@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+    <name>Character Studio</name>
+    <author>Character Studio Team</author>
+    <modVersion>1.0.0</modVersion>
+    <url>https://github.com/CharacterStudio/CharacterStudio</url>
+    <packageId>CharacterStudio.Mod</packageId>
+    <supportedVersions>
+        <li>1.5</li>
+        <li>1.6</li>
+    </supportedVersions>
+    <description>一个综合性的角色创作引擎，允许玩家可视化编辑外观、装配能力、配置AI行为，并导出为独立的皮肤与单位模组。
+
+功能特点：
+- 可视化皮肤编辑器（所见即所得）
+- 能力装配系统
+- AI行为配置
+- 一键导出为独立模组
+
+A comprehensive character creation engine that allows players to visually edit appearances, assemble abilities, configure AI behaviors, and export as standalone skin and unit mods.</description>
+    <modDependencies>
+        <li>
+            <packageId>brrainz.harmony</packageId>
+            <displayName>Harmony</displayName>
+        </li>
+    </modDependencies>
+    <loadAfter>
+        <li>brrainz.harmony</li>
+        <li>Ludeon.RimWorld</li>
+        <li>Ludeon.RimWorld.Royalty</li>
+        <li>Ludeon.RimWorld.Ideology</li>
+        <li>Ludeon.RimWorld.Biotech</li>
+        <li>Ludeon.RimWorld.Anomaly</li>
+    </loadAfter>
+</ModMetaData>

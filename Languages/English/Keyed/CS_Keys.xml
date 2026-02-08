@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <!-- Mod Info -->
+    <CS_Studio_ModName>The Second Seat: Character Studio</CS_Studio_ModName>
+    <CS_Studio_ModDescription>A comprehensive character creation engine that allows players to visually edit appearances, assemble abilities, configure AI behaviors, and export as standalone mods.</CS_Studio_ModDescription>
+
+    <!-- Editor Window -->
+    <CS_Studio_EditorTitle>Character Skin Editor</CS_Studio_EditorTitle>
+    <CS_Studio_EditorSubtitle>WYSIWYG Character Appearance Editor</CS_Studio_EditorSubtitle>
+
+    <!-- Menu Items -->
+    <CS_Studio_Menu_File>File</CS_Studio_Menu_File>
+    <CS_Studio_Menu_Edit>Edit</CS_Studio_Menu_Edit>
+    <CS_Studio_Menu_View>View</CS_Studio_Menu_View>
+    <CS_Studio_Menu_Help>Help</CS_Studio_Menu_Help>
+
+    <!-- File Operations -->
+    <CS_Studio_File_New>New</CS_Studio_File_New>
+    <CS_Studio_File_Open>Open</CS_Studio_File_Open>
+    <CS_Studio_File_Save>Save</CS_Studio_File_Save>
+    <CS_Studio_File_SaveAs>Save As</CS_Studio_File_SaveAs>
+    <CS_Studio_File_Export>Export as Mod</CS_Studio_File_Export>
+    <CS_Studio_File_Import>Import</CS_Studio_File_Import>
+
+    <!-- Tabs -->
+    <CS_Studio_Tab_Layers>Layers</CS_Studio_Tab_Layers>
+    <CS_Studio_Tab_Face>Face</CS_Studio_Tab_Face>
+
+    <!-- Layers Panel -->
+    <CS_Studio_Panel_Layers>Layers</CS_Studio_Panel_Layers>
+    <CS_Studio_Panel_AddLayer>Add Layer</CS_Studio_Panel_AddLayer>
+    <CS_Studio_Panel_RemoveLayer>Remove Layer</CS_Studio_Panel_RemoveLayer>
+    <CS_Studio_Panel_MoveUp>Move Up</CS_Studio_Panel_MoveUp>
+    <CS_Studio_Panel_MoveDown>Move Down</CS_Studio_Panel_MoveDown>
+    <CS_Studio_Panel_Duplicate>Duplicate</CS_Studio_Panel_Duplicate>
+    
+    <!-- New Layer Ops -->
+    <CS_Studio_Layer_AddCustom>Add Custom Layer</CS_Studio_Layer_AddCustom>
+    <CS_Studio_Layer_NoTree>(No Render Tree, please refresh)</CS_Studio_Layer_NoTree>
+    <CS_Studio_Layer_CustomSection>── Custom Layers ──</CS_Studio_Layer_CustomSection>
+    <CS_Studio_Ctx_CopyLayer>Copy Layer</CS_Studio_Ctx_CopyLayer>
+    <CS_Studio_Ctx_DeleteLayer>Delete Layer</CS_Studio_Ctx_DeleteLayer>
+
+    <!-- Preview Panel -->
+    <CS_Studio_Panel_Preview>Preview</CS_Studio_Panel_Preview>
+    <CS_Studio_Preview_SelectRace>Select Race</CS_Studio_Preview_SelectRace>
+    <CS_Studio_Preview_RotateLeft>Rotate Left</CS_Studio_Preview_RotateLeft>
+    <CS_Studio_Preview_RotateRight>Rotate Right</CS_Studio_Preview_RotateRight>
+    <CS_Studio_Preview_ZoomIn>Zoom In</CS_Studio_Preview_ZoomIn>
+    <CS_Studio_Preview_ZoomOut>Zoom Out</CS_Studio_Preview_ZoomOut>
+    <CS_Studio_Preview_ResetView>Reset View</CS_Studio_Preview_ResetView>
+    <CS_Studio_Preview_Exp>Exp:</CS_Studio_Preview_Exp>
+    <CS_Studio_Preview_Var>Var:</CS_Studio_Preview_Var>
+
+    <!-- Properties Panel -->
+    <CS_Studio_Panel_Properties>Properties</CS_Studio_Panel_Properties>
+    <CS_Studio_Prop_LayerName>Layer Name</CS_Studio_Prop_LayerName>
+    <CS_Studio_Prop_TexturePath>Texture Path</CS_Studio_Prop_TexturePath>
+    <CS_Studio_Prop_AnchorPoint>Anchor Point</CS_Studio_Prop_AnchorPoint>
+    <CS_Studio_Prop_Offset>Offset</CS_Studio_Prop_Offset>
+    <CS_Studio_Prop_OffsetX>X Offset</CS_Studio_Prop_OffsetX>
+    <CS_Studio_Prop_OffsetY>Y Offset</CS_Studio_Prop_OffsetY>
+    <CS_Studio_Prop_OffsetZ>Z Offset</CS_Studio_Prop_OffsetZ>
+    <CS_Studio_Prop_Scale>Scale</CS_Studio_Prop_Scale>
+    <CS_Studio_Prop_DrawOrder>Draw Order</CS_Studio_Prop_DrawOrder>
+    <CS_Studio_Prop_ColorType>Color Type</CS_Studio_Prop_ColorType>
+    <CS_Studio_Prop_CustomColor>Custom Color</CS_Studio_Prop_CustomColor>
+    <CS_Studio_Prop_Visible>Visible</CS_Studio_Prop_Visible>
+    <CS_Studio_Prop_FlipHorizontal>Flip Horizontal</CS_Studio_Prop_FlipHorizontal>
+    <CS_Studio_Prop_NodeInfo>Node Info</CS_Studio_Prop_NodeInfo>
+    <CS_Studio_Prop_NodePath>Node Path</CS_Studio_Prop_NodePath>
+    <CS_Studio_Prop_NodeTag>Tag</CS_Studio_Prop_NodeTag>
+    <CS_Studio_Prop_NodeWorker>Render Class</CS_Studio_Prop_NodeWorker>
+    <CS_Studio_Prop_NodeTexture>Texture</CS_Studio_Prop_NodeTexture>
+    <CS_Studio_Prop_NodeChildren>Child Count</CS_Studio_Prop_NodeChildren>
+    <CS_Studio_Prop_Actions>Actions</CS_Studio_Prop_Actions>
+    <CS_Studio_Prop_MountLayer>Mount Layer on Node</CS_Studio_Prop_MountLayer>
+    <CS_Studio_Prop_HideNode>Hide Node</CS_Studio_Prop_HideNode>
+    <CS_Studio_Prop_ShowNode>Show Node</CS_Studio_Prop_ShowNode>
+    <CS_Studio_Prop_FaceComponent>Face Component</CS_Studio_Prop_FaceComponent>
+
+    <!-- New Property Items -->
+    <CS_Studio_Msg_SelectLayer>Please select a node or layer</CS_Studio_Msg_SelectLayer>
+    <CS_Studio_Offset_EX>Offset E.X</CS_Studio_Offset_EX>
+    <CS_Studio_Offset_EY>Offset E.Y</CS_Studio_Offset_EY>
+    <CS_Studio_Offset_EZ>Offset E.Z</CS_Studio_Offset_EZ>
+    <CS_Studio_Section_NorthOffset>North Offset</CS_Studio_Section_NorthOffset>
+    <CS_Studio_Offset_NX>Offset N.X</CS_Studio_Offset_NX>
+    <CS_Studio_Offset_NY>Offset N.Y</CS_Studio_Offset_NY>
+    <CS_Studio_Offset_NZ>Offset N.Z</CS_Studio_Offset_NZ>
+    <CS_Studio_Btn_AddHidden>+ Add Hidden Node</CS_Studio_Btn_AddHidden>
+    <CS_Studio_Msg_NoHidden>(No hidden nodes)</CS_Studio_Msg_NoHidden>
+    <CS_Studio_Info_Path>Path:</CS_Studio_Info_Path>
+    <CS_Studio_Msg_PathCopied>Path copied</CS_Studio_Msg_PathCopied>
+    <CS_Studio_Info_Worker>Worker:</CS_Studio_Info_Worker>
+    <CS_Studio_Msg_TexCopied>Texture path copied</CS_Studio_Msg_TexCopied>
+
+    <!-- Animation Settings -->
+    <CS_Studio_Section_Animation>Animation Settings</CS_Studio_Section_Animation>
+    <CS_Studio_Anim_Type>Type</CS_Studio_Anim_Type>
+    <CS_Studio_Anim_None>None</CS_Studio_Anim_None>
+    <CS_Studio_Anim_Twitch>Random Twitch</CS_Studio_Anim_Twitch>
+    <CS_Studio_Anim_Swing>Periodic Swing</CS_Studio_Anim_Swing>
+    <CS_Studio_Anim_IdleSway>Idle Sway</CS_Studio_Anim_IdleSway>
+    <CS_Studio_Anim_Breathe>Breathe</CS_Studio_Anim_Breathe>
+    <CS_Studio_Anim_Frequency>Frequency</CS_Studio_Anim_Frequency>
+    <CS_Studio_Anim_Amplitude>Amplitude</CS_Studio_Anim_Amplitude>
+    <CS_Studio_Anim_Speed>Speed</CS_Studio_Anim_Speed>
+    <CS_Studio_Anim_AffectsOffset>Affects Offset</CS_Studio_Anim_AffectsOffset>
+    <CS_Studio_Anim_OffsetAmplitude>Offset Amplitude</CS_Studio_Anim_OffsetAmplitude>
+    <CS_Studio_Anim_PhaseOffset>Phase Offset</CS_Studio_Anim_PhaseOffset>
+
+    <!-- Color Types -->
+    <CS_Studio_ColorType_Custom>Custom</CS_Studio_ColorType_Custom>
+    <CS_Studio_ColorType_Hair>Hair Color</CS_Studio_ColorType_Hair>
+    <CS_Studio_ColorType_Skin>Skin Color</CS_Studio_ColorType_Skin>
+    <CS_Studio_ColorType_White>White</CS_Studio_ColorType_White>
+
+    <!-- Anchor Options -->
+    <CS_Studio_Anchor_Head>Head</CS_Studio_Anchor_Head>
+    <CS_Studio_Anchor_Body>Body</CS_Studio_Anchor_Body>
+    <CS_Studio_Anchor_Hair>Hair</CS_Studio_Anchor_Hair>
+
+    <!-- Export Dialog -->
+    <CS_Studio_Export_Title>Export as Mod</CS_Studio_Export_Title>
+    <CS_Studio_Export_ModName>Mod Name</CS_Studio_Export_ModName>
+    <CS_Studio_Export_Author>Author</CS_Studio_Export_Author>
+    <CS_Studio_Export_Version>Version</CS_Studio_Export_Version>
+    <CS_Studio_Export_Description>Description</CS_Studio_Export_Description>
+    <CS_Studio_Export_OutputPath>Output Path</CS_Studio_Export_OutputPath>
+    <CS_Studio_Export_Browse>Browse...</CS_Studio_Export_Browse>
+    <CS_Studio_Export_Confirm>Confirm Export</CS_Studio_Export_Confirm>
+    <CS_Studio_Export_Cancel>Cancel</CS_Studio_Export_Cancel>
+    <CS_Studio_Export_Success>Export successful! Mod saved to: {0}</CS_Studio_Export_Success>
+    <CS_Studio_Export_Failed>Export failed: {0}</CS_Studio_Export_Failed>
+
+    <!-- New Export Items -->
+    <CS_Studio_Export_CosmeticOptions>Cosmetic Options</CS_Studio_Export_CosmeticOptions>
+    <CS_Studio_Export_OutputSettings>Output Settings</CS_Studio_Export_OutputSettings>
+    <CS_Studio_Export_PathHint>Please manually copy the mod export path here.\n\nDefault RimWorld Mods folder:\n{0}</CS_Studio_Export_PathHint>
+    <CS_Studio_Export_Err_FillFields>Please fill in all required fields</CS_Studio_Export_Err_FillFields>
+    <CS_Studio_Export_Status_Exporting>Exporting...</CS_Studio_Export_Status_Exporting>
+    <CS_Studio_Export_Err_Unknown>Export failed: Unknown error</CS_Studio_Export_Err_Unknown>
+
+    <!-- Skin Settings -->
+    <CS_Studio_Skin_Settings>Skin Settings</CS_Studio_Skin_Settings>
+    <CS_Studio_Skin_HideVanillaHead>Hide Vanilla Head</CS_Studio_Skin_HideVanillaHead>
+    <CS_Studio_Skin_HideVanillaHair>Hide Vanilla Hair</CS_Studio_Skin_HideVanillaHair>
+    <CS_Studio_Skin_HideVanillaBody>Hide Vanilla Body</CS_Studio_Skin_HideVanillaBody>
+    <CS_Studio_Skin_HideVanillaApparel>Hide Vanilla Apparel</CS_Studio_Skin_HideVanillaApparel>
+    <CS_Studio_Skin_TargetRaces>Target Races</CS_Studio_Skin_TargetRaces>
+    <CS_Studio_Skin_Humanlike Only>Humanlike Only</CS_Studio_Skin_HumanlikeOnly>
+    
+    <!-- New Skin Settings -->
+    <CS_Studio_Label>Label</CS_Studio_Label>
+    <CS_Studio_AllRaces>(All Races)</CS_Studio_AllRaces>
+
+    <!-- Messages -->
+    <CS_Studio_Msg_UnsavedChanges>There are unsaved changes. Do you want to save?</CS_Studio_Msg_UnsavedChanges>
+    <CS_Studio_Msg_ConfirmDelete>Are you sure you want to delete this layer?</CS_Studio_Msg_ConfirmDelete>
+    <CS_Studio_Msg_TextureNotFound>Texture file not found</CS_Studio_Msg_TextureNotFound>
+    <CS_Studio_Msg_InvalidPath>Invalid path</CS_Studio_Msg_InvalidPath>
+    <CS_Studio_Msg_SaveSuccess>Save successful!</CS_Studio_Msg_SaveSuccess>
+    <CS_Studio_Msg_LoadSuccess>Load successful!</CS_Studio_Msg_LoadSuccess>
+    
+    <!-- New Messages -->
+    <CS_Studio_Msg_TreeRefreshed>Render tree refreshed</CS_Studio_Msg_TreeRefreshed>
+    <CS_Studio_Msg_TreeError>Failed to capture render tree</CS_Studio_Msg_TreeError>
+    <CS_Studio_Msg_Shown>Shown: {0}</CS_Studio_Msg_Shown>
+    <CS_Studio_Msg_Hidden>Hidden: {0}</CS_Studio_Msg_Hidden>
+    <CS_Studio_Msg_Copied>Copied: {0}</CS_Studio_Msg_Copied>
+    <CS_Studio_Msg_AllTagsAdded>All common tags added</CS_Studio_Msg_AllTagsAdded>
+    <CS_Studio_Msg_TagAdded>Added hidden tag: {0}</CS_Studio_Msg_TagAdded>
+    <CS_Studio_Msg_NoMoreTags>No more available tags in render tree</CS_Studio_Msg_NoMoreTags>
+    <CS_Studio_Err_NoMap>Please enter a game map first</CS_Studio_Err_NoMap>
+    <CS_Studio_Err_NoPawns>No importable humanoid pawns on map</CS_Studio_Err_NoPawns>
+    <CS_Studio_Err_ImportFailed>Failed to import any layers from {0}</CS_Studio_Err_ImportFailed>
+    <CS_Studio_Msg_Imported>Imported {1} layers from {0}</CS_Studio_Msg_Imported>
+    <CS_Studio_Msg_Appended>Appended {1} layers from {0}</CS_Studio_Msg_Appended>
+    <CS_Studio_Err_MannequinFailed>Mannequin initialization failed, preview disabled</CS_Studio_Err_MannequinFailed>
+    <CS_Studio_Err_DefNameEmpty>Error: DefName cannot be empty</CS_Studio_Err_DefNameEmpty>
+    <CS_Studio_Err_DefNameInvalid>Error: DefName can only contain letters, numbers, and underscores</CS_Studio_Err_DefNameInvalid>
+    <CS_Studio_Warn_NoLayers>Warning: No layers in current skin, continue export?</CS_Studio_Warn_NoLayers>
+    <CS_Studio_Warn_NoTexture>Warning: No texture path set for some layers</CS_Studio_Warn_NoTexture>
+
+    <!-- Buttons -->
+    <CS_Studio_Btn_OK>OK</CS_Studio_Btn_OK>
+    <CS_Studio_Btn_Cancel>Cancel</CS_Studio_Btn_Cancel>
+    <CS_Studio_Btn_Apply>Apply</CS_Studio_Btn_Apply>
+    <CS_Studio_Btn_Reset>Reset</CS_Studio_Btn_Reset>
+    <CS_Studio_Btn_SelectFile>Select File</CS_Studio_Btn_SelectFile>
+    <CS_Studio_Btn_ContinueExport>Export Anyway</CS_Studio_Btn_ContinueExport>
+
+    <!-- Tooltips -->
+    <CS_Studio_Tip_AddLayer>Add a new texture layer</CS_Studio_Tip_AddLayer>
+    <CS_Studio_Tip_RemoveLayer>Remove the selected layer</CS_Studio_Tip_RemoveLayer>
+    <CS_Studio_Tip_MoveUp>Move layer up</CS_Studio_Tip_MoveUp>
+    <CS_Studio_Tip_MoveDown>Move layer down</CS_Studio_Tip_MoveDown>
+    <CS_Studio_Tip_SelectTexture>Click to select a texture file</CS_Studio_Tip_SelectTexture>
+    <CS_Studio_Tip_ShowNode>Click to show this node</CS_Studio_Tip_ShowNode>
+    <CS_Studio_Tip_HideNode>Click to hide this node</CS_Studio_Tip_HideNode>
+
+    <!-- Export Mode -->
+    <CS_Studio_ExportMode>Export Mode</CS_Studio_ExportMode>
+    <CS_Studio_ExportMode_FullUnit>Full Unit Pack</CS_Studio_ExportMode_FullUnit>
+    <CS_Studio_ExportMode_FullUnit_Desc>Includes PawnKind, abilities, AI, and summoning item</CS_Studio_ExportMode_FullUnit_Desc>
+    <CS_Studio_ExportMode_Cosmetic>Cosmetic Pack</CS_Studio_ExportMode_Cosmetic>
+    <CS_Studio_ExportMode_Cosmetic_Desc>Skin and textures only</CS_Studio_ExportMode_Cosmetic_Desc>
+    <CS_Studio_Export_AsGene>Export as Gene</CS_Studio_Export_AsGene>
+    <CS_Studio_Export_AsGene_Desc>Generates a Biotech gene definition, selectable in xenotype editor</CS_Studio_Export_AsGene_Desc>
+    <CS_Studio_Export_AsTattoo>Export as Tattoo/Style</CS_Studio_Export_AsTattoo>
+    <CS_Studio_Export_OverlayMode>Overlay Mode</CS_Studio_Export_OverlayMode>
+    <CS_Studio_Export_OverlayMode_Desc>Does not hide vanilla appearance, only adds layers (for accessories like glasses, scars, etc.)</CS_Studio_Export_OverlayMode_Desc>
+    <CS_Studio_Export_GeneCategory>Gene Category</CS_Studio_Export_GeneCategory>
+    
+    <!-- Module Options -->
+    <CS_Studio_Export_ModuleOptions>Module Options</CS_Studio_Export_ModuleOptions>
+    <CS_Studio_Export_IncludeSkinDef>Include Skin Definition</CS_Studio_Export_IncludeSkinDef>
+    <CS_Studio_Export_IncludeGeneDef>Include Gene Definition</CS_Studio_Export_IncludeGeneDef>
+    <CS_Studio_Export_IncludePawnKind>Include PawnKind Definition</CS_Studio_Export_IncludePawnKind>
+    <CS_Studio_Export_IncludeSummonItem>Include Summon Item</CS_Studio_Export_IncludeSummonItem>
+    <CS_Studio_Export_IncludeAbilities>Include Abilities</CS_Studio_Export_IncludeAbilities>
+    <CS_Studio_Export_CopyTextures>Copy Textures</CS_Studio_Export_CopyTextures>
+    
+    <!-- Asset Source Preview -->
+    <CS_Studio_Export_PreviewAssets>Preview Asset Sources</CS_Studio_Export_PreviewAssets>
+    <CS_Studio_Export_HideAssets>Hide Asset Sources</CS_Studio_Export_HideAssets>
+    <CS_Studio_Export_AssetSources>Asset Sources</CS_Studio_Export_AssetSources>
+    <CS_Studio_Export_LocalFiles>Local Files</CS_Studio_Export_LocalFiles>
+    <CS_Studio_Export_VanillaContent>Vanilla Content</CS_Studio_Export_VanillaContent>
+    <CS_Studio_Export_ExternalMod>External Mods</CS_Studio_Export_ExternalMod>
+    <CS_Studio_Export_DetectedDeps>Detected {0} external mod dependencies:</CS_Studio_Export_DetectedDeps>
+
+    <!-- Appearance Gizmo -->
+    <CS_Gizmo_Appearance>Appearance</CS_Gizmo_Appearance>
+    <CS_Gizmo_Appearance_Desc>Change this pawn's appearance skin</CS_Gizmo_Appearance_Desc>
+    <CS_Appearance_ClearSkin>Restore Default Appearance</CS_Appearance_ClearSkin>
+    <CS_Appearance_NoSkins>(No skins available)</CS_Appearance_NoSkins>
+    <CS_Appearance_NoComp>This pawn does not support skin changes</CS_Appearance_NoComp>
+    <CS_Appearance_Applied>Applied appearance to {1}: {0}</CS_Appearance_Applied>
+    <CS_Appearance_Cleared>Restored default appearance for {0}</CS_Appearance_Cleared>
+    <CS_Studio_OpenEditor>Open Skin Editor</CS_Studio_OpenEditor>
+
+    <!-- Summon Items -->
+    <CS_Summon_Use>Summon {0}</CS_Summon_Use>
+    <CS_Summon_Success>Successfully summoned: {0}</CS_Summon_Success>
+
+    <!-- Render Tree Inspector -->
+    <CS_Inspector_Refresh>Refresh</CS_Inspector_Refresh>
+    <CS_Inspector_Import>Import</CS_Inspector_Import>
+    <CS_Inspector_Inspecting>Inspecting: {0}</CS_Inspector_Inspecting>
+    <CS_Inspector_NoData>No render tree data</CS_Inspector_NoData>
+    <CS_Inspector_ImportSuccess>Successfully imported {0} layers</CS_Inspector_ImportSuccess>
+    <CS_Inspector_ImportEmpty>No layers found to import</CS_Inspector_ImportEmpty>
+
+    <!-- Ability Editor -->
+    <CS_Studio_Ability_SelectOrCreate>Please select or create an ability</CS_Studio_Ability_SelectOrCreate>
+    <CS_Studio_Ability_Name>Name</CS_Studio_Ability_Name>
+    <CS_Studio_Ability_Cooldown>Cooldown (Ticks)</CS_Studio_Ability_Cooldown>
+    <CS_Studio_Ability_Type>Type</CS_Studio_Ability_Type>
+    <CS_Studio_Ability_Range>Range</CS_Studio_Ability_Range>
+    <CS_Studio_Ability_Radius>Explosion Radius</CS_Studio_Ability_Radius>
+    <CS_Studio_Effect_Add>Add Effect</CS_Studio_Effect_Add>
+    <CS_Studio_Effect_Amount>Amount</CS_Studio_Effect_Amount>
+    <CS_Studio_Effect_Chance>Chance</CS_Studio_Effect_Chance>
+    <CS_Studio_Effect_PawnKind>PawnKind</CS_Studio_Effect_PawnKind>
+    <CS_Studio_Effect_Hediff>Hediff</CS_Studio_Effect_Hediff>
+
+    <!-- Face & Menu -->
+    <CS_Studio_Face_Title>Face Configuration</CS_Studio_Face_Title>
+    <CS_Studio_Face_Dev>Face configuration is under development...\n\nUse Exp button in preview panel to test expressions</CS_Studio_Face_Dev>
+    <CS_Studio_Face_Config>Face Config</CS_Studio_Face_Config>
+    <CS_Studio_Face_Enable>Enable Expression System</CS_Studio_Face_Enable>
+    <CS_Studio_Face_Type>{0} Expression</CS_Studio_Face_Type>
+    <CS_Studio_None>(None)</CS_Studio_None>
+    <CS_Studio_Face_Create>Create Face Config</CS_Studio_Face_Create>
+    <CS_Studio_Ctx_CopyPath>Copy Node Path</CS_Studio_Ctx_CopyPath>
+    <CS_Studio_Ctx_CopyTexPath>Copy Texture Path</CS_Studio_Ctx_CopyTexPath>
+    <CS_Studio_Ctx_CollapseChildren>Collapse Children</CS_Studio_Ctx_CollapseChildren>
+    <CS_Studio_Ctx_ExpandChildren>Expand Children</CS_Studio_Ctx_ExpandChildren>
+    <CS_Studio_Ctx_FromRenderTree>── Select from Render Tree ──</CS_Studio_Ctx_FromRenderTree>
+    <CS_Studio_Ctx_ClearAndImport>Clear and Import</CS_Studio_Ctx_ClearAndImport>
+    <CS_Studio_Ctx_AppendImport>Append Import</CS_Studio_Ctx_AppendImport>
+
+    <!-- Help Glossary -->
+    <CS_Help_Title>Glossary</CS_Help_Title>
+    <CS_Help_Layer_Title>Layer</CS_Help_Layer_Title>
+    <CS_Help_Layer_Desc>A single image layer that makes up the character's appearance. Multiple layers can be added to create complex skins.</CS_Help_Layer_Desc>
+    <CS_Help_Anchor_Title>Anchor</CS_Help_Anchor_Title>
+    <CS_Help_Anchor_Desc>The body part to which the layer is attached. The layer moves and rotates with the anchor. For example, attaching to "Head" makes the layer rotate with the head.</CS_Help_Anchor_Desc>
+    <CS_Help_Offset_Title>Offset</CS_Help_Offset_Title>
+    <CS_Help_Offset_Desc>Adjusts the position of the layer relative to the anchor.\nX: Left/Right\nY: Depth/Layering\nZ: Up/Down</CS_Help_Offset_Desc>
+    <CS_Help_OffsetEast_Title>Offset East</CS_Help_OffsetEast_Title>
+    <CS_Help_OffsetEast_Desc>Additional offset applied when the character is facing East/West. Used to correct misalignment in side views.</CS_Help_OffsetEast_Desc>
+    <CS_Help_Scale_Title>Scale</CS_Help_Scale_Title>
+    <CS_Help_Scale_Desc>The magnification scale of the layer. 1.0 is the original size.</CS_Help_Scale_Desc>
+    <CS_Help_DrawOrder_Title>Draw Order</CS_Help_DrawOrder_Title>
+    <CS_Help_DrawOrder_Desc>Determines the rendering order. Higher values appear in front of lower values.</CS_Help_DrawOrder_Desc>
+    <CS_Help_ColorType_Title>Color Type</CS_Help_ColorType_Title>
+    <CS_Help_ColorType_Desc>Determines the source of the layer's color.\n- Custom: Use a specific fixed color.\n- Hair/Skin: Automatically use the current character's hair or skin color.</CS_Help_ColorType_Desc>
+    <CS_Help_Worker_Title>Worker</CS_Help_Worker_Title>
+    <CS_Help_Worker_Desc>The program class controlling rendering logic. Usually "Default". "FaceComponent" is for special facial parts (like eyes) supporting blinking/sleeping states.</CS_Help_Worker_Desc>
+    <CS_Help_Animation_Title>Animation</CS_Help_Animation_Title>
+    <CS_Help_Animation_Desc>Adds dynamic effects to the layer.\n- Random Twitch: Random twitching, suitable for animal ears.\n- Periodic Swing: Periodic swinging, suitable for tails.</CS_Help_Animation_Desc>
+
+    <!-- File Browser -->
+    <CS_Studio_Browser_Title>File Browser</CS_Studio_Browser_Title>
+    <CS_Studio_Browser_Up>Up</CS_Studio_Browser_Up>
+    <CS_Studio_Browser_Search>Search...</CS_Studio_Browser_Search>
+</LanguageData>

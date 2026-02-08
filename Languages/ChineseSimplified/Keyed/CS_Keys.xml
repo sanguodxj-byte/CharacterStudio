@@ -1,0 +1,332 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <!-- 模组信息 -->
+    <CS_Studio_ModName>第二席位：角色工作室</CS_Studio_ModName>
+    <CS_Studio_ModDescription>一个综合性的角色创作引擎，允许玩家可视化编辑外观、装配能力、配置AI行为，并导出为独立模组。</CS_Studio_ModDescription>
+
+    <!-- 编辑器窗口 -->
+    <CS_Studio_EditorTitle>角色皮肤编辑器</CS_Studio_EditorTitle>
+    <CS_Studio_EditorSubtitle>所见即所得的角色外观编辑</CS_Studio_EditorSubtitle>
+
+    <!-- 菜单项 -->
+    <CS_Studio_Menu_File>文件</CS_Studio_Menu_File>
+    <CS_Studio_Menu_Edit>编辑</CS_Studio_Menu_Edit>
+    <CS_Studio_Menu_View>视图</CS_Studio_Menu_View>
+    <CS_Studio_Menu_Help>帮助</CS_Studio_Menu_Help>
+    <CS_Studio_Menu_Abilities>技能编辑器</CS_Studio_Menu_Abilities>
+
+    <!-- 文件操作 -->
+    <CS_Studio_File_New>新建</CS_Studio_File_New>
+    <CS_Studio_File_Open>打开</CS_Studio_File_Open>
+    <CS_Studio_File_Save>保存</CS_Studio_File_Save>
+    <CS_Studio_File_SaveAs>另存为</CS_Studio_File_SaveAs>
+    <CS_Studio_File_Export>导出为模组</CS_Studio_File_Export>
+    <CS_Studio_File_Import>导入</CS_Studio_File_Import>
+
+    <!-- 选项卡 -->
+    <CS_Studio_Tab_Layers>图层</CS_Studio_Tab_Layers>
+    <CS_Studio_Tab_Face>表情</CS_Studio_Tab_Face>
+
+    <!-- 图层面板 -->
+    <CS_Studio_Panel_Layers>渲染树</CS_Studio_Panel_Layers>
+    <CS_Studio_Panel_AddLayer>添加图层</CS_Studio_Panel_AddLayer>
+    <CS_Studio_Panel_RemoveLayer>移除图层</CS_Studio_Panel_RemoveLayer>
+    <CS_Studio_Panel_MoveUp>上移</CS_Studio_Panel_MoveUp>
+    <CS_Studio_Panel_MoveDown>下移</CS_Studio_Panel_MoveDown>
+    <CS_Studio_Panel_Duplicate>复制</CS_Studio_Panel_Duplicate>
+    <CS_Studio_Panel_CustomLayers>自定义图层</CS_Studio_Panel_CustomLayers>
+    <CS_Studio_Panel_RefreshTree>刷新渲染树</CS_Studio_Panel_RefreshTree>
+    <CS_Studio_Panel_ExpandAll>展开全部</CS_Studio_Panel_ExpandAll>
+    <CS_Studio_Panel_CollapseAll>折叠全部</CS_Studio_Panel_CollapseAll>
+
+    <!-- 新增图层操作 -->
+    <CS_Studio_Layer_AddCustom>添加自定义图层</CS_Studio_Layer_AddCustom>
+    <CS_Studio_Layer_NoTree>(无渲染树，请刷新)</CS_Studio_Layer_NoTree>
+    <CS_Studio_Layer_CustomSection>── 自定义图层 ──</CS_Studio_Layer_CustomSection>
+    <CS_Studio_Ctx_CopyLayer>复制图层</CS_Studio_Ctx_CopyLayer>
+    <CS_Studio_Ctx_DeleteLayer>删除图层</CS_Studio_Ctx_DeleteLayer>
+
+    <!-- 预览面板 -->
+    <CS_Studio_Panel_Preview>预览</CS_Studio_Panel_Preview>
+    <CS_Studio_Preview_SelectRace>选择种族</CS_Studio_Preview_SelectRace>
+    <CS_Studio_Preview_RotateLeft>向左旋转</CS_Studio_Preview_RotateLeft>
+    <CS_Studio_Preview_RotateRight>向右旋转</CS_Studio_Preview_RotateRight>
+    <CS_Studio_Preview_ZoomIn>放大</CS_Studio_Preview_ZoomIn>
+    <CS_Studio_Preview_ZoomOut>缩小</CS_Studio_Preview_ZoomOut>
+    <CS_Studio_Preview_ResetView>重置视图</CS_Studio_Preview_ResetView>
+    <CS_Studio_Preview_Exp>Exp:</CS_Studio_Preview_Exp>
+    <CS_Studio_Preview_Var>Var:</CS_Studio_Preview_Var>
+
+    <!-- 属性面板 -->
+    <CS_Studio_Panel_Properties>属性</CS_Studio_Panel_Properties>
+    <CS_Studio_Prop_LayerName>图层名称</CS_Studio_Prop_LayerName>
+    <CS_Studio_Prop_TexturePath>纹理路径</CS_Studio_Prop_TexturePath>
+    <CS_Studio_Prop_AnchorPoint>锚点</CS_Studio_Prop_AnchorPoint>
+    <CS_Studio_Prop_Offset>偏移</CS_Studio_Prop_Offset>
+    <CS_Studio_Prop_OffsetX>X 偏移</CS_Studio_Prop_OffsetX>
+    <CS_Studio_Prop_OffsetY>Y 偏移</CS_Studio_Prop_OffsetY>
+    <CS_Studio_Prop_OffsetZ>Z 偏移</CS_Studio_Prop_OffsetZ>
+    <CS_Studio_Prop_Scale>缩放</CS_Studio_Prop_Scale>
+    <CS_Studio_Prop_DrawOrder>绘制顺序</CS_Studio_Prop_DrawOrder>
+    <CS_Studio_Prop_ColorType>颜色类型</CS_Studio_Prop_ColorType>
+    <CS_Studio_Prop_CustomColor>自定义颜色</CS_Studio_Prop_CustomColor>
+    <CS_Studio_Prop_Visible>可见</CS_Studio_Prop_Visible>
+    <CS_Studio_Prop_FlipHorizontal>水平翻转</CS_Studio_Prop_FlipHorizontal>
+    <CS_Studio_Prop_NodeInfo>节点信息</CS_Studio_Prop_NodeInfo>
+    <CS_Studio_Prop_NodePath>节点路径</CS_Studio_Prop_NodePath>
+    <CS_Studio_Prop_NodeTag>标签</CS_Studio_Prop_NodeTag>
+    <CS_Studio_Prop_NodeWorker>渲染类</CS_Studio_Prop_NodeWorker>
+    <CS_Studio_Prop_NodeTexture>贴图</CS_Studio_Prop_NodeTexture>
+    <CS_Studio_Prop_NodeChildren>子节点数</CS_Studio_Prop_NodeChildren>
+    <CS_Studio_Prop_Actions>操作</CS_Studio_Prop_Actions>
+    <CS_Studio_Prop_MountLayer>在此节点挂载新图层</CS_Studio_Prop_MountLayer>
+    <CS_Studio_Prop_HideNode>隐藏此节点</CS_Studio_Prop_HideNode>
+    <CS_Studio_Prop_ShowNode>显示此节点</CS_Studio_Prop_ShowNode>
+    <CS_Studio_Prop_FaceComponent>面部组件</CS_Studio_Prop_FaceComponent>
+
+    <!-- 新增属性面板 -->
+    <CS_Studio_Msg_SelectLayer>请选择一个节点或图层</CS_Studio_Msg_SelectLayer>
+    <CS_Studio_Offset_EX>偏移E.X</CS_Studio_Offset_EX>
+    <CS_Studio_Offset_EY>偏移E.Y</CS_Studio_Offset_EY>
+    <CS_Studio_Offset_EZ>偏移E.Z</CS_Studio_Offset_EZ>
+    <CS_Studio_Btn_AddHidden>+ 添加隐藏节点</CS_Studio_Btn_AddHidden>
+    <CS_Studio_Msg_NoHidden>(无隐藏节点)</CS_Studio_Msg_NoHidden>
+    <CS_Studio_Info_Path>路径:</CS_Studio_Info_Path>
+    <CS_Studio_Msg_PathCopied>路径已复制</CS_Studio_Msg_PathCopied>
+    <CS_Studio_Info_Worker>Worker:</CS_Studio_Info_Worker>
+    <CS_Studio_Msg_TexCopied>贴图路径已复制</CS_Studio_Msg_TexCopied>
+
+    <!-- 动画设置 -->
+    <CS_Studio_Section_Animation>动画设置</CS_Studio_Section_Animation>
+    <CS_Studio_Anim_Type>动画类型</CS_Studio_Anim_Type>
+    <CS_Studio_Anim_None>无动画</CS_Studio_Anim_None>
+    <CS_Studio_Anim_Twitch>随机抽动</CS_Studio_Anim_Twitch>
+    <CS_Studio_Anim_Swing>周期摆动</CS_Studio_Anim_Swing>
+    <CS_Studio_Anim_IdleSway>轻柔摇曳</CS_Studio_Anim_IdleSway>
+    <CS_Studio_Anim_Breathe>呼吸起伏</CS_Studio_Anim_Breathe>
+    <CS_Studio_Anim_Frequency>频率</CS_Studio_Anim_Frequency>
+    <CS_Studio_Anim_Amplitude>幅度</CS_Studio_Anim_Amplitude>
+    <CS_Studio_Anim_Speed>速度</CS_Studio_Anim_Speed>
+    <CS_Studio_Anim_AffectsOffset>同时位移</CS_Studio_Anim_AffectsOffset>
+    <CS_Studio_Anim_OffsetAmplitude>位移幅度</CS_Studio_Anim_OffsetAmplitude>
+    <CS_Studio_Anim_PhaseOffset>相位偏移</CS_Studio_Anim_PhaseOffset>
+
+    <!-- 章节标题 -->
+    <CS_Studio_Section_Base>基本设置</CS_Studio_Section_Base>
+    <CS_Studio_Section_Transform>变换设置</CS_Studio_Section_Transform>
+    <CS_Studio_Section_EastOffset>侧视图偏移 (East/West)</CS_Studio_Section_EastOffset>
+    <CS_Studio_Section_NorthOffset>北向偏移 (North)</CS_Studio_Section_NorthOffset>
+    <CS_Studio_Offset_NX>偏移N.X</CS_Studio_Offset_NX>
+    <CS_Studio_Offset_NY>偏移N.Y</CS_Studio_Offset_NY>
+    <CS_Studio_Offset_NZ>偏移N.Z</CS_Studio_Offset_NZ>
+    <CS_Studio_Section_Misc>其他设置</CS_Studio_Section_Misc>
+    <CS_Studio_Section_HideVanilla>隐藏原版节点</CS_Studio_Section_HideVanilla>
+    <CS_Studio_Section_SkinBase>皮肤基本信息</CS_Studio_Section_SkinBase>
+    <CS_Studio_Section_Targets>目标限制</CS_Studio_Section_Targets>
+    <CS_Studio_Section_AbilityBase>技能基础信息</CS_Studio_Section_AbilityBase>
+    <CS_Studio_Section_Carrier>载体设置 (X轴)</CS_Studio_Section_Carrier>
+    <CS_Studio_Section_Effects>效果列表 (Y轴)</CS_Studio_Section_Effects>
+
+    <!-- 颜色类型 -->
+    <CS_Studio_ColorType_Custom>自定义</CS_Studio_ColorType_Custom>
+    <CS_Studio_ColorType_Hair>头发颜色</CS_Studio_ColorType_Hair>
+    <CS_Studio_ColorType_Skin>皮肤颜色</CS_Studio_ColorType_Skin>
+    <CS_Studio_ColorType_White>白色</CS_Studio_ColorType_White>
+
+    <!-- 锚点选项 -->
+    <CS_Studio_Anchor_Head>头部</CS_Studio_Anchor_Head>
+    <CS_Studio_Anchor_Body>身体</CS_Studio_Anchor_Body>
+    <CS_Studio_Anchor_Hair>头发</CS_Studio_Anchor_Hair>
+
+    <!-- 导出对话框 -->
+    <CS_Studio_Export_Title>导出为模组</CS_Studio_Export_Title>
+    <CS_Studio_Export_ModName>模组名称</CS_Studio_Export_ModName>
+    <CS_Studio_Export_Author>作者</CS_Studio_Export_Author>
+    <CS_Studio_Export_Version>版本</CS_Studio_Export_Version>
+    <CS_Studio_Export_Description>描述</CS_Studio_Export_Description>
+    <CS_Studio_Export_OutputPath>输出路径</CS_Studio_Export_OutputPath>
+    <CS_Studio_Export_Browse>浏览...</CS_Studio_Export_Browse>
+    <CS_Studio_Export_Confirm>确认导出</CS_Studio_Export_Confirm>
+    <CS_Studio_Export_Cancel>取消</CS_Studio_Export_Cancel>
+    <CS_Studio_Export_Success>导出成功！模组已保存到：{0}</CS_Studio_Export_Success>
+    <CS_Studio_Export_Failed>导出失败：{0}</CS_Studio_Export_Failed>
+
+    <!-- 新增导出 -->
+    <CS_Studio_Export_CosmeticOptions>化妆品选项</CS_Studio_Export_CosmeticOptions>
+    <CS_Studio_Export_OutputSettings>输出设置</CS_Studio_Export_OutputSettings>
+    <CS_Studio_Export_PathHint>请手动将模组导出路径复制到此处。\n\n默认 RimWorld Mods 目录:\n{0}</CS_Studio_Export_PathHint>
+    <CS_Studio_Export_Err_FillFields>请填写所有必填字段</CS_Studio_Export_Err_FillFields>
+    <CS_Studio_Export_Status_Exporting>正在导出...</CS_Studio_Export_Status_Exporting>
+    <CS_Studio_Export_Err_Unknown>导出失败：未知错误</CS_Studio_Export_Err_Unknown>
+
+    <!-- 皮肤设置 -->
+    <CS_Studio_Skin_Settings>皮肤设置</CS_Studio_Skin_Settings>
+    <CS_Studio_Skin_HideVanillaHead>隐藏原版头部</CS_Studio_Skin_HideVanillaHead>
+    <CS_Studio_Skin_HideVanillaHair>隐藏原版头发</CS_Studio_Skin_HideVanillaHair>
+    <CS_Studio_Skin_HideVanillaBody>隐藏原版身体</CS_Studio_Skin_HideVanillaBody>
+    <CS_Studio_Skin_HideVanillaApparel>隐藏原版服装</CS_Studio_Skin_HideVanillaApparel>
+    <CS_Studio_Skin_TargetRaces>目标种族</CS_Studio_Skin_TargetRaces>
+    <CS_Studio_Skin_HumanlikeOnly>仅人形</CS_Studio_Skin_HumanlikeOnly>
+    
+    <!-- 新增皮肤设置 -->
+    <CS_Studio_Label>标签</CS_Studio_Label>
+    <CS_Studio_AllRaces>(所有种族)</CS_Studio_AllRaces>
+
+    <!-- 消息提示 -->
+    <CS_Studio_Msg_UnsavedChanges>有未保存的更改，是否保存？</CS_Studio_Msg_UnsavedChanges>
+    <CS_Studio_Msg_ConfirmDelete>确定要删除此图层吗？</CS_Studio_Msg_ConfirmDelete>
+    <CS_Studio_Msg_TextureNotFound>未找到纹理文件</CS_Studio_Msg_TextureNotFound>
+    <CS_Studio_Msg_InvalidPath>无效的路径</CS_Studio_Msg_InvalidPath>
+    <CS_Studio_Msg_SaveSuccess>保存成功！</CS_Studio_Msg_SaveSuccess>
+    <CS_Studio_Msg_LoadSuccess>加载成功！</CS_Studio_Msg_LoadSuccess>
+    
+    <!-- 新增消息 -->
+    <CS_Studio_Msg_TreeRefreshed>渲染树已刷新</CS_Studio_Msg_TreeRefreshed>
+    <CS_Studio_Msg_TreeError>无法获取渲染树</CS_Studio_Msg_TreeError>
+    <CS_Studio_Msg_Shown>已显示: {0}</CS_Studio_Msg_Shown>
+    <CS_Studio_Msg_Hidden>已隐藏: {0}</CS_Studio_Msg_Hidden>
+    <CS_Studio_Msg_Copied>已复制: {0}</CS_Studio_Msg_Copied>
+    <CS_Studio_Msg_AllTagsAdded>所有常用标签都已添加</CS_Studio_Msg_AllTagsAdded>
+    <CS_Studio_Msg_TagAdded>已添加隐藏标签: {0}</CS_Studio_Msg_TagAdded>
+    <CS_Studio_Msg_NoMoreTags>渲染树中没有更多可用标签</CS_Studio_Msg_NoMoreTags>
+    <CS_Studio_Err_NoMap>请先进入游戏地图</CS_Studio_Err_NoMap>
+    <CS_Studio_Err_NoPawns>地图上没有可导入的人形角色</CS_Studio_Err_NoPawns>
+    <CS_Studio_Err_ImportFailed>未能从 {0} 导入任何图层</CS_Studio_Err_ImportFailed>
+    <CS_Studio_Msg_Imported>已从 {0} 导入 {1} 个图层</CS_Studio_Msg_Imported>
+    <CS_Studio_Msg_Appended>已从 {0} 追加 {1} 个图层</CS_Studio_Msg_Appended>
+    <CS_Studio_Err_MannequinFailed>人偶初始化失败，预览功能不可用</CS_Studio_Err_MannequinFailed>
+    <CS_Studio_Err_DefNameEmpty>错误: DefName 不能为空</CS_Studio_Err_DefNameEmpty>
+    <CS_Studio_Err_DefNameInvalid>错误: DefName 只能包含字母、数字和下划线</CS_Studio_Err_DefNameInvalid>
+    <CS_Studio_Warn_NoLayers>警告：当前皮肤没有任何图层，是否仍要导出？</CS_Studio_Warn_NoLayers>
+    <CS_Studio_Warn_NoTexture>警告：没有图层设置了纹理路径</CS_Studio_Warn_NoTexture>
+
+    <!-- 按钮 -->
+    <CS_Studio_Btn_OK>确定</CS_Studio_Btn_OK>
+    <CS_Studio_Btn_Cancel>取消</CS_Studio_Btn_Cancel>
+    <CS_Studio_Btn_Apply>应用</CS_Studio_Btn_Apply>
+    <CS_Studio_Btn_Reset>重置</CS_Studio_Btn_Reset>
+    <CS_Studio_Btn_SelectFile>选择文件</CS_Studio_Btn_SelectFile>
+    <CS_Studio_Btn_Delete>删除</CS_Studio_Btn_Delete>
+    <CS_Studio_Btn_ContinueExport>继续导出</CS_Studio_Btn_ContinueExport>
+
+    <!-- 状态 -->
+    <CS_Studio_Status_Loading>预览加载中...</CS_Studio_Status_Loading>
+    <CS_Studio_Status_Developing>功能开发中...</CS_Studio_Status_Developing>
+
+    <!-- 工具提示 -->
+    <CS_Studio_Tip_AddLayer>添加新的纹理图层</CS_Studio_Tip_AddLayer>
+    <CS_Studio_Tip_RemoveLayer>删除选中的图层</CS_Studio_Tip_RemoveLayer>
+    <CS_Studio_Tip_MoveUp>将图层上移一层</CS_Studio_Tip_MoveUp>
+    <CS_Studio_Tip_MoveDown>将图层下移一层</CS_Studio_Tip_MoveDown>
+    <CS_Studio_Tip_SelectTexture>点击选择纹理文件</CS_Studio_Tip_SelectTexture>
+    <CS_Studio_Tip_ShowNode>点击显示此节点</CS_Studio_Tip_ShowNode>
+    <CS_Studio_Tip_HideNode>点击隐藏此节点</CS_Studio_Tip_HideNode>
+
+    <!-- 导出模式 -->
+    <CS_Studio_ExportMode>导出模式</CS_Studio_ExportMode>
+    <CS_Studio_ExportMode_FullUnit>完整角色包</CS_Studio_ExportMode_FullUnit>
+    <CS_Studio_ExportMode_FullUnit_Desc>包含 PawnKind、能力、AI 和召唤物品</CS_Studio_ExportMode_FullUnit_Desc>
+    <CS_Studio_ExportMode_Cosmetic>化妆品包</CS_Studio_ExportMode_Cosmetic>
+    <CS_Studio_ExportMode_Cosmetic_Desc>仅包含皮肤和纹理</CS_Studio_ExportMode_Cosmetic_Desc>
+    <CS_Studio_Export_AsGene>导出为基因</CS_Studio_Export_AsGene>
+    <CS_Studio_Export_AsGene_Desc>生成生物科技基因定义，可在异种编辑器中选择</CS_Studio_Export_AsGene_Desc>
+    <CS_Studio_Export_AsTattoo>导出为纹身/样式</CS_Studio_Export_AsTattoo>
+    <CS_Studio_Export_OverlayMode>叠加模式</CS_Studio_Export_OverlayMode>
+    <CS_Studio_Export_OverlayMode_Desc>不隐藏原版外观，只添加图层（适合眼镜、伤疤等配饰）</CS_Studio_Export_OverlayMode_Desc>
+    <CS_Studio_Export_GeneCategory>基因分类</CS_Studio_Export_GeneCategory>
+    
+    <!-- 模块选项 -->
+    <CS_Studio_Export_ModuleOptions>模块选项</CS_Studio_Export_ModuleOptions>
+    <CS_Studio_Export_IncludeSkinDef>包含皮肤定义</CS_Studio_Export_IncludeSkinDef>
+    <CS_Studio_Export_IncludeGeneDef>包含基因定义</CS_Studio_Export_IncludeGeneDef>
+    <CS_Studio_Export_IncludePawnKind>包含 PawnKind 定义</CS_Studio_Export_IncludePawnKind>
+    <CS_Studio_Export_IncludeSummonItem>包含召唤物品</CS_Studio_Export_IncludeSummonItem>
+    <CS_Studio_Export_IncludeAbilities>包含技能</CS_Studio_Export_IncludeAbilities>
+    <CS_Studio_Export_CopyTextures>复制纹理文件</CS_Studio_Export_CopyTextures>
+    
+    <!-- 资产来源预览 -->
+    <CS_Studio_Export_PreviewAssets>预览资产来源</CS_Studio_Export_PreviewAssets>
+    <CS_Studio_Export_HideAssets>隐藏资产来源</CS_Studio_Export_HideAssets>
+    <CS_Studio_Export_AssetSources>资产来源</CS_Studio_Export_AssetSources>
+    <CS_Studio_Export_LocalFiles>本地文件</CS_Studio_Export_LocalFiles>
+    <CS_Studio_Export_VanillaContent>游戏内置</CS_Studio_Export_VanillaContent>
+    <CS_Studio_Export_ExternalMod>外部模组</CS_Studio_Export_ExternalMod>
+    <CS_Studio_Export_DetectedDeps>检测到 {0} 个外部模组依赖：</CS_Studio_Export_DetectedDeps>
+
+    <!-- 外观 Gizmo -->
+    <CS_Gizmo_Appearance>外观</CS_Gizmo_Appearance>
+    <CS_Gizmo_Appearance_Desc>更换此角色的外观皮肤</CS_Gizmo_Appearance_Desc>
+    <CS_Appearance_ClearSkin>恢复默认外观</CS_Appearance_ClearSkin>
+    <CS_Appearance_NoSkins>（没有可用的皮肤）</CS_Appearance_NoSkins>
+    <CS_Appearance_NoComp>此角色不支持更换皮肤</CS_Appearance_NoComp>
+    <CS_Appearance_Applied>已为 {1} 应用外观：{0}</CS_Appearance_Applied>
+    <CS_Appearance_Cleared>已恢复 {0} 的默认外观</CS_Appearance_Cleared>
+    <CS_Studio_OpenEditor>打开皮肤编辑器</CS_Studio_OpenEditor>
+
+    <!-- 召唤物品 -->
+    <CS_Summon_Use>召唤 {0}</CS_Summon_Use>
+    <CS_Summon_Success>成功召唤：{0}</CS_Summon_Success>
+
+    <!-- 渲染树检查器 -->
+    <CS_Inspector_Refresh>刷新</CS_Inspector_Refresh>
+    <CS_Inspector_Import>导入</CS_Inspector_Import>
+    <CS_Inspector_Inspecting>正在检查: {0}</CS_Inspector_Inspecting>
+    <CS_Inspector_NoData>无渲染树数据</CS_Inspector_NoData>
+    <CS_Inspector_ImportSuccess>成功导入 {0} 个图层</CS_Inspector_ImportSuccess>
+    <CS_Inspector_ImportEmpty>未找到可导入的图层</CS_Inspector_ImportEmpty>
+
+    <!-- 技能编辑器 -->
+    <CS_Studio_Ability_SelectOrCreate>请选择或创建一个技能</CS_Studio_Ability_SelectOrCreate>
+    <CS_Studio_Ability_Name>名称</CS_Studio_Ability_Name>
+    <CS_Studio_Ability_Cooldown>冷却 (Tick)</CS_Studio_Ability_Cooldown>
+    <CS_Studio_Ability_Type>类型</CS_Studio_Ability_Type>
+    <CS_Studio_Ability_Range>射程</CS_Studio_Ability_Range>
+    <CS_Studio_Ability_Radius>爆炸半径</CS_Studio_Ability_Radius>
+    <CS_Studio_Effect_Add>添加效果</CS_Studio_Effect_Add>
+    <CS_Studio_Effect_Amount>数值</CS_Studio_Effect_Amount>
+    <CS_Studio_Effect_Chance>几率</CS_Studio_Effect_Chance>
+    <CS_Studio_Effect_PawnKind>PawnKind</CS_Studio_Effect_PawnKind>
+    <CS_Studio_Effect_Hediff>Hediff</CS_Studio_Effect_Hediff>
+
+    <!-- 表情与菜单 -->
+    <CS_Studio_Face_Title>表情配置</CS_Studio_Face_Title>
+    <CS_Studio_Face_Dev>表情配置功能开发中...\n\n可通过预览面板的 Exp 按钮测试表情</CS_Studio_Face_Dev>
+    <CS_Studio_Face_Config>面部配置</CS_Studio_Face_Config>
+    <CS_Studio_Face_Enable>启用表情系统</CS_Studio_Face_Enable>
+    <CS_Studio_Face_Type>{0} 表情</CS_Studio_Face_Type>
+    <CS_Studio_None>(无)</CS_Studio_None>
+    <CS_Studio_Face_Create>创建面部配置</CS_Studio_Face_Create>
+    <CS_Studio_Ctx_CopyPath>复制节点路径</CS_Studio_Ctx_CopyPath>
+    <CS_Studio_Ctx_CopyTexPath>复制贴图路径</CS_Studio_Ctx_CopyTexPath>
+    <CS_Studio_Ctx_CollapseChildren>折叠子节点</CS_Studio_Ctx_CollapseChildren>
+    <CS_Studio_Ctx_ExpandChildren>展开子节点</CS_Studio_Ctx_ExpandChildren>
+    <CS_Studio_Ctx_FromRenderTree>── 从渲染树选择 ──</CS_Studio_Ctx_FromRenderTree>
+    <CS_Studio_Ctx_ClearAndImport>清空并导入</CS_Studio_Ctx_ClearAndImport>
+    <CS_Studio_Ctx_AppendImport>追加导入</CS_Studio_Ctx_AppendImport>
+
+    <!-- 帮助文档 -->
+    <CS_Help_Title>术语说明</CS_Help_Title>
+    <CS_Help_Layer_Title>图层 (Layer)</CS_Help_Layer_Title>
+    <CS_Help_Layer_Desc>构成角色外观的单个图像层。可以添加多个图层来组合出复杂的皮肤。</CS_Help_Layer_Desc>
+    <CS_Help_Anchor_Title>锚点 (Anchor)</CS_Help_Anchor_Title>
+    <CS_Help_Anchor_Desc>图层依附的身体部位。图层会跟随锚点移动和旋转。例如，选择“头部”作为锚点，图层就会随头转动。</CS_Help_Anchor_Desc>
+    <CS_Help_Offset_Title>偏移 (Offset)</CS_Help_Offset_Title>
+    <CS_Help_Offset_Desc>调整图层相对于锚点的位置。\nX: 左右移动\nY: 前后层级微调\nZ: 上下移动</CS_Help_Offset_Desc>
+    <CS_Help_OffsetEast_Title>侧面偏移 (Offset East)</CS_Help_OffsetEast_Title>
+    <CS_Help_OffsetEast_Desc>当角色朝向侧面（东/西）时，额外应用的偏移量。用于修正侧面视角下的位置不对齐。</CS_Help_OffsetEast_Desc>
+    <CS_Help_Scale_Title>缩放 (Scale)</CS_Help_Scale_Title>
+    <CS_Help_Scale_Desc>图层的放大或缩小倍率。1.0 为原始大小。</CS_Help_Scale_Desc>
+    <CS_Help_DrawOrder_Title>绘制顺序 (Draw Order)</CS_Help_DrawOrder_Title>
+    <CS_Help_DrawOrder_Desc>决定图层的遮挡关系。数值越大，图层越靠前（遮挡数值小的图层）。</CS_Help_DrawOrder_Desc>
+    <CS_Help_ColorType_Title>颜色类型 (Color Type)</CS_Help_ColorType_Title>
+    <CS_Help_ColorType_Desc>决定图层的颜色来源。\n- 自定义: 使用指定的固定颜色。\n- 头发/皮肤: 自动使用当前角色的头发或皮肤颜色。</CS_Help_ColorType_Desc>
+    <CS_Help_Worker_Title>渲染类 (Worker)</CS_Help_Worker_Title>
+    <CS_Help_Worker_Desc>控制图层渲染逻辑的程序类。通常保持“Default”即可。“FaceComponent”用于特殊的面部部件（如眼睛），支持眨眼、睡眠等状态变化。</CS_Help_Worker_Desc>
+    <CS_Help_Animation_Title>动画 (Animation)</CS_Help_Animation_Title>
+    <CS_Help_Animation_Desc>为图层添加动态效果。\n- Random Twitch: 随机抽动，适合兽耳。\n- Periodic Swing: 周期摆动，适合尾巴。</CS_Help_Animation_Desc>
+
+    <!-- 文件浏览器 -->
+    <CS_Studio_Browser_Title>文件浏览</CS_Studio_Browser_Title>
+    <CS_Studio_Browser_Up>上级</CS_Studio_Browser_Up>
+    <CS_Studio_Browser_Search>搜索...</CS_Studio_Browser_Search>
+</LanguageData>

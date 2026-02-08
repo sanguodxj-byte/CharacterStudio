@@ -1,0 +1,22 @@
+# Build outputs
+bin/
+obj/
+1.6/Assemblies/*.dll
+1.5/Assemblies/*.dll
+
+# IDE files
+.vs/
+*.user
+*.suo
+*.csproj.user
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
