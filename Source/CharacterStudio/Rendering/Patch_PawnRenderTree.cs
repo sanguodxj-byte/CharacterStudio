@@ -107,10 +107,81 @@ namespace CharacterStudio.Rendering
                         Log.Message("[CharacterStudio] PawnRenderNode_Hair.GraphicFor 补丁已应用");
                     }
                 }
+
+                // HAR 兼容性：补丁所有 PawnRenderNode 的派生类的 GraphicFor 方法
+                // 这确保了任何模组添加的自定义渲染节点类型也能被正确隐藏
+                PatchAllDerivedGraphicForMethods(harmony, graphicPrefix);
             }
             catch (Exception ex)
             {
                 Log.Error($"[CharacterStudio] 应用 PawnRenderTree 补丁时出错: {ex}");
+            }
+        }
+
+        /// <summary>
+        /// HAR 兼容性：补丁所有 PawnRenderNode 派生类的 GraphicFor 方法
+        /// 这确保了外星人种族等模组的自定义节点类型也能被正确隐藏
+        /// </summary>
+        private static void PatchAllDerivedGraphicForMethods(Harmony harmony, MethodInfo graphicPrefix)
+        {
+            if (graphicPrefix == null) return;
+            
+            try
+            {
+                // 获取所有已加载的程序集
+                var pawnRenderNodeType = typeof(PawnRenderNode);
+                var pawnType = typeof(Pawn);
+                
+                // 已经补丁过的类型（避免重复）
+                var patchedTypes = new HashSet<Type>
+                {
+                    typeof(PawnRenderNode),
+                    typeof(PawnRenderNode_Head)
+                };
+                
+                // 遍历所有程序集查找 PawnRenderNode 的派生类
+                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    try
+                    {
+                        foreach (var type in assembly.GetTypes())
+                        {
+                            // 跳过已补丁的类型
+                            if (patchedTypes.Contains(type)) continue;
+                            
+                            // 检查是否是 PawnRenderNode 的派生类
+                            if (!pawnRenderNodeType.IsAssignableFrom(type)) continue;
+                            if (type.IsAbstract) continue;
+                            
+                            // 查找该类型自己声明的 GraphicFor 方法（不是继承的）
+                            var graphicMethod = type.GetMethod("GraphicFor",
+                                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly,
+                                null, new Type[] { pawnType }, null);
+                            
+                            if (graphicMethod != null)
+                            {
+                                try
+                                {
+                                    harmony.Patch(graphicMethod, prefix: new HarmonyMethod(graphicPrefix));
+                                    patchedTypes.Add(type);
+                                    Log.Message($"[CharacterStudio] {type.FullName}.GraphicFor 补丁已应用 (派生类自动发现)");
+                                }
+                                catch (Exception patchEx)
+                                {
+                                    Log.Warning($"[CharacterStudio] 无法补丁 {type.FullName}.GraphicFor: {patchEx.Message}");
+                                }
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // 某些程序集可能无法枚举类型，忽略
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warning($"[CharacterStudio] 枚举派生类时出错: {ex.Message}");
             }
         }
 
@@ -210,8 +281,8 @@ namespace CharacterStudio.Rendering
                 if (emptyGraphic == null)
                 {
                     emptyGraphic = new Graphic_Empty();
-                    // 初始化为空纹理，防止材质访问报错
-                    emptyGraphic.Init(new GraphicRequest(typeof(Graphic_Empty), "Base/Clear", ShaderDatabase.Cutout, Vector2.one, Color.white, Color.white, null, 0, null, null));
+                    // 注意：不调用 Init()，因为 Graphic_Empty 已经重写了 MatAt() 直接返回 BaseContent.ClearMat
+                    // 调用 Init() 会尝试加载纹理，导致 "Could not load Texture2D" 红字错误
                 }
                 return emptyGraphic;
             }
@@ -865,13 +936,21 @@ namespace CharacterStudio.Rendering
                         anyNodesInjected = true;
                         
                         // 应用调试偏移
+                        // 注意：offset 通过 debugOffset 应用（基类 OffsetFor 会使用）
                         node.debugOffset = layer.offset;
-                        node.debugScale = layer.scale.x; // 使用 X 作为统一缩放
+                        // 关键修复：不设置 debugScale，因为 props.drawSize 已经包含了缩放
+                        // 如果同时设置两者，缩放会被应用两次（drawSize * debugScale）
+                        // node.debugScale 保持默认值 1
                         
                         // 注册侧视图偏移量到 RuntimeAssetLoader
                         if (layer.offsetEast != Vector3.zero)
                         {
                             RuntimeAssetLoader.RegisterNodeOffsetEast(node.GetHashCode(), layer.offsetEast);
+                        }
+                        // 注册北方向偏移量到 RuntimeAssetLoader
+                        if (layer.offsetNorth != Vector3.zero)
+                        {
+                            RuntimeAssetLoader.RegisterNodeOffsetNorth(node.GetHashCode(), layer.offsetNorth);
                         }
                     }
                 }
@@ -981,13 +1060,21 @@ namespace CharacterStudio.Rendering
             {
                 case LayerColorType.Hair:
                     props.colorType = PawnRenderNodeProperties.AttachmentColorType.Hair;
+                    Log.Message($"[CharacterStudio] CreateNodeProperties: {layer.layerName} → colorType=Hair, offset={layer.offset}, offsetNorth={layer.offsetNorth}");
                     break;
                 case LayerColorType.Skin:
                     props.colorType = PawnRenderNodeProperties.AttachmentColorType.Skin;
+                    Log.Message($"[CharacterStudio] CreateNodeProperties: {layer.layerName} → colorType=Skin, offset={layer.offset}, offsetNorth={layer.offsetNorth}");
+                    break;
+                case LayerColorType.White:
+                    props.colorType = PawnRenderNodeProperties.AttachmentColorType.Custom;
+                    props.color = UnityEngine.Color.white;
+                    Log.Message($"[CharacterStudio] CreateNodeProperties: {layer.layerName} → colorType=White, offset={layer.offset}, offsetNorth={layer.offsetNorth}");
                     break;
                 default:
                     props.colorType = PawnRenderNodeProperties.AttachmentColorType.Custom;
                     props.color = layer.customColor;
+                    Log.Message($"[CharacterStudio] CreateNodeProperties: {layer.layerName} → colorType=Custom({layer.customColor}), offset={layer.offset}, offsetNorth={layer.offsetNorth}");
                     break;
             }
 

@@ -58,6 +58,25 @@ namespace CharacterStudio.Introspection
         public bool runtimeDataValid = false;
         
         // ─────────────────────────────────────────────
+        // Graphic 信息 (从 Graphic 对象直接提取)
+        // ─────────────────────────────────────────────
+        
+        /// <summary>Graphic 的绘制尺寸</summary>
+        public Vector2 graphicDrawSize = Vector2.one;
+        
+        /// <summary>Graphic 的主颜色</summary>
+        public Color graphicColor = Color.white;
+        
+        /// <summary>Graphic 的第二颜色 (Mask)</summary>
+        public Color graphicColorTwo = Color.white;
+        
+        /// <summary>Shader 名称</summary>
+        public string shaderName = "";
+        
+        /// <summary>Mask 纹理路径</summary>
+        public string maskPath = "";
+
+        // ─────────────────────────────────────────────
         // NodePath 系统 (CS 风格精准定位)
         // ─────────────────────────────────────────────
         
@@ -75,5 +94,12 @@ namespace CharacterStudio.Introspection
         
         /// <summary>原始图形类类型（如 Graphic_Multi, Graphic_Single）</summary>
         public System.Type graphicClass;
+
+        // ─────────────────────────────────────────────
+        // HAR 兼容性字段
+        // ─────────────────────────────────────────────
+        
+        /// <summary>HAR 定义的颜色通道 (e.g., "hair", "skin")</summary>
+        public string colorChannel = "";
     }
 }

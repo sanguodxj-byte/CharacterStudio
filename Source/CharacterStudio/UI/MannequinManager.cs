@@ -98,6 +98,62 @@ namespace CharacterStudio.UI
         }
 
         /// <summary>
+        /// 从源 Pawn 复制外观特征到人偶
+        /// </summary>
+        public void CopyAppearanceFrom(Pawn source)
+        {
+            if (mannequinPawn == null || source == null) return;
+
+            try
+            {
+                // 1. 同步 StoryTracker (发型, 发色, 肤色, 体型, 头型)
+                if (mannequinPawn.story != null && source.story != null)
+                {
+                    mannequinPawn.story.hairDef = source.story.hairDef;
+                    mannequinPawn.story.HairColor = source.story.HairColor;
+                    mannequinPawn.story.bodyType = source.story.bodyType;
+                    mannequinPawn.story.headType = source.story.headType;
+                    
+                    // 强制同步肤色
+                    mannequinPawn.story.skinColorOverride = source.story.SkinColor;
+                    
+                    // 同步年龄 (影响身形和纹理)
+                    mannequinPawn.ageTracker.AgeBiologicalTicks = source.ageTracker.AgeBiologicalTicks;
+                    mannequinPawn.ageTracker.AgeChronologicalTicks = source.ageTracker.AgeChronologicalTicks;
+                }
+                
+                // 2. 同步 StyleTracker (胡须, 纹身)
+                if (mannequinPawn.style != null && source.style != null)
+                {
+                    mannequinPawn.style.beardDef = source.style.beardDef;
+                    mannequinPawn.style.FaceTattoo = source.style.FaceTattoo;
+                    mannequinPawn.style.BodyTattoo = source.style.BodyTattoo;
+                }
+
+                // 3. 同步 Genes (如果存在)
+                if (mannequinPawn.genes != null && source.genes != null)
+                {
+                    // 简单同步异种类型
+                    if (mannequinPawn.genes.Xenotype != source.genes.Xenotype)
+                    {
+                        mannequinPawn.genes.SetXenotype(source.genes.Xenotype);
+                    }
+                }
+
+                // 4. 刷新渲染
+                mannequinPawn.Drawer.renderer.SetAllGraphicsDirty();
+                PortraitsCache.SetDirty(mannequinPawn);
+                needsRefresh = true;
+                
+                Log.Message($"[CharacterStudio] 已从 {source.LabelShort} 同步外观到预览人偶");
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"[CharacterStudio] 同步外观失败: {ex}");
+            }
+        }
+
+        /// <summary>
         /// 应用皮肤定义
         /// </summary>
         public void ApplySkin(PawnSkinDef? skinDef)

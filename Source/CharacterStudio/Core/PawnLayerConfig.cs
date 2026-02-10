@@ -60,11 +60,31 @@ namespace CharacterStudio.Core
         /// <summary>着色器类型定义（可选）</summary>
         public string? shaderTypeDef = null;
 
-        /// <summary>颜色类型</summary>
-        public LayerColorType colorType = LayerColorType.Custom;
+        /// <summary>着色器名称（用于 ShaderDatabase 加载）</summary>
+        public string shaderDefName = "Cutout";
+
+        /// <summary>颜色来源</summary>
+        public LayerColorSource colorSource = LayerColorSource.Fixed;
+
+        /// <summary>颜色类型 (旧版兼容)</summary>
+        [Obsolete("Use colorSource instead")]
+        public LayerColorType colorType
+        {
+            get => (LayerColorType)(int)colorSource;
+            set => colorSource = (LayerColorSource)(int)value;
+        }
 
         /// <summary>自定义颜色</summary>
         public Color customColor = Color.white;
+
+        /// <summary>第二颜色来源 (Mask)</summary>
+        public LayerColorSource colorTwoSource = LayerColorSource.Fixed;
+
+        /// <summary>自定义颜色2（用于 Mask 通道等）</summary>
+        public Color customColorTwo = Color.white;
+
+        /// <summary>Mask 纹理路径</summary>
+        public string maskTexPath = "";
 
         /// <summary>是否可见</summary>
         public bool visible = true;
@@ -114,8 +134,12 @@ namespace CharacterStudio.Core
                 workerClass = this.workerClass,
                 graphicClass = this.graphicClass,
                 shaderTypeDef = this.shaderTypeDef,
-                colorType = this.colorType,
+                shaderDefName = this.shaderDefName,
+                colorSource = this.colorSource,
                 customColor = this.customColor,
+                colorTwoSource = this.colorTwoSource,
+                customColorTwo = this.customColorTwo,
+                maskTexPath = this.maskTexPath,
                 visible = this.visible,
                 faceComponent = this.faceComponent,
                 animationType = this.animationType,
@@ -147,17 +171,33 @@ namespace CharacterStudio.Core
     }
 
     /// <summary>
-    /// 图层颜色类型
+    /// 图层颜色来源
     /// </summary>
+    public enum LayerColorSource
+    {
+        /// <summary>使用自定义固定颜色</summary>
+        Fixed,
+        /// <summary>使用角色头发颜色 (story.HairColor)</summary>
+        PawnHair,
+        /// <summary>使用角色皮肤颜色 (story.SkinColor)</summary>
+        PawnSkin,
+        /// <summary>使用服装主色 (apparel.DrawColor)</summary>
+        PawnApparelPrimary,
+        /// <summary>使用服装副色 (apparel.DrawColorTwo)</summary>
+        PawnApparelSecondary,
+        /// <summary>使用白色（不着色）</summary>
+        White
+    }
+
+    /// <summary>
+    /// [Obsolete] 图层颜色类型 (旧版兼容)
+    /// </summary>
+    [Obsolete("Use LayerColorSource instead")]
     public enum LayerColorType
     {
-        /// <summary>使用自定义颜色</summary>
         Custom,
-        /// <summary>使用角色头发颜色</summary>
         Hair,
-        /// <summary>使用角色皮肤颜色</summary>
         Skin,
-        /// <summary>使用白色（不着色）</summary>
         White
     }
 }

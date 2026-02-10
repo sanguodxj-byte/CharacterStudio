@@ -1,3 +1,9 @@
 {
-  "mcpServers": {}
+  "mcpServers": {
+    "RimSearcher": {
+      "args": [],
+      "command": "D:\\rim mod\\RimSearcher-master\\Sources\\.build\\bin\\RimSearcher.Server\\Release\\net8.0\\RimSearcher.Server.exe",
+      "cwd": "D:\\rim mod\\RimSearcher-master\\Sources\\.build\\bin\\RimSearcher.Server\\Release\\net8.0"
+    }
+  }
 }

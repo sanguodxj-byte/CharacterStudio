@@ -95,6 +95,17 @@ namespace CharacterStudio.Introspection
 
                 // 捕获 Graphic 类类型，确保我们可以正确重建多方向图形
                 Type graphicClass = null;
+                Vector2 graphicDrawSize = Vector2.one;
+                Color graphicColor = Color.white;
+                Color graphicColorTwo = Color.white;
+                
+                // 捕获 Shader 和 Mask
+                string shaderName = "";
+                string maskPath = "";
+                
+                // HAR 兼容性：颜色通道
+                string colorChannel = "";
+
                 try
                 {
                     // 1. 优先尝试使用公共 API 获取当前 Graphic
@@ -109,6 +120,24 @@ namespace CharacterStudio.Introspection
                     if (graphic != null)
                     {
                         graphicClass = graphic.GetType();
+                        graphicDrawSize = graphic.drawSize;
+                        graphicColor = graphic.color;
+                        graphicColorTwo = graphic.colorTwo;
+                        
+                        if (graphic.Shader != null)
+                        {
+                            shaderName = graphic.Shader.name;
+                        }
+                        
+                        // 探测 Mask
+                        if (!string.IsNullOrEmpty(graphic.path))
+                        {
+                            string potentialMask = graphic.path + "_m";
+                            if (ContentFinder<Texture2D>.Get(potentialMask, false) != null)
+                            {
+                                maskPath = potentialMask;
+                            }
+                        }
                     }
                 }
                 catch { }
@@ -135,6 +164,141 @@ namespace CharacterStudio.Introspection
                         nodeColor = props.color.Value;
                     }
                 }
+                
+                // ===== HAR 兼容性: 提取 colorChannel =====
+                // 尝试从节点自身或其属性中提取 HAR 特有的 colorChannel 信息
+                try
+                {
+                    // 1. 尝试从 BodyAddon 获取 (HAR 标准方式)
+                    // HAR 的 PawnRenderNode_BodyAddon 通常有一个 'addon' 字段指向 BodyAddon 定义
+                    var addonField = AccessTools.Field(gameNode.GetType(), "addon");
+                    if (addonField != null)
+                    {
+                        object addon = addonField.GetValue(gameNode);
+                        if (addon != null)
+                        {
+                            var channelField = AccessTools.Field(addon.GetType(), "colorChannel");
+                            if (channelField != null)
+                            {
+                                object channelVal = channelField.GetValue(addon);
+                                if (channelVal != null)
+                                {
+                                    colorChannel = channelVal.ToString();
+                                    // Log.Message($"[CS.HAR] Found colorChannel '{colorChannel}' for node {label}");
+                                }
+                            }
+                        }
+                    }
+                    
+                    // 2. 如果没找到，尝试直接从 Props 获取 (某些变体)
+                    if (string.IsNullOrEmpty(colorChannel) && props != null)
+                    {
+                        var propsChannelField = AccessTools.Field(props.GetType(), "colorChannel");
+                        if (propsChannelField != null)
+                        {
+                            object channelVal = propsChannelField.GetValue(props);
+                            if (channelVal != null)
+                            {
+                                colorChannel = channelVal.ToString();
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // 仅在调试模式下记录，避免刷屏
+                    // Log.Warning($"[CS.HAR] Failed to extract colorChannel for {label}: {ex.Message}");
+                }
+
+                // ===== HAR 调试: 详细记录节点信息 =====
+                bool isDebugNode = tagDef.ToLower().Contains("head") ||
+                                   tagDef.ToLower().Contains("ear") ||
+                                   tagDef.ToLower().Contains("tail") ||
+                                   label.ToLower().Contains("head") ||
+                                   label.ToLower().Contains("ear") ||
+                                   label.ToLower().Contains("tail");
+                string nodeTypeName = gameNode.GetType().Name;
+
+                // ===== HAR 调试: 探索节点自身的所有字段 =====
+                if (isDebugNode)
+                {
+                    Log.Message($"[CS.HAR.Debug] ====== 节点 '{label}' ({nodeTypeName}) ======");
+                    Log.Message($"[CS.HAR.Debug] 节点类型完整名: {gameNode.GetType().FullName}");
+                    
+                    // 遍历节点自身的所有字段（不是 props）
+                    var nodeType = gameNode.GetType();
+                    var allNodeFields = nodeType.GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    Log.Message($"[CS.HAR.Debug] 节点字段数量: {allNodeFields.Length}");
+                    
+                    foreach (var field in allNodeFields)
+                    {
+                        try
+                        {
+                            var value = field.GetValue(gameNode);
+                            string fieldName = field.Name.ToLower();
+                            
+                            // 扩展搜索：包含 size, draw, mesh, parent 相关字段
+                            if (fieldName.Contains("offset") ||
+                                fieldName.Contains("color") ||
+                                fieldName.Contains("scale") ||
+                                fieldName.Contains("position") ||
+                                fieldName.Contains("loc") ||
+                                fieldName.Contains("pos") ||
+                                fieldName.Contains("size") ||
+                                fieldName.Contains("draw") ||
+                                fieldName.Contains("mesh") ||
+                                fieldName.Contains("parent") ||
+                                fieldName.Contains("anchor"))
+                            {
+                                Log.Message($"[CS.HAR.Debug]   节点.{field.Name} ({field.FieldType.Name}): {value}");
+                            }
+                        }
+                        catch { }
+                    }
+                    
+                    // 检查父节点信息
+                    try
+                    {
+                        var parentField = AccessTools.Field(typeof(PawnRenderNode), "parent");
+                        if (parentField != null)
+                        {
+                            var parentNode = parentField.GetValue(gameNode) as PawnRenderNode;
+                            if (parentNode != null)
+                            {
+                                Log.Message($"[CS.HAR.Debug]   父节点类型: {parentNode.GetType().Name}");
+                                Log.Message($"[CS.HAR.Debug]   父节点label: {parentNode}");
+                                Log.Message($"[CS.HAR.Debug]   父节点debugScale: {parentNode.debugScale}");
+                                Log.Message($"[CS.HAR.Debug]   父节点debugOffset: {parentNode.debugOffset}");
+                            }
+                        }
+                    }
+                    catch { }
+                    
+                    // 也检查属性
+                    var allNodeProps = nodeType.GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    foreach (var prop in allNodeProps)
+                    {
+                        try
+                        {
+                            if (!prop.CanRead) continue;
+                            var value = prop.GetValue(gameNode);
+                            string propName = prop.Name.ToLower();
+                            
+                            if (propName.Contains("offset") ||
+                                propName.Contains("color") ||
+                                propName.Contains("scale") ||
+                                propName.Contains("position") ||
+                                propName.Contains("loc") ||
+                                propName.Contains("pos") ||
+                                propName.Contains("size") ||
+                                propName.Contains("draw"))
+                            {
+                                Log.Message($"[CS.HAR.Debug]   节点属性.{prop.Name} ({prop.PropertyType.Name}): {value}");
+                            }
+                        }
+                        catch { }
+                    }
+                }
 
                 // 获取运行时偏移和缩放 - 使用 node.GetTransform()
                 Vector3 nodeOffset = Vector3.zero;
@@ -149,6 +313,84 @@ namespace CharacterStudio.Introspection
                 Color runtimeColor = Color.white;
                 float runtimeRotation = 0f;
                 bool runtimeDataValid = false;
+                
+                // ===== 关键修复: 先读取 props 中的静态偏移作为基础值 =====
+                // 原版 RimWorld 的节点偏移通常存储在 props.offset 中
+                // Worker.OffsetFor() 返回的是 Worker 额外计算的偏移，很多原版节点返回零
+                Vector3 propsOffset = Vector3.zero;
+                Vector3 propsOffsetEast = Vector3.zero;
+                Vector3 propsOffsetNorth = Vector3.zero;
+                
+                // 使用反射读取 props 中的偏移属性
+                // 不同版本的 RimWorld 和模组可能有不同的属性结构
+                if (props != null)
+                {
+                    try
+                    {
+                        // 尝试读取 offset 字段/属性
+                        var offsetField = AccessTools.Field(props.GetType(), "offset");
+                        if (offsetField != null)
+                        {
+                            propsOffset = (Vector3)offsetField.GetValue(props);
+                        }
+                        else
+                        {
+                            var offsetProp = AccessTools.Property(props.GetType(), "offset");
+                            if (offsetProp != null)
+                            {
+                                propsOffset = (Vector3)offsetProp.GetValue(props);
+                            }
+                        }
+                        
+                        // 尝试读取 offsetEast 字段/属性
+                        var offsetEastField = AccessTools.Field(props.GetType(), "offsetEast");
+                        if (offsetEastField != null)
+                        {
+                            propsOffsetEast = (Vector3)offsetEastField.GetValue(props);
+                        }
+                        
+                        // 尝试读取 offsetNorth 字段/属性
+                        var offsetNorthField = AccessTools.Field(props.GetType(), "offsetNorth");
+                        if (offsetNorthField != null)
+                        {
+                            propsOffsetNorth = (Vector3)offsetNorthField.GetValue(props);
+                        }
+                        
+                        // ===== HAR 调试: 打印 props 相关信息 =====
+                        if (isDebugNode)
+                        {
+                            Log.Message($"[CS.HAR.Debug] 节点 '{label}' ({nodeTypeName}) Tag={tagDef}");
+                            Log.Message($"[CS.HAR.Debug]   - props类型: {props.GetType().FullName}");
+                            Log.Message($"[CS.HAR.Debug]   - props.offset: {propsOffset}");
+                            Log.Message($"[CS.HAR.Debug]   - props.offsetEast: {propsOffsetEast}");
+                            Log.Message($"[CS.HAR.Debug]   - props.offsetNorth: {propsOffsetNorth}");
+                            Log.Message($"[CS.HAR.Debug]   - nodeColor: {nodeColor}");
+                            
+                            // 列出 props 的所有字段
+                            var propsType = props.GetType();
+                            var allFields = propsType.GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                            foreach (var field in allFields)
+                            {
+                                try
+                                {
+                                    var value = field.GetValue(props);
+                                    if (value != null && (field.Name.ToLower().Contains("offset") || field.Name.ToLower().Contains("color") || field.Name.ToLower().Contains("scale")))
+                                    {
+                                        // 扩展搜索 drawSize
+                                        Log.Message($"[CS.HAR.Debug]   - props.{field.Name}: {value}");
+                                    }
+                                    // 增加 drawSize 和 size 的搜索
+                                    if (field.Name.ToLower().Contains("size") || field.Name.ToLower().Contains("draw"))
+                                    {
+                                        Log.Message($"[CS.HAR.Debug]   - props.{field.Name}: {value}");
+                                    }
+                                }
+                                catch { }
+                            }
+                        }
+                    }
+                    catch { }
+                }
                 
                 try
                 {
@@ -182,31 +424,60 @@ namespace CharacterStudio.Introspection
                         
                         // 使用 South 朝向获取基准偏移
                         Vector3 southOffset = worker.OffsetFor(gameNode, southParms, out Vector3 pivotSouth);
+                        
+                        // ===== HAR 调试: 打印 Worker 返回的偏移 =====
+                        if (isDebugNode)
+                        {
+                            Log.Message($"[CS.HAR.Debug]   - Worker类型: {worker.GetType().FullName}");
+                            Log.Message($"[CS.HAR.Debug]   - Worker.OffsetFor(South): {southOffset}");
+                        }
+                        
+                        // ===== 关键修复: 如果 Worker 返回零，使用 props.offset 作为回退 =====
+                        if (southOffset == Vector3.zero && propsOffset != Vector3.zero)
+                        {
+                            southOffset = propsOffset;
+                            if (isDebugNode)
+                            {
+                                Log.Message($"[CS.HAR.Debug]   - 使用 props.offset 回退: {propsOffset}");
+                            }
+                        }
+                        
                         if (southOffset != Vector3.zero)
                         {
                             nodeOffset = southOffset;
                             runtimeOffset = southOffset;
-                            Log.Message($"[CS.Debug] 节点 '{label}' South偏移: {southOffset}");
                         }
                         
                         // 使用 East 朝向获取侧面偏移
                         Vector3 eastOffset = worker.OffsetFor(gameNode, eastParms, out Vector3 pivotEast);
                         // 计算 East 相对于 South 的差值作为 offsetEast
                         Vector3 eastDelta = eastOffset - southOffset;
+                        
+                        // ===== 关键修复: 如果 Worker 差值为零，使用 props.offsetEast 作为回退 =====
+                        if (eastDelta == Vector3.zero && propsOffsetEast != Vector3.zero)
+                        {
+                            eastDelta = propsOffsetEast;
+                        }
+                        
                         if (eastDelta != Vector3.zero)
                         {
                             runtimeOffsetEast = eastDelta;
-                            Log.Message($"[CS.Debug] 节点 '{label}' East偏移差值: {eastDelta}");
                         }
                         
                         // 使用 North 朝向获取北向偏移
                         Vector3 northOffset = worker.OffsetFor(gameNode, northParms, out Vector3 pivotNorth);
                         // 计算 North 相对于 South 的差值作为 offsetNorth
                         Vector3 northDelta = northOffset - southOffset;
+                        
+                        // ===== 关键修复: 如果 Worker 差值为零，使用 props.offsetNorth 作为回退 =====
+                        if (northDelta == Vector3.zero && propsOffsetNorth != Vector3.zero)
+                        {
+                            northDelta = propsOffsetNorth;
+                        }
+                        
                         if (northDelta != Vector3.zero)
                         {
                             runtimeOffsetNorth = northDelta;
-                            Log.Message($"[CS.Debug] 节点 '{label}' North偏移差值: {northDelta}");
                         }
                         
                         // 使用 Worker.ScaleFor() 获取缩放（使用 South 朝向）
@@ -215,7 +486,6 @@ namespace CharacterStudio.Introspection
                         if (avgScale != 1f)
                         {
                             nodeScale = avgScale;
-                            Log.Message($"[CS.Debug] 节点 '{label}' 缩放: {workerScale} -> avgScale={avgScale}");
                         }
                         
                         // 使用 Worker.RotationFor() 获取旋转（使用 South 朝向）
@@ -238,10 +508,26 @@ namespace CharacterStudio.Introspection
                         
                         gameNode.GetTransform(southParms, out Vector3 transformOffset, out _, out Quaternion rotation, out Vector3 transformScale);
                         
+                        // ===== 关键修复: 如果 GetTransform 返回零，使用 props.offset 作为回退 =====
+                        if (transformOffset == Vector3.zero && propsOffset != Vector3.zero)
+                        {
+                            transformOffset = propsOffset;
+                        }
+                        
                         if (transformOffset != Vector3.zero)
                         {
                             nodeOffset = transformOffset;
                             runtimeOffset = transformOffset;
+                        }
+                        
+                        // 对于 East/North 偏移，直接使用 props 中的值
+                        if (propsOffsetEast != Vector3.zero)
+                        {
+                            runtimeOffsetEast = propsOffsetEast;
+                        }
+                        if (propsOffsetNorth != Vector3.zero)
+                        {
+                            runtimeOffsetNorth = propsOffsetNorth;
                         }
                         
                         float avgScale = (transformScale.x + transformScale.z) / 2f;
@@ -259,10 +545,12 @@ namespace CharacterStudio.Introspection
                     runtimeScale = new Vector3(nodeScale, 1f, nodeScale);
                     runtimeColor = nodeColor;
                     
-                    // 汇总调试日志
-                    if (nodeOffset != Vector3.zero || nodeScale != 1f || runtimeOffsetEast != Vector3.zero || runtimeOffsetNorth != Vector3.zero)
+                    // ===== HAR 调试: 最终捕获的数据 =====
+                    if (isDebugNode)
                     {
-                        Log.Message($"[CS.Debug] 节点 '{label}' 最终值: offset={nodeOffset}, offsetEast={runtimeOffsetEast}, offsetNorth={runtimeOffsetNorth}, scale={nodeScale}, color={nodeColor}");
+                        Log.Message($"[CS.HAR.Debug]   - 最终 runtimeOffset: {runtimeOffset}");
+                        Log.Message($"[CS.HAR.Debug]   - 最终 runtimeScale: {runtimeScale}");
+                        Log.Message($"[CS.HAR.Debug]   - 最终 runtimeColor: {runtimeColor}");
                     }
                 }
                 catch (Exception ex)
@@ -275,7 +563,6 @@ namespace CharacterStudio.Introspection
                         nodeDrawOrder = props.baseLayer;
                     }
                     runtimeDataValid = false;
-                    Log.Warning($"[CS.Debug] 节点 '{label}' 数据捕获失败: {ex.Message}，使用 debug 值: offset={nodeOffset}, scale={nodeScale}");
                 }
 
                 var snapshot = new RenderNodeSnapshot
@@ -303,7 +590,12 @@ namespace CharacterStudio.Introspection
                     runtimeColor = runtimeColor,
                     runtimeRotation = runtimeRotation,
                     runtimeDataValid = runtimeDataValid,
-                    graphicClass = graphicClass
+                    graphicClass = graphicClass,
+                    graphicDrawSize = graphicDrawSize,
+                    graphicColor = graphicColor,
+                    graphicColorTwo = graphicColorTwo,
+                    shaderName = shaderName,
+                    maskPath = maskPath
                 };
 
                 // Recursively capture children - 检查点2: 空检查
@@ -350,7 +642,7 @@ namespace CharacterStudio.Introspection
 
         /// <summary>
         /// 检查点1: HAR 兼容性 - 获取节点的纹理路径
-        /// 实现多级回退策略：texPath -> Graphic.path (不访问材质以避免渲染上下文错误)
+        /// 实现多级回退策略：texPath -> GraphicFor() -> PrimaryGraphic -> Graphics 列表 -> 反射
         /// </summary>
         private static string GetNodeTexturePath(PawnRenderNode node, Pawn pawn)
         {
@@ -364,7 +656,24 @@ namespace CharacterStudio.Introspection
                     return props.texPath;
                 }
 
-                // 2. 尝试从 PrimaryGraphic 获取路径
+                // 2. [关键增强] 使用 GraphicFor(pawn) 获取动态生成的图形
+                // 这对于 HAR 外星人种族非常重要，因为它们的纹理路径是动态计算的
+                try
+                {
+                    var graphicForPawn = node.GraphicFor(pawn);
+                    if (graphicForPawn != null && !string.IsNullOrEmpty(graphicForPawn.path))
+                    {
+                        Log.Message($"[CS.Debug] 节点 '{node}' 从 GraphicFor() 获取路径: {graphicForPawn.path}");
+                        return graphicForPawn.path;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // GraphicFor 可能在某些情况下失败
+                    Log.Message($"[CS.Debug] 节点 '{node}' GraphicFor() 失败: {ex.Message}");
+                }
+
+                // 3. 尝试从 PrimaryGraphic 获取路径
                 try
                 {
                     var primaryGraphic = node.PrimaryGraphic;
@@ -378,7 +687,7 @@ namespace CharacterStudio.Introspection
                     // 某些节点访问 PrimaryGraphic 可能失败
                 }
 
-                // 3. [关键] HAR 兼容性回退：尝试从 Graphics 列表获取
+                // 4. [关键] HAR 兼容性回退：尝试从 Graphics 列表获取
                 try
                 {
                     var graphics = node.Graphics;
@@ -390,7 +699,6 @@ namespace CharacterStudio.Introspection
                             {
                                 return graphic.path;
                             }
-                            // 注意：不再尝试访问 MatSingle，因为它可能导致渲染上下文错误
                         }
                     }
                 }
@@ -399,7 +707,7 @@ namespace CharacterStudio.Introspection
                     // 某些节点访问 Graphics 可能失败
                 }
 
-                // 4. [增强] 尝试从 GraphicData 获取路径 (适用于某些动态生成的 Graphic)
+                // 5. [增强] 尝试从 GraphicData 获取路径 (适用于某些动态生成的 Graphic)
                 try
                 {
                     var primaryGraphic = node.PrimaryGraphic;
@@ -410,11 +718,56 @@ namespace CharacterStudio.Introspection
                 }
                 catch { }
 
-                // 5. 检查节点是否只是逻辑节点（无图形）
+                // 6. [HAR 增强] 尝试反射访问 HAR 可能使用的私有/内部字段
+                try
+                {
+                    // 尝试访问 cachedGraphic 或类似的私有字段
+                    var cachedGraphicField = AccessTools.Field(node.GetType(), "cachedGraphic");
+                    if (cachedGraphicField != null)
+                    {
+                        var cachedGraphic = cachedGraphicField.GetValue(node) as Graphic;
+                        if (cachedGraphic != null && !string.IsNullOrEmpty(cachedGraphic.path))
+                        {
+                            Log.Message($"[CS.Debug] 节点 '{node}' 从 cachedGraphic 字段获取路径: {cachedGraphic.path}");
+                            return cachedGraphic.path;
+                        }
+                    }
+                    
+                    // 尝试访问 graphic 字段
+                    var graphicField = AccessTools.Field(node.GetType(), "graphic");
+                    if (graphicField != null)
+                    {
+                        var graphic = graphicField.GetValue(node) as Graphic;
+                        if (graphic != null && !string.IsNullOrEmpty(graphic.path))
+                        {
+                            Log.Message($"[CS.Debug] 节点 '{node}' 从 graphic 字段获取路径: {graphic.path}");
+                            return graphic.path;
+                        }
+                    }
+                    
+                    // 尝试访问 texPath 字段（某些自定义节点可能直接存储）
+                    var texPathField = AccessTools.Field(node.GetType(), "texPath");
+                    if (texPathField != null)
+                    {
+                        var texPath = texPathField.GetValue(node) as string;
+                        if (!string.IsNullOrEmpty(texPath))
+                        {
+                            Log.Message($"[CS.Debug] 节点 '{node}' 从 texPath 字段获取路径: {texPath}");
+                            return texPath;
+                        }
+                    }
+                }
+                catch { }
+
+                // 7. 检查节点是否只是逻辑节点（无图形）
                 if (props?.useGraphic == false)
                 {
                     return "No Graphic (Logic Only)";
                 }
+
+                // 8. 如果所有方法都失败，记录节点类型以便调试
+                string nodeType = node.GetType().FullName;
+                Log.Message($"[CS.Debug] 节点 '{node}' ({nodeType}) 无法获取纹理路径，标记为 Dynamic/Unknown");
 
                 return "Dynamic/Unknown";
             }

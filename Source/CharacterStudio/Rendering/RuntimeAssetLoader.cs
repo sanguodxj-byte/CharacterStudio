@@ -40,6 +40,8 @@ namespace CharacterStudio.Rendering
 
         // 节点东/西方向偏移量注册表
         private static readonly Dictionary<int, Vector3> nodeOffsetEastRegistry = new Dictionary<int, Vector3>();
+        // 节点北方向偏移量注册表
+        private static readonly Dictionary<int, Vector3> nodeOffsetNorthRegistry = new Dictionary<int, Vector3>();
         private static readonly object nodeRegistryLock = new object();
 
         // ─────────────────────────────────────────────
@@ -459,6 +461,33 @@ namespace CharacterStudio.Rendering
         }
 
         /// <summary>
+        /// 注册节点的北方向偏移量
+        /// </summary>
+        /// <param name="nodeId">节点ID (通常使用 node.GetHashCode())</param>
+        /// <param name="offset">偏移量向量</param>
+        public static void RegisterNodeOffsetNorth(int nodeId, Vector3 offset)
+        {
+            lock (nodeRegistryLock)
+            {
+                nodeOffsetNorthRegistry[nodeId] = offset;
+            }
+        }
+
+        /// <summary>
+        /// 尝试获取节点的北方向偏移量
+        /// </summary>
+        /// <param name="nodeId">节点ID</param>
+        /// <param name="offset">输出偏移量</param>
+        /// <returns>是否找到注册的偏移量</returns>
+        public static bool TryGetOffsetNorth(int nodeId, out Vector3 offset)
+        {
+            lock (nodeRegistryLock)
+            {
+                return nodeOffsetNorthRegistry.TryGetValue(nodeId, out offset);
+            }
+        }
+
+        /// <summary>
         /// 清除所有节点注册表数据
         /// </summary>
         public static void ClearNodeRegistry()
@@ -466,6 +495,7 @@ namespace CharacterStudio.Rendering
             lock (nodeRegistryLock)
             {
                 nodeOffsetEastRegistry.Clear();
+                nodeOffsetNorthRegistry.Clear();
             }
         }
 

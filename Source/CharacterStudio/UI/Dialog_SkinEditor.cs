@@ -52,6 +52,7 @@ namespace CharacterStudio.UI
         // 树状视图状态
         // ─────────────────────────────────────────────
         private HashSet<string> expandedPaths = new HashSet<string>();
+        private HashSet<string> collapsedSections = new HashSet<string>(); // 记录折叠的属性区域
         private RenderNodeSnapshot? cachedRootSnapshot;
         private string selectedNodePath = "";
         private float treeViewHeight = 0f;
@@ -1179,9 +1180,9 @@ namespace CharacterStudio.UI
             float width = viewRect.width;
 
             // 基本设置
-            UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Section_Base".Translate());
-            
-            string oldName = layer.layerName;
+            if (DrawCollapsibleSection(ref y, width, "基本设置", "Base"))
+            {
+                string oldName = layer.layerName;
             UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Prop_LayerName".Translate(), ref layer.layerName);
             if (oldName != layer.layerName) isDirty = true;
 
@@ -1202,182 +1203,200 @@ namespace CharacterStudio.UI
                     return key.CanTranslate() ? key.Translate() : tag;
                 },
                 val => { layer.anchorTag = val; isDirty = true; RefreshPreview(); });
+            } // End Base Section
 
             // 变换设置 (South - 默认方向)
             bool isSouthActive = previewRotation == Rot4.South;
-            DrawDirectionalSectionTitle(ref y, width, "CS_Studio_Section_Transform".Translate(), isSouthActive);
-            
-            float ox = layer.offset.x;
-            UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_OffsetX".Translate(), ref ox, -1f, 1f);
-            if (ox != layer.offset.x) { layer.offset.x = ox; isDirty = true; RefreshPreview(); }
+            if (DrawCollapsibleSection(ref y, width, "基础变换 (南向)", "Transform", isSouthActive))
+            {
+                float ox = layer.offset.x;
+                UIHelper.DrawPropertySlider(ref y, width, "X 偏移", ref ox, -1f, 1f);
+                if (ox != layer.offset.x) { layer.offset.x = ox; isDirty = true; RefreshPreview(); }
 
-            float oy = layer.offset.y;
-            UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_OffsetY".Translate(), ref oy, -1f, 1f);
-            if (oy != layer.offset.y) { layer.offset.y = oy; isDirty = true; RefreshPreview(); }
+                float oy = layer.offset.y;
+                UIHelper.DrawPropertySlider(ref y, width, "Y 偏移(高度)", ref oy, -1f, 1f);
+                if (oy != layer.offset.y) { layer.offset.y = oy; isDirty = true; RefreshPreview(); }
 
-            float oz = layer.offset.z;
-            UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_OffsetZ".Translate(), ref oz, -1f, 1f);
-            if (oz != layer.offset.z) { layer.offset.z = oz; isDirty = true; RefreshPreview(); }
+                float oz = layer.offset.z;
+                UIHelper.DrawPropertySlider(ref y, width, "Z 偏移", ref oz, -1f, 1f);
+                if (oz != layer.offset.z) { layer.offset.z = oz; isDirty = true; RefreshPreview(); }
+            }
 
             // 侧视图偏移 (East/West)
             bool isEastActive = previewRotation == Rot4.East || previewRotation == Rot4.West;
-            DrawDirectionalSectionTitle(ref y, width, "CS_Studio_Section_EastOffset".Translate(), isEastActive);
+            if (DrawCollapsibleSection(ref y, width, "侧面偏移 (东西向)", "EastOffset", isEastActive))
+            {
+                float ex = layer.offsetEast.x;
+                UIHelper.DrawPropertySlider(ref y, width, "X 偏移", ref ex, -1f, 1f);
+                if (ex != layer.offsetEast.x) { layer.offsetEast.x = ex; isDirty = true; RefreshPreview(); }
 
-            float ex = layer.offsetEast.x;
-            UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Offset_EX".Translate(), ref ex, -1f, 1f);
-            if (ex != layer.offsetEast.x) { layer.offsetEast.x = ex; isDirty = true; RefreshPreview(); }
+                float ey = layer.offsetEast.y;
+                UIHelper.DrawPropertySlider(ref y, width, "Y 偏移", ref ey, -1f, 1f);
+                if (ey != layer.offsetEast.y) { layer.offsetEast.y = ey; isDirty = true; RefreshPreview(); }
 
-            float ey = layer.offsetEast.y;
-            UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Offset_EY".Translate(), ref ey, -1f, 1f);
-            if (ey != layer.offsetEast.y) { layer.offsetEast.y = ey; isDirty = true; RefreshPreview(); }
-
-            float ez = layer.offsetEast.z;
-            UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Offset_EZ".Translate(), ref ez, -1f, 1f);
-            if (ez != layer.offsetEast.z) { layer.offsetEast.z = ez; isDirty = true; RefreshPreview(); }
+                float ez = layer.offsetEast.z;
+                UIHelper.DrawPropertySlider(ref y, width, "Z 偏移", ref ez, -1f, 1f);
+                if (ez != layer.offsetEast.z) { layer.offsetEast.z = ez; isDirty = true; RefreshPreview(); }
+            }
 
             // 北向偏移 (North)
             bool isNorthActive = previewRotation == Rot4.North;
-            DrawDirectionalSectionTitle(ref y, width, "CS_Studio_Section_NorthOffset".Translate(), isNorthActive);
+            if (DrawCollapsibleSection(ref y, width, "背面偏移 (北向)", "NorthOffset", isNorthActive))
+            {
+                float nx = layer.offsetNorth.x;
+                UIHelper.DrawPropertySlider(ref y, width, "X 偏移", ref nx, -1f, 1f);
+                if (nx != layer.offsetNorth.x) { layer.offsetNorth.x = nx; isDirty = true; RefreshPreview(); }
 
-            float nx = layer.offsetNorth.x;
-            UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Offset_NX".Translate(), ref nx, -1f, 1f);
-            if (nx != layer.offsetNorth.x) { layer.offsetNorth.x = nx; isDirty = true; RefreshPreview(); }
+                float ny = layer.offsetNorth.y;
+                UIHelper.DrawPropertySlider(ref y, width, "Y 偏移", ref ny, -1f, 1f);
+                if (ny != layer.offsetNorth.y) { layer.offsetNorth.y = ny; isDirty = true; RefreshPreview(); }
 
-            float ny = layer.offsetNorth.y;
-            UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Offset_NY".Translate(), ref ny, -1f, 1f);
-            if (ny != layer.offsetNorth.y) { layer.offsetNorth.y = ny; isDirty = true; RefreshPreview(); }
-
-            float nz = layer.offsetNorth.z;
-            UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Offset_NZ".Translate(), ref nz, -1f, 1f);
-            if (nz != layer.offsetNorth.z) { layer.offsetNorth.z = nz; isDirty = true; RefreshPreview(); }
+                float nz = layer.offsetNorth.z;
+                UIHelper.DrawPropertySlider(ref y, width, "Z 偏移", ref nz, -1f, 1f);
+                if (nz != layer.offsetNorth.z) { layer.offsetNorth.z = nz; isDirty = true; RefreshPreview(); }
+            }
 
             // 其他设置
-            UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Section_Misc".Translate());
-
-            float s = layer.scale.x;
-            UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_Scale".Translate(), ref s, 0.1f, 3f);
-            if (s != layer.scale.x) { layer.scale = new Vector2(s, s); isDirty = true; RefreshPreview(); }
-
-            // 扩大 DrawOrder 范围以覆盖 Body(0), Head(50) 等基准层级
-            UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_DrawOrder".Translate(), ref layer.drawOrder, -200f, 200f, "F0");
-            
-            // Worker 选择
-            string[] workers = { "Default", "FaceComponent" };
-            string currentWorker = layer.workerClass == typeof(CharacterStudio.Rendering.PawnRenderNodeWorker_FaceComponent) ? "FaceComponent" : "Default";
-            
-            UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Info_Worker".Translate(), currentWorker, workers,
-                w => w,
-                val => {
-                    if (val == "FaceComponent")
-                        layer.workerClass = typeof(CharacterStudio.Rendering.PawnRenderNodeWorker_FaceComponent);
-                    else
-                        layer.workerClass = null;
-                    isDirty = true;
-                    RefreshPreview();
-                });
-
-            // 如果是 FaceComponent，显示额外配置
-            if (currentWorker == "FaceComponent")
+            if (DrawCollapsibleSection(ref y, width, "其他设置", "Misc"))
             {
-                // Face Component Type
-                UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Prop_FaceComponent".Translate(), layer.faceComponent,
-                    (FaceComponentType[])Enum.GetValues(typeof(FaceComponentType)),
-                    type => type.ToString(),
-                    val => { layer.faceComponent = val; isDirty = true; RefreshPreview(); });
-            }
-
-            UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Prop_ColorType".Translate(), layer.colorType,
-                (LayerColorType[])Enum.GetValues(typeof(LayerColorType)),
-                type => $"CS_Studio_ColorType_{type}".Translate(),
-                val => { layer.colorType = val; isDirty = true; RefreshPreview(); });
-
-            bool flip = layer.flipHorizontal;
-            UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Prop_FlipHorizontal".Translate(), ref flip);
-            if (flip != layer.flipHorizontal) { layer.flipHorizontal = flip; isDirty = true; RefreshPreview(); }
-
-            // 动画设置
-            UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Section_Animation".Translate());
-
-            // 动画类型选择
-            UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Anim_Type".Translate(), layer.animationType,
-                (LayerAnimationType[])Enum.GetValues(typeof(LayerAnimationType)),
-                type => $"CS_Studio_Anim_{type}".Translate(),
-                val => { layer.animationType = val; isDirty = true; RefreshPreview(); });
-
-            // 仅当选择了动画类型时显示其他参数
-            if (layer.animationType != LayerAnimationType.None)
-            {
-                // 频率
-                float freq = layer.animFrequency;
-                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_Frequency".Translate(), ref freq, 0.1f, 5f);
-                if (freq != layer.animFrequency) { layer.animFrequency = freq; isDirty = true; RefreshPreview(); }
-
-                // 幅度
-                float amp = layer.animAmplitude;
-                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_Amplitude".Translate(), ref amp, 1f, 45f);
-                if (amp != layer.animAmplitude) { layer.animAmplitude = amp; isDirty = true; RefreshPreview(); }
-
-                // 速度（仅 Twitch 类型使用）
-                if (layer.animationType == LayerAnimationType.Twitch)
-                {
-                    float speed = layer.animSpeed;
-                    UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_Speed".Translate(), ref speed, 0.1f, 3f);
-                    if (speed != layer.animSpeed) { layer.animSpeed = speed; isDirty = true; RefreshPreview(); }
-                }
-
-                // 相位偏移（用于多图层错开动画）
-                float phase = layer.animPhaseOffset;
-                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_PhaseOffset".Translate(), ref phase, 0f, 1f);
-                if (phase != layer.animPhaseOffset) { layer.animPhaseOffset = phase; isDirty = true; RefreshPreview(); }
-
-                // 位移动画开关
-                bool affectsOffset = layer.animAffectsOffset;
-                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Anim_AffectsOffset".Translate(), ref affectsOffset);
-                if (affectsOffset != layer.animAffectsOffset) { layer.animAffectsOffset = affectsOffset; isDirty = true; RefreshPreview(); }
-
-                // 位移幅度（仅当启用位移时显示）
-                if (layer.animAffectsOffset)
-                {
-                    float offsetAmp = layer.animOffsetAmplitude;
-                    UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_OffsetAmplitude".Translate(), ref offsetAmp, 0.001f, 0.1f, "F3");
-                    if (offsetAmp != layer.animOffsetAmplitude) { layer.animOffsetAmplitude = offsetAmp; isDirty = true; RefreshPreview(); }
-                }
-            }
-
-            UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Section_HideVanilla".Translate());
-
-            // 显示当前隐藏的标签
-            #pragma warning disable CS0618
-            if (workingSkin.hiddenTags != null && workingSkin.hiddenTags.Count > 0)
-            {
-                foreach (var tag in workingSkin.hiddenTags.ToList())
-                {
-                    Rect tagRect = new Rect(0, y, propsRect.width - 50, 22);
-                    Widgets.Label(tagRect, $"  • {tag}");
-                    if (Widgets.ButtonText(new Rect(propsRect.width - 45, y, 40, 20), "×"))
+                float s = layer.scale.x;
+                UIHelper.DrawPropertySlider(ref y, width, "缩放", ref s, 0.1f, 3f);
+                if (s != layer.scale.x) { layer.scale = new Vector2(s, s); isDirty = true; RefreshPreview(); }
+    
+                // 扩大 DrawOrder 范围以覆盖 Body(0), Head(50) 等基准层级
+                    UIHelper.DrawPropertySlider(ref y, width, "层级(DrawOrder)", ref layer.drawOrder, -200f, 200f, "F0");
+                    
+                    // Worker 选择
+                    string[] workers = { "Default", "FaceComponent" };
+                    string currentWorker = layer.workerClass == typeof(CharacterStudio.Rendering.PawnRenderNodeWorker_FaceComponent) ? "FaceComponent" : "Default";
+                    
+                    UIHelper.DrawPropertyDropdown(ref y, width, "Worker", currentWorker, workers,
+                        w => w,
+                        val => {
+                            if (val == "FaceComponent")
+                                layer.workerClass = typeof(CharacterStudio.Rendering.PawnRenderNodeWorker_FaceComponent);
+                            else
+                                layer.workerClass = null;
+                            isDirty = true;
+                            RefreshPreview();
+                        });
+    
+                    // 如果是 FaceComponent，显示额外配置
+                    if (currentWorker == "FaceComponent")
                     {
-                        workingSkin.hiddenTags.Remove(tag);
-                        isDirty = true;
-                        RefreshPreview();
+                        // Face Component Type
+                        UIHelper.DrawPropertyDropdown(ref y, width, "面部部件类型", layer.faceComponent,
+                            (FaceComponentType[])Enum.GetValues(typeof(FaceComponentType)),
+                            type => type.ToString(),
+                            val => { layer.faceComponent = val; isDirty = true; RefreshPreview(); });
                     }
-                    y += 24;
+    
+                    UIHelper.DrawPropertyDropdown(ref y, width, "颜色类型", layer.colorType,
+                        (LayerColorType[])Enum.GetValues(typeof(LayerColorType)),
+                        type => $"CS_Studio_ColorType_{type}".Translate(),
+                        val => { layer.colorType = val; isDirty = true; RefreshPreview(); });
+    
+                    // 仅当颜色类型为 Custom 时显示颜色选择器
+                    if (layer.colorType == LayerColorType.Custom)
+                    {
+                        UIHelper.DrawPropertyColor(ref y, width, "颜色", layer.customColor,
+                            col => { layer.customColor = col; isDirty = true; RefreshPreview(); });
+                        
+                        // 绘制第二颜色（Mask）选择器
+                        UIHelper.DrawPropertyColor(ref y, width, "第二颜色(Mask)", layer.customColorTwo,
+                            col => { layer.customColorTwo = col; isDirty = true; RefreshPreview(); });
+                    }
+    
+                    bool flip = layer.flipHorizontal;
+                    UIHelper.DrawPropertyCheckbox(ref y, width, "水平翻转", ref flip);
+                    if (flip != layer.flipHorizontal) { layer.flipHorizontal = flip; isDirty = true; RefreshPreview(); }
+                } // End Misc Section
+    
+                // 动画设置
+                if (DrawCollapsibleSection(ref y, width, "动画设置", "Animation"))
+                {
+                    // 动画类型选择
+                    UIHelper.DrawPropertyDropdown(ref y, width, "动画类型", layer.animationType,
+                        (LayerAnimationType[])Enum.GetValues(typeof(LayerAnimationType)),
+                        type => $"CS_Studio_Anim_{type}".Translate(),
+                        val => { layer.animationType = val; isDirty = true; RefreshPreview(); });
+    
+                    // 仅当选择了动画类型时显示其他参数
+                    if (layer.animationType != LayerAnimationType.None)
+                    {
+                        // 频率
+                        float freq = layer.animFrequency;
+                        UIHelper.DrawPropertySlider(ref y, width, "频率", ref freq, 0.1f, 5f);
+                        if (freq != layer.animFrequency) { layer.animFrequency = freq; isDirty = true; RefreshPreview(); }
+    
+                        // 幅度
+                        float amp = layer.animAmplitude;
+                        UIHelper.DrawPropertySlider(ref y, width, "幅度", ref amp, 1f, 45f);
+                        if (amp != layer.animAmplitude) { layer.animAmplitude = amp; isDirty = true; RefreshPreview(); }
+    
+                        // 速度（仅 Twitch 类型使用）
+                        if (layer.animationType == LayerAnimationType.Twitch)
+                        {
+                            float speed = layer.animSpeed;
+                            UIHelper.DrawPropertySlider(ref y, width, "速度", ref speed, 0.1f, 3f);
+                            if (speed != layer.animSpeed) { layer.animSpeed = speed; isDirty = true; RefreshPreview(); }
+                        }
+    
+                        // 相位偏移（用于多图层错开动画）
+                        float phase = layer.animPhaseOffset;
+                        UIHelper.DrawPropertySlider(ref y, width, "相位偏移", ref phase, 0f, 1f);
+                        if (phase != layer.animPhaseOffset) { layer.animPhaseOffset = phase; isDirty = true; RefreshPreview(); }
+    
+                        // 位移动画开关
+                        bool affectsOffset = layer.animAffectsOffset;
+                        UIHelper.DrawPropertyCheckbox(ref y, width, "动画影响位移", ref affectsOffset);
+                        if (affectsOffset != layer.animAffectsOffset) { layer.animAffectsOffset = affectsOffset; isDirty = true; RefreshPreview(); }
+    
+                        // 位移幅度（仅当启用位移时显示）
+                        if (layer.animAffectsOffset)
+                        {
+                            float offsetAmp = layer.animOffsetAmplitude;
+                            UIHelper.DrawPropertySlider(ref y, width, "位移幅度", ref offsetAmp, 0.001f, 0.1f, "F3");
+                            if (offsetAmp != layer.animOffsetAmplitude) { layer.animOffsetAmplitude = offsetAmp; isDirty = true; RefreshPreview(); }
+                        }
+                    }
                 }
-            }
-            #pragma warning restore CS0618
-            else
-            {
-                GUI.color = Color.gray;
-                Widgets.Label(new Rect(0, y, propsRect.width - 20, 22), "  " + "CS_Studio_Msg_NoHidden".Translate());
-                GUI.color = Color.white;
-                y += 24;
-            }
-
-            // 添加隐藏标签按钮
-            if (Widgets.ButtonText(new Rect(0, y, propsRect.width - 20, 24), "CS_Studio_Btn_AddHidden".Translate()))
-            {
-                ShowHiddenTagsMenu();
-            }
-            y += 28;
+    
+                if (DrawCollapsibleSection(ref y, width, "隐藏原版部件", "HideVanilla"))
+                {
+                    // 显示当前隐藏的标签
+                    #pragma warning disable CS0618
+                    if (workingSkin.hiddenTags != null && workingSkin.hiddenTags.Count > 0)
+                    {
+                        foreach (var tag in workingSkin.hiddenTags.ToList())
+                        {
+                            Rect tagRect = new Rect(0, y, propsRect.width - 50, 22);
+                            Widgets.Label(tagRect, $"  • {tag}");
+                            if (Widgets.ButtonText(new Rect(propsRect.width - 45, y, 40, 20), "×"))
+                            {
+                                workingSkin.hiddenTags.Remove(tag);
+                                isDirty = true;
+                                RefreshPreview();
+                            }
+                            y += 24;
+                        }
+                    }
+                    #pragma warning restore CS0618
+                    else
+                    {
+                        GUI.color = Color.gray;
+                        Widgets.Label(new Rect(0, y, propsRect.width - 20, 22), "  " + "CS_Studio_Msg_NoHidden".Translate());
+                        GUI.color = Color.white;
+                        y += 24;
+                    }
+    
+                    // 添加隐藏标签按钮
+                    if (Widgets.ButtonText(new Rect(0, y, propsRect.width - 20, 24), "CS_Studio_Btn_AddHidden".Translate()))
+                    {
+                        ShowHiddenTagsMenu();
+                    }
+                    y += 28;
+                }
 
             Widgets.EndScrollView();
         }
@@ -1951,7 +1970,8 @@ namespace CharacterStudio.UI
             if (mannequin != null && pawn.def != null)
             {
                 mannequin.SetRace(pawn.def);
-                Log.Message($"[CharacterStudio] 已将人偶种族同步为 {pawn.def.defName}");
+                mannequin.CopyAppearanceFrom(pawn);
+                Log.Message($"[CharacterStudio] 已将人偶种族同步为 {pawn.def.defName} 并复制外观");
             }
 
             // 询问是否清空现有图层
@@ -2135,6 +2155,53 @@ namespace CharacterStudio.UI
             {
                 CollectSnapshots(child, result);
             }
+        }
+
+        /// <summary>
+        /// 绘制可折叠的属性区域
+        /// </summary>
+        private bool DrawCollapsibleSection(ref float y, float width, string title, string sectionKey, bool highlight = false)
+        {
+            bool isCollapsed = collapsedSections.Contains(sectionKey);
+            
+            y += 5f;
+            Rect rect = new Rect(0, y, width, 24f);
+            
+            // 背景
+            if (highlight)
+            {
+                Widgets.DrawBoxSolid(rect, new Color(0.2f, 0.4f, 0.6f, 0.3f));
+            }
+            else
+            {
+                Widgets.DrawLightHighlight(rect);
+            }
+            
+            // 标题
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.MiddleCenter;
+            GUI.color = highlight ? new Color(0.6f, 0.9f, 1f) : UIHelper.HeaderColor;
+            
+            string icon = isCollapsed ? "▶" : "▼";
+            string displayTitle = $"{icon} {title}";
+            
+            if (Widgets.ButtonInvisible(rect))
+            {
+                if (isCollapsed)
+                    collapsedSections.Remove(sectionKey);
+                else
+                    collapsedSections.Add(sectionKey);
+            }
+            
+            Widgets.Label(rect, displayTitle);
+            
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = GameFont.Small;
+            
+            y += 28f;
+            
+            return !isCollapsed;
         }
     }
 }

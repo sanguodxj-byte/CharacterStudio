@@ -12,6 +12,58 @@ namespace CharacterStudio.UI
     /// </summary>
     public static class UIHelper
     {
+        // 简单的颜色选择器对话框
+        public class Dialog_SimpleColorPicker : Window
+        {
+            private Color color;
+            private Action<Color> onColorChanged;
+            
+            public override Vector2 InitialSize => new Vector2(300, 200);
+            
+            public Dialog_SimpleColorPicker(Color initial, Action<Color> callback)
+            {
+                color = initial;
+                onColorChanged = callback;
+                doCloseX = true;
+                draggable = true;
+            }
+            
+            public override void DoWindowContents(Rect inRect)
+            {
+                float y = 0;
+                float width = inRect.width;
+                
+                // 预览
+                Widgets.DrawBoxSolid(new Rect(0, y, width, 30), color);
+                y += 40;
+                
+                // RGB Sliders
+                float r = color.r;
+                DrawSlider(ref y, width, "R", ref r);
+                if (Math.Abs(r - color.r) > 0.001f) { color.r = r; onColorChanged(color); }
+                
+                float g = color.g;
+                DrawSlider(ref y, width, "G", ref g);
+                if (Math.Abs(g - color.g) > 0.001f) { color.g = g; onColorChanged(color); }
+                
+                float b = color.b;
+                DrawSlider(ref y, width, "B", ref b);
+                if (Math.Abs(b - color.b) > 0.001f) { color.b = b; onColorChanged(color); }
+                
+                float a = color.a;
+                DrawSlider(ref y, width, "A", ref a);
+                if (Math.Abs(a - color.a) > 0.001f) { color.a = a; onColorChanged(color); }
+            }
+            
+            private void DrawSlider(ref float y, float width, string label, ref float val)
+            {
+                Widgets.Label(new Rect(0, y, 20, 24), label);
+                val = Widgets.HorizontalSlider(new Rect(25, y + 6, width - 60, 16), val, 0f, 1f);
+                Widgets.Label(new Rect(width - 30, y, 30, 24), val.ToString("F2"));
+                y += 30;
+            }
+        }
+
         public const float RowHeight = 28f;
         public const float VerticalPadding = 4f;
         public const float LabelWidth = 100f;
@@ -157,6 +209,33 @@ namespace CharacterStudio.UI
                 }
                 Find.WindowStack.Add(new FloatMenu(menuOptions));
             }
+
+            y += RowHeight;
+        }
+
+        /// <summary>
+        /// 绘制颜色选择字段
+        /// </summary>
+        public static void DrawPropertyColor(ref float y, float width, string label, Color value, Action<Color> onColorChanged, float labelWidth = LabelWidth)
+        {
+            Rect rect = new Rect(0, y, width, RowHeight);
+            Widgets.Label(new Rect(rect.x, rect.y, labelWidth, 24), label);
+            
+            Rect colorRect = new Rect(rect.x + labelWidth, rect.y + 2, 40, 20);
+            
+            // 绘制当前颜色
+            Widgets.DrawBoxSolid(colorRect, value);
+            Widgets.DrawBox(colorRect, 1);
+            
+            // 点击打开颜色选择器
+            if (Widgets.ButtonInvisible(colorRect))
+            {
+                Find.WindowStack.Add(new Dialog_SimpleColorPicker(value, onColorChanged));
+            }
+            
+            // 显示 RGB 文本
+            string colorText = $"R:{value.r:F2} G:{value.g:F2} B:{value.b:F2}";
+            Widgets.Label(new Rect(colorRect.xMax + 10, rect.y, width - colorRect.xMax - 10, 24), colorText);
 
             y += RowHeight;
         }

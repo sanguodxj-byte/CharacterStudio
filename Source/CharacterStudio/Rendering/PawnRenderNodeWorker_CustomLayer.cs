@@ -3,6 +3,7 @@ using RimWorld;
 using UnityEngine;
 using Verse;
 using CharacterStudio.Core;
+using System.Linq;
 
 namespace CharacterStudio.Rendering
 {
@@ -91,13 +92,29 @@ namespace CharacterStudio.Rendering
             // 北面朝向应用 offsetNorth
             else if (facing == Rot4.North)
             {
+                Vector3 northOffset = Vector3.zero;
+                bool hasNorthOffset = false;
+
+                // 1. 优先从 config 获取
                 if (customNode != null && customNode.config != null)
                 {
-                    Vector3 northOffset = customNode.config.offsetNorth;
-                    if (northOffset != Vector3.zero)
+                    northOffset = customNode.config.offsetNorth;
+                    hasNorthOffset = true;
+                }
+                // 2. 否则尝试从 RuntimeAssetLoader 获取 (兼容旧逻辑或非 Custom 节点)
+                else
+                {
+                    int nodeId = node.GetHashCode();
+                    if (RuntimeAssetLoader.TryGetOffsetNorth(nodeId, out Vector3 loaderOffset))
                     {
-                        baseOffset += northOffset;
+                        northOffset = loaderOffset;
+                        hasNorthOffset = true;
                     }
+                }
+
+                if (hasNorthOffset && northOffset != Vector3.zero)
+                {
+                    baseOffset += northOffset;
                 }
             }
 
@@ -111,21 +128,29 @@ namespace CharacterStudio.Rendering
         /// </summary>
         public override Vector3 ScaleFor(PawnRenderNode node, PawnDrawParms parms)
         {
-            // base.ScaleFor 已经应用了 node.Props.drawSize (即 config.scale) 和 node.debugScale
-            Vector3 baseScale = base.ScaleFor(node, parms);
+            // 注意：base.ScaleFor 默认会应用 node.Props.drawSize。
+            // 但我们在 GetGraphic 中已经使用 drawSize 创建了 Graphic，这决定了 Mesh 的大小。
+            // 如果 ScaleFor 再返回 drawSize，会导致双重缩放 (Mesh大小 * 矩阵缩放)。
+            // 因此，我们这里不调用 base.ScaleFor，而是手动构建缩放向量。
+            
+            Vector3 scale = Vector3.one;
+
+            // 应用调试缩放
+            if (node.debugScale != 1f)
+            {
+                scale *= node.debugScale;
+            }
             
             if (node is PawnRenderNode_Custom customNode && customNode.config != null)
             {
-                // 不再重复应用 config.scale
-                
                 // 应用呼吸动画缩放
                 if (customNode.config.animationType == LayerAnimationType.Breathe)
                 {
-                    baseScale *= customNode.currentAnimScale;
+                    scale *= customNode.currentAnimScale;
                 }
             }
 
-            return baseScale;
+            return scale;
         }
 
         /// <summary>
@@ -366,29 +391,25 @@ namespace CharacterStudio.Rendering
         }
 
         /// <summary>
-        /// 获取颜色
-        /// 根据 PawnLayerConfig 中的 colorType 返回对应颜色
-        /// 注意：基类没有 ColorFor 虚方法，这里定义为新方法供内部使用
+        /// 获取指定源的颜色
         /// </summary>
-        private Color GetColorFor(PawnRenderNode node, PawnDrawParms parms)
+        private Color GetColorFromSource(LayerColorSource source, Pawn pawn, Color fixedColor)
         {
-            if (node is PawnRenderNode_Custom customNode && customNode.config != null)
+            switch (source)
             {
-                var config = customNode.config;
-                switch (config.colorType)
-                {
-                    case LayerColorType.Custom:
-                        return config.customColor;
-                    case LayerColorType.Hair:
-                        return parms.pawn?.story?.HairColor ?? Color.white;
-                    case LayerColorType.Skin:
-                        return parms.pawn?.story?.SkinColor ?? Color.white;
-                    case LayerColorType.White:
-                    default:
-                        return Color.white;
-                }
+                case LayerColorSource.PawnHair:
+                    return pawn?.story?.HairColor ?? Color.white;
+                case LayerColorSource.PawnSkin:
+                    return pawn?.story?.SkinColor ?? Color.white;
+                case LayerColorSource.PawnApparelPrimary:
+                    return pawn?.apparel?.WornApparel?.FirstOrDefault()?.DrawColor ?? Color.white; // 简化处理
+                case LayerColorSource.PawnApparelSecondary:
+                    // 原版不支持 DrawColorTwo，这是 HAR 特性，暂时回退到主色或白色
+                    return Color.white;
+                case LayerColorSource.Fixed:
+                default:
+                    return fixedColor;
             }
-            return Color.white;
         }
 
         /// <summary>
@@ -401,17 +422,36 @@ namespace CharacterStudio.Rendering
         {
             MaterialPropertyBlock matPropBlock = node.MatPropBlock;
             
-            // 获取自定义颜色
-            Color customColor = GetColorFor(node, parms);
-            
-            if (parms.Statue)
+            if (node is PawnRenderNode_Custom customNode && customNode.config != null)
             {
-                matPropBlock.SetColor(ShaderPropertyIDs.Color, parms.statueColor.Value);
+                var config = customNode.config;
+                var pawn = parms.pawn;
+
+                // 1. 获取主颜色
+                Color colorOne = GetColorFromSource(config.colorSource, pawn, config.customColor);
+                
+                // 2. 获取副颜色 (Mask)
+                Color colorTwo = GetColorFromSource(config.colorTwoSource, pawn, config.customColorTwo);
+
+                if (parms.Statue)
+                {
+                    matPropBlock.SetColor(ShaderPropertyIDs.Color, parms.statueColor.Value);
+                }
+                else
+                {
+                    // 应用主颜色与 tint 的组合
+                    matPropBlock.SetColor(ShaderPropertyIDs.Color, parms.tint * colorOne);
+                    
+                    // 应用第二颜色（仅当使用支持 Mask 的 Shader 时有效）
+                    // 始终设置 _ColorTwo，因为如果 Shader 不支持，设置属性也不会有负面影响
+                    int colorTwoID = Shader.PropertyToID("_ColorTwo");
+                    matPropBlock.SetColor(colorTwoID, colorTwo);
+                }
             }
             else
             {
-                // 应用自定义颜色与 tint 的组合
-                matPropBlock.SetColor(ShaderPropertyIDs.Color, parms.tint * customColor);
+                // 非自定义节点的默认处理（虽然此 Worker 只用于自定义节点）
+                base.GetMaterialPropertyBlock(node, material, parms);
             }
             
             return matPropBlock;
@@ -504,8 +544,20 @@ namespace CharacterStudio.Rendering
                         if (graphicType == null) graphicType = typeof(Graphic_Multi);
                     }
 
-                    Shader shader = node.ShaderFor(parms.pawn);
-                    if (shader == null) shader = ShaderDatabase.Cutout;
+                    // 支持 Shader 切换
+                    Shader shader = null;
+                    if (!string.IsNullOrEmpty(customNode.config.shaderDefName))
+                    {
+                        switch (customNode.config.shaderDefName)
+                        {
+                            case "Cutout": shader = ShaderDatabase.Cutout; break;
+                            case "CutoutComplex": shader = ShaderDatabase.CutoutComplex; break;
+                            case "Transparent": shader = ShaderDatabase.Transparent; break;
+                            case "TransparentPostLight": shader = ShaderDatabase.TransparentPostLight; break;
+                            case "MetaOverlay": shader = ShaderDatabase.MetaOverlay; break;
+                        }
+                    }
+                    if (shader == null) shader = node.ShaderFor(parms.pawn) ?? ShaderDatabase.Cutout;
                     
                     var props = node.Props;
                     
@@ -514,20 +566,23 @@ namespace CharacterStudio.Rendering
                     if (drawSize.x <= 0f) drawSize.x = 1f;
                     if (drawSize.y <= 0f) drawSize.y = 1f;
 
-                    // 显式处理常用 Graphic 类型，避免反射查找失败
+                    // 获取颜色（基于源）
+                    Color color = GetColorFromSource(customNode.config.colorSource, parms.pawn, customNode.config.customColor);
+                    Color colorTwo = GetColorFromSource(customNode.config.colorTwoSource, parms.pawn, customNode.config.customColorTwo);
+
                     if (graphicType == typeof(Graphic_Multi))
                     {
-                        return GraphicDatabase.Get<Graphic_Multi>(resolvedTexPath, shader, drawSize, props?.color ?? Color.white);
+                        return GraphicDatabase.Get<Graphic_Multi>(resolvedTexPath, shader, drawSize, color, colorTwo);
                     }
                     else if (graphicType == typeof(Graphic_Single))
                     {
-                        return GraphicDatabase.Get<Graphic_Single>(resolvedTexPath, shader, drawSize, props?.color ?? Color.white);
+                        return GraphicDatabase.Get<Graphic_Single>(resolvedTexPath, shader, drawSize, color);
                     }
                     else
                     {
                         // 对于其他类型，尝试使用反射
-                        // 注意：需要匹配 GraphicDatabase.Get<T>(string, Shader, Vector2, Color) 的精确签名
-                        var method = typeof(GraphicDatabase).GetMethod("Get", new Type[] { typeof(string), typeof(Shader), typeof(Vector2), typeof(Color) });
+                        // 优先尝试带 ColorTwo 的重载
+                        var method = typeof(GraphicDatabase).GetMethod("Get", new Type[] { typeof(string), typeof(Shader), typeof(Vector2), typeof(Color), typeof(Color) });
                         if (method != null)
                         {
                             var genericMethod = method.MakeGenericMethod(graphicType);
@@ -535,7 +590,21 @@ namespace CharacterStudio.Rendering
                                 resolvedTexPath,
                                 shader,
                                 drawSize,
-                                props?.color ?? Color.white
+                                color,
+                                colorTwo
+                            });
+                        }
+                        
+                        // 回退到不带 ColorTwo 的重载
+                        method = typeof(GraphicDatabase).GetMethod("Get", new Type[] { typeof(string), typeof(Shader), typeof(Vector2), typeof(Color) });
+                        if (method != null)
+                        {
+                            var genericMethod = method.MakeGenericMethod(graphicType);
+                            return (Graphic)genericMethod.Invoke(null, new object[] {
+                                resolvedTexPath,
+                                shader,
+                                drawSize,
+                                color
                             });
                         }
                         else
