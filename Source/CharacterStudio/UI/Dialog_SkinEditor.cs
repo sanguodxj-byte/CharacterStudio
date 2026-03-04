@@ -4,9 +4,11 @@ using System.Linq;
 using RimWorld;
 using CharacterStudio.Abilities;
 using CharacterStudio.Core;
+using CharacterStudio.Exporter;
 using CharacterStudio.Introspection;
 using UnityEngine;
 using Verse;
+using System.IO;
 
 namespace CharacterStudio.UI
 {
@@ -33,6 +35,11 @@ namespace CharacterStudio.UI
         private PawnSkinDef workingSkin;
         private List<ModularAbilityDef> workingAbilities = new List<ModularAbilityDef>();
         private int selectedLayerIndex = -1;
+        private HashSet<int> selectedLayerIndices = new HashSet<int>();
+        private PawnSkinDef? lastUndoSkin;
+        private int lastUndoSelectedLayerIndex = -1;
+        private HashSet<int> lastUndoSelectedLayerIndices = new HashSet<int>();
+        private bool hasUndoSnapshot = false;
         private Vector2 layerScrollPos;
         private Vector2 propsScrollPos;
         private Vector2 faceScrollPos;
@@ -47,6 +54,9 @@ namespace CharacterStudio.UI
         private MannequinManager? mannequin;
         private Rot4 previewRotation = Rot4.South;
         private float previewZoom = 1f;
+
+        // 编辑目标 Pawn（可空，空表示仅预览模式）
+        private Pawn? targetPawn;
 
         // ─────────────────────────────────────────────
         // 树状视图状态
@@ -63,14 +73,14 @@ namespace CharacterStudio.UI
         // 窗口设置
         // ─────────────────────────────────────────────
 
-        public override Vector2 InitialSize => new Vector2(1024f, 700f);
+        public override Vector2 InitialSize => new Vector2(1680f, 980f);
 
         public Dialog_SkinEditor()
         {
             this.doCloseX = true;
             this.doCloseButton = false;
-            this.draggable = true;
-            this.resizeable = true;
+            this.draggable = false;
+            this.resizeable = false;
             this.closeOnClickedOutside = false;
             this.absorbInputAroundWindow = false;
             this.forcePause = false;
@@ -89,6 +99,22 @@ namespace CharacterStudio.UI
             if (existingSkin != null)
             {
                 workingSkin = existingSkin.Clone();
+            }
+        }
+
+        public Dialog_SkinEditor(Pawn pawn) : this()
+        {
+            targetPawn = pawn;
+
+            if (pawn?.def != null)
+            {
+                workingSkin.targetRaces = new List<string> { pawn.def.defName };
+            }
+
+            var comp = pawn?.GetComp<CompPawnSkin>();
+            if (comp?.ActiveSkin != null)
+            {
+                workingSkin = comp.ActiveSkin.Clone();
             }
         }
 
@@ -120,6 +146,12 @@ namespace CharacterStudio.UI
                 {
                     statusMessageTime -= Time.deltaTime;
                 }
+
+                // 全局快捷键（Ctrl+A 全选图层，Ctrl+Z 撤回）
+                HandleGlobalShortcuts();
+
+                // 清理多选状态
+                SanitizeLayerSelection();
 
                 // 绘制顶部菜单栏
                 Rect menuRect = new Rect(0, 0, inRect.width, TopMenuHeight);
@@ -220,6 +252,9 @@ namespace CharacterStudio.UI
 
             // 保存
             DrawButton("CS_Studio_File_Save".Translate(), OnSaveSkin);
+
+            // 应用到目标角色
+            DrawButton("CS_Studio_Btn_Apply".Translate(), OnApplyToTargetPawn);
 
             // 导出
             DrawButton("CS_Studio_File_Export".Translate(), OnExportMod);
@@ -595,6 +630,7 @@ namespace CharacterStudio.UI
             {
                 selectedNodePath = node.uniqueNodePath;
                 selectedLayerIndex = -1; // 清除自定义图层选择
+                selectedLayerIndices.Clear();
             }
 
             // 右键菜单
@@ -638,7 +674,7 @@ namespace CharacterStudio.UI
             }
 
             // 选中高亮
-            if (selectedLayerIndex == index)
+            if (selectedLayerIndices.Contains(index) || selectedLayerIndex == index)
             {
                 Widgets.DrawBox(rowRect, 1);
             }
@@ -672,18 +708,18 @@ namespace CharacterStudio.UI
             // 删除按钮
             if (Widgets.ButtonText(new Rect(width - 22, y + 1, 20, 20), "×"))
             {
+                CaptureUndoSnapshot();
                 workingSkin.layers.RemoveAt(index);
-                if (selectedLayerIndex >= workingSkin.layers.Count)
-                    selectedLayerIndex = workingSkin.layers.Count - 1;
+                RemapSelectionAfterRemoveIndex(index);
                 isDirty = true;
                 RefreshPreview();
             }
 
-            // 点击选中
-            if (Widgets.ButtonInvisible(rowRect))
+            // 左键点击：单选 / Shift 多选
+            if (Mouse.IsOver(rowRect) && Event.current.type == EventType.MouseDown && Event.current.button == 0)
             {
-                selectedLayerIndex = index;
-                selectedNodePath = ""; // 清除节点选择
+                HandleLayerRowLeftClick(index);
+                Event.current.Use();
             }
 
             // 右键菜单
@@ -838,6 +874,7 @@ namespace CharacterStudio.UI
             // 复制图层
             options.Add(new FloatMenuOption("CS_Studio_Ctx_CopyLayer".Translate(), () =>
             {
+                CaptureUndoSnapshot();
                 var copy = layer.Clone();
                 copy.layerName += " (Copy)";
                 workingSkin.layers.Insert(index + 1, copy);
@@ -851,6 +888,7 @@ namespace CharacterStudio.UI
             {
                 options.Add(new FloatMenuOption("CS_Studio_Panel_MoveUp".Translate(), () =>
                 {
+                    CaptureUndoSnapshot();
                     workingSkin.layers.RemoveAt(index);
                     workingSkin.layers.Insert(index - 1, layer);
                     selectedLayerIndex = index - 1;
@@ -864,6 +902,7 @@ namespace CharacterStudio.UI
             {
                 options.Add(new FloatMenuOption("CS_Studio_Panel_MoveDown".Translate(), () =>
                 {
+                    CaptureUndoSnapshot();
                     workingSkin.layers.RemoveAt(index);
                     workingSkin.layers.Insert(index + 1, layer);
                     selectedLayerIndex = index + 1;
@@ -875,9 +914,9 @@ namespace CharacterStudio.UI
             // 删除
             options.Add(new FloatMenuOption("CS_Studio_Ctx_DeleteLayer".Translate(), () =>
             {
+                CaptureUndoSnapshot();
                 workingSkin.layers.RemoveAt(index);
-                if (selectedLayerIndex >= workingSkin.layers.Count)
-                    selectedLayerIndex = workingSkin.layers.Count - 1;
+                RemapSelectionAfterRemoveIndex(index);
                 isDirty = true;
                 RefreshPreview();
             }));
@@ -1148,6 +1187,31 @@ namespace CharacterStudio.UI
             Widgets.Label(titleRect, "CS_Studio_Panel_Properties".Translate());
             Text.Font = GameFont.Small;
 
+            // 快速折叠/展开按钮
+            float expandBtnWidth = 24f;
+            if (Widgets.ButtonText(new Rect(rect.x + rect.width - Margin - expandBtnWidth * 2 - 4, rect.y + Margin, expandBtnWidth, ButtonHeight), "+"))
+            {
+                // 展开全部 (清空折叠列表)
+                collapsedSections.Clear();
+            }
+            TooltipHandler.TipRegion(new Rect(rect.x + rect.width - Margin - expandBtnWidth * 2 - 4, rect.y + Margin, expandBtnWidth, ButtonHeight), "CS_Studio_Tip_ExpandAll".Translate());
+
+            if (Widgets.ButtonText(new Rect(rect.x + rect.width - Margin - expandBtnWidth, rect.y + Margin, expandBtnWidth, ButtonHeight), "-"))
+            {
+                // 折叠全部 (添加所有已知部分)
+                var allSections = new[] { "Base", "Transform", "EastOffset", "NorthOffset", "Misc", "Animation", "HideVanilla", "NodeInfo", "NodeActions", "NodeRuntime" };
+                foreach (var s in allSections) collapsedSections.Add(s);
+            }
+            TooltipHandler.TipRegion(new Rect(rect.x + rect.width - Margin - expandBtnWidth, rect.y + Margin, expandBtnWidth, ButtonHeight), "CS_Studio_Tip_CollapseAll".Translate());
+
+            // 缩放归一化按钮（作用于已选图层；若无多选则作用于当前单选）
+            Rect normalizeRect = new Rect(rect.x + Margin, rect.y + Margin + ButtonHeight + Margin, rect.width - Margin * 2, 24f);
+            if (Widgets.ButtonText(normalizeRect, "缩放归一化(1.00)"))
+            {
+                NormalizeSelectedLayerScales();
+            }
+            TooltipHandler.TipRegion(normalizeRect, "将所选图层的缩放重置为 1.00。支持 Shift+左键多选与 Ctrl+A 全选。");
+
             // 如果选中了渲染树节点，显示节点信息
             if (!string.IsNullOrEmpty(selectedNodePath) && cachedRootSnapshot != null)
             {
@@ -1169,7 +1233,7 @@ namespace CharacterStudio.UI
 
             var layer = workingSkin.layers[selectedLayerIndex];
 
-            float propsY = rect.y + Margin + ButtonHeight + Margin;
+            float propsY = rect.y + Margin + ButtonHeight + Margin + 24f + Margin;
             float propsHeight = rect.height - propsY + rect.y - Margin;
             Rect propsRect = new Rect(rect.x + Margin, propsY, rect.width - Margin * 2, propsHeight);
             Rect viewRect = new Rect(0, 0, propsRect.width - 16, 750);
@@ -1416,7 +1480,7 @@ namespace CharacterStudio.UI
             float propsY = rect.y + Margin + ButtonHeight + Margin;
             float propsHeight = rect.height - propsY + rect.y - Margin;
             Rect propsRect = new Rect(rect.x + Margin, propsY, rect.width - Margin * 2, propsHeight);
-            Rect viewRect = new Rect(0, 0, propsRect.width - 16, 550);
+            Rect viewRect = new Rect(0, 0, propsRect.width - 16, 700); // 增加高度以适应折叠展开
 
             Widgets.BeginScrollView(propsRect, ref propsScrollPos, viewRect);
 
@@ -1424,176 +1488,155 @@ namespace CharacterStudio.UI
             float labelWidth = 70f;
             float fieldWidth = propsRect.width - labelWidth - 20;
 
-            // 节点路径
-            Text.Font = GameFont.Tiny;
-            GUI.color = Color.gray;
-            Widgets.Label(new Rect(0, y, propsRect.width - 20, 16), "CS_Studio_Prop_NodeInfo".Translate());
-            GUI.color = Color.white;
-            Text.Font = GameFont.Small;
-            y += 18;
-
-            // 路径（可复制）
-            Widgets.Label(new Rect(0, y, labelWidth, 24), "CS_Studio_Info_Path".Translate());
-            Rect pathRect = new Rect(labelWidth, y, fieldWidth - 30, 24);
-            Widgets.Label(pathRect, node.uniqueNodePath);
-            if (Widgets.ButtonText(new Rect(labelWidth + fieldWidth - 28, y, 28, 22), "📋"))
+            // 节点信息
+            if (DrawCollapsibleSection(ref y, propsRect.width - 20, "CS_Studio_Prop_NodeInfo".Translate(), "NodeInfo"))
             {
-                GUIUtility.systemCopyBuffer = node.uniqueNodePath;
-                ShowStatus("CS_Studio_Msg_PathCopied".Translate());
-            }
-            y += 26;
-
-            // 标签
-            Widgets.Label(new Rect(0, y, labelWidth, 24), "CS_Studio_Prop_NodeTag".Translate() + ":");
-            Widgets.Label(new Rect(labelWidth, y, fieldWidth, 24), node.tagDefName ?? "CS_Studio_None".Translate());
-            y += 26;
-
-            // Worker 类型
-            Widgets.Label(new Rect(0, y, labelWidth, 24), "CS_Studio_Info_Worker".Translate());
-            string shortWorker = node.workerClass;
-            if (shortWorker.Contains("."))
-                shortWorker = shortWorker.Substring(shortWorker.LastIndexOf('.') + 1);
-            Widgets.Label(new Rect(labelWidth, y, fieldWidth, 24), shortWorker);
-            y += 26;
-
-            // 贴图路径
-            Widgets.Label(new Rect(0, y, labelWidth, 24), "CS_Studio_Prop_NodeTexture".Translate() + ":");
-            if (!string.IsNullOrEmpty(node.texPath))
-            {
-                Rect texPathRect = new Rect(labelWidth, y, fieldWidth - 30, 24);
-                Widgets.Label(texPathRect, node.texPath);
+                // 路径（可复制）
+                Widgets.Label(new Rect(0, y, labelWidth, 24), "CS_Studio_Info_Path".Translate());
+                Rect pathRect = new Rect(labelWidth, y, fieldWidth - 30, 24);
+                Widgets.Label(pathRect, node.uniqueNodePath);
                 if (Widgets.ButtonText(new Rect(labelWidth + fieldWidth - 28, y, 28, 22), "📋"))
                 {
-                    GUIUtility.systemCopyBuffer = node.texPath;
-                    ShowStatus("CS_Studio_Msg_TexCopied".Translate());
+                    GUIUtility.systemCopyBuffer = node.uniqueNodePath;
+                    ShowStatus("CS_Studio_Msg_PathCopied".Translate());
                 }
-            }
-            else
-            {
-                GUI.color = Color.gray;
-                Widgets.Label(new Rect(labelWidth, y, fieldWidth, 24), "CS_Studio_None".Translate());
-                GUI.color = Color.white;
-            }
-            y += 26;
+                y += 26;
 
-            // 子节点数
-            Widgets.Label(new Rect(0, y, labelWidth, 24), "CS_Studio_Prop_NodeChildren".Translate() + ":");
-            Widgets.Label(new Rect(labelWidth, y, fieldWidth, 24), node.children.Count.ToString());
-            y += 30;
+                // 标签
+                Widgets.Label(new Rect(0, y, labelWidth, 24), "CS_Studio_Prop_NodeTag".Translate() + ":");
+                Widgets.Label(new Rect(labelWidth, y, fieldWidth, 24), node.tagDefName ?? "CS_Studio_None".Translate());
+                y += 26;
 
-            // 分隔线
-            Widgets.DrawLineHorizontal(0, y, propsRect.width - 20);
-            y += 10;
+                // Worker 类型
+                Widgets.Label(new Rect(0, y, labelWidth, 24), "CS_Studio_Info_Worker".Translate());
+                string shortWorker = node.workerClass;
+                if (shortWorker.Contains("."))
+                    shortWorker = shortWorker.Substring(shortWorker.LastIndexOf('.') + 1);
+                Widgets.Label(new Rect(labelWidth, y, fieldWidth, 24), shortWorker);
+                y += 26;
+
+                // 贴图路径
+                Widgets.Label(new Rect(0, y, labelWidth, 24), "CS_Studio_Prop_NodeTexture".Translate() + ":");
+                if (!string.IsNullOrEmpty(node.texPath))
+                {
+                    Rect texPathRect = new Rect(labelWidth, y, fieldWidth - 30, 24);
+                    Widgets.Label(texPathRect, node.texPath);
+                    if (Widgets.ButtonText(new Rect(labelWidth + fieldWidth - 28, y, 28, 22), "📋"))
+                    {
+                        GUIUtility.systemCopyBuffer = node.texPath;
+                        ShowStatus("CS_Studio_Msg_TexCopied".Translate());
+                    }
+                }
+                else
+                {
+                    GUI.color = Color.gray;
+                    Widgets.Label(new Rect(labelWidth, y, fieldWidth, 24), "CS_Studio_None".Translate());
+                    GUI.color = Color.white;
+                }
+                y += 26;
+
+                // 子节点数
+                Widgets.Label(new Rect(0, y, labelWidth, 24), "CS_Studio_Prop_NodeChildren".Translate() + ":");
+                Widgets.Label(new Rect(labelWidth, y, fieldWidth, 24), node.children.Count.ToString());
+                y += 30;
+            }
 
             // 操作按钮
-            Text.Font = GameFont.Tiny;
-            GUI.color = Color.gray;
-            Widgets.Label(new Rect(0, y, propsRect.width - 20, 16), "CS_Studio_Prop_Actions".Translate());
-            GUI.color = Color.white;
-            Text.Font = GameFont.Small;
-            y += 20;
-
-            // 隐藏/显示按钮
-            #pragma warning disable CS0618
-            bool isHidden = workingSkin.hiddenPaths.Contains(node.uniqueNodePath) ||
-                           workingSkin.hiddenTags.Contains(node.tagDefName);
-            #pragma warning restore CS0618
-            
-            if (Widgets.ButtonText(new Rect(0, y, propsRect.width - 20, 28), isHidden ? "CS_Studio_Prop_ShowNode".Translate() : "CS_Studio_Prop_HideNode".Translate()))
+            if (DrawCollapsibleSection(ref y, propsRect.width - 20, "CS_Studio_Prop_Actions".Translate(), "NodeActions"))
             {
-                ToggleNodeVisibility(node);
-            }
-            y += 32;
-
-            // 在此节点挂载图层
-            if (Widgets.ButtonText(new Rect(0, y, propsRect.width - 20, 28), "CS_Studio_Prop_MountLayer".Translate()))
-            {
-                var newLayer = new PawnLayerConfig
+                // 隐藏/显示按钮
+                #pragma warning disable CS0618
+                bool isHidden = workingSkin.hiddenPaths.Contains(node.uniqueNodePath) ||
+                               workingSkin.hiddenTags.Contains(node.tagDefName);
+                #pragma warning restore CS0618
+                
+                if (Widgets.ButtonText(new Rect(0, y, propsRect.width - 20, 28), isHidden ? "CS_Studio_Prop_ShowNode".Translate() : "CS_Studio_Prop_HideNode".Translate()))
                 {
-                    layerName = $"Layer on {GetNodeDisplayName(node)}",
-                    anchorPath = node.uniqueNodePath,
-                    anchorTag = node.tagDefName ?? "Body"
-                };
-                workingSkin.layers.Add(newLayer);
-                selectedLayerIndex = workingSkin.layers.Count - 1;
-                selectedNodePath = "";
-                isDirty = true;
-                RefreshPreview();
-                ShowStatus("CS_Studio_Msg_Appended".Translate(node.uniqueNodePath, "1")); // 参数类型修复
+                    ToggleNodeVisibility(node);
+                }
+                y += 32;
+
+                // 在此节点挂载图层
+                if (Widgets.ButtonText(new Rect(0, y, propsRect.width - 20, 28), "CS_Studio_Prop_MountLayer".Translate()))
+                {
+                    var newLayer = new PawnLayerConfig
+                    {
+                        layerName = $"Layer on {GetNodeDisplayName(node)}",
+                        anchorPath = node.uniqueNodePath,
+                        anchorTag = node.tagDefName ?? "Body"
+                    };
+                    workingSkin.layers.Add(newLayer);
+                    selectedLayerIndex = workingSkin.layers.Count - 1;
+                    selectedNodePath = "";
+                    isDirty = true;
+                    RefreshPreview();
+                    ShowStatus("CS_Studio_Msg_Appended".Translate(node.uniqueNodePath, "1"));
+                }
+                y += 32;
             }
-            y += 32;
 
             // ===== 运行时数据探针 (只读) =====
-            if (node.runtimeDataValid)
+            if (DrawCollapsibleSection(ref y, propsRect.width - 20, "运行时数据 (只读)", "NodeRuntime"))
             {
-                // 分隔线
-                Widgets.DrawLineHorizontal(0, y, propsRect.width - 20);
-                y += 10;
+                if (node.runtimeDataValid)
+                {
+                    // 运行时偏移
+                    bool offsetNonDefault = node.runtimeOffset != Vector3.zero;
+                    GUI.color = offsetNonDefault ? Color.yellow : Color.white;
+                    Widgets.Label(new Rect(0, y, labelWidth, 24), "Offset:");
+                    Widgets.Label(new Rect(labelWidth, y, fieldWidth, 24),
+                        $"({node.runtimeOffset.x:F3}, {node.runtimeOffset.y:F3}, {node.runtimeOffset.z:F3})");
+                    GUI.color = Color.white;
+                    y += 24;
 
-                Text.Font = GameFont.Tiny;
-                GUI.color = new Color(0.5f, 0.8f, 1f);
-                Widgets.Label(new Rect(0, y, propsRect.width - 20, 16), "运行时数据 (只读)");
-                GUI.color = Color.white;
-                Text.Font = GameFont.Small;
-                y += 20;
+                    // 运行时缩放
+                    bool scaleNonDefault = node.runtimeScale != Vector3.one;
+                    GUI.color = scaleNonDefault ? Color.yellow : Color.white;
+                    Widgets.Label(new Rect(0, y, labelWidth, 24), "Scale:");
+                    Widgets.Label(new Rect(labelWidth, y, fieldWidth, 24),
+                        $"({node.runtimeScale.x:F3}, {node.runtimeScale.y:F3}, {node.runtimeScale.z:F3})");
+                    GUI.color = Color.white;
+                    y += 24;
 
-                // 运行时偏移
-                bool offsetNonDefault = node.runtimeOffset != Vector3.zero;
-                GUI.color = offsetNonDefault ? Color.yellow : Color.white;
-                Widgets.Label(new Rect(0, y, labelWidth, 24), "Offset:");
-                Widgets.Label(new Rect(labelWidth, y, fieldWidth, 24),
-                    $"({node.runtimeOffset.x:F3}, {node.runtimeOffset.y:F3}, {node.runtimeOffset.z:F3})");
-                GUI.color = Color.white;
-                y += 24;
+                    // 运行时颜色
+                    bool colorNonDefault = node.runtimeColor != Color.white;
+                    GUI.color = colorNonDefault ? Color.yellow : Color.white;
+                    Widgets.Label(new Rect(0, y, labelWidth, 24), "Color:");
+                    // 绘制颜色预览方块
+                    Rect colorPreviewRect = new Rect(labelWidth, y + 2, 20, 20);
+                    Widgets.DrawBoxSolid(colorPreviewRect, node.runtimeColor);
+                    Widgets.DrawBox(colorPreviewRect, 1);
+                    Widgets.Label(new Rect(labelWidth + 25, y, fieldWidth - 25, 24),
+                        $"R:{node.runtimeColor.r:F2} G:{node.runtimeColor.g:F2} B:{node.runtimeColor.b:F2} A:{node.runtimeColor.a:F2}");
+                    GUI.color = Color.white;
+                    y += 24;
 
-                // 运行时缩放
-                bool scaleNonDefault = node.runtimeScale != Vector3.one;
-                GUI.color = scaleNonDefault ? Color.yellow : Color.white;
-                Widgets.Label(new Rect(0, y, labelWidth, 24), "Scale:");
-                Widgets.Label(new Rect(labelWidth, y, fieldWidth, 24),
-                    $"({node.runtimeScale.x:F3}, {node.runtimeScale.y:F3}, {node.runtimeScale.z:F3})");
-                GUI.color = Color.white;
-                y += 24;
+                    // 运行时旋转
+                    bool rotNonDefault = Mathf.Abs(node.runtimeRotation) > 0.01f;
+                    GUI.color = rotNonDefault ? Color.yellow : Color.white;
+                    Widgets.Label(new Rect(0, y, labelWidth, 24), "Rotation:");
+                    Widgets.Label(new Rect(labelWidth, y, fieldWidth, 24), $"{node.runtimeRotation:F1}°");
+                    GUI.color = Color.white;
+                    y += 24;
 
-                // 运行时颜色
-                bool colorNonDefault = node.runtimeColor != Color.white;
-                GUI.color = colorNonDefault ? Color.yellow : Color.white;
-                Widgets.Label(new Rect(0, y, labelWidth, 24), "Color:");
-                // 绘制颜色预览方块
-                Rect colorPreviewRect = new Rect(labelWidth, y + 2, 20, 20);
-                Widgets.DrawBoxSolid(colorPreviewRect, node.runtimeColor);
-                Widgets.DrawBox(colorPreviewRect, 1);
-                Widgets.Label(new Rect(labelWidth + 25, y, fieldWidth - 25, 24),
-                    $"R:{node.runtimeColor.r:F2} G:{node.runtimeColor.g:F2} B:{node.runtimeColor.b:F2} A:{node.runtimeColor.a:F2}");
-                GUI.color = Color.white;
-                y += 24;
-
-                // 运行时旋转
-                bool rotNonDefault = Mathf.Abs(node.runtimeRotation) > 0.01f;
-                GUI.color = rotNonDefault ? Color.yellow : Color.white;
-                Widgets.Label(new Rect(0, y, labelWidth, 24), "Rotation:");
-                Widgets.Label(new Rect(labelWidth, y, fieldWidth, 24), $"{node.runtimeRotation:F1}°");
-                GUI.color = Color.white;
-                y += 24;
-
-                // 提示
-                Text.Font = GameFont.Tiny;
-                GUI.color = new Color(0.6f, 0.6f, 0.6f);
-                Widgets.Label(new Rect(0, y, propsRect.width - 20, 16), "(黄色 = 非默认值)");
-                GUI.color = Color.white;
-                Text.Font = GameFont.Small;
-                y += 20;
-            }
-            else
-            {
-                // 无运行时数据
-                y += 10;
-                GUI.color = Color.gray;
-                Text.Font = GameFont.Tiny;
-                Widgets.Label(new Rect(0, y, propsRect.width - 20, 16), "(无运行时数据)");
-                Text.Font = GameFont.Small;
-                GUI.color = Color.white;
-                y += 20;
+                    // 提示
+                    Text.Font = GameFont.Tiny;
+                    GUI.color = new Color(0.6f, 0.6f, 0.6f);
+                    Widgets.Label(new Rect(0, y, propsRect.width - 20, 16), "(黄色 = 非默认值)");
+                    GUI.color = Color.white;
+                    Text.Font = GameFont.Small;
+                    y += 20;
+                }
+                else
+                {
+                    // 无运行时数据
+                    GUI.color = Color.gray;
+                    Text.Font = GameFont.Tiny;
+                    Widgets.Label(new Rect(0, y, propsRect.width - 20, 16), "(无运行时数据)");
+                    Text.Font = GameFont.Small;
+                    GUI.color = Color.white;
+                    y += 20;
+                }
             }
 
             Widgets.EndScrollView();
@@ -1650,6 +1693,191 @@ namespace CharacterStudio.UI
 
 
         // ─────────────────────────────────────────────
+        // 交互与快捷键（多选 / 归一化 / 撤回）
+        // ─────────────────────────────────────────────
+
+        private void HandleGlobalShortcuts()
+        {
+            var evt = Event.current;
+            if (evt == null || evt.type != EventType.KeyDown)
+            {
+                return;
+            }
+
+            bool ctrl = evt.control || evt.command;
+            if (!ctrl)
+            {
+                return;
+            }
+
+            // 避免与文本输入框冲突：输入控件聚焦时不拦截 Ctrl+A
+            if (evt.keyCode == KeyCode.A && GUIUtility.keyboardControl != 0)
+            {
+                return;
+            }
+
+            // Ctrl+A：全选图层
+            if (evt.keyCode == KeyCode.A)
+            {
+                if (workingSkin.layers.Count > 0)
+                {
+                    selectedLayerIndices.Clear();
+                    for (int i = 0; i < workingSkin.layers.Count; i++)
+                    {
+                        selectedLayerIndices.Add(i);
+                    }
+                    selectedLayerIndex = 0;
+                    selectedNodePath = "";
+                    ShowStatus($"已全选 {workingSkin.layers.Count} 个图层");
+                }
+                evt.Use();
+                return;
+            }
+
+            // Ctrl+Z：撤回上次改动（单步）
+            if (evt.keyCode == KeyCode.Z)
+            {
+                ApplyUndoSnapshot();
+                evt.Use();
+            }
+        }
+
+        private void CaptureUndoSnapshot()
+        {
+            // 始终覆盖为“最近一次改动前”快照，保证 Ctrl+Z 语义正确
+            lastUndoSkin = workingSkin.Clone();
+            lastUndoSelectedLayerIndex = selectedLayerIndex;
+            lastUndoSelectedLayerIndices = new HashSet<int>(selectedLayerIndices);
+            hasUndoSnapshot = true;
+        }
+
+        private void ApplyUndoSnapshot()
+        {
+            if (!hasUndoSnapshot || lastUndoSkin == null)
+            {
+                ShowStatus("没有可撤回的改动");
+                return;
+            }
+
+            workingSkin = lastUndoSkin.Clone();
+            selectedLayerIndex = lastUndoSelectedLayerIndex;
+            selectedLayerIndices = new HashSet<int>(lastUndoSelectedLayerIndices);
+
+            hasUndoSnapshot = false;
+            lastUndoSkin = null;
+            lastUndoSelectedLayerIndex = -1;
+            lastUndoSelectedLayerIndices.Clear();
+
+            SanitizeLayerSelection();
+            isDirty = true;
+            RefreshPreview();
+            RefreshRenderTree();
+            ShowStatus("已撤回上次改动");
+        }
+
+        private void SanitizeLayerSelection()
+        {
+            if (workingSkin.layers.Count == 0)
+            {
+                selectedLayerIndices.Clear();
+                selectedLayerIndex = -1;
+                return;
+            }
+
+            selectedLayerIndices.RemoveWhere(i => i < 0 || i >= workingSkin.layers.Count);
+
+            if (selectedLayerIndex < -1 || selectedLayerIndex >= workingSkin.layers.Count)
+            {
+                selectedLayerIndex = -1;
+            }
+
+            // 若主选中无效但存在多选，取最小索引作为主选中
+            if (selectedLayerIndex < 0 && selectedLayerIndices.Count > 0)
+            {
+                selectedLayerIndex = selectedLayerIndices.Min();
+            }
+
+            // 保证主选中包含在多选集合中（有主选中时）
+            if (selectedLayerIndex >= 0)
+            {
+                selectedLayerIndices.Add(selectedLayerIndex);
+            }
+        }
+
+        private void HandleLayerRowLeftClick(int index)
+        {
+            if (index < 0 || index >= workingSkin.layers.Count)
+            {
+                return;
+            }
+
+            bool shift = Event.current.shift;
+
+            if (shift)
+            {
+                // Shift+左键：增量多选（再次点击可取消）
+                if (!selectedLayerIndices.Add(index))
+                {
+                    selectedLayerIndices.Remove(index);
+                }
+                selectedLayerIndex = selectedLayerIndices.Count > 0 ? selectedLayerIndices.Min() : -1;
+            }
+            else
+            {
+                // 普通左键：单选
+                selectedLayerIndices.Clear();
+                selectedLayerIndices.Add(index);
+                selectedLayerIndex = index;
+            }
+
+            selectedNodePath = "";
+            SanitizeLayerSelection();
+        }
+
+        private void NormalizeSelectedLayerScales()
+        {
+            var targets = selectedLayerIndices
+                .Where(i => i >= 0 && i < workingSkin.layers.Count)
+                .Distinct()
+                .ToList();
+
+            if (targets.Count == 0 && selectedLayerIndex >= 0 && selectedLayerIndex < workingSkin.layers.Count)
+            {
+                targets.Add(selectedLayerIndex);
+            }
+
+            if (targets.Count == 0)
+            {
+                ShowStatus("请先选择至少一个图层");
+                return;
+            }
+
+            CaptureUndoSnapshot();
+
+            int changed = 0;
+            foreach (int idx in targets)
+            {
+                var layer = workingSkin.layers[idx];
+                if (layer.scale != Vector2.one)
+                {
+                    layer.scale = Vector2.one;
+                    changed++;
+                }
+            }
+
+            if (changed > 0)
+            {
+                isDirty = true;
+                RefreshPreview();
+                ShowStatus($"已归一化 {changed} 个图层缩放到 1.00");
+            }
+            else
+            {
+                ShowStatus("所选图层缩放已是 1.00");
+            }
+        }
+
+        // ─────────────────────────────────────────────
         // 事件处理
         // ─────────────────────────────────────────────
 
@@ -1698,22 +1926,87 @@ namespace CharacterStudio.UI
                 ShowStatus("CS_Studio_Err_DefNameEmpty".Translate());
                 return;
             }
-            
+
             if (!UIHelper.IsValidDefName(workingSkin.defName))
             {
                 ShowStatus("CS_Studio_Err_DefNameInvalid".Translate());
                 return;
             }
-            
+
             if (string.IsNullOrEmpty(workingSkin.label))
             {
                 workingSkin.label = workingSkin.defName;
             }
-            
-            // TODO: 实现实际保存逻辑（保存到文件或数据库）
-            // 当前仅标记为已保存
-            ShowStatus("CS_Studio_Msg_SaveSuccess".Translate());
-            isDirty = false;
+
+            // 保存到配置目录下的 CharacterStudio/Skins 文件夹
+            string exportDir = Path.Combine(GenFilePaths.ConfigFolderPath, "CharacterStudio", "Skins");
+            string fileName = workingSkin.defName + ".xml";
+            string filePath = Path.Combine(exportDir, fileName);
+
+            try
+            {
+                SkinSaver.SaveSkinDef(workingSkin, filePath);
+
+                // 注册到运行时 DefDatabase，确保无需重启即可在菜单中出现
+                var registered = PawnSkinDefRegistry.RegisterOrReplace(workingSkin.Clone());
+                workingSkin = registered;
+
+                // 如有目标 Pawn，保存时立即应用并触发渲染刷新
+                if (targetPawn != null)
+                {
+                    if (PawnSkinRuntimeUtility.ApplySkinToPawn(targetPawn, registered))
+                    {
+                        Messages.Message(
+                            "CS_Appearance_Applied".Translate(registered.label ?? registered.defName, targetPawn.LabelShort),
+                            MessageTypeDefOf.PositiveEvent,
+                            false
+                        );
+                    }
+                }
+
+                ShowStatus("CS_Studio_Msg_SaveSuccess".Translate());
+                Messages.Message($"已保存至: {filePath}", MessageTypeDefOf.PositiveEvent, false);
+                isDirty = false;
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"[CharacterStudio] 保存失败: {ex}");
+                ShowStatus("CS_Studio_Err_SaveFailed".Translate());
+            }
+        }
+
+        private void OnApplyToTargetPawn()
+        {
+            if (targetPawn == null)
+            {
+                ShowStatus("请先从地图导入一个角色作为应用目标");
+                return;
+            }
+
+            try
+            {
+                // 应用时使用克隆，避免运行时引用与编辑态对象互相污染
+                var runtimeSkin = workingSkin.Clone();
+                if (PawnSkinRuntimeUtility.ApplySkinToPawn(targetPawn, runtimeSkin))
+                {
+                    RefreshRenderTree();
+                    ShowStatus($"已应用到 {targetPawn.LabelShort}");
+                    Messages.Message(
+                        "CS_Appearance_Applied".Translate(runtimeSkin.label ?? runtimeSkin.defName, targetPawn.LabelShort),
+                        MessageTypeDefOf.PositiveEvent,
+                        false
+                    );
+                }
+                else
+                {
+                    ShowStatus("应用失败：目标角色缺少皮肤组件");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"[CharacterStudio] 应用到目标角色失败: {ex}");
+                ShowStatus("应用失败，请查看日志");
+            }
         }
 
         private void OnExportMod()
@@ -1753,6 +2046,7 @@ namespace CharacterStudio.UI
 
         private void OnAddLayer()
         {
+            CaptureUndoSnapshot();
             var newLayer = new PawnLayerConfig
             {
                 layerName = $"Layer {workingSkin.layers.Count + 1}",
@@ -1768,14 +2062,35 @@ namespace CharacterStudio.UI
         {
             if (selectedLayerIndex >= 0 && selectedLayerIndex < workingSkin.layers.Count)
             {
-                workingSkin.layers.RemoveAt(selectedLayerIndex);
-                if (selectedLayerIndex >= workingSkin.layers.Count)
-                {
-                    selectedLayerIndex = workingSkin.layers.Count - 1;
-                }
+                int removedIndex = selectedLayerIndex;
+                CaptureUndoSnapshot();
+                workingSkin.layers.RemoveAt(removedIndex);
+                RemapSelectionAfterRemoveIndex(removedIndex);
                 isDirty = true;
                 RefreshPreview();
             }
+        }
+
+        private void RemapSelectionAfterRemoveIndex(int removedIndex)
+        {
+            var remapped = new HashSet<int>();
+            foreach (int idx in selectedLayerIndices)
+            {
+                if (idx == removedIndex) continue;
+                remapped.Add(idx > removedIndex ? idx - 1 : idx);
+            }
+            selectedLayerIndices = remapped;
+
+            if (selectedLayerIndex == removedIndex)
+            {
+                selectedLayerIndex = -1;
+            }
+            else if (selectedLayerIndex > removedIndex)
+            {
+                selectedLayerIndex--;
+            }
+
+            SanitizeLayerSelection();
         }
 
         private void ShowLayerOrderMenu()
@@ -2005,11 +2320,12 @@ namespace CharacterStudio.UI
                             }
                         }
                         selectedLayerIndex = 0;
+                        targetPawn = pawn;
                         isDirty = true;
                         RefreshPreview();
                         // 刷新渲染树快照，以便在树视图中显示新注入的节点
                         RefreshRenderTree();
-                        ShowStatus("CS_Studio_Msg_Imported".Translate(pawn.LabelShort, layers.Count));
+                        ShowStatus($"已导入并绑定目标角色: {pawn.LabelShort}");
                     }),
                     new FloatMenuOption("CS_Studio_Ctx_AppendImport".Translate(), () =>
                     {
@@ -2034,11 +2350,12 @@ namespace CharacterStudio.UI
                             }
                         }
                         selectedLayerIndex = workingSkin.layers.Count - layers.Count;
+                        targetPawn = pawn;
                         isDirty = true;
                         RefreshPreview();
                         // 刷新渲染树快照
                         RefreshRenderTree();
-                        ShowStatus("CS_Studio_Msg_Appended".Translate(pawn.LabelShort, layers.Count));
+                        ShowStatus($"已追加导入并绑定目标角色: {pawn.LabelShort}");
                     }),
                     new FloatMenuOption("CS_Studio_Btn_Cancel".Translate(), () => { })
                 };
@@ -2068,11 +2385,12 @@ namespace CharacterStudio.UI
                     }
                 }
                 selectedLayerIndex = 0;
+                targetPawn = pawn;
                 isDirty = true;
                 RefreshPreview();
                 // 刷新渲染树快照
                 RefreshRenderTree();
-                ShowStatus("CS_Studio_Msg_Imported".Translate(pawn.LabelShort, layers.Count));
+                ShowStatus($"已导入并绑定目标角色: {pawn.LabelShort}");
             }
         }
 
@@ -2086,6 +2404,13 @@ namespace CharacterStudio.UI
             {
                 mannequin = new MannequinManager();
                 mannequin.Initialize();
+
+                if (targetPawn != null)
+                {
+                    mannequin.SetRace(targetPawn.def);
+                    mannequin.CopyAppearanceFrom(targetPawn);
+                }
+
                 RefreshPreview();
             }
             catch (Exception ex)

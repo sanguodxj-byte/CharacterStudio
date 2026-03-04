@@ -111,6 +111,9 @@ namespace CharacterStudio.Rendering
                 // HAR 兼容性：补丁所有 PawnRenderNode 的派生类的 GraphicFor 方法
                 // 这确保了任何模组添加的自定义渲染节点类型也能被正确隐藏
                 PatchAllDerivedGraphicForMethods(harmony, graphicPrefix);
+
+                // HAR 兼容性：补丁所有 PawnRenderNodeWorker 的派生类的 CanDrawNow 方法
+                PatchAllDerivedCanDrawNowMethods(harmony, canDrawPrefix);
             }
             catch (Exception ex)
             {
@@ -182,6 +185,55 @@ namespace CharacterStudio.Rendering
             catch (Exception ex)
             {
                 Log.Warning($"[CharacterStudio] 枚举派生类时出错: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// HAR 兼容性：补丁所有 PawnRenderNodeWorker 派生类的 CanDrawNow 方法
+        /// </summary>
+        private static void PatchAllDerivedCanDrawNowMethods(Harmony harmony, MethodInfo canDrawPrefix)
+        {
+            if (canDrawPrefix == null) return;
+            
+            try
+            {
+                var workerType = typeof(PawnRenderNodeWorker);
+                var patchedTypes = new HashSet<Type> { workerType };
+                
+                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    try
+                    {
+                        foreach (var type in assembly.GetTypes())
+                        {
+                            if (patchedTypes.Contains(type)) continue;
+                            if (!workerType.IsAssignableFrom(type)) continue;
+                            if (type.IsAbstract) continue;
+                            
+                            var method = type.GetMethod("CanDrawNow",
+                                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+                            
+                            if (method != null)
+                            {
+                                try
+                                {
+                                    harmony.Patch(method, prefix: new HarmonyMethod(canDrawPrefix));
+                                    patchedTypes.Add(type);
+                                    Log.Message($"[CharacterStudio] {type.FullName}.CanDrawNow 补丁已应用");
+                                }
+                                catch (Exception ex)
+                                {
+                                    Log.Warning($"[CharacterStudio] 无法补丁 {type.FullName}.CanDrawNow: {ex.Message}");
+                                }
+                            }
+                        }
+                    }
+                    catch { }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warning($"[CharacterStudio] 补丁派生 CanDrawNow 时出错: {ex.Message}");
             }
         }
 

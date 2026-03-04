@@ -240,7 +240,9 @@
     <CS_Appearance_Applied>Applied appearance to {1}: {0}</CS_Appearance_Applied>
     <CS_Appearance_Cleared>Restored default appearance for {0}</CS_Appearance_Cleared>
     <CS_Studio_OpenEditor>Open Skin Editor</CS_Studio_OpenEditor>
-
+    <CS_MainButton_CharacterStudio_Label>Character Studio</CS_MainButton_CharacterStudio_Label>
+    <CS_MainButton_CharacterStudio_Desc>Open Character Studio from the bottom main menu</CS_MainButton_CharacterStudio_Desc>
+ 
     <!-- Summon Items -->
     <CS_Summon_Use>Summon {0}</CS_Summon_Use>
     <CS_Summon_Success>Successfully summoned: {0}</CS_Summon_Success>

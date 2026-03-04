@@ -1,5 +1,6 @@
 using System.Reflection;
 using HarmonyLib;
+using CharacterStudio.Core;
 using CharacterStudio.Rendering;
 using Verse;
 
@@ -33,6 +34,9 @@ namespace CharacterStudio
 
             // 初始化 Harmony
             InitializeHarmony();
+
+            // 加载运行时皮肤定义
+            PawnSkinDefRegistry.LoadFromConfig();
 
             // 应用补丁
             ApplyPatches();

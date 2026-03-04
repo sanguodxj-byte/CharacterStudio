@@ -148,9 +148,18 @@ namespace CharacterStudio.Core
         {
             base.PostExposeData();
             Scribe_Values.Look(ref activeSkinDefName, "activeSkinDefName");
+
             if (Scribe.mode == LoadSaveMode.PostLoadInit && !string.IsNullOrEmpty(activeSkinDefName))
             {
                 activeSkin = DefDatabase<PawnSkinDef>.GetNamedSilentFail(activeSkinDefName);
+                if (activeSkin == null)
+                {
+                    activeSkin = PawnSkinDefRegistry.TryGet(activeSkinDefName);
+                    if (activeSkin != null)
+                    {
+                        activeSkinDefName = activeSkin.defName;
+                    }
+                }
             }
         }
     }

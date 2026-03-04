@@ -162,23 +162,11 @@ namespace CharacterStudio.UI
 
             try
             {
-                // 获取或添加皮肤组件
-                var skinComp = mannequinPawn.GetComp<CompPawnSkin>();
-                if (skinComp == null)
+                if (!PawnSkinRuntimeUtility.ApplySkinToPawn(mannequinPawn, skinDef))
                 {
-                    // 动态添加组件
-                    skinComp = new CompPawnSkin();
-                    skinComp.parent = mannequinPawn;
-                    mannequinPawn.AllComps.Add(skinComp);
-                    skinComp.Initialize(new CompProperties_PawnSkin());
+                    return;
                 }
 
-                // 应用皮肤
-                skinComp.ActiveSkin = skinDef;
-                
-                // 刷新隐藏节点缓存（处理 hiddenPaths 变更）
-                Patch_PawnRenderTree.RefreshHiddenNodes(mannequinPawn);
-                
                 // 刷新渲染 (强制 PortraitsCache 更新)
                 mannequinPawn.Drawer.renderer.SetAllGraphicsDirty();
                 PortraitsCache.SetDirty(mannequinPawn);
@@ -345,15 +333,6 @@ namespace CharacterStudio.UI
                     // 确保渲染器初始化
                     mannequinPawn.Drawer.renderer.SetAllGraphicsDirty();
                     
-                    // 确保有 CompPawnSkin
-                    if (mannequinPawn.GetComp<CompPawnSkin>() == null)
-                    {
-                        var skinComp = new CompPawnSkin();
-                        skinComp.parent = mannequinPawn;
-                        mannequinPawn.AllComps.Add(skinComp);
-                        skinComp.Initialize(new CompProperties_PawnSkin());
-                    }
-
                     Log.Message("[CharacterStudio] 人偶创建成功");
                 }
             }

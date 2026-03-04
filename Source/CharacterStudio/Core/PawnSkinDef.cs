@@ -102,8 +102,8 @@ namespace CharacterStudio.Core
         {
             var clone = new PawnSkinDef
             {
-                defName = this.defName + "_Copy",
-                label = this.label + " (Copy)",
+                defName = this.defName,
+                label = this.label,
                 description = this.description,
                 hideVanillaHead = this.hideVanillaHead,
                 hideVanillaHair = this.hideVanillaHair,

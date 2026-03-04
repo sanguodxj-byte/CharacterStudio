@@ -51,7 +51,11 @@ namespace CharacterStudio.Core
             {
                 return null;
             }
-            return DefDatabase<PawnSkinDef>.GetNamedSilentFail(skinDefName);
+
+            var def = DefDatabase<PawnSkinDef>.GetNamedSilentFail(skinDefName);
+            if (def != null) return def;
+
+            return PawnSkinDefRegistry.TryGet(skinDefName);
         }
     }
 }

@@ -13,6 +13,8 @@ namespace CharacterStudio.Rendering
     /// </summary>
     public class PawnRenderNodeWorker_CustomLayer : PawnRenderNodeWorker
     {
+        // 避免在每帧重复打印同一节点的缩放回退日志
+        private static readonly System.Collections.Generic.HashSet<int> _loggedScaleFallbackNodes = new System.Collections.Generic.HashSet<int>();
         /// <summary>
         /// 判断是否可以绘制
         /// </summary>
@@ -128,26 +130,44 @@ namespace CharacterStudio.Rendering
         /// </summary>
         public override Vector3 ScaleFor(PawnRenderNode node, PawnDrawParms parms)
         {
-            // 注意：base.ScaleFor 默认会应用 node.Props.drawSize。
-            // 但我们在 GetGraphic 中已经使用 drawSize 创建了 Graphic，这决定了 Mesh 的大小。
-            // 如果 ScaleFor 再返回 drawSize，会导致双重缩放 (Mesh大小 * 矩阵缩放)。
-            // 因此，我们这里不调用 base.ScaleFor，而是手动构建缩放向量。
-            
-            Vector3 scale = Vector3.one;
+            // 先走基类：在部分版本/节点路径中，base 会正确应用 props.drawSize
+            Vector3 scale = base.ScaleFor(node, parms);
 
-            // 应用调试缩放
-            if (node.debugScale != 1f)
-            {
-                scale *= node.debugScale;
-            }
-            
             if (node is PawnRenderNode_Custom customNode && customNode.config != null)
             {
+                // 关键修复：当 base 未体现 drawSize（常见为 1,1,1）时，回退到 config.scale。
+                // 这样缩放滑条修改 config.scale 后可立即生效，不依赖节点重建。
+                bool baseLooksIdentity = Mathf.Abs(scale.x - 1f) < 0.0001f
+                                         && Mathf.Abs(scale.y - 1f) < 0.0001f
+                                         && Mathf.Abs(scale.z - 1f) < 0.0001f;
+
+                if (baseLooksIdentity)
+                {
+                    Vector2 cfg = customNode.config.scale;
+                    float sx = cfg.x <= 0f ? 1f : cfg.x;
+                    float sy = cfg.y <= 0f ? 1f : cfg.y;
+                    // RimWorld 角色渲染常用 X/Z 平面；Y 维保持 1
+                    scale = new Vector3(sx, 1f, sy);
+
+                    int nodeId = node.GetHashCode();
+                    if (!_loggedScaleFallbackNodes.Contains(nodeId))
+                    {
+                        _loggedScaleFallbackNodes.Add(nodeId);
+                        Log.Message($"[CharacterStudio][ScaleDebug] Fallback scale applied: layer={customNode.config.layerName}, cfg=({sx:F2},{sy:F2}), nodeId={nodeId}");
+                    }
+                }
+
                 // 应用呼吸动画缩放
                 if (customNode.config.animationType == LayerAnimationType.Breathe)
                 {
                     scale *= customNode.currentAnimScale;
                 }
+            }
+
+            // 应用调试缩放
+            if (node.debugScale != 1f)
+            {
+                scale *= node.debugScale;
             }
 
             return scale;

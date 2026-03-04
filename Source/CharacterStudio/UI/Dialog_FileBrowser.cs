@@ -21,9 +21,13 @@ namespace CharacterStudio.UI
 
         public Dialog_FileBrowser(string initialPath, Action<string> onSelect, string fileFilter = "*.png")
         {
-            this.currentPath = string.IsNullOrEmpty(initialPath) || !Directory.Exists(initialPath) 
-                ? Environment.GetFolderPath(Environment.SpecialFolder.Desktop) 
-                : initialPath;
+            // 默认总是落在 Mods 目录；仅当传入的是“存在的绝对目录”时才使用传入值
+            this.currentPath = (!string.IsNullOrWhiteSpace(initialPath)
+                && Path.IsPathRooted(initialPath)
+                && Directory.Exists(initialPath))
+                ? initialPath
+                : GenFilePaths.ModsFolderPath;
+
             this.onFileSelected = onSelect;
             this.filter = fileFilter;
             this.doCloseX = true;

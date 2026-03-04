@@ -262,7 +262,9 @@
     <CS_Appearance_Applied>已为 {1} 应用外观：{0}</CS_Appearance_Applied>
     <CS_Appearance_Cleared>已恢复 {0} 的默认外观</CS_Appearance_Cleared>
     <CS_Studio_OpenEditor>打开皮肤编辑器</CS_Studio_OpenEditor>
-
+    <CS_MainButton_CharacterStudio_Label>角色工作室</CS_MainButton_CharacterStudio_Label>
+    <CS_MainButton_CharacterStudio_Desc>打开 Character Studio 主界面入口</CS_MainButton_CharacterStudio_Desc>
+ 
     <!-- 召唤物品 -->
     <CS_Summon_Use>召唤 {0}</CS_Summon_Use>
     <CS_Summon_Success>成功召唤：{0}</CS_Summon_Success>

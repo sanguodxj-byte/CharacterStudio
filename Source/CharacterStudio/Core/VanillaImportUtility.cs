@@ -184,6 +184,25 @@ namespace CharacterStudio.Core
                         }
                     }
                 }
+
+                // 针对 HAR 的 Mask 颜色 (colorTwo) 进行额外推断
+                // 如果 Shader 是 CutoutComplex 且 colorChannel 是 hair/skin，那么 colorTwo 可能是对应的第二颜色
+                // 但 HAR 通常在 skin 通道使用 skinColorSecond，在 hair 通道使用 hairColorSecond (如果有的话)
+                // 目前 RimWorld 原版 hair 没有第二颜色，但 HAR 可能有。
+                // 简单的逻辑：如果 colorTwoSource 仍然是 Fixed，且 colorSource 是动态的，尝试看看 colorTwo 是否也接近该动态源
+                if (detectedSourceTwo == LayerColorSource.Fixed && detectedSource != LayerColorSource.Fixed && pawn?.story != null)
+                {
+                    // 如果主颜色是 Hair，副颜色也接近 Hair，则绑定到 Hair
+                    if (detectedSource == LayerColorSource.PawnHair && IsColorSimilar(effectiveColorTwo, pawn.story.HairColor, 0.2f))
+                    {
+                        detectedSourceTwo = LayerColorSource.PawnHair;
+                    }
+                    // 如果主颜色是 Skin，副颜色也接近 Skin，则绑定到 Skin
+                    else if (detectedSource == LayerColorSource.PawnSkin && IsColorSimilar(effectiveColorTwo, pawn.story.SkinColor, 0.2f))
+                    {
+                        detectedSourceTwo = LayerColorSource.PawnSkin;
+                    }
+                }
                 
                 // 简化 Shader 名称
                 string simpleShaderName = "Cutout";

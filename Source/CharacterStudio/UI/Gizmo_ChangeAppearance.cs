@@ -67,17 +67,7 @@ namespace CharacterStudio.UI
                     );
                 }
 
-                // 添加打开编辑器选项
-                yield return new FloatMenuOption(
-                    "CS_Studio_OpenEditor".Translate(),
-                    () => OpenEditor()
-                );
             }
-        }
-
-        private void OpenEditor()
-        {
-            Find.WindowStack.Add(new Dialog_SkinEditor());
         }
 
         public override void ProcessInput(Event ev)
@@ -94,16 +84,12 @@ namespace CharacterStudio.UI
 
         private void ApplySkin(PawnSkinDef skin)
         {
-            var comp = pawn.GetComp<CompPawnSkin>();
-            if (comp == null)
+            if (!PawnSkinRuntimeUtility.ApplySkinToPawn(pawn, skin))
             {
-                // 动态添加组件（如果可能）
-                Log.Warning($"[CharacterStudio] Pawn {pawn.LabelShort} 没有 CompPawnSkin，无法应用皮肤");
                 Messages.Message("CS_Appearance_NoComp".Translate(), MessageTypeDefOf.RejectInput, false);
                 return;
             }
 
-            comp.ActiveSkin = skin;
             Messages.Message(
                 "CS_Appearance_Applied".Translate(skin.label ?? skin.defName, pawn.LabelShort),
                 MessageTypeDefOf.PositiveEvent,
@@ -113,10 +99,8 @@ namespace CharacterStudio.UI
 
         private void ClearSkin()
         {
-            var comp = pawn.GetComp<CompPawnSkin>();
-            if (comp == null) return;
+            if (!PawnSkinRuntimeUtility.ClearSkinFromPawn(pawn)) return;
 
-            comp.ClearSkin();
             Messages.Message(
                 "CS_Appearance_Cleared".Translate(pawn.LabelShort),
                 MessageTypeDefOf.NeutralEvent,
