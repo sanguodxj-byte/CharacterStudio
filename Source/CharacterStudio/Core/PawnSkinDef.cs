@@ -1,8 +1,32 @@
 using System.Collections.Generic;
+using CharacterStudio.Abilities;
 using Verse;
 
 namespace CharacterStudio.Core
 {
+    public class SkinAbilityHotkeyConfig
+    {
+        public bool enabled = false;
+        public string qAbilityDefName = "";
+        public string wAbilityDefName = "";
+        public string eAbilityDefName = "";
+        public string rAbilityDefName = "";
+        public string wComboAbilityDefName = "";
+
+        public SkinAbilityHotkeyConfig Clone()
+        {
+            return new SkinAbilityHotkeyConfig
+            {
+                enabled = enabled,
+                qAbilityDefName = qAbilityDefName,
+                wAbilityDefName = wAbilityDefName,
+                eAbilityDefName = eAbilityDefName,
+                rAbilityDefName = rAbilityDefName,
+                wComboAbilityDefName = wComboAbilityDefName
+            };
+        }
+    }
+
     /// <summary>
     /// 皮肤定义 (Def)
     /// 定义一个完整的角色皮肤，包含多个图层和配置选项
@@ -65,6 +89,12 @@ namespace CharacterStudio.Core
         /// <summary>面部表情配置</summary>
         public PawnFaceConfig faceConfig = new PawnFaceConfig();
 
+        /// <summary>技能列表（供运行时热键施法与导出使用）</summary>
+        public List<ModularAbilityDef> abilities = new List<ModularAbilityDef>();
+
+        /// <summary>QWER 技能热键映射</summary>
+        public SkinAbilityHotkeyConfig abilityHotkeys = new SkinAbilityHotkeyConfig();
+
         // ─────────────────────────────────────────────
         // 运行时方法
         // ─────────────────────────────────────────────
@@ -113,7 +143,8 @@ namespace CharacterStudio.Core
                 author = this.author,
                 version = this.version,
                 previewTexPath = this.previewTexPath,
-                faceConfig = this.faceConfig?.Clone() ?? new PawnFaceConfig()
+                faceConfig = this.faceConfig?.Clone() ?? new PawnFaceConfig(),
+                abilityHotkeys = this.abilityHotkeys?.Clone() ?? new SkinAbilityHotkeyConfig()
             };
 
             // 复制图层
@@ -132,6 +163,18 @@ namespace CharacterStudio.Core
 
             // 复制隐藏路径
             clone.hiddenPaths = new List<string>(this.hiddenPaths);
+
+            // 复制技能
+            if (this.abilities != null)
+            {
+                foreach (var ability in this.abilities)
+                {
+                    if (ability != null)
+                    {
+                        clone.abilities.Add(ability.Clone());
+                    }
+                }
+            }
 
             return clone;
         }

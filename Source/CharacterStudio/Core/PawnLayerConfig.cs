@@ -45,6 +45,9 @@ namespace CharacterStudio.Core
         /// <summary>图层缩放</summary>
         public Vector2 scale = Vector2.one;
 
+        /// <summary>旋转角度（度）</summary>
+        public float rotation = 0f;
+
         /// <summary>是否根据方向翻转</summary>
         public bool flipHorizontal = false;
 
@@ -129,6 +132,7 @@ namespace CharacterStudio.Core
                 offsetNorth = this.offsetNorth,
                 drawOrder = this.drawOrder,
                 scale = this.scale,
+                rotation = this.rotation,
                 flipHorizontal = this.flipHorizontal,
                 rotDrawMode = this.rotDrawMode,
                 workerClass = this.workerClass,

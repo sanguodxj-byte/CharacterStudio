@@ -14,6 +14,39 @@ namespace CharacterStudio.Introspection
     public static class RenderTreeParser
     {
         /// <summary>
+        /// 是否在主线程。使用反射以兼容不同 RimWorld/Verse 版本。
+        /// </summary>
+        private static bool IsMainThread()
+        {
+            try
+            {
+                var unityDataType = AccessTools.TypeByName("Verse.UnityData");
+                if (unityDataType != null)
+                {
+                    var prop = AccessTools.Property(unityDataType, "IsInMainThread");
+                    if (prop != null)
+                    {
+                        object value = prop.GetValue(null, null);
+                        if (value is bool b) return b;
+                    }
+
+                    var field = AccessTools.Field(unityDataType, "IsInMainThread");
+                    if (field != null)
+                    {
+                        object value = field.GetValue(null);
+                        if (value is bool b) return b;
+                    }
+                }
+            }
+            catch
+            {
+                // 忽略并走保守默认值
+            }
+
+            // 无法判断时默认 true，避免影响正常主线程逻辑
+            return true;
+        }
+        /// <summary>
         /// Entry point: Captures the entire tree of a Pawn.
         /// 包含强制树构建逻辑，确保渲染树已初始化
         /// </summary>
@@ -94,7 +127,7 @@ namespace CharacterStudio.Introspection
                 string resolvedTexPath = GetNodeTexturePath(gameNode, pawn);
 
                 // 捕获 Graphic 类类型，确保我们可以正确重建多方向图形
-                Type graphicClass = null;
+                Type? graphicClass = null;
                 Vector2 graphicDrawSize = Vector2.one;
                 Color graphicColor = Color.white;
                 Color graphicColorTwo = Color.white;
@@ -108,34 +141,37 @@ namespace CharacterStudio.Introspection
 
                 try
                 {
-                    // 1. 优先尝试使用公共 API 获取当前 Graphic
-                    var graphic = gameNode.GraphicFor(pawn);
-                    
-                    // 2. 如果公共 API 返回空，尝试反射访问内部属性
-                    if (graphic == null)
+                    if (IsMainThread())
                     {
-                        graphic = AccessTools.Property(typeof(PawnRenderNode), "Graphic")?.GetValue(gameNode, null) as Graphic;
-                    }
+                        // 1. 优先尝试使用公共 API 获取当前 Graphic
+                        var graphic = gameNode.GraphicFor(pawn);
 
-                    if (graphic != null)
-                    {
-                        graphicClass = graphic.GetType();
-                        graphicDrawSize = graphic.drawSize;
-                        graphicColor = graphic.color;
-                        graphicColorTwo = graphic.colorTwo;
-                        
-                        if (graphic.Shader != null)
+                        // 2. 如果公共 API 返回空，尝试反射访问内部属性
+                        if (graphic == null)
                         {
-                            shaderName = graphic.Shader.name;
+                            graphic = AccessTools.Property(typeof(PawnRenderNode), "Graphic")?.GetValue(gameNode, null) as Graphic;
                         }
-                        
-                        // 探测 Mask
-                        if (!string.IsNullOrEmpty(graphic.path))
+
+                        if (graphic != null)
                         {
-                            string potentialMask = graphic.path + "_m";
-                            if (ContentFinder<Texture2D>.Get(potentialMask, false) != null)
+                            graphicClass = graphic.GetType();
+                            graphicDrawSize = graphic.drawSize;
+                            graphicColor = graphic.color;
+                            graphicColorTwo = graphic.colorTwo;
+
+                            if (graphic.Shader != null)
                             {
-                                maskPath = potentialMask;
+                                shaderName = graphic.Shader.name;
+                            }
+
+                            // 探测 Mask（仅主线程可访问资源）
+                            if (!string.IsNullOrEmpty(graphic.path))
+                            {
+                                string potentialMask = graphic.path + "_m";
+                                if (ContentFinder<Texture2D>.Get(potentialMask, false) != null)
+                                {
+                                    maskPath = potentialMask;
+                                }
                             }
                         }
                     }
@@ -150,18 +186,22 @@ namespace CharacterStudio.Introspection
                     facing = pawn.Rotation
                 };
 
-                // 获取运行时颜色 - 使用 node.ColorFor() 而非静态 props.color
+                // 获取运行时颜色 - 仅主线程调用 ColorFor，非主线程回退到 props.color
                 Color nodeColor = Color.white;
-                try
+                if (props?.color != null)
                 {
-                    nodeColor = gameNode.ColorFor(pawn);
+                    nodeColor = props.color.Value;
                 }
-                catch
+
+                if (IsMainThread())
                 {
-                    // 回退到 props.color
-                    if (props?.color != null)
+                    try
                     {
-                        nodeColor = props.color.Value;
+                        nodeColor = gameNode.ColorFor(pawn);
+                    }
+                    catch
+                    {
+                        // 保持 props 回退值
                     }
                 }
                 
@@ -204,10 +244,9 @@ namespace CharacterStudio.Introspection
                         }
                     }
                 }
-                catch (Exception ex)
+                catch
                 {
                     // 仅在调试模式下记录，避免刷屏
-                    // Log.Warning($"[CS.HAR] Failed to extract colorChannel for {label}: {ex.Message}");
                 }
 
                 // ===== HAR 调试: 详细记录节点信息 =====
@@ -394,166 +433,193 @@ namespace CharacterStudio.Introspection
                 
                 try
                 {
-                    // ===== 核心修正: 使用固定朝向获取基准数据 =====
-                    // CS 的 offset 是基于 South 朝向的基准值
-                    // offsetEast 是 East 朝向相对于 South 的额外偏移
-                    var worker = gameNode.Worker;
-                    
-                    if (worker != null)
+                    // 非主线程：禁止调用 Worker/Transform 运行时 API，使用 props 回退
+                    if (!IsMainThread())
                     {
-                        // 创建 South 朝向的 drawParms 用于获取基准偏移
-                        var southParms = new PawnDrawParms()
+                        if (propsOffset != Vector3.zero)
                         {
-                            pawn = pawn,
-                            facing = Rot4.South
-                        };
-                        
-                        // 创建 East 朝向的 drawParms 用于获取侧面偏移
-                        var eastParms = new PawnDrawParms()
-                        {
-                            pawn = pawn,
-                            facing = Rot4.East
-                        };
-                        
-                        // 创建 North 朝向的 drawParms 用于获取北向偏移
-                        var northParms = new PawnDrawParms()
-                        {
-                            pawn = pawn,
-                            facing = Rot4.North
-                        };
-                        
-                        // 使用 South 朝向获取基准偏移
-                        Vector3 southOffset = worker.OffsetFor(gameNode, southParms, out Vector3 pivotSouth);
-                        
-                        // ===== HAR 调试: 打印 Worker 返回的偏移 =====
-                        if (isDebugNode)
-                        {
-                            Log.Message($"[CS.HAR.Debug]   - Worker类型: {worker.GetType().FullName}");
-                            Log.Message($"[CS.HAR.Debug]   - Worker.OffsetFor(South): {southOffset}");
+                            nodeOffset = propsOffset;
+                            runtimeOffset = propsOffset;
                         }
-                        
-                        // ===== 关键修复: 如果 Worker 返回零，使用 props.offset 作为回退 =====
-                        if (southOffset == Vector3.zero && propsOffset != Vector3.zero)
-                        {
-                            southOffset = propsOffset;
-                            if (isDebugNode)
-                            {
-                                Log.Message($"[CS.HAR.Debug]   - 使用 props.offset 回退: {propsOffset}");
-                            }
-                        }
-                        
-                        if (southOffset != Vector3.zero)
-                        {
-                            nodeOffset = southOffset;
-                            runtimeOffset = southOffset;
-                        }
-                        
-                        // 使用 East 朝向获取侧面偏移
-                        Vector3 eastOffset = worker.OffsetFor(gameNode, eastParms, out Vector3 pivotEast);
-                        // 计算 East 相对于 South 的差值作为 offsetEast
-                        Vector3 eastDelta = eastOffset - southOffset;
-                        
-                        // ===== 关键修复: 如果 Worker 差值为零，使用 props.offsetEast 作为回退 =====
-                        if (eastDelta == Vector3.zero && propsOffsetEast != Vector3.zero)
-                        {
-                            eastDelta = propsOffsetEast;
-                        }
-                        
-                        if (eastDelta != Vector3.zero)
-                        {
-                            runtimeOffsetEast = eastDelta;
-                        }
-                        
-                        // 使用 North 朝向获取北向偏移
-                        Vector3 northOffset = worker.OffsetFor(gameNode, northParms, out Vector3 pivotNorth);
-                        // 计算 North 相对于 South 的差值作为 offsetNorth
-                        Vector3 northDelta = northOffset - southOffset;
-                        
-                        // ===== 关键修复: 如果 Worker 差值为零，使用 props.offsetNorth 作为回退 =====
-                        if (northDelta == Vector3.zero && propsOffsetNorth != Vector3.zero)
-                        {
-                            northDelta = propsOffsetNorth;
-                        }
-                        
-                        if (northDelta != Vector3.zero)
-                        {
-                            runtimeOffsetNorth = northDelta;
-                        }
-                        
-                        // 使用 Worker.ScaleFor() 获取缩放（使用 South 朝向）
-                        Vector3 workerScale = worker.ScaleFor(gameNode, southParms);
-                        float avgScale = (workerScale.x + workerScale.z) / 2f;
-                        if (avgScale != 1f)
-                        {
-                            nodeScale = avgScale;
-                        }
-                        
-                        // 使用 Worker.RotationFor() 获取旋转（使用 South 朝向）
-                        Quaternion workerRotation = worker.RotationFor(gameNode, southParms);
-                        runtimeRotation = workerRotation.eulerAngles.y;
-                        
-                        // 获取绘制顺序
-                        nodeDrawOrder = worker.LayerFor(gameNode, southParms);
-                        
-                        runtimeDataValid = true;
-                    }
-                    else
-                    {
-                        // Worker 为空时，回退到 GetTransform（使用 South 朝向）
-                        var southParms = new PawnDrawParms()
-                        {
-                            pawn = pawn,
-                            facing = Rot4.South
-                        };
-                        
-                        gameNode.GetTransform(southParms, out Vector3 transformOffset, out _, out Quaternion rotation, out Vector3 transformScale);
-                        
-                        // ===== 关键修复: 如果 GetTransform 返回零，使用 props.offset 作为回退 =====
-                        if (transformOffset == Vector3.zero && propsOffset != Vector3.zero)
-                        {
-                            transformOffset = propsOffset;
-                        }
-                        
-                        if (transformOffset != Vector3.zero)
-                        {
-                            nodeOffset = transformOffset;
-                            runtimeOffset = transformOffset;
-                        }
-                        
-                        // 对于 East/North 偏移，直接使用 props 中的值
+
                         if (propsOffsetEast != Vector3.zero)
                         {
                             runtimeOffsetEast = propsOffsetEast;
                         }
+
                         if (propsOffsetNorth != Vector3.zero)
                         {
                             runtimeOffsetNorth = propsOffsetNorth;
                         }
-                        
-                        float avgScale = (transformScale.x + transformScale.z) / 2f;
-                        if (avgScale != 1f)
-                        {
-                            nodeScale = avgScale;
-                        }
-                        
-                        runtimeRotation = rotation.eulerAngles.y;
+
                         nodeDrawOrder = props?.baseLayer ?? 0f;
-                        runtimeDataValid = true;
+                        runtimeScale = new Vector3(nodeScale, 1f, nodeScale);
+                        runtimeColor = nodeColor;
+                        runtimeDataValid = false;
                     }
-                    
-                    // 更新运行时数据
-                    runtimeScale = new Vector3(nodeScale, 1f, nodeScale);
-                    runtimeColor = nodeColor;
-                    
-                    // ===== HAR 调试: 最终捕获的数据 =====
-                    if (isDebugNode)
+                    else
                     {
-                        Log.Message($"[CS.HAR.Debug]   - 最终 runtimeOffset: {runtimeOffset}");
-                        Log.Message($"[CS.HAR.Debug]   - 最终 runtimeScale: {runtimeScale}");
-                        Log.Message($"[CS.HAR.Debug]   - 最终 runtimeColor: {runtimeColor}");
+                        // ===== 核心修正: 使用固定朝向获取基准数据 =====
+                        // CS 的 offset 是基于 South 朝向的基准值
+                        // offsetEast 是 East 朝向相对于 South 的额外偏移
+                        var worker = gameNode.Worker;
+
+                        if (worker != null)
+                        {
+                            // 创建 South 朝向的 drawParms 用于获取基准偏移
+                            var southParms = new PawnDrawParms()
+                            {
+                                pawn = pawn,
+                                facing = Rot4.South
+                            };
+
+                            // 创建 East 朝向的 drawParms 用于获取侧面偏移
+                            var eastParms = new PawnDrawParms()
+                            {
+                                pawn = pawn,
+                                facing = Rot4.East
+                            };
+
+                            // 创建 North 朝向的 drawParms 用于获取北向偏移
+                            var northParms = new PawnDrawParms()
+                            {
+                                pawn = pawn,
+                                facing = Rot4.North
+                            };
+
+                            // 使用 South 朝向获取基准偏移
+                            Vector3 southOffset = worker.OffsetFor(gameNode, southParms, out Vector3 pivotSouth);
+
+                            // ===== HAR 调试: 打印 Worker 返回的偏移 =====
+                            if (isDebugNode)
+                            {
+                                Log.Message($"[CS.HAR.Debug]   - Worker类型: {worker.GetType().FullName}");
+                                Log.Message($"[CS.HAR.Debug]   - Worker.OffsetFor(South): {southOffset}");
+                            }
+
+                            // ===== 关键修复: 如果 Worker 返回零，使用 props.offset 作为回退 =====
+                            if (southOffset == Vector3.zero && propsOffset != Vector3.zero)
+                            {
+                                southOffset = propsOffset;
+                                if (isDebugNode)
+                                {
+                                    Log.Message($"[CS.HAR.Debug]   - 使用 props.offset 回退: {propsOffset}");
+                                }
+                            }
+
+                            if (southOffset != Vector3.zero)
+                            {
+                                nodeOffset = southOffset;
+                                runtimeOffset = southOffset;
+                            }
+
+                            // 使用 East 朝向获取侧面偏移
+                            Vector3 eastOffset = worker.OffsetFor(gameNode, eastParms, out Vector3 pivotEast);
+                            // 计算 East 相对于 South 的差值作为 offsetEast
+                            Vector3 eastDelta = eastOffset - southOffset;
+
+                            // ===== 关键修复: 如果 Worker 差值为零，使用 props.offsetEast 作为回退 =====
+                            if (eastDelta == Vector3.zero && propsOffsetEast != Vector3.zero)
+                            {
+                                eastDelta = propsOffsetEast;
+                            }
+
+                            if (eastDelta != Vector3.zero)
+                            {
+                                runtimeOffsetEast = eastDelta;
+                            }
+
+                            // 使用 North 朝向获取北向偏移
+                            Vector3 northOffset = worker.OffsetFor(gameNode, northParms, out Vector3 pivotNorth);
+                            // 计算 North 相对于 South 的差值作为 offsetNorth
+                            Vector3 northDelta = northOffset - southOffset;
+
+                            // ===== 关键修复: 如果 Worker 差值为零，使用 props.offsetNorth 作为回退 =====
+                            if (northDelta == Vector3.zero && propsOffsetNorth != Vector3.zero)
+                            {
+                                northDelta = propsOffsetNorth;
+                            }
+
+                            if (northDelta != Vector3.zero)
+                            {
+                                runtimeOffsetNorth = northDelta;
+                            }
+
+                            // 使用 Worker.ScaleFor() 获取缩放（使用 South 朝向）
+                            Vector3 workerScale = worker.ScaleFor(gameNode, southParms);
+                            float avgScale = (workerScale.x + workerScale.z) / 2f;
+                            if (avgScale != 1f)
+                            {
+                                nodeScale = avgScale;
+                            }
+
+                            // 使用 Worker.RotationFor() 获取旋转（使用 South 朝向）
+                            Quaternion workerRotation = worker.RotationFor(gameNode, southParms);
+                            runtimeRotation = workerRotation.eulerAngles.y;
+
+                            // 获取绘制顺序
+                            nodeDrawOrder = worker.LayerFor(gameNode, southParms);
+
+                            runtimeDataValid = true;
+                        }
+                        else
+                        {
+                            // Worker 为空时，回退到 GetTransform（使用 South 朝向）
+                            var southParms = new PawnDrawParms()
+                            {
+                                pawn = pawn,
+                                facing = Rot4.South
+                            };
+
+                            gameNode.GetTransform(southParms, out Vector3 transformOffset, out _, out Quaternion rotation, out Vector3 transformScale);
+
+                            // ===== 关键修复: 如果 GetTransform 返回零，使用 props.offset 作为回退 =====
+                            if (transformOffset == Vector3.zero && propsOffset != Vector3.zero)
+                            {
+                                transformOffset = propsOffset;
+                            }
+
+                            if (transformOffset != Vector3.zero)
+                            {
+                                nodeOffset = transformOffset;
+                                runtimeOffset = transformOffset;
+                            }
+
+                            // 对于 East/North 偏移，直接使用 props 中的值
+                            if (propsOffsetEast != Vector3.zero)
+                            {
+                                runtimeOffsetEast = propsOffsetEast;
+                            }
+                            if (propsOffsetNorth != Vector3.zero)
+                            {
+                                runtimeOffsetNorth = propsOffsetNorth;
+                            }
+
+                            float avgScale = (transformScale.x + transformScale.z) / 2f;
+                            if (avgScale != 1f)
+                            {
+                                nodeScale = avgScale;
+                            }
+
+                            runtimeRotation = rotation.eulerAngles.y;
+                            nodeDrawOrder = props?.baseLayer ?? 0f;
+                            runtimeDataValid = true;
+                        }
+
+                        // 更新运行时数据
+                        runtimeScale = new Vector3(nodeScale, 1f, nodeScale);
+                        runtimeColor = nodeColor;
+
+                        // ===== HAR 调试: 最终捕获的数据 =====
+                        if (isDebugNode)
+                        {
+                            Log.Message($"[CS.HAR.Debug]   - 最终 runtimeOffset: {runtimeOffset}");
+                            Log.Message($"[CS.HAR.Debug]   - 最终 runtimeScale: {runtimeScale}");
+                            Log.Message($"[CS.HAR.Debug]   - 最终 runtimeColor: {runtimeColor}");
+                        }
                     }
                 }
-                catch (Exception ex)
+                catch
                 {
                     // 回退到 debug 值
                     nodeOffset = gameNode.debugOffset;
@@ -656,6 +722,16 @@ namespace CharacterStudio.Introspection
                     return props.texPath;
                 }
 
+                // 线程保护：非主线程时禁止触发任何可能加载资源的访问
+                if (!IsMainThread())
+                {
+                    if (props?.useGraphic == false)
+                    {
+                        return "No Graphic (Logic Only)";
+                    }
+                    return "Dynamic/Unknown";
+                }
+
                 // 2. [关键增强] 使用 GraphicFor(pawn) 获取动态生成的图形
                 // 这对于 HAR 外星人种族非常重要，因为它们的纹理路径是动态计算的
                 try
@@ -753,7 +829,7 @@ namespace CharacterStudio.Introspection
                         if (!string.IsNullOrEmpty(texPath))
                         {
                             Log.Message($"[CS.Debug] 节点 '{node}' 从 texPath 字段获取路径: {texPath}");
-                            return texPath;
+                            return texPath!;
                         }
                     }
                 }

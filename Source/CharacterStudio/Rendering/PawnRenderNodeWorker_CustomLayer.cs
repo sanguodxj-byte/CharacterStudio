@@ -42,7 +42,7 @@ namespace CharacterStudio.Rendering
         {
             // base.OffsetFor 已经应用了 node.DebugOffset (即 config.offset)
             Vector3 baseOffset = base.OffsetFor(node, parms, out pivot);
-            PawnRenderNode_Custom customNode = node as PawnRenderNode_Custom;
+            PawnRenderNode_Custom? customNode = node as PawnRenderNode_Custom;
             
             if (customNode != null && customNode.config != null)
             {
@@ -186,10 +186,16 @@ namespace CharacterStudio.Rendering
                 baseRot *= Quaternion.Euler(0f, node.debugAngleOffset, 0f);
             }
 
-            // 动画逻辑
+            // 应用配置旋转与动画旋转
             if (node is PawnRenderNode_Custom customNode && customNode.config != null)
             {
                 var config = customNode.config;
+
+                if (Mathf.Abs(config.rotation) > 0.01f)
+                {
+                    baseRot *= Quaternion.Euler(0f, config.rotation, 0f);
+                }
+
                 if (config.animationType != LayerAnimationType.None)
                 {
                     // 计算动画
@@ -455,7 +461,7 @@ namespace CharacterStudio.Rendering
 
                 if (parms.Statue)
                 {
-                    matPropBlock.SetColor(ShaderPropertyIDs.Color, parms.statueColor.Value);
+                    matPropBlock.SetColor(ShaderPropertyIDs.Color, parms.statueColor ?? Color.white);
                 }
                 else
                 {
@@ -521,7 +527,7 @@ namespace CharacterStudio.Rendering
                     typeof(Graphic_Runtime),
                     resolvedTexPath,
                     shader,
-                    props?.drawSize ?? Vector2.one,
+                    Vector2.one,
                     props?.color ?? Color.white,
                     Color.white, null, 0, null, null
                 );
@@ -541,7 +547,13 @@ namespace CharacterStudio.Rendering
             // 修复: 必须使用原始类加载，否则 Graphic_Multi 的资源用 Graphic_Single 加载会失败（粉色方块）
             if (node is PawnRenderNode_Custom customNode)
             {
-                Type graphicType = customNode.config?.graphicClass;
+                var config = customNode.config;
+                if (config == null)
+                {
+                    return base.GetGraphic(node, parms);
+                }
+
+                Type? graphicType = config.graphicClass;
                 
                 // 排除 Graphic_Runtime，因为它只用于外部资源
                 if (graphicType != typeof(Graphic_Runtime))
@@ -565,10 +577,10 @@ namespace CharacterStudio.Rendering
                     }
 
                     // 支持 Shader 切换
-                    Shader shader = null;
-                    if (!string.IsNullOrEmpty(customNode.config.shaderDefName))
+                    Shader? shader = null;
+                    if (!string.IsNullOrEmpty(config.shaderDefName))
                     {
-                        switch (customNode.config.shaderDefName)
+                        switch (config.shaderDefName)
                         {
                             case "Cutout": shader = ShaderDatabase.Cutout; break;
                             case "CutoutComplex": shader = ShaderDatabase.CutoutComplex; break;
@@ -581,14 +593,12 @@ namespace CharacterStudio.Rendering
                     
                     var props = node.Props;
                     
-                    // 确保 drawSize 合理，避免不可见
-                    Vector2 drawSize = props?.drawSize ?? Vector2.one;
-                    if (drawSize.x <= 0f) drawSize.x = 1f;
-                    if (drawSize.y <= 0f) drawSize.y = 1f;
+                    // 编辑器预览中统一使用 1.0 基础尺寸，缩放全部交由 ScaleFor 矩阵处理，避免二次缩放
+                    Vector2 drawSize = Vector2.one;
 
                     // 获取颜色（基于源）
-                    Color color = GetColorFromSource(customNode.config.colorSource, parms.pawn, customNode.config.customColor);
-                    Color colorTwo = GetColorFromSource(customNode.config.colorTwoSource, parms.pawn, customNode.config.customColorTwo);
+                    Color color = GetColorFromSource(config.colorSource, parms.pawn, config.customColor);
+                    Color colorTwo = GetColorFromSource(config.colorTwoSource, parms.pawn, config.customColorTwo);
 
                     if (graphicType == typeof(Graphic_Multi))
                     {
@@ -605,7 +615,7 @@ namespace CharacterStudio.Rendering
                         var method = typeof(GraphicDatabase).GetMethod("Get", new Type[] { typeof(string), typeof(Shader), typeof(Vector2), typeof(Color), typeof(Color) });
                         if (method != null)
                         {
-                            var genericMethod = method.MakeGenericMethod(graphicType);
+                            var genericMethod = method.MakeGenericMethod(graphicType!);
                             return (Graphic)genericMethod.Invoke(null, new object[] {
                                 resolvedTexPath,
                                 shader,
@@ -619,7 +629,7 @@ namespace CharacterStudio.Rendering
                         method = typeof(GraphicDatabase).GetMethod("Get", new Type[] { typeof(string), typeof(Shader), typeof(Vector2), typeof(Color) });
                         if (method != null)
                         {
-                            var genericMethod = method.MakeGenericMethod(graphicType);
+                            var genericMethod = method.MakeGenericMethod(graphicType!);
                             return (Graphic)genericMethod.Invoke(null, new object[] {
                                 resolvedTexPath,
                                 shader,
@@ -651,7 +661,7 @@ namespace CharacterStudio.Rendering
                 return GraphicDatabase.Get<Graphic_Single>(
                     resolvedTexPath,
                     shader,
-                    props?.drawSize ?? Vector2.one,
+                    Vector2.one,
                     props?.color ?? Color.white
                 );
             }

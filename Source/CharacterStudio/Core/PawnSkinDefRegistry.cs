@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml;
+using CharacterStudio.Abilities;
 using Verse;
 
 namespace CharacterStudio.Core
@@ -41,7 +42,7 @@ namespace CharacterStudio.Core
                 LoadFromConfig();
             }
 
-            runtimeDefsByName.TryGetValue(defName, out var def);
+            runtimeDefsByName.TryGetValue(defName!, out var def);
             return def;
         }
 
@@ -185,6 +186,20 @@ namespace CharacterStudio.Core
             target.author = source.author;
             target.version = source.version;
             target.previewTexPath = source.previewTexPath;
+
+            target.abilityHotkeys = source.abilityHotkeys?.Clone() ?? new SkinAbilityHotkeyConfig();
+
+            target.abilities.Clear();
+            if (source.abilities != null)
+            {
+                foreach (var ability in source.abilities)
+                {
+                    if (ability != null)
+                    {
+                        target.abilities.Add(ability.Clone());
+                    }
+                }
+            }
 
             target.layers.Clear();
             if (source.layers != null)

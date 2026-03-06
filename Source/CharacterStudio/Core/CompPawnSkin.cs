@@ -19,6 +19,23 @@ namespace CharacterStudio.Core
         private int blinkTimer = 0;
         private const int BlinkDuration = 10;
 
+        // Q 键四段轮换模式索引（0..3）
+        public int qHotkeyModeIndex = 0;
+
+        // Q->W 连段窗口（单位：Tick）
+        public int qComboWindowEndTick = 0;
+
+        // E 技能短 CD
+        public int eCooldownUntilTick = 0;
+
+        // R 两段机制状态
+        public bool rStackingEnabled = false;
+        public int rStackCount = 0;
+        public bool rSecondStageReady = false;
+        public int rSecondStageExecuteTick = -1;
+        public bool rSecondStageHasTarget = false;
+        public IntVec3 rSecondStageTargetCell = IntVec3.Invalid;
+
         public PawnSkinDef? ActiveSkin
         {
             get => activeSkin;
@@ -148,6 +165,16 @@ namespace CharacterStudio.Core
         {
             base.PostExposeData();
             Scribe_Values.Look(ref activeSkinDefName, "activeSkinDefName");
+            Scribe_Values.Look(ref qHotkeyModeIndex, "qHotkeyModeIndex", 0);
+            Scribe_Values.Look(ref qComboWindowEndTick, "qComboWindowEndTick", 0);
+            Scribe_Values.Look(ref eCooldownUntilTick, "eCooldownUntilTick", 0);
+
+            Scribe_Values.Look(ref rStackingEnabled, "rStackingEnabled", false);
+            Scribe_Values.Look(ref rStackCount, "rStackCount", 0);
+            Scribe_Values.Look(ref rSecondStageReady, "rSecondStageReady", false);
+            Scribe_Values.Look(ref rSecondStageExecuteTick, "rSecondStageExecuteTick", -1);
+            Scribe_Values.Look(ref rSecondStageHasTarget, "rSecondStageHasTarget", false);
+            Scribe_Values.Look(ref rSecondStageTargetCell, "rSecondStageTargetCell", IntVec3.Invalid);
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit && !string.IsNullOrEmpty(activeSkinDefName))
             {
@@ -160,6 +187,25 @@ namespace CharacterStudio.Core
                         activeSkinDefName = activeSkin.defName;
                     }
                 }
+            }
+
+            if (qHotkeyModeIndex < 0 || qHotkeyModeIndex > 3)
+            {
+                qHotkeyModeIndex = 0;
+            }
+
+            if (rStackCount < 0)
+            {
+                rStackCount = 0;
+            }
+            if (rStackCount > 7)
+            {
+                rStackCount = 7;
+            }
+
+            if (!rSecondStageHasTarget)
+            {
+                rSecondStageTargetCell = IntVec3.Invalid;
             }
         }
     }

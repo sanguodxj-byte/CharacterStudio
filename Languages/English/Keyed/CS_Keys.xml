@@ -51,6 +51,7 @@
     <CS_Studio_Preview_ResetView>Reset View</CS_Studio_Preview_ResetView>
     <CS_Studio_Preview_Exp>Exp:</CS_Studio_Preview_Exp>
     <CS_Studio_Preview_Var>Var:</CS_Studio_Preview_Var>
+    <CS_Studio_Preview_RefHint>Hold F to show a translucent reference ghost of the imported pawn (follows cursor inside preview)</CS_Studio_Preview_RefHint>
 
     <!-- Properties Panel -->
     <CS_Studio_Panel_Properties>Properties</CS_Studio_Panel_Properties>
@@ -110,6 +111,21 @@
     <CS_Studio_Anim_OffsetAmplitude>Offset Amplitude</CS_Studio_Anim_OffsetAmplitude>
     <CS_Studio_Anim_PhaseOffset>Phase Offset</CS_Studio_Anim_PhaseOffset>
 
+    <CS_Studio_Section_RuntimeComponents>Runtime Components</CS_Studio_Section_RuntimeComponents>
+    <CS_Studio_Runtime_AddComponent>+ Add Component</CS_Studio_Runtime_AddComponent>
+    <CS_Studio_Runtime_Empty>(No runtime components)</CS_Studio_Runtime_Empty>
+    <CS_Studio_Runtime_QWindowTicks>Q Combo Window (ticks)</CS_Studio_Runtime_QWindowTicks>
+    <CS_Studio_Runtime_ECooldownTicks>E Cooldown (ticks)</CS_Studio_Runtime_ECooldownTicks>
+    <CS_Studio_Runtime_EJumpDistance>E Jump Distance</CS_Studio_Runtime_EJumpDistance>
+    <CS_Studio_Runtime_EFindRadius>E Landing Search Radius</CS_Studio_Runtime_EFindRadius>
+    <CS_Studio_Runtime_ETriggerEffects>Trigger ability effects after E jump</CS_Studio_Runtime_ETriggerEffects>
+    <CS_Studio_Runtime_RRequiredStacks>R Required Stacks</CS_Studio_Runtime_RRequiredStacks>
+    <CS_Studio_Runtime_RDelayTicks>R Delay (ticks)</CS_Studio_Runtime_RDelayTicks>
+    <CS_Studio_Runtime_RWave1>R Wave 1 (radius/damage)</CS_Studio_Runtime_RWave1>
+    <CS_Studio_Runtime_RWave2>R Wave 2 (radius/damage)</CS_Studio_Runtime_RWave2>
+    <CS_Studio_Runtime_RWave3>R Wave 3 (radius/damage)</CS_Studio_Runtime_RWave3>
+    <CS_Studio_Runtime_RDamageDef>R Damage Type</CS_Studio_Runtime_RDamageDef>
+
     <!-- Color Types -->
     <CS_Studio_ColorType_Custom>Custom</CS_Studio_ColorType_Custom>
     <CS_Studio_ColorType_Hair>Hair Color</CS_Studio_ColorType_Hair>
@@ -154,6 +170,14 @@
     <!-- New Skin Settings -->
     <CS_Studio_Label>Label</CS_Studio_Label>
     <CS_Studio_AllRaces>(All Races)</CS_Studio_AllRaces>
+    <CS_Studio_Section_AbilityHotkeys>Ability Hotkey Mapping</CS_Studio_Section_AbilityHotkeys>
+    <CS_Studio_Ability_Hotkey_Enable>Enable QWER ability hotkeys</CS_Studio_Ability_Hotkey_Enable>
+    <CS_Studio_Ability_Hotkey_Q>Q Ability</CS_Studio_Ability_Hotkey_Q>
+    <CS_Studio_Ability_Hotkey_W>W Ability</CS_Studio_Ability_Hotkey_W>
+    <CS_Studio_Ability_Hotkey_E>E Ability</CS_Studio_Ability_Hotkey_E>
+    <CS_Studio_Ability_Hotkey_R>R Ability</CS_Studio_Ability_Hotkey_R>
+    <CS_Studio_Ability_Hotkey_WCombo>W Combo Ability (within 0.2s after Q)</CS_Studio_Ability_Hotkey_WCombo>
+    <CS_Studio_Ability_Hotkey_None>(Unbound)</CS_Studio_Ability_Hotkey_None>
 
     <!-- Messages -->
     <CS_Studio_Msg_UnsavedChanges>There are unsaved changes. Do you want to save?</CS_Studio_Msg_UnsavedChanges>
@@ -257,16 +281,40 @@
 
     <!-- Ability Editor -->
     <CS_Studio_Ability_SelectOrCreate>Please select or create an ability</CS_Studio_Ability_SelectOrCreate>
+    <CS_Studio_Ability_DefName>DefName</CS_Studio_Ability_DefName>
     <CS_Studio_Ability_Name>Name</CS_Studio_Ability_Name>
+    <CS_Studio_Ability_IconPath>Icon Path</CS_Studio_Ability_IconPath>
     <CS_Studio_Ability_Cooldown>Cooldown (Ticks)</CS_Studio_Ability_Cooldown>
+    <CS_Studio_Ability_Warmup>Warmup (Ticks)</CS_Studio_Ability_Warmup>
+    <CS_Studio_Ability_Charges>Charges</CS_Studio_Ability_Charges>
+    <CS_Studio_Ability_Validate>Validate</CS_Studio_Ability_Validate>
+    <CS_Studio_Ability_Valid>Valid</CS_Studio_Ability_Valid>
+    <CS_Studio_Ability_ValidWithWarnings>Valid with warnings</CS_Studio_Ability_ValidWithWarnings>
+    <CS_Studio_Ability_Invalid>Invalid</CS_Studio_Ability_Invalid>
     <CS_Studio_Ability_Type>Type</CS_Studio_Ability_Type>
     <CS_Studio_Ability_Range>Range</CS_Studio_Ability_Range>
     <CS_Studio_Ability_Radius>Explosion Radius</CS_Studio_Ability_Radius>
+    <CS_Studio_Ability_Projectile>Projectile</CS_Studio_Ability_Projectile>
     <CS_Studio_Effect_Add>Add Effect</CS_Studio_Effect_Add>
     <CS_Studio_Effect_Amount>Amount</CS_Studio_Effect_Amount>
     <CS_Studio_Effect_Chance>Chance</CS_Studio_Effect_Chance>
+    <CS_Studio_Effect_DamageDef>Damage Type</CS_Studio_Effect_DamageDef>
+    <CS_Studio_Effect_Duration>Duration (sec)</CS_Studio_Effect_Duration>
+    <CS_Studio_Effect_NoExtraParams>No extra parameters for this effect</CS_Studio_Effect_NoExtraParams>
     <CS_Studio_Effect_PawnKind>PawnKind</CS_Studio_Effect_PawnKind>
+    <CS_Studio_Effect_SummonCount>Count</CS_Studio_Effect_SummonCount>
     <CS_Studio_Effect_Hediff>Hediff</CS_Studio_Effect_Hediff>
+    <CS_Ability_Hotkey_AbilityMissing>Ability definition not found: {0}</CS_Ability_Hotkey_AbilityMissing>
+    <CS_Ability_Hotkey_CastSuccess>Casted via {0}: {1}</CS_Ability_Hotkey_CastSuccess>
+    <CS_Ability_Hotkey_QMode>Q mode switched to phase {0}</CS_Ability_Hotkey_QMode>
+    <CS_Ability_Hotkey_ECooldown>E is on cooldown: {0}s remaining</CS_Ability_Hotkey_ECooldown>
+    <CS_Ability_R_StackingOn>R stage 1 enabled: attacks now build stacks</CS_Ability_R_StackingOn>
+    <CS_Ability_R_StackingOff>R stage 1 disabled</CS_Ability_R_StackingOff>
+    <CS_Ability_R_StackGain>R stacks: {0}/{1}</CS_Ability_R_StackGain>
+    <CS_Ability_R_Ready>R stage 2 ready: press R to choose target</CS_Ability_R_Ready>
+    <CS_Ability_R_TargetInvalid>Invalid target for R stage 2</CS_Ability_R_TargetInvalid>
+    <CS_Ability_R_SecondStageArmed>R stage 2 armed, triggering in {0}s</CS_Ability_R_SecondStageArmed>
+    <CS_Ability_R_SecondStageCast>R stage 2 cast: blink and triple shockwaves</CS_Ability_R_SecondStageCast>
 
     <!-- Face & Menu -->
     <CS_Studio_Face_Title>Face Configuration</CS_Studio_Face_Title>

@@ -56,6 +56,7 @@
     <CS_Studio_Preview_ResetView>重置视图</CS_Studio_Preview_ResetView>
     <CS_Studio_Preview_Exp>Exp:</CS_Studio_Preview_Exp>
     <CS_Studio_Preview_Var>Var:</CS_Studio_Preview_Var>
+    <CS_Studio_Preview_RefHint>按住 F 显示导入角色的原始半透明参考虚影（鼠标移入预览区可跟随）</CS_Studio_Preview_RefHint>
 
     <!-- 属性面板 -->
     <CS_Studio_Panel_Properties>属性</CS_Studio_Panel_Properties>
@@ -126,6 +127,20 @@
     <CS_Studio_Section_AbilityBase>技能基础信息</CS_Studio_Section_AbilityBase>
     <CS_Studio_Section_Carrier>载体设置 (X轴)</CS_Studio_Section_Carrier>
     <CS_Studio_Section_Effects>效果列表 (Y轴)</CS_Studio_Section_Effects>
+    <CS_Studio_Section_RuntimeComponents>运行时组件</CS_Studio_Section_RuntimeComponents>
+    <CS_Studio_Runtime_AddComponent>+ 添加组件</CS_Studio_Runtime_AddComponent>
+    <CS_Studio_Runtime_Empty>(未添加任何运行时组件)</CS_Studio_Runtime_Empty>
+    <CS_Studio_Runtime_QWindowTicks>Q连段窗口(Tick)</CS_Studio_Runtime_QWindowTicks>
+    <CS_Studio_Runtime_ECooldownTicks>E冷却(Tick)</CS_Studio_Runtime_ECooldownTicks>
+    <CS_Studio_Runtime_EJumpDistance>E跳跃距离</CS_Studio_Runtime_EJumpDistance>
+    <CS_Studio_Runtime_EFindRadius>E落点搜索半径</CS_Studio_Runtime_EFindRadius>
+    <CS_Studio_Runtime_ETriggerEffects>E后触发技能效果</CS_Studio_Runtime_ETriggerEffects>
+    <CS_Studio_Runtime_RRequiredStacks>R所需层数</CS_Studio_Runtime_RRequiredStacks>
+    <CS_Studio_Runtime_RDelayTicks>R延迟(Tick)</CS_Studio_Runtime_RDelayTicks>
+    <CS_Studio_Runtime_RWave1>R波次1(半径/伤害)</CS_Studio_Runtime_RWave1>
+    <CS_Studio_Runtime_RWave2>R波次2(半径/伤害)</CS_Studio_Runtime_RWave2>
+    <CS_Studio_Runtime_RWave3>R波次3(半径/伤害)</CS_Studio_Runtime_RWave3>
+    <CS_Studio_Runtime_RDamageDef>R伤害类型</CS_Studio_Runtime_RDamageDef>
 
     <!-- 颜色类型 -->
     <CS_Studio_ColorType_Custom>自定义</CS_Studio_ColorType_Custom>
@@ -171,6 +186,14 @@
     <!-- 新增皮肤设置 -->
     <CS_Studio_Label>标签</CS_Studio_Label>
     <CS_Studio_AllRaces>(所有种族)</CS_Studio_AllRaces>
+    <CS_Studio_Section_AbilityHotkeys>技能热键映射</CS_Studio_Section_AbilityHotkeys>
+    <CS_Studio_Ability_Hotkey_Enable>启用 QWER 技能热键</CS_Studio_Ability_Hotkey_Enable>
+    <CS_Studio_Ability_Hotkey_Q>Q 键技能</CS_Studio_Ability_Hotkey_Q>
+    <CS_Studio_Ability_Hotkey_W>W 键技能</CS_Studio_Ability_Hotkey_W>
+    <CS_Studio_Ability_Hotkey_E>E 键技能</CS_Studio_Ability_Hotkey_E>
+    <CS_Studio_Ability_Hotkey_R>R 键技能</CS_Studio_Ability_Hotkey_R>
+    <CS_Studio_Ability_Hotkey_WCombo>W 连段技能（Q后0.2秒）</CS_Studio_Ability_Hotkey_WCombo>
+    <CS_Studio_Ability_Hotkey_None>(未绑定)</CS_Studio_Ability_Hotkey_None>
 
     <!-- 消息提示 -->
     <CS_Studio_Msg_UnsavedChanges>有未保存的更改，是否保存？</CS_Studio_Msg_UnsavedChanges>
@@ -279,16 +302,40 @@
 
     <!-- 技能编辑器 -->
     <CS_Studio_Ability_SelectOrCreate>请选择或创建一个技能</CS_Studio_Ability_SelectOrCreate>
+    <CS_Studio_Ability_DefName>DefName</CS_Studio_Ability_DefName>
     <CS_Studio_Ability_Name>名称</CS_Studio_Ability_Name>
+    <CS_Studio_Ability_IconPath>图标路径</CS_Studio_Ability_IconPath>
     <CS_Studio_Ability_Cooldown>冷却 (Tick)</CS_Studio_Ability_Cooldown>
+    <CS_Studio_Ability_Warmup>预热 (Tick)</CS_Studio_Ability_Warmup>
+    <CS_Studio_Ability_Charges>次数</CS_Studio_Ability_Charges>
+    <CS_Studio_Ability_Validate>校验</CS_Studio_Ability_Validate>
+    <CS_Studio_Ability_Valid>校验通过</CS_Studio_Ability_Valid>
+    <CS_Studio_Ability_ValidWithWarnings>校验通过（有警告）</CS_Studio_Ability_ValidWithWarnings>
+    <CS_Studio_Ability_Invalid>校验失败</CS_Studio_Ability_Invalid>
     <CS_Studio_Ability_Type>类型</CS_Studio_Ability_Type>
     <CS_Studio_Ability_Range>射程</CS_Studio_Ability_Range>
     <CS_Studio_Ability_Radius>爆炸半径</CS_Studio_Ability_Radius>
+    <CS_Studio_Ability_Projectile>投射物</CS_Studio_Ability_Projectile>
     <CS_Studio_Effect_Add>添加效果</CS_Studio_Effect_Add>
     <CS_Studio_Effect_Amount>数值</CS_Studio_Effect_Amount>
     <CS_Studio_Effect_Chance>几率</CS_Studio_Effect_Chance>
+    <CS_Studio_Effect_DamageDef>伤害类型</CS_Studio_Effect_DamageDef>
+    <CS_Studio_Effect_Duration>持续时间(秒)</CS_Studio_Effect_Duration>
+    <CS_Studio_Effect_NoExtraParams>此效果无额外参数</CS_Studio_Effect_NoExtraParams>
     <CS_Studio_Effect_PawnKind>PawnKind</CS_Studio_Effect_PawnKind>
+    <CS_Studio_Effect_SummonCount>数量</CS_Studio_Effect_SummonCount>
     <CS_Studio_Effect_Hediff>Hediff</CS_Studio_Effect_Hediff>
+    <CS_Ability_Hotkey_AbilityMissing>未找到技能定义：{0}</CS_Ability_Hotkey_AbilityMissing>
+    <CS_Ability_Hotkey_CastSuccess>已通过 {0} 释放技能：{1}</CS_Ability_Hotkey_CastSuccess>
+    <CS_Ability_Hotkey_QMode>Q 模式已切换到第 {0} 段</CS_Ability_Hotkey_QMode>
+    <CS_Ability_Hotkey_ECooldown>E 技能冷却中：剩余 {0} 秒</CS_Ability_Hotkey_ECooldown>
+    <CS_Ability_R_StackingOn>R 一段已开启：攻击可叠层</CS_Ability_R_StackingOn>
+    <CS_Ability_R_StackingOff>R 一段已关闭</CS_Ability_R_StackingOff>
+    <CS_Ability_R_StackGain>R 层数：{0}/{1}</CS_Ability_R_StackGain>
+    <CS_Ability_R_Ready>R 二段已就绪：按 R 选择落点</CS_Ability_R_Ready>
+    <CS_Ability_R_TargetInvalid>R 二段目标无效</CS_Ability_R_TargetInvalid>
+    <CS_Ability_R_SecondStageArmed>R 二段已锁定，{0} 秒后执行</CS_Ability_R_SecondStageArmed>
+    <CS_Ability_R_SecondStageCast>R 二段已释放：瞬移并引爆三段冲击</CS_Ability_R_SecondStageCast>
 
     <!-- 表情与菜单 -->
     <CS_Studio_Face_Title>表情配置</CS_Studio_Face_Title>

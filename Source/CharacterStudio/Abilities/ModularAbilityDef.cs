@@ -80,6 +80,12 @@ namespace CharacterStudio.Abilities
         public List<AbilityEffectConfig> effects = new List<AbilityEffectConfig>();
 
         // ─────────────────────────────────────────────
+        // 运行时组件 (Runtime Components)
+        // 用于组合复杂技能行为，让玩家通过编辑器配置
+        // ─────────────────────────────────────────────
+        public List<AbilityRuntimeComponentConfig> runtimeComponents = new List<AbilityRuntimeComponentConfig>();
+
+        // ─────────────────────────────────────────────
         // 运行时方法
         // ─────────────────────────────────────────────
         public ModularAbilityDef Clone()
@@ -105,7 +111,105 @@ namespace CharacterStudio.Abilities
                 clone.effects.Add(effect.Clone());
             }
 
+            foreach (var component in this.runtimeComponents)
+            {
+                clone.runtimeComponents.Add(component.Clone());
+            }
+
             return clone;
+        }
+    }
+
+    public enum AbilityRuntimeComponentType
+    {
+        QComboWindow,      // Q 施放后开启连段窗口（如 W 连段）
+        EShortJump,        // E 热键短位移
+        RStackDetonation   // R 两段：叠层-选点-延时爆发
+    }
+
+    public class AbilityRuntimeComponentConfig
+    {
+        public AbilityRuntimeComponentType type;
+        public bool enabled = true;
+
+        // Q 连段组件
+        public int comboWindowTicks = 12;
+
+        // E 短跳组件
+        public int cooldownTicks = 120;
+        public int jumpDistance = 6;
+        public int findCellRadius = 3;
+        public bool triggerAbilityEffectsAfterJump = true;
+
+        // R 两段组件
+        public int requiredStacks = 7;
+        public int delayTicks = 180;
+        public float wave1Radius = 3f;
+        public float wave1Damage = 80f;
+        public float wave2Radius = 6f;
+        public float wave2Damage = 140f;
+        public float wave3Radius = 9f;
+        public float wave3Damage = 220f;
+        public DamageDef? waveDamageDef;
+
+        public AbilityRuntimeComponentConfig Clone()
+        {
+            return (AbilityRuntimeComponentConfig)MemberwiseClone();
+        }
+
+        public AbilityValidationResult Validate()
+        {
+            var result = new AbilityValidationResult();
+            if (!enabled)
+            {
+                return result;
+            }
+
+            switch (type)
+            {
+                case AbilityRuntimeComponentType.QComboWindow:
+                    if (comboWindowTicks <= 0)
+                    {
+                        result.AddError("Q 连段窗口时长必须大于 0 tick");
+                    }
+                    break;
+
+                case AbilityRuntimeComponentType.EShortJump:
+                    if (cooldownTicks < 0)
+                    {
+                        result.AddError("E 短跳冷却不能为负数");
+                    }
+                    if (jumpDistance <= 0)
+                    {
+                        result.AddError("E 短跳距离必须大于 0");
+                    }
+                    if (findCellRadius < 0)
+                    {
+                        result.AddError("E 短跳寻位半径不能为负数");
+                    }
+                    break;
+
+                case AbilityRuntimeComponentType.RStackDetonation:
+                    if (requiredStacks <= 0)
+                    {
+                        result.AddError("R 所需层数必须大于 0");
+                    }
+                    if (delayTicks < 0)
+                    {
+                        result.AddError("R 延迟时间不能为负数");
+                    }
+                    if (wave1Radius <= 0 || wave2Radius <= 0 || wave3Radius <= 0)
+                    {
+                        result.AddError("R 三段半径必须大于 0");
+                    }
+                    if (wave1Damage <= 0 || wave2Damage <= 0 || wave3Damage <= 0)
+                    {
+                        result.AddError("R 三段伤害必须大于 0");
+                    }
+                    break;
+            }
+
+            return result;
         }
     }
 
@@ -302,6 +406,33 @@ namespace CharacterStudio.Abilities
                     foreach (var warning in effectResult.Warnings)
                     {
                         result.AddWarning($"效果 #{i + 1}: {warning}");
+                    }
+                }
+            }
+
+            if (ability.runtimeComponents != null)
+            {
+                for (int i = 0; i < ability.runtimeComponents.Count; i++)
+                {
+                    var component = ability.runtimeComponents[i];
+                    if (component == null)
+                    {
+                        result.AddWarning($"运行时组件 #{i + 1} 为空");
+                        continue;
+                    }
+
+                    var compResult = component.Validate();
+                    if (!compResult.IsValid)
+                    {
+                        foreach (var error in compResult.Errors)
+                        {
+                            result.AddError($"运行时组件 #{i + 1}: {error}");
+                        }
+                    }
+
+                    foreach (var warning in compResult.Warnings)
+                    {
+                        result.AddWarning($"运行时组件 #{i + 1}: {warning}");
                     }
                 }
             }

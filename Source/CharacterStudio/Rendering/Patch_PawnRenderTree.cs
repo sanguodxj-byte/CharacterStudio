@@ -6,6 +6,7 @@ using CharacterStudio.Core;
 using UnityEngine;
 using Verse;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace CharacterStudio.Rendering
 {
@@ -17,6 +18,60 @@ namespace CharacterStudio.Rendering
     public static class Patch_PawnRenderTree
     {
         private static Harmony? harmony;
+
+        private static readonly object patchStateLock = new object();
+        private static readonly HashSet<MethodInfo> patchedCanDrawNowMethods = new HashSet<MethodInfo>();
+
+        // 反射字段缓存：只在首次调用时查找一次
+        private static FieldInfo? graphicsField;
+        private static readonly string[] knownGraphicsFieldNames = { "graphics", "_graphics", "cachedGraphics", "graphicCache" };
+
+        // P2: 全局反射缓存 —— 避免每次调用时重新查找
+        private static readonly FieldInfo? nodesByTagField_Cached =
+            AccessTools.Field(typeof(PawnRenderTree), "nodesByTag");
+        private static readonly FieldInfo? renderTreeField_Cached =
+            AccessTools.Field(typeof(PawnRenderer), "renderTree");
+        private static readonly MethodInfo? setDirtyMethod_Cached =
+            AccessTools.Method(typeof(PawnRenderTree), "SetDirty");
+        private static readonly FieldInfo? setupCompleteField_Cached =
+            AccessTools.Field(typeof(PawnRenderTree), "setupComplete");
+        private static readonly FieldInfo? nodeAncestorsField_Cached =
+            AccessTools.Field(typeof(PawnRenderTree), "nodeAncestors");
+        private static readonly MethodInfo? initAncestorsMethod_Cached =
+            AccessTools.Method(typeof(PawnRenderTree), "InitializeAncestors");
+
+        private static FieldInfo? GetGraphicsField()
+        {
+            if (graphicsField != null)
+            {
+                return graphicsField;
+            }
+
+            foreach (var name in knownGraphicsFieldNames)
+            {
+                graphicsField = AccessTools.Field(typeof(PawnRenderNode), name);
+                if (graphicsField != null)
+                {
+                    return graphicsField;
+                }
+            }
+
+            foreach (var field in typeof(PawnRenderNode).GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public))
+            {
+                if (field.FieldType == typeof(Graphic[]))
+                {
+                    graphicsField = field;
+                    if (Prefs.DevMode)
+                    {
+                        Log.Message($"[CharacterStudio] 自动探测到 Graphics 缓存字段: {field.Name}");
+                    }
+                    return graphicsField;
+                }
+            }
+
+            Log.Warning("[CharacterStudio] 未找到 PawnRenderNode.Graphics[] 缓存字段，将回退到 CanDrawNow 方案（节点可能无法完全隐藏）");
+            return null;
+        }
 
         static Patch_PawnRenderTree()
         {
@@ -53,138 +108,29 @@ namespace CharacterStudio.Rendering
                 if (canDrawMethod != null && canDrawPrefix != null)
                 {
                     harmony.Patch(canDrawMethod, prefix: new HarmonyMethod(canDrawPrefix));
+                    lock (patchStateLock)
+                    {
+                        patchedCanDrawNowMethods.Add(canDrawMethod);
+                    }
                     Log.Message("[CharacterStudio] PawnRenderNodeWorker.CanDrawNow 补丁已应用");
                 }
 
-                // 补丁 PawnRenderNode.GraphicFor 方法 (用于隐藏 Mesh 但允许子节点绘制)
-                // 显式指定参数以确保找到正确的方法
-                var graphicMethod = AccessTools.Method(typeof(PawnRenderNode), "GraphicFor", new Type[] { typeof(Pawn) });
-                var graphicPrefix = AccessTools.Method(typeof(Patch_PawnRenderTree), nameof(GraphicFor_Prefix));
-
-                if (graphicMethod != null && graphicPrefix != null)
-                {
-                    harmony.Patch(graphicMethod, prefix: new HarmonyMethod(graphicPrefix));
-                    Log.Message("[CharacterStudio] PawnRenderNode.GraphicFor 补丁已应用");
-                }
-                else
-                {
-                    Log.Error("[CharacterStudio] 无法找到 PawnRenderNode.GraphicFor(Pawn) 方法，隐藏修复可能失效");
-                }
-
-                // 关键修复：额外补丁 PawnRenderNode_Head.GraphicFor 方法
-                // 因为 PawnRenderNode_Head 完全重写了 GraphicFor，基类补丁不会被调用
-                var headGraphicMethod = AccessTools.Method(typeof(PawnRenderNode_Head), "GraphicFor", new Type[] { typeof(Pawn) });
-                if (headGraphicMethod != null && graphicPrefix != null)
-                {
-                    harmony.Patch(headGraphicMethod, prefix: new HarmonyMethod(graphicPrefix));
-                    Log.Message("[CharacterStudio] PawnRenderNode_Head.GraphicFor 补丁已应用");
-                }
-                else
-                {
-                    Log.Warning("[CharacterStudio] 无法找到 PawnRenderNode_Head.GraphicFor(Pawn) 方法");
-                }
-
-                // 同样补丁 PawnRenderNode_Body.GraphicFor（如果存在）
-                var bodyType = AccessTools.TypeByName("Verse.PawnRenderNode_Body");
-                if (bodyType != null)
-                {
-                    var bodyGraphicMethod = AccessTools.Method(bodyType, "GraphicFor", new Type[] { typeof(Pawn) });
-                    if (bodyGraphicMethod != null && graphicPrefix != null)
-                    {
-                        harmony.Patch(bodyGraphicMethod, prefix: new HarmonyMethod(graphicPrefix));
-                        Log.Message("[CharacterStudio] PawnRenderNode_Body.GraphicFor 补丁已应用");
-                    }
-                }
-
-                // 补丁 PawnRenderNode_Hair.GraphicFor（如果存在）
-                var hairType = AccessTools.TypeByName("Verse.PawnRenderNode_Hair");
-                if (hairType != null)
-                {
-                    var hairGraphicMethod = AccessTools.Method(hairType, "GraphicFor", new Type[] { typeof(Pawn) });
-                    if (hairGraphicMethod != null && graphicPrefix != null)
-                    {
-                        harmony.Patch(hairGraphicMethod, prefix: new HarmonyMethod(graphicPrefix));
-                        Log.Message("[CharacterStudio] PawnRenderNode_Hair.GraphicFor 补丁已应用");
-                    }
-                }
-
-                // HAR 兼容性：补丁所有 PawnRenderNode 的派生类的 GraphicFor 方法
-                // 这确保了任何模组添加的自定义渲染节点类型也能被正确隐藏
-                PatchAllDerivedGraphicForMethods(harmony, graphicPrefix);
+                // 注意：不再补丁 GraphicFor。实际渲染走 worker.GetGraphic -> node.Graphics[] 缓存。
+                // 隐藏策略改为在 HideNode 时清空 Graphics[]，保证不提交 Mesh 且不中断子节点遍历。
 
                 // HAR 兼容性：补丁所有 PawnRenderNodeWorker 的派生类的 CanDrawNow 方法
-                PatchAllDerivedCanDrawNowMethods(harmony, canDrawPrefix);
+                if (canDrawPrefix != null)
+                {
+                    PatchAllDerivedCanDrawNowMethods(harmony, canDrawPrefix);
+                }
+                else
+                {
+                    Log.Warning("[CharacterStudio] CanDrawNow_Prefix 未找到，跳过派生类 CanDrawNow 补丁");
+                }
             }
             catch (Exception ex)
             {
                 Log.Error($"[CharacterStudio] 应用 PawnRenderTree 补丁时出错: {ex}");
-            }
-        }
-
-        /// <summary>
-        /// HAR 兼容性：补丁所有 PawnRenderNode 派生类的 GraphicFor 方法
-        /// 这确保了外星人种族等模组的自定义节点类型也能被正确隐藏
-        /// </summary>
-        private static void PatchAllDerivedGraphicForMethods(Harmony harmony, MethodInfo graphicPrefix)
-        {
-            if (graphicPrefix == null) return;
-            
-            try
-            {
-                // 获取所有已加载的程序集
-                var pawnRenderNodeType = typeof(PawnRenderNode);
-                var pawnType = typeof(Pawn);
-                
-                // 已经补丁过的类型（避免重复）
-                var patchedTypes = new HashSet<Type>
-                {
-                    typeof(PawnRenderNode),
-                    typeof(PawnRenderNode_Head)
-                };
-                
-                // 遍历所有程序集查找 PawnRenderNode 的派生类
-                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-                {
-                    try
-                    {
-                        foreach (var type in assembly.GetTypes())
-                        {
-                            // 跳过已补丁的类型
-                            if (patchedTypes.Contains(type)) continue;
-                            
-                            // 检查是否是 PawnRenderNode 的派生类
-                            if (!pawnRenderNodeType.IsAssignableFrom(type)) continue;
-                            if (type.IsAbstract) continue;
-                            
-                            // 查找该类型自己声明的 GraphicFor 方法（不是继承的）
-                            var graphicMethod = type.GetMethod("GraphicFor",
-                                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly,
-                                null, new Type[] { pawnType }, null);
-                            
-                            if (graphicMethod != null)
-                            {
-                                try
-                                {
-                                    harmony.Patch(graphicMethod, prefix: new HarmonyMethod(graphicPrefix));
-                                    patchedTypes.Add(type);
-                                    Log.Message($"[CharacterStudio] {type.FullName}.GraphicFor 补丁已应用 (派生类自动发现)");
-                                }
-                                catch (Exception patchEx)
-                                {
-                                    Log.Warning($"[CharacterStudio] 无法补丁 {type.FullName}.GraphicFor: {patchEx.Message}");
-                                }
-                            }
-                        }
-                    }
-                    catch
-                    {
-                        // 某些程序集可能无法枚举类型，忽略
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Warning($"[CharacterStudio] 枚举派生类时出错: {ex.Message}");
             }
         }
 
@@ -219,7 +165,14 @@ namespace CharacterStudio.Rendering
                                 {
                                     harmony.Patch(method, prefix: new HarmonyMethod(canDrawPrefix));
                                     patchedTypes.Add(type);
-                                    Log.Message($"[CharacterStudio] {type.FullName}.CanDrawNow 补丁已应用");
+                                    lock (patchStateLock)
+                                    {
+                                        patchedCanDrawNowMethods.Add(method);
+                                    }
+                                    if (Prefs.DevMode)
+                                    {
+                                        Log.Message($"[CharacterStudio] {type.FullName}.CanDrawNow 补丁已应用");
+                                    }
                                 }
                                 catch (Exception ex)
                                 {
@@ -250,47 +203,19 @@ namespace CharacterStudio.Rendering
                     harmonyInstance.Unpatch(originalMethod, HarmonyPatchType.Postfix, harmonyInstance.Id);
                 }
 
-                var canDrawMethod = AccessTools.Method(typeof(PawnRenderNodeWorker), nameof(PawnRenderNodeWorker.CanDrawNow));
-                if (canDrawMethod != null)
+                List<MethodInfo> methodsToUnpatch;
+                lock (patchStateLock)
                 {
-                    harmonyInstance.Unpatch(canDrawMethod, HarmonyPatchType.Prefix, harmonyInstance.Id);
+                    methodsToUnpatch = new List<MethodInfo>(patchedCanDrawNowMethods);
+                    patchedCanDrawNowMethods.Clear();
                 }
 
-                var graphicMethod = AccessTools.Method(typeof(PawnRenderNode), "GraphicFor");
-                if (graphicMethod != null)
+                foreach (var method in methodsToUnpatch)
                 {
-                    harmonyInstance.Unpatch(graphicMethod, HarmonyPatchType.Prefix, harmonyInstance.Id);
+                    if (method == null) continue;
+                    harmonyInstance.Unpatch(method, HarmonyPatchType.Prefix, harmonyInstance.Id);
                 }
 
-                // 移除 PawnRenderNode_Head.GraphicFor 补丁
-                var headGraphicMethod = AccessTools.Method(typeof(PawnRenderNode_Head), "GraphicFor", new Type[] { typeof(Pawn) });
-                if (headGraphicMethod != null)
-                {
-                    harmonyInstance.Unpatch(headGraphicMethod, HarmonyPatchType.Prefix, harmonyInstance.Id);
-                }
-
-                // 移除 PawnRenderNode_Body.GraphicFor 补丁
-                var bodyType = AccessTools.TypeByName("Verse.PawnRenderNode_Body");
-                if (bodyType != null)
-                {
-                    var bodyGraphicMethod = AccessTools.Method(bodyType, "GraphicFor", new Type[] { typeof(Pawn) });
-                    if (bodyGraphicMethod != null)
-                    {
-                        harmonyInstance.Unpatch(bodyGraphicMethod, HarmonyPatchType.Prefix, harmonyInstance.Id);
-                    }
-                }
-
-                // 移除 PawnRenderNode_Hair.GraphicFor 补丁
-                var hairType = AccessTools.TypeByName("Verse.PawnRenderNode_Hair");
-                if (hairType != null)
-                {
-                    var hairGraphicMethod = AccessTools.Method(hairType, "GraphicFor", new Type[] { typeof(Pawn) });
-                    if (hairGraphicMethod != null)
-                    {
-                        harmonyInstance.Unpatch(hairGraphicMethod, HarmonyPatchType.Prefix, harmonyInstance.Id);
-                    }
-                }
-                
                 Log.Message("[CharacterStudio] 补丁已移除");
                 
                 // 清理所有隐藏节点状态
@@ -308,14 +233,22 @@ namespace CharacterStudio.Rendering
         /// </summary>
         private static bool CanDrawNow_Prefix(PawnRenderNode node, ref bool __result)
         {
-            if (node != null && hiddenNodes.Contains(node))
+            if (node?.tree == null)
+                return true;
+
+            // 自定义节点自身始终放行，避免“自己拦截自己”导致不绘制。
+            if (node is PawnRenderNode_Custom)
+                return true;
+
+            var hidden = GetHiddenSet(node.tree);
+            if (hidden.Contains(node))
             {
-                // 关键修复：如果被隐藏的节点有自定义图层作为子节点，必须允许 Draw 被调用
-                // 否则子节点（我们的自定义图层）将无法绘制
-                if (HasCustomChildren(node))
+                // 若该节点任意深度存在自定义后代，必须允许 Draw 流程继续，
+                // 否则孙层/更深层的自定义图层会被整棵分支短路。
+                if (HasCustomDescendant(node))
                 {
-                     // 允许执行，但在 GraphicFor 补丁中我们会返回空图形以隐藏自身
-                     return true;
+                    // 允许执行，自身贴图由 HideNode 时清空 Graphics[] 缓存实现隐藏
+                    return true;
                 }
 
                 __result = false;
@@ -324,59 +257,20 @@ namespace CharacterStudio.Rendering
             return true;
         }
 
-        // 缓存一个空的 Graphic 实例
-        private static Graphic_Empty? emptyGraphic;
-        private static Graphic_Empty EmptyGraphic
-        {
-            get
-            {
-                if (emptyGraphic == null)
-                {
-                    emptyGraphic = new Graphic_Empty();
-                    // 注意：不调用 Init()，因为 Graphic_Empty 已经重写了 MatAt() 直接返回 BaseContent.ClearMat
-                    // 调用 Init() 会尝试加载纹理，导致 "Could not load Texture2D" 红字错误
-                }
-                return emptyGraphic;
-            }
-        }
-
         /// <summary>
-        /// GraphicFor 前缀补丁
-        /// 如果节点在隐藏列表中但有自定义子节点，返回空图形以隐藏自身
+        /// 检查节点任意深度是否存在自定义后代节点
         /// </summary>
-        private static bool GraphicFor_Prefix(PawnRenderNode __instance, ref Graphic? __result)
+        private static bool HasCustomDescendant(PawnRenderNode node)
         {
-            if (__instance != null && hiddenNodes.Contains(__instance))
-            {
-                // 如果这是被隐藏的节点，不能返回 null，因为 RenderNode.Draw 中如果 graphic 为 null 会直接返回
-                // 从而跳过子节点的绘制。
-                // 所以我们必须返回一个"透明/空"的 Graphic，让 Draw 方法继续执行并绘制子节点。
-                __result = EmptyGraphic;
-                return false; // 跳过原方法
-            }
-            return true;
-        }
+            if (node?.children == null) return false;
 
-        /// <summary>
-        /// 空图形类，用于隐藏节点但不中断绘制流程
-        /// </summary>
-        public class Graphic_Empty : Graphic_Single
-        {
-            public override void DrawWorker(Vector3 loc, Rot4 rot, ThingDef thingDef, Thing thing, float extraRotation) { }
-            public override void Print(SectionLayer layer, Thing thing, float extraRotation) { }
-            public override Material MatAt(Rot4 rot, Thing thing = null) { return BaseContent.ClearMat; }
-        }
-
-        /// <summary>
-        /// 检查节点是否有自定义子节点
-        /// </summary>
-        private static bool HasCustomChildren(PawnRenderNode node)
-        {
-            if (node.children == null) return false;
-            for (int i = 0; i < node.children.Length; i++)
+            foreach (var child in node.children)
             {
-                if (node.children[i] is PawnRenderNode_Custom) return true;
+                if (child == null) continue;
+                if (child is PawnRenderNode_Custom) return true;
+                if (HasCustomDescendant(child)) return true;
             }
+
             return false;
         }
 
@@ -396,7 +290,6 @@ namespace CharacterStudio.Rendering
                 bool hideVanillaHair = false;
                 bool overlayMode = false;
 
-                // 优先级1：检查基因皮肤（生物科技集成）
                 var geneSkin = TryGetGeneSkin(pawn);
                 if (geneSkin.skinDef != null)
                 {
@@ -407,7 +300,6 @@ namespace CharacterStudio.Rendering
                 }
                 else
                 {
-                    // 优先级2：检查 CompPawnSkin 组件
                     var skinComp = pawn.GetComp<CompPawnSkin>();
                     if (skinComp != null && skinComp.HasActiveSkin)
                     {
@@ -423,19 +315,102 @@ namespace CharacterStudio.Rendering
 
                 if (skinDef == null) return;
 
-                // 处理隐藏原版元素（非叠加模式时）
+                // P1: 如果已经注入了自定义节点，跳过重复注入
+                bool hasCustomNodes = false;
+                CheckForCustomNodes(__instance.rootNode, ref hasCustomNodes);
+                if (hasCustomNodes) return;
+
+                bool tagHidingAvailable = true;
                 if (!overlayMode)
                 {
-                    ProcessVanillaHiding(__instance, skinDef, hideVanillaHead, hideVanillaHair);
+                    ProcessVanillaHiding(__instance, skinDef, hideVanillaHead, hideVanillaHair, out tagHidingAvailable);
                 }
 
-                // 注入自定义图层
-                InjectCustomLayers(__instance, pawn, skinDef);
+                bool anyNodesInjected = InjectCustomLayers(__instance, pawn, skinDef);
+
+                if (!overlayMode && anyNodesInjected)
+                {
+                    try
+                    {
+                        if (__instance?.rootNode != null && __instance.pawn != null && !__instance.pawn.Dead)
+                        {
+                            if (!tagHidingAvailable && IsGraphicsReadyForVanillaNodes(__instance))
+                            {
+                                HideVanillaNodesByImportedTexPaths(__instance, skinDef);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning($"[CharacterStudio] 兜底隐藏跳过: {ex.Message}");
+                    }
+                }
             }
             catch (Exception ex)
             {
                 Log.Error($"[CharacterStudio] 处理渲染树时出错: {ex}");
             }
+        }
+
+        /// <summary>
+        /// 检查是否可使用 nodesByTag 索引（部分模组/版本可能不可用）
+        /// </summary>
+        private static bool HasNodesByTagIndex(PawnRenderTree tree)
+        {
+            // P2: 使用缓存的反射字段
+            var nodesByTag = nodesByTagField_Cached?.GetValue(tree) as Dictionary<PawnRenderNodeTagDef, PawnRenderNode>;
+            return nodesByTag != null;
+        }
+
+        /// <summary>
+        /// 检查“原版节点”图形是否已就绪（过滤占位贴图/未初始化节点）
+        /// 注意：排除 PawnRenderNode_Custom，避免注入后被误判为就绪。
+        /// </summary>
+        private static bool IsGraphicsReadyForVanillaNodes(PawnRenderTree tree)
+        {
+            if (tree?.rootNode == null)
+                return false;
+
+            return IsNodeGraphicsReadyRecursive(tree.rootNode);
+        }
+
+        private static bool IsNodeGraphicsReadyRecursive(PawnRenderNode node)
+        {
+            if (node == null)
+                return true;
+
+            if (!(node is PawnRenderNode_Custom))
+            {
+                try
+                {
+                    var g = node.PrimaryGraphic;
+                    if (g == null) return false;
+
+                    string path = g.path ?? string.Empty;
+                    // 已知占位路径：Blank / 烟雾占位
+                    if (path.Equals("Miho/Blank", StringComparison.OrdinalIgnoreCase) ||
+                        path.EndsWith("/Blank", StringComparison.OrdinalIgnoreCase) ||
+                        path.Equals("Things/Mote/Smoke", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return false;
+                    }
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+
+            if (node.children == null)
+                return true;
+
+            foreach (var child in node.children)
+            {
+                if (child == null) continue;
+                if (!IsNodeGraphicsReadyRecursive(child)) return false;
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -475,66 +450,238 @@ namespace CharacterStudio.Rendering
         /// 处理隐藏原版元素
         /// 阶段4: 同时支持 hiddenTags（旧版）和 hiddenPaths（新版 NodePath）
         /// </summary>
-        private static void ProcessVanillaHiding(PawnRenderTree tree, PawnSkinDef skinDef, bool hideHead, bool hideHair)
+        private static void ProcessVanillaHiding(PawnRenderTree tree, PawnSkinDef skinDef, bool hideHead, bool hideHair, out bool tagHidingAvailable)
         {
-            // 使用反射获取 nodesByTag 字典
-            var nodesByTagField = AccessTools.Field(typeof(PawnRenderTree), "nodesByTag");
-            if (nodesByTagField == null) return;
+            // P2: 使用缓存的反射字段
+            var nodesByTag = nodesByTagField_Cached?.GetValue(tree) as Dictionary<PawnRenderNodeTagDef, PawnRenderNode>;
 
-            var nodesByTag = nodesByTagField.GetValue(tree) as Dictionary<PawnRenderNodeTagDef, PawnRenderNode>;
-            if (nodesByTag == null) return;
+            tagHidingAvailable = nodesByTag != null;
+            bool canUseTagHiding = tagHidingAvailable;
 
             // 隐藏头部
-            if (hideHead || skinDef.hideVanillaHead)
+            if (canUseTagHiding && (hideHead || skinDef.hideVanillaHead))
             {
-                HideNodeByTagName(nodesByTag, "Head");
+                HideNodeByTagName(nodesByTag!, "Head");
             }
 
             // 隐藏头发
-            if (hideHair || skinDef.hideVanillaHair)
+            if (canUseTagHiding && (hideHair || skinDef.hideVanillaHair))
             {
-                HideNodeByTagName(nodesByTag, "Hair");
+                HideNodeByTagName(nodesByTag!, "Hair");
             }
 
             // 隐藏身体
             if (skinDef.hideVanillaBody)
             {
-                HideNodeByTagName(nodesByTag, "Body");
+                if (canUseTagHiding)
+                {
+                    // 1) 先按标准 Body 标签隐藏（原版/部分模组）
+                    HideNodeByTagName(nodesByTag!, "Body");
+
+                    // 2) 再走一次兼容性回退（HAR/异种等非标准标签）
+                    HideVanillaBodyFallback(tree, nodesByTag!);
+                }
+                else
+                {
+                    // 没有 tag 索引时，至少保留递归 Body-like 回退
+                    HideBodyLikeNodesRecursive(tree.rootNode);
+                }
             }
 
-            // 处理自定义 hiddenTags 列表（向后兼容）
-            #pragma warning disable CS0618 // 忽略过时警告
-            if (skinDef.hiddenTags != null && skinDef.hiddenTags.Count > 0)
+            // 阶段4: 处理新版 hiddenPaths 列表（NodePath 精确定位）
+            bool hasHiddenPath = skinDef.hiddenPaths != null && skinDef.hiddenPaths.Count > 0;
+            bool hiddenByPath = false;
+            var fallbackTagsFromMissedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            if (hasHiddenPath)
             {
-                foreach (var tagName in skinDef.hiddenTags)
+                foreach (var nodePath in skinDef.hiddenPaths)
                 {
-                    if (!string.IsNullOrEmpty(tagName))
+                    if (string.IsNullOrEmpty(nodePath))
+                        continue;
+
+                    var targetNode = FindNodeByPath(tree, nodePath, warnOnFail: false);
+                    if (targetNode != null)
                     {
-                        HideNodeByTagName(nodesByTag, tagName);
+                        HideNode(targetNode);
+                        hiddenByPath = true;
                     }
+                    else
+                    {
+                        // 路径失配时，提取末段 tag 做“段级回退”，用于补漏不同种族/模组的节点结构差异。
+                        string fallbackTag = ExtractTerminalTagFromNodePath(nodePath);
+                        if (!string.IsNullOrEmpty(fallbackTag))
+                        {
+                            fallbackTagsFromMissedPaths.Add(fallbackTag);
+                        }
+                    }
+                }
+            }
+
+            // 处理自定义 hiddenTags 列表（向后兼容） + 路径失配段级回退
+            #pragma warning disable CS0618 // 忽略过时警告
+            if (canUseTagHiding)
+            {
+                var tagsToHide = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                // 旧行为：仅当未配置 hiddenPaths 或 hiddenPaths 全失配时，启用 hiddenTags 全量回退
+                if (skinDef.hiddenTags != null && skinDef.hiddenTags.Count > 0 && (!hasHiddenPath || !hiddenByPath))
+                {
+                    foreach (var tagName in skinDef.hiddenTags)
+                    {
+                        if (!string.IsNullOrEmpty(tagName))
+                        {
+                            tagsToHide.Add(tagName);
+                        }
+                    }
+                }
+
+                // 新行为：对 hiddenPaths 中“失配项”做段级 tag 回退（即使部分路径已命中也补漏）
+                foreach (var fallbackTag in fallbackTagsFromMissedPaths)
+                {
+                    tagsToHide.Add(fallbackTag);
+                }
+
+                foreach (var tagName in tagsToHide)
+                {
+                    HideNodeByTagName(nodesByTag!, tagName);
                 }
             }
             #pragma warning restore CS0618
 
-            // 阶段4: 处理新版 hiddenPaths 列表（NodePath 精确定位）
-            if (skinDef.hiddenPaths != null && skinDef.hiddenPaths.Count > 0)
+        }
+
+        /// <summary>
+        /// 按导入图层 texPath 隐藏原版节点（跨路径兜底）
+        /// </summary>
+        private static void HideVanillaNodesByImportedTexPaths(PawnRenderTree tree, PawnSkinDef skinDef)
+        {
+            if (tree?.rootNode == null || skinDef?.layers == null || skinDef.layers.Count == 0)
+                return;
+
+            var importedTexPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var layer in skinDef.layers)
             {
-                foreach (var nodePath in skinDef.hiddenPaths)
+                if (layer == null || string.IsNullOrEmpty(layer.texPath))
+                    continue;
+
+                // 过滤动态/未知贴图，避免误隐藏
+                if (layer.texPath == "Dynamic/Unknown" || layer.texPath == "Unknown" || layer.texPath.StartsWith("Dynamic/", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                importedTexPaths.Add(NormalizeTexPath(layer.texPath));
+            }
+
+            if (importedTexPaths.Count == 0)
+                return;
+
+            HideVanillaNodesByTexPathRecursive(tree.rootNode, tree.pawn, importedTexPaths);
+        }
+
+        /// <summary>
+        /// 递归按“真实渲染纹理路径”隐藏匹配节点
+        /// </summary>
+        private static void HideVanillaNodesByTexPathRecursive(PawnRenderNode node, Pawn? pawn, HashSet<string> importedTexPaths)
+        {
+            if (node == null)
+                return;
+
+            // 自定义节点不参与原版去重隐藏
+            if (!(node is PawnRenderNode_Custom))
+            {
+                string nodeTexPath = ResolveNodeTexturePathForHide(node, pawn);
+                if (!string.IsNullOrEmpty(nodeTexPath) && importedTexPaths.Contains(nodeTexPath))
                 {
-                    if (!string.IsNullOrEmpty(nodePath))
+                    HideNode(node);
+                }
+            }
+
+            if (node.children == null) return;
+            foreach (var child in node.children)
+            {
+                if (child == null) continue;
+                HideVanillaNodesByTexPathRecursive(child, pawn, importedTexPaths);
+            }
+        }
+
+        /// <summary>
+        /// 获取节点用于隐藏匹配的真实纹理路径
+        /// 优先级：GraphicFor -> PrimaryGraphic -> Graphics -> Props.texPath
+        /// </summary>
+        private static string ResolveNodeTexturePathForHide(PawnRenderNode node, Pawn? pawn)
+        {
+            // 1) 动态 GraphicFor（HAR/异种常见）
+            if (pawn != null)
+            {
+                try
+                {
+                    var g = node.GraphicFor(pawn);
+                    if (g != null && !string.IsNullOrEmpty(g.path))
+                        return NormalizeTexPath(g.path);
+                }
+                catch
+                {
+                    // 忽略单节点异常，继续回退
+                }
+            }
+
+            // 2) PrimaryGraphic
+            try
+            {
+                var primary = node.PrimaryGraphic;
+                if (primary != null && !string.IsNullOrEmpty(primary.path))
+                    return NormalizeTexPath(primary.path);
+            }
+            catch { }
+
+            // 3) Graphics 列表
+            try
+            {
+                var graphics = node.Graphics;
+                if (graphics != null)
+                {
+                    foreach (var g in graphics)
                     {
-                        var targetNode = FindNodeByPath(tree, nodePath);
-                        if (targetNode != null)
-                        {
-                            HideNode(targetNode);
-                        }
-                        else
-                        {
-                            Log.Warning($"[CharacterStudio] 无法找到路径对应的节点: {nodePath}");
-                        }
+                        if (g != null && !string.IsNullOrEmpty(g.path))
+                            return NormalizeTexPath(g.path);
                     }
                 }
             }
+            catch { }
+
+            // 4) 静态 Props 路径
+            return NormalizeTexPath(node.Props?.texPath ?? string.Empty);
+        }
+
+        private static string NormalizeTexPath(string path)
+        {
+            return string.IsNullOrEmpty(path)
+                ? string.Empty
+                : path.Replace('\\', '/').Trim();
+        }
+
+        /// <summary>
+        /// 从 NodePath 提取末段 tag（如 Root/Body:0/Head:0 -> Head）
+        /// </summary>
+        private static string ExtractTerminalTagFromNodePath(string nodePath)
+        {
+            if (string.IsNullOrEmpty(nodePath))
+                return string.Empty;
+
+            var segments = nodePath.Split('/');
+            for (int i = segments.Length - 1; i >= 0; i--)
+            {
+                if (string.IsNullOrEmpty(segments[i]))
+                    continue;
+
+                var (tagName, _) = ParsePathSegment(segments[i]);
+                if (!string.IsNullOrEmpty(tagName) && !tagName.Equals("Root", StringComparison.OrdinalIgnoreCase))
+                {
+                    return tagName;
+                }
+            }
+
+            return string.Empty;
         }
 
         /// <summary>
@@ -564,18 +711,22 @@ namespace CharacterStudio.Rendering
                 // 从根节点开始遍历
                 PawnRenderNode currentNode = tree.rootNode;
 
-                // 从第二段开始匹配子节点
+                // 从第二段开始匹配子节点（严格模式：tag + index）
                 for (int i = 1; i < segments.Length; i++)
                 {
                     var segment = segments[i];
                     var (tagName, index) = ParsePathSegment(segment);
 
-                    // 在当前节点的子节点中查找
                     var matchedChild = FindChildByTagAndIndex(currentNode, tagName, index);
                     if (matchedChild == null)
                     {
-                        if (warnOnFail) Log.Warning($"[CharacterStudio] 在路径 '{path}' 中找不到段 '{segment}'");
-                        return null;
+                        // 回退：只按 tag 匹配（忽略 index），提高跨模组稳定性
+                        matchedChild = FindChildByTagFirst(currentNode, tagName);
+                        if (matchedChild == null)
+                        {
+                            if (warnOnFail) Log.Warning($"[CharacterStudio] 在路径 '{path}' 中找不到段 '{segment}'");
+                            return null;
+                        }
                     }
 
                     currentNode = matchedChild;
@@ -638,21 +789,57 @@ namespace CharacterStudio.Rendering
         }
 
         /// <summary>
+        /// 在子节点中按 tag 查找第一个匹配节点（忽略 index）
+        /// </summary>
+        private static PawnRenderNode? FindChildByTagFirst(PawnRenderNode parent, string tagName)
+        {
+            if (parent.children == null)
+                return null;
+
+            foreach (var child in parent.children)
+            {
+                if (child == null) continue;
+                string childTag = child.Props?.tagDef?.defName ?? "Untagged";
+                if (childTag == tagName)
+                {
+                    return child;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// 隐藏单个节点（用于路径匹配后的隐藏）
         /// </summary>
         private static void HideNode(PawnRenderNode node)
         {
-            if (node == null || hiddenNodes.Contains(node))
+            if (node?.tree == null)
                 return;
 
-            hiddenNodes.Add(node);
-            // 改为使用 CanDrawNow 补丁控制可见性，不再修改 debugScale
-            // 这样可以避免破坏子节点的矩阵计算
-            HideChildNodes(node);
+            var hidden = GetHiddenSet(node.tree);
+            if (!hidden.Add(node))
+                return;
+
+            // 直接清空 Graphics[] 缓存，避免渲染提交 Mesh
+            ClearNodeGraphicsCache(node);
+            HideChildNodes(node, hidden);
         }
 
-        // 存储隐藏节点的状态，避免与调试工具冲突
-        private static readonly HashSet<PawnRenderNode> hiddenNodes = new HashSet<PawnRenderNode>();
+        // 存储隐藏节点状态（按渲染树分组），避免跨 Pawn 引用污染与失效引用
+        private static ConditionalWeakTable<PawnRenderTree, HashSet<PawnRenderNode>> hiddenNodesByTree =
+            new ConditionalWeakTable<PawnRenderTree, HashSet<PawnRenderNode>>();
+
+        // P3: 移除 trackedHiddenTrees（强引用阻止 GC 回收已卸载地图的渲染树）
+
+        // 保存被清空节点的原始 Graphics[] 数组，供恢复时使用
+        private static ConditionalWeakTable<PawnRenderNode, Graphic[]> savedGraphicsByNode =
+            new ConditionalWeakTable<PawnRenderNode, Graphic[]>();
+
+        private static HashSet<PawnRenderNode> GetHiddenSet(PawnRenderTree tree)
+        {
+            return hiddenNodesByTree.GetOrCreateValue(tree);
+        }
 
         /// <summary>
         /// 通过标签名隐藏节点
@@ -668,12 +855,7 @@ namespace CharacterStudio.Rendering
                     
                     try
                     {
-                        if (!hiddenNodes.Contains(node))
-                        {
-                            hiddenNodes.Add(node);
-                            // 同时隐藏子节点
-                            HideChildNodes(node);
-                        }
+                        HideNode(node);
                     }
                     catch (Exception ex)
                     {
@@ -683,31 +865,136 @@ namespace CharacterStudio.Rendering
             }
         }
 
+        private static void ClearNodeGraphicsCache(PawnRenderNode node)
+        {
+            var field = GetGraphicsField();
+            if (field == null) return;
+
+            try
+            {
+                var existing = field.GetValue(node) as Graphic[];
+                if (existing != null && existing.Length > 0)
+                {
+                    savedGraphicsByNode.Remove(node);
+                    savedGraphicsByNode.Add(node, existing);
+                    field.SetValue(node, Array.Empty<Graphic>());
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warning($"[CharacterStudio] 清空图形缓存出错 ({node}): {ex.Message}");
+            }
+        }
+
+        private static void RestoreNodeGraphicsCache(PawnRenderNode node)
+        {
+            var field = GetGraphicsField();
+            if (field == null) return;
+
+            try
+            {
+                if (savedGraphicsByNode.TryGetValue(node, out var saved))
+                {
+                    field.SetValue(node, saved);
+                    savedGraphicsByNode.Remove(node);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warning($"[CharacterStudio] 恢复图形缓存出错 ({node}): {ex.Message}");
+            }
+        }
+
         /// <summary>
         /// 递归隐藏子节点
         /// 注意：跳过 PawnRenderNode_Custom 类型的节点，因为这些是自定义图层
         /// 自定义图层虽然作为原版节点的子节点（用于定位），但不应该随原版节点一起隐藏
         /// </summary>
-        private static void HideChildNodes(PawnRenderNode node)
+        private static void HideChildNodes(PawnRenderNode node, HashSet<PawnRenderNode> hidden)
         {
             if (node.children == null) return;
-            
+
             foreach (var child in node.children)
             {
                 if (child == null) continue;
-                
-                // 跳过自定义图层节点 - 它们不应该随父节点一起隐藏
+
                 if (child is PawnRenderNode_Custom)
                 {
                     continue;
                 }
-                
-                if (!hiddenNodes.Contains(child))
+
+                if (hidden.Add(child))
                 {
-                    hiddenNodes.Add(child);
-                    HideChildNodes(child);
+                    ClearNodeGraphicsCache(child);
+                    HideChildNodes(child, hidden);
                 }
             }
+        }
+
+        /// <summary>
+        /// hideVanillaBody 兼容性回退：处理非标准 Body 标签的种族/模组
+        /// </summary>
+        private static void HideVanillaBodyFallback(PawnRenderTree tree, Dictionary<PawnRenderNodeTagDef, PawnRenderNode> nodesByTag)
+        {
+            if (tree?.rootNode == null)
+                return;
+
+            // 先尝试一组常见标签名
+            string[] commonBodyTags = { "Torso", "Core", "BodyBase", "NakedBody", "AlienBody", "Body" };
+            foreach (var tag in commonBodyTags)
+            {
+                HideNodeByTagName(nodesByTag, tag);
+            }
+
+            // 再递归按启发式隐藏：标签/调试名包含 body/torso，且不是服装类节点
+            HideBodyLikeNodesRecursive(tree.rootNode);
+        }
+
+        /// <summary>
+        /// 递归隐藏 Body-like 节点（跳过服装与自定义节点）
+        /// </summary>
+        private static void HideBodyLikeNodesRecursive(PawnRenderNode node)
+        {
+            if (node == null) return;
+
+            if (!(node is PawnRenderNode_Custom) && IsBodyLikeNode(node))
+            {
+                HideNode(node);
+            }
+
+            if (node.children == null) return;
+            foreach (var child in node.children)
+            {
+                if (child == null) continue;
+                HideBodyLikeNodesRecursive(child);
+            }
+        }
+
+        /// <summary>
+        /// 判断节点是否属于“身体主体”类别
+        /// </summary>
+        private static bool IsBodyLikeNode(PawnRenderNode node)
+        {
+            var props = node.Props;
+            string tag = props?.tagDef?.defName ?? string.Empty;
+            string workerName = props?.workerClass?.Name ?? string.Empty;
+            string label = node.ToString() ?? string.Empty;
+
+            // 过滤服装/装备相关节点
+            if (tag.IndexOf("Apparel", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                tag.IndexOf("Headgear", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                workerName.IndexOf("Apparel", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                workerName.IndexOf("Headgear", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return false;
+            }
+
+            // 命中 body/torso/core 等关键词
+            return tag.IndexOf("Body", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   tag.IndexOf("Torso", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   tag.IndexOf("Core", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   label.IndexOf("Body", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   label.IndexOf("Torso", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         /// <summary>
@@ -715,8 +1002,34 @@ namespace CharacterStudio.Rendering
         /// </summary>
         public static void ClearHiddenNodes()
         {
-            hiddenNodes.Clear();
+            // P3: 不再依赖 trackedHiddenTrees 遍历，直接重建 ConditionalWeakTable
+            hiddenNodesByTree = new ConditionalWeakTable<PawnRenderTree, HashSet<PawnRenderNode>>();
+            savedGraphicsByNode = new ConditionalWeakTable<PawnRenderNode, Graphic[]>();
         }
+
+        // P3: RestoreAllHiddenNodeGraphics 已不再使用（去除 trackedHiddenTrees 后无法遍历）
+        // 单棵树的恢复通过 RestoreAndRemoveHiddenForTree 实现
+
+        private static void RestoreAndRemoveHiddenForTree(PawnRenderTree tree)
+        {
+            if (tree == null)
+                return;
+
+            if (hiddenNodesByTree.TryGetValue(tree, out var oldHidden))
+            {
+                foreach (var oldNode in oldHidden)
+                {
+                    if (oldNode != null)
+                    {
+                        RestoreNodeGraphicsCache(oldNode);
+                    }
+                }
+            }
+
+            hiddenNodesByTree.Remove(tree);
+            // P3: 不再操作 trackedHiddenTrees
+        }
+
 
         /// <summary>
         /// 刷新指定 Pawn 的隐藏节点（在皮肤变更时调用）
@@ -727,9 +1040,9 @@ namespace CharacterStudio.Rendering
             
             var tree = pawn.Drawer.renderer.renderTree;
             
-            // 清除旧的隐藏节点
-            hiddenNodes.Clear();
-            
+            // 先恢复上一轮被清空的 Graphics[] 缓存
+            RestoreAndRemoveHiddenForTree(tree);
+
             // 移除所有旧的自定义图层节点，确保状态纯净
             // 这对于编辑器预览至关重要，因为图层列表可能发生了变化
             RemoveAllCustomNodes(tree);
@@ -741,10 +1054,16 @@ namespace CharacterStudio.Rendering
             if (skinDef != null)
             {
                 // 重新处理隐藏逻辑，使用皮肤定义中的设置
-                ProcessVanillaHiding(tree, skinDef, skinDef.hideVanillaHead, skinDef.hideVanillaHair);
-                
+                ProcessVanillaHiding(tree, skinDef, skinDef.hideVanillaHead, skinDef.hideVanillaHair, out bool tagHidingAvailable);
+
                 // 强制注入当前的所有自定义图层
-                InjectCustomLayers(tree, pawn, skinDef);
+                bool anyNodesInjected = InjectCustomLayers(tree, pawn, skinDef);
+
+                // 与 Postfix 保持一致：仅在缺失 tag 索引时触发 texPath 兜底隐藏。
+                if (anyNodesInjected && !tagHidingAvailable && IsGraphicsReadyForVanillaNodes(tree))
+                {
+                    HideVanillaNodesByImportedTexPaths(tree, skinDef);
+                }
             }
             
             // 标记树为脏，触发重绘和排序更新
@@ -781,6 +1100,7 @@ namespace CharacterStudio.Rendering
                 if (child is PawnRenderNode_Custom)
                 {
                     hasCustomChild = true;
+                    RuntimeAssetLoader.UnregisterNodeOffsets(child.GetHashCode());
                     // 不需要 break，我们还需要递归处理其他节点
                 }
                 else
@@ -814,30 +1134,17 @@ namespace CharacterStudio.Rendering
 
             try
             {
-                // 清除旧的隐藏节点
-                hiddenNodes.Clear();
-
-                // 使用反射强制标记渲染树需要重建
-                var rendererField = AccessTools.Field(typeof(PawnRenderer), "renderTree");
-                if (rendererField != null)
+                // P2: 使用缓存的反射字段
+                var tree = renderTreeField_Cached?.GetValue(pawn.Drawer.renderer) as PawnRenderTree;
+                if (tree != null)
                 {
-                    var tree = rendererField.GetValue(pawn.Drawer.renderer) as PawnRenderTree;
-                    if (tree != null)
-                    {
-                        // 尝试调用 SetDirty 方法
-                        var setDirtyMethod = AccessTools.Method(typeof(PawnRenderTree), "SetDirty");
-                        if (setDirtyMethod != null)
-                        {
-                            setDirtyMethod.Invoke(tree, null);
-                        }
-                        
-                        // 同时尝试重新设置 setupComplete 为 false 以强制重新初始化
-                        var setupCompleteField = AccessTools.Field(typeof(PawnRenderTree), "setupComplete");
-                        if (setupCompleteField != null)
-                        {
-                            setupCompleteField.SetValue(tree, false);
-                        }
-                    }
+                    // 不再调用 RestoreAndRemoveHiddenForTree：
+                    // 调用方（ApplySkinToPawn/ClearSkinFromPawn）已由 RefreshHiddenNodes
+                    // 处理了完整的 恢复→清理→隐藏→注入 流程。
+                    // 如果在此恢复隐藏，P1 守卫会跳过 Postfix，导致隐藏丢失。
+
+                    setDirtyMethod_Cached?.Invoke(tree, null);
+                    setupCompleteField_Cached?.SetValue(tree, false);
                 }
 
                 // 设置图形为脏以触发重新渲染
@@ -863,8 +1170,11 @@ namespace CharacterStudio.Rendering
             if (!hasCustomNodes)
             {
                 // 尚未注入，执行注入
-                InjectCustomLayers(tree, pawn, skinDef);
-                Log.Message($"[CharacterStudio] 在皮肤变更时注入了 {skinDef.layers.Count} 个自定义图层");
+                var injected = InjectCustomLayers(tree, pawn, skinDef);
+                if (injected)
+                {
+                    Log.Message($"[CharacterStudio] 在皮肤变更时注入了 {skinDef.layers.Count} 个自定义图层");
+                }
             }
         }
 
@@ -895,9 +1205,9 @@ namespace CharacterStudio.Rendering
         /// 注入自定义图层
         /// 阶段4: 支持 anchorPath（NodePath）优先于 anchorTag
         /// </summary>
-        private static void InjectCustomLayers(PawnRenderTree tree, Pawn pawn, PawnSkinDef skinDef)
+        private static bool InjectCustomLayers(PawnRenderTree tree, Pawn pawn, PawnSkinDef skinDef)
         {
-            if (skinDef.layers == null || skinDef.layers.Count == 0) return;
+            if (skinDef.layers == null || skinDef.layers.Count == 0) return false;
 
             bool anyNodesInjected = false;
 
@@ -983,6 +1293,11 @@ namespace CharacterStudio.Rendering
                     // 添加为子节点
                     if (node != null)
                     {
+                        // 直接使用 layer.scale —— 该值在捕获阶段（RenderTreeParser.ScaleFor）
+                        // 已经包含了节点的 props.drawSize 缩放。
+                        // 不再叠乘 anchorScale，避免二次放大。
+                        node.Props.drawSize = layer.scale;
+
                         node.parent = parentNode;
                         AddChildToNode(parentNode, node);
                         anyNodesInjected = true;
@@ -1018,6 +1333,8 @@ namespace CharacterStudio.Rendering
             {
                 ReinitializeNodeAncestors(tree);
             }
+
+            return anyNodesInjected;
         }
 
         /// <summary>
@@ -1028,36 +1345,30 @@ namespace CharacterStudio.Rendering
         {
             try
             {
-                // 获取 nodeAncestors 字段
-                var nodeAncestorsField = AccessTools.Field(typeof(PawnRenderTree), "nodeAncestors");
-                if (nodeAncestorsField == null)
+                // P2: 使用缓存的反射字段
+                if (nodeAncestorsField_Cached == null)
                 {
                     Log.Warning("[CharacterStudio] 无法找到 nodeAncestors 字段");
                     return;
                 }
 
-                // 清空现有字典
-                var nodeAncestors = nodeAncestorsField.GetValue(tree) as Dictionary<PawnRenderNode, List<PawnRenderNode>>;
+                var nodeAncestors = nodeAncestorsField_Cached.GetValue(tree) as Dictionary<PawnRenderNode, List<PawnRenderNode>>;
                 if (nodeAncestors == null)
                 {
-                    // 如果字典不存在，创建一个新的
                     nodeAncestors = new Dictionary<PawnRenderNode, List<PawnRenderNode>>();
-                    nodeAncestorsField.SetValue(tree, nodeAncestors);
+                    nodeAncestorsField_Cached.SetValue(tree, nodeAncestors);
                 }
                 else
                 {
                     nodeAncestors.Clear();
                 }
 
-                // 尝试调用私有的 InitializeAncestors 方法
-                var initMethod = AccessTools.Method(typeof(PawnRenderTree), "InitializeAncestors");
-                if (initMethod != null)
+                if (initAncestorsMethod_Cached != null)
                 {
-                    initMethod.Invoke(tree, null);
+                    initAncestorsMethod_Cached.Invoke(tree, null);
                 }
                 else
                 {
-                    // 如果找不到方法，手动遍历树并注册所有节点
                     ManuallyInitializeAncestors(tree.rootNode, nodeAncestors, new List<PawnRenderNode>());
                 }
             }
@@ -1112,21 +1423,17 @@ namespace CharacterStudio.Rendering
             {
                 case LayerColorType.Hair:
                     props.colorType = PawnRenderNodeProperties.AttachmentColorType.Hair;
-                    Log.Message($"[CharacterStudio] CreateNodeProperties: {layer.layerName} → colorType=Hair, offset={layer.offset}, offsetNorth={layer.offsetNorth}");
                     break;
                 case LayerColorType.Skin:
                     props.colorType = PawnRenderNodeProperties.AttachmentColorType.Skin;
-                    Log.Message($"[CharacterStudio] CreateNodeProperties: {layer.layerName} → colorType=Skin, offset={layer.offset}, offsetNorth={layer.offsetNorth}");
                     break;
                 case LayerColorType.White:
                     props.colorType = PawnRenderNodeProperties.AttachmentColorType.Custom;
                     props.color = UnityEngine.Color.white;
-                    Log.Message($"[CharacterStudio] CreateNodeProperties: {layer.layerName} → colorType=White, offset={layer.offset}, offsetNorth={layer.offsetNorth}");
                     break;
                 default:
                     props.colorType = PawnRenderNodeProperties.AttachmentColorType.Custom;
                     props.color = layer.customColor;
-                    Log.Message($"[CharacterStudio] CreateNodeProperties: {layer.layerName} → colorType=Custom({layer.customColor}), offset={layer.offset}, offsetNorth={layer.offsetNorth}");
                     break;
             }
 

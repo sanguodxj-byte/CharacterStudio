@@ -35,6 +35,12 @@ namespace CharacterStudio.UI
                     .OrderBy(s => s.label)
                     .ToList();
 
+                // 打开编辑器入口（可从编辑器内继续执行“从地图导入”）
+                yield return new FloatMenuOption(
+                    "CS_Studio_OpenEditor".Translate(),
+                    () => Find.WindowStack.Add(new Dialog_SkinEditor(pawn))
+                );
+
                 // 添加清除选项
                 yield return new FloatMenuOption(
                     "CS_Appearance_ClearSkin".Translate(),

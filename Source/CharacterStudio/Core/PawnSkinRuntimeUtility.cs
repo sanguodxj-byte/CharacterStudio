@@ -26,11 +26,14 @@ namespace CharacterStudio.Core
 
             try
             {
+                // RefreshHiddenNodes 在主线程执行注入（纹理加载必须在主线程）
+                // P1 守卫（CheckForCustomNodes）会阻止 Postfix 重复注入
                 Patch_PawnRenderTree.RefreshHiddenNodes(pawn);
                 Patch_PawnRenderTree.ForceRebuildRenderTree(pawn);
             }
-            catch
+            catch (System.Exception ex)
             {
+                Log.Warning($"[CharacterStudio] ForceRebuildRenderTree 失败，回退到 RequestRenderRefresh: {ex.Message}");
                 comp.RequestRenderRefresh();
             }
 
@@ -55,8 +58,9 @@ namespace CharacterStudio.Core
                 Patch_PawnRenderTree.RefreshHiddenNodes(pawn);
                 Patch_PawnRenderTree.ForceRebuildRenderTree(pawn);
             }
-            catch
+            catch (System.Exception ex)
             {
+                Log.Warning($"[CharacterStudio] ClearSkin ForceRebuildRenderTree 失败: {ex.Message}");
                 comp.RequestRenderRefresh();
             }
 

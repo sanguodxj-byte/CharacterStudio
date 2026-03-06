@@ -78,13 +78,16 @@ namespace CharacterStudio.Core
                     return result;
                 }
 
-                var seenTexPaths = new HashSet<string>();
+                // 去重策略：仅按纹理路径去重。
+                // 需求场景下我们保存的是整体纹理效果，父/子节点若 texPath 相同可视为重复图层。
+                var seenTexPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 foreach (var layer in rawLayers)
                 {
-                    string uniqueKey = $"{layer.texPath}|{layer.anchorPath}";
-                    if (!seenTexPaths.Contains(uniqueKey))
+                    if (string.IsNullOrEmpty(layer.texPath))
+                        continue;
+
+                    if (seenTexPaths.Add(layer.texPath))
                     {
-                        seenTexPaths.Add(uniqueKey);
                         result.layers.Add(layer);
                     }
                 }
@@ -103,13 +106,19 @@ namespace CharacterStudio.Core
             }
         }
 
-        private static void ProcessSnapshotNode(RenderNodeSnapshot node, string parentAnchorTag, string parentAnchorPath, List<PawnLayerConfig> layers, List<string> sourcePaths, List<string> sourceTags, ref int index, Pawn pawn)
+        private static void ProcessSnapshotNode(RenderNodeSnapshot node, string parentAnchorTag, string? parentAnchorPath, List<PawnLayerConfig> layers, List<string> sourcePaths, List<string> sourceTags, ref int index, Pawn? pawn)
         {
             if (node == null) return;
 
             string currentAnchor = parentAnchorTag;
 
-            if (IsValidLayer(node))
+            // ── 结构性父节点过滤 ──
+            // Head/Body 节点自身携带皮肤纹理，但这些纹理在游戏中由原版渲染树管理。
+            // 将它们导入为自定义图层会导致纹理重复。
+            // 仅跳过导入，不跳过递归子节点处理和 anchor 更新。
+            bool isStructuralParent = IsStructuralParentNode(node);
+
+            if (IsValidLayer(node) && !isStructuralParent)
             {
                 Vector3 effectiveOffset;
                 Vector3 effectiveOffsetEast;
@@ -220,7 +229,7 @@ namespace CharacterStudio.Core
                     layerName = GenerateLayerName(node, index),
                     texPath = node.texPath,
                     anchorTag = parentAnchorTag,
-                    anchorPath = string.IsNullOrEmpty(parentAnchorPath) ? "Root" : parentAnchorPath,
+                    anchorPath = string.IsNullOrEmpty(parentAnchorPath) ? "Root" : (parentAnchorPath ?? "Root"),
                     colorSource = detectedSource,
                     customColor = effectiveColor,
                     colorTwoSource = detectedSourceTwo,
@@ -243,6 +252,8 @@ namespace CharacterStudio.Core
                 
                 if (!isDynamicOrUnknown)
                 {
+                    // 结构性父节点的路径不加入 hiddenPaths，因为原版节点保持正常渲染
+                    // （此分支已被 isStructuralParent 过滤，不会到达，但保留防御性检查）
                     sourcePaths.Add(node.uniqueNodePath ?? "");
                     if (!string.IsNullOrEmpty(node.tagDefName) && node.tagDefName != "Untagged" && !sourceTags.Contains(node.tagDefName))
                     {
@@ -255,6 +266,15 @@ namespace CharacterStudio.Core
             if (!string.IsNullOrEmpty(node.tagDefName) && node.tagDefName != "Untagged" && !ExcludedTags.Contains(node.tagDefName))
             {
                 currentAnchor = node.tagDefName;
+            }
+
+            // HAR/异种兼容：某些身体节点可能没有标准 Body tag，补充 Body 回退隐藏标记
+            if (!string.IsNullOrEmpty(node.debugLabel) &&
+                node.debugLabel.IndexOf("body", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                (node.workerClass == null || !node.workerClass.Contains("Apparel")) &&
+                !sourceTags.Contains("Body"))
+            {
+                sourceTags.Add("Body");
             }
 
             if (node.children != null)
@@ -290,7 +310,8 @@ namespace CharacterStudio.Core
             var result = new ImportResult
             {
                 layers = new List<PawnLayerConfig>(),
-                sourcePaths = new List<string>()
+                sourcePaths = new List<string>(),
+                sourceTags = new List<string>()
             };
             
             foreach (var layer in skinDef.layers)
@@ -303,12 +324,17 @@ namespace CharacterStudio.Core
             {
                 result.sourcePaths = new List<string>(skinDef.hiddenPaths);
             }
+
+            if (skinDef.hiddenTags != null)
+            {
+                result.sourceTags = new List<string>(skinDef.hiddenTags);
+            }
             
-            Log.Message($"[CharacterStudio] 从现有皮肤导入 {result.layers.Count} 个图层，{result.sourcePaths.Count} 个隐藏路径");
+            Log.Message($"[CharacterStudio] 从现有皮肤导入 {result.layers.Count} 个图层，{result.sourcePaths.Count} 个隐藏路径，{result.sourceTags.Count} 个隐藏标签");
             return result;
         }
         
-        private static LayerColorSource DetectSourceByColor(Color color, Pawn pawn)
+        private static LayerColorSource DetectSourceByColor(Color color, Pawn? pawn)
         {
             if (pawn?.story == null) return LayerColorSource.Fixed;
             
@@ -318,7 +344,7 @@ namespace CharacterStudio.Core
             return LayerColorSource.Fixed;
         }
 
-        private static LayerColorSource DetectColorSource(RenderNodeSnapshot node, Pawn pawn)
+        private static LayerColorSource DetectColorSource(RenderNodeSnapshot node, Pawn? pawn)
         {
             // 0. 基于 HAR colorChannel 的绝对匹配 (最高优先级)
             if (!string.IsNullOrEmpty(node.colorChannel))
@@ -388,6 +414,28 @@ namespace CharacterStudio.Core
                    Mathf.Abs(a.g - b.g) < tolerance &&
                    Mathf.Abs(a.b - b.b) < tolerance &&
                    Mathf.Abs(a.a - b.a) < tolerance;
+        }
+
+        /// <summary>
+        /// 判断节点是否为结构性父节点（Head/Body 容器节点）。
+        /// 这些节点有自己的纹理（皮肤贴图），但它们的纹理应由原版机制管理，
+        /// 不应导入为自定义图层，否则会导致重复渲染。
+        /// </summary>
+        private static bool IsStructuralParentNode(RenderNodeSnapshot node)
+        {
+            if (node == null) return false;
+            if (node.children == null || node.children.Count == 0) return false;
+
+            string tag = node.tagDefName ?? "";
+            if (tag == "Head" || tag == "Body")
+            {
+                // 排除服装类节点（它们可能也有 Body 相关 tag）
+                if (node.workerClass != null &&
+                    (node.workerClass.Contains("Apparel") || node.workerClass.Contains("Headgear")))
+                    return false;
+                return true;
+            }
+            return false;
         }
 
         private static string GenerateLayerName(RenderNodeSnapshot node, int index)

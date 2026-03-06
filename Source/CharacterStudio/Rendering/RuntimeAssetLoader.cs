@@ -488,6 +488,18 @@ namespace CharacterStudio.Rendering
         }
 
         /// <summary>
+        /// 注销单个节点的偏移量注册
+        /// </summary>
+        public static void UnregisterNodeOffsets(int nodeId)
+        {
+            lock (nodeRegistryLock)
+            {
+                nodeOffsetEastRegistry.Remove(nodeId);
+                nodeOffsetNorthRegistry.Remove(nodeId);
+            }
+        }
+
+        /// <summary>
         /// 清除所有节点注册表数据
         /// </summary>
         public static void ClearNodeRegistry()

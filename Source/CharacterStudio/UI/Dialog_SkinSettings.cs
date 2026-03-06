@@ -20,6 +20,12 @@ namespace CharacterStudio.UI
         private string tempDescription;
         private string tempAuthor;
         private string tempVersion;
+        private bool tempHotkeysEnabled;
+        private string tempQAbilityDefName;
+        private string tempWAbilityDefName;
+        private string tempEAbilityDefName;
+        private string tempRAbilityDefName;
+        private string tempWComboAbilityDefName;
 
         public override Vector2 InitialSize => new Vector2(500f, 500f);
 
@@ -39,6 +45,12 @@ namespace CharacterStudio.UI
             tempDescription = skin.description ?? "";
             tempAuthor = skin.author ?? "";
             tempVersion = skin.version ?? "1.0.0";
+            tempHotkeysEnabled = skin.abilityHotkeys?.enabled ?? false;
+            tempQAbilityDefName = skin.abilityHotkeys?.qAbilityDefName ?? "";
+            tempWAbilityDefName = skin.abilityHotkeys?.wAbilityDefName ?? "";
+            tempEAbilityDefName = skin.abilityHotkeys?.eAbilityDefName ?? "";
+            tempRAbilityDefName = skin.abilityHotkeys?.rAbilityDefName ?? "";
+            tempWComboAbilityDefName = skin.abilityHotkeys?.wComboAbilityDefName ?? "";
         }
 
         public override void DoWindowContents(Rect inRect)
@@ -86,6 +98,16 @@ namespace CharacterStudio.UI
             string racesText = skinDef.targetRaces != null && skinDef.targetRaces.Count > 0 ? string.Join(", ", skinDef.targetRaces) : "CS_Studio_AllRaces".Translate();
             UIHelper.DrawPropertyFieldWithButton(ref vy, width, "CS_Studio_Skin_TargetRaces".Translate(), racesText, ShowRaceSelector);
 
+            // 技能热键映射
+            UIHelper.DrawSectionTitle(ref vy, width, "CS_Studio_Section_AbilityHotkeys".Translate());
+            UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Ability_Hotkey_Enable".Translate(), ref tempHotkeysEnabled);
+
+            DrawHotkeyMappingField(ref vy, width, "CS_Studio_Ability_Hotkey_Q".Translate(), () => tempQAbilityDefName, v => tempQAbilityDefName = v);
+            DrawHotkeyMappingField(ref vy, width, "CS_Studio_Ability_Hotkey_W".Translate(), () => tempWAbilityDefName, v => tempWAbilityDefName = v);
+            DrawHotkeyMappingField(ref vy, width, "CS_Studio_Ability_Hotkey_E".Translate(), () => tempEAbilityDefName, v => tempEAbilityDefName = v);
+            DrawHotkeyMappingField(ref vy, width, "CS_Studio_Ability_Hotkey_R".Translate(), () => tempRAbilityDefName, v => tempRAbilityDefName = v);
+            DrawHotkeyMappingField(ref vy, width, "CS_Studio_Ability_Hotkey_WCombo".Translate(), () => tempWComboAbilityDefName, v => tempWComboAbilityDefName = v);
+
             Widgets.EndScrollView();
 
             // ─────────────────────────────────────────────
@@ -114,8 +136,55 @@ namespace CharacterStudio.UI
             skinDef.description = tempDescription;
             skinDef.author = tempAuthor;
             skinDef.version = tempVersion;
+            if (skinDef.abilityHotkeys == null)
+            {
+                skinDef.abilityHotkeys = new SkinAbilityHotkeyConfig();
+            }
+
+            skinDef.abilityHotkeys.enabled = tempHotkeysEnabled;
+            skinDef.abilityHotkeys.qAbilityDefName = tempQAbilityDefName;
+            skinDef.abilityHotkeys.wAbilityDefName = tempWAbilityDefName;
+            skinDef.abilityHotkeys.eAbilityDefName = tempEAbilityDefName;
+            skinDef.abilityHotkeys.rAbilityDefName = tempRAbilityDefName;
+            skinDef.abilityHotkeys.wComboAbilityDefName = tempWComboAbilityDefName;
 
             onChanged?.Invoke();
+        }
+
+        private void DrawHotkeyMappingField(ref float y, float width, string label, Func<string> getter, Action<string> setter)
+        {
+            string current = getter();
+            string display = string.IsNullOrEmpty(current) ? "CS_Studio_Ability_Hotkey_None".Translate() : current;
+            UIHelper.DrawPropertyFieldWithButton(ref y, width, label, display, () => ShowAbilitySelector(setter));
+        }
+
+        private void ShowAbilitySelector(Action<string> onSelect)
+        {
+            var options = new List<FloatMenuOption>
+            {
+                new FloatMenuOption("CS_Studio_Ability_Hotkey_None".Translate(), () =>
+                {
+                    onSelect("");
+                    onChanged?.Invoke();
+                })
+            };
+
+            if (skinDef.abilities != null)
+            {
+                foreach (var ability in skinDef.abilities)
+                {
+                    if (ability == null || string.IsNullOrEmpty(ability.defName)) continue;
+                    string abilityLabel = string.IsNullOrEmpty(ability.label) ? ability.defName : $"{ability.label} ({ability.defName})";
+
+                    options.Add(new FloatMenuOption(abilityLabel, () =>
+                    {
+                        onSelect(ability.defName);
+                        onChanged?.Invoke();
+                    }));
+                }
+            }
+
+            Find.WindowStack.Add(new FloatMenu(options));
         }
 
         private void ShowRaceSelector()

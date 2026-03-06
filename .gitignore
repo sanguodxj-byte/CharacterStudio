@@ -20,3 +20,8 @@ desktop.ini
 *.bak
 *.swp
 *~
+
+# Local workspace / tooling
+build_out.log
+CharacterStudio.code-workspace
+.windsurfrules

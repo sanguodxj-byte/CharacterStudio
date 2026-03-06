@@ -243,7 +243,7 @@ namespace CharacterStudio.UI
         /// <summary>
         /// 绘制复选框行
         /// </summary>
-        public static void DrawPropertyCheckbox(ref float y, float width, string label, ref bool value, string tooltip = null)
+        public static void DrawPropertyCheckbox(ref float y, float width, string label, ref bool value, string? tooltip = null)
         {
             Rect rect = new Rect(0, y, width, RowHeight);
             Widgets.CheckboxLabeled(rect, label, ref value);

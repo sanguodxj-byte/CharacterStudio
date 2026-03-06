@@ -552,7 +552,9 @@ namespace CharacterStudio.Exporter
                         new XElement("author", config.Author),
                         new XElement("version", config.Version),
                         GenerateLayersXml(skin.layers),
-                        GenerateTargetRacesXml(skin.targetRaces)
+                        GenerateTargetRacesXml(skin.targetRaces),
+                        GenerateSkinAbilitiesXml(skin.abilities),
+                        GenerateAbilityHotkeysXml(skin.abilityHotkeys)
                     )
                 )
             );
@@ -579,6 +581,7 @@ namespace CharacterStudio.Exporter
                     new XElement("offset", $"({layer.offset.x:F3}, {layer.offset.y:F3}, {layer.offset.z:F3})"),
                     new XElement("drawOrder", layer.drawOrder),
                     new XElement("scale", $"({layer.scale.x:F2}, {layer.scale.y:F2})"),
+                    new XElement("rotation", layer.rotation),
                     new XElement("flipHorizontal", layer.flipHorizontal.ToString().ToLower()),
                     new XElement("colorType", layer.colorType.ToString()),
                     new XElement("visible", layer.visible.ToString().ToLower())
@@ -603,6 +606,124 @@ namespace CharacterStudio.Exporter
             }
 
             return element;
+        }
+
+        private XElement? GenerateSkinAbilitiesXml(List<ModularAbilityDef>? abilities)
+        {
+            if (abilities == null || abilities.Count == 0)
+            {
+                return null;
+            }
+
+            var element = new XElement("abilities");
+            foreach (var ability in abilities)
+            {
+                if (ability == null || string.IsNullOrEmpty(ability.defName)) continue;
+
+                var abilityEl = new XElement("li",
+                    new XElement("defName", ability.defName),
+                    !string.IsNullOrEmpty(ability.label) ? new XElement("label", ability.label) : null,
+                    !string.IsNullOrEmpty(ability.description) ? new XElement("description", ability.description) : null,
+                    !string.IsNullOrEmpty(ability.iconPath) ? new XElement("iconPath", ability.iconPath) : null,
+                    new XElement("cooldownTicks", ability.cooldownTicks),
+                    new XElement("warmupTicks", ability.warmupTicks),
+                    new XElement("charges", ability.charges),
+                    new XElement("aiCanUse", ability.aiCanUse),
+                    new XElement("carrierType", ability.carrierType.ToString()),
+                    new XElement("range", ability.range),
+                    new XElement("radius", ability.radius),
+                    ability.projectileDef != null ? new XElement("projectileDef", ability.projectileDef.defName) : null,
+                    GenerateSkinAbilityEffectsXml(ability.effects),
+                    GenerateRuntimeComponentsXml(ability.runtimeComponents)
+                );
+
+                element.Add(abilityEl);
+            }
+
+            return element;
+        }
+
+        private XElement? GenerateSkinAbilityEffectsXml(List<AbilityEffectConfig>? effects)
+        {
+            if (effects == null || effects.Count == 0)
+            {
+                return null;
+            }
+
+            var effectsEl = new XElement("effects");
+            foreach (var effect in effects)
+            {
+                if (effect == null) continue;
+
+                var effectEl = new XElement("li",
+                    new XElement("type", effect.type.ToString()),
+                    new XElement("amount", effect.amount),
+                    new XElement("duration", effect.duration),
+                    new XElement("chance", effect.chance),
+                    effect.damageDef != null ? new XElement("damageDef", effect.damageDef.defName) : null,
+                    effect.hediffDef != null ? new XElement("hediffDef", effect.hediffDef.defName) : null,
+                    effect.summonKind != null ? new XElement("summonKind", effect.summonKind.defName) : null,
+                    new XElement("summonCount", effect.summonCount)
+                );
+
+                effectsEl.Add(effectEl);
+            }
+
+            return effectsEl;
+        }
+
+        private XElement? GenerateRuntimeComponentsXml(List<AbilityRuntimeComponentConfig>? components)
+        {
+            if (components == null || components.Count == 0)
+            {
+                return null;
+            }
+
+            var root = new XElement("runtimeComponents");
+            foreach (var component in components)
+            {
+                if (component == null) continue;
+
+                var compEl = new XElement("li",
+                    new XElement("type", component.type.ToString()),
+                    new XElement("enabled", component.enabled.ToString().ToLower()),
+                    new XElement("comboWindowTicks", component.comboWindowTicks),
+                    new XElement("cooldownTicks", component.cooldownTicks),
+                    new XElement("jumpDistance", component.jumpDistance),
+                    new XElement("findCellRadius", component.findCellRadius),
+                    new XElement("triggerAbilityEffectsAfterJump", component.triggerAbilityEffectsAfterJump.ToString().ToLower()),
+                    new XElement("requiredStacks", component.requiredStacks),
+                    new XElement("delayTicks", component.delayTicks),
+                    new XElement("wave1Radius", component.wave1Radius),
+                    new XElement("wave1Damage", component.wave1Damage),
+                    new XElement("wave2Radius", component.wave2Radius),
+                    new XElement("wave2Damage", component.wave2Damage),
+                    new XElement("wave3Radius", component.wave3Radius),
+                    new XElement("wave3Damage", component.wave3Damage),
+                    component.waveDamageDef != null ? new XElement("waveDamageDef", component.waveDamageDef.defName) : null
+                );
+
+                root.Add(compEl);
+            }
+
+            return root;
+        }
+
+        private XElement? GenerateAbilityHotkeysXml(SkinAbilityHotkeyConfig? hotkeys)
+        {
+            if (hotkeys == null)
+            {
+                return null;
+            }
+
+            return new XElement("abilityHotkeys",
+                new XElement("enabled", hotkeys.enabled.ToString().ToLower()),
+                !string.IsNullOrEmpty(hotkeys.qAbilityDefName) ? new XElement("qAbilityDefName", hotkeys.qAbilityDefName) : null,
+                !string.IsNullOrEmpty(hotkeys.wAbilityDefName) ? new XElement("wAbilityDefName", hotkeys.wAbilityDefName) : null,
+                !string.IsNullOrEmpty(hotkeys.eAbilityDefName) ? new XElement("eAbilityDefName", hotkeys.eAbilityDefName) : null,
+                !string.IsNullOrEmpty(hotkeys.rAbilityDefName) ? new XElement("rAbilityDefName", hotkeys.rAbilityDefName) : null,
+                !string.IsNullOrEmpty(hotkeys.wComboAbilityDefName) ? new XElement("wComboAbilityDefName", hotkeys.wComboAbilityDefName) : null
+            );
         }
 
         // ─────────────────────────────────────────────

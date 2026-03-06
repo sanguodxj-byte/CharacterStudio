@@ -93,7 +93,7 @@ namespace CharacterStudio.Introspection
         public string workerClass = "Default";      // The Type name of the node's worker
         
         /// <summary>原始图形类类型（如 Graphic_Multi, Graphic_Single）</summary>
-        public System.Type graphicClass;
+        public System.Type? graphicClass;
 
         // ─────────────────────────────────────────────
         // HAR 兼容性字段
