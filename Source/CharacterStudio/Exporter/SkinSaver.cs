@@ -69,6 +69,7 @@ namespace CharacterStudio.Exporter
                 !string.IsNullOrEmpty(skin.author) ? new XElement("author", skin.author) : null,
                 !string.IsNullOrEmpty(skin.version) ? new XElement("version", skin.version) : null,
                 !string.IsNullOrEmpty(skin.previewTexPath) ? new XElement("previewTexPath", skin.previewTexPath) : null,
+                GenerateAttributesXml(skin.attributes),
                 
                 // 隐藏路径
                 GenerateListElement("hiddenPaths", skin.hiddenPaths),
@@ -76,6 +77,9 @@ namespace CharacterStudio.Exporter
                 #pragma warning disable CS0618
                 GenerateListElement("hiddenTags", skin.hiddenTags),
                 #pragma warning restore CS0618
+
+                // 基础槽位
+                GenerateBaseAppearanceXml(skin.baseAppearance),
 
                 // 图层
                 GenerateLayersXml(skin.layers),
@@ -92,7 +96,7 @@ namespace CharacterStudio.Exporter
             );
         }
 
-        private static XElement GenerateAbilitiesXml(List<ModularAbilityDef> abilities)
+        private static XElement? GenerateAbilitiesXml(List<ModularAbilityDef>? abilities)
         {
             if (abilities == null || abilities.Count == 0) return null;
 
@@ -124,7 +128,7 @@ namespace CharacterStudio.Exporter
             return element;
         }
 
-        private static XElement GenerateEffectsXml(List<AbilityEffectConfig> effects)
+        private static XElement? GenerateEffectsXml(List<AbilityEffectConfig>? effects)
         {
             if (effects == null || effects.Count == 0) return null;
 
@@ -150,7 +154,7 @@ namespace CharacterStudio.Exporter
             return effectsEl;
         }
 
-        private static XElement GenerateRuntimeComponentsXml(List<AbilityRuntimeComponentConfig> components)
+        private static XElement? GenerateRuntimeComponentsXml(List<AbilityRuntimeComponentConfig>? components)
         {
             if (components == null || components.Count == 0) return null;
 
@@ -184,7 +188,7 @@ namespace CharacterStudio.Exporter
             return root;
         }
 
-        private static XElement GenerateAbilityHotkeysXml(SkinAbilityHotkeyConfig hotkeys)
+        private static XElement? GenerateAbilityHotkeysXml(SkinAbilityHotkeyConfig? hotkeys)
         {
             if (hotkeys == null) return null;
 
@@ -198,7 +202,7 @@ namespace CharacterStudio.Exporter
             );
         }
 
-        private static XElement GenerateListElement(string tagName, List<string> items)
+        private static XElement? GenerateListElement(string tagName, List<string>? items)
         {
             if (items == null || items.Count == 0) return null;
 
@@ -213,7 +217,74 @@ namespace CharacterStudio.Exporter
             return element;
         }
 
-        private static XElement GenerateLayersXml(List<PawnLayerConfig> layers)
+        private static XElement? GenerateAttributesXml(CharacterStudio.AI.CharacterAttributeProfile? attributes)
+        {
+            if (attributes == null)
+            {
+                return null;
+            }
+
+            return new XElement("attributes",
+                !string.IsNullOrEmpty(attributes.title) ? new XElement("title", attributes.title) : null,
+                !string.IsNullOrEmpty(attributes.factionRole) ? new XElement("factionRole", attributes.factionRole) : null,
+                !string.IsNullOrEmpty(attributes.combatRole) ? new XElement("combatRole", attributes.combatRole) : null,
+                !string.IsNullOrEmpty(attributes.backstorySummary) ? new XElement("backstorySummary", attributes.backstorySummary) : null,
+                !string.IsNullOrEmpty(attributes.personality) ? new XElement("personality", attributes.personality) : null,
+                !string.IsNullOrEmpty(attributes.bodyTypeDefName) ? new XElement("bodyTypeDefName", attributes.bodyTypeDefName) : null,
+                !string.IsNullOrEmpty(attributes.headTypeDefName) ? new XElement("headTypeDefName", attributes.headTypeDefName) : null,
+                !string.IsNullOrEmpty(attributes.hairDefName) ? new XElement("hairDefName", attributes.hairDefName) : null,
+                !string.IsNullOrEmpty(attributes.favoriteColorHex) ? new XElement("favoriteColorHex", attributes.favoriteColorHex) : null,
+                new XElement("biologicalAge", attributes.biologicalAge),
+                new XElement("chronologicalAge", attributes.chronologicalAge),
+                new XElement("moveSpeedMultiplier", attributes.moveSpeedMultiplier),
+                new XElement("meleePower", attributes.meleePower),
+                new XElement("shootingAccuracy", attributes.shootingAccuracy),
+                new XElement("armorRating", attributes.armorRating),
+                new XElement("psychicSensitivity", attributes.psychicSensitivity),
+                new XElement("marketValue", attributes.marketValue),
+                GenerateListElement("tags", attributes.tags),
+                GenerateListElement("keyTraits", attributes.keyTraits),
+                GenerateListElement("startingApparelDefs", attributes.startingApparelDefs)
+            );
+        }
+
+        private static XElement? GenerateBaseAppearanceXml(BaseAppearanceConfig? baseAppearance)
+        {
+            if (baseAppearance == null || baseAppearance.slots == null || baseAppearance.slots.Count == 0) return null;
+
+            var root = new XElement("baseAppearance");
+            var slotsEl = new XElement("slots");
+
+            foreach (var slot in baseAppearance.slots)
+            {
+                if (slot == null) continue;
+
+                slotsEl.Add(new XElement("li",
+                    new XElement("slotType", slot.slotType.ToString()),
+                    new XElement("enabled", slot.enabled.ToString().ToLower()),
+                    !string.IsNullOrEmpty(slot.texPath) ? new XElement("texPath", slot.texPath) : null,
+                    !string.IsNullOrEmpty(slot.maskTexPath) ? new XElement("maskTexPath", slot.maskTexPath) : null,
+                    !string.IsNullOrEmpty(slot.shaderDefName) ? new XElement("shaderDefName", slot.shaderDefName) : null,
+                    new XElement("colorSource", slot.colorSource.ToString()),
+                    slot.colorSource == LayerColorSource.Fixed ? new XElement("customColor", $"({slot.customColor.r:F3}, {slot.customColor.g:F3}, {slot.customColor.b:F3}, {slot.customColor.a:F3})") : null,
+                    new XElement("colorTwoSource", slot.colorTwoSource.ToString()),
+                    slot.colorTwoSource == LayerColorSource.Fixed ? new XElement("customColorTwo", $"({slot.customColorTwo.r:F3}, {slot.customColorTwo.g:F3}, {slot.customColorTwo.b:F3}, {slot.customColorTwo.a:F3})") : null,
+                    new XElement("scale", $"({slot.scale.x:F2}, {slot.scale.y:F2})"),
+                    new XElement("offset", $"({slot.offset.x:F3}, {slot.offset.y:F3}, {slot.offset.z:F3})"),
+                    slot.offsetEast != Vector3.zero ? new XElement("offsetEast", $"({slot.offsetEast.x:F3}, {slot.offsetEast.y:F3}, {slot.offsetEast.z:F3})") : null,
+                    slot.offsetNorth != Vector3.zero ? new XElement("offsetNorth", $"({slot.offsetNorth.x:F3}, {slot.offsetNorth.y:F3}, {slot.offsetNorth.z:F3})") : null,
+                    new XElement("rotation", slot.rotation),
+                    new XElement("flipHorizontal", slot.flipHorizontal.ToString().ToLower()),
+                    new XElement("drawOrderOffset", slot.drawOrderOffset),
+                    slot.graphicClass != null ? new XElement("graphicClass", slot.graphicClass.FullName) : null
+                ));
+            }
+
+            root.Add(slotsEl);
+            return root;
+        }
+
+        private static XElement? GenerateLayersXml(List<PawnLayerConfig>? layers)
         {
             if (layers == null || layers.Count == 0) return null;
 
@@ -273,6 +344,11 @@ namespace CharacterStudio.Exporter
                 var componentsEl = new XElement("components");
                 foreach (var comp in config.components)
                 {
+                    if (comp == null)
+                    {
+                        continue;
+                    }
+
                     var compEl = new XElement("li",
                         new XElement("type", comp.type.ToString())
                     );
@@ -282,19 +358,30 @@ namespace CharacterStudio.Exporter
                         var exprsEl = new XElement("expressions");
                         foreach (var expr in comp.expressions)
                         {
-                            if (!string.IsNullOrEmpty(expr.texPath))
+                            if (expr == null || string.IsNullOrEmpty(expr.texPath))
                             {
-                                exprsEl.Add(new XElement("li",
-                                    new XElement("expression", expr.expression.ToString()),
-                                    new XElement("texPath", expr.texPath)
-                                ));
+                                continue;
                             }
+
+                            exprsEl.Add(new XElement("li",
+                                new XElement("expression", expr.expression.ToString()),
+                                new XElement("texPath", expr.texPath)
+                            ));
                         }
-                        compEl.Add(exprsEl);
+
+                        if (exprsEl.HasElements)
+                        {
+                            compEl.Add(exprsEl);
+                        }
                     }
+
                     componentsEl.Add(compEl);
                 }
-                element.Add(componentsEl);
+
+                if (componentsEl.HasElements)
+                {
+                    element.Add(componentsEl);
+                }
             }
 
             return element;

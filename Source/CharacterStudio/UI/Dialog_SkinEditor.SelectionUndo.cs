@@ -27,8 +27,8 @@ namespace CharacterStudio.UI
                 return;
             }
 
-            // 避免与文本输入框冲突：输入控件聚焦时不拦截 Ctrl+A
-            if (evt.keyCode == KeyCode.A && GUIUtility.keyboardControl != 0)
+            // 避免与文本输入框冲突：输入控件聚焦时不拦截 Ctrl+A / Ctrl+D
+            if ((evt.keyCode == KeyCode.A || evt.keyCode == KeyCode.D) && GUIUtility.keyboardControl != 0)
             {
                 return;
             }
@@ -45,8 +45,19 @@ namespace CharacterStudio.UI
                     }
                     selectedLayerIndex = 0;
                     selectedNodePath = "";
-                    ShowStatus($"已全选 {workingSkin.layers.Count} 个图层");
+                    ShowStatus("CS_Studio_Msg_SelectAllLayers".Translate(workingSkin.layers.Count));
                 }
+                evt.Use();
+                return;
+            }
+
+            // Ctrl+D：取消选择
+            if (evt.keyCode == KeyCode.D)
+            {
+                selectedLayerIndices.Clear();
+                selectedLayerIndex = -1;
+                selectedNodePath = "";
+                ShowStatus("CS_Studio_Msg_SelectionCleared".Translate());
                 evt.Use();
                 return;
             }
@@ -76,7 +87,7 @@ namespace CharacterStudio.UI
         {
             if (!editorHistory.TryUndo(workingSkin, selectedLayerIndex, selectedLayerIndices, out var snapshot) || snapshot == null)
             {
-                ShowStatus("没有可撤销的改动");
+                ShowStatus("CS_Studio_Msg_NothingToUndo".Translate());
                 return;
             }
 
@@ -88,14 +99,14 @@ namespace CharacterStudio.UI
             isDirty = true;
             RefreshPreview();
             RefreshRenderTree();
-            ShowStatus("已撤销上次改动");
+            ShowStatus("CS_Studio_Msg_UndoSuccess".Translate());
         }
 
         private void ApplyRedoSnapshot()
         {
             if (!editorHistory.TryRedo(workingSkin, selectedLayerIndex, selectedLayerIndices, out var snapshot) || snapshot == null)
             {
-                ShowStatus("没有可重做的改动");
+                ShowStatus("CS_Studio_Msg_NothingToRedo".Translate());
                 return;
             }
 
@@ -107,7 +118,7 @@ namespace CharacterStudio.UI
             isDirty = true;
             RefreshPreview();
             RefreshRenderTree();
-            ShowStatus("已重做上次改动");
+            ShowStatus("CS_Studio_Msg_RedoSuccess".Translate());
         }
 
         private void SanitizeLayerSelection()
@@ -146,16 +157,51 @@ namespace CharacterStudio.UI
                 return;
             }
 
-            bool shift = Event.current.shift;
+            var evt = Event.current;
+            bool shift = evt.shift;
+            bool ctrl = evt.control || evt.command;
+            int anchorIndex = selectedLayerIndex;
 
             if (shift)
             {
-                // Shift+左键：增量多选（再次点击可取消）
+                // Shift+左键：按主选中做范围多选；与 Ctrl 组合时在现有多选上追加范围
+                if (!ctrl)
+                {
+                    selectedLayerIndices.Clear();
+                }
+
+                if (anchorIndex >= 0 && anchorIndex < workingSkin.layers.Count)
+                {
+                    int start = Math.Min(anchorIndex, index);
+                    int end = Math.Max(anchorIndex, index);
+                    for (int i = start; i <= end; i++)
+                    {
+                        selectedLayerIndices.Add(i);
+                    }
+                }
+                else
+                {
+                    selectedLayerIndices.Add(index);
+                }
+
+                selectedLayerIndex = index;
+            }
+            else if (ctrl)
+            {
+                // Ctrl+左键：切换单项多选状态
                 if (!selectedLayerIndices.Add(index))
                 {
                     selectedLayerIndices.Remove(index);
                 }
-                selectedLayerIndex = selectedLayerIndices.Count > 0 ? selectedLayerIndices.Min() : -1;
+
+                if (selectedLayerIndices.Contains(index))
+                {
+                    selectedLayerIndex = index;
+                }
+                else
+                {
+                    selectedLayerIndex = selectedLayerIndices.Count > 0 ? selectedLayerIndices.Min() : -1;
+                }
             }
             else
             {

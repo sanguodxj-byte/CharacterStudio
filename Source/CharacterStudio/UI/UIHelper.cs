@@ -69,29 +69,40 @@ namespace CharacterStudio.UI
         public const float LabelWidth = 100f;
 
         // 颜色常量
-        public static readonly Color HeaderColor = new Color(0.7f, 0.8f, 1f);
-        public static readonly Color SubtleColor = new Color(0.7f, 0.7f, 0.7f);
-        public static readonly Color BorderColor = new Color(0.3f, 0.3f, 0.3f);
-        public static readonly Color AlternatingRowColor = new Color(1f, 1f, 1f, 0.05f);
+        public static readonly Color HeaderColor = new Color(0.78f, 0.86f, 1f);
+        public static readonly Color SubtleColor = new Color(0.72f, 0.75f, 0.82f);
+        public static readonly Color BorderColor = new Color(0.20f, 0.24f, 0.32f, 0.95f);
+        public static readonly Color AlternatingRowColor = new Color(0.32f, 0.38f, 0.52f, 0.08f);
+        public static readonly Color PanelFillColor = new Color(0.10f, 0.12f, 0.17f, 0.92f);
+        public static readonly Color PanelFillSoftColor = new Color(0.15f, 0.18f, 0.25f, 0.82f);
+        public static readonly Color AccentColor = new Color(0.37f, 0.62f, 1f, 1f);
+        public static readonly Color AccentSoftColor = new Color(0.37f, 0.62f, 1f, 0.18f);
+        public static readonly Color ActiveTabColor = new Color(0.24f, 0.31f, 0.46f, 0.95f);
+        public static readonly Color HoverOutlineColor = new Color(0.70f, 0.82f, 1f, 0.35f);
 
         /// <summary>
         /// 绘制带有标题和分隔线的章节标题
         /// </summary>
         public static void DrawSectionTitle(ref float y, float width, string title)
         {
-            y += 5f;
-            Rect rect = new Rect(0, y, width, 24f);
-            Widgets.DrawLightHighlight(rect);
-            
+            y += 6f;
+            Rect rect = new Rect(0, y, width, 26f);
+            Widgets.DrawBoxSolid(rect, PanelFillSoftColor);
+            Widgets.DrawBoxSolid(new Rect(rect.x, rect.yMax - 1f, rect.width, 1f), AccentSoftColor);
+            Widgets.DrawHighlightIfMouseover(rect);
+
+            GameFont oldFont = Text.Font;
             Text.Font = GameFont.Tiny;
-            Text.Anchor = TextAnchor.MiddleCenter;
+            Text.Anchor = TextAnchor.MiddleLeft;
             GUI.color = HeaderColor;
-            Widgets.Label(rect, title);
+            Widgets.Label(new Rect(rect.x + 8f, rect.y, rect.width - 16f, rect.height), title);
+            GUI.color = AccentColor;
+            Widgets.Label(new Rect(rect.x + rect.width - 44f, rect.y, 36f, rect.height), "◆");
             GUI.color = Color.white;
             Text.Anchor = TextAnchor.UpperLeft;
-            Text.Font = GameFont.Small;
-            
-            y += 28f;
+            Text.Font = oldFont;
+
+            y += 30f;
         }
 
         /// <summary>
@@ -99,10 +110,8 @@ namespace CharacterStudio.UI
         /// </summary>
         public static void DrawAlternatingRowBackground(Rect rect, int index)
         {
-            if (index % 2 == 1)
-            {
-                Widgets.DrawBoxSolid(rect, AlternatingRowColor);
-            }
+            Widgets.DrawBoxSolid(rect, index % 2 == 0 ? PanelFillColor : AlternatingRowColor);
+            Widgets.DrawBoxSolid(new Rect(rect.x, rect.yMax - 1f, rect.width, 1f), new Color(1f, 1f, 1f, 0.035f));
         }
         /// <summary>
         /// 绘制属性标签（只读）
@@ -289,13 +298,34 @@ namespace CharacterStudio.UI
         /// </summary>
         public static bool DrawTabButton(Rect rect, string label, bool isActive)
         {
-            if (isActive)
+            Color fill = isActive ? ActiveTabColor : PanelFillSoftColor;
+            Widgets.DrawBoxSolid(rect, fill);
+            Widgets.DrawBoxSolid(new Rect(rect.x, rect.yMax - 2f, rect.width, 2f), isActive ? AccentColor : new Color(1f, 1f, 1f, 0.05f));
+
+            if (Mouse.IsOver(rect))
             {
-                Widgets.DrawHighlight(rect);
+                Widgets.DrawBoxSolid(rect, isActive ? new Color(1f, 1f, 1f, 0.03f) : new Color(1f, 1f, 1f, 0.05f));
+                GUI.color = HoverOutlineColor;
+                Widgets.DrawBox(rect, 1);
+                GUI.color = Color.white;
+            }
+            else if (isActive)
+            {
+                GUI.color = AccentSoftColor;
+                Widgets.DrawBox(rect, 1);
+                GUI.color = Color.white;
             }
 
-            bool clicked = Widgets.ButtonText(rect, label, drawBackground: !isActive);
-            return clicked && !isActive;
+            GameFont oldFont = Text.Font;
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.MiddleCenter;
+            GUI.color = isActive ? Color.white : SubtleColor;
+            Widgets.Label(rect, label);
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = oldFont;
+
+            return Widgets.ButtonInvisible(rect) && !isActive;
         }
     }
 }

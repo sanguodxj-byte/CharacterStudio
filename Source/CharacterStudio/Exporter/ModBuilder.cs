@@ -112,17 +112,34 @@ namespace CharacterStudio.Exporter
 
             string safeName = SanitizeFileName(config.ModName);
             string modPath = Path.Combine(config.OutputPath, safeName);
+            var exportConfig = CloneExportConfig(config);
 
-            // 克隆皮肤定义，避免污染源对象
-            var exportSkinDef = config.SkinDef.Clone();
-            var exportConfig = new ModExportConfig
+            ApplyExportModeDefaults(exportConfig);
+
+            try
+            {
+                ExecuteExportPipeline(modPath, exportConfig);
+                Log.Message($"[CharacterStudio] 模组导出成功: {modPath}");
+                return modPath;
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"[CharacterStudio] 导出失败: {ex}");
+                CleanupFailedExport(modPath);
+                throw;
+            }
+        }
+
+        private ModExportConfig CloneExportConfig(ModExportConfig config)
+        {
+            return new ModExportConfig
             {
                 ModName = config.ModName,
                 Author = config.Author,
                 Version = config.Version,
                 Description = config.Description,
                 OutputPath = config.OutputPath,
-                SkinDef = exportSkinDef,
+                SkinDef = config.SkinDef!.Clone(),
                 Abilities = config.Abilities,
                 SourceTexturePaths = config.SourceTexturePaths,
                 Mode = config.Mode,
@@ -138,76 +155,61 @@ namespace CharacterStudio.Exporter
                 IncludeAbilities = config.IncludeAbilities,
                 CopyTextures = config.CopyTextures
             };
+        }
 
-            // 根据导出模式设置模块化开关
-            ApplyExportModeDefaults(exportConfig);
+        private void ExecuteExportPipeline(string modPath, ModExportConfig exportConfig)
+        {
+            CreateDirectoryStructure(modPath);
+            AnalyzeAssetSources(exportConfig);
+            GenerateAboutXml(modPath, exportConfig);
 
+            if (exportConfig.CopyTextures)
+            {
+                CopyTextures(modPath, exportConfig);
+            }
+
+            GenerateDefinitionFiles(modPath, exportConfig);
+            GenerateManifestXml(modPath, exportConfig);
+        }
+
+        private void GenerateDefinitionFiles(string modPath, ModExportConfig exportConfig)
+        {
+            if (exportConfig.IncludeSkinDef)
+            {
+                GenerateSkinDefXml(modPath, exportConfig);
+            }
+
+            if (exportConfig.IncludeGeneDef && exportConfig.ExportAsGene)
+            {
+                GenerateGeneDefXml(modPath, exportConfig);
+            }
+
+            if (exportConfig.IncludePawnKind)
+            {
+                GenerateUnitDefXml(modPath, exportConfig);
+            }
+
+            if (exportConfig.IncludeAbilities && exportConfig.Abilities.Count > 0)
+            {
+                GenerateAbilityDefXml(modPath, exportConfig);
+            }
+        }
+
+        private void CleanupFailedExport(string modPath)
+        {
             try
             {
-                // 创建目录结构
-                CreateDirectoryStructure(modPath);
-
-                // 分析资产来源
-                AnalyzeAssetSources(exportConfig);
-
-                // 生成 About.xml（包含依赖检测）
-                GenerateAboutXml(modPath, exportConfig);
-
-                // 复制纹理文件（仅复制本地文件）
-                if (exportConfig.CopyTextures)
+                if (!Directory.Exists(modPath))
                 {
-                    CopyTextures(modPath, exportConfig);
+                    return;
                 }
 
-                // 生成皮肤定义 XML
-                if (exportConfig.IncludeSkinDef)
-                {
-                    GenerateSkinDefXml(modPath, exportConfig);
-                }
-
-                // 生成基因定义 XML
-                if (exportConfig.IncludeGeneDef && exportConfig.ExportAsGene)
-                {
-                    GenerateGeneDefXml(modPath, exportConfig);
-                }
-
-                // 生成 PawnKind 定义
-                if (exportConfig.IncludePawnKind)
-                {
-                    GenerateUnitDefXml(modPath, exportConfig);
-                }
-
-                // 生成技能定义 XML
-                if (exportConfig.IncludeAbilities && exportConfig.Abilities != null && exportConfig.Abilities.Count > 0)
-                {
-                    GenerateAbilityDefXml(modPath, exportConfig);
-                }
-
-                // 生成 Manifest.xml（CS 版本信息）
-                GenerateManifestXml(modPath, exportConfig);
-
-                Log.Message($"[CharacterStudio] 模组导出成功: {modPath}");
-                return modPath;
+                Directory.Delete(modPath, true);
+                Log.Message($"[CharacterStudio] 已清理未完成的导出目录: {modPath}");
             }
-            catch (Exception ex)
+            catch (Exception cleanupEx)
             {
-                Log.Error($"[CharacterStudio] 导出失败: {ex}");
-                
-                // 尝试清理未完成的目录
-                try
-                {
-                    if (Directory.Exists(modPath))
-                    {
-                        Directory.Delete(modPath, true);
-                        Log.Message($"[CharacterStudio] 已清理未完成的导出目录: {modPath}");
-                    }
-                }
-                catch (Exception cleanupEx)
-                {
-                    Log.Warning($"[CharacterStudio] 清理目录失败: {cleanupEx.Message}");
-                }
-
-                throw;
+                Log.Warning($"[CharacterStudio] 清理目录失败: {cleanupEx.Message}");
             }
         }
 
@@ -256,88 +258,34 @@ namespace CharacterStudio.Exporter
         /// </summary>
         private void AnalyzeAssetSources(ModExportConfig config)
         {
-            if (config.SkinDef?.layers == null) return;
-
             config.AssetSources.Clear();
             config.DetectedDependencies.Clear();
 
-            foreach (var layer in config.SkinDef.layers)
+            foreach (var texPath in EnumerateTexturePaths(config))
             {
-                if (string.IsNullOrEmpty(layer.texPath)) continue;
-
-                var sourceInfo = DetectAssetSource(layer.texPath);
+                var sourceInfo = ExportAssetUtility.DetectAssetSource(texPath);
                 config.AssetSources.Add(sourceInfo);
 
-                // 收集外部模组依赖
-                if (sourceInfo.SourceType == AssetSourceType.ExternalMod &&
-                    !string.IsNullOrEmpty(sourceInfo.SourceModPackageId) &&
-                    !config.DetectedDependencies.Contains(sourceInfo.SourceModPackageId))
+                string? packageId = sourceInfo.SourceModPackageId;
+                if (sourceInfo.SourceType != AssetSourceType.ExternalMod || string.IsNullOrWhiteSpace(packageId))
                 {
-                    config.DetectedDependencies.Add(sourceInfo.SourceModPackageId);
-                    Log.Message($"[CharacterStudio] 检测到外部模组依赖: {sourceInfo.SourceModName} ({sourceInfo.SourceModPackageId})");
+                    continue;
                 }
+
+                string dependencyPackageId = packageId!;
+                if (config.DetectedDependencies.Contains(dependencyPackageId))
+                {
+                    continue;
+                }
+
+                config.DetectedDependencies.Add(dependencyPackageId);
+                Log.Message($"[CharacterStudio] 检测到外部模组依赖: {sourceInfo.SourceModName} ({dependencyPackageId})");
             }
         }
 
-        /// <summary>
-        /// 检测单个资产的来源类型
-        /// </summary>
-        private AssetSourceInfo DetectAssetSource(string texPath)
+        private IEnumerable<string> EnumerateTexturePaths(ModExportConfig config)
         {
-            var info = new AssetSourceInfo { OriginalPath = texPath };
-
-            // 检查是否是绝对路径（本地文件）
-            if (texPath.Contains(":") || texPath.StartsWith("/"))
-            {
-                info.SourceType = AssetSourceType.LocalFile;
-                info.ResolvedPath = texPath;
-                return info;
-            }
-
-            // 检查是否存在于游戏内容数据库
-            if (ContentFinder<UnityEngine.Texture2D>.Get(texPath, false) != null)
-            {
-                // 尝试确定来源模组
-                foreach (var mod in LoadedModManager.RunningMods)
-                {
-                    // 检查模组的 Textures 目录
-                    string modTexPath = Path.Combine(mod.RootDir, "Textures", texPath.Replace('/', Path.DirectorySeparatorChar));
-                    string[] extensions = { ".png", ".PNG", ".jpg", ".JPG" };
-                    
-                    foreach (var ext in extensions)
-                    {
-                        if (File.Exists(modTexPath + ext))
-                        {
-                            // 判断是否是 Core 或 Royalty 等官方内容
-                            if (mod.PackageId.StartsWith("ludeon."))
-                            {
-                                info.SourceType = AssetSourceType.VanillaContent;
-                                info.ResolvedPath = texPath;
-                            }
-                            else
-                            {
-                                info.SourceType = AssetSourceType.ExternalMod;
-                                info.SourceModPackageId = mod.PackageId;
-                                info.SourceModName = mod.Name;
-                                info.ResolvedPath = texPath;
-                            }
-                            return info;
-                        }
-                    }
-                }
-
-                // 未找到具体模组，假定为游戏内置
-                info.SourceType = AssetSourceType.VanillaContent;
-                info.ResolvedPath = texPath;
-            }
-            else
-            {
-                // 无法定位，标记为本地文件
-                info.SourceType = AssetSourceType.LocalFile;
-                info.ResolvedPath = texPath;
-            }
-
-            return info;
+            return ExportAssetUtility.EnumerateTexturePaths(config.SkinDef, config.Abilities, config.GeneIconPath);
         }
 
         // ─────────────────────────────────────────────
@@ -384,9 +332,9 @@ namespace CharacterStudio.Exporter
                 // 查找模组名称
                 string displayName = depPackageId;
                 var sourceInfo = config.AssetSources.FirstOrDefault(s => s.SourceModPackageId == depPackageId);
-                if (sourceInfo != null && !string.IsNullOrEmpty(sourceInfo.SourceModName))
+                if (sourceInfo != null && !string.IsNullOrWhiteSpace(sourceInfo.SourceModName))
                 {
-                    displayName = sourceInfo.SourceModName;
+                    displayName = sourceInfo.SourceModName!;
                 }
 
                 modDependencies.Add(new XElement("li",
@@ -437,67 +385,122 @@ namespace CharacterStudio.Exporter
 
         private void CopyTextures(string modPath, ModExportConfig config)
         {
-            if (config.SkinDef?.layers == null) return;
+            if (config.SkinDef == null) return;
 
             string texturesPath = Path.Combine(modPath, "Textures", "CS", SanitizeFileName(config.ModName));
             Directory.CreateDirectory(texturesPath);
 
-            int layerIndex = 0;
-            for (int i = 0; i < config.SkinDef.layers.Count; i++)
+            var remap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            int assetIndex = 0;
+
+            foreach (var texPath in EnumerateTexturePaths(config))
             {
-                var layer = config.SkinDef.layers[i];
-                if (string.IsNullOrEmpty(layer.texPath)) continue;
-
-                // 查找对应的资产来源信息
-                var sourceInfo = config.AssetSources.FirstOrDefault(s => s.OriginalPath == layer.texPath);
-
-                // 根据资产来源类型决定处理方式
+                var sourceInfo = config.AssetSources.FirstOrDefault(s => s.OriginalPath == texPath);
                 if (sourceInfo != null)
                 {
                     switch (sourceInfo.SourceType)
                     {
                         case AssetSourceType.VanillaContent:
-                            // 游戏内置资源，保持原路径，不复制
-                            Log.Message($"[CharacterStudio] 保留游戏内置资源路径: {layer.texPath}");
+                            Log.Message($"[CharacterStudio] 保留游戏内置资源路径: {texPath}");
                             continue;
-
                         case AssetSourceType.ExternalMod:
-                            // 外部模组资源，保持原路径，不复制（依赖已添加到 About.xml）
-                            Log.Message($"[CharacterStudio] 保留外部模组资源路径: {layer.texPath} (来自 {sourceInfo.SourceModName})");
+                            Log.Message($"[CharacterStudio] 保留外部模组资源路径: {texPath} (来自 {sourceInfo.SourceModName})");
                             continue;
-
-                        case AssetSourceType.LocalFile:
-                            // 本地文件，需要复制
-                            break;
                     }
                 }
 
-                // 复制本地文件
-                string? sourceFile = FindSourceTexture(layer.texPath, config.SourceTexturePaths);
+                string? sourceFile = FindSourceTexture(texPath, config.SourceTexturePaths);
                 if (sourceFile == null)
                 {
-                    Log.Warning($"[CharacterStudio] 无法找到纹理: {layer.texPath}");
+                    Log.Warning($"[CharacterStudio] 无法找到纹理: {texPath}");
                     continue;
                 }
 
-                // 生成新的文件名
-                string newFileName = $"Layer_{layerIndex:D2}_{layer.layerName ?? "Unknown"}";
+                string roleName = $"Asset_{assetIndex:D2}_{Path.GetFileNameWithoutExtension(sourceFile)}";
                 string extension = Path.GetExtension(sourceFile);
-                string destFile = Path.Combine(texturesPath, newFileName + extension);
+                string destFile = Path.Combine(texturesPath, roleName + extension);
 
                 try
                 {
                     File.Copy(sourceFile, destFile, true);
-
-                    // 更新图层的纹理路径
-                    layer.texPath = $"CS/{SanitizeFileName(config.ModName)}/{newFileName}";
-                    layerIndex++;
-                    Log.Message($"[CharacterStudio] 已复制本地纹理: {newFileName}{extension}");
+                    remap[texPath] = $"CS/{SanitizeFileName(config.ModName)}/{roleName}";
+                    assetIndex++;
+                    Log.Message($"[CharacterStudio] 已复制本地纹理: {roleName}{extension}");
                 }
                 catch (Exception ex)
                 {
                     Log.Warning($"[CharacterStudio] 复制纹理失败: {ex.Message}");
                 }
+            }
+
+            ApplyTextureRemap(config, remap);
+        }
+
+        private void ApplyTextureRemap(ModExportConfig config, Dictionary<string, string> remap)
+        {
+            if (config.SkinDef == null || remap.Count == 0)
+            {
+                return;
+            }
+
+            string Remap(string? path)
+            {
+                if (string.IsNullOrWhiteSpace(path))
+                {
+                    return path ?? string.Empty;
+                }
+
+                string normalizedPath = path!;
+                return remap.TryGetValue(normalizedPath, out var mapped)
+                    ? mapped ?? normalizedPath
+                    : normalizedPath;
+            }
+
+            var skin = config.SkinDef;
+            skin.previewTexPath = Remap(skin.previewTexPath);
+
+            if (skin.layers != null)
+            {
+                foreach (var layer in skin.layers)
+                {
+                    if (layer == null) continue;
+                    layer.texPath = Remap(layer.texPath);
+                    layer.maskTexPath = Remap(layer.maskTexPath);
+                }
+            }
+
+            if (skin.baseAppearance?.slots != null)
+            {
+                foreach (var slot in skin.baseAppearance.slots)
+                {
+                    if (slot == null) continue;
+                    slot.texPath = Remap(slot.texPath);
+                    slot.maskTexPath = Remap(slot.maskTexPath);
+                }
+            }
+
+            if (skin.faceConfig?.components != null)
+            {
+                foreach (var component in skin.faceConfig.components)
+                {
+                    if (component?.expressions == null) continue;
+                    foreach (var expression in component.expressions)
+                    {
+                        if (expression == null) continue;
+                        expression.texPath = Remap(expression.texPath);
+                    }
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(config.GeneIconPath))
+            {
+                config.GeneIconPath = Remap(config.GeneIconPath);
+            }
+
+            foreach (var ability in config.Abilities ?? new List<ModularAbilityDef>())
+            {
+                if (ability == null) continue;
+                ability.iconPath = Remap(ability.iconPath);
             }
         }
 
@@ -537,193 +540,61 @@ namespace CharacterStudio.Exporter
 
             var skin = config.SkinDef;
 
-            var doc = new XDocument(
-                new XDeclaration("1.0", "utf-8", null),
-                new XElement("Defs",
-                    new XElement("CharacterStudio.Core.PawnSkinDef",
-                        new XElement("defName", skin.defName ?? $"Skin_{SanitizeFileName(config.ModName)}"),
-                        new XElement("label", skin.label ?? config.ModName),
-                        new XElement("description", skin.description ?? config.Description),
-                        new XElement("hideVanillaHead", skin.hideVanillaHead.ToString().ToLower()),
-                        new XElement("hideVanillaHair", skin.hideVanillaHair.ToString().ToLower()),
-                        new XElement("hideVanillaBody", skin.hideVanillaBody.ToString().ToLower()),
-                        new XElement("hideVanillaApparel", skin.hideVanillaApparel.ToString().ToLower()),
-                        new XElement("humanlikeOnly", skin.humanlikeOnly.ToString().ToLower()),
-                        new XElement("author", config.Author),
-                        new XElement("version", config.Version),
-                        GenerateLayersXml(skin.layers),
-                        GenerateTargetRacesXml(skin.targetRaces),
-                        GenerateSkinAbilitiesXml(skin.abilities),
-                        GenerateAbilityHotkeysXml(skin.abilityHotkeys)
-                    )
-                )
-            );
+            var doc = ModExportXmlWriter.CreateSkinDefDocument(
+                skin,
+                config.ModName,
+                config.Description,
+                config.Author,
+                config.Version,
+                SanitizeFileName);
 
             string defsPath = Path.Combine(modPath, "Defs", "SkinDefs.xml");
             doc.Save(defsPath);
         }
 
+        private XElement? GenerateBaseAppearanceXml(BaseAppearanceConfig? baseAppearance)
+        {
+            return ModExportXmlWriter.GenerateBaseAppearanceXml(baseAppearance);
+        }
+
         private XElement GenerateLayersXml(List<PawnLayerConfig>? layers)
         {
-            var element = new XElement("layers");
+            return ModExportXmlWriter.GenerateLayersXml(layers);
+        }
 
-            if (layers == null || layers.Count == 0)
-            {
-                return element;
-            }
+        private XElement? GenerateStringListXml(string tagName, List<string>? values)
+        {
+            return ModExportXmlWriter.GenerateStringListXml(tagName, values);
+        }
 
-            foreach (var layer in layers)
-            {
-                element.Add(new XElement("li",
-                    new XElement("layerName", layer.layerName ?? ""),
-                    new XElement("texPath", layer.texPath ?? ""),
-                    new XElement("anchorTag", layer.anchorTag ?? "Head"),
-                    new XElement("offset", $"({layer.offset.x:F3}, {layer.offset.y:F3}, {layer.offset.z:F3})"),
-                    new XElement("drawOrder", layer.drawOrder),
-                    new XElement("scale", $"({layer.scale.x:F2}, {layer.scale.y:F2})"),
-                    new XElement("rotation", layer.rotation),
-                    new XElement("flipHorizontal", layer.flipHorizontal.ToString().ToLower()),
-                    new XElement("colorType", layer.colorType.ToString()),
-                    new XElement("visible", layer.visible.ToString().ToLower())
-                ));
-            }
-
-            return element;
+        private XElement GenerateFaceConfigXml(PawnFaceConfig config)
+        {
+            return ModExportXmlWriter.GenerateFaceConfigXml(config);
         }
 
         private XElement GenerateTargetRacesXml(List<string>? races)
         {
-            var element = new XElement("targetRaces");
-
-            if (races == null || races.Count == 0)
-            {
-                return element;
-            }
-
-            foreach (var race in races)
-            {
-                element.Add(new XElement("li", race));
-            }
-
-            return element;
+            return ModExportXmlWriter.GenerateTargetRacesXml(races);
         }
 
         private XElement? GenerateSkinAbilitiesXml(List<ModularAbilityDef>? abilities)
         {
-            if (abilities == null || abilities.Count == 0)
-            {
-                return null;
-            }
-
-            var element = new XElement("abilities");
-            foreach (var ability in abilities)
-            {
-                if (ability == null || string.IsNullOrEmpty(ability.defName)) continue;
-
-                var abilityEl = new XElement("li",
-                    new XElement("defName", ability.defName),
-                    !string.IsNullOrEmpty(ability.label) ? new XElement("label", ability.label) : null,
-                    !string.IsNullOrEmpty(ability.description) ? new XElement("description", ability.description) : null,
-                    !string.IsNullOrEmpty(ability.iconPath) ? new XElement("iconPath", ability.iconPath) : null,
-                    new XElement("cooldownTicks", ability.cooldownTicks),
-                    new XElement("warmupTicks", ability.warmupTicks),
-                    new XElement("charges", ability.charges),
-                    new XElement("aiCanUse", ability.aiCanUse),
-                    new XElement("carrierType", ability.carrierType.ToString()),
-                    new XElement("range", ability.range),
-                    new XElement("radius", ability.radius),
-                    ability.projectileDef != null ? new XElement("projectileDef", ability.projectileDef.defName) : null,
-                    GenerateSkinAbilityEffectsXml(ability.effects),
-                    GenerateRuntimeComponentsXml(ability.runtimeComponents)
-                );
-
-                element.Add(abilityEl);
-            }
-
-            return element;
+            return ModExportXmlWriter.GenerateSkinAbilitiesXml(abilities);
         }
 
         private XElement? GenerateSkinAbilityEffectsXml(List<AbilityEffectConfig>? effects)
         {
-            if (effects == null || effects.Count == 0)
-            {
-                return null;
-            }
-
-            var effectsEl = new XElement("effects");
-            foreach (var effect in effects)
-            {
-                if (effect == null) continue;
-
-                var effectEl = new XElement("li",
-                    new XElement("type", effect.type.ToString()),
-                    new XElement("amount", effect.amount),
-                    new XElement("duration", effect.duration),
-                    new XElement("chance", effect.chance),
-                    effect.damageDef != null ? new XElement("damageDef", effect.damageDef.defName) : null,
-                    effect.hediffDef != null ? new XElement("hediffDef", effect.hediffDef.defName) : null,
-                    effect.summonKind != null ? new XElement("summonKind", effect.summonKind.defName) : null,
-                    new XElement("summonCount", effect.summonCount)
-                );
-
-                effectsEl.Add(effectEl);
-            }
-
-            return effectsEl;
+            return ModExportXmlWriter.GenerateSkinAbilityEffectsXml(effects);
         }
 
         private XElement? GenerateRuntimeComponentsXml(List<AbilityRuntimeComponentConfig>? components)
         {
-            if (components == null || components.Count == 0)
-            {
-                return null;
-            }
-
-            var root = new XElement("runtimeComponents");
-            foreach (var component in components)
-            {
-                if (component == null) continue;
-
-                var compEl = new XElement("li",
-                    new XElement("type", component.type.ToString()),
-                    new XElement("enabled", component.enabled.ToString().ToLower()),
-                    new XElement("comboWindowTicks", component.comboWindowTicks),
-                    new XElement("cooldownTicks", component.cooldownTicks),
-                    new XElement("jumpDistance", component.jumpDistance),
-                    new XElement("findCellRadius", component.findCellRadius),
-                    new XElement("triggerAbilityEffectsAfterJump", component.triggerAbilityEffectsAfterJump.ToString().ToLower()),
-                    new XElement("requiredStacks", component.requiredStacks),
-                    new XElement("delayTicks", component.delayTicks),
-                    new XElement("wave1Radius", component.wave1Radius),
-                    new XElement("wave1Damage", component.wave1Damage),
-                    new XElement("wave2Radius", component.wave2Radius),
-                    new XElement("wave2Damage", component.wave2Damage),
-                    new XElement("wave3Radius", component.wave3Radius),
-                    new XElement("wave3Damage", component.wave3Damage),
-                    component.waveDamageDef != null ? new XElement("waveDamageDef", component.waveDamageDef.defName) : null
-                );
-
-                root.Add(compEl);
-            }
-
-            return root;
+            return ModExportXmlWriter.GenerateRuntimeComponentsXml(components);
         }
 
         private XElement? GenerateAbilityHotkeysXml(SkinAbilityHotkeyConfig? hotkeys)
         {
-            if (hotkeys == null)
-            {
-                return null;
-            }
-
-            return new XElement("abilityHotkeys",
-                new XElement("enabled", hotkeys.enabled.ToString().ToLower()),
-                !string.IsNullOrEmpty(hotkeys.qAbilityDefName) ? new XElement("qAbilityDefName", hotkeys.qAbilityDefName) : null,
-                !string.IsNullOrEmpty(hotkeys.wAbilityDefName) ? new XElement("wAbilityDefName", hotkeys.wAbilityDefName) : null,
-                !string.IsNullOrEmpty(hotkeys.eAbilityDefName) ? new XElement("eAbilityDefName", hotkeys.eAbilityDefName) : null,
-                !string.IsNullOrEmpty(hotkeys.rAbilityDefName) ? new XElement("rAbilityDefName", hotkeys.rAbilityDefName) : null,
-                !string.IsNullOrEmpty(hotkeys.wComboAbilityDefName) ? new XElement("wComboAbilityDefName", hotkeys.wComboAbilityDefName) : null
-            );
+            return ModExportXmlWriter.GenerateAbilityHotkeysXml(hotkeys);
         }
 
         // ─────────────────────────────────────────────
@@ -741,35 +612,7 @@ namespace CharacterStudio.Exporter
                 ? $"CS/{safeName}/Icon"
                 : config.GeneIconPath;
 
-            var doc = new XDocument(
-                new XDeclaration("1.0", "utf-8", null),
-                new XElement("Defs",
-                    new XElement("GeneDef",
-                        new XElement("defName", geneDefName),
-                        new XElement("label", $"Face: {config.ModName}"),
-                        new XElement("description",
-                            $"Changes the carrier's appearance to resemble {config.ModName}.\n\n" +
-                            (config.OverlayMode
-                                ? "This is an overlay effect that adds to the existing appearance."
-                                : "This replaces the carrier's head appearance.")),
-                        new XElement("iconPath", iconPath),
-                        new XElement("biostatCpx", 0),
-                        new XElement("biostatMet", 0),
-                        new XElement("displayCategory", config.GeneCategory),
-                        new XElement("displayOrderInCategory", 100),
-                        new XElement("selectionWeight", 0), // 不在随机生成中出现
-                        new XElement("modExtensions",
-                            new XElement("li", new XAttribute("Class", "CharacterStudio.Core.DefModExtension_SkinLink"),
-                                new XElement("skinDefName", skinDefName),
-                                new XElement("priority", 100),
-                                new XElement("overlayMode", config.OverlayMode.ToString().ToLower()),
-                                new XElement("hideVanillaHead", (!config.OverlayMode).ToString().ToLower()),
-                                new XElement("hideVanillaHair", (!config.OverlayMode && (config.SkinDef?.hideVanillaHair ?? true)).ToString().ToLower())
-                            )
-                        )
-                    )
-                )
-            );
+            var doc = ModExportXmlWriter.CreateGeneDefDocument(config, safeName);
 
             string geneDefsPath = Path.Combine(modPath, "Defs", "GeneDefs.xml");
             doc.Save(geneDefsPath);
@@ -790,42 +633,7 @@ namespace CharacterStudio.Exporter
             string thingDefName = $"CS_Item_Summon_{safeName}";
             string skinDefName = config.SkinDef.defName ?? $"Skin_{safeName}";
 
-            var doc = new XDocument(
-                new XDeclaration("1.0", "utf-8", null),
-                new XElement("Defs",
-                    // PawnKindDef
-                    CreatePawnKindDefElement(pawnKindName, config, skinDefName),
-                    // Summoning Item
-                    new XElement("ThingDef", new XAttribute("ParentName", "ResourceBase"),
-                        new XElement("defName", thingDefName),
-                        new XElement("label", $"Summon: {config.ModName}"),
-                        new XElement("description", $"Use to summon {config.ModName}."),
-                        new XElement("graphicData",
-                            new XElement("texPath", "Things/Item/Resource/UnfinishedComponent"), // 占位图
-                            new XElement("graphicClass", "Graphic_Single")
-                        ),
-                        new XElement("statBases",
-                            new XElement("MarketValue", 1000),
-                            new XElement("Mass", 0.5)
-                        ),
-                        new XElement("thingCategories",
-                            new XElement("li", "Items")
-                        ),
-                        new XElement("comps",
-                            // CompUsable：负责提供使用动作
-                            new XElement("li", new XAttribute("Class", "CompProperties_Usable"),
-                                new XElement("useJob", "UseItem"),
-                                new XElement("useLabel", "Summon")
-                            ),
-                            // CompSummonCharacter：负责实际效果（继承自 CompUseEffect）
-                            new XElement("li", new XAttribute("Class", "CharacterStudio.Items.CompProperties_SummonCharacter"),
-                                new XElement("pawnKind", pawnKindName),
-                                new XElement("arrivalMode", "DropPod")
-                            )
-                        )
-                    )
-                )
-            );
+            var doc = ModExportXmlWriter.CreateUnitDefDocument(config, safeName);
 
             string unitDefsPath = Path.Combine(modPath, "Defs", "UnitDefs.xml");
             doc.Save(unitDefsPath);
@@ -838,37 +646,7 @@ namespace CharacterStudio.Exporter
         /// </summary>
         private XElement CreatePawnKindDefElement(string pawnKindName, ModExportConfig config, string skinDefName)
         {
-            var pawnKindDef = new XElement("PawnKindDef",
-                new XElement("defName", pawnKindName),
-                new XElement("label", config.ModName),
-                new XElement("race", "Human"),
-                new XElement("combatPower", 100),
-                new XElement("defaultFactionType", "PlayerColony")
-            );
-
-            // 仅在有技能时添加技能元素
-            var abilitiesXml = GenerateAbilitiesXml(config.Abilities);
-            if (abilitiesXml != null)
-            {
-                pawnKindDef.Add(abilitiesXml);
-            }
-
-            // 添加 modExtensions
-            pawnKindDef.Add(new XElement("modExtensions",
-                new XElement("li", new XAttribute("Class", "CharacterStudio.Core.DefModExtension_SkinLink"),
-                    new XElement("skinDefName", skinDefName),
-                    new XElement("priority", 100),
-                    new XElement("hideVanillaHead", "true"),
-                    new XElement("hideVanillaHair", "true")
-                ),
-                new XElement("li", new XAttribute("Class", "CharacterStudio.AI.CompProperties_CustomAI"),
-                    new XElement("behavior",
-                        new XElement("behaviorType", "Normal")
-                    )
-                )
-            ));
-
-            return pawnKindDef;
+            return ModExportXmlWriter.CreatePawnKindDefElement(pawnKindName, config, skinDefName);
         }
 
         // ─────────────────────────────────────────────
@@ -877,61 +655,7 @@ namespace CharacterStudio.Exporter
 
         private void GenerateAbilityDefXml(string modPath, ModExportConfig config)
         {
-            var element = new XElement("Defs");
-
-            foreach (var ability in config.Abilities)
-            {
-                // 构建 AbilityDef
-                var abilityDef = new XElement("AbilityDef",
-                    new XElement("defName", ability.defName),
-                    new XElement("label", ability.label),
-                    new XElement("description", ability.description),
-                    new XElement("iconPath", ability.iconPath),
-                    new XElement("cooldownTicksRange", ability.cooldownTicks),
-                    new XElement("verbProperties",
-                        new XElement("warmupTime", ability.warmupTicks / 60f),
-                        new XElement("range", ability.range),
-                        new XElement("targetParams",
-                            new XElement("canTargetPawns", "true"),
-                            new XElement("canTargetLocations", "true")
-                        )
-                    ),
-                    new XElement("comps",
-                        new XElement("li", new XAttribute("Class", "CharacterStudio.Abilities.CompProperties_AbilityModular"),
-                            GenerateEffectsXml(ability.effects)
-                        )
-                    )
-                );
-
-                // 根据载体类型调整 verbProperties
-                var verbProps = abilityDef.Element("verbProperties");
-                switch (ability.carrierType)
-                {
-                    case AbilityCarrierType.Self:
-                        verbProps.Add(new XElement("verbClass", "Verb_CastAbility"));
-                        verbProps.Add(new XElement("targetable", "false"));
-                        break;
-                    case AbilityCarrierType.Touch:
-                        verbProps.Add(new XElement("verbClass", "Verb_CastAbilityTouch"));
-                        verbProps.Add(new XElement("range", "-1"));
-                        break;
-                    case AbilityCarrierType.Target:
-                        verbProps.Add(new XElement("verbClass", "Verb_CastAbility"));
-                        break;
-                    case AbilityCarrierType.Projectile:
-                        // 暂不支持投射物生成，回退到普通施法
-                        verbProps.Add(new XElement("verbClass", "Verb_CastAbility"));
-                        break;
-                    case AbilityCarrierType.Area:
-                        verbProps.Add(new XElement("verbClass", "Verb_CastAbility"));
-                        verbProps.Add(new XElement("radius", ability.radius));
-                        break;
-                }
-
-                element.Add(abilityDef);
-            }
-
-            var doc = new XDocument(new XDeclaration("1.0", "utf-8", null), element);
+            var doc = ModExportXmlWriter.CreateAbilityDefDocument(config.Abilities);
             string abilityDefsPath = Path.Combine(modPath, "Defs", "AbilityDefs.xml");
             doc.Save(abilityDefsPath);
 
@@ -940,43 +664,12 @@ namespace CharacterStudio.Exporter
 
         private XElement? GenerateAbilitiesXml(List<ModularAbilityDef>? abilities)
         {
-            if (abilities == null || abilities.Count == 0)
-            {
-                return null;
-            }
-
-            var element = new XElement("abilities");
-            foreach (var ability in abilities)
-            {
-                element.Add(new XElement("li", ability.defName));
-            }
-            return element;
+            return ModExportXmlWriter.GenerateAbilityRefsXml(abilities);
         }
 
         private XElement GenerateEffectsXml(List<AbilityEffectConfig> effects)
         {
-            var element = new XElement("effects");
-            foreach (var effect in effects)
-            {
-                var effectEl = new XElement("li",
-                    new XElement("type", effect.type.ToString()),
-                    new XElement("amount", effect.amount),
-                    new XElement("duration", effect.duration),
-                    new XElement("chance", effect.chance)
-                );
-
-                if (effect.damageDef != null)
-                    effectEl.Add(new XElement("damageDef", effect.damageDef.defName));
-                if (effect.hediffDef != null)
-                    effectEl.Add(new XElement("hediffDef", effect.hediffDef.defName));
-                if (effect.summonKind != null)
-                    effectEl.Add(new XElement("summonKind", effect.summonKind.defName));
-                
-                effectEl.Add(new XElement("summonCount", effect.summonCount));
-
-                element.Add(effectEl);
-            }
-            return element;
+            return ModExportXmlWriter.GenerateAbilityEffectsXml(effects);
         }
 
         // ─────────────────────────────────────────────
@@ -988,40 +681,7 @@ namespace CharacterStudio.Exporter
         /// </summary>
         private void GenerateManifestXml(string modPath, ModExportConfig config)
         {
-            var doc = new XDocument(
-                new XDeclaration("1.0", "utf-8", null),
-                new XElement("Manifest",
-                    new XElement("GeneratorVersion", CS_VERSION),
-                    new XElement("GeneratedAt", DateTime.UtcNow.ToString("o")),
-                    new XElement("ExportMode", config.Mode.ToString()),
-                    new XElement("ModName", config.ModName),
-                    new XElement("ModVersion", config.Version),
-                    new XElement("Author", config.Author),
-                    new XElement("ExportSettings",
-                        new XElement("IncludeSkinDef", config.IncludeSkinDef.ToString().ToLower()),
-                        new XElement("IncludeGeneDef", config.IncludeGeneDef.ToString().ToLower()),
-                        new XElement("IncludePawnKind", config.IncludePawnKind.ToString().ToLower()),
-                        new XElement("IncludeSummonItem", config.IncludeSummonItem.ToString().ToLower()),
-                        new XElement("IncludeAbilities", config.IncludeAbilities.ToString().ToLower()),
-                        new XElement("CopyTextures", config.CopyTextures.ToString().ToLower()),
-                        new XElement("ExportAsGene", config.ExportAsGene.ToString().ToLower()),
-                        new XElement("OverlayMode", config.OverlayMode.ToString().ToLower())
-                    ),
-                    new XElement("AssetSources",
-                        from source in config.AssetSources
-                        select new XElement("Asset",
-                            new XAttribute("type", source.SourceType.ToString()),
-                            new XElement("OriginalPath", source.OriginalPath),
-                            new XElement("ResolvedPath", source.ResolvedPath),
-                            source.SourceModPackageId != null ? new XElement("SourceMod", source.SourceModPackageId) : null
-                        )
-                    ),
-                    new XElement("Dependencies",
-                        from dep in config.DetectedDependencies
-                        select new XElement("Dependency", dep)
-                    )
-                )
-            );
+            var doc = ModExportXmlWriter.CreateManifestDocument(config, CS_VERSION);
 
             string manifestPath = Path.Combine(modPath, "About", "Manifest.xml");
             doc.Save(manifestPath);

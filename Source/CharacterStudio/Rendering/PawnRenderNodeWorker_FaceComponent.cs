@@ -15,29 +15,32 @@ namespace CharacterStudio.Rendering
         /// </summary>
         public override Vector3 ScaleFor(PawnRenderNode node, PawnDrawParms parms)
         {
-            Vector3 scale = base.ScaleFor(node, parms);
+            Vector2 originalDrawSize = node.Props.drawSize;
+            node.Props.drawSize = Vector2.one;
+            Vector3 baseScale;
+            try
+            {
+                baseScale = base.ScaleFor(node, parms);
+            }
+            finally
+            {
+                node.Props.drawSize = originalDrawSize;
+            }
 
             if (node is PawnRenderNode_Custom customNode && customNode.config != null)
             {
-                bool baseLooksIdentity = Mathf.Abs(scale.x - 1f) < 0.0001f
-                                         && Mathf.Abs(scale.y - 1f) < 0.0001f
-                                         && Mathf.Abs(scale.z - 1f) < 0.0001f;
-
-                if (baseLooksIdentity)
-                {
-                    Vector2 cfg = customNode.config.scale;
-                    float sx = cfg.x <= 0f ? 1f : cfg.x;
-                    float sy = cfg.y <= 0f ? 1f : cfg.y;
-                    scale = new Vector3(sx, 1f, sy);
-                }
+                Vector2 cfg = customNode.config.scale;
+                float sx = cfg.x <= 0f ? 1f : cfg.x;
+                float sy = cfg.y <= 0f ? 1f : cfg.y;
+                baseScale = new Vector3(sx * baseScale.x, 1f, sy * baseScale.z);
             }
 
             if (node.debugScale != 1f)
             {
-                scale *= node.debugScale;
+                baseScale *= node.debugScale;
             }
 
-            return scale;
+            return baseScale;
         }
 
         /// <summary>
@@ -74,16 +77,10 @@ namespace CharacterStudio.Rendering
             
             if (skin?.faceConfig?.enabled == true)
             {
-                // 尝试从节点名称判断组件类型
-                FaceComponentType type = FaceComponentType.Eyes;
-                string label = node.Props?.debugLabel?.ToLower() ?? "";
-                
-                if (label.Contains("mouth") || label.Contains("嘴")) type = FaceComponentType.Mouth;
-                else if (label.Contains("brow") || label.Contains("眉")) type = FaceComponentType.Brows;
-
+                FaceComponentType type = ResolveFaceComponentType(node);
                 ExpressionType exp = comp?.GetEffectiveExpression() ?? ExpressionType.Neutral;
                 string path = skin.faceConfig.GetTexPath(type, exp);
-                
+
                 if (!string.IsNullOrEmpty(path))
                 {
                     Shader shader = node.ShaderFor(parms.pawn);
@@ -93,8 +90,7 @@ namespace CharacterStudio.Rendering
                     }
 
                     var props = node.Props;
-                    
-                    // 检查是否是外部路径
+
                     bool isExternal = path.Contains(":") ||
                                       path.StartsWith("/") ||
                                       System.IO.File.Exists(path);
@@ -106,7 +102,6 @@ namespace CharacterStudio.Rendering
                             Log.Error($"[CharacterStudio] 外部表情纹理文件不存在: {path}");
                         }
 
-                        // 不使用 GraphicDatabase 缓存 Graphic_Runtime，以支持实时热加载
                         var req = new GraphicRequest(
                             typeof(Graphic_Runtime),
                             path,
@@ -115,24 +110,21 @@ namespace CharacterStudio.Rendering
                             props?.color ?? Color.white,
                             Color.white, null, 0, null, null
                         );
-                        
+
                         var graphic = new Graphic_Runtime();
                         graphic.Init(req);
                         return graphic;
                     }
                     else
                     {
-                        // 检查游戏内资源是否存在
                         if (ContentFinder<Texture2D>.Get(path, false) == null)
                         {
-                            // 尝试检查 _north 变体
                             if (ContentFinder<Texture2D>.Get(path + "_north", false) == null)
                             {
                                 Log.Error($"[CharacterStudio] 无法找到游戏内表情纹理资源: {path}");
                             }
                             else
                             {
-                                // 如果存在 _north，可能是 Graphic_Multi
                                 return GraphicDatabase.Get<Graphic_Multi>(
                                     path,
                                     shader,
@@ -155,9 +147,28 @@ namespace CharacterStudio.Rendering
             return base.GetGraphic(node, parms);
         }
 
+        private static FaceComponentType ResolveFaceComponentType(PawnRenderNode node)
+        {
+            if (node is PawnRenderNode_Custom customNode && customNode.config != null)
+            {
+                return customNode.config.faceComponent;
+            }
+
+            string label = node.Props?.debugLabel?.ToLowerInvariant() ?? string.Empty;
+            if (label.Contains("mouth") || label.Contains("嘴"))
+            {
+                return FaceComponentType.Mouth;
+            }
+            if (label.Contains("brow") || label.Contains("眉"))
+            {
+                return FaceComponentType.Brows;
+            }
+
+            return FaceComponentType.Eyes;
+        }
+
         public override bool CanDrawNow(PawnRenderNode node, PawnDrawParms parms)
         {
-            // 基础检查
             return base.CanDrawNow(node, parms);
         }
     }

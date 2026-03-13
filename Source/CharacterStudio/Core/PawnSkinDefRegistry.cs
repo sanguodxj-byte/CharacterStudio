@@ -186,6 +186,7 @@ namespace CharacterStudio.Core
             target.author = source.author;
             target.version = source.version;
             target.previewTexPath = source.previewTexPath;
+            target.attributes = source.attributes?.Clone() ?? new CharacterStudio.AI.CharacterAttributeProfile();
 
             target.abilityHotkeys = source.abilityHotkeys?.Clone() ?? new SkinAbilityHotkeyConfig();
 

@@ -19,6 +19,7 @@ namespace CharacterStudio.Rendering
         
         // 材质缓存
         private static readonly Dictionary<string, Material> materialCache = new Dictionary<string, Material>();
+        private static readonly Dictionary<int, string> textureMaterialCacheKeys = new Dictionary<int, string>();
 
         // 文件修改时间缓存（用于热加载检测）
         private static readonly Dictionary<string, DateTime> fileLastWriteTimes = new Dictionary<string, DateTime>();
@@ -215,36 +216,33 @@ namespace CharacterStudio.Rendering
                 return null;
             }
 
-            string cacheKey = $"{texture.name}_{shader?.name ?? "Cutout"}";
-
-            // 检查缓存
-            if (materialCache.TryGetValue(cacheKey, out var cachedMat))
-            {
-                if (cachedMat != null)
-                {
-                    return cachedMat;
-                }
-                materialCache.Remove(cacheKey);
-            }
-
             try
             {
-                // 使用默认着色器
-                if (shader == null)
+                shader ??= ShaderDatabase.Cutout;
+                string cacheKey = GetMaterialCacheKey(texture, shader);
+
+                lock (materialCacheLock)
                 {
-                    shader = ShaderDatabase.Cutout;
+                    if (materialCache.TryGetValue(cacheKey, out var cachedMat))
+                    {
+                        if (cachedMat != null)
+                        {
+                            return cachedMat;
+                        }
+
+                        materialCache.Remove(cacheKey);
+                    }
+
+                    EnsureCacheCapacity(materialCache, null, MaxMaterialCacheSize);
+
+                    var mat = MaterialPool.MatFrom(
+                        new MaterialRequest(texture, shader)
+                    );
+
+                    materialCache[cacheKey] = mat;
+                    textureMaterialCacheKeys[texture.GetInstanceID()] = cacheKey;
+                    return mat;
                 }
-
-                // 创建材质
-                var mat = MaterialPool.MatFrom(
-                    new MaterialRequest(texture, shader)
-                );
-
-                // 添加到缓存（带LRU管理）
-                EnsureCacheCapacity(materialCache, null, MaxMaterialCacheSize);
-                materialCache[cacheKey] = mat;
-
-                return mat;
             }
             catch (Exception ex)
             {
@@ -336,6 +334,11 @@ namespace CharacterStudio.Rendering
             {
                 if (tex != null)
                 {
+                    lock (materialCacheLock)
+                    {
+                        textureMaterialCacheKeys.Remove(tex.GetInstanceID());
+                    }
+
                     UnityEngine.Object.Destroy(tex);
                 }
                 textureCache.Remove(fullPath);
@@ -403,6 +406,11 @@ namespace CharacterStudio.Rendering
                 var keysToRemove = cache.Keys.Take(toRemove).ToList();
                 foreach (var key in keysToRemove)
                 {
+                    if (cache.TryGetValue(key, out var item) && item is Material material && material.mainTexture != null)
+                    {
+                        textureMaterialCacheKeys.Remove(material.mainTexture.GetInstanceID());
+                    }
+
                     cache.Remove(key);
                 }
             }
@@ -589,6 +597,24 @@ namespace CharacterStudio.Rendering
             }
 
             return Vector2Int.zero;
+        }
+        private static string GetMaterialCacheKey(Texture2D texture, Shader shader)
+        {
+            string textureIdentity = texture.name;
+
+            lock (textureCacheLock)
+            {
+                foreach (var entry in textureCache)
+                {
+                    if (ReferenceEquals(entry.Value, texture))
+                    {
+                        textureIdentity = entry.Key;
+                        break;
+                    }
+                }
+            }
+
+            return $"{textureIdentity}_{shader.name}";
         }
     }
 }

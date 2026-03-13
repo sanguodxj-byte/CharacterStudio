@@ -19,7 +19,12 @@ namespace CharacterStudio.Exporter
             }
 
             var defs = new XElement("Defs");
-            var layers = skinDef.layers ?? new List<PawnLayerConfig>();
+            var layers = new List<PawnLayerConfig>();
+            if (skinDef.layers != null)
+            {
+                layers.AddRange(skinDef.layers);
+            }
+            layers.AddRange(BaseAppearanceUtility.BuildSyntheticLayers(skinDef));
 
             for (int i = 0; i < layers.Count; i++)
             {

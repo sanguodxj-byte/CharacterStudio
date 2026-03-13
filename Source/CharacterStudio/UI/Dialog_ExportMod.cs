@@ -231,80 +231,35 @@ namespace CharacterStudio.UI
             assetSources.Clear();
             detectedDependencies.Clear();
 
-            if (skinDef?.layers == null) return;
-
-            var builder = new ModBuilder();
-            foreach (var layer in skinDef.layers)
+            foreach (var texPath in EnumerateReferencedTexturePaths())
             {
-                if (string.IsNullOrEmpty(layer.texPath)) continue;
-
-                // 使用反射调用私有方法，或者直接内联检测逻辑
-                var sourceInfo = DetectAssetSourceSimple(layer.texPath);
+                var sourceInfo = ExportAssetUtility.DetectAssetSource(texPath);
                 assetSources.Add(sourceInfo);
 
-                if (sourceInfo.SourceType == AssetSourceType.ExternalMod &&
-                    !string.IsNullOrEmpty(sourceInfo.SourceModPackageId) &&
-                    !detectedDependencies.Contains(sourceInfo.SourceModPackageId))
+                string? packageId = sourceInfo.SourceModPackageId;
+                if (sourceInfo.SourceType != AssetSourceType.ExternalMod || string.IsNullOrWhiteSpace(packageId))
                 {
-                    detectedDependencies.Add(sourceInfo.SourceModPackageId);
+                    continue;
                 }
+
+                string dependencyPackageId = packageId!;
+                if (detectedDependencies.Contains(dependencyPackageId))
+                {
+                    continue;
+                }
+
+                detectedDependencies.Add(dependencyPackageId);
             }
         }
 
-        /// <summary>
-        /// 简化的资产来源检测
-        /// </summary>
-        private AssetSourceInfo DetectAssetSourceSimple(string texPath)
+        private IEnumerable<string> EnumerateReferencedTexturePaths()
         {
-            var info = new AssetSourceInfo { OriginalPath = texPath };
+            return ExportAssetUtility.EnumerateTexturePaths(skinDef, abilities);
+        }
 
-            // 检查是否是绝对路径
-            if (texPath.Contains(":") || texPath.StartsWith("/"))
-            {
-                info.SourceType = AssetSourceType.LocalFile;
-                info.ResolvedPath = texPath;
-                return info;
-            }
-
-            // 检查是否存在于游戏内容
-            if (ContentFinder<UnityEngine.Texture2D>.Get(texPath, false) != null)
-            {
-                // 尝试确定来源模组
-                foreach (var mod in LoadedModManager.RunningMods)
-                {
-                    string modTexPath = Path.Combine(mod.RootDir, "Textures", texPath.Replace('/', Path.DirectorySeparatorChar));
-                    string[] extensions = { ".png", ".PNG", ".jpg", ".JPG" };
-
-                    foreach (var ext in extensions)
-                    {
-                        if (File.Exists(modTexPath + ext))
-                        {
-                            if (mod.PackageId.StartsWith("ludeon."))
-                            {
-                                info.SourceType = AssetSourceType.VanillaContent;
-                            }
-                            else
-                            {
-                                info.SourceType = AssetSourceType.ExternalMod;
-                                info.SourceModPackageId = mod.PackageId;
-                                info.SourceModName = mod.Name;
-                            }
-                            info.ResolvedPath = texPath;
-                            return info;
-                        }
-                    }
-                }
-
-                info.SourceType = AssetSourceType.VanillaContent;
-                info.ResolvedPath = texPath;
-            }
-            else
-            {
-                info.SourceType = AssetSourceType.LocalFile;
-                info.ResolvedPath = texPath;
-            }
-
-            return info;
+        private List<string> BuildSourceTextureSearchPaths()
+        {
+            return ExportAssetUtility.BuildSourceTextureSearchPaths(skinDef, abilities);
         }
 
         /// <summary>
@@ -400,6 +355,7 @@ namespace CharacterStudio.UI
                     OutputPath = outputPath,
                     SkinDef = skinDef,
                     Abilities = abilities,
+                    SourceTexturePaths = BuildSourceTextureSearchPaths(),
                     Mode = exportMode,
                     ExportAsGene = exportAsGene,
                     GeneCategory = geneCategory,
@@ -414,10 +370,10 @@ namespace CharacterStudio.UI
                 };
 
                 // 调用导出逻辑
-                new ModBuilder().Export(config);
+                string exportedModPath = new ModBuilder().Export(config);
 
-                statusMessage = "CS_Studio_Export_Success".Translate();
-                Messages.Message("CS_Studio_Export_Success".Translate(), MessageTypeDefOf.PositiveEvent);
+                statusMessage = "CS_Studio_Export_Success".Translate(exportedModPath);
+                Messages.Message("CS_Studio_Export_Success".Translate(exportedModPath), MessageTypeDefOf.PositiveEvent);
                 isExporting = false;
                 Close();
             }

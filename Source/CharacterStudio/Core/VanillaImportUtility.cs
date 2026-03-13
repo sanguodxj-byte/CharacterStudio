@@ -16,6 +16,7 @@ namespace CharacterStudio.Core
         public List<PawnLayerConfig> layers;
         public List<string> sourcePaths;
         public List<string> sourceTags;
+        public BaseAppearanceConfig baseAppearance;
     }
 
     /// <summary>
@@ -45,7 +46,8 @@ namespace CharacterStudio.Core
             {
                 layers = new List<PawnLayerConfig>(),
                 sourcePaths = new List<string>(),
-                sourceTags = new List<string>()
+                sourceTags = new List<string>(),
+                baseAppearance = new BaseAppearanceConfig()
             };
             
             if (pawn == null) return result;
@@ -53,10 +55,16 @@ namespace CharacterStudio.Core
             try
             {
                 var compSkin = pawn.GetComp<CompPawnSkin>();
-                if (compSkin?.ActiveSkin != null && compSkin.ActiveSkin.layers.Count > 0)
+                if (compSkin?.ActiveSkin != null)
                 {
-                    Log.Message($"[CharacterStudio] 检测到 {pawn.LabelShort} 已有 CS 皮肤配置，直接导入现有配置");
-                    return ImportFromExistingSkin(compSkin.ActiveSkin);
+                    bool hasExistingLayers = compSkin.ActiveSkin.layers.Count > 0;
+                    bool hasExistingBaseAppearance = compSkin.ActiveSkin.baseAppearance != null
+                        && compSkin.ActiveSkin.baseAppearance.EnabledSlots().Any();
+                    if (hasExistingLayers || hasExistingBaseAppearance)
+                    {
+                        Log.Message($"[CharacterStudio] 检测到 {pawn.LabelShort} 已有 CS 皮肤配置，直接导入现有配置");
+                        return ImportFromExistingSkin(compSkin.ActiveSkin);
+                    }
                 }
                 
                 var snapshot = RenderTreeParser.Capture(pawn);
@@ -70,23 +78,57 @@ namespace CharacterStudio.Core
                 var allPaths = new List<string>();
                 var allTags = new List<string>();
                 var rawLayers = new List<PawnLayerConfig>();
-                ProcessSnapshotNode(snapshot, "Root", "", rawLayers, allPaths, allTags, ref index, pawn);
+                ProcessSnapshotNode(snapshot, "Root", "", rawLayers, allPaths, allTags, result.baseAppearance, ref index, pawn);
                 
-                if (rawLayers.Count == 0)
+                bool hasImportedBaseAppearance = result.baseAppearance.EnabledSlots().Any();
+                if (rawLayers.Count == 0 && !hasImportedBaseAppearance)
                 {
-                    Log.Warning($"[CharacterStudio] 从 {pawn.LabelShort} 未能扫描到任何有效图层。");
+                    Log.Warning($"[CharacterStudio] 从 {pawn.LabelShort} 未能扫描到任何有效图层或基础槽位。");
                     return result;
                 }
 
-                // 去重策略：仅按纹理路径去重。
-                // 需求场景下我们保存的是整体纹理效果，父/子节点若 texPath 相同可视为重复图层。
-                var seenTexPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                // 去重策略：按“渲染语义”去重，而不是仅按 texPath。
+                // 这样可保留同贴图但锚点、颜色、遮罩、排序或缩放不同的合法图层。
+                var seenLayerKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 foreach (var layer in rawLayers)
                 {
                     if (string.IsNullOrEmpty(layer.texPath))
                         continue;
 
-                    if (seenTexPaths.Add(layer.texPath))
+                    string dedupeKey = string.Join("|",
+                        layer.texPath ?? string.Empty,
+                        layer.maskTexPath ?? string.Empty,
+                        layer.anchorPath ?? string.Empty,
+                        layer.anchorTag ?? string.Empty,
+                        layer.shaderDefName ?? string.Empty,
+                        layer.graphicClass?.FullName ?? string.Empty,
+                        layer.colorSource.ToString(),
+                        layer.colorTwoSource.ToString(),
+                        layer.customColor.r.ToString("F4"),
+                        layer.customColor.g.ToString("F4"),
+                        layer.customColor.b.ToString("F4"),
+                        layer.customColor.a.ToString("F4"),
+                        layer.customColorTwo.r.ToString("F4"),
+                        layer.customColorTwo.g.ToString("F4"),
+                        layer.customColorTwo.b.ToString("F4"),
+                        layer.customColorTwo.a.ToString("F4"),
+                        layer.drawOrder.ToString("F4"),
+                        layer.offset.x.ToString("F4"),
+                        layer.offset.y.ToString("F4"),
+                        layer.offset.z.ToString("F4"),
+                        layer.offsetEast.x.ToString("F4"),
+                        layer.offsetEast.y.ToString("F4"),
+                        layer.offsetEast.z.ToString("F4"),
+                        layer.offsetNorth.x.ToString("F4"),
+                        layer.offsetNorth.y.ToString("F4"),
+                        layer.offsetNorth.z.ToString("F4"),
+                        layer.scale.x.ToString("F4"),
+                        layer.scale.y.ToString("F4"),
+                        layer.visible ? "1" : "0",
+                        layer.flipHorizontal ? "1" : "0"
+                    );
+
+                    if (seenLayerKeys.Add(dedupeKey))
                     {
                         result.layers.Add(layer);
                     }
@@ -95,7 +137,7 @@ namespace CharacterStudio.Core
                 result.sourcePaths = allPaths;
                 result.sourceTags = allTags;
 
-                Log.Message($"[CharacterStudio] 从 {pawn.LabelShort} 成功扫描 {rawLayers.Count} 个图层，保留 {result.layers.Count} 个");
+                Log.Message($"[CharacterStudio] 从 {pawn.LabelShort} 成功扫描 {rawLayers.Count} 个图层，保留 {result.layers.Count} 个，基础槽位 {result.baseAppearance.EnabledSlots().Count()} 个");
 
                 return result;
             }
@@ -106,7 +148,7 @@ namespace CharacterStudio.Core
             }
         }
 
-        private static void ProcessSnapshotNode(RenderNodeSnapshot node, string parentAnchorTag, string? parentAnchorPath, List<PawnLayerConfig> layers, List<string> sourcePaths, List<string> sourceTags, ref int index, Pawn? pawn)
+        private static void ProcessSnapshotNode(RenderNodeSnapshot node, string parentAnchorTag, string? parentAnchorPath, List<PawnLayerConfig> layers, List<string> sourcePaths, List<string> sourceTags, BaseAppearanceConfig baseAppearance, ref int index, Pawn? pawn)
         {
             if (node == null) return;
 
@@ -117,6 +159,11 @@ namespace CharacterStudio.Core
             // 将它们导入为自定义图层会导致纹理重复。
             // 仅跳过导入，不跳过递归子节点处理和 anchor 更新。
             bool isStructuralParent = IsStructuralParentNode(node);
+
+            if (isStructuralParent)
+            {
+                TryImportBaseSlot(node, baseAppearance, pawn);
+            }
 
             if (IsValidLayer(node) && !isStructuralParent)
             {
@@ -281,7 +328,7 @@ namespace CharacterStudio.Core
             {
                 foreach (var child in node.children)
                 {
-                    ProcessSnapshotNode(child, currentAnchor, node.uniqueNodePath, layers, sourcePaths, sourceTags, ref index, pawn);
+                    ProcessSnapshotNode(child, currentAnchor, node.uniqueNodePath, layers, sourcePaths, sourceTags, baseAppearance, ref index, pawn);
                 }
             }
         }
@@ -311,7 +358,8 @@ namespace CharacterStudio.Core
             {
                 layers = new List<PawnLayerConfig>(),
                 sourcePaths = new List<string>(),
-                sourceTags = new List<string>()
+                sourceTags = new List<string>(),
+                baseAppearance = skinDef.baseAppearance?.Clone() ?? new BaseAppearanceConfig()
             };
             
             foreach (var layer in skinDef.layers)
@@ -325,10 +373,12 @@ namespace CharacterStudio.Core
                 result.sourcePaths = new List<string>(skinDef.hiddenPaths);
             }
 
+#pragma warning disable CS0618 // hiddenTags 仅用于旧数据兼容
             if (skinDef.hiddenTags != null)
             {
                 result.sourceTags = new List<string>(skinDef.hiddenTags);
             }
+#pragma warning restore CS0618
             
             Log.Message($"[CharacterStudio] 从现有皮肤导入 {result.layers.Count} 个图层，{result.sourcePaths.Count} 个隐藏路径，{result.sourceTags.Count} 个隐藏标签");
             return result;
@@ -414,6 +464,86 @@ namespace CharacterStudio.Core
                    Mathf.Abs(a.g - b.g) < tolerance &&
                    Mathf.Abs(a.b - b.b) < tolerance &&
                    Mathf.Abs(a.a - b.a) < tolerance;
+        }
+
+        private static void TryImportBaseSlot(RenderNodeSnapshot node, BaseAppearanceConfig baseAppearance, Pawn? pawn)
+        {
+            BaseAppearanceSlotType? slotType = TryResolveBaseSlotType(node);
+            if (slotType == null)
+            {
+                return;
+            }
+
+            var slot = baseAppearance.GetSlot(slotType.Value);
+            Vector3 effectiveOffset = node.runtimeDataValid ? node.runtimeOffset : node.offset;
+            Vector3 effectiveOffsetEast = node.runtimeDataValid ? node.runtimeOffsetEast : Vector3.zero;
+            Vector3 effectiveOffsetNorth = node.runtimeDataValid ? node.runtimeOffsetNorth : Vector3.zero;
+            Vector2 effectiveScale = node.runtimeDataValid
+                ? new Vector2(node.runtimeScale.x, node.runtimeScale.z)
+                : (node.scale > 0f ? new Vector2(node.scale, node.scale) : Vector2.one);
+            Color effectiveColor = node.runtimeDataValid ? node.runtimeColor : node.color;
+            Color effectiveColorTwo = node.runtimeDataValid ? node.graphicColorTwo : Color.white;
+
+            string simpleShaderName = "Cutout";
+            if (!string.IsNullOrEmpty(node.shaderName))
+            {
+                if (node.shaderName.Contains("CutoutComplex")) simpleShaderName = "CutoutComplex";
+                else if (node.shaderName.Contains("TransparentPostLight")) simpleShaderName = "TransparentPostLight";
+                else if (node.shaderName.Contains("Transparent")) simpleShaderName = "Transparent";
+                else if (node.shaderName.Contains("MetaOverlay")) simpleShaderName = "MetaOverlay";
+                else if (node.shaderName.Contains("Cutout")) simpleShaderName = "Cutout";
+            }
+
+            slot.enabled = !string.IsNullOrWhiteSpace(node.texPath);
+            slot.slotType = slotType.Value;
+            slot.texPath = node.texPath ?? string.Empty;
+            slot.maskTexPath = node.maskPath ?? string.Empty;
+            slot.shaderDefName = simpleShaderName;
+            slot.colorSource = DetectColorSource(node, pawn);
+            slot.customColor = effectiveColor;
+            slot.colorTwoSource = DetectSourceByColor(effectiveColorTwo, pawn);
+            slot.customColorTwo = effectiveColorTwo;
+            slot.scale = effectiveScale;
+            slot.offset = effectiveOffset;
+            slot.offsetEast = effectiveOffsetEast;
+            slot.offsetNorth = effectiveOffsetNorth;
+            slot.rotation = node.runtimeDataValid ? node.runtimeRotation : 0f;
+            slot.drawOrderOffset = 0f;
+            slot.graphicClass = node.graphicClass;
+        }
+
+        private static BaseAppearanceSlotType? TryResolveBaseSlotType(RenderNodeSnapshot node)
+        {
+            string tag = node.tagDefName ?? string.Empty;
+            string label = node.debugLabel ?? string.Empty;
+            string texPath = node.texPath ?? string.Empty;
+
+            if (ContainsAny(tag, label, texPath, "body")) return BaseAppearanceSlotType.Body;
+            if (ContainsAny(tag, label, texPath, "head")) return BaseAppearanceSlotType.Head;
+            if (ContainsAny(tag, label, texPath, "hair")) return BaseAppearanceSlotType.Hair;
+            if (ContainsAny(tag, label, texPath, "beard")) return BaseAppearanceSlotType.Beard;
+            if (ContainsAny(tag, label, texPath, "eye", "eyes")) return BaseAppearanceSlotType.Eyes;
+            if (ContainsAny(tag, label, texPath, "brow", "eyebrow")) return BaseAppearanceSlotType.Brow;
+            if (ContainsAny(tag, label, texPath, "mouth", "lip")) return BaseAppearanceSlotType.Mouth;
+            if (ContainsAny(tag, label, texPath, "nose")) return BaseAppearanceSlotType.Nose;
+            if (ContainsAny(tag, label, texPath, "ear")) return BaseAppearanceSlotType.Ear;
+
+            return null;
+        }
+
+        private static bool ContainsAny(string a, string b, string c, params string[] needles)
+        {
+            foreach (var needle in needles)
+            {
+                if ((!string.IsNullOrEmpty(a) && a.IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                    (!string.IsNullOrEmpty(b) && b.IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                    (!string.IsNullOrEmpty(c) && c.IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>

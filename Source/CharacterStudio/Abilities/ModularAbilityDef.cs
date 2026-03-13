@@ -31,7 +31,7 @@ namespace CharacterStudio.Abilities
             var sb = new StringBuilder();
             if (!IsValid)
             {
-                sb.AppendLine("验证失败:");
+                sb.AppendLine("CS_Ability_Validate_Failed".Translate());
                 foreach (var error in Errors)
                 {
                     sb.AppendLine($"  ✗ {error}");
@@ -39,7 +39,7 @@ namespace CharacterStudio.Abilities
             }
             if (Warnings.Count > 0)
             {
-                sb.AppendLine("警告:");
+                sb.AppendLine("CS_Ability_Validate_Warnings".Translate());
                 foreach (var warning in Warnings)
                 {
                     sb.AppendLine($"  ⚠ {warning}");
@@ -170,41 +170,41 @@ namespace CharacterStudio.Abilities
                 case AbilityRuntimeComponentType.QComboWindow:
                     if (comboWindowTicks <= 0)
                     {
-                        result.AddError("Q 连段窗口时长必须大于 0 tick");
+                        result.AddError("CS_Ability_Validate_QComboWindowTicks".Translate());
                     }
                     break;
 
                 case AbilityRuntimeComponentType.EShortJump:
                     if (cooldownTicks < 0)
                     {
-                        result.AddError("E 短跳冷却不能为负数");
+                        result.AddError("CS_Ability_Validate_EShortJumpCooldown".Translate());
                     }
                     if (jumpDistance <= 0)
                     {
-                        result.AddError("E 短跳距离必须大于 0");
+                        result.AddError("CS_Ability_Validate_EShortJumpDistance".Translate());
                     }
                     if (findCellRadius < 0)
                     {
-                        result.AddError("E 短跳寻位半径不能为负数");
+                        result.AddError("CS_Ability_Validate_EShortJumpFindCellRadius".Translate());
                     }
                     break;
 
                 case AbilityRuntimeComponentType.RStackDetonation:
                     if (requiredStacks <= 0)
                     {
-                        result.AddError("R 所需层数必须大于 0");
+                        result.AddError("CS_Ability_Validate_RRequiredStacks".Translate());
                     }
                     if (delayTicks < 0)
                     {
-                        result.AddError("R 延迟时间不能为负数");
+                        result.AddError("CS_Ability_Validate_RDelayTicks".Translate());
                     }
                     if (wave1Radius <= 0 || wave2Radius <= 0 || wave3Radius <= 0)
                     {
-                        result.AddError("R 三段半径必须大于 0");
+                        result.AddError("CS_Ability_Validate_RWaveRadius".Translate());
                     }
                     if (wave1Damage <= 0 || wave2Damage <= 0 || wave3Damage <= 0)
                     {
-                        result.AddError("R 三段伤害必须大于 0");
+                        result.AddError("CS_Ability_Validate_RWaveDamage".Translate());
                     }
                     break;
             }
@@ -273,12 +273,12 @@ namespace CharacterStudio.Abilities
             // 检查数值范围
             if (amount < 0)
             {
-                result.AddWarning("效果数值为负数，可能导致意外行为");
+                result.AddWarning("CS_Ability_Validate_EffectNegativeAmount".Translate());
             }
 
             if (chance <= 0 || chance > 1)
             {
-                result.AddError($"触发几率必须在 0-1 之间，当前值: {chance}");
+                result.AddError("CS_Ability_Validate_EffectChanceRange".Translate(chance));
             }
 
             // 检查效果类型特定要求
@@ -287,7 +287,7 @@ namespace CharacterStudio.Abilities
                 case AbilityEffectType.Damage:
                     if (amount <= 0)
                     {
-                        result.AddError("伤害效果的数值必须大于 0");
+                        result.AddError("CS_Ability_Validate_DamageAmount".Translate());
                     }
                     break;
 
@@ -295,18 +295,18 @@ namespace CharacterStudio.Abilities
                 case AbilityEffectType.Debuff:
                     if (hediffDef == null)
                     {
-                        result.AddError($"{type} 效果必须指定 HediffDef");
+                        result.AddError("CS_Ability_Validate_HediffRequired".Translate(($"CS_Ability_EffectType_{type}").Translate()));
                     }
                     break;
 
                 case AbilityEffectType.Summon:
                     if (summonKind == null)
                     {
-                        result.AddError("召唤效果必须指定 PawnKindDef");
+                        result.AddError("CS_Ability_Validate_SummonKindRequired".Translate());
                     }
                     if (summonCount <= 0)
                     {
-                        result.AddError("召唤数量必须大于 0");
+                        result.AddError("CS_Ability_Validate_SummonCount".Translate());
                     }
                     break;
             }
@@ -330,42 +330,42 @@ namespace CharacterStudio.Abilities
             // 基础验证
             if (string.IsNullOrEmpty(ability.defName))
             {
-                result.AddError("defName 不能为空");
+                result.AddError("CS_Ability_Validate_DefNameEmpty".Translate());
             }
             else if (!IsValidDefName(ability.defName))
             {
-                result.AddError("defName 只能包含字母、数字和下划线");
+                result.AddError("CS_Ability_Validate_DefNameInvalid".Translate());
             }
 
             if (string.IsNullOrEmpty(ability.label))
             {
-                result.AddWarning("label 为空，将使用 defName 作为显示名称");
+                result.AddWarning("CS_Ability_Validate_LabelEmpty".Translate());
             }
 
             // 数值验证
             if (ability.cooldownTicks < 0)
             {
-                result.AddError("冷却时间不能为负数");
+                result.AddError("CS_Ability_Validate_CooldownNegative".Translate());
             }
 
             if (ability.warmupTicks < 0)
             {
-                result.AddError("热身时间不能为负数");
+                result.AddError("CS_Ability_Validate_WarmupNegative".Translate());
             }
 
             if (ability.charges <= 0)
             {
-                result.AddWarning("能力使用次数为 0 或负数");
+                result.AddWarning("CS_Ability_Validate_ChargesNonPositive".Translate());
             }
 
             if (ability.range < 0)
             {
-                result.AddError("射程不能为负数");
+                result.AddError("CS_Ability_Validate_RangeNegative".Translate());
             }
 
             if (ability.radius < 0)
             {
-                result.AddError("作用半径不能为负数");
+                result.AddError("CS_Ability_Validate_RadiusNegative".Translate());
             }
 
             // 载体类型验证
@@ -376,20 +376,20 @@ namespace CharacterStudio.Abilities
                 case AbilityCarrierType.Area:
                     if (ability.range <= 0)
                     {
-                        result.AddWarning($"载体类型 {ability.carrierType} 通常需要设置射程");
+                        result.AddWarning("CS_Ability_Validate_CarrierNeedsRange".Translate(GetCarrierTypeLabel(ability.carrierType)));
                     }
                     break;
             }
 
             if (ability.carrierType == AbilityCarrierType.Projectile && ability.projectileDef == null)
             {
-                result.AddWarning("投射物载体未指定 projectileDef，可能使用默认投射物");
+                result.AddWarning("CS_Ability_Validate_ProjectileDefMissing".Translate());
             }
 
             // 效果验证
             if (ability.effects == null || ability.effects.Count == 0)
             {
-                result.AddWarning("能力没有定义任何效果");
+                result.AddWarning("CS_Ability_Validate_NoEffects".Translate());
             }
             else
             {
@@ -400,12 +400,12 @@ namespace CharacterStudio.Abilities
                     {
                         foreach (var error in effectResult.Errors)
                         {
-                            result.AddError($"效果 #{i + 1}: {error}");
+                            result.AddError("CS_Ability_Validate_EffectIndexError".Translate(i + 1, error));
                         }
                     }
                     foreach (var warning in effectResult.Warnings)
                     {
-                        result.AddWarning($"效果 #{i + 1}: {warning}");
+                        result.AddWarning("CS_Ability_Validate_EffectIndexWarning".Translate(i + 1, warning));
                     }
                 }
             }
@@ -417,7 +417,7 @@ namespace CharacterStudio.Abilities
                     var component = ability.runtimeComponents[i];
                     if (component == null)
                     {
-                        result.AddWarning($"运行时组件 #{i + 1} 为空");
+                        result.AddWarning("CS_Ability_Validate_RuntimeComponentNull".Translate(i + 1));
                         continue;
                     }
 
@@ -426,18 +426,28 @@ namespace CharacterStudio.Abilities
                     {
                         foreach (var error in compResult.Errors)
                         {
-                            result.AddError($"运行时组件 #{i + 1}: {error}");
+                            result.AddError("CS_Ability_Validate_RuntimeComponentError".Translate(i + 1, error));
                         }
                     }
 
                     foreach (var warning in compResult.Warnings)
                     {
-                        result.AddWarning($"运行时组件 #{i + 1}: {warning}");
+                        result.AddWarning("CS_Ability_Validate_RuntimeComponentWarning".Translate(i + 1, warning));
                     }
                 }
             }
 
             return result;
+        }
+
+        private static string GetCarrierTypeLabel(AbilityCarrierType type)
+        {
+            return ($"CS_Ability_CarrierType_{type}").Translate();
+        }
+
+        private static string GetEffectTypeLabel(AbilityEffectType type)
+        {
+            return ($"CS_Ability_EffectType_{type}").Translate();
         }
 
         private static bool IsValidDefName(string defName)

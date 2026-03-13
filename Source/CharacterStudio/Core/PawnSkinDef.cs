@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CharacterStudio.Abilities;
+using CharacterStudio.AI;
 using Verse;
 
 namespace CharacterStudio.Core
@@ -60,6 +61,9 @@ namespace CharacterStudio.Core
         // 图层配置
         // ─────────────────────────────────────────────
 
+        /// <summary>基础外观槽位</summary>
+        public BaseAppearanceConfig baseAppearance = new BaseAppearanceConfig();
+
         /// <summary>图层列表</summary>
         public List<PawnLayerConfig> layers = new List<PawnLayerConfig>();
 
@@ -94,6 +98,9 @@ namespace CharacterStudio.Core
 
         /// <summary>QWER 技能热键映射</summary>
         public SkinAbilityHotkeyConfig abilityHotkeys = new SkinAbilityHotkeyConfig();
+
+        /// <summary>角色属性画像（供编辑器与 LLM 生成使用）</summary>
+        public CharacterAttributeProfile attributes = new CharacterAttributeProfile();
 
         // ─────────────────────────────────────────────
         // 运行时方法
@@ -144,7 +151,9 @@ namespace CharacterStudio.Core
                 version = this.version,
                 previewTexPath = this.previewTexPath,
                 faceConfig = this.faceConfig?.Clone() ?? new PawnFaceConfig(),
-                abilityHotkeys = this.abilityHotkeys?.Clone() ?? new SkinAbilityHotkeyConfig()
+                abilityHotkeys = this.abilityHotkeys?.Clone() ?? new SkinAbilityHotkeyConfig(),
+                baseAppearance = this.baseAppearance?.Clone() ?? new BaseAppearanceConfig(),
+                attributes = this.attributes?.Clone() ?? new CharacterAttributeProfile()
             };
 
             // 复制图层

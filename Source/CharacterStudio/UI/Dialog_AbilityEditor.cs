@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CharacterStudio.Abilities;
+using CharacterStudio.AI;
+using CharacterStudio.Core;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -16,8 +19,8 @@ namespace CharacterStudio.UI
         // ─────────────────────────────────────────────
         // 常量
         // ─────────────────────────────────────────────
-        private const float LeftPanelWidth = 200f;
-        private const float RightPanelWidth = 350f;
+        private const float LeftPanelWidth = 260f;
+        private const float RightPanelWidth = 360f;
         private new const float Margin = 10f;
         private const float RowHeight = 30f;
 
@@ -30,12 +33,18 @@ namespace CharacterStudio.UI
         private Vector2 propsScrollPos;
         private Vector2 effectsScrollPos;
         private string validationSummary = string.Empty;
+        private string abilitySearchText = string.Empty;
+        private string llmAbilityPrompt = string.Empty;
+        private readonly SkinAbilityHotkeyConfig? boundHotkeys;
+        private readonly PawnSkinDef? boundSkin;
 
-        public override Vector2 InitialSize => new Vector2(900f, 700f);
+        public override Vector2 InitialSize => new Vector2(1180f, 760f);
 
-        public Dialog_AbilityEditor(List<ModularAbilityDef> abilityList)
+        public Dialog_AbilityEditor(List<ModularAbilityDef> abilityList, SkinAbilityHotkeyConfig? hotkeyConfig = null, PawnSkinDef? skin = null)
         {
             this.abilities = abilityList;
+            this.boundHotkeys = hotkeyConfig;
+            this.boundSkin = skin;
             this.doCloseX = true;
             this.doCloseButton = false;
             this.draggable = true;
@@ -59,7 +68,10 @@ namespace CharacterStudio.UI
             Widgets.Label(new Rect(0, 0, inRect.width, 30), "CS_Studio_Ability_EditorTitle".Translate());
             Text.Font = GameFont.Small;
 
-            float contentY = 40f;
+            Rect summaryRect = new Rect(0, 34f, inRect.width, 58f);
+            DrawTopSummary(summaryRect);
+
+            float contentY = 98f;
             float contentHeight = inRect.height - contentY;
 
             // 左侧列表
@@ -90,18 +102,26 @@ namespace CharacterStudio.UI
         {
             Widgets.DrawMenuSection(rect);
 
-            // 工具栏
-            if (Widgets.ButtonText(new Rect(rect.x + Margin, rect.y + Margin, 56, 24), "CS_Studio_File_New".Translate()))
+            Rect inner = rect.ContractedBy(Margin);
+            float buttonWidth = (inner.width - 10f) / 2f;
+
+            if (Widgets.ButtonText(new Rect(inner.x, inner.y, buttonWidth, 24f), "CS_Studio_File_New".Translate()))
             {
                 CreateNewAbility();
             }
 
-            if (Widgets.ButtonText(new Rect(rect.x + Margin + 60, rect.y + Margin, 56, 24), "CS_Studio_Panel_Duplicate".Translate()))
+            if (Widgets.ButtonText(new Rect(inner.x + buttonWidth + 10f, inner.y, buttonWidth, 24f), "CS_Studio_Panel_Duplicate".Translate()))
             {
                 DuplicateSelectedAbility();
             }
 
-            if (Widgets.ButtonText(new Rect(rect.x + rect.width - 66, rect.y + Margin, 56, 24), "CS_Studio_Btn_Delete".Translate()))
+            float secondRowY = inner.y + 30f;
+            if (Widgets.ButtonText(new Rect(inner.x, secondRowY, buttonWidth, 24f), "CS_Studio_Ability_LoadQwerExamples".Translate()))
+            {
+                LoadQwerExamples();
+            }
+
+            if (Widgets.ButtonText(new Rect(inner.x + buttonWidth + 10f, secondRowY, buttonWidth, 24f), "CS_Studio_Btn_Delete".Translate()))
             {
                 if (selectedAbility != null)
                 {
@@ -111,35 +131,62 @@ namespace CharacterStudio.UI
                 }
             }
 
-            // 列表
-            float listY = rect.y + 40;
-            float listHeight = rect.height - 50;
-            Rect listRect = new Rect(rect.x + Margin, listY, rect.width - Margin * 2, listHeight);
-            Rect viewRect = new Rect(0, 0, listRect.width - 16, abilities.Count * RowHeight);
+            float thirdRowY = secondRowY + 30f;
+            if (Widgets.ButtonText(new Rect(inner.x, thirdRowY, buttonWidth, 24f), "CS_LLM_GenerateAbilities".Translate()))
+            {
+                GenerateAbilitiesFromPrompt(false);
+            }
+
+            if (Widgets.ButtonText(new Rect(inner.x + buttonWidth + 10f, thirdRowY, buttonWidth, 24f), "CS_LLM_OpenSettings".Translate()))
+            {
+                Find.WindowStack.Add(new Dialog_LlmSettings());
+            }
+
+            float promptY = thirdRowY + 30f;
+            Widgets.Label(new Rect(inner.x, promptY, inner.width, 24f), "CS_LLM_AbilityPrompt".Translate());
+            llmAbilityPrompt = Widgets.TextArea(new Rect(inner.x, promptY + 22f, inner.width, 76f), llmAbilityPrompt ?? string.Empty);
+            Widgets.Label(new Rect(inner.x, promptY + 102f, inner.width, 40f), "CS_LLM_EditorTool_AbilityHint".Translate());
+
+            float promptButtonsY = promptY + 144f;
+            if (Widgets.ButtonText(new Rect(inner.x, promptButtonsY, buttonWidth, 24f), "CS_LLM_ApplyReplace".Translate()))
+            {
+                GenerateAbilitiesFromPrompt(true);
+            }
+
+            if (Widgets.ButtonText(new Rect(inner.x + buttonWidth + 10f, promptButtonsY, buttonWidth, 24f), "CS_LLM_ApplyAppend".Translate()))
+            {
+                GenerateAbilitiesFromPrompt(false);
+            }
+
+            float searchY = promptButtonsY + 34f;
+            Widgets.Label(new Rect(inner.x, searchY, inner.width, 24f), "CS_Studio_Ability_Search".Translate());
+            abilitySearchText = Widgets.TextField(new Rect(inner.x, searchY + 22f, inner.width, 24f), abilitySearchText ?? string.Empty);
+
+            List<ModularAbilityDef> filteredAbilities = GetFilteredAbilities();
+            Widgets.Label(new Rect(inner.x, searchY + 50f, inner.width, 24f), "CS_Studio_Ability_CountSummary".Translate(filteredAbilities.Count, abilities.Count));
+
+            float listY = searchY + 78f;
+            float listHeight = rect.height - (listY - rect.y) - Margin;
+            Rect listRect = new Rect(inner.x, listY, inner.width, listHeight);
+            Rect viewRect = new Rect(0, 0, listRect.width - 16f, Mathf.Max(filteredAbilities.Count * 44f, listRect.height - 4f));
 
             Widgets.BeginScrollView(listRect, ref listScrollPos, viewRect);
-            for (int i = 0; i < abilities.Count; i++)
+            for (int i = 0; i < filteredAbilities.Count; i++)
             {
-                var ability = abilities[i];
-                Rect rowRect = new Rect(0, i * RowHeight, viewRect.width, RowHeight);
-                
-                if (selectedAbility == ability)
-                {
-                    Widgets.DrawHighlightSelected(rowRect);
-                }
-
-                if (Widgets.ButtonInvisible(rowRect))
-                {
-                    selectedAbility = ability;
-                }
-
-                var validation = ability.Validate();
-                string statusIcon = validation.IsValid
-                    ? (validation.Warnings.Count > 0 ? "⚠" : "✅")
-                    : "❌";
-                string displayName = string.IsNullOrWhiteSpace(ability.label) ? ability.defName : ability.label;
-                Widgets.Label(new Rect(5, i * RowHeight, viewRect.width - 10, RowHeight), $"{statusIcon} {displayName}");
+                var ability = filteredAbilities[i];
+                Rect rowRect = new Rect(0, i * 44f, viewRect.width, 40f);
+                DrawAbilityRow(rowRect, ability, i);
             }
+
+            if (filteredAbilities.Count == 0)
+            {
+                Text.Anchor = TextAnchor.MiddleCenter;
+                GUI.color = Color.gray;
+                Widgets.Label(new Rect(0, 8f, viewRect.width, 40f), "CS_Studio_Ability_NoResults".Translate());
+                GUI.color = Color.white;
+                Text.Anchor = TextAnchor.UpperLeft;
+            }
+
             Widgets.EndScrollView();
         }
 
@@ -148,13 +195,15 @@ namespace CharacterStudio.UI
             Widgets.DrawMenuSection(rect);
             Rect contentRect = rect.ContractedBy(Margin);
 
-            Widgets.BeginScrollView(contentRect, ref propsScrollPos, new Rect(0, 0, contentRect.width - 16, 1200));
+            Widgets.BeginScrollView(contentRect, ref propsScrollPos, new Rect(0, 0, contentRect.width - 16, 1400));
             
             float y = 0;
             float labelWidth = 100f;
             float fieldWidth = contentRect.width - labelWidth - 30;
 
             float width = contentRect.width;
+
+            DrawSelectedAbilitySummary(ref y, width);
 
             // 基础信息
             UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Section_AbilityBase".Translate());
@@ -174,7 +223,7 @@ namespace CharacterStudio.UI
             UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Section_Carrier".Translate());
             UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Ability_Type".Translate(), selectedAbility.carrierType,
                 (AbilityCarrierType[])Enum.GetValues(typeof(AbilityCarrierType)),
-                type => type.ToString(),
+                GetCarrierTypeLabel,
                 val => selectedAbility.carrierType = val);
 
             // 范围
@@ -226,19 +275,34 @@ namespace CharacterStudio.UI
             Widgets.DrawMenuSection(rect);
             Rect contentRect = rect.ContractedBy(Margin);
 
-            // 标题栏
-            Widgets.Label(new Rect(contentRect.x, contentRect.y, 100, 24), "<b>" + "CS_Studio_Effect_Title".Translate() + "</b>");
+            Widgets.Label(new Rect(contentRect.x, contentRect.y, contentRect.width - 90f, 24), "<b>" + "CS_Studio_Effect_Title".Translate() + "</b>");
             if (Widgets.ButtonText(new Rect(contentRect.x + contentRect.width - 80, contentRect.y, 80, 24), "CS_Studio_Effect_Add".Translate()))
             {
                 ShowAddEffectMenu();
             }
 
-            // 效果列表
-            float listY = contentRect.y + 30;
-            float listHeight = contentRect.height - 30;
-            Rect listRect = new Rect(contentRect.x, listY, contentRect.width, listHeight);
-            Rect viewRect = new Rect(0, 0, listRect.width - 16, selectedAbility!.effects.Count * 150); // 每个效果预留高度
+            Widgets.Label(new Rect(contentRect.x, contentRect.y + 24f, contentRect.width, 24f), "CS_Studio_Ability_EffectsSummary".Translate(selectedAbility?.effects?.Count ?? 0, selectedAbility?.runtimeComponents?.Count ?? 0));
 
+            float listY = contentRect.y + 52f;
+            float listHeight = contentRect.height - 52f;
+            Rect listRect = new Rect(contentRect.x, listY, contentRect.width, listHeight);
+
+            if (selectedAbility == null || selectedAbility.effects == null || selectedAbility.effects.Count == 0)
+            {
+                Widgets.DrawHighlight(listRect);
+                Text.Anchor = TextAnchor.MiddleCenter;
+                GUI.color = Color.gray;
+                Widgets.Label(new Rect(listRect.x + 10f, listRect.y + 20f, listRect.width - 20f, 70f), "CS_Studio_Effect_EmptyHint".Translate());
+                GUI.color = Color.white;
+                Text.Anchor = TextAnchor.UpperLeft;
+                if (Widgets.ButtonText(new Rect(listRect.x + 30f, listRect.y + 92f, listRect.width - 60f, 28f), "CS_Studio_Effect_Add".Translate()))
+                {
+                    ShowAddEffectMenu();
+                }
+                return;
+            }
+
+            Rect viewRect = new Rect(0, 0, listRect.width - 16, selectedAbility.effects.Count * 150f);
             Widgets.BeginScrollView(listRect, ref effectsScrollPos, viewRect);
             
             float cy = 0;
@@ -246,7 +310,7 @@ namespace CharacterStudio.UI
             {
                 var effect = selectedAbility.effects[i];
                 DrawEffectItem(new Rect(0, cy, viewRect.width, 140), effect, i);
-                cy += 150;
+                cy += 150f;
             }
 
             Widgets.EndScrollView();
@@ -258,7 +322,7 @@ namespace CharacterStudio.UI
             Rect inner = rect.ContractedBy(5);
 
             // 标题与删除
-            Widgets.Label(new Rect(inner.x, inner.y, 130, 24), $"#{index + 1} {effect.type}");
+            Widgets.Label(new Rect(inner.x, inner.y, 130, 24), $"#{index + 1} {GetEffectTypeLabel(effect.type)}");
 
             float buttonX = inner.x + inner.width - 78;
             if (Widgets.ButtonText(new Rect(buttonX, inner.y, 24, 24), "▲") && selectedAbility != null && index > 0)
@@ -346,7 +410,7 @@ namespace CharacterStudio.UI
             var options = new List<FloatMenuOption>();
             foreach (AbilityEffectType type in Enum.GetValues(typeof(AbilityEffectType)))
             {
-                options.Add(new FloatMenuOption(type.ToString(), () =>
+                options.Add(new FloatMenuOption(GetEffectTypeLabel(type), () =>
                 {
                     selectedAbility?.effects.Add(CreateDefaultEffectConfig(type));
                 }));
@@ -525,7 +589,7 @@ namespace CharacterStudio.UI
                 Widgets.DrawMenuSection(block);
                 Rect inner = block.ContractedBy(5f);
 
-                Widgets.Label(new Rect(inner.x, inner.y, inner.width - 100f, 24f), $"#{i + 1} {comp.type}");
+                Widgets.Label(new Rect(inner.x, inner.y, inner.width - 100f, 24f), $"#{i + 1} {GetRuntimeComponentTypeLabel(comp.type)}");
                 bool enabled = comp.enabled;
                 Widgets.Checkbox(new Vector2(inner.x + inner.width - 96f, inner.y + 2f), ref enabled, 24f, false);
                 comp.enabled = enabled;
@@ -623,7 +687,7 @@ namespace CharacterStudio.UI
             var options = new List<FloatMenuOption>();
             foreach (AbilityRuntimeComponentType type in Enum.GetValues(typeof(AbilityRuntimeComponentType)))
             {
-                options.Add(new FloatMenuOption(type.ToString(), () =>
+                options.Add(new FloatMenuOption(GetRuntimeComponentTypeLabel(type), () =>
                 {
                     selectedAbility.runtimeComponents ??= new List<AbilityRuntimeComponentConfig>();
                     selectedAbility.runtimeComponents.Add(CreateDefaultRuntimeComponent(type));
@@ -689,9 +753,215 @@ namespace CharacterStudio.UI
 
             var copy = selectedAbility.Clone();
             copy.defName = $"{selectedAbility.defName}_Copy_{DateTime.Now.Ticks}";
-            copy.label = (selectedAbility.label ?? "Ability") + " Copy";
+            copy.label = "CS_Studio_Ability_CopyLabel".Translate(selectedAbility.label ?? "CS_Studio_Ability_DefaultName".Translate());
             abilities.Add(copy);
             selectedAbility = copy;
+        }
+
+        private void LoadQwerExamples()
+        {
+            var exampleAbilities = CreateQwerExampleAbilities();
+            var exampleDefNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var ability in exampleAbilities)
+            {
+                if (!string.IsNullOrEmpty(ability.defName))
+                {
+                    exampleDefNames.Add(ability.defName);
+                }
+            }
+
+            abilities.RemoveAll(a => a != null && !string.IsNullOrEmpty(a.defName) && exampleDefNames.Contains(a.defName));
+            abilities.AddRange(exampleAbilities);
+            selectedAbility = exampleAbilities.Count > 0 ? exampleAbilities[0] : abilities.Count > 0 ? abilities[0] : null;
+
+            if (boundHotkeys != null)
+            {
+                boundHotkeys.enabled = true;
+                boundHotkeys.qAbilityDefName = "CS_Example_Q_ModeSlash";
+                boundHotkeys.wAbilityDefName = "CS_Example_W_Pierce";
+                boundHotkeys.eAbilityDefName = "CS_Example_E_ShadowStep";
+                boundHotkeys.rAbilityDefName = "CS_Example_R_Annihilation";
+                boundHotkeys.wComboAbilityDefName = "CS_Example_W_ComboBurst";
+            }
+
+            validationSummary = "CS_Studio_Ability_QwerExamplesLoaded".Translate();
+        }
+
+        private static List<ModularAbilityDef> CreateQwerExampleAbilities()
+        {
+            return new List<ModularAbilityDef>
+            {
+                CreateQExampleAbility(),
+                CreateWExampleAbility(),
+                CreateWComboExampleAbility(),
+                CreateEExampleAbility(),
+                CreateRExampleAbility()
+            };
+        }
+
+        private static ModularAbilityDef CreateQExampleAbility()
+        {
+            return new ModularAbilityDef
+            {
+                defName = "CS_Example_Q_ModeSlash",
+                label = "Q·四式斩",
+                description = "示例：Q 键循环四种前向攻击形态，并开启 W 连段窗口。",
+                cooldownTicks = 45f,
+                warmupTicks = 0f,
+                charges = 1,
+                carrierType = AbilityCarrierType.Target,
+                range = 5f,
+                effects = new List<AbilityEffectConfig>
+                {
+                    new AbilityEffectConfig
+                    {
+                        type = AbilityEffectType.Damage,
+                        amount = 18f,
+                        chance = 1f,
+                        damageDef = DamageDefOf.Cut
+                    }
+                },
+                runtimeComponents = new List<AbilityRuntimeComponentConfig>
+                {
+                    new AbilityRuntimeComponentConfig
+                    {
+                        type = AbilityRuntimeComponentType.QComboWindow,
+                        enabled = true,
+                        comboWindowTicks = 18
+                    }
+                }
+            };
+        }
+
+        private static ModularAbilityDef CreateWExampleAbility()
+        {
+            return new ModularAbilityDef
+            {
+                defName = "CS_Example_W_Pierce",
+                label = "W·穿刺",
+                description = "示例：W 键默认释放单点高伤穿刺。",
+                cooldownTicks = 75f,
+                warmupTicks = 8f,
+                charges = 1,
+                carrierType = AbilityCarrierType.Target,
+                range = 2.5f,
+                effects = new List<AbilityEffectConfig>
+                {
+                    new AbilityEffectConfig
+                    {
+                        type = AbilityEffectType.Damage,
+                        amount = 30f,
+                        chance = 1f,
+                        damageDef = DamageDefOf.Stab
+                    }
+                }
+            };
+        }
+
+        private static ModularAbilityDef CreateWComboExampleAbility()
+        {
+            return new ModularAbilityDef
+            {
+                defName = "CS_Example_W_ComboBurst",
+                label = "W·裂阵追击",
+                description = "示例：在 Q 连段窗口内按下 W，触发更大范围的追击爆发。",
+                cooldownTicks = 90f,
+                warmupTicks = 0f,
+                charges = 1,
+                carrierType = AbilityCarrierType.Area,
+                range = 3f,
+                radius = 1.9f,
+                effects = new List<AbilityEffectConfig>
+                {
+                    new AbilityEffectConfig
+                    {
+                        type = AbilityEffectType.Damage,
+                        amount = 42f,
+                        chance = 1f,
+                        damageDef = DamageDefOf.Bomb
+                    }
+                }
+            };
+        }
+
+        private static ModularAbilityDef CreateEExampleAbility()
+        {
+            return new ModularAbilityDef
+            {
+                defName = "CS_Example_E_ShadowStep",
+                label = "E·影踏",
+                description = "示例：E 键执行短位移，落点触发一次伤害效果。",
+                cooldownTicks = 120f,
+                warmupTicks = 0f,
+                charges = 1,
+                carrierType = AbilityCarrierType.Target,
+                range = 6f,
+                effects = new List<AbilityEffectConfig>
+                {
+                    new AbilityEffectConfig
+                    {
+                        type = AbilityEffectType.Damage,
+                        amount = 24f,
+                        chance = 1f,
+                        damageDef = DamageDefOf.Blunt
+                    }
+                },
+                runtimeComponents = new List<AbilityRuntimeComponentConfig>
+                {
+                    new AbilityRuntimeComponentConfig
+                    {
+                        type = AbilityRuntimeComponentType.EShortJump,
+                        enabled = true,
+                        cooldownTicks = 120,
+                        jumpDistance = 6,
+                        findCellRadius = 3,
+                        triggerAbilityEffectsAfterJump = true
+                    }
+                }
+            };
+        }
+
+        private static ModularAbilityDef CreateRExampleAbility()
+        {
+            return new ModularAbilityDef
+            {
+                defName = "CS_Example_R_Annihilation",
+                label = "R·歼灭界域",
+                description = "示例：R 键先开启近战叠层，再选点延迟跃迁并释放三段爆炸波。",
+                cooldownTicks = 240f,
+                warmupTicks = 0f,
+                charges = 1,
+                carrierType = AbilityCarrierType.Area,
+                range = 9f,
+                radius = 3f,
+                effects = new List<AbilityEffectConfig>
+                {
+                    new AbilityEffectConfig
+                    {
+                        type = AbilityEffectType.Damage,
+                        amount = 12f,
+                        chance = 1f,
+                        damageDef = DamageDefOf.Bomb
+                    }
+                },
+                runtimeComponents = new List<AbilityRuntimeComponentConfig>
+                {
+                    new AbilityRuntimeComponentConfig
+                    {
+                        type = AbilityRuntimeComponentType.RStackDetonation,
+                        enabled = true,
+                        requiredStacks = 7,
+                        delayTicks = 180,
+                        wave1Radius = 3f,
+                        wave1Damage = 80f,
+                        wave2Radius = 6f,
+                        wave2Damage = 140f,
+                        wave3Radius = 9f,
+                        wave3Damage = 220f,
+                        waveDamageDef = DamageDefOf.Bomb
+                    }
+                }
+            };
         }
 
         private void CreateNewAbility()
@@ -699,10 +969,230 @@ namespace CharacterStudio.UI
             var newAbility = new ModularAbilityDef
             {
                 defName = $"CS_Ability_{DateTime.Now.Ticks}",
-                label = "New Ability"
+                label = "CS_Studio_Ability_DefaultName".Translate()
             };
             abilities.Add(newAbility);
             selectedAbility = newAbility;
+            validationSummary = string.Empty;
+        }
+
+        private void DrawTopSummary(Rect rect)
+        {
+            Widgets.DrawMenuSection(rect);
+            Rect inner = rect.ContractedBy(8f);
+
+            string selectedName = selectedAbility == null
+                ? "CS_Studio_Ability_SelectOrCreate".Translate()
+                : (string.IsNullOrWhiteSpace(selectedAbility.label) ? selectedAbility.defName : selectedAbility.label);
+            string validationText = selectedAbility == null ? "-" : GetValidationLabel(selectedAbility.Validate());
+            string hotkeyText = GetHotkeySummary();
+
+            Widgets.Label(new Rect(inner.x, inner.y, inner.width * 0.42f, 24f), "CS_Studio_Ability_SelectedSummary".Translate(selectedName));
+            Widgets.Label(new Rect(inner.x, inner.y + 24f, inner.width * 0.42f, 24f), "CS_Studio_Ability_HotkeySummary".Translate(hotkeyText));
+
+            float rightX = inner.x + inner.width * 0.45f;
+            float rightW = inner.width * 0.55f;
+            Widgets.Label(new Rect(rightX, inner.y, rightW, 24f), "CS_Studio_Ability_ValidationSummary".Translate(validationText));
+            Widgets.Label(new Rect(rightX, inner.y + 24f, rightW, 24f), "CS_Studio_Ability_EffectsSummary".Translate(selectedAbility?.effects?.Count ?? 0, selectedAbility?.runtimeComponents?.Count ?? 0));
+        }
+
+        private void DrawAbilityRow(Rect rowRect, ModularAbilityDef ability, int index)
+        {
+            UIHelper.DrawAlternatingRowBackground(rowRect, index);
+
+            if (selectedAbility == ability)
+            {
+                Widgets.DrawHighlightSelected(rowRect);
+            }
+
+            if (Widgets.ButtonInvisible(rowRect))
+            {
+                selectedAbility = ability;
+            }
+
+            var validation = ability.Validate();
+            string statusIcon = validation.IsValid
+                ? (validation.Warnings.Count > 0 ? "⚠" : "✅")
+                : "❌";
+            string displayName = string.IsNullOrWhiteSpace(ability.label) ? ability.defName : ability.label;
+            string subline = string.Format("{0} | {1} | {2} {3:0} | {4}", ability.defName, GetCarrierTypeLabel(ability.carrierType), "CS_Studio_Ability_CooldownShort".Translate(), ability.cooldownTicks, GetValidationLabel(validation));
+
+            Widgets.Label(new Rect(rowRect.x + 6f, rowRect.y + 2f, rowRect.width - 12f, 20f), $"{statusIcon} {displayName}");
+            GUI.color = Color.gray;
+            Widgets.Label(new Rect(rowRect.x + 20f, rowRect.y + 19f, rowRect.width - 24f, 18f), subline);
+            GUI.color = Color.white;
+        }
+
+        private void DrawSelectedAbilitySummary(ref float y, float width)
+        {
+            if (selectedAbility == null)
+            {
+                return;
+            }
+
+            Rect cardRect = new Rect(0, y, width, 62f);
+            Widgets.DrawMenuSection(cardRect);
+            Rect inner = cardRect.ContractedBy(8f);
+            var validation = selectedAbility.Validate();
+            string selectedName = string.IsNullOrWhiteSpace(selectedAbility.label) ? selectedAbility.defName : selectedAbility.label;
+
+            Widgets.Label(new Rect(inner.x, inner.y, inner.width * 0.5f, 24f), selectedName);
+            Widgets.Label(new Rect(inner.x, inner.y + 22f, inner.width * 0.5f, 24f), "CS_Studio_Ability_DefSummary".Translate(selectedAbility.defName));
+            Widgets.Label(new Rect(inner.x + inner.width * 0.52f, inner.y, inner.width * 0.48f, 24f), "CS_Studio_Ability_ValidationSummary".Translate(GetValidationLabel(validation)));
+            Widgets.Label(new Rect(inner.x + inner.width * 0.52f, inner.y + 22f, inner.width * 0.48f, 24f), "CS_Studio_Ability_HotkeySummary".Translate(GetHotkeySummaryForSelected()));
+
+            y += 70f;
+        }
+
+        private List<ModularAbilityDef> GetFilteredAbilities()
+        {
+            if (abilities == null || abilities.Count == 0)
+            {
+                return new List<ModularAbilityDef>();
+            }
+
+            string search = (abilitySearchText ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(search))
+            {
+                return abilities;
+            }
+
+            return abilities.Where(a => a != null &&
+                ((a.label?.IndexOf(search, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0 ||
+                 (a.defName?.IndexOf(search, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0 ||
+                 GetCarrierTypeLabel(a.carrierType).IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0)).ToList();
+        }
+
+        private string GetValidationLabel(AbilityValidationResult validation)
+        {
+            if (!validation.IsValid)
+            {
+                return "CS_Studio_Ability_Invalid".Translate();
+            }
+
+            return validation.Warnings.Count > 0
+                ? "CS_Studio_Ability_ValidWithWarnings".Translate()
+                : "CS_Studio_Ability_Valid".Translate();
+        }
+
+        private string GetHotkeySummary()
+        {
+            if (boundHotkeys == null || !boundHotkeys.enabled)
+            {
+                return "CS_Studio_Ability_Hotkey_None".Translate();
+            }
+
+            return string.Join(" / ", new[]
+            {
+                FormatHotkeySlotSummary("CS_Studio_Ability_HotkeySlot_Q".Translate(), boundHotkeys.qAbilityDefName),
+                FormatHotkeySlotSummary("CS_Studio_Ability_HotkeySlot_W".Translate(), boundHotkeys.wAbilityDefName),
+                FormatHotkeySlotSummary("CS_Studio_Ability_HotkeySlot_E".Translate(), boundHotkeys.eAbilityDefName),
+                FormatHotkeySlotSummary("CS_Studio_Ability_HotkeySlot_R".Translate(), boundHotkeys.rAbilityDefName),
+                FormatHotkeySlotSummary("CS_Studio_Ability_HotkeySlot_WCombo".Translate(), boundHotkeys.wComboAbilityDefName)
+            });
+        }
+
+        private string GetHotkeySummaryForSelected()
+        {
+            if (selectedAbility == null || boundHotkeys == null || !boundHotkeys.enabled)
+            {
+                return "CS_Studio_Ability_Hotkey_None".Translate();
+            }
+
+            var slots = new List<string>();
+            if (string.Equals(boundHotkeys.qAbilityDefName, selectedAbility.defName, StringComparison.OrdinalIgnoreCase)) slots.Add("CS_Studio_Ability_HotkeySlot_Q".Translate());
+            if (string.Equals(boundHotkeys.wAbilityDefName, selectedAbility.defName, StringComparison.OrdinalIgnoreCase)) slots.Add("CS_Studio_Ability_HotkeySlot_W".Translate());
+            if (string.Equals(boundHotkeys.eAbilityDefName, selectedAbility.defName, StringComparison.OrdinalIgnoreCase)) slots.Add("CS_Studio_Ability_HotkeySlot_E".Translate());
+            if (string.Equals(boundHotkeys.rAbilityDefName, selectedAbility.defName, StringComparison.OrdinalIgnoreCase)) slots.Add("CS_Studio_Ability_HotkeySlot_R".Translate());
+            if (string.Equals(boundHotkeys.wComboAbilityDefName, selectedAbility.defName, StringComparison.OrdinalIgnoreCase)) slots.Add("CS_Studio_Ability_HotkeySlot_WCombo".Translate());
+            return slots.Count > 0 ? string.Join(", ", slots) : "CS_Studio_Ability_Hotkey_None".Translate();
+        }
+
+        private static string GetCarrierTypeLabel(AbilityCarrierType type)
+        {
+            return ($"CS_Ability_CarrierType_{type}").Translate();
+        }
+
+        private static string GetEffectTypeLabel(AbilityEffectType type)
+        {
+            return ($"CS_Ability_EffectType_{type}").Translate();
+        }
+
+        private static string GetRuntimeComponentTypeLabel(AbilityRuntimeComponentType type)
+        {
+            return ($"CS_Ability_RuntimeComponentType_{type}").Translate();
+        }
+
+        private string FormatHotkeySlotSummary(string slotLabel, string defName)
+        {
+            return "CS_Studio_Ability_HotkeySlotSummary".Translate(slotLabel, FormatHotkeyAbility(defName));
+        }
+
+        private string FormatHotkeyAbility(string defName)
+        {
+            return FormatHotkeyAbilityStatic(defName, abilities);
+        }
+
+        private static string FormatHotkeyAbilityStatic(string defName, List<ModularAbilityDef> availableAbilities)
+        {
+            if (string.IsNullOrWhiteSpace(defName))
+            {
+                return "CS_Studio_Ability_Unassigned".Translate();
+            }
+
+            ModularAbilityDef? match = availableAbilities?.FirstOrDefault(a => a != null && string.Equals(a.defName, defName, StringComparison.OrdinalIgnoreCase));
+            if (match == null)
+            {
+                return defName;
+            }
+
+            return string.IsNullOrWhiteSpace(match.label) ? match.defName : match.label;
+        }
+        private void GenerateAbilitiesFromPrompt(bool replaceExisting)
+        {
+            try
+            {
+                var settings = LlmSettingsRepository.GetOrLoad();
+                if (!settings.enabled || !settings.IsConfigured)
+                {
+                    validationSummary = "CS_LLM_Settings_NotConfigured".Translate();
+                    Find.WindowStack.Add(new Dialog_LlmSettings());
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(llmAbilityPrompt))
+                {
+                    validationSummary = "CS_LLM_AbilityPrompt_Empty".Translate();
+                    return;
+                }
+
+                PawnSkinDef skinContext = boundSkin ?? new PawnSkinDef();
+                var result = LlmGenerationService.GenerateAbilities(settings, llmAbilityPrompt, skinContext, abilities);
+                List<ModularAbilityDef> generated = result.payload ?? new List<ModularAbilityDef>();
+                generated = generated.Where(a => a != null).ToList();
+                if (generated.Count == 0)
+                {
+                    validationSummary = "CS_LLM_GenerateAbilitiesEmpty".Translate();
+                    return;
+                }
+
+                if (replaceExisting)
+                {
+                    abilities.Clear();
+                }
+
+                int beforeCount = abilities.Count;
+                abilities.AddRange(generated);
+                selectedAbility = generated[0];
+                validationSummary = replaceExisting
+                    ? "CS_LLM_GenerateAbilitiesReplaced".Translate(generated.Count)
+                    : "CS_LLM_GenerateAbilitiesAppended".Translate(generated.Count, beforeCount, abilities.Count);
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"[CharacterStudio] 技能 LLM 生成失败: {ex}");
+                validationSummary = "CS_LLM_GenerateFailed".Translate(ex.Message);
+            }
         }
     }
 }

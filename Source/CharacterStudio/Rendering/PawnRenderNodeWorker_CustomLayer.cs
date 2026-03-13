@@ -130,47 +130,46 @@ namespace CharacterStudio.Rendering
         /// </summary>
         public override Vector3 ScaleFor(PawnRenderNode node, PawnDrawParms parms)
         {
-            // 先走基类：在部分版本/节点路径中，base 会正确应用 props.drawSize
-            Vector3 scale = base.ScaleFor(node, parms);
-
             if (node is PawnRenderNode_Custom customNode && customNode.config != null)
             {
-                // 关键修复：当 base 未体现 drawSize（常见为 1,1,1）时，回退到 config.scale。
-                // 这样缩放滑条修改 config.scale 后可立即生效，不依赖节点重建。
-                bool baseLooksIdentity = Mathf.Abs(scale.x - 1f) < 0.0001f
-                                         && Mathf.Abs(scale.y - 1f) < 0.0001f
-                                         && Mathf.Abs(scale.z - 1f) < 0.0001f;
+                Vector2 cfg = customNode.config.scale;
+                float sx = cfg.x <= 0f ? 1f : cfg.x;
+                float sy = cfg.y <= 0f ? 1f : cfg.y;
 
-                if (baseLooksIdentity)
+                Vector2 originalDrawSize = node.Props.drawSize;
+                node.Props.drawSize = Vector2.one;
+                Vector3 raceScale;
+                try
                 {
-                    Vector2 cfg = customNode.config.scale;
-                    float sx = cfg.x <= 0f ? 1f : cfg.x;
-                    float sy = cfg.y <= 0f ? 1f : cfg.y;
-                    // RimWorld 角色渲染常用 X/Z 平面；Y 维保持 1
-                    scale = new Vector3(sx, 1f, sy);
-
-                    int nodeId = node.GetHashCode();
-                    if (!_loggedScaleFallbackNodes.Contains(nodeId))
-                    {
-                        _loggedScaleFallbackNodes.Add(nodeId);
-                        Log.Message($"[CharacterStudio][ScaleDebug] Fallback scale applied: layer={customNode.config.layerName}, cfg=({sx:F2},{sy:F2}), nodeId={nodeId}");
-                    }
+                    raceScale = base.ScaleFor(node, parms);
+                }
+                finally
+                {
+                    node.Props.drawSize = originalDrawSize;
                 }
 
-                // 应用呼吸动画缩放
+                Vector3 scale = new Vector3(sx * raceScale.x, 1f, sy * raceScale.z);
+
                 if (customNode.config.animationType == LayerAnimationType.Breathe)
                 {
                     scale *= customNode.currentAnimScale;
                 }
+
+                if (node.debugScale != 1f)
+                {
+                    scale *= node.debugScale;
+                }
+
+                return scale;
             }
 
-            // 应用调试缩放
+            Vector3 baseScale = base.ScaleFor(node, parms);
             if (node.debugScale != 1f)
             {
-                scale *= node.debugScale;
+                baseScale *= node.debugScale;
             }
 
-            return scale;
+            return baseScale;
         }
 
         /// <summary>

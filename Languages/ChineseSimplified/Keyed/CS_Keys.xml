@@ -22,10 +22,15 @@
     <CS_Studio_File_SaveAs>另存为</CS_Studio_File_SaveAs>
     <CS_Studio_File_Export>导出为模组</CS_Studio_File_Export>
     <CS_Studio_File_Import>导入</CS_Studio_File_Import>
+    <CS_Studio_Import_Source_Map>从地图角色导入</CS_Studio_Import_Source_Map>
+    <CS_Studio_Import_Source_Race>从种族列表导入</CS_Studio_Import_Source_Race>
+    <CS_Studio_Import_Source_ProjectSkin>从项目角色列表导入</CS_Studio_Import_Source_ProjectSkin>
 
     <!-- 选项卡 -->
+    <CS_Studio_Tab_BaseAppearance>基础槽位</CS_Studio_Tab_BaseAppearance>
     <CS_Studio_Tab_Layers>图层</CS_Studio_Tab_Layers>
     <CS_Studio_Tab_Face>表情</CS_Studio_Tab_Face>
+    <CS_Studio_Tab_Attributes>属性</CS_Studio_Tab_Attributes>
 
     <!-- 图层面板 -->
     <CS_Studio_Panel_Layers>渲染树</CS_Studio_Panel_Layers>
@@ -54,8 +59,8 @@
     <CS_Studio_Preview_ZoomIn>放大</CS_Studio_Preview_ZoomIn>
     <CS_Studio_Preview_ZoomOut>缩小</CS_Studio_Preview_ZoomOut>
     <CS_Studio_Preview_ResetView>重置视图</CS_Studio_Preview_ResetView>
-    <CS_Studio_Preview_Exp>Exp:</CS_Studio_Preview_Exp>
-    <CS_Studio_Preview_Var>Var:</CS_Studio_Preview_Var>
+    <CS_Studio_Preview_Exp>表情</CS_Studio_Preview_Exp>
+    <CS_Studio_Preview_Var>变体</CS_Studio_Preview_Var>
     <CS_Studio_Preview_RefHint>按住 F 显示导入角色的原始半透明参考虚影（鼠标移入预览区可跟随）</CS_Studio_Preview_RefHint>
 
     <!-- 属性面板 -->
@@ -84,6 +89,7 @@
     <CS_Studio_Prop_HideNode>隐藏此节点</CS_Studio_Prop_HideNode>
     <CS_Studio_Prop_ShowNode>显示此节点</CS_Studio_Prop_ShowNode>
     <CS_Studio_Prop_FaceComponent>面部组件</CS_Studio_Prop_FaceComponent>
+    <CS_Studio_Prop_Worker>渲染工作器</CS_Studio_Prop_Worker>
 
     <!-- 新增属性面板 -->
     <CS_Studio_Msg_SelectLayer>请选择一个节点或图层</CS_Studio_Msg_SelectLayer>
@@ -94,8 +100,14 @@
     <CS_Studio_Msg_NoHidden>(无隐藏节点)</CS_Studio_Msg_NoHidden>
     <CS_Studio_Info_Path>路径:</CS_Studio_Info_Path>
     <CS_Studio_Msg_PathCopied>路径已复制</CS_Studio_Msg_PathCopied>
-    <CS_Studio_Info_Worker>Worker:</CS_Studio_Info_Worker>
+    <CS_Studio_Info_Worker>工作器：</CS_Studio_Info_Worker>
     <CS_Studio_Msg_TexCopied>贴图路径已复制</CS_Studio_Msg_TexCopied>
+    <CS_Studio_Runtime_Offset>偏移：</CS_Studio_Runtime_Offset>
+    <CS_Studio_Runtime_Scale>缩放：</CS_Studio_Runtime_Scale>
+    <CS_Studio_Runtime_Color>颜色：</CS_Studio_Runtime_Color>
+    <CS_Studio_Runtime_ColorValue>R:{0} G:{1} B:{2} A:{3}</CS_Studio_Runtime_ColorValue>
+    <CS_Studio_Runtime_Rotation>旋转：</CS_Studio_Runtime_Rotation>
+    <CS_Studio_Runtime_RotationValue>{0}°</CS_Studio_Runtime_RotationValue>
 
     <!-- 动画设置 -->
     <CS_Studio_Section_Animation>动画设置</CS_Studio_Section_Animation>
@@ -201,7 +213,22 @@
     <CS_Studio_Msg_TextureNotFound>未找到纹理文件</CS_Studio_Msg_TextureNotFound>
     <CS_Studio_Msg_InvalidPath>无效的路径</CS_Studio_Msg_InvalidPath>
     <CS_Studio_Msg_SaveSuccess>保存成功！</CS_Studio_Msg_SaveSuccess>
+    <CS_Studio_Msg_SavePath>已保存至: {0}</CS_Studio_Msg_SavePath>
     <CS_Studio_Msg_LoadSuccess>加载成功！</CS_Studio_Msg_LoadSuccess>
+    <CS_Studio_Msg_TargetPawnRequired>请先导入或绑定一个可应用的目标角色</CS_Studio_Msg_TargetPawnRequired>
+    <CS_Studio_Msg_AppliedToPawn>已应用到 {0}</CS_Studio_Msg_AppliedToPawn>
+    <CS_Studio_Err_ApplyNoSkinComp>应用失败：目标角色缺少皮肤组件</CS_Studio_Err_ApplyNoSkinComp>
+    <CS_Studio_Err_ApplyFailedCheckLog>应用失败，请查看日志</CS_Studio_Err_ApplyFailedCheckLog>
+    <CS_Studio_Msg_ImportedBoundPawn>已导入并绑定目标角色: {0}</CS_Studio_Msg_ImportedBoundPawn>
+    <CS_Studio_Msg_AppendedImportedBoundPawn>已追加导入并绑定目标角色: {0}</CS_Studio_Msg_AppendedImportedBoundPawn>
+    <CS_Studio_Msg_SelectAllLayers>已全选 {0} 个图层</CS_Studio_Msg_SelectAllLayers>
+    <CS_Studio_Msg_SelectionCleared>已清除选择</CS_Studio_Msg_SelectionCleared>
+    <CS_Studio_Msg_NothingToUndo>没有可撤销的改动</CS_Studio_Msg_NothingToUndo>
+    <CS_Studio_Msg_UndoSuccess>已撤销上次改动</CS_Studio_Msg_UndoSuccess>
+    <CS_Studio_Msg_NothingToRedo>没有可重做的改动</CS_Studio_Msg_NothingToRedo>
+    <CS_Studio_Msg_RedoSuccess>已重做上次改动</CS_Studio_Msg_RedoSuccess>
+    <CS_Studio_Msg_SelectedLayer>已选中: {0}</CS_Studio_Msg_SelectedLayer>
+    <CS_Studio_Msg_AddedHiddenTag>已添加隐藏标签: {0}</CS_Studio_Msg_AddedHiddenTag>
     
     <!-- 新增消息 -->
     <CS_Studio_Msg_TreeRefreshed>渲染树已刷新</CS_Studio_Msg_TreeRefreshed>
@@ -214,14 +241,20 @@
     <CS_Studio_Msg_NoMoreTags>渲染树中没有更多可用标签</CS_Studio_Msg_NoMoreTags>
     <CS_Studio_Err_NoMap>请先进入游戏地图</CS_Studio_Err_NoMap>
     <CS_Studio_Err_NoPawns>地图上没有可导入的人形角色</CS_Studio_Err_NoPawns>
+    <CS_Studio_Err_NoRaces>当前没有可导入的种族</CS_Studio_Err_NoRaces>
+    <CS_Studio_Err_NoProjectSkins>当前没有可导入的 Character Studio 角色</CS_Studio_Err_NoProjectSkins>
     <CS_Studio_Err_ImportFailed>未能从 {0} 导入任何图层</CS_Studio_Err_ImportFailed>
     <CS_Studio_Msg_Imported>已从 {0} 导入 {1} 个图层</CS_Studio_Msg_Imported>
     <CS_Studio_Msg_Appended>已从 {0} 追加 {1} 个图层</CS_Studio_Msg_Appended>
+    <CS_Studio_Msg_ImportedNoBoundPawn>已从 {0} 导入 {1} 个图层，但当前地图中没有可自动绑定的目标角色</CS_Studio_Msg_ImportedNoBoundPawn>
+    <CS_Studio_Msg_AppendedNoBoundPawn>已从 {0} 追加 {1} 个图层，但当前地图中没有可自动绑定的目标角色</CS_Studio_Msg_AppendedNoBoundPawn>
+    <CS_Studio_Msg_ImportedProjectSkin>已完整导入项目角色：{0}</CS_Studio_Msg_ImportedProjectSkin>
     <CS_Studio_Err_MannequinFailed>人偶初始化失败，预览功能不可用</CS_Studio_Err_MannequinFailed>
     <CS_Studio_Err_DefNameEmpty>错误: DefName 不能为空</CS_Studio_Err_DefNameEmpty>
     <CS_Studio_Err_DefNameInvalid>错误: DefName 只能包含字母、数字和下划线</CS_Studio_Err_DefNameInvalid>
     <CS_Studio_Warn_NoLayers>警告：当前皮肤没有任何图层，是否仍要导出？</CS_Studio_Warn_NoLayers>
     <CS_Studio_Warn_NoTexture>警告：没有图层设置了纹理路径</CS_Studio_Warn_NoTexture>
+    <CS_Studio_Msg_SelectEditorTarget>请选择一个基础槽位、图层或渲染树节点</CS_Studio_Msg_SelectEditorTarget>
 
     <!-- 按钮 -->
     <CS_Studio_Btn_OK>确定</CS_Studio_Btn_OK>
@@ -231,10 +264,14 @@
     <CS_Studio_Btn_SelectFile>选择文件</CS_Studio_Btn_SelectFile>
     <CS_Studio_Btn_Delete>删除</CS_Studio_Btn_Delete>
     <CS_Studio_Btn_ContinueExport>继续导出</CS_Studio_Btn_ContinueExport>
+    <CS_Studio_Btn_Edit>编辑</CS_Studio_Btn_Edit>
+    <CS_Studio_Btn_ClearShort>清空</CS_Studio_Btn_ClearShort>
 
     <!-- 状态 -->
     <CS_Studio_Status_Loading>预览加载中...</CS_Studio_Status_Loading>
     <CS_Studio_Status_Developing>功能开发中...</CS_Studio_Status_Developing>
+    <CS_Studio_Status_Edit>编辑中</CS_Studio_Status_Edit>
+    <CS_Studio_Status_Ready>就绪</CS_Studio_Status_Ready>
 
     <!-- 工具提示 -->
     <CS_Studio_Tip_AddLayer>添加新的纹理图层</CS_Studio_Tip_AddLayer>
@@ -301,7 +338,17 @@
     <CS_Inspector_ImportEmpty>未找到可导入的图层</CS_Inspector_ImportEmpty>
 
     <!-- 技能编辑器 -->
+    <CS_Studio_Ability_EditorTitle>技能编辑器</CS_Studio_Ability_EditorTitle>
+    <CS_Studio_Ability_LoadQwerExamples>载入 QWER 示例技能</CS_Studio_Ability_LoadQwerExamples>
+    <CS_Studio_Ability_QwerExamplesLoaded>已载入 QWER 示例技能并绑定热键</CS_Studio_Ability_QwerExamplesLoaded>
     <CS_Studio_Ability_SelectOrCreate>请选择或创建一个技能</CS_Studio_Ability_SelectOrCreate>
+    <CS_Studio_Ability_Search>搜索技能</CS_Studio_Ability_Search>
+    <CS_Studio_Ability_CountSummary>显示 {0} / {1} 个技能</CS_Studio_Ability_CountSummary>
+    <CS_Studio_Ability_NoResults>没有匹配的技能</CS_Studio_Ability_NoResults>
+    <CS_Studio_Ability_SelectedSummary>当前选中：{0}</CS_Studio_Ability_SelectedSummary>
+    <CS_Studio_Ability_HotkeySummary>热键映射：{0}</CS_Studio_Ability_HotkeySummary>
+    <CS_Studio_Ability_ValidationSummary>校验状态：{0}</CS_Studio_Ability_ValidationSummary>
+    <CS_Studio_Ability_EffectsSummary>效果 {0} 个 / 运行时组件 {1} 个</CS_Studio_Ability_EffectsSummary>
     <CS_Studio_Ability_DefName>DefName</CS_Studio_Ability_DefName>
     <CS_Studio_Ability_Name>名称</CS_Studio_Ability_Name>
     <CS_Studio_Ability_IconPath>图标路径</CS_Studio_Ability_IconPath>
@@ -316,7 +363,25 @@
     <CS_Studio_Ability_Range>射程</CS_Studio_Ability_Range>
     <CS_Studio_Ability_Radius>爆炸半径</CS_Studio_Ability_Radius>
     <CS_Studio_Ability_Projectile>投射物</CS_Studio_Ability_Projectile>
+    <CS_Studio_Ability_CooldownShort>冷却</CS_Studio_Ability_CooldownShort>
+    <CS_Studio_Ability_DefSummary>Def：{0}</CS_Studio_Ability_DefSummary>
+    <CS_Studio_Ability_DefaultName>新技能</CS_Studio_Ability_DefaultName>
+    <CS_Studio_Ability_CopyLabel>{0} 副本</CS_Studio_Ability_CopyLabel>
+    <CS_Studio_DefaultSkinLabel>新皮肤</CS_Studio_DefaultSkinLabel>
+    <CS_Studio_Layer_DefaultName>图层 {0}</CS_Studio_Layer_DefaultName>
+    <CS_Studio_Layer_MountedOn>挂载于 {0} 的图层</CS_Studio_Layer_MountedOn>
+    <CS_Studio_Worker_Default>默认</CS_Studio_Worker_Default>
+    <CS_Studio_Worker_FaceComponent>面部组件</CS_Studio_Worker_FaceComponent>
+    <CS_Studio_Ability_Unassigned>未绑定</CS_Studio_Ability_Unassigned>
+    <CS_Studio_Ability_HotkeySlotSummary>{0}：{1}</CS_Studio_Ability_HotkeySlotSummary>
+    <CS_Studio_Ability_HotkeySlot_Q>Q</CS_Studio_Ability_HotkeySlot_Q>
+    <CS_Studio_Ability_HotkeySlot_W>W</CS_Studio_Ability_HotkeySlot_W>
+    <CS_Studio_Ability_HotkeySlot_E>E</CS_Studio_Ability_HotkeySlot_E>
+    <CS_Studio_Ability_HotkeySlot_R>R</CS_Studio_Ability_HotkeySlot_R>
+    <CS_Studio_Ability_HotkeySlot_WCombo>W连段</CS_Studio_Ability_HotkeySlot_WCombo>
     <CS_Studio_Effect_Add>添加效果</CS_Studio_Effect_Add>
+    <CS_Studio_Effect_EmptyHint>当前技能还没有任何效果。
+点击下方按钮添加第一个效果，或载入 QWER 示例快速体验完整技能结构。</CS_Studio_Effect_EmptyHint>
     <CS_Studio_Effect_Amount>数值</CS_Studio_Effect_Amount>
     <CS_Studio_Effect_Chance>几率</CS_Studio_Effect_Chance>
     <CS_Studio_Effect_DamageDef>伤害类型</CS_Studio_Effect_DamageDef>
@@ -325,6 +390,69 @@
     <CS_Studio_Effect_PawnKind>PawnKind</CS_Studio_Effect_PawnKind>
     <CS_Studio_Effect_SummonCount>数量</CS_Studio_Effect_SummonCount>
     <CS_Studio_Effect_Hediff>Hediff</CS_Studio_Effect_Hediff>
+
+    <!-- LLM / 属性编辑 -->
+    <CS_LLM_Settings_Title>LLM 设置</CS_LLM_Settings_Title>
+    <CS_LLM_Settings_Desc>配置 OpenAI 兼容接口的 Base URL、Model 与 API Key，用于自然语言生成角色与技能。</CS_LLM_Settings_Desc>
+    <CS_LLM_Settings_Section_Connection>连接设置</CS_LLM_Settings_Section_Connection>
+    <CS_LLM_Settings_Section_Request>请求参数</CS_LLM_Settings_Section_Request>
+    <CS_LLM_Settings_Section_Prompts>内置提示词</CS_LLM_Settings_Section_Prompts>
+    <CS_LLM_Settings_Enabled>启用 LLM 生成功能</CS_LLM_Settings_Enabled>
+    <CS_LLM_Settings_BaseUrl>Base URL</CS_LLM_Settings_BaseUrl>
+    <CS_LLM_Settings_Model>Model</CS_LLM_Settings_Model>
+    <CS_LLM_Settings_ApiKey>API Key</CS_LLM_Settings_ApiKey>
+    <CS_LLM_Settings_Temperature>Temperature</CS_LLM_Settings_Temperature>
+    <CS_LLM_Settings_MaxTokens>Max Tokens</CS_LLM_Settings_MaxTokens>
+    <CS_LLM_Settings_ApiKeyPreview>密钥预览</CS_LLM_Settings_ApiKeyPreview>
+    <CS_LLM_Settings_EndpointPreview>请求地址预览</CS_LLM_Settings_EndpointPreview>
+    <CS_LLM_Settings_Status>配置状态</CS_LLM_Settings_Status>
+    <CS_LLM_Settings_Configured>已配置</CS_LLM_Settings_Configured>
+    <CS_LLM_Settings_NotConfigured>未配置</CS_LLM_Settings_NotConfigured>
+    <CS_LLM_Settings_SaveSuccess>LLM 设置已保存</CS_LLM_Settings_SaveSuccess>
+    <CS_LLM_Settings_SaveFailed>LLM 设置保存失败：{0}</CS_LLM_Settings_SaveFailed>
+    <CS_LLM_Settings_SystemPrompt>系统提示词</CS_LLM_Settings_SystemPrompt>
+    <CS_LLM_Settings_CharacterEditorPrompt>角色编辑工具提示词</CS_LLM_Settings_CharacterEditorPrompt>
+    <CS_LLM_Settings_AbilityEditorPrompt>技能编辑工具提示词</CS_LLM_Settings_AbilityEditorPrompt>
+    <CS_LLM_Settings_ResetPrompts>恢复默认提示词</CS_LLM_Settings_ResetPrompts>
+    <CS_LLM_Settings_PromptsReset>已恢复内置提示词模板</CS_LLM_Settings_PromptsReset>
+    <CS_LLM_CharacterSection>角色设计生成</CS_LLM_CharacterSection>
+    <CS_LLM_CharacterPrompt>角色自然语言描述</CS_LLM_CharacterPrompt>
+    <CS_LLM_GenerateCharacter>生成角色设计</CS_LLM_GenerateCharacter>
+    <CS_LLM_GenerateCharacterSuccess>角色设计已生成并应用</CS_LLM_GenerateCharacterSuccess>
+    <CS_LLM_AbilityPrompt>技能自然语言描述</CS_LLM_AbilityPrompt>
+    <CS_LLM_GenerateAbilities>生成技能</CS_LLM_GenerateAbilities>
+    <CS_LLM_GenerateAbilitiesSuccess>已生成 {0} 个技能</CS_LLM_GenerateAbilitiesSuccess>
+    <CS_LLM_GenerateAbilitiesEmpty>LLM 未返回可用技能</CS_LLM_GenerateAbilitiesEmpty>
+    <CS_LLM_GenerateAbilitiesReplaced>已替换为 {0} 个新技能</CS_LLM_GenerateAbilitiesReplaced>
+    <CS_LLM_GenerateAbilitiesAppended>已追加 {0} 个技能（原有 {1} 个，当前共 {2} 个）</CS_LLM_GenerateAbilitiesAppended>
+    <CS_LLM_GenerateFailed>LLM 生成失败：{0}</CS_LLM_GenerateFailed>
+    <CS_LLM_AbilityPrompt_Empty>请先输入技能描述</CS_LLM_AbilityPrompt_Empty>
+    <CS_LLM_CharacterPrompt_Empty>请先输入角色描述</CS_LLM_CharacterPrompt_Empty>
+    <CS_LLM_OpenSettings>打开 LLM 设置</CS_LLM_OpenSettings>
+    <CS_LLM_ApplyReplace>替换现有技能</CS_LLM_ApplyReplace>
+    <CS_LLM_ApplyAppend>追加到现有技能</CS_LLM_ApplyAppend>
+    <CS_LLM_EditorTool_CharacterHint>LLM 将以“角色编辑工具”身份输出结构化结果，并直接应用到当前编辑器字段、属性、目标种族、隐藏节点和技能列表。</CS_LLM_EditorTool_CharacterHint>
+    <CS_LLM_EditorTool_AbilityHint>LLM 将以“技能编辑工具”身份输出结构化技能数据，生成结果可直接替换或追加到当前技能列表。</CS_LLM_EditorTool_AbilityHint>
+
+    <CS_Attr_Title>称号</CS_Attr_Title>
+    <CS_Attr_FactionRole>阵营定位</CS_Attr_FactionRole>
+    <CS_Attr_CombatRole>战斗定位</CS_Attr_CombatRole>
+    <CS_Attr_Personality>性格</CS_Attr_Personality>
+    <CS_Attr_BodyType>BodyTypeDef</CS_Attr_BodyType>
+    <CS_Attr_HeadType>HeadTypeDef</CS_Attr_HeadType>
+    <CS_Attr_HairDef>HairDef</CS_Attr_HairDef>
+    <CS_Attr_FavoriteColor>偏好颜色</CS_Attr_FavoriteColor>
+    <CS_Attr_BiologicalAge>生理年龄</CS_Attr_BiologicalAge>
+    <CS_Attr_ChronologicalAge>实际年龄</CS_Attr_ChronologicalAge>
+    <CS_Attr_MoveSpeed>移动速度倍率</CS_Attr_MoveSpeed>
+    <CS_Attr_MeleePower>近战强度</CS_Attr_MeleePower>
+    <CS_Attr_ShootingAccuracy>射击精度</CS_Attr_ShootingAccuracy>
+    <CS_Attr_ArmorRating>护甲值</CS_Attr_ArmorRating>
+    <CS_Attr_PsychicSensitivity>灵能敏感度</CS_Attr_PsychicSensitivity>
+    <CS_Attr_MarketValue>市场价值</CS_Attr_MarketValue>
+    <CS_Attr_Tags>标签</CS_Attr_Tags>
+    <CS_Attr_KeyTraits>关键特质</CS_Attr_KeyTraits>
+    <CS_Attr_StartingApparel>初始服装 Def</CS_Attr_StartingApparel>
     <CS_Ability_Hotkey_AbilityMissing>未找到技能定义：{0}</CS_Ability_Hotkey_AbilityMissing>
     <CS_Ability_Hotkey_CastSuccess>已通过 {0} 释放技能：{1}</CS_Ability_Hotkey_CastSuccess>
     <CS_Ability_Hotkey_QMode>Q 模式已切换到第 {0} 段</CS_Ability_Hotkey_QMode>
@@ -336,15 +464,94 @@
     <CS_Ability_R_TargetInvalid>R 二段目标无效</CS_Ability_R_TargetInvalid>
     <CS_Ability_R_SecondStageArmed>R 二段已锁定，{0} 秒后执行</CS_Ability_R_SecondStageArmed>
     <CS_Ability_R_SecondStageCast>R 二段已释放：瞬移并引爆三段冲击</CS_Ability_R_SecondStageCast>
+    <CS_Ability_Validate_Failed>验证失败:</CS_Ability_Validate_Failed>
+    <CS_Ability_Validate_Warnings>警告:</CS_Ability_Validate_Warnings>
+    <CS_Ability_Validate_QComboWindowTicks>Q 连段窗口时长必须大于 0 tick</CS_Ability_Validate_QComboWindowTicks>
+    <CS_Ability_Validate_EShortJumpCooldown>E 短跳冷却不能为负数</CS_Ability_Validate_EShortJumpCooldown>
+    <CS_Ability_Validate_EShortJumpDistance>E 短跳距离必须大于 0</CS_Ability_Validate_EShortJumpDistance>
+    <CS_Ability_Validate_EShortJumpFindCellRadius>E 短跳寻位半径不能为负数</CS_Ability_Validate_EShortJumpFindCellRadius>
+    <CS_Ability_Validate_RRequiredStacks>R 所需层数必须大于 0</CS_Ability_Validate_RRequiredStacks>
+    <CS_Ability_Validate_RDelayTicks>R 延迟时间不能为负数</CS_Ability_Validate_RDelayTicks>
+    <CS_Ability_Validate_RWaveRadius>R 三段半径必须大于 0</CS_Ability_Validate_RWaveRadius>
+    <CS_Ability_Validate_RWaveDamage>R 三段伤害必须大于 0</CS_Ability_Validate_RWaveDamage>
+    <CS_Ability_Validate_EffectNegativeAmount>效果数值为负数，可能导致意外行为</CS_Ability_Validate_EffectNegativeAmount>
+    <CS_Ability_Validate_EffectChanceRange>触发几率必须在 0-1 之间，当前值: {0}</CS_Ability_Validate_EffectChanceRange>
+    <CS_Ability_Validate_DamageAmount>伤害效果的数值必须大于 0</CS_Ability_Validate_DamageAmount>
+    <CS_Ability_Validate_HediffRequired>{0} 效果必须指定 HediffDef</CS_Ability_Validate_HediffRequired>
+    <CS_Ability_Validate_SummonKindRequired>召唤效果必须指定 PawnKindDef</CS_Ability_Validate_SummonKindRequired>
+    <CS_Ability_Validate_SummonCount>召唤数量必须大于 0</CS_Ability_Validate_SummonCount>
+    <CS_Ability_Validate_DefNameEmpty>defName 不能为空</CS_Ability_Validate_DefNameEmpty>
+    <CS_Ability_Validate_DefNameInvalid>defName 只能包含字母、数字和下划线</CS_Ability_Validate_DefNameInvalid>
+    <CS_Ability_Validate_LabelEmpty>label 为空，将使用 defName 作为显示名称</CS_Ability_Validate_LabelEmpty>
+    <CS_Ability_Validate_CooldownNegative>冷却时间不能为负数</CS_Ability_Validate_CooldownNegative>
+    <CS_Ability_Validate_WarmupNegative>热身时间不能为负数</CS_Ability_Validate_WarmupNegative>
+    <CS_Ability_Validate_ChargesNonPositive>能力使用次数为 0 或负数</CS_Ability_Validate_ChargesNonPositive>
+    <CS_Ability_Validate_RangeNegative>射程不能为负数</CS_Ability_Validate_RangeNegative>
+    <CS_Ability_Validate_RadiusNegative>作用半径不能为负数</CS_Ability_Validate_RadiusNegative>
+    <CS_Ability_Validate_CarrierNeedsRange>载体类型 {0} 通常需要设置射程</CS_Ability_Validate_CarrierNeedsRange>
+    <CS_Ability_Validate_ProjectileDefMissing>投射物载体未指定 projectileDef，可能使用默认投射物</CS_Ability_Validate_ProjectileDefMissing>
+    <CS_Ability_Validate_NoEffects>能力没有定义任何效果</CS_Ability_Validate_NoEffects>
+    <CS_Ability_Validate_EffectIndexError>效果 #{0}: {1}</CS_Ability_Validate_EffectIndexError>
+    <CS_Ability_Validate_EffectIndexWarning>效果 #{0}: {1}</CS_Ability_Validate_EffectIndexWarning>
+    <CS_Ability_Validate_RuntimeComponentNull>运行时组件 #{0} 为空</CS_Ability_Validate_RuntimeComponentNull>
+    <CS_Ability_Validate_RuntimeComponentError>运行时组件 #{0}: {1}</CS_Ability_Validate_RuntimeComponentError>
+    <CS_Ability_Validate_RuntimeComponentWarning>运行时组件 #{0}: {1}</CS_Ability_Validate_RuntimeComponentWarning>
+    <CS_Ability_CarrierType_Self>自身</CS_Ability_CarrierType_Self>
+    <CS_Ability_CarrierType_Touch>接触</CS_Ability_CarrierType_Touch>
+    <CS_Ability_CarrierType_Target>目标</CS_Ability_CarrierType_Target>
+    <CS_Ability_CarrierType_Projectile>投射物</CS_Ability_CarrierType_Projectile>
+    <CS_Ability_CarrierType_Area>范围</CS_Ability_CarrierType_Area>
+    <CS_Ability_EffectType_Damage>伤害</CS_Ability_EffectType_Damage>
+    <CS_Ability_EffectType_Heal>治疗</CS_Ability_EffectType_Heal>
+    <CS_Ability_EffectType_Buff>增益</CS_Ability_EffectType_Buff>
+    <CS_Ability_EffectType_Debuff>减益</CS_Ability_EffectType_Debuff>
+    <CS_Ability_EffectType_Summon>召唤</CS_Ability_EffectType_Summon>
+    <CS_Ability_EffectType_Teleport>位移</CS_Ability_EffectType_Teleport>
+    <CS_Ability_EffectType_Control>控制</CS_Ability_EffectType_Control>
+    <CS_Ability_EffectType_Terraform>地形改造</CS_Ability_EffectType_Terraform>
+    <CS_Ability_RuntimeComponentType_QComboWindow>Q 连段窗口</CS_Ability_RuntimeComponentType_QComboWindow>
+    <CS_Ability_RuntimeComponentType_EShortJump>E 短跳</CS_Ability_RuntimeComponentType_EShortJump>
+    <CS_Ability_RuntimeComponentType_RStackDetonation>R 叠层引爆</CS_Ability_RuntimeComponentType_RStackDetonation>
+
+    <!-- 基础槽位 -->
+    <CS_Studio_BaseSlot_Unset>(未设置)</CS_Studio_BaseSlot_Unset>
+    <CS_Studio_BaseSlot_Section>基础槽位 - {0}</CS_Studio_BaseSlot_Section>
+    <CS_Studio_BaseSlot_Enable>启用</CS_Studio_BaseSlot_Enable>
+    <CS_Studio_BaseSlot_MaskTexture>Mask 贴图</CS_Studio_BaseSlot_MaskTexture>
+    <CS_Studio_BaseSlot_Shader>Shader</CS_Studio_BaseSlot_Shader>
+    <CS_Studio_BaseSlot_Rotation>旋转</CS_Studio_BaseSlot_Rotation>
+    <CS_Studio_BaseSlot_DrawOrderOffset>层级偏移</CS_Studio_BaseSlot_DrawOrderOffset>
+    <CS_Studio_Prop_OffsetYHeight>Y 偏移(高度)</CS_Studio_Prop_OffsetYHeight>
+    <CS_Studio_BaseSlot_PrimaryColorSource>主颜色来源</CS_Studio_BaseSlot_PrimaryColorSource>
+    <CS_Studio_BaseSlot_PrimaryColor>主颜色</CS_Studio_BaseSlot_PrimaryColor>
+    <CS_Studio_BaseSlot_SecondaryColorSource>第二颜色来源</CS_Studio_BaseSlot_SecondaryColorSource>
+    <CS_Studio_BaseSlot_SecondaryColor>第二颜色</CS_Studio_BaseSlot_SecondaryColor>
+    <CS_Studio_BaseSlot_SecondColorMask>第二颜色（Mask）</CS_Studio_BaseSlot_SecondColorMask>
+    <CS_Studio_Hide_HiddenPaths>隐藏路径 (hiddenPaths):</CS_Studio_Hide_HiddenPaths>
+    <CS_Studio_Hide_NoHiddenPaths>  无 hiddenPaths</CS_Studio_Hide_NoHiddenPaths>
+    <CS_Studio_Hide_HiddenTagsCompat>隐藏标签（兼容）:</CS_Studio_Hide_HiddenTagsCompat>
+    <CS_Studio_Node_RuntimeData>运行时数据（只读）</CS_Studio_Node_RuntimeData>
+    <CS_Studio_Node_RuntimeNote>（黄色 = 非默认值）</CS_Studio_Node_RuntimeNote>
+    <CS_Studio_Node_NoRuntimeData>（无运行时数据）</CS_Studio_Node_NoRuntimeData>
+    <CS_Studio_Status_UnsavedChanges>* 有未保存的更改</CS_Studio_Status_UnsavedChanges>
+    <CS_Studio_Status_EditorSummary>基础槽位: {0} | 图层: {1} | 缩放: {2}x | 方向: {3}</CS_Studio_Status_EditorSummary>
 
     <!-- 表情与菜单 -->
     <CS_Studio_Face_Title>表情配置</CS_Studio_Face_Title>
-    <CS_Studio_Face_Dev>表情配置功能开发中...\n\n可通过预览面板的 Exp 按钮测试表情</CS_Studio_Face_Dev>
     <CS_Studio_Face_Config>面部配置</CS_Studio_Face_Config>
     <CS_Studio_Face_Enable>启用表情系统</CS_Studio_Face_Enable>
     <CS_Studio_Face_Type>{0} 表情</CS_Studio_Face_Type>
-    <CS_Studio_None>(无)</CS_Studio_None>
+    <CS_Studio_Face_TypeSummary>{0}（已配置 {1}/{2}）</CS_Studio_Face_TypeSummary>
     <CS_Studio_Face_Create>创建面部配置</CS_Studio_Face_Create>
+    <CS_Studio_Face_PreviewAuto>自动</CS_Studio_Face_PreviewAuto>
+    <CS_Studio_Face_PreviewActive>预览表情</CS_Studio_Face_PreviewActive>
+    <CS_Studio_Face_PreviewHint>预览模式</CS_Studio_Face_PreviewHint>
+    <CS_Studio_Face_PreviewHintValue>可在预览面板切换自动/指定表情，并即时预览当前配置</CS_Studio_Face_PreviewHintValue>
+    <CS_Studio_None>(无)</CS_Studio_None>
+    <CS_Studio_Node_Tooltip>路径: {0}\n类型: {1}\n贴图: {2}</CS_Studio_Node_Tooltip>
+    <CS_Studio_Mannequin_NotInitialized>人偶未初始化</CS_Studio_Mannequin_NotInitialized>
+    <CS_Studio_Mannequin_RenderError>渲染错误: {0}</CS_Studio_Mannequin_RenderError>
+    <CS_Studio_Mannequin_PortraitError>肖像错误: {0}</CS_Studio_Mannequin_PortraitError>
     <CS_Studio_Ctx_CopyPath>复制节点路径</CS_Studio_Ctx_CopyPath>
     <CS_Studio_Ctx_CopyTexPath>复制贴图路径</CS_Studio_Ctx_CopyTexPath>
     <CS_Studio_Ctx_CollapseChildren>折叠子节点</CS_Studio_Ctx_CollapseChildren>
@@ -352,6 +559,23 @@
     <CS_Studio_Ctx_FromRenderTree>── 从渲染树选择 ──</CS_Studio_Ctx_FromRenderTree>
     <CS_Studio_Ctx_ClearAndImport>清空并导入</CS_Studio_Ctx_ClearAndImport>
     <CS_Studio_Ctx_AppendImport>追加导入</CS_Studio_Ctx_AppendImport>
+    <CS_FaceComponent_Eyes>眼睛</CS_FaceComponent_Eyes>
+    <CS_FaceComponent_Mouth>嘴部</CS_FaceComponent_Mouth>
+    <CS_FaceComponent_Brows>眉毛</CS_FaceComponent_Brows>
+    <CS_Studio_Face_PreviewModeButton>切换预览</CS_Studio_Face_PreviewModeButton>
+    <CS_Studio_Face_ClearPath>清空当前表情贴图路径</CS_Studio_Face_ClearPath>
+    <CS_Expression_Neutral>平静</CS_Expression_Neutral>
+    <CS_Expression_Happy>快乐</CS_Expression_Happy>
+    <CS_Expression_Sad>悲伤</CS_Expression_Sad>
+    <CS_Expression_Angry>愤怒</CS_Expression_Angry>
+    <CS_Expression_Scared>恐惧</CS_Expression_Scared>
+    <CS_Expression_Pain>痛苦</CS_Expression_Pain>
+    <CS_Expression_Shock>震惊</CS_Expression_Shock>
+    <CS_Expression_Tired>疲惫</CS_Expression_Tired>
+    <CS_Expression_Eating>进食</CS_Expression_Eating>
+    <CS_Expression_Sleeping>睡眠</CS_Expression_Sleeping>
+    <CS_Expression_Blink>眨眼</CS_Expression_Blink>
+    <CS_Expression_Dead>死亡</CS_Expression_Dead>
 
     <!-- 帮助文档 -->
     <CS_Help_Title>术语说明</CS_Help_Title>

@@ -334,7 +334,7 @@ namespace CharacterStudio.Rendering
                     {
                         if (__instance?.rootNode != null && __instance.pawn != null && !__instance.pawn.Dead)
                         {
-                            if (!tagHidingAvailable && IsGraphicsReadyForVanillaNodes(__instance))
+                            if (IsGraphicsReadyForVanillaNodes(__instance))
                             {
                                 HideVanillaNodesByImportedTexPaths(__instance, skinDef);
                             }
@@ -342,7 +342,7 @@ namespace CharacterStudio.Rendering
                     }
                     catch (Exception ex)
                     {
-                        Log.Warning($"[CharacterStudio] 兜底隐藏跳过: {ex.Message}");
+                        Log.Warning($"[CharacterStudio] 纹理路径隐藏跳过: {ex.Message}");
                     }
                 }
             }
@@ -489,13 +489,13 @@ namespace CharacterStudio.Rendering
             }
 
             // 阶段4: 处理新版 hiddenPaths 列表（NodePath 精确定位）
-            bool hasHiddenPath = skinDef.hiddenPaths != null && skinDef.hiddenPaths.Count > 0;
-            bool hiddenByPath = false;
+            List<string>? hiddenPaths = skinDef.hiddenPaths;
+            bool hasHiddenPath = hiddenPaths != null && hiddenPaths.Count > 0;
             var fallbackTagsFromMissedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             if (hasHiddenPath)
             {
-                foreach (var nodePath in skinDef.hiddenPaths)
+                foreach (string nodePath in hiddenPaths!)
                 {
                     if (string.IsNullOrEmpty(nodePath))
                         continue;
@@ -504,7 +504,6 @@ namespace CharacterStudio.Rendering
                     if (targetNode != null)
                     {
                         HideNode(targetNode);
-                        hiddenByPath = true;
                     }
                     else
                     {
@@ -524,8 +523,9 @@ namespace CharacterStudio.Rendering
             {
                 var tagsToHide = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-                // 旧行为：仅当未配置 hiddenPaths 或 hiddenPaths 全失配时，启用 hiddenTags 全量回退
-                if (skinDef.hiddenTags != null && skinDef.hiddenTags.Count > 0 && (!hasHiddenPath || !hiddenByPath))
+                // hiddenTags 是用户显式配置的兼容隐藏入口，不应因为 hiddenPaths 部分命中而失效。
+                // 否则 UI 会显示节点已隐藏，但预览里仍可见，造成“状态不同步”。
+                if (skinDef.hiddenTags != null && skinDef.hiddenTags.Count > 0)
                 {
                     foreach (var tagName in skinDef.hiddenTags)
                     {
@@ -1059,8 +1059,9 @@ namespace CharacterStudio.Rendering
                 // 强制注入当前的所有自定义图层
                 bool anyNodesInjected = InjectCustomLayers(tree, pawn, skinDef);
 
-                // 与 Postfix 保持一致：仅在缺失 tag 索引时触发 texPath 兜底隐藏。
-                if (anyNodesInjected && !tagHidingAvailable && IsGraphicsReadyForVanillaNodes(tree))
+                // 预览人偶与导入源 Pawn 的节点路径/标签可能不一致，
+                // 因此在注入后始终再按实际渲染出的 texPath 做一次隐藏校准。
+                if (anyNodesInjected && IsGraphicsReadyForVanillaNodes(tree))
                 {
                     HideVanillaNodesByImportedTexPaths(tree, skinDef);
                 }
@@ -1161,7 +1162,9 @@ namespace CharacterStudio.Rendering
         /// </summary>
         private static void InjectCustomLayersIfNeeded(PawnRenderTree tree, Pawn pawn, PawnSkinDef skinDef)
         {
-            if (skinDef?.layers == null || skinDef.layers.Count == 0) return;
+            PawnSkinDef activeSkinDef = skinDef ?? throw new ArgumentNullException(nameof(skinDef));
+            int configuredLayerCount = (activeSkinDef.layers?.Count ?? 0) + BaseAppearanceUtility.BuildSyntheticLayers(activeSkinDef).Count();
+            if (configuredLayerCount == 0) return;
 
             // 检查是否已经注入了自定义图层
             bool hasCustomNodes = false;
@@ -1170,10 +1173,10 @@ namespace CharacterStudio.Rendering
             if (!hasCustomNodes)
             {
                 // 尚未注入，执行注入
-                var injected = InjectCustomLayers(tree, pawn, skinDef);
+                var injected = InjectCustomLayers(tree, pawn, activeSkinDef);
                 if (injected)
                 {
-                    Log.Message($"[CharacterStudio] 在皮肤变更时注入了 {skinDef.layers.Count} 个自定义图层");
+                    Log.Message($"[CharacterStudio] 在皮肤变更时注入了 {configuredLayerCount} 个自定义图层（含基础槽位）");
                 }
             }
         }
@@ -1207,11 +1210,17 @@ namespace CharacterStudio.Rendering
         /// </summary>
         private static bool InjectCustomLayers(PawnRenderTree tree, Pawn pawn, PawnSkinDef skinDef)
         {
-            if (skinDef.layers == null || skinDef.layers.Count == 0) return false;
+            var allLayers = new List<PawnLayerConfig>();
+            if (skinDef.layers != null)
+            {
+                allLayers.AddRange(skinDef.layers);
+            }
+            allLayers.AddRange(BaseAppearanceUtility.BuildSyntheticLayers(skinDef));
+            if (allLayers.Count == 0) return false;
 
             bool anyNodesInjected = false;
 
-            foreach (var layer in skinDef.layers)
+            foreach (var layer in allLayers)
             {
                 if (!layer.visible) continue;
                 if (string.IsNullOrEmpty(layer.texPath)) continue;
@@ -1419,15 +1428,15 @@ namespace CharacterStudio.Rendering
             };
 
             // 设置颜色类型
-            switch (layer.colorType)
+            switch (layer.colorSource)
             {
-                case LayerColorType.Hair:
+                case LayerColorSource.PawnHair:
                     props.colorType = PawnRenderNodeProperties.AttachmentColorType.Hair;
                     break;
-                case LayerColorType.Skin:
+                case LayerColorSource.PawnSkin:
                     props.colorType = PawnRenderNodeProperties.AttachmentColorType.Skin;
                     break;
-                case LayerColorType.White:
+                case LayerColorSource.White:
                     props.colorType = PawnRenderNodeProperties.AttachmentColorType.Custom;
                     props.color = UnityEngine.Color.white;
                     break;

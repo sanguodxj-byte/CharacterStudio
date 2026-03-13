@@ -72,21 +72,22 @@ namespace CharacterStudio.Abilities
 
         private static void TryCastForSelectedPawn(AbilityHotkeySlot slot, int tick)
         {
-            Pawn pawn = Find.Selector?.SingleSelectedThing as Pawn;
-            if (pawn == null || !pawn.Spawned || pawn.Map == null)
+            Pawn? selectedPawn = Find.Selector?.SingleSelectedThing as Pawn;
+            if (selectedPawn == null || !selectedPawn.Spawned || selectedPawn.Map == null)
             {
                 return;
             }
 
+            Pawn pawn = selectedPawn;
             var skinComp = pawn.GetComp<CompPawnSkin>();
             var skin = skinComp?.ActiveSkin;
-            if (skin == null || skin.abilityHotkeys == null || !skin.abilityHotkeys.enabled)
+            if (skinComp == null || skin == null || skin.abilityHotkeys == null || !skin.abilityHotkeys.enabled)
             {
                 return;
             }
 
             string abilityDefName = ResolveAbilityDefNameBySlot(skin.abilityHotkeys, slot, skinComp, tick);
-            var ability = ResolveAbilityByDefName(skin, abilityDefName);
+            ModularAbilityDef? ability = ResolveAbilityByDefName(skin, abilityDefName);
 
             if (ability == null && slot != AbilityHotkeySlot.R)
             {
@@ -104,13 +105,22 @@ namespace CharacterStudio.Abilities
             switch (slot)
             {
                 case AbilityHotkeySlot.Q:
-                    casted = TryCastQModeAbility(pawn, skinComp, ability, tick);
+                    if (ability != null)
+                    {
+                        casted = TryCastQModeAbility(pawn, skinComp, ability, tick);
+                    }
                     break;
                 case AbilityHotkeySlot.W:
-                    casted = TryCastDefaultAbility(pawn, ability);
+                    if (ability != null)
+                    {
+                        casted = TryCastDefaultAbility(pawn, ability);
+                    }
                     break;
                 case AbilityHotkeySlot.E:
-                    casted = TryCastEShortJump(pawn, skinComp, ability, tick);
+                    if (ability != null)
+                    {
+                        casted = TryCastEShortJump(pawn, skinComp, ability, tick);
+                    }
                     break;
                 case AbilityHotkeySlot.R:
                     casted = TryHandleRHotkey(pawn, skinComp, ability, tick);
@@ -126,7 +136,7 @@ namespace CharacterStudio.Abilities
             }
         }
 
-        private static ModularAbilityDef ResolveAbilityByDefName(PawnSkinDef skin, string abilityDefName)
+        private static ModularAbilityDef? ResolveAbilityByDefName(PawnSkinDef skin, string abilityDefName)
         {
             if (string.IsNullOrEmpty(abilityDefName) || skin.abilities == null || skin.abilities.Count == 0)
             {
@@ -186,7 +196,7 @@ namespace CharacterStudio.Abilities
                 return false;
             }
 
-            AbilityRuntimeComponentConfig jumpComp = GetRuntimeComponent(ability, AbilityRuntimeComponentType.EShortJump);
+            AbilityRuntimeComponentConfig? jumpComp = GetRuntimeComponent(ability, AbilityRuntimeComponentType.EShortJump);
             if (jumpComp == null || !jumpComp.enabled)
             {
                 return TryCastDefaultAbility(caster, ability);
@@ -235,14 +245,14 @@ namespace CharacterStudio.Abilities
             return true;
         }
 
-        private static bool TryHandleRHotkey(Pawn caster, CompPawnSkin skinComp, ModularAbilityDef ability, int tick)
+        private static bool TryHandleRHotkey(Pawn caster, CompPawnSkin skinComp, ModularAbilityDef? ability, int tick)
         {
             if (ability == null)
             {
                 return false;
             }
 
-            AbilityRuntimeComponentConfig rComp = GetRuntimeComponent(ability, AbilityRuntimeComponentType.RStackDetonation);
+            AbilityRuntimeComponentConfig? rComp = GetRuntimeComponent(ability, AbilityRuntimeComponentType.RStackDetonation);
             if (rComp == null || !rComp.enabled)
             {
                 return TryCastDefaultAbility(caster, ability);
@@ -305,7 +315,7 @@ namespace CharacterStudio.Abilities
                     continue;
                 }
 
-                AbilityRuntimeComponentConfig rComp = ResolveRStackComponentConfig(pawn, comp);
+                AbilityRuntimeComponentConfig? rComp = ResolveRStackComponentConfig(pawn, comp);
                 if (rComp == null || !rComp.enabled)
                 {
                     LastBusyStanceByPawn.Remove(pawn);
@@ -374,13 +384,13 @@ namespace CharacterStudio.Abilities
                         continue;
                     }
 
-                    var rComp = ResolveRStackComponentConfig(pawn, comp);
+                    AbilityRuntimeComponentConfig? rComp = ResolveRStackComponentConfig(pawn, comp);
                     ExecuteRSecondStage(pawn, comp, rComp);
                 }
             }
         }
 
-        private static void ExecuteRSecondStage(Pawn caster, CompPawnSkin skinComp, AbilityRuntimeComponentConfig rComp)
+        private static void ExecuteRSecondStage(Pawn caster, CompPawnSkin skinComp, AbilityRuntimeComponentConfig? rComp)
         {
             if (caster.Map == null || !skinComp.rSecondStageHasTarget || !skinComp.rSecondStageTargetCell.IsValid)
             {
@@ -587,7 +597,7 @@ namespace CharacterStudio.Abilities
             return cells.Where(c => c.InBounds(map));
         }
 
-        private static AbilityRuntimeComponentConfig GetRuntimeComponent(ModularAbilityDef ability, AbilityRuntimeComponentType type)
+        private static AbilityRuntimeComponentConfig? GetRuntimeComponent(ModularAbilityDef? ability, AbilityRuntimeComponentType type)
         {
             if (ability?.runtimeComponents == null)
             {
@@ -603,7 +613,7 @@ namespace CharacterStudio.Abilities
             return qComp != null && qComp.comboWindowTicks > 0 ? qComp.comboWindowTicks : DefaultQWComboWindowTicks;
         }
 
-        private static AbilityRuntimeComponentConfig ResolveRStackComponentConfig(Pawn pawn, CompPawnSkin skinComp)
+        private static AbilityRuntimeComponentConfig? ResolveRStackComponentConfig(Pawn pawn, CompPawnSkin skinComp)
         {
             var skin = skinComp?.ActiveSkin;
             var hotkeys = skin?.abilityHotkeys;

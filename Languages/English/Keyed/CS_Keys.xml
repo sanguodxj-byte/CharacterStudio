@@ -21,10 +21,15 @@
     <CS_Studio_File_SaveAs>Save As</CS_Studio_File_SaveAs>
     <CS_Studio_File_Export>Export as Mod</CS_Studio_File_Export>
     <CS_Studio_File_Import>Import</CS_Studio_File_Import>
+    <CS_Studio_Import_Source_Map>Import from Map Pawn</CS_Studio_Import_Source_Map>
+    <CS_Studio_Import_Source_Race>Import from Race List</CS_Studio_Import_Source_Race>
+    <CS_Studio_Import_Source_ProjectSkin>Import from Project Character List</CS_Studio_Import_Source_ProjectSkin>
 
     <!-- Tabs -->
+    <CS_Studio_Tab_BaseAppearance>Base Slots</CS_Studio_Tab_BaseAppearance>
     <CS_Studio_Tab_Layers>Layers</CS_Studio_Tab_Layers>
     <CS_Studio_Tab_Face>Face</CS_Studio_Tab_Face>
+    <CS_Studio_Tab_Attributes>Attributes</CS_Studio_Tab_Attributes>
 
     <!-- Layers Panel -->
     <CS_Studio_Panel_Layers>Layers</CS_Studio_Panel_Layers>
@@ -49,8 +54,8 @@
     <CS_Studio_Preview_ZoomIn>Zoom In</CS_Studio_Preview_ZoomIn>
     <CS_Studio_Preview_ZoomOut>Zoom Out</CS_Studio_Preview_ZoomOut>
     <CS_Studio_Preview_ResetView>Reset View</CS_Studio_Preview_ResetView>
-    <CS_Studio_Preview_Exp>Exp:</CS_Studio_Preview_Exp>
-    <CS_Studio_Preview_Var>Var:</CS_Studio_Preview_Var>
+    <CS_Studio_Preview_Exp>Expression</CS_Studio_Preview_Exp>
+    <CS_Studio_Preview_Var>Variant</CS_Studio_Preview_Var>
     <CS_Studio_Preview_RefHint>Hold F to show a translucent reference ghost of the imported pawn (follows cursor inside preview)</CS_Studio_Preview_RefHint>
 
     <!-- Properties Panel -->
@@ -79,6 +84,7 @@
     <CS_Studio_Prop_HideNode>Hide Node</CS_Studio_Prop_HideNode>
     <CS_Studio_Prop_ShowNode>Show Node</CS_Studio_Prop_ShowNode>
     <CS_Studio_Prop_FaceComponent>Face Component</CS_Studio_Prop_FaceComponent>
+    <CS_Studio_Prop_Worker>Worker</CS_Studio_Prop_Worker>
 
     <!-- New Property Items -->
     <CS_Studio_Msg_SelectLayer>Please select a node or layer</CS_Studio_Msg_SelectLayer>
@@ -95,6 +101,12 @@
     <CS_Studio_Msg_PathCopied>Path copied</CS_Studio_Msg_PathCopied>
     <CS_Studio_Info_Worker>Worker:</CS_Studio_Info_Worker>
     <CS_Studio_Msg_TexCopied>Texture path copied</CS_Studio_Msg_TexCopied>
+    <CS_Studio_Runtime_Offset>Offset:</CS_Studio_Runtime_Offset>
+    <CS_Studio_Runtime_Scale>Scale:</CS_Studio_Runtime_Scale>
+    <CS_Studio_Runtime_Color>Color:</CS_Studio_Runtime_Color>
+    <CS_Studio_Runtime_ColorValue>R:{0} G:{1} B:{2} A:{3}</CS_Studio_Runtime_ColorValue>
+    <CS_Studio_Runtime_Rotation>Rotation:</CS_Studio_Runtime_Rotation>
+    <CS_Studio_Runtime_RotationValue>{0}°</CS_Studio_Runtime_RotationValue>
 
     <!-- Animation Settings -->
     <CS_Studio_Section_Animation>Animation Settings</CS_Studio_Section_Animation>
@@ -185,7 +197,22 @@
     <CS_Studio_Msg_TextureNotFound>Texture file not found</CS_Studio_Msg_TextureNotFound>
     <CS_Studio_Msg_InvalidPath>Invalid path</CS_Studio_Msg_InvalidPath>
     <CS_Studio_Msg_SaveSuccess>Save successful!</CS_Studio_Msg_SaveSuccess>
+    <CS_Studio_Msg_SavePath>Saved to: {0}</CS_Studio_Msg_SavePath>
     <CS_Studio_Msg_LoadSuccess>Load successful!</CS_Studio_Msg_LoadSuccess>
+    <CS_Studio_Msg_TargetPawnRequired>Please import or bind a valid target pawn first</CS_Studio_Msg_TargetPawnRequired>
+    <CS_Studio_Msg_AppliedToPawn>Applied to {0}</CS_Studio_Msg_AppliedToPawn>
+    <CS_Studio_Err_ApplyNoSkinComp>Apply failed: target pawn has no skin component</CS_Studio_Err_ApplyNoSkinComp>
+    <CS_Studio_Err_ApplyFailedCheckLog>Apply failed, check the log</CS_Studio_Err_ApplyFailedCheckLog>
+    <CS_Studio_Msg_ImportedBoundPawn>Imported and bound target pawn: {0}</CS_Studio_Msg_ImportedBoundPawn>
+    <CS_Studio_Msg_AppendedImportedBoundPawn>Appended import and bound target pawn: {0}</CS_Studio_Msg_AppendedImportedBoundPawn>
+    <CS_Studio_Msg_SelectAllLayers>Selected all {0} layers</CS_Studio_Msg_SelectAllLayers>
+    <CS_Studio_Msg_SelectionCleared>Selection cleared</CS_Studio_Msg_SelectionCleared>
+    <CS_Studio_Msg_NothingToUndo>No changes to undo</CS_Studio_Msg_NothingToUndo>
+    <CS_Studio_Msg_UndoSuccess>Undid last change</CS_Studio_Msg_UndoSuccess>
+    <CS_Studio_Msg_NothingToRedo>No changes to redo</CS_Studio_Msg_NothingToRedo>
+    <CS_Studio_Msg_RedoSuccess>Redid last change</CS_Studio_Msg_RedoSuccess>
+    <CS_Studio_Msg_SelectedLayer>Selected: {0}</CS_Studio_Msg_SelectedLayer>
+    <CS_Studio_Msg_AddedHiddenTag>Added hidden tag: {0}</CS_Studio_Msg_AddedHiddenTag>
     
     <!-- New Messages -->
     <CS_Studio_Msg_TreeRefreshed>Render tree refreshed</CS_Studio_Msg_TreeRefreshed>
@@ -198,14 +225,20 @@
     <CS_Studio_Msg_NoMoreTags>No more available tags in render tree</CS_Studio_Msg_NoMoreTags>
     <CS_Studio_Err_NoMap>Please enter a game map first</CS_Studio_Err_NoMap>
     <CS_Studio_Err_NoPawns>No importable humanoid pawns on map</CS_Studio_Err_NoPawns>
+    <CS_Studio_Err_NoRaces>No importable races available</CS_Studio_Err_NoRaces>
+    <CS_Studio_Err_NoProjectSkins>No Character Studio characters available for import</CS_Studio_Err_NoProjectSkins>
     <CS_Studio_Err_ImportFailed>Failed to import any layers from {0}</CS_Studio_Err_ImportFailed>
     <CS_Studio_Msg_Imported>Imported {1} layers from {0}</CS_Studio_Msg_Imported>
     <CS_Studio_Msg_Appended>Appended {1} layers from {0}</CS_Studio_Msg_Appended>
+    <CS_Studio_Msg_ImportedNoBoundPawn>Imported {1} layers from {0}, but no suitable target pawn could be auto-bound on the current map</CS_Studio_Msg_ImportedNoBoundPawn>
+    <CS_Studio_Msg_AppendedNoBoundPawn>Appended {1} layers from {0}, but no suitable target pawn could be auto-bound on the current map</CS_Studio_Msg_AppendedNoBoundPawn>
+    <CS_Studio_Msg_ImportedProjectSkin>Fully imported project character: {0}</CS_Studio_Msg_ImportedProjectSkin>
     <CS_Studio_Err_MannequinFailed>Mannequin initialization failed, preview disabled</CS_Studio_Err_MannequinFailed>
     <CS_Studio_Err_DefNameEmpty>Error: DefName cannot be empty</CS_Studio_Err_DefNameEmpty>
     <CS_Studio_Err_DefNameInvalid>Error: DefName can only contain letters, numbers, and underscores</CS_Studio_Err_DefNameInvalid>
     <CS_Studio_Warn_NoLayers>Warning: No layers in current skin, continue export?</CS_Studio_Warn_NoLayers>
     <CS_Studio_Warn_NoTexture>Warning: No texture path set for some layers</CS_Studio_Warn_NoTexture>
+    <CS_Studio_Msg_SelectEditorTarget>Please select a base slot, layer, or render tree node</CS_Studio_Msg_SelectEditorTarget>
 
     <!-- Buttons -->
     <CS_Studio_Btn_OK>OK</CS_Studio_Btn_OK>
@@ -214,6 +247,12 @@
     <CS_Studio_Btn_Reset>Reset</CS_Studio_Btn_Reset>
     <CS_Studio_Btn_SelectFile>Select File</CS_Studio_Btn_SelectFile>
     <CS_Studio_Btn_ContinueExport>Export Anyway</CS_Studio_Btn_ContinueExport>
+    <CS_Studio_Btn_Edit>Edit</CS_Studio_Btn_Edit>
+    <CS_Studio_Btn_ClearShort>Clear</CS_Studio_Btn_ClearShort>
+
+    <!-- Status -->
+    <CS_Studio_Status_Edit>EDIT</CS_Studio_Status_Edit>
+    <CS_Studio_Status_Ready>READY</CS_Studio_Status_Ready>
 
     <!-- Tooltips -->
     <CS_Studio_Tip_AddLayer>Add a new texture layer</CS_Studio_Tip_AddLayer>
@@ -280,7 +319,17 @@
     <CS_Inspector_ImportEmpty>No layers found to import</CS_Inspector_ImportEmpty>
 
     <!-- Ability Editor -->
+    <CS_Studio_Ability_EditorTitle>Ability Editor</CS_Studio_Ability_EditorTitle>
+    <CS_Studio_Ability_LoadQwerExamples>Load QWER Example Abilities</CS_Studio_Ability_LoadQwerExamples>
+    <CS_Studio_Ability_QwerExamplesLoaded>Loaded QWER example abilities and bound hotkeys</CS_Studio_Ability_QwerExamplesLoaded>
     <CS_Studio_Ability_SelectOrCreate>Please select or create an ability</CS_Studio_Ability_SelectOrCreate>
+    <CS_Studio_Ability_Search>Search Abilities</CS_Studio_Ability_Search>
+    <CS_Studio_Ability_CountSummary>Showing {0} / {1} abilities</CS_Studio_Ability_CountSummary>
+    <CS_Studio_Ability_NoResults>No abilities match the current filter</CS_Studio_Ability_NoResults>
+    <CS_Studio_Ability_SelectedSummary>Selected: {0}</CS_Studio_Ability_SelectedSummary>
+    <CS_Studio_Ability_HotkeySummary>Hotkey Mapping: {0}</CS_Studio_Ability_HotkeySummary>
+    <CS_Studio_Ability_ValidationSummary>Validation: {0}</CS_Studio_Ability_ValidationSummary>
+    <CS_Studio_Ability_EffectsSummary>Effects: {0} / Runtime Components: {1}</CS_Studio_Ability_EffectsSummary>
     <CS_Studio_Ability_DefName>DefName</CS_Studio_Ability_DefName>
     <CS_Studio_Ability_Name>Name</CS_Studio_Ability_Name>
     <CS_Studio_Ability_IconPath>Icon Path</CS_Studio_Ability_IconPath>
@@ -295,7 +344,25 @@
     <CS_Studio_Ability_Range>Range</CS_Studio_Ability_Range>
     <CS_Studio_Ability_Radius>Explosion Radius</CS_Studio_Ability_Radius>
     <CS_Studio_Ability_Projectile>Projectile</CS_Studio_Ability_Projectile>
+    <CS_Studio_Ability_CooldownShort>CD</CS_Studio_Ability_CooldownShort>
+    <CS_Studio_Ability_DefSummary>Def: {0}</CS_Studio_Ability_DefSummary>
+    <CS_Studio_Ability_DefaultName>New Ability</CS_Studio_Ability_DefaultName>
+    <CS_Studio_Ability_CopyLabel>{0} Copy</CS_Studio_Ability_CopyLabel>
+    <CS_Studio_DefaultSkinLabel>New Skin</CS_Studio_DefaultSkinLabel>
+    <CS_Studio_Layer_DefaultName>Layer {0}</CS_Studio_Layer_DefaultName>
+    <CS_Studio_Layer_MountedOn>Layer on {0}</CS_Studio_Layer_MountedOn>
+    <CS_Studio_Worker_Default>Default</CS_Studio_Worker_Default>
+    <CS_Studio_Worker_FaceComponent>Face Component</CS_Studio_Worker_FaceComponent>
+    <CS_Studio_Ability_Unassigned>Unassigned</CS_Studio_Ability_Unassigned>
+    <CS_Studio_Ability_HotkeySlotSummary>{0}: {1}</CS_Studio_Ability_HotkeySlotSummary>
+    <CS_Studio_Ability_HotkeySlot_Q>Q</CS_Studio_Ability_HotkeySlot_Q>
+    <CS_Studio_Ability_HotkeySlot_W>W</CS_Studio_Ability_HotkeySlot_W>
+    <CS_Studio_Ability_HotkeySlot_E>E</CS_Studio_Ability_HotkeySlot_E>
+    <CS_Studio_Ability_HotkeySlot_R>R</CS_Studio_Ability_HotkeySlot_R>
+    <CS_Studio_Ability_HotkeySlot_WCombo>W Combo</CS_Studio_Ability_HotkeySlot_WCombo>
     <CS_Studio_Effect_Add>Add Effect</CS_Studio_Effect_Add>
+    <CS_Studio_Effect_EmptyHint>This ability has no effects yet.
+Use the button below to add the first effect, or load the QWER examples to inspect a complete setup.</CS_Studio_Effect_EmptyHint>
     <CS_Studio_Effect_Amount>Amount</CS_Studio_Effect_Amount>
     <CS_Studio_Effect_Chance>Chance</CS_Studio_Effect_Chance>
     <CS_Studio_Effect_DamageDef>Damage Type</CS_Studio_Effect_DamageDef>
@@ -304,6 +371,69 @@
     <CS_Studio_Effect_PawnKind>PawnKind</CS_Studio_Effect_PawnKind>
     <CS_Studio_Effect_SummonCount>Count</CS_Studio_Effect_SummonCount>
     <CS_Studio_Effect_Hediff>Hediff</CS_Studio_Effect_Hediff>
+
+    <!-- LLM / Attribute Editing -->
+    <CS_LLM_Settings_Title>LLM Settings</CS_LLM_Settings_Title>
+    <CS_LLM_Settings_Desc>Configure Base URL, Model, and API Key for an OpenAI-compatible endpoint to generate characters and abilities from natural language.</CS_LLM_Settings_Desc>
+    <CS_LLM_Settings_Section_Connection>Connection</CS_LLM_Settings_Section_Connection>
+    <CS_LLM_Settings_Section_Request>Request</CS_LLM_Settings_Section_Request>
+    <CS_LLM_Settings_Section_Prompts>Built-in Prompts</CS_LLM_Settings_Section_Prompts>
+    <CS_LLM_Settings_Enabled>Enable LLM generation</CS_LLM_Settings_Enabled>
+    <CS_LLM_Settings_BaseUrl>Base URL</CS_LLM_Settings_BaseUrl>
+    <CS_LLM_Settings_Model>Model</CS_LLM_Settings_Model>
+    <CS_LLM_Settings_ApiKey>API Key</CS_LLM_Settings_ApiKey>
+    <CS_LLM_Settings_Temperature>Temperature</CS_LLM_Settings_Temperature>
+    <CS_LLM_Settings_MaxTokens>Max Tokens</CS_LLM_Settings_MaxTokens>
+    <CS_LLM_Settings_ApiKeyPreview>API Key Preview</CS_LLM_Settings_ApiKeyPreview>
+    <CS_LLM_Settings_EndpointPreview>Endpoint Preview</CS_LLM_Settings_EndpointPreview>
+    <CS_LLM_Settings_Status>Status</CS_LLM_Settings_Status>
+    <CS_LLM_Settings_Configured>Configured</CS_LLM_Settings_Configured>
+    <CS_LLM_Settings_NotConfigured>Not Configured</CS_LLM_Settings_NotConfigured>
+    <CS_LLM_Settings_SaveSuccess>LLM settings saved</CS_LLM_Settings_SaveSuccess>
+    <CS_LLM_Settings_SaveFailed>Failed to save LLM settings: {0}</CS_LLM_Settings_SaveFailed>
+    <CS_LLM_Settings_SystemPrompt>System Prompt</CS_LLM_Settings_SystemPrompt>
+    <CS_LLM_Settings_CharacterEditorPrompt>Character Editor Tool Prompt</CS_LLM_Settings_CharacterEditorPrompt>
+    <CS_LLM_Settings_AbilityEditorPrompt>Ability Editor Tool Prompt</CS_LLM_Settings_AbilityEditorPrompt>
+    <CS_LLM_Settings_ResetPrompts>Reset Default Prompts</CS_LLM_Settings_ResetPrompts>
+    <CS_LLM_Settings_PromptsReset>Built-in prompt templates restored</CS_LLM_Settings_PromptsReset>
+    <CS_LLM_CharacterSection>Character Design Generation</CS_LLM_CharacterSection>
+    <CS_LLM_CharacterPrompt>Character Prompt</CS_LLM_CharacterPrompt>
+    <CS_LLM_GenerateCharacter>Generate Character Design</CS_LLM_GenerateCharacter>
+    <CS_LLM_GenerateCharacterSuccess>Character design generated and applied</CS_LLM_GenerateCharacterSuccess>
+    <CS_LLM_AbilityPrompt>Ability Prompt</CS_LLM_AbilityPrompt>
+    <CS_LLM_GenerateAbilities>Generate Abilities</CS_LLM_GenerateAbilities>
+    <CS_LLM_GenerateAbilitiesSuccess>Generated {0} abilities</CS_LLM_GenerateAbilitiesSuccess>
+    <CS_LLM_GenerateAbilitiesEmpty>No usable abilities were returned by the LLM</CS_LLM_GenerateAbilitiesEmpty>
+    <CS_LLM_GenerateAbilitiesReplaced>Replaced the list with {0} newly generated abilities</CS_LLM_GenerateAbilitiesReplaced>
+    <CS_LLM_GenerateAbilitiesAppended>Appended {0} abilities (was {1}, now {2})</CS_LLM_GenerateAbilitiesAppended>
+    <CS_LLM_GenerateFailed>LLM generation failed: {0}</CS_LLM_GenerateFailed>
+    <CS_LLM_AbilityPrompt_Empty>Please enter an ability prompt first</CS_LLM_AbilityPrompt_Empty>
+    <CS_LLM_CharacterPrompt_Empty>Please enter a character prompt first</CS_LLM_CharacterPrompt_Empty>
+    <CS_LLM_OpenSettings>Open LLM Settings</CS_LLM_OpenSettings>
+    <CS_LLM_ApplyReplace>Replace Existing Abilities</CS_LLM_ApplyReplace>
+    <CS_LLM_ApplyAppend>Append to Existing Abilities</CS_LLM_ApplyAppend>
+    <CS_LLM_EditorTool_CharacterHint>The LLM acts as a character editor tool and returns structured output that is applied directly to the current editor fields, attributes, target races, hidden nodes, and ability list.</CS_LLM_EditorTool_CharacterHint>
+    <CS_LLM_EditorTool_AbilityHint>The LLM acts as an ability editor tool and returns structured ability data that can be directly replaced into or appended to the current ability list.</CS_LLM_EditorTool_AbilityHint>
+
+    <CS_Attr_Title>Title</CS_Attr_Title>
+    <CS_Attr_FactionRole>Faction Role</CS_Attr_FactionRole>
+    <CS_Attr_CombatRole>Combat Role</CS_Attr_CombatRole>
+    <CS_Attr_Personality>Personality</CS_Attr_Personality>
+    <CS_Attr_BodyType>BodyTypeDef</CS_Attr_BodyType>
+    <CS_Attr_HeadType>HeadTypeDef</CS_Attr_HeadType>
+    <CS_Attr_HairDef>HairDef</CS_Attr_HairDef>
+    <CS_Attr_FavoriteColor>Favorite Color</CS_Attr_FavoriteColor>
+    <CS_Attr_BiologicalAge>Biological Age</CS_Attr_BiologicalAge>
+    <CS_Attr_ChronologicalAge>Chronological Age</CS_Attr_ChronologicalAge>
+    <CS_Attr_MoveSpeed>Move Speed Multiplier</CS_Attr_MoveSpeed>
+    <CS_Attr_MeleePower>Melee Power</CS_Attr_MeleePower>
+    <CS_Attr_ShootingAccuracy>Shooting Accuracy</CS_Attr_ShootingAccuracy>
+    <CS_Attr_ArmorRating>Armor Rating</CS_Attr_ArmorRating>
+    <CS_Attr_PsychicSensitivity>Psychic Sensitivity</CS_Attr_PsychicSensitivity>
+    <CS_Attr_MarketValue>Market Value</CS_Attr_MarketValue>
+    <CS_Attr_Tags>Tags</CS_Attr_Tags>
+    <CS_Attr_KeyTraits>Key Traits</CS_Attr_KeyTraits>
+    <CS_Attr_StartingApparel>Starting Apparel Defs</CS_Attr_StartingApparel>
     <CS_Ability_Hotkey_AbilityMissing>Ability definition not found: {0}</CS_Ability_Hotkey_AbilityMissing>
     <CS_Ability_Hotkey_CastSuccess>Casted via {0}: {1}</CS_Ability_Hotkey_CastSuccess>
     <CS_Ability_Hotkey_QMode>Q mode switched to phase {0}</CS_Ability_Hotkey_QMode>
@@ -315,15 +445,97 @@
     <CS_Ability_R_TargetInvalid>Invalid target for R stage 2</CS_Ability_R_TargetInvalid>
     <CS_Ability_R_SecondStageArmed>R stage 2 armed, triggering in {0}s</CS_Ability_R_SecondStageArmed>
     <CS_Ability_R_SecondStageCast>R stage 2 cast: blink and triple shockwaves</CS_Ability_R_SecondStageCast>
+    <CS_Ability_Validate_Failed>Validation failed:</CS_Ability_Validate_Failed>
+    <CS_Ability_Validate_Warnings>Warnings:</CS_Ability_Validate_Warnings>
+    <CS_Ability_Validate_QComboWindowTicks>Q combo window must be greater than 0 ticks</CS_Ability_Validate_QComboWindowTicks>
+    <CS_Ability_Validate_EShortJumpCooldown>E short-jump cooldown cannot be negative</CS_Ability_Validate_EShortJumpCooldown>
+    <CS_Ability_Validate_EShortJumpDistance>E short-jump distance must be greater than 0</CS_Ability_Validate_EShortJumpDistance>
+    <CS_Ability_Validate_EShortJumpFindCellRadius>E short-jump find-cell radius cannot be negative</CS_Ability_Validate_EShortJumpFindCellRadius>
+    <CS_Ability_Validate_RRequiredStacks>R required stacks must be greater than 0</CS_Ability_Validate_RRequiredStacks>
+    <CS_Ability_Validate_RDelayTicks>R delay cannot be negative</CS_Ability_Validate_RDelayTicks>
+    <CS_Ability_Validate_RWaveRadius>All R wave radii must be greater than 0</CS_Ability_Validate_RWaveRadius>
+    <CS_Ability_Validate_RWaveDamage>All R wave damage values must be greater than 0</CS_Ability_Validate_RWaveDamage>
+    <CS_Ability_Validate_EffectNegativeAmount>Effect amount is negative and may cause unexpected behavior</CS_Ability_Validate_EffectNegativeAmount>
+    <CS_Ability_Validate_EffectChanceRange>Trigger chance must be between 0 and 1, current value: {0}</CS_Ability_Validate_EffectChanceRange>
+    <CS_Ability_Validate_DamageAmount>Damage effect amount must be greater than 0</CS_Ability_Validate_DamageAmount>
+    <CS_Ability_Validate_HediffRequired>{0} effect must specify a HediffDef</CS_Ability_Validate_HediffRequired>
+    <CS_Ability_Validate_SummonKindRequired>Summon effect must specify a PawnKindDef</CS_Ability_Validate_SummonKindRequired>
+    <CS_Ability_Validate_SummonCount>Summon count must be greater than 0</CS_Ability_Validate_SummonCount>
+    <CS_Ability_Validate_DefNameEmpty>defName cannot be empty</CS_Ability_Validate_DefNameEmpty>
+    <CS_Ability_Validate_DefNameInvalid>defName may only contain letters, numbers, and underscores</CS_Ability_Validate_DefNameInvalid>
+    <CS_Ability_Validate_LabelEmpty>label is empty; defName will be used as the display name</CS_Ability_Validate_LabelEmpty>
+    <CS_Ability_Validate_CooldownNegative>Cooldown cannot be negative</CS_Ability_Validate_CooldownNegative>
+    <CS_Ability_Validate_WarmupNegative>Warmup cannot be negative</CS_Ability_Validate_WarmupNegative>
+    <CS_Ability_Validate_ChargesNonPositive>Ability charges are 0 or negative</CS_Ability_Validate_ChargesNonPositive>
+    <CS_Ability_Validate_RangeNegative>Range cannot be negative</CS_Ability_Validate_RangeNegative>
+    <CS_Ability_Validate_RadiusNegative>Radius cannot be negative</CS_Ability_Validate_RadiusNegative>
+    <CS_Ability_Validate_CarrierNeedsRange>Carrier type {0} usually requires a range</CS_Ability_Validate_CarrierNeedsRange>
+    <CS_Ability_Validate_ProjectileDefMissing>Projectile carrier has no projectileDef; a default projectile may be used</CS_Ability_Validate_ProjectileDefMissing>
+    <CS_Ability_Validate_NoEffects>Ability defines no effects</CS_Ability_Validate_NoEffects>
+    <CS_Ability_Validate_EffectIndexError>Effect #{0}: {1}</CS_Ability_Validate_EffectIndexError>
+    <CS_Ability_Validate_EffectIndexWarning>Effect #{0}: {1}</CS_Ability_Validate_EffectIndexWarning>
+    <CS_Ability_Validate_RuntimeComponentNull>Runtime component #{0} is null</CS_Ability_Validate_RuntimeComponentNull>
+    <CS_Ability_Validate_RuntimeComponentError>Runtime component #{0}: {1}</CS_Ability_Validate_RuntimeComponentError>
+    <CS_Ability_Validate_RuntimeComponentWarning>Runtime component #{0}: {1}</CS_Ability_Validate_RuntimeComponentWarning>
+
+    <CS_Ability_CarrierType_Self>Self</CS_Ability_CarrierType_Self>
+    <CS_Ability_CarrierType_Touch>Touch</CS_Ability_CarrierType_Touch>
+    <CS_Ability_CarrierType_Target>Target</CS_Ability_CarrierType_Target>
+    <CS_Ability_CarrierType_Projectile>Projectile</CS_Ability_CarrierType_Projectile>
+    <CS_Ability_CarrierType_Area>Area</CS_Ability_CarrierType_Area>
+    <CS_Ability_EffectType_Damage>Damage</CS_Ability_EffectType_Damage>
+    <CS_Ability_EffectType_Heal>Heal</CS_Ability_EffectType_Heal>
+    <CS_Ability_EffectType_Buff>Buff</CS_Ability_EffectType_Buff>
+    <CS_Ability_EffectType_Debuff>Debuff</CS_Ability_EffectType_Debuff>
+    <CS_Ability_EffectType_Summon>Summon</CS_Ability_EffectType_Summon>
+    <CS_Ability_EffectType_Teleport>Teleport</CS_Ability_EffectType_Teleport>
+    <CS_Ability_EffectType_Control>Control</CS_Ability_EffectType_Control>
+    <CS_Ability_EffectType_Terraform>Terraform</CS_Ability_EffectType_Terraform>
+    <CS_Ability_RuntimeComponentType_QComboWindow>Q Combo Window</CS_Ability_RuntimeComponentType_QComboWindow>
+    <CS_Ability_RuntimeComponentType_EShortJump>E Short Jump</CS_Ability_RuntimeComponentType_EShortJump>
+    <CS_Ability_RuntimeComponentType_RStackDetonation>R Stack Detonation</CS_Ability_RuntimeComponentType_RStackDetonation>
+
+    <!-- Base Appearance -->
+    <CS_Studio_BaseSlot_Unset>(Unset)</CS_Studio_BaseSlot_Unset>
+    <CS_Studio_BaseSlot_Section>Base Slot - {0}</CS_Studio_BaseSlot_Section>
+    <CS_Studio_BaseSlot_Enable>Enabled</CS_Studio_BaseSlot_Enable>
+    <CS_Studio_BaseSlot_MaskTexture>Mask Texture</CS_Studio_BaseSlot_MaskTexture>
+    <CS_Studio_BaseSlot_Shader>Shader</CS_Studio_BaseSlot_Shader>
+    <CS_Studio_BaseSlot_Rotation>Rotation</CS_Studio_BaseSlot_Rotation>
+    <CS_Studio_BaseSlot_DrawOrderOffset>Draw Order Offset</CS_Studio_BaseSlot_DrawOrderOffset>
+    <CS_Studio_Prop_OffsetYHeight>Y Offset (Height)</CS_Studio_Prop_OffsetYHeight>
+    <CS_Studio_BaseSlot_PrimaryColorSource>Primary Color Source</CS_Studio_BaseSlot_PrimaryColorSource>
+    <CS_Studio_BaseSlot_PrimaryColor>Primary Color</CS_Studio_BaseSlot_PrimaryColor>
+    <CS_Studio_BaseSlot_SecondaryColorSource>Secondary Color Source</CS_Studio_BaseSlot_SecondaryColorSource>
+    <CS_Studio_BaseSlot_SecondaryColor>Secondary Color</CS_Studio_BaseSlot_SecondaryColor>
+    <CS_Studio_BaseSlot_SecondColorMask>Second Color (Mask)</CS_Studio_BaseSlot_SecondColorMask>
+    <CS_Studio_Hide_HiddenPaths>Hidden Paths (hiddenPaths):</CS_Studio_Hide_HiddenPaths>
+    <CS_Studio_Hide_NoHiddenPaths>  No hiddenPaths</CS_Studio_Hide_NoHiddenPaths>
+    <CS_Studio_Hide_HiddenTagsCompat>Hidden Tags (compat):</CS_Studio_Hide_HiddenTagsCompat>
+    <CS_Studio_Node_RuntimeData>Runtime Data (Read-only)</CS_Studio_Node_RuntimeData>
+    <CS_Studio_Node_RuntimeNote>(Yellow = non-default value)</CS_Studio_Node_RuntimeNote>
+    <CS_Studio_Node_NoRuntimeData>(No runtime data)</CS_Studio_Node_NoRuntimeData>
+    <CS_Studio_Status_UnsavedChanges>* Unsaved changes</CS_Studio_Status_UnsavedChanges>
+    <CS_Studio_Status_EditorSummary>Base Slots: {0} | Layers: {1} | Zoom: {2}x | Facing: {3}</CS_Studio_Status_EditorSummary>
 
     <!-- Face & Menu -->
     <CS_Studio_Face_Title>Face Configuration</CS_Studio_Face_Title>
-    <CS_Studio_Face_Dev>Face configuration is under development...\n\nUse Exp button in preview panel to test expressions</CS_Studio_Face_Dev>
     <CS_Studio_Face_Config>Face Config</CS_Studio_Face_Config>
     <CS_Studio_Face_Enable>Enable Expression System</CS_Studio_Face_Enable>
     <CS_Studio_Face_Type>{0} Expression</CS_Studio_Face_Type>
-    <CS_Studio_None>(None)</CS_Studio_None>
+    <CS_Studio_Face_TypeSummary>{0} ({1}/{2} configured)</CS_Studio_Face_TypeSummary>
     <CS_Studio_Face_Create>Create Face Config</CS_Studio_Face_Create>
+    <CS_Studio_Face_PreviewAuto>Auto</CS_Studio_Face_PreviewAuto>
+    <CS_Studio_Face_PreviewActive>Preview Expression</CS_Studio_Face_PreviewActive>
+    <CS_Studio_Face_PreviewHint>Preview Mode</CS_Studio_Face_PreviewHint>
+    <CS_Studio_Face_PreviewHintValue>Switch between auto and a forced expression in the preview panel to inspect the current face setup instantly</CS_Studio_Face_PreviewHintValue>
+    <CS_Studio_Face_PreviewModeButton>Preview Mode</CS_Studio_Face_PreviewModeButton>
+    <CS_Studio_Face_ClearPath>Clear the current expression texture path</CS_Studio_Face_ClearPath>
+    <CS_Studio_None>(None)</CS_Studio_None>
+    <CS_Studio_Node_Tooltip>Path: {0}\nType: {1}\nTexture: {2}</CS_Studio_Node_Tooltip>
+    <CS_Studio_Mannequin_NotInitialized>Mannequin not initialized</CS_Studio_Mannequin_NotInitialized>
+    <CS_Studio_Mannequin_RenderError>Render error: {0}</CS_Studio_Mannequin_RenderError>
+    <CS_Studio_Mannequin_PortraitError>Portrait error: {0}</CS_Studio_Mannequin_PortraitError>
     <CS_Studio_Ctx_CopyPath>Copy Node Path</CS_Studio_Ctx_CopyPath>
     <CS_Studio_Ctx_CopyTexPath>Copy Texture Path</CS_Studio_Ctx_CopyTexPath>
     <CS_Studio_Ctx_CollapseChildren>Collapse Children</CS_Studio_Ctx_CollapseChildren>
@@ -331,6 +543,21 @@
     <CS_Studio_Ctx_FromRenderTree>── Select from Render Tree ──</CS_Studio_Ctx_FromRenderTree>
     <CS_Studio_Ctx_ClearAndImport>Clear and Import</CS_Studio_Ctx_ClearAndImport>
     <CS_Studio_Ctx_AppendImport>Append Import</CS_Studio_Ctx_AppendImport>
+    <CS_FaceComponent_Eyes>Eyes</CS_FaceComponent_Eyes>
+    <CS_FaceComponent_Mouth>Mouth</CS_FaceComponent_Mouth>
+    <CS_FaceComponent_Brows>Brows</CS_FaceComponent_Brows>
+    <CS_Expression_Neutral>Neutral</CS_Expression_Neutral>
+    <CS_Expression_Happy>Happy</CS_Expression_Happy>
+    <CS_Expression_Sad>Sad</CS_Expression_Sad>
+    <CS_Expression_Angry>Angry</CS_Expression_Angry>
+    <CS_Expression_Scared>Scared</CS_Expression_Scared>
+    <CS_Expression_Pain>Pain</CS_Expression_Pain>
+    <CS_Expression_Shock>Shock</CS_Expression_Shock>
+    <CS_Expression_Tired>Tired</CS_Expression_Tired>
+    <CS_Expression_Eating>Eating</CS_Expression_Eating>
+    <CS_Expression_Sleeping>Sleeping</CS_Expression_Sleeping>
+    <CS_Expression_Blink>Blink</CS_Expression_Blink>
+    <CS_Expression_Dead>Dead</CS_Expression_Dead>
 
     <!-- Help Glossary -->
     <CS_Help_Title>Glossary</CS_Help_Title>

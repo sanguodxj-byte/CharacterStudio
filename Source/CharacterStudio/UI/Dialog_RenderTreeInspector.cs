@@ -55,7 +55,8 @@ namespace CharacterStudio.UI
 
             // 绘制左侧树
             Widgets.DrawMenuSection(treeRect);
-            Widgets.BeginScrollView(treeRect, ref scrollPos, new Rect(0, 0, treeRect.width - 16, CalculateTreeHeight(rootNode)));
+            float treeHeight = rootNode != null ? CalculateTreeHeight(rootNode) : 0f;
+            Widgets.BeginScrollView(treeRect, ref scrollPos, new Rect(0, 0, treeRect.width - 16, treeHeight));
             
             if (rootNode != null)
             {

@@ -250,7 +250,7 @@ namespace CharacterStudio.UI
         {
             if (mannequinPawn == null)
             {
-                DrawPlaceholder(rect, "人偶未初始化");
+                DrawPlaceholder(rect, "CS_Studio_Mannequin_NotInitialized".Translate());
                 return;
             }
 
@@ -269,7 +269,7 @@ namespace CharacterStudio.UI
             }
             catch (Exception ex)
             {
-                DrawPlaceholder(rect, $"渲染错误: {ex.Message}");
+                DrawPlaceholder(rect, "CS_Studio_Mannequin_RenderError".Translate(ex.Message));
             }
         }
 
@@ -388,7 +388,7 @@ namespace CharacterStudio.UI
             }
             catch (Exception ex)
             {
-                DrawPlaceholder(rect, $"肖像错误: {ex.Message}");
+                DrawPlaceholder(rect, "CS_Studio_Mannequin_PortraitError".Translate(ex.Message));
             }
         }
 

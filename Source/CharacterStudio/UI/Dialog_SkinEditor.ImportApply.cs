@@ -58,7 +58,7 @@ namespace CharacterStudio.UI
                 }
 
                 ShowStatus("CS_Studio_Msg_SaveSuccess".Translate());
-                Messages.Message($"已保存至: {filePath}", MessageTypeDefOf.PositiveEvent, false);
+                Messages.Message("CS_Studio_Msg_SavePath".Translate(filePath), MessageTypeDefOf.PositiveEvent, false);
                 isDirty = false;
             }
             catch (Exception ex)
@@ -72,7 +72,7 @@ namespace CharacterStudio.UI
         {
             if (targetPawn == null)
             {
-                ShowStatus("请先从地图导入一个角色作为应用目标");
+                ShowStatus("CS_Studio_Msg_TargetPawnRequired".Translate());
                 return;
             }
 
@@ -85,7 +85,7 @@ namespace CharacterStudio.UI
                     // 显式触发一次隐藏节点刷新，确保编辑器“应用”语义稳定
                     CharacterStudio.Rendering.Patch_PawnRenderTree.RefreshHiddenNodes(targetPawn);
                     RefreshRenderTree();
-                    ShowStatus($"已应用到 {targetPawn.LabelShort}");
+                    ShowStatus("CS_Studio_Msg_AppliedToPawn".Translate(targetPawn.LabelShort));
                     Messages.Message(
                         "CS_Appearance_Applied".Translate(runtimeSkin.label ?? runtimeSkin.defName, targetPawn.LabelShort),
                         MessageTypeDefOf.PositiveEvent,
@@ -94,19 +94,30 @@ namespace CharacterStudio.UI
                 }
                 else
                 {
-                    ShowStatus("应用失败：目标角色缺少皮肤组件");
+                    ShowStatus("CS_Studio_Err_ApplyNoSkinComp".Translate());
                 }
             }
             catch (Exception ex)
             {
                 Log.Error($"[CharacterStudio] 应用到目标角色失败: {ex}");
-                ShowStatus("应用失败，请查看日志");
+                ShowStatus("CS_Studio_Err_ApplyFailedCheckLog".Translate());
             }
         }
 
         private void OnImportFromMap()
         {
-            // 获取地图上所有可选的 Pawn
+            var options = new List<FloatMenuOption>
+            {
+                new FloatMenuOption("CS_Studio_Import_Source_Map".Translate(), ShowMapPawnImportMenu),
+                new FloatMenuOption("CS_Studio_Import_Source_Race".Translate(), OnImportFromRaceList),
+                new FloatMenuOption("CS_Studio_Import_Source_ProjectSkin".Translate(), OnImportFromProjectSkins)
+            };
+
+            Find.WindowStack.Add(new FloatMenu(options));
+        }
+
+        private void ShowMapPawnImportMenu()
+        {
             var map = Find.CurrentMap;
             if (map == null)
             {
@@ -124,177 +135,431 @@ namespace CharacterStudio.UI
                 return;
             }
 
-            // 显示选择菜单
             var options = new List<FloatMenuOption>();
             foreach (var pawn in pawns)
             {
-                var p = pawn; // 捕获变量
+                var p = pawn;
                 options.Add(new FloatMenuOption(
                     $"{p.LabelShort} ({p.kindDef.label})",
-                    () => DoImportFromPawn(p)
+                    () => DoImportFromPawn(p, p, p.def, p.LabelShort, false)
                 ));
             }
+
             Find.WindowStack.Add(new FloatMenu(options));
         }
 
-        private void DoImportFromPawn(Pawn pawn)
+        private void OnImportFromRaceList()
+        {
+            var races = MannequinManager.GetAvailableRaces();
+            if (races.Length == 0)
+            {
+                ShowStatus("CS_Studio_Err_NoRaces".Translate());
+                return;
+            }
+
+            var options = new List<FloatMenuOption>();
+            foreach (var race in races)
+            {
+                var raceLocal = race;
+                string displayName = string.IsNullOrWhiteSpace(raceLocal.label) ? raceLocal.defName : raceLocal.label;
+                options.Add(new FloatMenuOption(
+                    $"{displayName} ({raceLocal.defName})",
+                    () => DoImportFromRace(raceLocal)
+                ));
+            }
+
+            Find.WindowStack.Add(new FloatMenu(options));
+        }
+
+        private void OnImportFromProjectSkins()
+        {
+            PawnSkinDefRegistry.LoadFromConfig();
+            var skins = PawnSkinDefRegistry.AllRuntimeDefs
+                .Where(skin => skin != null)
+                .OrderBy(skin => string.IsNullOrWhiteSpace(skin.label) ? skin.defName : skin.label)
+                .ToList();
+
+            if (skins.Count == 0)
+            {
+                ShowStatus("CS_Studio_Err_NoProjectSkins".Translate());
+                return;
+            }
+
+            var options = new List<FloatMenuOption>();
+            foreach (var skin in skins)
+            {
+                var skinLocal = skin;
+                string displayName = string.IsNullOrWhiteSpace(skinLocal.label) ? skinLocal.defName : skinLocal.label;
+                options.Add(new FloatMenuOption(
+                    $"{displayName} ({skinLocal.defName})",
+                    () => DoImportFromProjectSkin(skinLocal)
+                ));
+            }
+
+            Find.WindowStack.Add(new FloatMenu(options));
+        }
+
+        private void DoImportFromRace(ThingDef raceDef)
+        {
+            if (raceDef == null)
+            {
+                return;
+            }
+
+            if (!EnsureMannequinReady())
+            {
+                return;
+            }
+
+            mannequin!.SetRace(raceDef);
+            var previewPawn = mannequin.CurrentPawn;
+            if (previewPawn == null)
+            {
+                ShowStatus("CS_Studio_Err_ImportFailed".Translate(raceDef.label ?? raceDef.defName));
+                return;
+            }
+
+            DoImportFromPawn(previewPawn, null, raceDef, raceDef.label ?? raceDef.defName, true);
+        }
+
+        private void DoImportFromProjectSkin(PawnSkinDef skinDef)
+        {
+            if (skinDef == null)
+            {
+                return;
+            }
+
+            workingSkin = skinDef.Clone();
+            SyncAbilitiesFromSkin();
+
+            var previewRace = ResolvePreferredPreviewRace(workingSkin);
+            SyncPreviewRace(previewRace, null);
+            ApplySelectionAfterImport(workingSkin.layers.Count, true, workingSkin.baseAppearance);
+
+            Pawn? resolvedTargetPawn = ResolvePreferredTargetPawnForSkin(workingSkin, previewRace);
+            FinalizeImportState(resolvedTargetPawn);
+            ShowImportCompletionStatus(workingSkin.label ?? workingSkin.defName, workingSkin.layers.Count, resolvedTargetPawn, true);
+        }
+
+        private void DoImportFromPawn(
+            Pawn pawn,
+            Pawn? boundPawn,
+            ThingDef? previewRace,
+            string? sourceLabel,
+            bool replaceTargetRaces)
         {
             var importResult = VanillaImportUtility.ImportFromPawnWithPaths(pawn);
             var layers = importResult.layers;
             var sourcePaths = importResult.sourcePaths;
             var sourceTags = importResult.sourceTags;
+            var importedBaseAppearance = importResult.baseAppearance ?? new BaseAppearanceConfig();
 
-            bool shouldHideVanillaBody = sourceTags.Any(tag =>
+            bool hasImportedBodySlot = importedBaseAppearance.EnabledSlots().Any(slot => slot.slotType == BaseAppearanceSlotType.Body);
+            bool hasImportedHeadSlot = importedBaseAppearance.EnabledSlots().Any(slot =>
+                slot.slotType == BaseAppearanceSlotType.Head
+                || slot.slotType == BaseAppearanceSlotType.Eyes
+                || slot.slotType == BaseAppearanceSlotType.Brow
+                || slot.slotType == BaseAppearanceSlotType.Mouth
+                || slot.slotType == BaseAppearanceSlotType.Nose
+                || slot.slotType == BaseAppearanceSlotType.Ear);
+            bool hasImportedHairSlot = importedBaseAppearance.EnabledSlots().Any(slot =>
+                slot.slotType == BaseAppearanceSlotType.Hair
+                || slot.slotType == BaseAppearanceSlotType.Beard);
+
+            bool shouldHideVanillaBody = hasImportedBodySlot
+                || sourceTags.Any(tag =>
                     !string.IsNullOrEmpty(tag) && tag.IndexOf("Body", StringComparison.OrdinalIgnoreCase) >= 0)
                 || layers.Any(layer =>
                     !string.IsNullOrEmpty(layer.anchorTag) && layer.anchorTag.IndexOf("Body", StringComparison.OrdinalIgnoreCase) >= 0);
 
-            bool shouldHideVanillaHead = sourceTags.Any(tag =>
+            bool shouldHideVanillaHead = hasImportedHeadSlot
+                || sourceTags.Any(tag =>
                     !string.IsNullOrEmpty(tag) && tag.IndexOf("Head", StringComparison.OrdinalIgnoreCase) >= 0)
                 || layers.Any(layer =>
                     !string.IsNullOrEmpty(layer.anchorTag) && layer.anchorTag.IndexOf("Head", StringComparison.OrdinalIgnoreCase) >= 0);
 
-            if (layers.Count == 0)
+            bool shouldHideVanillaHair = hasImportedHairSlot
+                || sourceTags.Any(tag =>
+                    !string.IsNullOrEmpty(tag) && (tag.IndexOf("Hair", StringComparison.OrdinalIgnoreCase) >= 0 || tag.IndexOf("Beard", StringComparison.OrdinalIgnoreCase) >= 0))
+                || layers.Any(layer =>
+                    !string.IsNullOrEmpty(layer.anchorTag) && (layer.anchorTag.IndexOf("Hair", StringComparison.OrdinalIgnoreCase) >= 0 || layer.anchorTag.IndexOf("Beard", StringComparison.OrdinalIgnoreCase) >= 0));
+
+            string resolvedSourceLabel = sourceLabel ?? pawn.LabelShort;
+            if (layers.Count == 0 && !importedBaseAppearance.EnabledSlots().Any())
             {
-                ShowStatus("CS_Studio_Err_ImportFailed".Translate(pawn.LabelShort));
+                ShowStatus("CS_Studio_Err_ImportFailed".Translate(resolvedSourceLabel));
                 return;
             }
 
-            // 同步人偶的种族，确保预览使用正确的种族模型
-            // 这对于 HAR 等自定义种族尤为重要
-            if (mannequin != null && pawn.def != null)
-            {
-                mannequin.SetRace(pawn.def);
-                mannequin.CopyAppearanceFrom(pawn);
-                Log.Message($"[CharacterStudio] 已将人偶种族同步为 {pawn.def.defName} 并复制外观");
-            }
+            SyncPreviewRace(previewRace, boundPawn);
 
-            // 询问是否清空现有图层
-            if (workingSkin.layers.Count > 0)
+            Action<bool> applyImport = replaceExisting => ApplyImportedAppearance(
+                layers,
+                sourcePaths,
+                sourceTags,
+                importedBaseAppearance,
+                shouldHideVanillaBody,
+                shouldHideVanillaHead,
+                shouldHideVanillaHair,
+                boundPawn,
+                previewRace,
+                resolvedSourceLabel,
+                replaceTargetRaces,
+                replaceExisting);
+
+            if (workingSkin.layers.Count > 0 || workingSkin.baseAppearance.EnabledSlots().Any())
             {
                 var options = new List<FloatMenuOption>
                 {
-                    new FloatMenuOption("CS_Studio_Ctx_ClearAndImport".Translate(), () =>
-                    {
-                        workingSkin.layers.Clear();
-                        workingSkin.hiddenPaths.Clear();
-                        workingSkin.hiddenTags.Clear();
-                        foreach (var layer in layers)
-                        {
-                            workingSkin.layers.Add(layer);
-                        }
-                        // 隐藏对应的原生节点，避免与导入的图层重叠
-                        foreach (var path in sourcePaths)
-                        {
-                            if (!string.IsNullOrEmpty(path) && !workingSkin.hiddenPaths.Contains(path))
-                            {
-                                workingSkin.hiddenPaths.Add(path);
-                            }
-                        }
-                        // 使用标签作为回退隐藏机制（当路径匹配失败时）
-                        foreach (var tag in sourceTags)
-                        {
-                            if (!string.IsNullOrEmpty(tag) && !workingSkin.hiddenTags.Contains(tag))
-                            {
-                                workingSkin.hiddenTags.Add(tag);
-                            }
-                        }
-                        if (shouldHideVanillaBody)
-                        {
-                            workingSkin.hideVanillaBody = true;
-                        }
-                        if (shouldHideVanillaHead)
-                        {
-                            workingSkin.hideVanillaHead = true;
-                        }
-                        selectedLayerIndex = 0;
-                        targetPawn = pawn;
-                        isDirty = true;
-                        RefreshPreview();
-                        // 刷新渲染树快照，以便在树视图中显示新注入的节点
-                        RefreshRenderTree();
-                        ShowStatus($"已导入并绑定目标角色: {pawn.LabelShort}");
-                    }),
-                    new FloatMenuOption("CS_Studio_Ctx_AppendImport".Translate(), () =>
-                    {
-                        foreach (var layer in layers)
-                        {
-                            workingSkin.layers.Add(layer);
-                        }
-                        // 隐藏对应的原生节点，避免与导入的图层重叠
-                        foreach (var path in sourcePaths)
-                        {
-                            if (!string.IsNullOrEmpty(path) && !workingSkin.hiddenPaths.Contains(path))
-                            {
-                                workingSkin.hiddenPaths.Add(path);
-                            }
-                        }
-                        // 使用标签作为回退隐藏机制（当路径匹配失败时）
-                        foreach (var tag in sourceTags)
-                        {
-                            if (!string.IsNullOrEmpty(tag) && !workingSkin.hiddenTags.Contains(tag))
-                            {
-                                workingSkin.hiddenTags.Add(tag);
-                            }
-                        }
-                        if (shouldHideVanillaBody)
-                        {
-                            workingSkin.hideVanillaBody = true;
-                        }
-                        if (shouldHideVanillaHead)
-                        {
-                            workingSkin.hideVanillaHead = true;
-                        }
-                        selectedLayerIndex = workingSkin.layers.Count - layers.Count;
-                        targetPawn = pawn;
-                        isDirty = true;
-                        RefreshPreview();
-                        // 刷新渲染树快照
-                        RefreshRenderTree();
-                        ShowStatus($"已追加导入并绑定目标角色: {pawn.LabelShort}");
-                    }),
+                    new FloatMenuOption("CS_Studio_Ctx_ClearAndImport".Translate(), () => applyImport(true)),
+                    new FloatMenuOption("CS_Studio_Ctx_AppendImport".Translate(), () => applyImport(false)),
                     new FloatMenuOption("CS_Studio_Btn_Cancel".Translate(), () => { })
                 };
                 Find.WindowStack.Add(new FloatMenu(options));
             }
             else
             {
-                // 直接导入
-                foreach (var layer in layers)
+                applyImport(true);
+            }
+        }
+
+        private void ApplyImportedAppearance(
+            List<PawnLayerConfig> layers,
+            List<string> sourcePaths,
+            List<string> sourceTags,
+            BaseAppearanceConfig importedBaseAppearance,
+            bool shouldHideVanillaBody,
+            bool shouldHideVanillaHead,
+            bool shouldHideVanillaHair,
+            Pawn? boundPawn,
+            ThingDef? previewRace,
+            string sourceLabel,
+            bool replaceTargetRaces,
+            bool replaceExisting)
+        {
+            if (replaceExisting)
+            {
+                workingSkin.layers.Clear();
+                workingSkin.hiddenPaths.Clear();
+#pragma warning disable CS0618 // hiddenTags 仅用于旧数据兼容
+                workingSkin.hiddenTags.Clear();
+#pragma warning restore CS0618
+                workingSkin.hideVanillaBody = false;
+                workingSkin.hideVanillaHead = false;
+                workingSkin.hideVanillaHair = false;
+                workingSkin.baseAppearance = importedBaseAppearance.Clone();
+
+                if (replaceTargetRaces)
                 {
-                    workingSkin.layers.Add(layer);
+                    workingSkin.targetRaces.Clear();
                 }
-                // 隐藏对应的原生节点，避免与导入的图层重叠
-                foreach (var path in sourcePaths)
+            }
+            else
+            {
+                MergeBaseAppearanceSlots(workingSkin.baseAppearance, importedBaseAppearance);
+            }
+
+            foreach (var layer in layers)
+            {
+                workingSkin.layers.Add(layer);
+            }
+
+            foreach (var path in sourcePaths)
+            {
+                if (!string.IsNullOrEmpty(path) && !workingSkin.hiddenPaths.Contains(path))
                 {
-                    if (!string.IsNullOrEmpty(path) && !workingSkin.hiddenPaths.Contains(path))
+                    workingSkin.hiddenPaths.Add(path);
+                }
+            }
+
+#pragma warning disable CS0618 // hiddenTags 仅用于旧数据兼容
+            foreach (var tag in sourceTags)
+            {
+                if (!string.IsNullOrEmpty(tag) && !workingSkin.hiddenTags.Contains(tag))
+                {
+                    workingSkin.hiddenTags.Add(tag);
+                }
+            }
+#pragma warning restore CS0618
+
+            if (shouldHideVanillaBody)
+            {
+                workingSkin.hideVanillaBody = true;
+            }
+            if (shouldHideVanillaHead)
+            {
+                workingSkin.hideVanillaHead = true;
+            }
+            if (shouldHideVanillaHair)
+            {
+                workingSkin.hideVanillaHair = true;
+            }
+
+            if (replaceTargetRaces && previewRace != null && !workingSkin.targetRaces.Contains(previewRace.defName))
+            {
+                workingSkin.targetRaces.Add(previewRace.defName);
+            }
+
+            Pawn? resolvedTargetPawn = boundPawn ?? ResolvePreferredTargetPawnForSkin(workingSkin, previewRace);
+            ApplySelectionAfterImport(layers.Count, replaceExisting, importedBaseAppearance);
+            FinalizeImportState(resolvedTargetPawn);
+            ShowImportCompletionStatus(sourceLabel, layers.Count, resolvedTargetPawn, replaceExisting);
+        }
+
+        private ThingDef? ResolvePreferredPreviewRace(PawnSkinDef skinDef)
+        {
+            if (skinDef.targetRaces != null)
+            {
+                foreach (var raceDefName in skinDef.targetRaces)
+                {
+                    var raceDef = DefDatabase<ThingDef>.GetNamedSilentFail(raceDefName);
+                    if (raceDef?.race != null && raceDef.race.Humanlike)
                     {
-                        workingSkin.hiddenPaths.Add(path);
+                        return raceDef;
                     }
                 }
-                // 使用标签作为回退隐藏机制（当路径匹配失败时）
-                foreach (var tag in sourceTags)
+            }
+
+            return targetPawn?.def ?? mannequin?.CurrentPawn?.def ?? ThingDefOf.Human;
+        }
+
+        private bool EnsureMannequinReady()
+        {
+            if (mannequin == null)
+            {
+                InitializeMannequin();
+            }
+
+            if (mannequin == null)
+            {
+                ShowStatus("CS_Studio_Err_MannequinFailed".Translate());
+                return false;
+            }
+
+            return true;
+        }
+
+        private void SyncPreviewRace(ThingDef? previewRace, Pawn? sourcePawn)
+        {
+            if (previewRace == null || !EnsureMannequinReady())
+            {
+                return;
+            }
+
+            mannequin!.SetRace(previewRace);
+            if (sourcePawn != null)
+            {
+                mannequin.CopyAppearanceFrom(sourcePawn);
+                Log.Message($"[CharacterStudio] 已将人偶种族同步为 {previewRace.defName} 并复制外观");
+            }
+        }
+
+        private void ApplySelectionAfterImport(int importedLayerCount, bool replaceExisting, BaseAppearanceConfig importedBaseAppearance)
+        {
+            selectedLayerIndex = importedLayerCount > 0
+                ? (replaceExisting ? 0 : workingSkin.layers.Count - importedLayerCount)
+                : -1;
+            selectedLayerIndices.Clear();
+            if (selectedLayerIndex >= 0)
+            {
+                selectedLayerIndices.Add(selectedLayerIndex);
+            }
+
+            selectedNodePath = string.Empty;
+            if (importedBaseAppearance.EnabledSlots().Any())
+            {
+                selectedBaseSlotType = importedBaseAppearance.EnabledSlots().First().slotType;
+                currentTab = EditorTab.BaseAppearance;
+            }
+            else
+            {
+                selectedBaseSlotType = null;
+                currentTab = EditorTab.Layers;
+            }
+        }
+
+        private void FinalizeImportState(Pawn? boundPawn)
+        {
+            targetPawn = boundPawn;
+            isDirty = true;
+            RefreshPreview();
+            RefreshRenderTree();
+        }
+
+        private Pawn? ResolvePreferredTargetPawnForSkin(PawnSkinDef skinDef, ThingDef? preferredRace)
+        {
+            if (targetPawn != null && skinDef.IsValidForPawn(targetPawn))
+            {
+                return targetPawn;
+            }
+
+            var map = Find.CurrentMap;
+            if (map == null)
+            {
+                return null;
+            }
+
+            IEnumerable<Pawn> candidates = map.mapPawns.AllPawnsSpawned
+                .Where(p => p.RaceProps.Humanlike && p.Drawer?.renderer?.renderTree != null)
+                .Where(skinDef.IsValidForPawn);
+
+            if (preferredRace != null)
+            {
+                var sameRacePawn = candidates.FirstOrDefault(p => p.def == preferredRace);
+                if (sameRacePawn != null)
                 {
-                    if (!string.IsNullOrEmpty(tag) && !workingSkin.hiddenTags.Contains(tag))
-                    {
-                        workingSkin.hiddenTags.Add(tag);
-                    }
+                    return sameRacePawn;
                 }
-                if (shouldHideVanillaBody)
-                {
-                    workingSkin.hideVanillaBody = true;
-                }
-                if (shouldHideVanillaHead)
-                {
-                    workingSkin.hideVanillaHead = true;
-                }
-                selectedLayerIndex = 0;
-                targetPawn = pawn;
-                isDirty = true;
-                RefreshPreview();
-                // 刷新渲染树快照
-                RefreshRenderTree();
-                ShowStatus($"已导入并绑定目标角色: {pawn.LabelShort}");
+            }
+
+            return candidates.FirstOrDefault();
+        }
+
+        private void ShowImportCompletionStatus(string sourceLabel, int layerCount, Pawn? boundPawn, bool replaceExisting)
+        {
+            if (boundPawn != null)
+            {
+                ShowStatus(replaceExisting
+                    ? "CS_Studio_Msg_ImportedBoundPawn".Translate(boundPawn.LabelShort)
+                    : "CS_Studio_Msg_AppendedImportedBoundPawn".Translate(boundPawn.LabelShort));
+                return;
+            }
+
+            ShowStatus(replaceExisting
+                ? "CS_Studio_Msg_ImportedNoBoundPawn".Translate(sourceLabel, layerCount)
+                : "CS_Studio_Msg_AppendedNoBoundPawn".Translate(sourceLabel, layerCount));
+        }
+
+        private static void MergeBaseAppearanceSlots(BaseAppearanceConfig target, BaseAppearanceConfig source)
+        {
+            if (target == null || source == null)
+            {
+                return;
+            }
+
+            target.EnsureAllSlotsExist();
+            source.EnsureAllSlotsExist();
+            foreach (var sourceSlot in source.EnabledSlots())
+            {
+                var targetSlot = target.GetSlot(sourceSlot.slotType);
+                var cloned = sourceSlot.Clone();
+                targetSlot.enabled = cloned.enabled;
+                targetSlot.slotType = cloned.slotType;
+                targetSlot.texPath = cloned.texPath;
+                targetSlot.maskTexPath = cloned.maskTexPath;
+                targetSlot.shaderDefName = cloned.shaderDefName;
+                targetSlot.colorSource = cloned.colorSource;
+                targetSlot.customColor = cloned.customColor;
+                targetSlot.colorTwoSource = cloned.colorTwoSource;
+                targetSlot.customColorTwo = cloned.customColorTwo;
+                targetSlot.scale = cloned.scale;
+                targetSlot.offset = cloned.offset;
+                targetSlot.offsetEast = cloned.offsetEast;
+                targetSlot.offsetNorth = cloned.offsetNorth;
+                targetSlot.rotation = cloned.rotation;
+                targetSlot.flipHorizontal = cloned.flipHorizontal;
+                targetSlot.drawOrderOffset = cloned.drawOrderOffset;
+                targetSlot.graphicClass = cloned.graphicClass;
             }
         }
 
@@ -333,6 +598,9 @@ namespace CharacterStudio.UI
         private void RefreshPreview()
         {
             mannequin?.ApplySkin(workingSkin);
+            var previewPawn = mannequin?.CurrentPawn;
+            var skinComp = previewPawn?.GetComp<CompPawnSkin>();
+            skinComp?.SetPreviewExpressionOverride(previewExpressionOverrideEnabled ? previewExpression : null);
         }
 
         private void ShowStatus(string message)

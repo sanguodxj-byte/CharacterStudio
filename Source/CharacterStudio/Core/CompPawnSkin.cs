@@ -16,6 +16,7 @@ namespace CharacterStudio.Core
 
         // 表情状态
         public ExpressionType curExpression = ExpressionType.Neutral;
+        private ExpressionType? previewExpressionOverride = null;
         private int blinkTimer = 0;
         private const int BlinkDuration = 10;
 
@@ -122,6 +123,7 @@ namespace CharacterStudio.Core
 
         private void UpdateBlinkLogic()
         {
+            if (previewExpressionOverride.HasValue) return;
             if (curExpression == ExpressionType.Sleeping || curExpression == ExpressionType.Dead) return;
 
             if (blinkTimer > 0)
@@ -139,8 +141,28 @@ namespace CharacterStudio.Core
             }
         }
 
+        public void SetPreviewExpressionOverride(ExpressionType? expression)
+        {
+            bool changed = previewExpressionOverride != expression;
+            previewExpressionOverride = expression;
+
+            if (expression.HasValue)
+            {
+                blinkTimer = 0;
+            }
+
+            if (changed)
+            {
+                RequestRenderRefresh();
+            }
+        }
+
         public ExpressionType GetEffectiveExpression()
         {
+            if (previewExpressionOverride.HasValue)
+            {
+                return previewExpressionOverride.Value;
+            }
             if (blinkTimer > 0) return ExpressionType.Blink;
             return curExpression;
         }

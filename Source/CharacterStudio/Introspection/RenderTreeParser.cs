@@ -46,6 +46,33 @@ namespace CharacterStudio.Introspection
             // 无法判断时默认 true，避免影响正常主线程逻辑
             return true;
         }
+
+        private static bool IsVerboseDebugEnabled => Prefs.DevMode;
+
+        private static bool ShouldInspectHarDebugNode(string label, string tagDef)
+        {
+            return ContainsHarDebugKeyword(tagDef) || ContainsHarDebugKeyword(label);
+        }
+
+        private static bool ContainsHarDebugKeyword(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return false;
+            }
+
+            return value.IndexOf("head", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   value.IndexOf("ear", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   value.IndexOf("tail", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static void DebugLog(string message)
+        {
+            if (IsVerboseDebugEnabled)
+            {
+                Log.Message(message);
+            }
+        }
         /// <summary>
         /// Entry point: Captures the entire tree of a Pawn.
         /// 包含强制树构建逻辑，确保渲染树已初始化
@@ -250,16 +277,11 @@ namespace CharacterStudio.Introspection
                 }
 
                 // ===== HAR 调试: 详细记录节点信息 =====
-                bool isDebugNode = tagDef.ToLower().Contains("head") ||
-                                   tagDef.ToLower().Contains("ear") ||
-                                   tagDef.ToLower().Contains("tail") ||
-                                   label.ToLower().Contains("head") ||
-                                   label.ToLower().Contains("ear") ||
-                                   label.ToLower().Contains("tail");
+                bool shouldInspectDebugNode = IsVerboseDebugEnabled && ShouldInspectHarDebugNode(label, tagDef);
                 string nodeTypeName = gameNode.GetType().Name;
 
                 // ===== HAR 调试: 探索节点自身的所有字段 =====
-                if (isDebugNode)
+                if (shouldInspectDebugNode)
                 {
                     Log.Message($"[CS.HAR.Debug] ====== 节点 '{label}' ({nodeTypeName}) ======");
                     Log.Message($"[CS.HAR.Debug] 节点类型完整名: {gameNode.GetType().FullName}");
@@ -396,7 +418,7 @@ namespace CharacterStudio.Introspection
                         }
                         
                         // ===== HAR 调试: 打印 props 相关信息 =====
-                        if (isDebugNode)
+                        if (shouldInspectDebugNode)
                         {
                             Log.Message($"[CS.HAR.Debug] 节点 '{label}' ({nodeTypeName}) Tag={tagDef}");
                             Log.Message($"[CS.HAR.Debug]   - props类型: {props.GetType().FullName}");
@@ -491,7 +513,7 @@ namespace CharacterStudio.Introspection
                             Vector3 southOffset = worker.OffsetFor(gameNode, southParms, out Vector3 pivotSouth);
 
                             // ===== HAR 调试: 打印 Worker 返回的偏移 =====
-                            if (isDebugNode)
+                            if (shouldInspectDebugNode)
                             {
                                 Log.Message($"[CS.HAR.Debug]   - Worker类型: {worker.GetType().FullName}");
                                 Log.Message($"[CS.HAR.Debug]   - Worker.OffsetFor(South): {southOffset}");
@@ -501,7 +523,7 @@ namespace CharacterStudio.Introspection
                             if (southOffset == Vector3.zero && propsOffset != Vector3.zero)
                             {
                                 southOffset = propsOffset;
-                                if (isDebugNode)
+                                if (shouldInspectDebugNode)
                                 {
                                     Log.Message($"[CS.HAR.Debug]   - 使用 props.offset 回退: {propsOffset}");
                                 }
@@ -611,7 +633,7 @@ namespace CharacterStudio.Introspection
                         runtimeColor = nodeColor;
 
                         // ===== HAR 调试: 最终捕获的数据 =====
-                        if (isDebugNode)
+                        if (shouldInspectDebugNode)
                         {
                             Log.Message($"[CS.HAR.Debug]   - 最终 runtimeOffset: {runtimeOffset}");
                             Log.Message($"[CS.HAR.Debug]   - 最终 runtimeScale: {runtimeScale}");
@@ -739,14 +761,14 @@ namespace CharacterStudio.Introspection
                     var graphicForPawn = node.GraphicFor(pawn);
                     if (graphicForPawn != null && !string.IsNullOrEmpty(graphicForPawn.path))
                     {
-                        Log.Message($"[CS.Debug] 节点 '{node}' 从 GraphicFor() 获取路径: {graphicForPawn.path}");
+                        DebugLog($"[CS.Debug] 节点 '{node}' 从 GraphicFor() 获取路径: {graphicForPawn.path}");
                         return graphicForPawn.path;
                     }
                 }
                 catch (Exception ex)
                 {
                     // GraphicFor 可能在某些情况下失败
-                    Log.Message($"[CS.Debug] 节点 '{node}' GraphicFor() 失败: {ex.Message}");
+                    DebugLog($"[CS.Debug] 节点 '{node}' GraphicFor() 失败: {ex.Message}");
                 }
 
                 // 3. 尝试从 PrimaryGraphic 获取路径
@@ -804,7 +826,7 @@ namespace CharacterStudio.Introspection
                         var cachedGraphic = cachedGraphicField.GetValue(node) as Graphic;
                         if (cachedGraphic != null && !string.IsNullOrEmpty(cachedGraphic.path))
                         {
-                            Log.Message($"[CS.Debug] 节点 '{node}' 从 cachedGraphic 字段获取路径: {cachedGraphic.path}");
+                            DebugLog($"[CS.Debug] 节点 '{node}' 从 cachedGraphic 字段获取路径: {cachedGraphic.path}");
                             return cachedGraphic.path;
                         }
                     }
@@ -816,7 +838,7 @@ namespace CharacterStudio.Introspection
                         var graphic = graphicField.GetValue(node) as Graphic;
                         if (graphic != null && !string.IsNullOrEmpty(graphic.path))
                         {
-                            Log.Message($"[CS.Debug] 节点 '{node}' 从 graphic 字段获取路径: {graphic.path}");
+                            DebugLog($"[CS.Debug] 节点 '{node}' 从 graphic 字段获取路径: {graphic.path}");
                             return graphic.path;
                         }
                     }
@@ -828,7 +850,7 @@ namespace CharacterStudio.Introspection
                         var texPath = texPathField.GetValue(node) as string;
                         if (!string.IsNullOrEmpty(texPath))
                         {
-                            Log.Message($"[CS.Debug] 节点 '{node}' 从 texPath 字段获取路径: {texPath}");
+                            DebugLog($"[CS.Debug] 节点 '{node}' 从 texPath 字段获取路径: {texPath}");
                             return texPath!;
                         }
                     }
@@ -843,7 +865,7 @@ namespace CharacterStudio.Introspection
 
                 // 8. 如果所有方法都失败，记录节点类型以便调试
                 string nodeType = node.GetType().FullName;
-                Log.Message($"[CS.Debug] 节点 '{node}' ({nodeType}) 无法获取纹理路径，标记为 Dynamic/Unknown");
+                DebugLog($"[CS.Debug] 节点 '{node}' ({nodeType}) 无法获取纹理路径，标记为 Dynamic/Unknown");
 
                 return "Dynamic/Unknown";
             }
