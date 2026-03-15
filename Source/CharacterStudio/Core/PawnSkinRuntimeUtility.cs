@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using HarmonyLib;
 using Verse;
 using CharacterStudio.Rendering;
+using CharacterStudio.Abilities;
 
 namespace CharacterStudio.Core
 {
@@ -22,12 +23,17 @@ namespace CharacterStudio.Core
                 return false;
             }
 
-            comp.ActiveSkin = skin;
+            // 使用静默赋值避免 setter 在此处触发 RequestRenderRefresh，
+            // 后续 RefreshHiddenNodes + ForceRebuildRenderTree 负责完整刷新，
+            // 防止同一帧对同一 Pawn 产生三次冗余重绘。
+            comp.SetActiveSkinSilent(skin);
+
+            // 皮肤切换时清除表情图形缓存，避免新皮肤使用旧贴图
+            CharacterStudio.Rendering.PawnRenderNodeWorker_FaceComponent.ClearCache();
 
             try
             {
                 // RefreshHiddenNodes 在主线程执行注入（纹理加载必须在主线程）
-                // P1 守卫（CheckForCustomNodes）会阻止 Postfix 重复注入
                 Patch_PawnRenderTree.RefreshHiddenNodes(pawn);
                 Patch_PawnRenderTree.ForceRebuildRenderTree(pawn);
             }
@@ -36,6 +42,10 @@ namespace CharacterStudio.Core
                 Log.Warning($"[CharacterStudio] ForceRebuildRenderTree 失败，回退到 RequestRenderRefresh: {ex.Message}");
                 comp.RequestRenderRefresh();
             }
+
+            // 同步授予皮肤中的技能给 Pawn
+            if (skin != null)
+                AbilityGrantUtility.GrantSkinAbilitiesToPawn(pawn, skin);
 
             return true;
         }
@@ -51,6 +61,7 @@ namespace CharacterStudio.Core
                 return false;
             }
 
+            // ClearSkin 内部已直接置空字段，不走 setter，无需静默赋值
             comp.ClearSkin();
 
             try
@@ -63,6 +74,9 @@ namespace CharacterStudio.Core
                 Log.Warning($"[CharacterStudio] ClearSkin ForceRebuildRenderTree 失败: {ex.Message}");
                 comp.RequestRenderRefresh();
             }
+
+            // 撤销所有 CS 技能
+            AbilityGrantUtility.RevokeAllCSAbilitiesFromPawn(pawn);
 
             return true;
         }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using CharacterStudio.Abilities;
@@ -36,7 +36,10 @@ namespace CharacterStudio.UI
         private string abilitySearchText = string.Empty;
         private string llmAbilityPrompt = string.Empty;
         private readonly SkinAbilityHotkeyConfig? boundHotkeys;
+
         private readonly PawnSkinDef? boundSkin;
+        // 绑定目标 Pawn（可从编辑器直接授予/撤销技能）
+        private Pawn? boundPawn;
 
         public override Vector2 InitialSize => new Vector2(1180f, 760f);
 
@@ -1001,19 +1004,123 @@ namespace CharacterStudio.UI
             Widgets.DrawMenuSection(rect);
             Rect inner = rect.ContractedBy(8f);
 
-            string selectedName = selectedAbility == null
+            string selectedName  = selectedAbility == null
                 ? "CS_Studio_Ability_SelectOrCreate".Translate()
                 : (string.IsNullOrWhiteSpace(selectedAbility.label) ? selectedAbility.defName : selectedAbility.label);
             string validationText = selectedAbility == null ? "-" : GetValidationLabel(selectedAbility.Validate());
-            string hotkeyText = GetHotkeySummary();
+            string hotkeyText     = GetHotkeySummary();
 
-            Widgets.Label(new Rect(inner.x, inner.y, inner.width * 0.42f, 24f), "CS_Studio_Ability_SelectedSummary".Translate(selectedName));
-            Widgets.Label(new Rect(inner.x, inner.y + 24f, inner.width * 0.42f, 24f), "CS_Studio_Ability_HotkeySummary".Translate(hotkeyText));
+            // 左侧：选中技能信息
+            float leftW = inner.width * 0.38f;
+            Widgets.Label(new Rect(inner.x, inner.y,       leftW, 24f), "CS_Studio_Ability_SelectedSummary".Translate(selectedName));
+            Widgets.Label(new Rect(inner.x, inner.y + 24f, leftW, 24f), "CS_Studio_Ability_HotkeySummary".Translate(hotkeyText));
 
-            float rightX = inner.x + inner.width * 0.45f;
-            float rightW = inner.width * 0.55f;
-            Widgets.Label(new Rect(rightX, inner.y, rightW, 24f), "CS_Studio_Ability_ValidationSummary".Translate(validationText));
-            Widgets.Label(new Rect(rightX, inner.y + 24f, rightW, 24f), "CS_Studio_Ability_EffectsSummary".Translate(selectedAbility?.effects?.Count ?? 0, selectedAbility?.runtimeComponents?.Count ?? 0));
+            // 中间：验证 & 效果数
+            float midX = inner.x + inner.width * 0.40f;
+            float midW = inner.width * 0.30f;
+            Widgets.Label(new Rect(midX, inner.y,       midW, 24f), "CS_Studio_Ability_ValidationSummary".Translate(validationText));
+            Widgets.Label(new Rect(midX, inner.y + 24f, midW, 24f), "CS_Studio_Ability_EffectsSummary".Translate(selectedAbility?.effects?.Count ?? 0, selectedAbility?.runtimeComponents?.Count ?? 0));
+
+            // 右侧：绑定到角色
+            float bindX = inner.x + inner.width * 0.72f;
+            float bindW = inner.width * 0.28f;
+            DrawBindToPawnSection(new Rect(bindX, inner.y, bindW, inner.height));
+        }
+
+        private void DrawBindToPawnSection(Rect rect)
+        {
+            // 当前绑定状态
+            string pawnLabel = boundPawn != null
+                ? boundPawn.LabelShort
+                : "CS_Ability_NoPawnBound".Translate();
+
+            Text.Font   = GameFont.Tiny;
+            Text.Anchor = TextAnchor.UpperLeft;
+            GUI.color   = boundPawn != null ? new Color(0.4f, 1f, 0.5f) : Color.gray;
+            Widgets.Label(new Rect(rect.x, rect.y, rect.width, 20f),
+                "CS_Ability_BoundPawn".Translate() + ": " + pawnLabel);
+            GUI.color = Color.white;
+
+            float btnH = 22f;
+            float btnW = (rect.width - 4f) / 2f;
+
+            // 选择角色
+            if (Widgets.ButtonText(new Rect(rect.x, rect.y + 22f, btnW, btnH), "CS_Ability_SelectPawn".Translate()))
+                ShowSelectPawnMenu();
+
+            // 授予 / 撤销
+            bool hasAbilities = abilities != null && abilities.Count > 0;
+            if (boundPawn != null && hasAbilities)
+            {
+                if (Widgets.ButtonText(new Rect(rect.x + btnW + 4f, rect.y + 22f, btnW, btnH),
+                    "CS_Ability_Grant".Translate()))
+                {
+                    GrantAbilitiesToBoundPawn();
+                }
+            }
+            else if (boundPawn != null)
+            {
+                if (Widgets.ButtonText(new Rect(rect.x + btnW + 4f, rect.y + 22f, btnW, btnH),
+                    "CS_Ability_Revoke".Translate()))
+                {
+                    CharacterStudio.Abilities.AbilityGrantUtility.RevokeAllCSAbilitiesFromPawn(boundPawn);
+                    Messages.Message("CS_Ability_RevokeSuccess".Translate(boundPawn.LabelShort),
+                        MessageTypeDefOf.NeutralEvent, false);
+                }
+            }
+        }
+
+        private void ShowSelectPawnMenu()
+        {
+            var map = Find.CurrentMap;
+            if (map == null)
+            {
+                Messages.Message("CS_Studio_Err_NoMap".Translate(), MessageTypeDefOf.RejectInput, false);
+                return;
+            }
+
+            var pawns = map.mapPawns.FreeColonists
+                .Where(p => p != null && p.RaceProps.Humanlike)
+                .OrderBy(p => p.LabelShort)
+                .ToList();
+
+            if (pawns.Count == 0)
+            {
+                Messages.Message("CS_Studio_Err_NoPawns".Translate(), MessageTypeDefOf.RejectInput, false);
+                return;
+            }
+
+            var options = new List<FloatMenuOption>();
+
+            // 清除绑定
+            options.Add(new FloatMenuOption("CS_Ability_ClearBinding".Translate(), () => boundPawn = null));
+
+            foreach (var pawn in pawns)
+            {
+                var p = pawn;
+                string label = p.LabelShort;
+                if (boundPawn == p) label = "✓ " + label;
+                options.Add(new FloatMenuOption(label, () => boundPawn = p));
+            }
+
+            Find.WindowStack.Add(new FloatMenu(options));
+        }
+
+        private void GrantAbilitiesToBoundPawn()
+        {
+            if (boundPawn == null || abilities == null || abilities.Count == 0) return;
+
+            // 构建临时皮肤容器
+            var tempSkin = boundSkin ?? new CharacterStudio.Core.PawnSkinDef();
+            tempSkin.abilities.Clear();
+            foreach (var a in abilities)
+                if (a != null) tempSkin.abilities.Add(a);
+
+            CharacterStudio.Abilities.AbilityGrantUtility.GrantSkinAbilitiesToPawn(boundPawn, tempSkin);
+
+            Messages.Message(
+                "CS_Ability_GrantSuccess".Translate(abilities.Count, boundPawn.LabelShort),
+                MessageTypeDefOf.PositiveEvent, false);
         }
 
         private void DrawAbilityRow(Rect rowRect, ModularAbilityDef ability, int index)
@@ -1216,3 +1323,6 @@ namespace CharacterStudio.UI
         }
     }
 }
+
+
+

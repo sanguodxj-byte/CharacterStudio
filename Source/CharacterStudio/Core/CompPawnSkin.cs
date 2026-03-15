@@ -1,3 +1,4 @@
+﻿using System;
 using RimWorld;
 using Verse;
 using UnityEngine;
@@ -52,6 +53,18 @@ namespace CharacterStudio.Core
             }
         }
 
+        /// <summary>
+        /// 静默赋值：仅更新数据，不触发 RequestRenderRefresh()。
+        /// 供 PawnSkinRuntimeUtility 使用，避免与随后的 RefreshHiddenNodes /
+        /// ForceRebuildRenderTree 产生多次冗余重绘。
+        /// </summary>
+        internal void SetActiveSkinSilent(PawnSkinDef? skin)
+        {
+            activeSkin        = skin;
+            activeSkinDefName = skin?.defName;
+            needsRefresh      = false; // 调用方负责触发刷新
+        }
+
         public bool HasActiveSkin => activeSkin != null;
         public Pawn? Pawn => parent as Pawn;
 
@@ -97,28 +110,51 @@ namespace CharacterStudio.Core
             if (activeSkin?.faceConfig?.enabled != true) return;
 
             var oldExp = curExpression;
-            var pawn = Pawn!;
+            var pawn   = Pawn!;
 
-            if (pawn.Dead) curExpression = ExpressionType.Dead;
-            else if (pawn.Downed) curExpression = ExpressionType.Pain;
-            else if (RestUtility.InBed(pawn)) curExpression = ExpressionType.Sleeping;
-            else if (pawn.CurJob?.def == JobDefOf.Ingest) curExpression = ExpressionType.Eating;
+            if (pawn.Dead)
+            {
+                curExpression = ExpressionType.Dead;
+            }
+            else if (pawn.Downed)
+            {
+                curExpression = ExpressionType.Pain;
+            }
+            else if (RestUtility.InBed(pawn))
+            {
+                curExpression = ExpressionType.Sleeping;
+            }
+            else if (pawn.CurJob?.def == JobDefOf.Ingest)
+            {
+                curExpression = ExpressionType.Eating;
+            }
+            else if (pawn.InMentalState)
+            {
+                // 根据心理状态细分表情
+                var stateDef = pawn.MentalStateDef;
+                bool isPanic = stateDef != null &&
+                    (stateDef.defName.IndexOf("Flee", StringComparison.OrdinalIgnoreCase) >= 0
+                    || stateDef.defName.IndexOf("Panic", StringComparison.OrdinalIgnoreCase) >= 0
+                    || stateDef.defName.IndexOf("WildMan", StringComparison.OrdinalIgnoreCase) >= 0);
+                curExpression = isPanic ? ExpressionType.Scared : ExpressionType.Angry;
+            }
             else
             {
-                if (pawn.InMentalState) curExpression = ExpressionType.Angry;
+                float rest = pawn.needs?.rest?.CurLevel ?? 1f;
+                float mood = pawn.needs?.mood?.CurLevel ?? 0.5f;
+
+                if (rest < 0.15f)
+                    curExpression = ExpressionType.Tired;
+                else if (mood < 0.2f)
+                    curExpression = ExpressionType.Sad;
+                else if (mood > 0.8f)
+                    curExpression = ExpressionType.Happy;
                 else
-                {
-                    float mood = pawn.needs?.mood?.CurLevel ?? 0.5f;
-                    if (mood < 0.2f) curExpression = ExpressionType.Sad;
-                    else if (mood > 0.8f) curExpression = ExpressionType.Happy;
-                    else curExpression = ExpressionType.Neutral;
-                }
+                    curExpression = ExpressionType.Neutral;
             }
 
             if (oldExp != curExpression)
-            {
                 RequestRenderRefresh();
-            }
         }
 
         private void UpdateBlinkLogic()
@@ -133,7 +169,9 @@ namespace CharacterStudio.Core
             }
             else
             {
-                if (Rand.Value < 0.008f)
+                // 优化：眨眼概率检测由每 Tick 降低为每 10 Tick（约 0.17s）一次，
+                // 调整概率保持等效眨眼频率（0.008 * 60 ≈ 0.08/s → 0.08 * 10 = 约0.08s触发间隔不变）
+                if (Pawn!.IsHashIntervalTick(10) && Rand.Value < 0.08f)
                 {
                     blinkTimer = BlinkDuration;
                     RequestRenderRefresh();

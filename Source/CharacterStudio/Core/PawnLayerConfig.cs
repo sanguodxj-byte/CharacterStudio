@@ -60,17 +60,24 @@ namespace CharacterStudio.Core
         /// <summary>图形类类型（如 Graphic_Multi, Graphic_Single）</summary>
         public Type? graphicClass;
 
-        /// <summary>着色器类型定义（可选）</summary>
+        /// <summary>
+        /// [废弃] 保留字段，仅供旧版 XML 反序列化兼容使用，运行时不读取。
+        /// 请使用 <see cref="shaderDefName"/> 指定 Shader。
+        /// </summary>
+        [Obsolete("Use shaderDefName instead. This field exists only for backward XML compatibility.")]
         public string? shaderTypeDef = null;
 
-        /// <summary>着色器名称（用于 ShaderDatabase 加载）</summary>
+        /// <summary>着色器名称（用于 ShaderDatabase.LoadShader 加载，如 "Cutout", "CutoutComplex"）</summary>
         public string shaderDefName = "Cutout";
 
         /// <summary>颜色来源</summary>
         public LayerColorSource colorSource = LayerColorSource.Fixed;
 
-        /// <summary>颜色类型 (旧版兼容)</summary>
-        [Obsolete("Use colorSource instead")]
+        /// <summary>
+        /// [废弃] 旧版颜色类型桥接属性，将旧 LayerColorType 枚举映射到 colorSource。
+        /// 保留仅为已存储皮肤的 XML 反序列化兼容，新代码请直接读写 <see cref="colorSource"/>。
+        /// </summary>
+        [Obsolete("Use colorSource instead. This property exists only for backward XML compatibility.")]
         public LayerColorType colorType
         {
             get => (LayerColorType)(int)colorSource;

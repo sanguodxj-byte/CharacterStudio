@@ -17,6 +17,12 @@ namespace CharacterStudio.Core
         public List<string> sourcePaths;
         public List<string> sourceTags;
         public BaseAppearanceConfig baseAppearance;
+        /// <summary>
+        /// true 表示数据来自角色已有的 CS 皮肤（直接克隆），
+        /// 此时 sourceTags 存储的是旧皮肤的 hiddenTags 而非渲染树推断结果，
+        /// 调用方不应再用它做 shouldHideVanilla* 启发式推断。
+        /// </summary>
+        public bool isFromExistingSkin;
     }
 
     /// <summary>
@@ -63,7 +69,9 @@ namespace CharacterStudio.Core
                     if (hasExistingLayers || hasExistingBaseAppearance)
                     {
                         Log.Message($"[CharacterStudio] 检测到 {pawn.LabelShort} 已有 CS 皮肤配置，直接导入现有配置");
-                        return ImportFromExistingSkin(compSkin.ActiveSkin);
+                        var existingResult = ImportFromExistingSkin(compSkin.ActiveSkin);
+                        existingResult.isFromExistingSkin = true;
+                        return existingResult;
                     }
                 }
                 
@@ -74,11 +82,19 @@ namespace CharacterStudio.Core
                     return result;
                 }
 
-                int index = 0;
-                var allPaths = new List<string>();
-                var allTags = new List<string>();
-                var rawLayers = new List<PawnLayerConfig>();
-                ProcessSnapshotNode(snapshot, "Root", "", rawLayers, allPaths, allTags, result.baseAppearance, ref index, pawn);
+                var ctx = new ImportContext
+                {
+                    rawLayers      = new List<PawnLayerConfig>(),
+                    allPaths       = new List<string>(),
+                    allTags        = new List<string>(),
+                    baseAppearance = result.baseAppearance,
+                    index          = 0,
+                    pawn           = pawn
+                };
+                ProcessSnapshotNode(snapshot, "Root", "", ctx);
+                var rawLayers = ctx.rawLayers;
+                var allPaths  = ctx.allPaths;
+                var allTags   = ctx.allTags;
                 
                 bool hasImportedBaseAppearance = result.baseAppearance.EnabledSlots().Any();
                 if (rawLayers.Count == 0 && !hasImportedBaseAppearance)
@@ -148,8 +164,32 @@ namespace CharacterStudio.Core
             }
         }
 
-        private static void ProcessSnapshotNode(RenderNodeSnapshot node, string parentAnchorTag, string? parentAnchorPath, List<PawnLayerConfig> layers, List<string> sourcePaths, List<string> sourceTags, BaseAppearanceConfig baseAppearance, ref int index, Pawn? pawn)
+        // ─────────────────────────────────────────────
+        // 导入上下文（替代9参数递归）
+        // ─────────────────────────────────────────────
+
+        private sealed class ImportContext
         {
+            public List<PawnLayerConfig> rawLayers      = null!;
+            public List<string>          allPaths       = null!;
+            public List<string>          allTags        = null!;
+            public BaseAppearanceConfig  baseAppearance = null!;
+            public int                   index;
+            public Pawn?                 pawn;
+        }
+
+        private static void ProcessSnapshotNode(
+            RenderNodeSnapshot node,
+            string parentAnchorTag,
+            string? parentAnchorPath,
+            ImportContext ctx)
+        {
+            // 将字段解包为局部变量，减少 ctx.xxx 的噪声
+            var layers        = ctx.rawLayers;
+            var sourcePaths   = ctx.allPaths;
+            var sourceTags    = ctx.allTags;
+            var baseAppearance= ctx.baseAppearance;
+            var pawn          = ctx.pawn;
             if (node == null) return;
 
             string currentAnchor = parentAnchorTag;
@@ -231,9 +271,9 @@ namespace CharacterStudio.Core
                         // 修正 Color Two: 如果第一颜色是 Hair，且第二颜色是 Fixed，尝试绑定到 Hair
                         if (detectedSource == LayerColorSource.PawnHair && detectedSourceTwo == LayerColorSource.Fixed && pawn?.story != null)
                         {
-                            // 如果第二颜色和头发颜色差异不是极大 (容差 0.3)，则认为是头发
-                            // 这解决了 Miho 尾巴末端颜色略有不同的问题
-                            if (IsColorSimilar(effectiveColorTwo, pawn.story.HairColor, 0.3f))
+                            // 容差 0.15：比默认 0.01 宽松以兼容 HAR 尾巴末端颜色偏差，
+                            // 但不超过 0.2 以避免将差异较大的固定色误判为发色。
+                            if (IsColorSimilar(effectiveColorTwo, pawn.story.HairColor, 0.15f))
                             {
                                 detectedSourceTwo = LayerColorSource.PawnHair;
                             }
@@ -273,7 +313,7 @@ namespace CharacterStudio.Core
 
                 var layer = new PawnLayerConfig
                 {
-                    layerName = GenerateLayerName(node, index),
+                    layerName = GenerateLayerName(node, ctx.index),
                     texPath = node.texPath,
                     anchorTag = parentAnchorTag,
                     anchorPath = string.IsNullOrEmpty(parentAnchorPath) ? "Root" : (parentAnchorPath ?? "Root"),
@@ -307,7 +347,7 @@ namespace CharacterStudio.Core
                         sourceTags.Add(node.tagDefName);
                     }
                 }
-                index++;
+                ctx.index++;
             }
 
             if (!string.IsNullOrEmpty(node.tagDefName) && node.tagDefName != "Untagged" && !ExcludedTags.Contains(node.tagDefName))
@@ -328,7 +368,7 @@ namespace CharacterStudio.Core
             {
                 foreach (var child in node.children)
                 {
-                    ProcessSnapshotNode(child, currentAnchor, node.uniqueNodePath, layers, sourcePaths, sourceTags, baseAppearance, ref index, pawn);
+                    ProcessSnapshotNode(child, currentAnchor, node.uniqueNodePath, ctx);
                 }
             }
         }
@@ -503,8 +543,7 @@ namespace CharacterStudio.Core
             slot.texPath = node.texPath ?? string.Empty;
             slot.maskTexPath = node.maskPath ?? string.Empty;
             slot.shaderDefName = simpleShaderName;
-            slot.colorSource = DetectColorSource(node, pawn);
-            slot.colorSource = colorSrc;
+            slot.colorSource = colorSrc; // 修复：移除之前重复的 DetectColorSource 调用
             slot.customColor = customColor;
             slot.colorTwoSource = LayerColorSource.PawnSkin;
             slot.customColorTwo = Color.white;

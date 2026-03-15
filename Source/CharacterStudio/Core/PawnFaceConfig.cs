@@ -14,10 +14,10 @@ namespace CharacterStudio.Core
         Happy,      // 快乐
         Sad,        // 悲伤
         Angry,      // 愤怒
-        Scared,     // 恐惧
-        Pain,       // 痛苦
-        Shock,      // 震惊
-        Tired,      // 疲劳
+        Scared,     // 恐惧（逃跑/恐慌精神状态）
+        Pain,       // 痛苦（倒地）
+        Shock,      // 震惊（保留，可由外部触发器设置）
+        Tired,      // 疲劳（休息值极低）
         Eating,     // 进食
         Sleeping,   // 睡眠（闭眼）
         Blink,      // 眨眼
@@ -37,41 +37,55 @@ namespace CharacterStudio.Core
 
     /// <summary>
     /// 完整的面部表情配置
-    /// 
+    ///
     /// 设计思路：通过切换整张头部贴图来实现表情变化。
     /// 不再操控眼睛、嘴巴、眉毛等子节点（这些节点在启用 Head 槽位时会被隐藏）。
     /// 表情贴图应包含该表情下完整的面部五官。
-    /// 
-    /// 用法示例：
-    ///   Neutral  -> head_neutral.png  （平静，含正常五官）
-    ///   Sleeping -> head_sleeping.png （睡眠，含闭眼）
-    ///   Dead     -> head_dead.png     （死亡状态）
-    ///   其余未配置表情 -> 自动回退到 Neutral
+    ///
+    /// 性能优化：内部维护 Dictionary 缓存，GetTexPath 为 O(1) 查找。
+    /// 写操作（SetTexPath）同时更新列表与字典保持一致。
     /// </summary>
     public class PawnFaceConfig
     {
         public bool enabled = false;
 
-        /// <summary>各表情对应的头部贴图路径列表</summary>
+        /// <summary>各表情对应的头部贴图路径列表（XML 序列化用）</summary>
         public List<ExpressionTexPath> expressions = new List<ExpressionTexPath>();
 
+        // Dictionary 缓存，首次 GetTexPath 时懒初始化
+        private Dictionary<ExpressionType, string>? _lookupCache;
+
+        private Dictionary<ExpressionType, string> GetLookup()
+        {
+            if (_lookupCache != null) return _lookupCache;
+
+            _lookupCache = new Dictionary<ExpressionType, string>();
+            foreach (var e in expressions)
+            {
+                if (!string.IsNullOrEmpty(e.texPath))
+                    _lookupCache[e.expression] = e.texPath;
+            }
+            return _lookupCache;
+        }
+
+        private void InvalidateLookup() => _lookupCache = null;
+
         /// <summary>
-        /// 获取指定表情的贴图路径
-        /// 未找到时回退到 Neutral；Neutral 也未配置则返回空字符串（原版渲染保持不变）
+        /// 获取指定表情的贴图路径（O(1)）。
+        /// 未找到时回退到 Neutral；Neutral 也未配置则返回空字符串（原版渲染保持不变）。
         /// </summary>
         public string GetTexPath(ExpressionType expression)
         {
-            var match = expressions.Find(e => e.expression == expression);
-            if (match != null && !string.IsNullOrEmpty(match.texPath))
-                return match.texPath;
+            var lookup = GetLookup();
+
+            if (lookup.TryGetValue(expression, out string path) && !string.IsNullOrEmpty(path))
+                return path;
 
             // 回退到 Neutral
-            if (expression != ExpressionType.Neutral)
-            {
-                var neutral = expressions.Find(e => e.expression == ExpressionType.Neutral);
-                if (neutral != null && !string.IsNullOrEmpty(neutral.texPath))
-                    return neutral.texPath;
-            }
+            if (expression != ExpressionType.Neutral
+                && lookup.TryGetValue(ExpressionType.Neutral, out string neutralPath)
+                && !string.IsNullOrEmpty(neutralPath))
+                return neutralPath;
 
             return string.Empty;
         }
@@ -84,13 +98,14 @@ namespace CharacterStudio.Core
                 existing.texPath = texPath;
             else
                 expressions.Add(new ExpressionTexPath { expression = expression, texPath = texPath });
+
+            // 使缓存失效，下次 GetTexPath 时重建
+            InvalidateLookup();
         }
 
         /// <summary>是否配置了任何表情贴图</summary>
         public bool HasAnyExpression()
-        {
-            return expressions.Exists(e => !string.IsNullOrEmpty(e.texPath));
-        }
+            => expressions.Exists(e => !string.IsNullOrEmpty(e.texPath));
 
         public PawnFaceConfig Clone()
         {
@@ -100,9 +115,10 @@ namespace CharacterStudio.Core
                 clone.expressions.Add(new ExpressionTexPath
                 {
                     expression = exp.expression,
-                    texPath = exp.texPath
+                    texPath    = exp.texPath
                 });
             }
+            // clone 的 _lookupCache 保持 null，首次使用时懒初始化
             return clone;
         }
     }

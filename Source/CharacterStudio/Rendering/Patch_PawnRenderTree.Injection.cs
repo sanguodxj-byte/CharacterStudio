@@ -29,6 +29,12 @@ namespace CharacterStudio.Rendering
             if (skinDef != null)
             {
                 ProcessVanillaHiding(tree, skinDef, skinDef.hideVanillaHead, skinDef.hideVanillaHair, out _);
+
+                // 修复：恢复与 TrySetupGraphIfNeeded_Postfix 相同的调用顺序：
+                // BaseAppearance 覆写必须在自定义图层注入之前，
+                // 否则手动刷新后槽位贴图（Body/Head/Hair）会丢失。
+                ApplyBaseAppearanceOverrides(tree, pawn, skinDef);
+
                 bool anyNodesInjected = InjectCustomLayers(tree, pawn, skinDef);
 
                 if (anyNodesInjected && IsGraphicsReadyForVanillaNodes(tree))

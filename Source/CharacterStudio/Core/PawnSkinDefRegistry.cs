@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -19,17 +19,10 @@ namespace CharacterStudio.Core
         private static bool loaded;
         private static bool loading;
 
-        static PawnSkinDefRegistry()
-        {
-            try
-            {
-                LoadFromConfig();
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"[CharacterStudio] 初始化 PawnSkinDefRegistry 失败: {ex}");
-            }
-        }
+        // 静态构造器故意留空：初始化时机由 ModEntryPoint 统一控制（调用 LoadFromConfig），
+        // 避免与 [StaticConstructorOnStartup] 触发的构造器产生双重加载。
+        // TryGet / RegisterOrReplace 内部已有懒加载守卫，可安全调用。
+        static PawnSkinDefRegistry() { }
 
         public static IEnumerable<PawnSkinDef> AllRuntimeDefs => runtimeDefsByName.Values;
 
@@ -174,91 +167,57 @@ namespace CharacterStudio.Core
             return def;
         }
 
+        /// <summary>
+        /// 将 source 的所有内容覆写到 target，保留 target 的 defName / defNameHash / modContentPack。
+        /// 使用 Clone() 实现，避免手工字段列举遗漏新增字段的风险。
+        /// </summary>
         private static void OverwriteDefContent(PawnSkinDef target, PawnSkinDef source)
         {
-            target.label = source.label;
-            target.description = source.description;
-            target.hideVanillaHead = source.hideVanillaHead;
-            target.hideVanillaHair = source.hideVanillaHair;
-            target.hideVanillaBody = source.hideVanillaBody;
-            target.hideVanillaApparel = source.hideVanillaApparel;
-            target.humanlikeOnly = source.humanlikeOnly;
-            target.author = source.author;
-            target.version = source.version;
-            target.previewTexPath = source.previewTexPath;
-            target.attributes = source.attributes?.Clone() ?? new CharacterStudio.AI.CharacterAttributeProfile();
+            // 保存需要保持不变的标识字段
+            string savedDefName      = target.defName;
+            int    savedDefNameHash  = target.shortHash;
 
-            target.abilityHotkeys = source.abilityHotkeys?.Clone() ?? new SkinAbilityHotkeyConfig();
+            // 用 Clone 复制所有内容字段（包括未来新增的字段）
+            var cloned = source.Clone();
+
+            // 将 clone 的所有字段反写到 target（逐字段赋值保持对象引用不变，
+            // 因为 DefDatabase / runtimeDefsByName 持有 target 的引用）
+            target.label            = cloned.label;
+            target.description      = cloned.description;
+            target.hideVanillaHead  = cloned.hideVanillaHead;
+            target.hideVanillaHair  = cloned.hideVanillaHair;
+            target.hideVanillaBody  = cloned.hideVanillaBody;
+            target.hideVanillaApparel= cloned.hideVanillaApparel;
+            target.humanlikeOnly    = cloned.humanlikeOnly;
+            target.author           = cloned.author;
+            target.version          = cloned.version;
+            target.previewTexPath   = cloned.previewTexPath;
+            target.attributes       = cloned.attributes;
+            target.abilityHotkeys   = cloned.abilityHotkeys;
+            target.faceConfig       = cloned.faceConfig;
+            target.baseAppearance   = cloned.baseAppearance;
 
             target.abilities.Clear();
-            if (source.abilities != null)
-            {
-                foreach (var ability in source.abilities)
-                {
-                    if (ability != null)
-                    {
-                        target.abilities.Add(ability.Clone());
-                    }
-                }
-            }
+            target.abilities.AddRange(cloned.abilities);
 
             target.layers.Clear();
-            if (source.layers != null)
-            {
-                foreach (var layer in source.layers)
-                {
-                    target.layers.Add(layer.Clone());
-                }
-            }
+            target.layers.AddRange(cloned.layers);
 
             target.targetRaces.Clear();
-            if (source.targetRaces != null)
-            {
-                target.targetRaces.AddRange(source.targetRaces);
-            }
+            target.targetRaces.AddRange(cloned.targetRaces);
 
             target.hiddenPaths.Clear();
-            if (source.hiddenPaths != null)
-            {
-                target.hiddenPaths.AddRange(source.hiddenPaths);
-            }
+            target.hiddenPaths.AddRange(cloned.hiddenPaths);
 
-            #pragma warning disable CS0618
+#pragma warning disable CS0618
             target.hiddenTags.Clear();
-            if (source.hiddenTags != null)
-            {
-                target.hiddenTags.AddRange(source.hiddenTags);
-            }
-            #pragma warning restore CS0618
+            target.hiddenTags.AddRange(cloned.hiddenTags);
+#pragma warning restore CS0618
 
-            if (target.faceConfig == null)
-            {
-                target.faceConfig = new PawnFaceConfig();
-            }
-            CopyFaceConfig(target.faceConfig, source.faceConfig);
-        }
-
-        private static void CopyFaceConfig(PawnFaceConfig target, PawnFaceConfig? source)
-        {
-            if (source == null)
-            {
-                target.enabled = false;
-                target.expressions.Clear();
-                return;
-            }
-
-            target.enabled = source.enabled;
-            target.expressions.Clear();
-
-            if (source.expressions == null) return;
-            foreach (var expr in source.expressions)
-            {
-                target.expressions.Add(new ExpressionTexPath
-                {
-                    expression = expr.expression,
-                    texPath = expr.texPath
-                });
-            }
+            // 恢复标识字段（不能被 Clone 覆盖）
+            target.defName   = savedDefName;
+            target.shortHash = (ushort)savedDefNameHash;
         }
     }
 }
+

@@ -79,6 +79,9 @@ namespace CharacterStudio
                 // 应用 Pawn Gizmo 补丁（外观更换按钮）
                 UI.Patch_PawnGizmos.Apply(HarmonyInstance);
 
+                // 应用技能 Gizmo 补丁（皮肤技能按钮）
+                UI.Patch_AbilityGizmos.Apply(HarmonyInstance);
+
                 Log.Message("[CharacterStudio] 所有补丁已应用");
             }
             catch (System.Exception ex)

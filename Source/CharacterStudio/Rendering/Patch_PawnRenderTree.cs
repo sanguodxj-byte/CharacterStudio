@@ -311,6 +311,15 @@ namespace CharacterStudio.Rendering
             return IsNodeGraphicsReadyRecursive(tree.rootNode);
         }
 
+        // 贴图路径排除列表：这些路径表示节点图形尚未就绪（占位符或烟雾特效）。
+        // 可在此扩展，无需修改检测逻辑。
+        private static readonly HashSet<string> GraphicsNotReadyPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "Things/Mote/Smoke",
+        };
+
+        private static readonly string[] GraphicsNotReadySuffixes = { "/Blank" };
+
         private static bool IsNodeGraphicsReadyRecursive(PawnRenderNode node)
         {
             if (node == null) return true;
@@ -323,10 +332,11 @@ namespace CharacterStudio.Rendering
                     if (g == null) return false;
 
                     string path = g.path ?? string.Empty;
-                    if (path.Equals("Miho/Blank", StringComparison.OrdinalIgnoreCase) ||
-                        path.EndsWith("/Blank", StringComparison.OrdinalIgnoreCase) ||
-                        path.Equals("Things/Mote/Smoke", StringComparison.OrdinalIgnoreCase))
+                    if (GraphicsNotReadyPaths.Contains(path))
                         return false;
+                    foreach (var suffix in GraphicsNotReadySuffixes)
+                        if (path.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+                            return false;
                 }
                 catch { return false; }
             }

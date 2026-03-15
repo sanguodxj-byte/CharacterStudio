@@ -93,6 +93,9 @@ namespace CharacterStudio.UI
 
             currentRace = raceDef;
             DestroyMannequin();
+            // 清空文件修改时间缓存：新人偶的贴图路径集合与旧人偶不同，
+            // 旧路径残留会导致字典无限增长（内存泄漏）。
+            fileModificationTimes.Clear();
             CreateMannequin();
             needsRefresh = true;
         }
@@ -162,14 +165,11 @@ namespace CharacterStudio.UI
 
             try
             {
+                // ApplySkinToPawn 内部已通过 ForceRebuildRenderTree → SetAllGraphicsDirty
+                // 完成一次完整刷新，此处不再重复调用，避免同帧三重刷新。
                 if (!PawnSkinRuntimeUtility.ApplySkinToPawn(mannequinPawn, skinDef))
-                {
                     return;
-                }
 
-                // 刷新渲染 (强制 PortraitsCache 更新)
-                mannequinPawn.Drawer.renderer.SetAllGraphicsDirty();
-                PortraitsCache.SetDirty(mannequinPawn);
                 needsRefresh = true;
             }
             catch (Exception ex)

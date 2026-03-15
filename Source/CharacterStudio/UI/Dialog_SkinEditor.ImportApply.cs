@@ -141,7 +141,9 @@ namespace CharacterStudio.UI
                 var p = pawn;
                 options.Add(new FloatMenuOption(
                     $"{p.LabelShort} ({p.kindDef.label})",
-                    () => DoImportFromPawn(p, p, p.def, p.LabelShort, false)
+                    // replaceTargetRaces=true：从地图角色导入时自动将其种族写入 targetRaces，
+                    // 确保后续 IsValidForPawn 能正确匹配回该角色。
+                    () => DoImportFromPawn(p, p, p.def, p.LabelShort, true)
                 ));
             }
 
@@ -254,32 +256,50 @@ namespace CharacterStudio.UI
             var sourceTags = importResult.sourceTags;
             var importedBaseAppearance = importResult.baseAppearance ?? new BaseAppearanceConfig();
 
-            bool hasImportedBodySlot = importedBaseAppearance.EnabledSlots().Any(slot => slot.slotType == BaseAppearanceSlotType.Body);
-            bool hasImportedHeadSlot = importedBaseAppearance.EnabledSlots().Any(slot =>
-                slot.slotType == BaseAppearanceSlotType.Head
-                );
-            bool hasImportedHairSlot = importedBaseAppearance.EnabledSlots().Any(slot =>
-                slot.slotType == BaseAppearanceSlotType.Hair
-                || slot.slotType == BaseAppearanceSlotType.Beard);
+            bool shouldHideVanillaBody;
+            bool shouldHideVanillaHead;
+            bool shouldHideVanillaHair;
 
-            bool shouldHideVanillaBody = hasImportedBodySlot
-                || sourceTags.Any(tag =>
-                    !string.IsNullOrEmpty(tag) && tag.IndexOf("Body", StringComparison.OrdinalIgnoreCase) >= 0)
-                || layers.Any(layer =>
-                    !string.IsNullOrEmpty(layer.anchorTag) && layer.anchorTag.IndexOf("Body", StringComparison.OrdinalIgnoreCase) >= 0);
+            if (importResult.isFromExistingSkin)
+            {
+                // 数据来自已有 CS 皮肤的直接克隆：sourceTags 存储的是旧皮肤的 hiddenTags，
+                // 不应再作为启发式依据重新推断 hideVanilla* 标志，直接沿用原皮肤的值。
+                var existingComp = pawn.GetComp<CharacterStudio.Core.CompPawnSkin>();
+                var existingSkin = existingComp?.ActiveSkin;
+                shouldHideVanillaBody = existingSkin?.hideVanillaBody ?? false;
+                shouldHideVanillaHead = existingSkin?.hideVanillaHead ?? false;
+                shouldHideVanillaHair = existingSkin?.hideVanillaHair ?? false;
+            }
+            else
+            {
+                // 数据来自渲染树快照：用启发式规则推断需要隐藏的原版节点。
+                bool hasImportedBodySlot = importedBaseAppearance.EnabledSlots().Any(slot => slot.slotType == BaseAppearanceSlotType.Body);
+                bool hasImportedHeadSlot = importedBaseAppearance.EnabledSlots().Any(slot =>
+                    slot.slotType == BaseAppearanceSlotType.Head);
+                bool hasImportedHairSlot = importedBaseAppearance.EnabledSlots().Any(slot =>
+                    slot.slotType == BaseAppearanceSlotType.Hair
+                    || slot.slotType == BaseAppearanceSlotType.Beard);
 
-            bool shouldHideVanillaHead = hasImportedHeadSlot
-                || sourceTags.Any(tag =>
-                    !string.IsNullOrEmpty(tag) && tag.IndexOf("Head", StringComparison.OrdinalIgnoreCase) >= 0)
-                || layers.Any(layer =>
-                    !string.IsNullOrEmpty(layer.anchorTag) && layer.anchorTag.IndexOf("Head", StringComparison.OrdinalIgnoreCase) >= 0);
+                shouldHideVanillaBody = hasImportedBodySlot
+                    || sourceTags.Any(tag =>
+                        !string.IsNullOrEmpty(tag) && tag.IndexOf("Body", StringComparison.OrdinalIgnoreCase) >= 0)
+                    || layers.Any(layer =>
+                        !string.IsNullOrEmpty(layer.anchorTag) && layer.anchorTag.IndexOf("Body", StringComparison.OrdinalIgnoreCase) >= 0);
 
-            bool shouldHideVanillaHair = hasImportedHairSlot
-                || sourceTags.Any(tag =>
-                    !string.IsNullOrEmpty(tag) && (tag.IndexOf("Hair", StringComparison.OrdinalIgnoreCase) >= 0 || tag.IndexOf("Beard", StringComparison.OrdinalIgnoreCase) >= 0))
-                || layers.Any(layer =>
-                    !string.IsNullOrEmpty(layer.anchorTag) && (layer.anchorTag.IndexOf("Hair", StringComparison.OrdinalIgnoreCase) >= 0 || layer.anchorTag.IndexOf("Beard", StringComparison.OrdinalIgnoreCase) >= 0));
+                shouldHideVanillaHead = hasImportedHeadSlot
+                    || sourceTags.Any(tag =>
+                        !string.IsNullOrEmpty(tag) && tag.IndexOf("Head", StringComparison.OrdinalIgnoreCase) >= 0)
+                    || layers.Any(layer =>
+                        !string.IsNullOrEmpty(layer.anchorTag) && layer.anchorTag.IndexOf("Head", StringComparison.OrdinalIgnoreCase) >= 0);
 
+                shouldHideVanillaHair = hasImportedHairSlot
+                    || sourceTags.Any(tag =>
+                        !string.IsNullOrEmpty(tag) && (tag.IndexOf("Hair", StringComparison.OrdinalIgnoreCase) >= 0 || tag.IndexOf("Beard", StringComparison.OrdinalIgnoreCase) >= 0))
+                    || layers.Any(layer =>
+                        !string.IsNullOrEmpty(layer.anchorTag) && (layer.anchorTag.IndexOf("Hair", StringComparison.OrdinalIgnoreCase) >= 0 || layer.anchorTag.IndexOf("Beard", StringComparison.OrdinalIgnoreCase) >= 0));
+            }
+
+            // sourceLabel 在从地图 Pawn 导入时已由调用方提供，此处直接使用
             string resolvedSourceLabel = sourceLabel ?? pawn.LabelShort;
             if (layers.Count == 0 && !importedBaseAppearance.EnabledSlots().Any())
             {
