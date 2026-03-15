@@ -62,6 +62,26 @@ namespace CharacterStudio.UI
             }
         }
 
+        public override void PreClose()
+        {
+            base.PreClose();
+            // 当能力编辑器关闭时，自动将当前修改同步回皮肤对象
+            if (boundSkin != null)
+            {
+                boundSkin.abilities.Clear();
+                if (abilities != null)
+                {
+                    foreach (var ability in abilities)
+                    {
+                        if (ability != null)
+                        {
+                            boundSkin.abilities.Add(ability.Clone());
+                        }
+                    }
+                }
+            }
+        }
+
         public override void DoWindowContents(Rect inRect)
         {
             Text.Font = GameFont.Medium;

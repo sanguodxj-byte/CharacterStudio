@@ -92,9 +92,6 @@ namespace CharacterStudio.Core
         /// <summary>是否可见</summary>
         public bool visible = true;
 
-        /// <summary>面部组件类型（仅当 workerClass 为 FaceComponent 时使用）</summary>
-        public FaceComponentType faceComponent = FaceComponentType.Eyes;
-
         /// <summary>动画类型</summary>
         public LayerAnimationType animationType = LayerAnimationType.None;
 
@@ -145,7 +142,6 @@ namespace CharacterStudio.Core
                 customColorTwo = this.customColorTwo,
                 maskTexPath = this.maskTexPath,
                 visible = this.visible,
-                faceComponent = this.faceComponent,
                 animationType = this.animationType,
                 animFrequency = this.animFrequency,
                 animAmplitude = this.animAmplitude,

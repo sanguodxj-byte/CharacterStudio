@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+  特殊角色特质定义 / Special Character Trait Definitions
+  
+  特质定义角色的独特个性特征，有正面和负面效果。
+  Traits define unique personality characteristics with positive and negative effects.
+  
+  参考 / Reference:
+  - RimWorld Core: Traits.xml
+-->
+<Defs>
+
+    <!-- ========================================
+         示例特质 / Example Traits
+         ======================================== -->
+    
+    <!-- 
+    <TraitDef>
+        <defName>SpecialTrait_Example</defName>
+        <commonality>0.5</commonality>
+        <degreeDatas>
+            <li>
+                <label>Example Trait</label>
+                <description>[PAWN_nameDef] has a special trait that makes [PAWN_objective] unique.</description>
+                <statOffsets>
+                    <MoveSpeed>0.1</MoveSpeed>
+                    <WorkSpeedGlobal>0.05</WorkSpeedGlobal>
+                </statOffsets>
+                <skillGains>
+                    <li>
+                        <key>Shooting</key>
+                        <value>2</value>
+                    </li>
+                </skillGains>
+            </li>
+        </degreeDatas>
+        <conflictingTraits>
+            <li>SpeedOffset</li>
+        </conflictingTraits>
+        <requiredWorkTags>
+            <li>Violent</li>
+        </requiredWorkTags>
+    </TraitDef>
+    -->
+
+</Defs>

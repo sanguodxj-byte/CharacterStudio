@@ -166,22 +166,12 @@ namespace CharacterStudio.Exporter
                 }
             }
 
-            if (skinDef.faceConfig?.components != null)
+            if (skinDef.faceConfig?.expressions != null)
             {
-                foreach (var component in skinDef.faceConfig.components)
+                foreach (var expression in skinDef.faceConfig.expressions)
                 {
-                    if (component?.expressions == null)
+                    if (expression != null)
                     {
-                        continue;
-                    }
-
-                    foreach (var expression in component.expressions)
-                    {
-                        if (expression == null)
-                        {
-                            continue;
-                        }
-
                         yield return expression.texPath;
                     }
                 }

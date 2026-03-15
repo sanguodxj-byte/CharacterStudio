@@ -243,30 +243,21 @@ namespace CharacterStudio.Core
             if (source == null)
             {
                 target.enabled = false;
-                target.components.Clear();
+                target.expressions.Clear();
                 return;
             }
 
             target.enabled = source.enabled;
-            target.components.Clear();
+            target.expressions.Clear();
 
-            if (source.components == null) return;
-
-            foreach (var component in source.components)
+            if (source.expressions == null) return;
+            foreach (var expr in source.expressions)
             {
-                var compClone = new FaceComponentMapping { type = component.type };
-                if (component.expressions != null)
+                target.expressions.Add(new ExpressionTexPath
                 {
-                    foreach (var expr in component.expressions)
-                    {
-                        compClone.expressions.Add(new ExpressionTexPath
-                        {
-                            expression = expr.expression,
-                            texPath = expr.texPath
-                        });
-                    }
-                }
-                target.components.Add(compClone);
+                    expression = expr.expression,
+                    texPath = expr.texPath
+                });
             }
         }
     }

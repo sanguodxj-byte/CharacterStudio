@@ -53,6 +53,12 @@ namespace CharacterStudio.UI
             tempWComboAbilityDefName = skin.abilityHotkeys?.wComboAbilityDefName ?? "";
         }
 
+        public override void PreClose()
+        {
+            base.PreClose();
+            ApplyChanges();
+        }
+
         public override void DoWindowContents(Rect inRect)
         {
             Text.Font = GameFont.Medium;
@@ -117,13 +123,7 @@ namespace CharacterStudio.UI
             float btnWidth = 100f;
             float btnY = inRect.height - 35;
 
-            if (Widgets.ButtonText(new Rect(inRect.width / 2 - btnWidth - 10, btnY, btnWidth, 30), "CS_Studio_Btn_OK".Translate()))
-            {
-                ApplyChanges();
-                Close();
-            }
-
-            if (Widgets.ButtonText(new Rect(inRect.width / 2 + 10, btnY, btnWidth, 30), "CS_Studio_Btn_Cancel".Translate()))
+            if (Widgets.ButtonText(new Rect(inRect.width / 2 - btnWidth / 2, btnY, btnWidth, 30), "CS_Studio_Btn_OK".Translate()))
             {
                 Close();
             }

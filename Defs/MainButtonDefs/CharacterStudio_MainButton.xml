@@ -2,8 +2,7 @@
 <Defs>
   <MainButtonDef>
     <defName>CharacterStudio</defName>
-    <label>CS_MainButton_CharacterStudio_Label</label>
-    <description>CS_MainButton_CharacterStudio_Desc</description>
+    <label>Character Studio</label>
     <tabWindowClass>CharacterStudio.UI.MainTabWindow_CharacterStudio</tabWindowClass>
     <order>560</order>
   </MainButtonDef>

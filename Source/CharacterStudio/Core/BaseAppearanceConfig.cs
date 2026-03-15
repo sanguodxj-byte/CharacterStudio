@@ -6,17 +6,17 @@ using Verse;
 
 namespace CharacterStudio.Core
 {
+    /// <summary>
+    /// 基础外观槽位类型
+    /// 只覆盖原版渲染树中有明确 tag 的顶层节点：Body / Head / Hair / Beard
+    /// 面部表情（眼睛、嘴、眉毛等）通过 PawnFaceConfig 以整张头部贴图切换实现
+    /// </summary>
     public enum BaseAppearanceSlotType
     {
         Body,
         Head,
         Hair,
-        Beard,
-        Eyes,
-        Brow,
-        Mouth,
-        Nose,
-        Ear
+        Beard
     }
 
     public class BaseAppearanceSlotConfig
@@ -106,11 +106,8 @@ namespace CharacterStudio.Core
             foreach (var slot in slots)
             {
                 if (slot != null)
-                {
                     clone.slots.Add(slot.Clone());
-                }
             }
-
             clone.EnsureAllSlotsExist();
             return clone;
         }
@@ -119,10 +116,7 @@ namespace CharacterStudio.Core
         {
             EnsureAllSlotsExist();
             var slot = slots.FirstOrDefault(s => s != null && s.slotType == slotType);
-            if (slot != null)
-            {
-                return slot;
-            }
+            if (slot != null) return slot;
 
             slot = new BaseAppearanceSlotConfig { slotType = slotType };
             slots.Add(slot);
@@ -140,9 +134,7 @@ namespace CharacterStudio.Core
             foreach (BaseAppearanceSlotType slotType in Enum.GetValues(typeof(BaseAppearanceSlotType)))
             {
                 if (!slots.Any(s => s != null && s.slotType == slotType))
-                {
                     slots.Add(new BaseAppearanceSlotConfig { slotType = slotType });
-                }
             }
         }
     }

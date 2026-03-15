@@ -257,11 +257,7 @@ namespace CharacterStudio.UI
             bool hasImportedBodySlot = importedBaseAppearance.EnabledSlots().Any(slot => slot.slotType == BaseAppearanceSlotType.Body);
             bool hasImportedHeadSlot = importedBaseAppearance.EnabledSlots().Any(slot =>
                 slot.slotType == BaseAppearanceSlotType.Head
-                || slot.slotType == BaseAppearanceSlotType.Eyes
-                || slot.slotType == BaseAppearanceSlotType.Brow
-                || slot.slotType == BaseAppearanceSlotType.Mouth
-                || slot.slotType == BaseAppearanceSlotType.Nose
-                || slot.slotType == BaseAppearanceSlotType.Ear);
+                );
             bool hasImportedHairSlot = importedBaseAppearance.EnabledSlots().Any(slot =>
                 slot.slotType == BaseAppearanceSlotType.Hair
                 || slot.slotType == BaseAppearanceSlotType.Beard);

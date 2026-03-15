@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+    <name>Special Characters</name>
+    <author>Your Name</author>
+    <modVersion>1.0.0</modVersion>
+    <url>https://github.com/yourname/SpecialCharacters</url>
+    <packageId>YourName.SpecialCharacters</packageId>
+    <supportedVersions>
+        <li>1.5</li>
+        <li>1.6</li>
+    </supportedVersions>
+    <description>特殊角色模组 - 添加独特的可招募角色到游戏中。
+
+每个角色都有独特的背景故事、能力和外观。
+
+Features:
+- 独特的特殊角色
+- 自定义背景故事
+- 专属能力和装备
+- 高质量立绘贴图
+
+功能特点：
+- 独特的特殊角色
+- 自定义背景故事
+- 专属能力和装备
+- 高质量立绘贴图</description>
+    <modDependencies>
+        <li>
+            <packageId>brrainz.harmony</packageId>
+            <displayName>Harmony</displayName>
+        </li>
+    </modDependencies>
+    <loadAfter>
+        <li>brrainz.harmony</li>
+        <li>Ludeon.RimWorld</li>
+        <li>Ludeon.RimWorld.Royalty</li>
+        <li>Ludeon.RimWorld.Ideology</li>
+        <li>Ludeon.RimWorld.Biotech</li>
+        <li>Ludeon.RimWorld.Anomaly</li>
+    </loadAfter>
+</ModMetaData>

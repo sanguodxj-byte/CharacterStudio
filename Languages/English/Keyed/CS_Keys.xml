@@ -148,6 +148,17 @@
     <CS_Studio_Anchor_Head>Head</CS_Studio_Anchor_Head>
     <CS_Studio_Anchor_Body>Body</CS_Studio_Anchor_Body>
     <CS_Studio_Anchor_Hair>Hair</CS_Studio_Anchor_Hair>
+    <CS_Studio_Anchor_Beard>Beard</CS_Studio_Anchor_Beard>
+    <CS_Studio_Anchor_Eyes>Eyes</CS_Studio_Anchor_Eyes>
+    <CS_Studio_Anchor_Brow>Brow</CS_Studio_Anchor_Brow>
+    <CS_Studio_Anchor_Mouth>Mouth</CS_Studio_Anchor_Mouth>
+    <CS_Studio_Anchor_Nose>Nose</CS_Studio_Anchor_Nose>
+    <CS_Studio_Anchor_Ear>Ear</CS_Studio_Anchor_Ear>
+    <CS_Studio_Anchor_Jaw>Jaw</CS_Studio_Anchor_Jaw>
+    <CS_Studio_Anchor_FaceTattoo>Face Tattoo</CS_Studio_Anchor_FaceTattoo>
+    <CS_Studio_Anchor_BodyTattoo>Body Tattoo</CS_Studio_Anchor_BodyTattoo>
+    <CS_Studio_Anchor_Apparel>Apparel</CS_Studio_Anchor_Apparel>
+    <CS_Studio_Anchor_Headgear>Headgear</CS_Studio_Anchor_Headgear>
 
     <!-- Export Dialog -->
     <CS_Studio_Export_Title>Export as Mod</CS_Studio_Export_Title>
@@ -213,6 +224,7 @@
     <CS_Studio_Msg_RedoSuccess>Redid last change</CS_Studio_Msg_RedoSuccess>
     <CS_Studio_Msg_SelectedLayer>Selected: {0}</CS_Studio_Msg_SelectedLayer>
     <CS_Studio_Msg_AddedHiddenTag>Added hidden tag: {0}</CS_Studio_Msg_AddedHiddenTag>
+    <CS_Studio_Msg_ParametersReset>Selected parameters have been reset.</CS_Studio_Msg_ParametersReset>
     
     <!-- New Messages -->
     <CS_Studio_Msg_TreeRefreshed>Render tree refreshed</CS_Studio_Msg_TreeRefreshed>
@@ -249,6 +261,7 @@
     <CS_Studio_Btn_ContinueExport>Export Anyway</CS_Studio_Btn_ContinueExport>
     <CS_Studio_Btn_Edit>Edit</CS_Studio_Btn_Edit>
     <CS_Studio_Btn_ClearShort>Clear</CS_Studio_Btn_ClearShort>
+    <CS_Studio_Btn_Reset>Reset Params</CS_Studio_Btn_Reset>
 
     <!-- Status -->
     <CS_Studio_Status_Edit>EDIT</CS_Studio_Status_Edit>
@@ -303,9 +316,8 @@
     <CS_Appearance_Applied>Applied appearance to {1}: {0}</CS_Appearance_Applied>
     <CS_Appearance_Cleared>Restored default appearance for {0}</CS_Appearance_Cleared>
     <CS_Studio_OpenEditor>Open Skin Editor</CS_Studio_OpenEditor>
-    <CS_MainButton_CharacterStudio_Label>Character Studio</CS_MainButton_CharacterStudio_Label>
-    <CS_MainButton_CharacterStudio_Desc>Open Character Studio from the bottom main menu</CS_MainButton_CharacterStudio_Desc>
- 
+    <CharacterStudio>Character Studio</CharacterStudio>
+
     <!-- Summon Items -->
     <CS_Summon_Use>Summon {0}</CS_Summon_Use>
     <CS_Summon_Success>Successfully summoned: {0}</CS_Summon_Success>

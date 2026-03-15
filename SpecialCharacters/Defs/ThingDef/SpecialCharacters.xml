@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+  特殊角色实体定义 / Special Character Thing Definitions
+  
+  此文件定义角色的基础属性和特性。
+  This file defines the base properties and characteristics of characters.
+  
+  参考 / Reference: 
+  - RimWorld Core: ThingDef_Misc.xml (Pawn definitions)
+-->
+<Defs>
+    
+    <!-- ========================================
+         示例特殊角色模板 / Example Special Character Template
+         ======================================== -->
+    
+    <!-- 
+    <ThingDef ParentName="BasePawn">
+        <defName>SpecialCharacter_Example</defName>
+        <label>Example Character</label>
+        <description>An example special character with unique abilities.</description>
+        <thingClass>Pawn</thingClass>
+        <category>Pawn</category>
+        <selectable>true</selectable>
+        <tickerType>Normal</tickerType>
+        <altitudeLayer>Pawn</altitudeLayer>
+        <useHitPoints>false</useHitPoints>
+        <hasTooltip>true</hasTooltip>
+        <soundImpactDefault>BulletImpact_Flesh</soundImpactDefault>
+        <inspectorTabs>
+            <li>ITab_Pawn_Health</li>
+            <li>ITab_Pawn_Needs</li>
+            <li>ITab_Pawn_Character</li>
+            <li>ITab_Pawn_Training</li>
+            <li>ITab_Pawn_Gear</li>
+            <li>ITab_Pawn_Guest</li>
+            <li>ITab_Pawn_Prisoner</li>
+            <li>ITab_Pawn_Social</li>
+            <li>ITab_Pawn_Log</li>
+        </inspectorTabs>
+        <drawGUIOverlay>true</drawGUIOverlay>
+        <comps>
+            <li>
+                <compClass>CompAttachableThing</compClass>
+            </li>
+        </comps>
+    </ThingDef>
+    -->
+    
+</Defs>

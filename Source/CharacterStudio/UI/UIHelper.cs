@@ -119,8 +119,12 @@ namespace CharacterStudio.UI
         public static void DrawPropertyLabel(ref float y, float width, string label, string value, float labelWidth = LabelWidth)
         {
             Rect rect = new Rect(0, y, width, RowHeight);
-            Widgets.Label(new Rect(rect.x, rect.y, labelWidth, 24), label + ":");
-            Widgets.Label(new Rect(rect.x + labelWidth, rect.y, rect.width - labelWidth, 24), value ?? "");
+            
+            Text.Font = GameFont.Small;
+            float actualLabelWidth = Mathf.Max(labelWidth, Text.CalcSize(label + ":").x + 10f);
+            
+            Widgets.Label(new Rect(rect.x, rect.y, actualLabelWidth, 24), label + ":");
+            Widgets.Label(new Rect(rect.x + actualLabelWidth, rect.y, rect.width - actualLabelWidth, 24), value ?? "");
             y += RowHeight;
         }
 
@@ -130,9 +134,14 @@ namespace CharacterStudio.UI
         public static void DrawPropertyField(ref float y, float width, string label, ref string value, string? tooltip = null, float labelWidth = LabelWidth)
         {
             Rect rect = new Rect(0, y, width, RowHeight);
-            Widgets.Label(new Rect(rect.x, rect.y, labelWidth, 24), label);
             
-            string newValue = Widgets.TextField(new Rect(rect.x + labelWidth, rect.y, rect.width - labelWidth, 24), value ?? "");
+            // 计算标签实际宽度并适当调整，避免重叠
+            Text.Font = GameFont.Small;
+            float actualLabelWidth = Mathf.Max(labelWidth, Text.CalcSize(label).x + 10f);
+            
+            Widgets.Label(new Rect(rect.x, rect.y, actualLabelWidth, 24), label);
+            
+            string newValue = Widgets.TextField(new Rect(rect.x + actualLabelWidth, rect.y, rect.width - actualLabelWidth, 24), value ?? "");
             if (newValue != value)
             {
                 value = SanitizeInput(newValue, 128);
@@ -152,13 +161,18 @@ namespace CharacterStudio.UI
         public static void DrawPropertyFieldWithButton(ref float y, float width, string label, string value, Action onButtonClick, string buttonText = "...", float labelWidth = LabelWidth)
         {
             Rect rect = new Rect(0, y, width, RowHeight);
-            Widgets.Label(new Rect(rect.x, rect.y, labelWidth, 24), label);
             
-            float btnWidth = 30f;
-            float fieldWidth = rect.width - labelWidth - btnWidth - 5;
+            Text.Font = GameFont.Small;
+            float actualLabelWidth = Mathf.Max(labelWidth, Text.CalcSize(label).x + 10f);
             
-            Widgets.Label(new Rect(rect.x + labelWidth, rect.y, fieldWidth, 24), value ?? "(无)");
-            if (Widgets.ButtonText(new Rect(rect.x + labelWidth + fieldWidth + 5, rect.y, btnWidth, 24), buttonText))
+            Widgets.Label(new Rect(rect.x, rect.y, actualLabelWidth, 24), label);
+            
+            Text.Font = GameFont.Small;
+            float btnWidth = Mathf.Max(30f, Text.CalcSize(buttonText).x + 16f);
+            float fieldWidth = rect.width - actualLabelWidth - btnWidth - 5;
+            
+            Widgets.Label(new Rect(rect.x + actualLabelWidth, rect.y, fieldWidth, 24), value ?? "(无)");
+            if (Widgets.ButtonText(new Rect(rect.x + actualLabelWidth + fieldWidth + 5, rect.y, btnWidth, 24), buttonText))
             {
                 onButtonClick?.Invoke();
             }
@@ -167,17 +181,25 @@ namespace CharacterStudio.UI
         }
 
         /// <summary>
-        /// 绘制滑块字段
+        /// 绘制滑块字段（带有文本输入框以便精细调整）
         /// </summary>
         public static void DrawPropertySlider(ref float y, float width, string label, ref float value, float min, float max, string format = "F2", float labelWidth = LabelWidth)
         {
             Rect rect = new Rect(0, y, width, RowHeight);
-            Widgets.Label(new Rect(rect.x, rect.y, labelWidth, 24), label);
             
-            float sliderWidth = rect.width - labelWidth - 50;
-            float newValue = Widgets.HorizontalSlider(new Rect(rect.x + labelWidth, rect.y + 4, sliderWidth, 16), value, min, max);
-            Widgets.Label(new Rect(rect.x + labelWidth + sliderWidth + 5, rect.y, 45, 24), newValue.ToString(format));
+            Text.Font = GameFont.Small;
+            float actualLabelWidth = Mathf.Max(labelWidth, Text.CalcSize(label).x + 10f);
             
+            Widgets.Label(new Rect(rect.x, rect.y, actualLabelWidth, 24), label);
+            
+            float inputWidth = 50f;
+            float sliderWidth = rect.width - actualLabelWidth - inputWidth - 5f;
+            
+            float newValue = Widgets.HorizontalSlider(new Rect(rect.x + actualLabelWidth, rect.y + 4, sliderWidth, 16), value, min, max);
+            
+            string buffer = value.ToString();
+            Widgets.TextFieldNumeric<float>(new Rect(rect.x + actualLabelWidth + sliderWidth + 5, rect.y, inputWidth, 24), ref newValue, ref buffer, min, max);
+
             if (Math.Abs(newValue - value) > 0.0001f)
             {
                 value = newValue;
@@ -192,10 +214,14 @@ namespace CharacterStudio.UI
         public static void DrawNumericField<T>(ref float y, float width, string label, ref T value, float min = 0, float max = 1000000, float labelWidth = LabelWidth) where T : struct
         {
             Rect rect = new Rect(0, y, width, RowHeight);
-            Widgets.Label(new Rect(rect.x, rect.y, labelWidth, 24), label);
+            
+            Text.Font = GameFont.Small;
+            float actualLabelWidth = Mathf.Max(labelWidth, Text.CalcSize(label).x + 10f);
+            
+            Widgets.Label(new Rect(rect.x, rect.y, actualLabelWidth, 24), label);
             
             string buffer = value.ToString();
-            Widgets.TextFieldNumeric<T>(new Rect(rect.x + labelWidth, rect.y, rect.width - labelWidth, 24), ref value, ref buffer, min, max);
+            Widgets.TextFieldNumeric<T>(new Rect(rect.x + actualLabelWidth, rect.y, rect.width - actualLabelWidth, 24), ref value, ref buffer, min, max);
             
             y += RowHeight;
         }
@@ -206,9 +232,13 @@ namespace CharacterStudio.UI
         public static void DrawPropertyDropdown<T>(ref float y, float width, string label, T currentValue, IEnumerable<T> options, Func<T, string> labelMaker, Action<T> onSelect, float labelWidth = LabelWidth)
         {
             Rect rect = new Rect(0, y, width, RowHeight);
-            Widgets.Label(new Rect(rect.x, rect.y, labelWidth, 24), label);
             
-            if (Widgets.ButtonText(new Rect(rect.x + labelWidth, rect.y, rect.width - labelWidth, 24), labelMaker(currentValue)))
+            Text.Font = GameFont.Small;
+            float actualLabelWidth = Mathf.Max(labelWidth, Text.CalcSize(label).x + 10f);
+            
+            Widgets.Label(new Rect(rect.x, rect.y, actualLabelWidth, 24), label);
+            
+            if (Widgets.ButtonText(new Rect(rect.x + actualLabelWidth, rect.y, rect.width - actualLabelWidth, 24), labelMaker(currentValue)))
             {
                 List<FloatMenuOption> menuOptions = new List<FloatMenuOption>();
                 foreach (var option in options)
@@ -228,9 +258,13 @@ namespace CharacterStudio.UI
         public static void DrawPropertyColor(ref float y, float width, string label, Color value, Action<Color> onColorChanged, float labelWidth = LabelWidth)
         {
             Rect rect = new Rect(0, y, width, RowHeight);
-            Widgets.Label(new Rect(rect.x, rect.y, labelWidth, 24), label);
             
-            Rect colorRect = new Rect(rect.x + labelWidth, rect.y + 2, 40, 20);
+            Text.Font = GameFont.Small;
+            float actualLabelWidth = Mathf.Max(labelWidth, Text.CalcSize(label).x + 10f);
+            
+            Widgets.Label(new Rect(rect.x, rect.y, actualLabelWidth, 24), label);
+            
+            Rect colorRect = new Rect(rect.x + actualLabelWidth, rect.y + 2, 40, 20);
             
             // 绘制当前颜色
             Widgets.DrawBoxSolid(colorRect, value);
@@ -252,10 +286,15 @@ namespace CharacterStudio.UI
         /// <summary>
         /// 绘制复选框行
         /// </summary>
-        public static void DrawPropertyCheckbox(ref float y, float width, string label, ref bool value, string? tooltip = null)
+        public static void DrawPropertyCheckbox(ref float y, float width, string label, ref bool value, string? tooltip = null, float labelWidth = LabelWidth)
         {
             Rect rect = new Rect(0, y, width, RowHeight);
-            Widgets.CheckboxLabeled(rect, label, ref value);
+            
+            Text.Font = GameFont.Small;
+            float actualLabelWidth = Mathf.Max(labelWidth, Text.CalcSize(label).x + 10f);
+            
+            Widgets.Label(new Rect(rect.x, rect.y, actualLabelWidth, 24), label);
+            Widgets.Checkbox(new Vector2(rect.x + actualLabelWidth, rect.y + 2), ref value);
             
             if (!string.IsNullOrEmpty(tooltip))
             {

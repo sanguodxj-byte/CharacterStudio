@@ -164,6 +164,17 @@
     <CS_Studio_Anchor_Head>头部</CS_Studio_Anchor_Head>
     <CS_Studio_Anchor_Body>身体</CS_Studio_Anchor_Body>
     <CS_Studio_Anchor_Hair>头发</CS_Studio_Anchor_Hair>
+    <CS_Studio_Anchor_Beard>胡须</CS_Studio_Anchor_Beard>
+    <CS_Studio_Anchor_Eyes>眼睛</CS_Studio_Anchor_Eyes>
+    <CS_Studio_Anchor_Brow>眉毛</CS_Studio_Anchor_Brow>
+    <CS_Studio_Anchor_Mouth>嘴巴</CS_Studio_Anchor_Mouth>
+    <CS_Studio_Anchor_Nose>鼻子</CS_Studio_Anchor_Nose>
+    <CS_Studio_Anchor_Ear>耳朵</CS_Studio_Anchor_Ear>
+    <CS_Studio_Anchor_Jaw>下颌</CS_Studio_Anchor_Jaw>
+    <CS_Studio_Anchor_FaceTattoo>面部纹身</CS_Studio_Anchor_FaceTattoo>
+    <CS_Studio_Anchor_BodyTattoo>身体纹身</CS_Studio_Anchor_BodyTattoo>
+    <CS_Studio_Anchor_Apparel>服装</CS_Studio_Anchor_Apparel>
+    <CS_Studio_Anchor_Headgear>头部装备</CS_Studio_Anchor_Headgear>
 
     <!-- 导出对话框 -->
     <CS_Studio_Export_Title>导出为模组</CS_Studio_Export_Title>
@@ -229,6 +240,7 @@
     <CS_Studio_Msg_RedoSuccess>已重做上次改动</CS_Studio_Msg_RedoSuccess>
     <CS_Studio_Msg_SelectedLayer>已选中: {0}</CS_Studio_Msg_SelectedLayer>
     <CS_Studio_Msg_AddedHiddenTag>已添加隐藏标签: {0}</CS_Studio_Msg_AddedHiddenTag>
+    <CS_Studio_Msg_ParametersReset>所选项形变参数已复位</CS_Studio_Msg_ParametersReset>
     
     <!-- 新增消息 -->
     <CS_Studio_Msg_TreeRefreshed>渲染树已刷新</CS_Studio_Msg_TreeRefreshed>
@@ -266,6 +278,7 @@
     <CS_Studio_Btn_ContinueExport>继续导出</CS_Studio_Btn_ContinueExport>
     <CS_Studio_Btn_Edit>编辑</CS_Studio_Btn_Edit>
     <CS_Studio_Btn_ClearShort>清空</CS_Studio_Btn_ClearShort>
+    <CS_Studio_Btn_Reset>重置参数</CS_Studio_Btn_Reset>
 
     <!-- 状态 -->
     <CS_Studio_Status_Loading>预览加载中...</CS_Studio_Status_Loading>
@@ -322,9 +335,8 @@
     <CS_Appearance_Applied>已为 {1} 应用外观：{0}</CS_Appearance_Applied>
     <CS_Appearance_Cleared>已恢复 {0} 的默认外观</CS_Appearance_Cleared>
     <CS_Studio_OpenEditor>打开皮肤编辑器</CS_Studio_OpenEditor>
-    <CS_MainButton_CharacterStudio_Label>角色工作室</CS_MainButton_CharacterStudio_Label>
-    <CS_MainButton_CharacterStudio_Desc>打开 Character Studio 主界面入口</CS_MainButton_CharacterStudio_Desc>
- 
+    <CharacterStudio>角色工作室</CharacterStudio>
+
     <!-- 召唤物品 -->
     <CS_Summon_Use>召唤 {0}</CS_Summon_Use>
     <CS_Summon_Success>成功召唤：{0}</CS_Summon_Success>

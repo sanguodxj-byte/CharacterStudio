@@ -85,7 +85,6 @@ namespace CharacterStudio.Exporter
                     new XElement("visible", layer.visible.ToString().ToLower()),
                     layer.workerClass != null ? new XElement("workerClass", layer.workerClass.FullName) : null,
                     layer.graphicClass != null ? new XElement("graphicClass", layer.graphicClass.FullName) : null,
-                    layer.workerClass != null && layer.workerClass.Name.Contains("FaceComponent") ? new XElement("faceComponent", layer.faceComponent.ToString()) : null,
                     layer.animationType != LayerAnimationType.None ? new XElement("animationType", layer.animationType.ToString()) : null,
                     layer.animationType != LayerAnimationType.None ? new XElement("animFrequency", layer.animFrequency) : null,
                     layer.animationType != LayerAnimationType.None ? new XElement("animAmplitude", layer.animAmplitude) : null,
@@ -124,43 +123,18 @@ namespace CharacterStudio.Exporter
                 new XElement("enabled", config.enabled.ToString().ToLower())
             );
 
-            if (config.components != null && config.components.Count > 0)
+            if (config.expressions != null && config.expressions.Count > 0)
             {
-                var componentsEl = new XElement("components");
-                foreach (var component in config.components)
+                var exprsEl = new XElement("expressions");
+                foreach (var expression in config.expressions)
                 {
-                    if (component == null) continue;
-
-                    var compEl = new XElement("li",
-                        new XElement("type", component.type.ToString())
-                    );
-
-                    if (component.expressions != null && component.expressions.Count > 0)
-                    {
-                        var exprsEl = new XElement("expressions");
-                        foreach (var expression in component.expressions)
-                        {
-                            if (expression == null || string.IsNullOrEmpty(expression.texPath)) continue;
-
-                            exprsEl.Add(new XElement("li",
-                                new XElement("expression", expression.expression.ToString()),
-                                new XElement("texPath", expression.texPath)
-                            ));
-                        }
-
-                        if (exprsEl.HasElements)
-                        {
-                            compEl.Add(exprsEl);
-                        }
-                    }
-
-                    componentsEl.Add(compEl);
+                    if (expression == null || string.IsNullOrEmpty(expression.texPath)) continue;
+                    exprsEl.Add(new XElement("li",
+                        new XElement("expression", expression.expression.ToString()),
+                        new XElement("texPath", expression.texPath)
+                    ));
                 }
-
-                if (componentsEl.HasElements)
-                {
-                    element.Add(componentsEl);
-                }
+                if (exprsEl.HasElements) element.Add(exprsEl);
             }
 
             return element;
@@ -399,7 +373,7 @@ namespace CharacterStudio.Exporter
                         GenerateBaseAppearanceXml(skin.baseAppearance),
                         GenerateLayersXml(skin.layers),
                         GenerateTargetRacesXml(skin.targetRaces),
-                        skin.faceConfig != null && (skin.faceConfig.enabled || (skin.faceConfig.components?.Count ?? 0) > 0) ? GenerateFaceConfigXml(skin.faceConfig) : null,
+                        skin.faceConfig != null && (skin.faceConfig.enabled || skin.faceConfig.HasAnyExpression()) ? GenerateFaceConfigXml(skin.faceConfig) : null,
                         GenerateSkinAbilitiesXml(skin.abilities),
                         GenerateAbilityHotkeysXml(skin.abilityHotkeys)
                     )

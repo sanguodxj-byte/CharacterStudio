@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+  特殊角色能力定义 / Special Character Ability Definitions
+  
+  能力定义角色可使用的特殊技能。
+  Abilities define special skills that characters can use.
+  
+  参考 / Reference:
+  - RimWorld Core: Abilities.xml
+  - RimWorld Royalty: Abilities.xml (for more complex abilities)
+-->
+<Defs>
+
+    <!-- ========================================
+         示例能力 / Example Ability
+         ======================================== -->
+    
+    <!-- 
+    <AbilityDef>
+        <defName>SpecialAbility_Example</defName>
+        <label>Example Ability</label>
+        <description>A special ability unique to certain characters.</description>
+        <iconPath>UI/Icons/Abilities/ExampleAbility</iconPath>
+        <cooldownTicksRange>3000~5000</cooldownTicksRange>
+        <verbProperties>
+            <verbClass>Verb_CastAbility</verbClass>
+            <range>30</range>
+            <targetParams>
+                <canTargetPawns>true</canTargetPawns>
+                <canTargetBuildings>false</canTargetBuildings>
+                <canTargetSelf>true</canTargetSelf>
+            </targetParams>
+        </verbProperties>
+        <comps>
+            <li Class="CompProperties_AbilityEffect">
+                <compClass>CompAbilityEffect_Example</compClass>
+            </li>
+        </comps>
+    </AbilityDef>
+    -->
+
+</Defs>

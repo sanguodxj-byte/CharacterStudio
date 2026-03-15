@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using RimWorld;
@@ -475,14 +475,10 @@ namespace CharacterStudio.Core
             }
 
             var slot = baseAppearance.GetSlot(slotType.Value);
-            Vector3 effectiveOffset = node.runtimeDataValid ? node.runtimeOffset : node.offset;
-            Vector3 effectiveOffsetEast = node.runtimeDataValid ? node.runtimeOffsetEast : Vector3.zero;
-            Vector3 effectiveOffsetNorth = node.runtimeDataValid ? node.runtimeOffsetNorth : Vector3.zero;
-            Vector2 effectiveScale = node.runtimeDataValid
-                ? new Vector2(node.runtimeScale.x, node.runtimeScale.z)
-                : (node.scale > 0f ? new Vector2(node.scale, node.scale) : Vector2.one);
-            Color effectiveColor = node.runtimeDataValid ? node.runtimeColor : node.color;
-            Color effectiveColorTwo = node.runtimeDataValid ? node.graphicColorTwo : Color.white;
+
+            // 结构性父节点（Body/Head/Hair/Beard）的 offset/scale/rotation 由原版 Worker 自动处理
+            // （BaseHeadOffsetAt、bodyGraphicScale、ScaleFor 等），不应存入槽位配置。
+            // 槽位存储的是用户的
 
             string simpleShaderName = "Cutout";
             if (!string.IsNullOrEmpty(node.shaderName))
@@ -494,21 +490,29 @@ namespace CharacterStudio.Core
                 else if (node.shaderName.Contains("Cutout")) simpleShaderName = "Cutout";
             }
 
-            slot.enabled = !string.IsNullOrWhiteSpace(node.texPath);
+            // 即使 texPath 为空（动态路径尚未解析），也标记槽位为 enabled。
+            // texPath 为空表示用户需要手动选择贴图；偏移/缩放/颜色等数据仍然正确捕获。
+            // 颜色来源检测
+            LayerColorSource colorSrc = DetectColorSource(node, pawn);
+            Color customColor = (colorSrc == LayerColorSource.Fixed) ? node.color : Color.white;
+
+            // 有 texPath 时才 enabled，让 UI 层决定是否展示
+            slot.enabled = !string.IsNullOrWhiteSpace(node.texPath)
+                || node.runtimeDataValid; // 有运行时数据也标记为可见
             slot.slotType = slotType.Value;
             slot.texPath = node.texPath ?? string.Empty;
             slot.maskTexPath = node.maskPath ?? string.Empty;
             slot.shaderDefName = simpleShaderName;
             slot.colorSource = DetectColorSource(node, pawn);
-            slot.customColor = effectiveColor;
-            slot.colorTwoSource = DetectSourceByColor(effectiveColorTwo, pawn);
-            slot.customColorTwo = effectiveColorTwo;
-            slot.scale = effectiveScale;
-            slot.offset = effectiveOffset;
-            slot.offsetEast = effectiveOffsetEast;
-            slot.offsetNorth = effectiveOffsetNorth;
-            slot.rotation = node.runtimeDataValid ? node.runtimeRotation : 0f;
-            slot.drawOrderOffset = 0f;
+            slot.colorSource = colorSrc;
+            slot.customColor = customColor;
+            slot.colorTwoSource = LayerColorSource.PawnSkin;
+            slot.customColorTwo = Color.white;
+            slot.scale = Vector2.one;
+            slot.offset = Vector3.zero;
+            slot.offsetEast = Vector3.zero;
+            slot.offsetNorth = Vector3.zero;
+            slot.rotation = 0f;
             slot.graphicClass = node.graphicClass;
         }
 
@@ -522,11 +526,6 @@ namespace CharacterStudio.Core
             if (ContainsAny(tag, label, texPath, "head")) return BaseAppearanceSlotType.Head;
             if (ContainsAny(tag, label, texPath, "hair")) return BaseAppearanceSlotType.Hair;
             if (ContainsAny(tag, label, texPath, "beard")) return BaseAppearanceSlotType.Beard;
-            if (ContainsAny(tag, label, texPath, "eye", "eyes")) return BaseAppearanceSlotType.Eyes;
-            if (ContainsAny(tag, label, texPath, "brow", "eyebrow")) return BaseAppearanceSlotType.Brow;
-            if (ContainsAny(tag, label, texPath, "mouth", "lip")) return BaseAppearanceSlotType.Mouth;
-            if (ContainsAny(tag, label, texPath, "nose")) return BaseAppearanceSlotType.Nose;
-            if (ContainsAny(tag, label, texPath, "ear")) return BaseAppearanceSlotType.Ear;
 
             return null;
         }
@@ -550,11 +549,13 @@ namespace CharacterStudio.Core
         /// 判断节点是否为结构性父节点（Head/Body 容器节点）。
         /// 这些节点有自己的纹理（皮肤贴图），但它们的纹理应由原版机制管理，
         /// 不应导入为自定义图层，否则会导致重复渲染。
+        /// 设计原则：只识别原版顶层的 Head/Body 节点。
+        /// 面部子节点（Eyes/Mouth/Brow/Nose/Ear）和 HAR BodyAddon 一律作为普通自定义图层导入，
+        /// 由 ApplyBaseAppearanceOverrides 在渲染时通过递归搜索覆写。
         /// </summary>
         private static bool IsStructuralParentNode(RenderNodeSnapshot node)
         {
             if (node == null) return false;
-            if (node.children == null || node.children.Count == 0) return false;
 
             string tag = node.tagDefName ?? "";
             if (tag == "Head" || tag == "Body")
@@ -565,6 +566,7 @@ namespace CharacterStudio.Core
                     return false;
                 return true;
             }
+
             return false;
         }
 
@@ -586,3 +588,5 @@ namespace CharacterStudio.Core
         }
     }
 }
+
+

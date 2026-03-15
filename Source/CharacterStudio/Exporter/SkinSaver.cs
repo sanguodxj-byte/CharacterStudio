@@ -88,7 +88,7 @@ namespace CharacterStudio.Exporter
                 GenerateListElement("targetRaces", skin.targetRaces),
 
                 // 面部配置
-                skin.faceConfig != null && (skin.faceConfig.enabled || skin.faceConfig.components.Any()) ? GenerateFaceConfigXml(skin.faceConfig) : null,
+                skin.faceConfig != null && (skin.faceConfig.enabled || skin.faceConfig.HasAnyExpression()) ? GenerateFaceConfigXml(skin.faceConfig) : null,
 
                 // 技能与热键
                 GenerateAbilitiesXml(skin.abilities),
@@ -316,8 +316,6 @@ namespace CharacterStudio.Exporter
                     
                     // Worker
                     layer.workerClass != null ? new XElement("workerClass", layer.workerClass.FullName) : null,
-                    // 仅当 Worker 是 FaceComponent 时才保存 faceComponent
-                    (layer.workerClass != null && layer.workerClass.Name.Contains("FaceComponent")) ? new XElement("faceComponent", layer.faceComponent.ToString()) : null,
 
                     // 动画
                     layer.animationType != LayerAnimationType.None ? new XElement("animationType", layer.animationType.ToString()) : null,
@@ -339,49 +337,18 @@ namespace CharacterStudio.Exporter
                 new XElement("enabled", config.enabled.ToString().ToLower())
             );
 
-            if (config.components != null && config.components.Count > 0)
+            if (config.expressions != null && config.expressions.Count > 0)
             {
-                var componentsEl = new XElement("components");
-                foreach (var comp in config.components)
+                var exprsEl = new XElement("expressions");
+                foreach (var expr in config.expressions)
                 {
-                    if (comp == null)
-                    {
-                        continue;
-                    }
-
-                    var compEl = new XElement("li",
-                        new XElement("type", comp.type.ToString())
-                    );
-
-                    if (comp.expressions != null && comp.expressions.Count > 0)
-                    {
-                        var exprsEl = new XElement("expressions");
-                        foreach (var expr in comp.expressions)
-                        {
-                            if (expr == null || string.IsNullOrEmpty(expr.texPath))
-                            {
-                                continue;
-                            }
-
-                            exprsEl.Add(new XElement("li",
-                                new XElement("expression", expr.expression.ToString()),
-                                new XElement("texPath", expr.texPath)
-                            ));
-                        }
-
-                        if (exprsEl.HasElements)
-                        {
-                            compEl.Add(exprsEl);
-                        }
-                    }
-
-                    componentsEl.Add(compEl);
+                    if (expr == null || string.IsNullOrEmpty(expr.texPath)) continue;
+                    exprsEl.Add(new XElement("li",
+                        new XElement("expression", expr.expression.ToString()),
+                        new XElement("texPath", expr.texPath)
+                    ));
                 }
-
-                if (componentsEl.HasElements)
-                {
-                    element.Add(componentsEl);
-                }
+                if (exprsEl.HasElements) element.Add(exprsEl);
             }
 
             return element;
