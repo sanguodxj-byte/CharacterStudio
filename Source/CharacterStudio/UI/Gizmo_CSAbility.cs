@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿﻿using System.Collections.Generic;
 using System.Linq;
 using CharacterStudio.Abilities;
 using CharacterStudio.Core;
@@ -242,18 +242,45 @@ namespace CharacterStudio.UI
         {
             if (!__instance.IsColonistPlayerControlled) return;
 
-            var comp = __instance.GetComp<CompPawnSkin>();
-            if (comp?.ActiveSkin == null) return;
-
-            var skin = comp.ActiveSkin;
-            if (skin.abilities == null || skin.abilities.Count == 0) return;
-
             var list = __result.ToList();
-            foreach (var ability in skin.abilities)
+
+            // 方式1：CS皮肤绑定的技能
+            var comp = __instance.GetComp<CharacterStudio.Core.CompPawnSkin>();
+            if (comp?.ActiveSkin?.abilities != null)
             {
-                if (ability != null)
-                    list.Add(new Gizmo_CSAbility(__instance, ability));
+                foreach (var ability in comp.ActiveSkin.abilities)
+                {
+                    if (ability != null)
+                        list.Add(new Gizmo_CSAbility(__instance, ability));
+                }
             }
+
+            // 方式2：直接通过 AbilityGrantUtility 授予的技能（无需绑定皮肤）
+            // 查找已授予此 Pawn 的 CS 技能并生成 Gizmo
+            var grantedNames = CharacterStudio.Abilities.AbilityGrantUtility.GetGrantedAbilityNames(__instance);
+            var skinAbilityNames = comp?.ActiveSkin?.abilities?.Select(a => a?.defName)
+                .Where(n => n != null).ToHashSet() ?? new System.Collections.Generic.HashSet<string>();
+
+            foreach (var defName in grantedNames)
+            {
+                // 跳过已经通过皮肤显示的技能，避免重复
+                if (skinAbilityNames.Contains(defName)) continue;
+
+                var runtimeDef = CharacterStudio.Abilities.AbilityGrantUtility.GetRuntimeAbilityDef(defName);
+                if (runtimeDef == null) continue;
+
+                // 构造一个轻量 ModularAbilityDef 用于显示
+                // 从 runtimeDef 还原显示信息
+                var placeholder = new CharacterStudio.Abilities.ModularAbilityDef
+                {
+                    defName     = defName,
+                    label       = runtimeDef.label ?? defName,
+                    description = runtimeDef.description ?? string.Empty,
+                    cooldownTicks = runtimeDef.cooldownTicksRange.min,
+                };
+                list.Add(new Gizmo_CSAbility(__instance, placeholder));
+            }
+
             __result = list;
         }
     }

@@ -296,9 +296,19 @@ namespace CharacterStudio.Abilities
             return true;
         }
 
+        // 追踪当前帧是否有任何 Pawn 处于 rStacking 状态，避免无状态时的全量扫描
+        private static int lastRStackingCheckTick = -1;
+        private static bool anyRStackingActive = false;
+
         private static void UpdateRStackingStates()
         {
             if (Current.Game == null) return;
+
+            // 每 30 Tick 重新检测一次是否有 Pawn 处于 rStacking，避免每帧全量扫描
+            int tick = Find.TickManager?.TicksGame ?? 0;
+            bool needFullScan = !anyRStackingActive || (tick - lastRStackingCheckTick >= 30);
+            if (!needFullScan) return;
+            lastRStackingCheckTick = tick;
 
             var allPawns = Current.Game.Maps
                 .Where(m => m != null)
@@ -306,6 +316,7 @@ namespace CharacterStudio.Abilities
                 .Where(p => p != null && p.Spawned)
                 .ToList();
 
+            anyRStackingActive = false;
             foreach (var pawn in allPawns)
             {
                 var comp = pawn.GetComp<CompPawnSkin>();
@@ -314,6 +325,7 @@ namespace CharacterStudio.Abilities
                     LastBusyStanceByPawn.Remove(pawn);
                     continue;
                 }
+                anyRStackingActive = true;
 
                 AbilityRuntimeComponentConfig? rComp = ResolveRStackComponentConfig(pawn, comp);
                 if (rComp == null || !rComp.enabled)
@@ -362,6 +374,8 @@ namespace CharacterStudio.Abilities
         private static void ProcessPendingRSecondStages(int tick)
         {
             if (Current.Game == null) return;
+            // 无任何 Pawn 有挂起的二段蓄力时跳过全量扫描
+            if (!anyRStackingActive) return;
 
             foreach (var map in Current.Game.Maps)
             {
@@ -437,29 +451,32 @@ namespace CharacterStudio.Abilities
             skinComp.rStackCount = 0;
         }
 
+        // 复用的伤害波 effect 对象，避免每波 new 分配
+        private static readonly AbilityEffectConfig _waveEffectCache = new AbilityEffectConfig
+        {
+            type   = AbilityEffectType.Damage,
+            chance = 1f
+        };
+
         private static void ApplyDamageWave(Pawn caster, IntVec3 center, float radius, float amount, DamageDef damageDef)
         {
             if (caster.Map == null) return;
 
-            var effect = new AbilityEffectConfig
-            {
-                type = AbilityEffectType.Damage,
-                amount = amount,
-                chance = 1f,
-                damageDef = damageDef
-            };
+            // 复用缓存对象，仅更新变化字段
+            _waveEffectCache.amount    = amount;
+            _waveEffectCache.damageDef = damageDef;
+
             var worker = EffectWorkerFactory.GetWorker(AbilityEffectType.Damage);
+            var map    = caster.Map;
 
-            var cells = GenRadial.RadialCellsAround(center, radius, true);
-            foreach (var cell in cells)
+            foreach (var cell in GenRadial.RadialCellsAround(center, radius, true))
             {
-                if (!cell.InBounds(caster.Map)) continue;
+                if (!cell.InBounds(map)) continue;
 
-                var things = cell.GetThingList(caster.Map).ToList();
-                foreach (var thing in things)
-                {
-                    worker.Apply(effect, new LocalTargetInfo(thing), caster);
-                }
+                _thingBuffer.Clear();
+                _thingBuffer.AddRange(cell.GetThingList(map));
+                foreach (var thing in _thingBuffer)
+                    worker.Apply(_waveEffectCache, new LocalTargetInfo(thing), caster);
             }
         }
 
@@ -493,27 +510,34 @@ namespace CharacterStudio.Abilities
             return ExecuteAbilityOnCells(caster, ability, cells);
         }
 
+        // 复用的 Thing 快照缓冲区，避免每格 GetThingList().ToList() 分配
+        private static readonly List<Thing> _thingBuffer = new List<Thing>();
+
         private static bool ExecuteAbilityOnCells(Pawn caster, ModularAbilityDef ability, IEnumerable<IntVec3> rawCells)
         {
             if (caster.Map == null || ability == null || ability.effects == null || ability.effects.Count == 0)
-            {
                 return false;
-            }
+
+            var map = caster.Map;
+            var distinctCells = new HashSet<IntVec3>();
+            foreach (var c in rawCells)
+                if (c.InBounds(map)) distinctCells.Add(c);
 
             bool applied = false;
-            var map = caster.Map;
-            var distinctCells = new HashSet<IntVec3>(rawCells.Where(c => c.InBounds(map)));
+
+            // 性能优化：提前按 effect.type 缓存 worker，避免每格重复 GetWorker 调用
+            var workers = new EffectWorker[ability.effects.Count];
+            for (int ei = 0; ei < ability.effects.Count; ei++)
+                workers[ei] = EffectWorkerFactory.GetWorker(ability.effects[ei].type);
 
             foreach (var cell in distinctCells)
             {
-                foreach (var effect in ability.effects)
+                for (int ei = 0; ei < ability.effects.Count; ei++)
                 {
-                    if (Rand.Value > effect.chance)
-                    {
-                        continue;
-                    }
+                    var effect = ability.effects[ei];
+                    if (Rand.Value > effect.chance) continue;
 
-                    var worker = EffectWorkerFactory.GetWorker(effect.type);
+                    var worker = workers[ei];
                     switch (effect.type)
                     {
                         case AbilityEffectType.Teleport:
@@ -523,8 +547,10 @@ namespace CharacterStudio.Abilities
                             applied = true;
                             break;
                         default:
-                            var things = cell.GetThingList(map).ToList();
-                            foreach (var thing in things)
+                            // 复用 buffer 避免每格 List 分配
+                            _thingBuffer.Clear();
+                            _thingBuffer.AddRange(cell.GetThingList(map));
+                            foreach (var thing in _thingBuffer)
                             {
                                 worker.Apply(effect, new LocalTargetInfo(thing), caster);
                                 applied = true;

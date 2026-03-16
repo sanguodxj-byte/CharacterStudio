@@ -135,37 +135,42 @@ namespace CharacterStudio.Abilities
             {
                 var abilityDef = new AbilityDef
                 {
-                    defName       = "CS_RT_" + key,
-                    label         = modAbility.label ?? key,
-                    description   = modAbility.description ?? string.Empty,
-                    iconPath      = string.IsNullOrEmpty(modAbility.iconPath)
-                                    ? "UI/Abilities/Shoot"   // 占位图标
-                                    : modAbility.iconPath,
+                    defName            = "CS_RT_" + key,
+                    label              = modAbility.label ?? key,
+                    description        = modAbility.description ?? string.Empty,
+                    iconPath           = string.IsNullOrEmpty(modAbility.iconPath)
+                                         ? "UI/Abilities/Shoot"   // 占位图标
+                                         : modAbility.iconPath,
                     cooldownTicksRange = new IntRange((int)modAbility.cooldownTicks, (int)modAbility.cooldownTicks),
-                    charges       = modAbility.charges,
-                    aiCanUse = modAbility.aiCanUse > 0.5f
+                    charges            = modAbility.charges,
+                    aiCanUse           = modAbility.aiCanUse > 0.5f
                 };
 
-                // 设置载体类型
+                // 设置载体类型（含 warmupTime）
+                VerbProperties verbProps;
                 switch (modAbility.carrierType)
                 {
                     case AbilityCarrierType.Self:
-                        abilityDef.verbProperties = BuildVerbProps_Self();
+                        verbProps = BuildVerbProps_Self();
                         break;
                     case AbilityCarrierType.Touch:
                     case AbilityCarrierType.Target:
-                        abilityDef.verbProperties = BuildVerbProps_Target(modAbility.range);
+                        verbProps = BuildVerbProps_Target(modAbility.range);
                         break;
                     case AbilityCarrierType.Area:
-                        abilityDef.verbProperties = BuildVerbProps_Area(modAbility.range);
+                        verbProps = BuildVerbProps_Area(modAbility.range);
                         break;
                     case AbilityCarrierType.Projectile:
-                        abilityDef.verbProperties = BuildVerbProps_Target(modAbility.range);
+                        verbProps = BuildVerbProps_Target(modAbility.range);
                         break;
                     default:
-                        abilityDef.verbProperties = BuildVerbProps_Self();
+                        verbProps = BuildVerbProps_Self();
                         break;
                 }
+                // 修复：将编辑器中的 warmupTicks 设置到 VerbProperties.warmupTime
+                if (modAbility.warmupTicks > 0f)
+                    verbProps.warmupTime = modAbility.warmupTicks / 60f; // 转换为秒
+                abilityDef.verbProperties = verbProps;
 
                 // 注入效果组件
                 if (modAbility.effects != null && modAbility.effects.Count > 0)

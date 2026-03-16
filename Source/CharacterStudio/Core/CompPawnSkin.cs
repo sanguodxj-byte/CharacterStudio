@@ -21,6 +21,9 @@ namespace CharacterStudio.Core
         private int blinkTimer = 0;
         private const int BlinkDuration = 10;
 
+        // 帧动画 Tick 计数器（每 Tick +1，用于多帧表情序列定位）
+        private int expressionAnimTick = 0;
+
         // Q 键四段轮换模式索引（0..3）
         public int qHotkeyModeIndex = 0;
 
@@ -92,15 +95,19 @@ namespace CharacterStudio.Core
                 needsRefresh = false;
             }
 
-            // 每 30 Tick (约 0.5s) 更新一次表情环境
-            if (Pawn.IsHashIntervalTick(30))
-            {
-                UpdateExpressionState();
-            }
-
-            // 眨眼逻辑
             if (activeSkin?.faceConfig?.enabled == true)
             {
+                // 帧动画 Tick 累加（驱动多帧表情序列）
+                expressionAnimTick++;
+
+                // 每 30 Tick (约 0.5s) 更新一次表情状态
+                if (Pawn.IsHashIntervalTick(30))
+                    UpdateExpressionState();
+
+                // 帧动画帧推进：检测当前帧是否应切换到下一帧
+                UpdateAnimatedExpressionFrame();
+
+                // 眨眼逻辑
                 UpdateBlinkLogic();
             }
         }
@@ -111,6 +118,7 @@ namespace CharacterStudio.Core
 
             var oldExp = curExpression;
             var pawn   = Pawn!;
+            var job    = pawn.CurJob?.def;
 
             if (pawn.Dead)
             {
@@ -124,13 +132,74 @@ namespace CharacterStudio.Core
             {
                 curExpression = ExpressionType.Sleeping;
             }
-            else if (pawn.CurJob?.def == JobDefOf.Ingest)
+            // ── Job 驱动（对应 NL FA ForJobs）──
+            else if (job == JobDefOf.Ingest)
             {
                 curExpression = ExpressionType.Eating;
             }
+            else if (job != null && (
+                job.defName == "LayDown" || job == JobDefOf.Lovin
+                || job.defName.IndexOf("LayDown", StringComparison.OrdinalIgnoreCase) >= 0))
+            {
+                curExpression = ExpressionType.LayDown;
+            }
+            else if (job != null && (
+                job.defName.IndexOf("Strip", StringComparison.OrdinalIgnoreCase) >= 0))
+            {
+                curExpression = ExpressionType.Strip;
+            }
+            else if (job != null && (
+                job.defName.IndexOf("Haul", StringComparison.OrdinalIgnoreCase) >= 0
+                || job.defName.IndexOf("Carry", StringComparison.OrdinalIgnoreCase) >= 0))
+            {
+                curExpression = ExpressionType.Hauling;
+            }
+            else if (job != null && (
+                job.defName.IndexOf("Read", StringComparison.OrdinalIgnoreCase) >= 0
+                || job.defName.IndexOf("Study", StringComparison.OrdinalIgnoreCase) >= 0))
+            {
+                curExpression = ExpressionType.Reading;
+            }
+            else if (job != null && (
+                job.defName.IndexOf("SocialRelax", StringComparison.OrdinalIgnoreCase) >= 0
+                || job.defName.IndexOf("Social", StringComparison.OrdinalIgnoreCase) >= 0
+                || job.defName.IndexOf("Chat", StringComparison.OrdinalIgnoreCase) >= 0))
+            {
+                curExpression = ExpressionType.SocialRelax;
+            }
+            else if (job != null && (
+                job.defName.IndexOf("DoBill", StringComparison.OrdinalIgnoreCase) >= 0
+                || job.defName.IndexOf("Craft", StringComparison.OrdinalIgnoreCase) >= 0
+                || job.defName.IndexOf("Cook", StringComparison.OrdinalIgnoreCase) >= 0))
+            {
+                curExpression = ExpressionType.Working;
+            }
+            else if (job != null && (
+                job.defName.IndexOf("WaitCombat", StringComparison.OrdinalIgnoreCase) >= 0
+                || job.defName.IndexOf("AttackStatic", StringComparison.OrdinalIgnoreCase) >= 0))
+            {
+                curExpression = ExpressionType.WaitCombat;
+            }
+            else if (job != null && (
+                job.defName.IndexOf("AttackMelee", StringComparison.OrdinalIgnoreCase) >= 0))
+            {
+                curExpression = ExpressionType.AttackMelee;
+            }
+            else if (job != null && (
+                job.defName.IndexOf("Shoot", StringComparison.OrdinalIgnoreCase) >= 0
+                || job.defName.IndexOf("Burst", StringComparison.OrdinalIgnoreCase) >= 0))
+            {
+                curExpression = ExpressionType.AttackRanged;
+            }
+            else if (job != null && (
+                job.defName.IndexOf("Goto", StringComparison.OrdinalIgnoreCase) >= 0
+                || job == JobDefOf.Goto))
+            {
+                curExpression = ExpressionType.Goto;
+            }
+            // ── 精神状态（Mental State）──
             else if (pawn.InMentalState)
             {
-                // 根据心理状态细分表情
                 var stateDef = pawn.MentalStateDef;
                 bool isPanic = stateDef != null &&
                     (stateDef.defName.IndexOf("Flee", StringComparison.OrdinalIgnoreCase) >= 0
@@ -138,6 +207,7 @@ namespace CharacterStudio.Core
                     || stateDef.defName.IndexOf("WildMan", StringComparison.OrdinalIgnoreCase) >= 0);
                 curExpression = isPanic ? ExpressionType.Scared : ExpressionType.Angry;
             }
+            // ── 情绪/生理 ──
             else
             {
                 float rest = pawn.needs?.rest?.CurLevel ?? 1f;
@@ -145,8 +215,14 @@ namespace CharacterStudio.Core
 
                 if (rest < 0.15f)
                     curExpression = ExpressionType.Tired;
+                else if (mood < 0.1f)
+                    curExpression = ExpressionType.Hopeless;
                 else if (mood < 0.2f)
                     curExpression = ExpressionType.Sad;
+                else if (mood < 0.4f)
+                    curExpression = ExpressionType.Gloomy;
+                else if (mood > 0.9f)
+                    curExpression = ExpressionType.Cheerful;
                 else if (mood > 0.8f)
                     curExpression = ExpressionType.Happy;
                 else
@@ -154,6 +230,28 @@ namespace CharacterStudio.Core
             }
 
             if (oldExp != curExpression)
+                RequestRenderRefresh();
+        }
+
+        /// <summary>
+        /// 检测当前帧动画是否应触发渲染更新（贴图切换时刷新）
+        /// </summary>
+        private void UpdateAnimatedExpressionFrame()
+        {
+            if (previewExpressionOverride.HasValue) return;
+            var faceConfig = activeSkin?.faceConfig;
+            if (faceConfig == null) return;
+
+            var expEntry = faceConfig.GetExpression(curExpression);
+            if (expEntry == null || !expEntry.IsAnimated) return;
+
+            // 当前帧将在下一个 durationTick 边界切换，提前通知渲染系统
+            // 计算帧边界时刻，只在边界 Tick 触发刷新，避免每帧刷新
+            int totalDuration = 0;
+            foreach (var f in expEntry.frames)
+                totalDuration += f.durationTicks > 0 ? f.durationTicks : 1;
+
+            if (totalDuration > 0 && expressionAnimTick % totalDuration == 0)
                 RequestRenderRefresh();
         }
 
@@ -198,12 +296,14 @@ namespace CharacterStudio.Core
         public ExpressionType GetEffectiveExpression()
         {
             if (previewExpressionOverride.HasValue)
-            {
                 return previewExpressionOverride.Value;
-            }
-            if (blinkTimer > 0) return ExpressionType.Blink;
+            if (blinkTimer > 0)
+                return ExpressionType.Blink;
             return curExpression;
         }
+
+        /// <summary>获取当前帧动画 Tick（供 FaceComponent 渲染时定位帧）</summary>
+        public int GetExpressionAnimTick() => expressionAnimTick;
 
         public void RequestRenderRefresh()
         {

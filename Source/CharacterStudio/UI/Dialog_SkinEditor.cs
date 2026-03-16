@@ -682,9 +682,8 @@ namespace CharacterStudio.UI
             float contentY = rect.y + Margin + ButtonHeight + Margin;
             float contentHeight = rect.height - contentY + rect.y - Margin;
             Rect contentRect = new Rect(rect.x + Margin, contentY, rect.width - Margin * 2, contentHeight);
-            // 每个表情一行 28px，加上标题和说明区域
             int exprCount = Enum.GetValues(typeof(ExpressionType)).Length;
-            Rect viewRect = new Rect(0, 0, contentRect.width - 16, exprCount * 28f + 160f);
+            Rect viewRect = new Rect(0, 0, contentRect.width - 16, Enum.GetValues(typeof(ExpressionType)).Length * 28f + 200f);
 
             Widgets.BeginScrollView(contentRect, ref faceScrollPos, viewRect);
 
@@ -738,7 +737,8 @@ namespace CharacterStudio.UI
             // 各表情 -> 头部整张贴图路径映射
             UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_ExpressionMappings".Translate());
 
-            int assignedCount = fc.expressions.Count(e => !string.IsNullOrEmpty(e.texPath));
+            int assignedCount = fc.expressions.Count(e =>
+                !string.IsNullOrEmpty(e.texPath) || (e.frames != null && e.frames.Count > 0));
             Text.Font = GameFont.Tiny;
             GUI.color = UIHelper.SubtleColor;
             Widgets.Label(new Rect(0f, y, width, 18f),
@@ -750,19 +750,58 @@ namespace CharacterStudio.UI
             foreach (ExpressionType expression in Enum.GetValues(typeof(ExpressionType)))
             {
                 ExpressionType localExpr = expression;
-                string currentPath = fc.GetTexPath(localExpr);
-                // 显示精确配置的路径（不走回退）
                 var exactMatch = fc.expressions.Find(e => e.expression == localExpr);
-                string displayPath = exactMatch?.texPath ?? string.Empty;
-                string displayValue = string.IsNullOrEmpty(displayPath)
-                    ? "CS_Studio_None".Translate()
-                    : System.IO.Path.GetFileName(displayPath);
+                bool isAnimated = exactMatch?.IsAnimated == true;
+                bool hasContent = exactMatch != null &&
+                    (!string.IsNullOrEmpty(exactMatch.texPath) || exactMatch.frames.Count > 0);
 
-                UIHelper.DrawPropertyFieldWithButton(ref y, width,
-                    GetExpressionTypeLabel(localExpr), displayValue,
-                    () =>
+                // ── 第一行：表情名称（全宽标签）+ 右侧按钮组 ──
+                // 背景条（区分不同表情）
+                Widgets.DrawBoxSolid(new Rect(0f, y, width, 24f),
+                    hasContent ? UIHelper.AccentSoftColor : UIHelper.AlternatingRowColor);
+
+                // 表情名称（左侧，全宽减去按钮区）
+                Text.Font = GameFont.Small;
+                Text.Anchor = TextAnchor.MiddleLeft;
+                Widgets.Label(new Rect(6f, y, width - 76f, 24f), GetExpressionTypeLabel(localExpr));
+                Text.Anchor = TextAnchor.UpperLeft;
+
+                // 右侧按钮组：[选择/编辑] [+F] [X]
+                float bx = width - 74f;
+
+                // [选择/编辑] 按钮
+                if (Widgets.ButtonText(new Rect(bx, y, 36f, 22f), isAnimated ? "…" : "..."))
+                {
+                    if (isAnimated)
                     {
-                        Find.WindowStack.Add(new Dialog_FileBrowser(displayPath, path =>
+                        var frameOpts = new List<FloatMenuOption>
+                        {
+                            new FloatMenuOption("CS_Studio_Face_AddFrame".Translate(), () =>
+                            {
+                                Find.WindowStack.Add(new Dialog_FileBrowser("", path =>
+                                {
+                                    if (!string.IsNullOrEmpty(path))
+                                    {
+                                        exactMatch!.frames.Add(new ExpressionFrame { texPath = path, durationTicks = 6 });
+                                        isDirty = true;
+                                        RefreshPreview();
+                                    }
+                                }));
+                            }),
+                            new FloatMenuOption("CS_Studio_Face_ConvertToStatic".Translate(), () =>
+                            {
+                                string firstPath = exactMatch!.frames.Count > 0 ? exactMatch.frames[0].texPath : string.Empty;
+                                fc.SetTexPath(localExpr, firstPath);
+                                isDirty = true;
+                                RefreshPreview();
+                            })
+                        };
+                        Find.WindowStack.Add(new FloatMenu(frameOpts));
+                    }
+                    else
+                    {
+                        string curPath = exactMatch?.texPath ?? string.Empty;
+                        Find.WindowStack.Add(new Dialog_FileBrowser(curPath, path =>
                         {
                             fc.SetTexPath(localExpr, path);
                             isDirty = true;
@@ -771,16 +810,124 @@ namespace CharacterStudio.UI
                             else
                                 RefreshPreview();
                         }));
-                    });
+                    }
+                }
 
-                // 清除按钮
-                Rect clearRect = new Rect(width - 36f, y - 28f, 32f, 24f);
+                // [+F] 按钮：追加帧
+                Rect addFrameRect = new Rect(bx + 38f, y, 18f, 22f);
+                TooltipHandler.TipRegion(addFrameRect, "CS_Studio_Face_AddFrame".Translate());
+                if (Widgets.ButtonText(addFrameRect, "+"))
+                {
+                    Find.WindowStack.Add(new Dialog_FileBrowser("", path =>
+                    {
+                        if (!string.IsNullOrEmpty(path))
+                        {
+                            fc.AddFrame(localExpr, path, durationTicks: 6);
+                            isDirty = true;
+                            RefreshPreview();
+                        }
+                    }));
+                }
+
+                // [X] 清除按钮
+                Rect clearRect = new Rect(bx + 58f, y, 18f, 22f);
                 TooltipHandler.TipRegion(clearRect, "CS_Studio_Face_ClearPath".Translate());
-                if (Widgets.ButtonText(clearRect, "CS_Studio_Btn_ClearShort".Translate()))
+                if (Widgets.ButtonText(clearRect, "X"))
                 {
                     fc.SetTexPath(localExpr, string.Empty);
                     isDirty = true;
                     RefreshPreview();
+                }
+
+                y += 26f;
+
+                // ── 第二行：贴图路径/帧摘要（缩进，灰色小字）──
+                Text.Font = GameFont.Tiny;
+                GUI.color = hasContent ? Color.white : UIHelper.SubtleColor;
+                string pathDisplay;
+                if (isAnimated)
+                    pathDisplay = $"  ▶ {exactMatch!.frames.Count} " + "CS_Studio_Face_Frames".Translate();
+                else
+                {
+                    string rawPath = exactMatch?.texPath ?? string.Empty;
+                    pathDisplay = string.IsNullOrEmpty(rawPath)
+                        ? $"  {(string)"CS_Studio_None".Translate()}"
+                        : $"  {System.IO.Path.GetFileName(rawPath)}";
+                }
+                Widgets.Label(new Rect(6f, y, width - 12f, 18f), pathDisplay);
+                GUI.color = Color.white;
+                Text.Font = GameFont.Small;
+                y += 20f;
+
+                // ── 帧动画展开列表（仅 isAnimated 时显示）──
+                if (isAnimated && exactMatch != null)
+                {
+                    for (int fi = 0; fi < exactMatch.frames.Count; fi++)
+                    {
+                        int frameIdx = fi;
+                        var frame = exactMatch.frames[fi];
+
+                        // 帧行背景
+                        Widgets.DrawBoxSolid(new Rect(20f, y, width - 20f, 22f),
+                            UIHelper.PanelFillSoftColor);
+
+                        // 帧序号
+                        Text.Font = GameFont.Tiny;
+                        GUI.color = UIHelper.AccentColor;
+                        Widgets.Label(new Rect(22f, y + 3f, 22f, 16f), $"[{fi}]");
+                        GUI.color = Color.white;
+
+                        // 文件名（占据中间大部分空间，使用 Tiny 字体确保完整显示）
+                        string fname = string.IsNullOrEmpty(frame.texPath)
+                            ? (string)"CS_Studio_None".Translate()
+                            : System.IO.Path.GetFileName(frame.texPath);
+                        Widgets.Label(new Rect(46f, y + 3f, width - 172f, 16f), fname);
+                        Text.Font = GameFont.Small;
+
+                        // 时长显示（灰色小字）
+                        Text.Font = GameFont.Tiny;
+                        GUI.color = UIHelper.SubtleColor;
+                        Widgets.Label(new Rect(width - 124f, y + 3f, 36f, 16f), $"{frame.durationTicks}t");
+                        GUI.color = Color.white;
+                        Text.Font = GameFont.Small;
+
+                        // 操作按钮区（右侧固定宽度）
+                        // [选] 贴图
+                        if (Widgets.ButtonText(new Rect(width - 86f, y + 1f, 28f, 20f), "…"))
+                        {
+                            Find.WindowStack.Add(new Dialog_FileBrowser(frame.texPath, path =>
+                            {
+                                if (!string.IsNullOrEmpty(path))
+                                {
+                                    frame.texPath = path;
+                                    isDirty = true;
+                                    RefreshPreview();
+                                }
+                            }));
+                        }
+
+                        // [-] 时长减
+                        if (Widgets.ButtonText(new Rect(width - 56f, y + 1f, 16f, 20f), "-"))
+                        {
+                            frame.durationTicks = Mathf.Max(1, frame.durationTicks - 1);
+                            isDirty = true;
+                        }
+                        // [+] 时长加
+                        if (Widgets.ButtonText(new Rect(width - 38f, y + 1f, 16f, 20f), "+"))
+                        {
+                            frame.durationTicks = Mathf.Min(600, frame.durationTicks + 1);
+                            isDirty = true;
+                        }
+                        // [×] 删除帧
+                        if (Widgets.ButtonText(new Rect(width - 20f, y + 1f, 18f, 20f), "×"))
+                        {
+                            fc.RemoveFrame(localExpr, frameIdx);
+                            isDirty = true;
+                            RefreshPreview();
+                        }
+
+                        y += 24f;
+                    }
                 }
             }
 
@@ -2167,7 +2314,16 @@ namespace CharacterStudio.UI
             Widgets.BeginScrollView(propsRect, ref propsScrollPos, viewRect);
 
             float y = 0;
-            float labelWidth = 70f;
+            // 标签宽度自适应：取所有标签中最宽者，确保全部完整显示
+            Text.Font = GameFont.Small;
+            float labelWidth = new[]
+            {
+                "CS_Studio_Info_Path",
+                "CS_Studio_Prop_NodeTag",
+                "CS_Studio_Info_Worker",
+                "CS_Studio_Prop_NodeTexture",
+                "CS_Studio_Prop_NodeChildren"
+            }.Max(k => Text.CalcSize((k).Translate()).x) + 10f;
             float fieldWidth = propsRect.width - labelWidth - 20;
 
             // 节点信息
@@ -2175,8 +2331,11 @@ namespace CharacterStudio.UI
             {
                 // 路径（可复制）
                 Widgets.Label(new Rect(0, y, labelWidth, 24), "CS_Studio_Info_Path".Translate());
-                Rect pathRect = new Rect(labelWidth, y, fieldWidth - 30, 24);
+                Rect pathRect = new Rect(labelWidth, y, fieldWidth - 32, 24);
+                // 长路径用 Tiny 字体，确保完整显示
+                Text.Font = GameFont.Tiny;
                 Widgets.Label(pathRect, node.uniqueNodePath);
+                Text.Font = GameFont.Small;
                 if (Widgets.ButtonText(new Rect(labelWidth + fieldWidth - 28, y, 28, 22), "📋"))
                 {
                     GUIUtility.systemCopyBuffer = node.uniqueNodePath;
@@ -2201,8 +2360,10 @@ namespace CharacterStudio.UI
                 Widgets.Label(new Rect(0, y, labelWidth, 24), "CS_Studio_Prop_NodeTexture".Translate() + ":");
                 if (!string.IsNullOrEmpty(node.texPath))
                 {
-                    Rect texPathRect = new Rect(labelWidth, y, fieldWidth - 30, 24);
+                    Rect texPathRect = new Rect(labelWidth, y, fieldWidth - 32, 24);
+                    Text.Font = GameFont.Tiny;
                     Widgets.Label(texPathRect, node.texPath);
+                    Text.Font = GameFont.Small;
                     if (Widgets.ButtonText(new Rect(labelWidth + fieldWidth - 28, y, 28, 22), "📋"))
                     {
                         GUIUtility.systemCopyBuffer = node.texPath;

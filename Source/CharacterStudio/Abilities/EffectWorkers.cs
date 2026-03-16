@@ -60,9 +60,20 @@ namespace CharacterStudio.Abilities
     {
         public override void Apply(AbilityEffectConfig config, LocalTargetInfo target, Pawn caster)
         {
-            if (target.Thing is Pawn pawn && config.hediffDef != null)
+            if (target.Thing is not Pawn pawn || config.hediffDef == null) return;
+
+            var hediff = pawn.health.AddHediff(config.hediffDef);
+
+            // 将编辑器中设置的 duration（秒）应用到 HediffComp_Disappears
+            // config.duration <= 0 表示永久效果，由 HediffDef 自身控制
+            if (config.duration > 0f && hediff != null)
             {
-                pawn.health.AddHediff(config.hediffDef);
+                var comp = hediff.TryGetComp<HediffComp_Disappears>();
+                if (comp != null)
+                {
+                    int durationTicks = (int)(config.duration * 60f);
+                    comp.ticksToDisappear = durationTicks;
+                }
             }
         }
     }

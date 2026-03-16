@@ -367,63 +367,74 @@ namespace CharacterStudio.UI
             }
 
             float y = inner.y + 30;
-            float labelWidth = 60f;
-            float fieldWidth = (inner.width - labelWidth) / 2 - 10;
+            // 标签宽度自适应：确保中文标签完整显示
+            float labelWidth = Mathf.Max(60f, Text.CalcSize("CS_Studio_Effect_Amount".Translate()).x + 8f);
+            float halfW      = (inner.width - 8f) / 2f;
+            float fieldWidth = halfW - labelWidth - 4f;
 
-            // 数值
+            // 数值（左半）
             Widgets.Label(new Rect(inner.x, y, labelWidth, 24), "CS_Studio_Effect_Amount".Translate());
             string amountStr = effect.amount.ToString();
             Widgets.TextFieldNumeric(new Rect(inner.x + labelWidth, y, fieldWidth, 24), ref effect.amount, ref amountStr);
 
-            // 几率
-            Widgets.Label(new Rect(inner.x + labelWidth + fieldWidth + 10, y, labelWidth, 24), "CS_Studio_Effect_Chance".Translate());
+            // 几率（右半）
+            float chanceX     = inner.x + halfW + 8f;
+            float chanceLabelW = Mathf.Max(60f, Text.CalcSize("CS_Studio_Effect_Chance".Translate()).x + 8f);
+            float chanceFieldW = halfW - chanceLabelW - 4f;
+            Widgets.Label(new Rect(chanceX, y, chanceLabelW, 24), "CS_Studio_Effect_Chance".Translate());
             string chanceStr = effect.chance.ToString();
-            Widgets.TextFieldNumeric(new Rect(inner.x + labelWidth * 2 + fieldWidth + 10, y, fieldWidth, 24), ref effect.chance, ref chanceStr, 0, 1);
+            Widgets.TextFieldNumeric(new Rect(chanceX + chanceLabelW, y, chanceFieldW, 24), ref effect.chance, ref chanceStr, 0, 1);
             
             y += 30;
 
-            // 特定参数
+            // 特定参数 — 使用全行宽，标签自适应宽度
+            float extraLabelW = Mathf.Max(72f,
+                Text.CalcSize("CS_Studio_Effect_DamageDef".Translate()).x + 8f);
+            float extraFieldW = inner.width - extraLabelW;
+
             switch (effect.type)
             {
                 case AbilityEffectType.Damage:
-                    Widgets.Label(new Rect(inner.x, y, labelWidth, 24), "CS_Studio_Effect_DamageDef".Translate());
-                    if (Widgets.ButtonText(new Rect(inner.x + labelWidth, y, fieldWidth * 2 + 10, 24), effect.damageDef?.label ?? "CS_Studio_None".Translate()))
-                    {
+                    Widgets.Label(new Rect(inner.x, y, extraLabelW, 24), "CS_Studio_Effect_DamageDef".Translate());
+                    if (Widgets.ButtonText(new Rect(inner.x + extraLabelW, y, extraFieldW, 24),
+                        effect.damageDef?.label ?? "CS_Studio_None".Translate()))
                         ShowDamageDefSelector(effect);
-                    }
                     break;
                 case AbilityEffectType.Summon:
-                    Widgets.Label(new Rect(inner.x, y, labelWidth, 24), "CS_Studio_Effect_PawnKind".Translate());
-                    if (Widgets.ButtonText(new Rect(inner.x + labelWidth, y, fieldWidth * 2 + 10, 24), effect.summonKind?.label ?? "CS_Studio_None".Translate()))
-                    {
+                    Widgets.Label(new Rect(inner.x, y, extraLabelW, 24), "CS_Studio_Effect_PawnKind".Translate());
+                    if (Widgets.ButtonText(new Rect(inner.x + extraLabelW, y, extraFieldW, 24),
+                        effect.summonKind?.label ?? "CS_Studio_None".Translate()))
                         ShowPawnKindSelector(effect);
-                    }
                     y += 30;
-                    Widgets.Label(new Rect(inner.x, y, labelWidth, 24), "CS_Studio_Effect_SummonCount".Translate());
+                    Widgets.Label(new Rect(inner.x, y, extraLabelW, 24), "CS_Studio_Effect_SummonCount".Translate());
                     string summonCountStr = effect.summonCount.ToString();
-                    Widgets.TextFieldNumeric(new Rect(inner.x + labelWidth, y, fieldWidth * 2 + 10, 24), ref effect.summonCount, ref summonCountStr, 1, 100);
+                    Widgets.TextFieldNumeric(new Rect(inner.x + extraLabelW, y, extraFieldW, 24),
+                        ref effect.summonCount, ref summonCountStr, 1, 100);
                     break;
                 case AbilityEffectType.Buff:
                 case AbilityEffectType.Debuff:
-                    Widgets.Label(new Rect(inner.x, y, labelWidth, 24), "CS_Studio_Effect_Hediff".Translate());
-                    if (Widgets.ButtonText(new Rect(inner.x + labelWidth, y, fieldWidth * 2 + 10, 24), effect.hediffDef?.label ?? "CS_Studio_None".Translate()))
-                    {
+                    Widgets.Label(new Rect(inner.x, y, extraLabelW, 24), "CS_Studio_Effect_Hediff".Translate());
+                    if (Widgets.ButtonText(new Rect(inner.x + extraLabelW, y, extraFieldW, 24),
+                        effect.hediffDef?.label ?? "CS_Studio_None".Translate()))
                         ShowHediffSelector(effect);
-                    }
                     y += 30;
-                    Widgets.Label(new Rect(inner.x, y, labelWidth, 24), "CS_Studio_Effect_Duration".Translate());
+                    Widgets.Label(new Rect(inner.x, y, extraLabelW, 24), "CS_Studio_Effect_Duration".Translate());
                     string buffDurationStr = effect.duration.ToString();
-                    Widgets.TextFieldNumeric(new Rect(inner.x + labelWidth, y, fieldWidth * 2 + 10, 24), ref effect.duration, ref buffDurationStr, 0f, 600f);
+                    Widgets.TextFieldNumeric(new Rect(inner.x + extraLabelW, y, extraFieldW, 24),
+                        ref effect.duration, ref buffDurationStr, 0f, 600f);
                     break;
                 case AbilityEffectType.Control:
-                    Widgets.Label(new Rect(inner.x, y, labelWidth, 24), "CS_Studio_Effect_Duration".Translate());
+                    Widgets.Label(new Rect(inner.x, y, extraLabelW, 24), "CS_Studio_Effect_Duration".Translate());
                     string controlDurationStr = effect.duration.ToString();
-                    Widgets.TextFieldNumeric(new Rect(inner.x + labelWidth, y, fieldWidth * 2 + 10, 24), ref effect.duration, ref controlDurationStr, 0f, 600f);
+                    Widgets.TextFieldNumeric(new Rect(inner.x + extraLabelW, y, extraFieldW, 24),
+                        ref effect.duration, ref controlDurationStr, 0f, 600f);
                     break;
                 case AbilityEffectType.Heal:
                 case AbilityEffectType.Teleport:
                 case AbilityEffectType.Terraform:
-                    Widgets.Label(new Rect(inner.x, y, fieldWidth * 2 + labelWidth + 10, 24), "CS_Studio_Effect_NoExtraParams".Translate());
+                    GUI.color = UIHelper.SubtleColor;
+                    Widgets.Label(new Rect(inner.x, y, inner.width, 24), "CS_Studio_Effect_NoExtraParams".Translate());
+                    GUI.color = Color.white;
                     break;
             }
         }
@@ -1010,18 +1021,28 @@ namespace CharacterStudio.UI
             string validationText = selectedAbility == null ? "-" : GetValidationLabel(selectedAbility.Validate());
             string hotkeyText     = GetHotkeySummary();
 
-            // 左侧：选中技能信息
-            float leftW = inner.width * 0.38f;
-            Widgets.Label(new Rect(inner.x, inner.y,       leftW, 24f), "CS_Studio_Ability_SelectedSummary".Translate(selectedName));
-            Widgets.Label(new Rect(inner.x, inner.y + 24f, leftW, 24f), "CS_Studio_Ability_HotkeySummary".Translate(hotkeyText));
+            // 左侧（40%）：选中技能名 + 热键摘要（Tiny，允许换行）
+            float leftW = inner.width * 0.40f;
+            Widgets.Label(new Rect(inner.x, inner.y, leftW, 24f),
+                "CS_Studio_Ability_SelectedSummary".Translate(selectedName));
+            Text.Font = GameFont.Tiny;
+            GUI.color = UIHelper.SubtleColor;
+            Widgets.Label(new Rect(inner.x, inner.y + 22f, leftW, 24f),
+                "CS_Studio_Ability_HotkeySummary".Translate(hotkeyText));
+            GUI.color = Color.white;
+            Text.Font = GameFont.Small;
 
-            // 中间：验证 & 效果数
-            float midX = inner.x + inner.width * 0.40f;
-            float midW = inner.width * 0.30f;
-            Widgets.Label(new Rect(midX, inner.y,       midW, 24f), "CS_Studio_Ability_ValidationSummary".Translate(validationText));
-            Widgets.Label(new Rect(midX, inner.y + 24f, midW, 24f), "CS_Studio_Ability_EffectsSummary".Translate(selectedAbility?.effects?.Count ?? 0, selectedAbility?.runtimeComponents?.Count ?? 0));
+            // 中间（28%）：验证状态 + 效果数
+            float midX = inner.x + inner.width * 0.42f;
+            float midW = inner.width * 0.28f;
+            Widgets.Label(new Rect(midX, inner.y,       midW, 24f),
+                "CS_Studio_Ability_ValidationSummary".Translate(validationText));
+            Widgets.Label(new Rect(midX, inner.y + 22f, midW, 24f),
+                "CS_Studio_Ability_EffectsSummary".Translate(
+                    selectedAbility?.effects?.Count ?? 0,
+                    selectedAbility?.runtimeComponents?.Count ?? 0));
 
-            // 右侧：绑定到角色
+            // 右侧（30%）：绑定到角色
             float bindX = inner.x + inner.width * 0.72f;
             float bindW = inner.width * 0.28f;
             DrawBindToPawnSection(new Rect(bindX, inner.y, bindW, inner.height));
@@ -1079,9 +1100,11 @@ namespace CharacterStudio.UI
                 return;
             }
 
-            var pawns = map.mapPawns.FreeColonists
-                .Where(p => p != null && p.RaceProps.Humanlike)
-                .OrderBy(p => p.LabelShort)
+            // 包含所有地图上的角色（殖民者、访客、俘虏、动物等）
+            var pawns = map.mapPawns.AllPawnsSpawned
+                .Where(p => p != null && !p.Dead && p.abilities != null)
+                .OrderByDescending(p => p.IsColonist)
+                .ThenBy(p => p.LabelShort)
                 .ToList();
 
             if (pawns.Count == 0)
@@ -1110,9 +1133,8 @@ namespace CharacterStudio.UI
         {
             if (boundPawn == null || abilities == null || abilities.Count == 0) return;
 
-            // 构建临时皮肤容器
-            var tempSkin = boundSkin ?? new CharacterStudio.Core.PawnSkinDef();
-            tempSkin.abilities.Clear();
+            // 构建临时皮肤容器（不修改 boundSkin，使用独立临时对象）
+            var tempSkin = new CharacterStudio.Core.PawnSkinDef();
             foreach (var a in abilities)
                 if (a != null) tempSkin.abilities.Add(a);
 
@@ -1142,12 +1164,19 @@ namespace CharacterStudio.UI
                 ? (validation.Warnings.Count > 0 ? "⚠" : "✅")
                 : "❌";
             string displayName = string.IsNullOrWhiteSpace(ability.label) ? ability.defName : ability.label;
-            string subline = string.Format("{0} | {1} | {2} {3:0} | {4}", ability.defName, GetCarrierTypeLabel(ability.carrierType), "CS_Studio_Ability_CooldownShort".Translate(), ability.cooldownTicks, GetValidationLabel(validation));
+
+            // subline 分两段：左侧 carrierType + CD，右侧 validation（Tiny 字体）
+            string sublineLeft  = $"{GetCarrierTypeLabel(ability.carrierType)}  CD:{ability.cooldownTicks:0}t";
+            string sublineRight = GetValidationLabel(validation);
 
             Widgets.Label(new Rect(rowRect.x + 6f, rowRect.y + 2f, rowRect.width - 12f, 20f), $"{statusIcon} {displayName}");
+            Text.Font = GameFont.Tiny;
             GUI.color = Color.gray;
-            Widgets.Label(new Rect(rowRect.x + 20f, rowRect.y + 19f, rowRect.width - 24f, 18f), subline);
+            Widgets.Label(new Rect(rowRect.x + 20f, rowRect.y + 20f, rowRect.width * 0.6f - 20f, 16f), sublineLeft);
+            GUI.color = validation.IsValid ? (validation.Warnings.Count > 0 ? new Color(1f, 0.85f, 0.2f) : new Color(0.4f, 1f, 0.5f)) : new Color(1f, 0.35f, 0.35f);
+            Widgets.Label(new Rect(rowRect.x + rowRect.width * 0.6f, rowRect.y + 20f, rowRect.width * 0.4f, 16f), sublineRight);
             GUI.color = Color.white;
+            Text.Font = GameFont.Small;
         }
 
         private void DrawSelectedAbilitySummary(ref float y, float width)
@@ -1163,10 +1192,24 @@ namespace CharacterStudio.UI
             var validation = selectedAbility.Validate();
             string selectedName = string.IsNullOrWhiteSpace(selectedAbility.label) ? selectedAbility.defName : selectedAbility.label;
 
-            Widgets.Label(new Rect(inner.x, inner.y, inner.width * 0.5f, 24f), selectedName);
-            Widgets.Label(new Rect(inner.x, inner.y + 22f, inner.width * 0.5f, 24f), "CS_Studio_Ability_DefSummary".Translate(selectedAbility.defName));
-            Widgets.Label(new Rect(inner.x + inner.width * 0.52f, inner.y, inner.width * 0.48f, 24f), "CS_Studio_Ability_ValidationSummary".Translate(GetValidationLabel(validation)));
-            Widgets.Label(new Rect(inner.x + inner.width * 0.52f, inner.y + 22f, inner.width * 0.48f, 24f), "CS_Studio_Ability_HotkeySummary".Translate(GetHotkeySummaryForSelected()));
+            // 左半：技能名（大字）+ defName（小字）
+            Widgets.Label(new Rect(inner.x, inner.y, inner.width * 0.52f, 24f), selectedName);
+            Text.Font = GameFont.Tiny;
+            GUI.color = UIHelper.SubtleColor;
+            Widgets.Label(new Rect(inner.x, inner.y + 22f, inner.width * 0.52f, 18f),
+                "CS_Studio_Ability_DefSummary".Translate(selectedAbility.defName));
+            GUI.color = Color.white;
+            Text.Font = GameFont.Small;
+
+            // 右半：验证（顶）+ 热键（底，Tiny）
+            Widgets.Label(new Rect(inner.x + inner.width * 0.54f, inner.y, inner.width * 0.46f, 24f),
+                "CS_Studio_Ability_ValidationSummary".Translate(GetValidationLabel(validation)));
+            Text.Font = GameFont.Tiny;
+            GUI.color = UIHelper.SubtleColor;
+            Widgets.Label(new Rect(inner.x + inner.width * 0.54f, inner.y + 22f, inner.width * 0.46f, 18f),
+                "CS_Studio_Ability_HotkeySummary".Translate(GetHotkeySummaryForSelected()));
+            GUI.color = Color.white;
+            Text.Font = GameFont.Small;
 
             y += 70f;
         }
@@ -1323,6 +1366,7 @@ namespace CharacterStudio.UI
         }
     }
 }
+
 
 
 

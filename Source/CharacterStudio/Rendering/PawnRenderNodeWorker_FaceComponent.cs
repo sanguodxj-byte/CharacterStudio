@@ -91,14 +91,19 @@ namespace CharacterStudio.Rendering
             if (skin?.faceConfig?.enabled == true)
             {
                 ExpressionType exp  = comp?.GetEffectiveExpression() ?? ExpressionType.Neutral;
-                string         path = skin.faceConfig.GetTexPath(exp);
+                // 传入当前帧动画 Tick，供帧序列定位当前帧
+                int  animTick = comp?.GetExpressionAnimTick() ?? 0;
+                string path  = skin.faceConfig.GetTexPath(exp, animTick);
 
                 if (!string.IsNullOrEmpty(path))
                 {
                     Shader shader    = node.ShaderFor(parms.pawn) ?? ShaderDatabase.Cutout;
                     Color  nodeColor = node.Props?.color ?? Color.white;
 
-                    return GetOrBuildGraphic(path, shader, nodeColor);
+                    // 帧动画表情：缓存键加入 animTick（区分每帧），静态表情 tick=0
+                    var expEntry = skin.faceConfig.GetExpression(exp);
+                    int cacheTickKey = (expEntry?.IsAnimated == true) ? animTick : 0;
+                    return GetOrBuildGraphic(path, shader, nodeColor, cacheTickKey);
                 }
             }
 
@@ -112,10 +117,10 @@ namespace CharacterStudio.Rendering
         // 缓存辅助
         // ─────────────────────────────────────────────
 
-        private static Graphic GetOrBuildGraphic(string path, Shader shader, Color color)
+        private static Graphic GetOrBuildGraphic(string path, Shader shader, Color color, int tickKey = 0)
         {
-            // 缓存键：路径 + shader 名称 + 颜色 RGBA（精确到 F3 避免浮点抖动）
-            string key = BuildCacheKey(path, shader, color);
+            // 缓存键：路径 + shader 名称 + 颜色 RGBA + tickKey（帧动画每帧独立缓存）
+            string key = BuildCacheKey(path, shader, color, tickKey);
             if (graphicCache.TryGetValue(key, out var cached))
                 return cached;
 
@@ -160,8 +165,13 @@ namespace CharacterStudio.Rendering
             return isMulti;
         }
 
-        private static string BuildCacheKey(string path, Shader shader, Color color)
-            => $"{path}|{shader?.name ?? ""}|{color.r:F3},{color.g:F3},{color.b:F3},{color.a:F3}";
+        private static string BuildCacheKey(string path, Shader shader, Color color, int tickKey = 0)
+        {
+            // tickKey 非零时（帧动画）加入 tick 区分不同帧的缓存
+            if (tickKey != 0)
+                return $"{path}|{shader?.name ?? ""}|{color.r:F3},{color.g:F3},{color.b:F3},{color.a:F3}|t{tickKey}";
+            return $"{path}|{shader?.name ?? ""}|{color.r:F3},{color.g:F3},{color.b:F3},{color.a:F3}";
+        }
 
         /// <summary>
         /// 清除表情图形缓存（皮肤热重载时调用）
