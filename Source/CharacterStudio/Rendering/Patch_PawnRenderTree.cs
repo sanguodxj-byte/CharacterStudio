@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
@@ -453,10 +453,15 @@ namespace CharacterStudio.Rendering
                 var tagsToHide = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 if (skinDef.hiddenTags != null)
                     foreach (var t in skinDef.hiddenTags)
-                        if (!string.IsNullOrEmpty(t)) tagsToHide.Add(t);
+                        if (!string.IsNullOrEmpty(t) &&
+                            t.IndexOf("Apparel", StringComparison.OrdinalIgnoreCase) < 0 &&
+                            t.IndexOf("Headgear", StringComparison.OrdinalIgnoreCase) < 0)
+                            tagsToHide.Add(t);
 
                 foreach (var t in fallbackTagsFromMissedPaths)
-                    tagsToHide.Add(t);
+                    if (t.IndexOf("Apparel", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        t.IndexOf("Headgear", StringComparison.OrdinalIgnoreCase) < 0)
+                        tagsToHide.Add(t);
 
                 foreach (var t in tagsToHide)
                     HideNodeByTagName(nodesByTag!, t);

@@ -249,11 +249,15 @@ namespace CharacterStudio.Rendering
 
             if (!(node is PawnRenderNode_Custom))
             {
+                // 跳过服装和头盔节点，绝对不隐藏
+                if (IsApparelLikeNode(node)) goto recurse;
+
                 string nodeTexPath = ResolveNodeTexturePathForHide(node, pawn);
                 if (!string.IsNullOrEmpty(nodeTexPath) && importedTexPaths.Contains(nodeTexPath))
                     HideNode(node);
             }
 
+            recurse:
             if (node.children == null) return;
             foreach (var child in node.children)
             {
