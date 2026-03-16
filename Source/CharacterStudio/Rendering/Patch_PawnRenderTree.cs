@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
@@ -200,15 +200,15 @@ namespace CharacterStudio.Rendering
         // Harmony 前缀：CanDrawNow
         // ─────────────────────────────────────────────
 
-        private static bool CanDrawNow_Prefix(PawnRenderNode node, ref bool __result)
+        private static bool CanDrawNow_Prefix(PawnRenderNode __0, ref bool __result)
         {
-            if (node?.tree == null) return true;
-            if (node is PawnRenderNode_Custom) return true;
+            if (__0?.tree == null) return true;
+            if (__0 is PawnRenderNode_Custom) return true;
 
-            var hidden = GetHiddenSet(node.tree);
-            if (hidden.Contains(node))
+            var hidden = GetHiddenSet(__0.tree);
+            if (hidden.Contains(__0))
             {
-                if (HasCustomDescendant(node)) return true;
+                if (HasCustomDescendant(__0)) return true;
                 __result = false;
                 return false;
             }
@@ -465,3 +465,4 @@ namespace CharacterStudio.Rendering
         }
     }
 }
+
