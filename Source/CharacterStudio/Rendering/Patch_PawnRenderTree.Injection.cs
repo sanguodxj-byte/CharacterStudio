@@ -37,6 +37,9 @@ namespace CharacterStudio.Rendering
 
                 bool anyNodesInjected = InjectCustomLayers(tree, pawn, skinDef);
 
+                // 注入眼睛方向覆盖层（仅当配置启用时）
+                InjectEyeDirectionLayer(tree, pawn, skinDef);
+
                 if (anyNodesInjected && IsGraphicsReadyForVanillaNodes(tree))
                     HideVanillaNodesByImportedTexPaths(tree, skinDef);
             }
@@ -81,7 +84,8 @@ namespace CharacterStudio.Rendering
 
         private static void RemoveCustomNodesRecursive(PawnRenderNode node)
         {
-            if (node.children == null || node.children.Length == 0) return;
+            if (node.children == null || node.children.Length == 0)
+                return;
 
             bool hasCustomChild = false;
             foreach (var child in node.children)
@@ -99,7 +103,8 @@ namespace CharacterStudio.Rendering
 
             if (hasCustomChild)
             {
-                var newChildren = new List<PawnRenderNode>();
+                // 先收集需要保留的子节点，再以数组形式写回（与 PawnRenderNode.children 类型一致）
+                var newChildren = new List<PawnRenderNode>(node.children.Length);
                 foreach (var child in node.children)
                     if (!(child is PawnRenderNode_Custom))
                         newChildren.Add(child);
@@ -337,5 +342,58 @@ namespace CharacterStudio.Rendering
                 foreach (var child in node.children)
                     ManuallyInitializeAncestors(child, nodeAncestors, pathWithCurrent);
         }
+
+        // ─────────────────────────────────────────────
+        // 眼睛方向覆盖层注入
+        // ─────────────────────────────────────────────
+
+        /// <summary>
+        /// 当 faceConfig.eyeDirectionConfig 启用时，
+        /// 在头部节点下注入一个 PawnRenderNodeWorker_EyeDirection 覆盖层，
+        /// 用于渲染当前眼睛方向贴图。
+        ///
+        /// 空值防护：任何前置条件不满足时直接返回，不抛出异常。
+        /// 重复防护：RefreshHiddenNodes 调用链在此方法前已执行 RemoveAllCustomNodes，
+        ///           所有 PawnRenderNode_Custom（含眼睛方向层）均已被清除，无需额外处理。
+        /// </summary>
+        private static void InjectEyeDirectionLayer(PawnRenderTree tree, Pawn pawn, Core.PawnSkinDef skinDef)
+        {
+            try
+            {
+                var eyeCfg = skinDef?.faceConfig?.eyeDirectionConfig;
+                if (eyeCfg == null || !eyeCfg.enabled || !eyeCfg.HasAnyTex()) return;
+
+                // 尝试挂载到头部节点；找不到时回退到根节点
+                PawnRenderNode? parentNode = FindParentNode(tree, "Head");
+                if (parentNode == null || parentNode == tree.rootNode)
+                    parentNode = tree.rootNode;
+                if (parentNode == null) return; // rootNode 为 null 时安全退出
+
+                var props = new PawnRenderNodeProperties
+                {
+                    texPath     = string.Empty, // 贴图由 Worker 动态提供
+                    workerClass = typeof(PawnRenderNodeWorker_EyeDirection),
+                    nodeClass   = typeof(PawnRenderNode_Custom),
+                    baseLayer   = 0.001f,       // 紧贴头部之上
+                    debugLabel  = "[CS] EyeDirection",
+                };
+
+                var node = (PawnRenderNode)Activator.CreateInstance(
+                    typeof(PawnRenderNode_Custom),
+                    new object[] { pawn, props, tree });
+
+                if (node == null) return;
+
+                node.parent = parentNode;
+                AddChildToNode(parentNode, node);
+
+                ReinitializeNodeAncestors(tree);
+            }
+            catch (Exception ex)
+            {
+                Log.Warning($"[CharacterStudio] 注入眼睛方向覆盖层时出错: {ex.Message}");
+            }
+        }
+
     }
 }

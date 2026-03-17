@@ -30,6 +30,7 @@ namespace CharacterStudio.Core
 
             // 皮肤切换时清除表情图形缓存，避免新皮肤使用旧贴图
             CharacterStudio.Rendering.PawnRenderNodeWorker_FaceComponent.ClearCache();
+            CharacterStudio.Rendering.PawnRenderNodeWorker_EyeDirection.ClearCache();
 
             try
             {

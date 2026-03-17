@@ -670,6 +670,7 @@ namespace CharacterStudio.Rendering
 
         /// <summary>
         /// 阶段3: 根据 Pawn 状态解析表情变体路径
+        /// 优先从 CompPawnSkin.GetEffectiveExpression() 获取状态，与正规表情系统同步。
         /// 后缀优先级: _Sleep > _Angry > _Blink > 原始路径
         /// </summary>
         private string ResolveExpressionVariant(string basePath, Pawn pawn)
@@ -679,7 +680,44 @@ namespace CharacterStudio.Rendering
 
             try
             {
-                // 检测睡眠状态（检查是否在床上）
+                // 优先通过 CompPawnSkin 读取正规表情状态（已含 previewOverride 和 blinkTimer）
+                var skinComp = pawn.TryGetComp<CharacterStudio.Core.CompPawnSkin>();
+                if (skinComp != null && skinComp.HasActiveSkin)
+                {
+                    var expr = skinComp.GetEffectiveExpression();
+
+                    // 睡眠 / 死亡 → _Sleep 后缀
+                    if (expr == ExpressionType.Sleeping || expr == ExpressionType.Dead)
+                    {
+                        string sleepPath = basePath + "_Sleep";
+                        if (TextureExists(sleepPath))
+                            return sleepPath;
+                    }
+
+                    // 攻击性 / 愤怒 → _Angry 后缀
+                    if (expr == ExpressionType.Angry ||
+                        expr == ExpressionType.AttackMelee ||
+                        expr == ExpressionType.AttackRanged ||
+                        expr == ExpressionType.WaitCombat ||
+                        expr == ExpressionType.Scared)
+                    {
+                        string angryPath = basePath + "_Angry";
+                        if (TextureExists(angryPath))
+                            return angryPath;
+                    }
+
+                    // 眨眼（由 CompPawnSkin.blinkTimer 驱动，各 Pawn 相位错开）
+                    if (expr == ExpressionType.Blink)
+                    {
+                        string blinkPath = basePath + "_Blink";
+                        if (TextureExists(blinkPath))
+                            return blinkPath;
+                    }
+
+                    return basePath;
+                }
+
+                // 回退：没有 CompPawnSkin 时，用轻量级状态判断
                 if (pawn.jobs?.curDriver != null && RestUtility.InBed(pawn))
                 {
                     string sleepPath = basePath + "_Sleep";
@@ -687,22 +725,11 @@ namespace CharacterStudio.Rendering
                         return sleepPath;
                 }
 
-                // 检测愤怒状态（被征召或精神崩溃中）
                 if (pawn.Drafted || (pawn.MentalState != null && pawn.MentalState.def.IsAggro))
                 {
                     string angryPath = basePath + "_Angry";
                     if (TextureExists(angryPath))
                         return angryPath;
-                }
-
-                // 眨眼状态（基于 tick 的周期性检测）
-                // 每 200 ticks 眨眼一次，持续 10 ticks
-                int tickCycle = Find.TickManager.TicksGame % 200;
-                if (tickCycle < 10)
-                {
-                    string blinkPath = basePath + "_Blink";
-                    if (TextureExists(blinkPath))
-                        return blinkPath;
                 }
             }
             catch

@@ -550,6 +550,22 @@ Use the button below to add the first effect, or load the QWER examples to inspe
     <CS_Studio_Face_HeadTexHint>Assign a full head texture for each expression, or click [+F] to add multiple frames for animation.</CS_Studio_Face_HeadTexHint>
     <CS_Studio_Face_ExpressionMappings>Expression Texture Mappings</CS_Studio_Face_ExpressionMappings>
     <CS_Studio_Face_Assigned>configured</CS_Studio_Face_Assigned>
+    <!-- Eye Direction -->
+    <CS_Studio_Face_EyeDir_Title>Eye Direction Config</CS_Studio_Face_EyeDir_Title>
+    <CS_Studio_Face_EyeDir_Hint>Assign an overlay texture for each gaze direction. Missing directions fall back to Center automatically.</CS_Studio_Face_EyeDir_Hint>
+    <CS_Studio_Face_EyeDir_Create>Create Eye Direction Config</CS_Studio_Face_EyeDir_Create>
+    <CS_Studio_Face_EyeDir_Enable>Enable Eye Direction</CS_Studio_Face_EyeDir_Enable>
+    <CS_Studio_Face_EyeDir_Preview>Preview Direction</CS_Studio_Face_EyeDir_Preview>
+    <CS_Studio_Face_EyeDir_Auto>Auto (runtime inferred)</CS_Studio_Face_EyeDir_Auto>
+    <CS_Studio_Face_EyeDir_Center>Center</CS_Studio_Face_EyeDir_Center>
+    <CS_Studio_Face_EyeDir_Left>Left</CS_Studio_Face_EyeDir_Left>
+    <CS_Studio_Face_EyeDir_Right>Right</CS_Studio_Face_EyeDir_Right>
+    <CS_Studio_Face_EyeDir_Up>Up</CS_Studio_Face_EyeDir_Up>
+    <CS_Studio_Face_EyeDir_Down>Down</CS_Studio_Face_EyeDir_Down>
+    <CS_Studio_Face_EyeDir_Remove>Remove Eye Direction Config</CS_Studio_Face_EyeDir_Remove>
+    <CS_Studio_Face_EyeDir_PupilMoveRange>Pupil UV Offset Range</CS_Studio_Face_EyeDir_PupilMoveRange>
+    <CS_Ability_Hotkey_SlotCooldown>{0} ability on cooldown, {1}s remaining</CS_Ability_Hotkey_SlotCooldown>
+    <CS_Studio_Face_EyeDir_UVModeHint>UV offset mode active: Left/Right/Up/Down textures not needed, direction is code-driven</CS_Studio_Face_EyeDir_UVModeHint>
     <CS_Studio_None>(None)</CS_Studio_None>
     <CS_Studio_Node_Tooltip>Path: {0}\nType: {1}\nTexture: {2}</CS_Studio_Node_Tooltip>
     <CS_Studio_Mannequin_NotInitialized>Mannequin not initialized</CS_Studio_Mannequin_NotInitialized>
@@ -661,5 +677,47 @@ Use the button below to add the first effect, or load the QWER examples to inspe
     <!-- Tooltips -->
     <CS_Studio_Tip_ExpandAll>Expand all property sections</CS_Studio_Tip_ExpandAll>
     <CS_Studio_Tip_CollapseAll>Collapse all property sections</CS_Studio_Tip_CollapseAll>
+
+    <!-- Visual Effects (Ability Editor) -->
+    <CS_Studio_VFX_Title>Visual Effects</CS_Studio_VFX_Title>
+    <CS_Studio_VFX_Add>+ Add</CS_Studio_VFX_Add>
+    <CS_Studio_VFX_EmptyHint>No visual effects. Click "+ Add" to configure particle/glow effects played on ability cast.</CS_Studio_VFX_EmptyHint>
+    <CS_Studio_VFX_Type>Effect Type</CS_Studio_VFX_Type>
+    <CS_Studio_VFX_Target>Target</CS_Studio_VFX_Target>
+    <CS_Studio_VFX_Delay>Delay (ticks)</CS_Studio_VFX_Delay>
+    <CS_Studio_VFX_Scale>Scale</CS_Studio_VFX_Scale>
+    <!-- Effect type labels -->
+    <CS_Studio_VFX_Type_DustPuff>Dust Puff</CS_Studio_VFX_Type_DustPuff>
+    <CS_Studio_VFX_Type_MicroSparks>Micro Sparks</CS_Studio_VFX_Type_MicroSparks>
+    <CS_Studio_VFX_Type_LightningGlow>Lightning Glow</CS_Studio_VFX_Type_LightningGlow>
+    <CS_Studio_VFX_Type_FireGlow>Fire Glow</CS_Studio_VFX_Type_FireGlow>
+    <CS_Studio_VFX_Type_Smoke>Smoke</CS_Studio_VFX_Type_Smoke>
+    <CS_Studio_VFX_Type_ExplosionEffect>Explosion Flash</CS_Studio_VFX_Type_ExplosionEffect>
+    <!-- Target labels -->
+    <CS_Studio_VFX_Target_Caster>Caster</CS_Studio_VFX_Target_Caster>
+    <CS_Studio_VFX_Target_Target>Hit Target</CS_Studio_VFX_Target_Target>
+    <CS_Studio_VFX_Target_Both>Both</CS_Studio_VFX_Target_Both>
+
+    <!-- Weapon Render Override -->
+    <CS_Studio_Section_WeaponRender>Weapon Render Override</CS_Studio_Section_WeaponRender>
+    <CS_Studio_WeaponRender_Enable>Enable Weapon Override</CS_Studio_WeaponRender_Enable>
+    <CS_Studio_WeaponRender_ApplyOffHand>Apply to Off-Hand Weapon</CS_Studio_WeaponRender_ApplyOffHand>
+    <CS_Studio_WeaponRender_ScaleX>Scale X</CS_Studio_WeaponRender_ScaleX>
+    <CS_Studio_WeaponRender_ScaleY>Scale Y</CS_Studio_WeaponRender_ScaleY>
+    <CS_Studio_WeaponRender_OffsetX>Offset X (Global)</CS_Studio_WeaponRender_OffsetX>
+    <CS_Studio_WeaponRender_OffsetY>Offset Y (Global)</CS_Studio_WeaponRender_OffsetY>
+    <CS_Studio_WeaponRender_OffsetZ>Offset Z (Global)</CS_Studio_WeaponRender_OffsetZ>
+    <CS_Studio_WeaponRender_DirOffsets>Directional Offsets</CS_Studio_WeaponRender_DirOffsets>
+    <CS_Studio_WeaponRender_OffSouthX>South Offset X</CS_Studio_WeaponRender_OffSouthX>
+    <CS_Studio_WeaponRender_OffSouthZ>South Offset Z</CS_Studio_WeaponRender_OffSouthZ>
+    <CS_Studio_WeaponRender_OffNorthX>North Offset X</CS_Studio_WeaponRender_OffNorthX>
+    <CS_Studio_WeaponRender_OffNorthZ>North Offset Z</CS_Studio_WeaponRender_OffNorthZ>
+    <CS_Studio_WeaponRender_OffEastX>East/West Offset X</CS_Studio_WeaponRender_OffEastX>
+    <CS_Studio_WeaponRender_OffEastZ>East/West Offset Z</CS_Studio_WeaponRender_OffEastZ>
+    <CS_Studio_WeaponRender_Reset>Reset Weapon Config</CS_Studio_WeaponRender_Reset>
+
+    <!-- Expression minimum set progress -->
+    <!-- {0} = done count, {1} = min set total -->
+    <CS_Studio_Face_MinSetProgress>Min Set {0}/{1} complete (★ = recommended priority)</CS_Studio_Face_MinSetProgress>
 </LanguageData>
 

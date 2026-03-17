@@ -70,7 +70,7 @@ namespace CharacterStudio.UI
             float fieldWidth = inRect.width - labelWidth - 20;
 
             Rect scrollRect = new Rect(0, y, inRect.width, inRect.height - y - 50);
-            Rect viewRect = new Rect(0, 0, scrollRect.width - 16, 500);
+            Rect viewRect = new Rect(0, 0, scrollRect.width - 16, 760);
 
             Widgets.BeginScrollView(scrollRect, ref scrollPos, viewRect);
 
@@ -113,6 +113,38 @@ namespace CharacterStudio.UI
             DrawHotkeyMappingField(ref vy, width, "CS_Studio_Ability_Hotkey_E".Translate(), () => tempEAbilityDefName, v => tempEAbilityDefName = v);
             DrawHotkeyMappingField(ref vy, width, "CS_Studio_Ability_Hotkey_R".Translate(), () => tempRAbilityDefName, v => tempRAbilityDefName = v);
             DrawHotkeyMappingField(ref vy, width, "CS_Studio_Ability_Hotkey_WCombo".Translate(), () => tempWComboAbilityDefName, v => tempWComboAbilityDefName = v);
+
+            // 武器渲染覆写
+            UIHelper.DrawSectionTitle(ref vy, width, "CS_Studio_Section_WeaponRender".Translate());
+            if (skinDef.weaponRenderConfig == null)
+                skinDef.weaponRenderConfig = new CharacterStudio.Core.WeaponRenderConfig();
+            var wrc = skinDef.weaponRenderConfig;
+            UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_WeaponRender_Enable".Translate(), ref wrc.enabled);
+            if (wrc.enabled)
+            {
+                UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_WeaponRender_ApplyOffHand".Translate(), ref wrc.applyToOffHand);
+                UIHelper.DrawPropertySlider(ref vy, width, "CS_Studio_WeaponRender_ScaleX".Translate(), ref wrc.scale.x, 0.1f, 3f, "F2");
+                UIHelper.DrawPropertySlider(ref vy, width, "CS_Studio_WeaponRender_ScaleY".Translate(), ref wrc.scale.y, 0.1f, 3f, "F2");
+                UIHelper.DrawPropertySlider(ref vy, width, "CS_Studio_WeaponRender_OffsetX".Translate(), ref wrc.offset.x, -2f, 2f, "F3");
+                UIHelper.DrawPropertySlider(ref vy, width, "CS_Studio_WeaponRender_OffsetY".Translate(), ref wrc.offset.y, -2f, 2f, "F3");
+                UIHelper.DrawPropertySlider(ref vy, width, "CS_Studio_WeaponRender_OffsetZ".Translate(), ref wrc.offset.z, -2f, 2f, "F3");
+                // 方向特定偏移 (南/北/东)
+                UIHelper.DrawSectionTitle(ref vy, width, "CS_Studio_WeaponRender_DirOffsets".Translate());
+                UIHelper.DrawPropertySlider(ref vy, width, "CS_Studio_WeaponRender_OffSouthX".Translate(), ref wrc.offsetSouth.x, -2f, 2f, "F3");
+                UIHelper.DrawPropertySlider(ref vy, width, "CS_Studio_WeaponRender_OffSouthZ".Translate(), ref wrc.offsetSouth.z, -2f, 2f, "F3");
+                UIHelper.DrawPropertySlider(ref vy, width, "CS_Studio_WeaponRender_OffNorthX".Translate(), ref wrc.offsetNorth.x, -2f, 2f, "F3");
+                UIHelper.DrawPropertySlider(ref vy, width, "CS_Studio_WeaponRender_OffNorthZ".Translate(), ref wrc.offsetNorth.z, -2f, 2f, "F3");
+                UIHelper.DrawPropertySlider(ref vy, width, "CS_Studio_WeaponRender_OffEastX".Translate(), ref wrc.offsetEast.x, -2f, 2f, "F3");
+                UIHelper.DrawPropertySlider(ref vy, width, "CS_Studio_WeaponRender_OffEastZ".Translate(), ref wrc.offsetEast.z, -2f, 2f, "F3");
+
+                // 重置按钮
+                if (Widgets.ButtonText(new Rect(0, vy, 120, 24), "CS_Studio_WeaponRender_Reset".Translate()))
+                {
+                    skinDef.weaponRenderConfig = new CharacterStudio.Core.WeaponRenderConfig { enabled = true };
+                    onChanged?.Invoke();
+                }
+                vy += 30f;
+            }
 
             Widgets.EndScrollView();
 

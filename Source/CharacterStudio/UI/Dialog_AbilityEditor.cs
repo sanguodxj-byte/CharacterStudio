@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using CharacterStudio.Abilities;
@@ -32,10 +32,18 @@ namespace CharacterStudio.UI
         private Vector2 listScrollPos;
         private Vector2 propsScrollPos;
         private Vector2 effectsScrollPos;
+        private Vector2 vfxScrollPos;
+        private Vector2 rcScrollPos;
+        /// <summary>右侧面板标签：0=效果 1=视觉特效 2=运行时组件</summary>
+        private int rightPanelTab = 0;
         private string validationSummary = string.Empty;
         private string abilitySearchText = string.Empty;
         private string llmAbilityPrompt = string.Empty;
         private readonly SkinAbilityHotkeyConfig? boundHotkeys;
+        // LLM 生成状态（异步）
+        private bool llmAbilitiesGenerating = false;
+        private (bool replaceExisting, List<ModularAbilityDef> result)? llmAbilitiesPendingResult = null;
+        private string? llmAbilitiesPendingError = null;
 
         private readonly PawnSkinDef? boundSkin;
         // 绑定目标 Pawn（可从编辑器直接授予/撤销技能）
@@ -108,9 +116,9 @@ namespace CharacterStudio.UI
                 Rect centerRect = new Rect(LeftPanelWidth + Margin, contentY, centerWidth, contentHeight);
                 DrawAbilityProperties(centerRect);
 
-                // 右侧效果
+                // 右侧：三标签（效果 / 视觉特效 / 运行时组件）
                 Rect rightRect = new Rect(inRect.width - RightPanelWidth, contentY, RightPanelWidth, contentHeight);
-                DrawEffectsPanel(rightRect);
+                DrawRightTabPanel(rightRect);
             }
             else
             {
@@ -155,7 +163,9 @@ namespace CharacterStudio.UI
             }
 
             float thirdRowY = secondRowY + 30f;
-            if (Widgets.ButtonText(new Rect(inner.x, thirdRowY, buttonWidth, 24f), "CS_LLM_GenerateAbilities".Translate()))
+            GUI.enabled = !llmAbilitiesGenerating;
+            string genLabel = llmAbilitiesGenerating ? "CS_LLM_Generating".Translate().ToString() : "CS_LLM_GenerateAbilities".Translate().ToString();
+            if (Widgets.ButtonText(new Rect(inner.x, thirdRowY, buttonWidth, 24f), genLabel))
             {
                 GenerateAbilitiesFromPrompt(false);
             }
@@ -218,7 +228,9 @@ namespace CharacterStudio.UI
             Widgets.DrawMenuSection(rect);
             Rect contentRect = rect.ContractedBy(Margin);
 
-            Widgets.BeginScrollView(contentRect, ref propsScrollPos, new Rect(0, 0, contentRect.width - 16, 1400));
+            // 预算高度：基础段 ~400 + 验证按钮
+            float propsHeight = 420f;
+            Widgets.BeginScrollView(contentRect, ref propsScrollPos, new Rect(0, 0, contentRect.width - 16, propsHeight));
             
             float y = 0;
             float labelWidth = 100f;
@@ -271,8 +283,7 @@ namespace CharacterStudio.UI
                 y += RowHeight;
             }
 
-            DrawRuntimeComponentsSection(ref y, width);
-
+            // 运行时组件已移至右侧标签页，这里仅保留验证按钮
             y += 10f;
             if (Widgets.ButtonText(new Rect(0, y, width, 28f), "CS_Studio_Ability_Validate".Translate()))
             {
@@ -337,6 +348,440 @@ namespace CharacterStudio.UI
             }
 
             Widgets.EndScrollView();
+        }
+
+        /// <summary>
+        /// 右侧三标签容器（效果 / 视觉特效 / 运行时组件）
+        /// </summary>
+        private void DrawRightTabPanel(Rect rect)
+        {
+            Widgets.DrawMenuSection(rect);
+            Rect inner = rect.ContractedBy(Margin);
+
+            // 标签按钮行
+            float tabW = inner.width / 3f;
+            int effectCount = selectedAbility?.effects?.Count ?? 0;
+            int vfxCount    = selectedAbility?.visualEffects?.Count ?? 0;
+            int rcCount     = selectedAbility?.runtimeComponents?.Count ?? 0;
+
+            string[] tabs = {
+                $"CS_Studio_Effect_Title".Translate() + (effectCount > 0 ? $" ({effectCount})" : ""),
+                "CS_Studio_VFX_Title".Translate()    + (vfxCount > 0    ? $" ({vfxCount})"    : ""),
+                "CS_Studio_Section_RuntimeComponents".Translate().RawText.Split('.')[0] + (rcCount > 0 ? $" ({rcCount})" : "")
+            };
+
+            for (int i = 0; i < tabs.Length; i++)
+            {
+                Rect tabRect = new Rect(inner.x + tabW * i, inner.y, tabW, 26f);
+                bool active  = rightPanelTab == i;
+                if (active) Widgets.DrawHighlight(tabRect);
+                if (Widgets.ButtonText(tabRect, tabs[i]))
+                    rightPanelTab = i;
+            }
+
+            Rect bodyRect = new Rect(inner.x, inner.y + 28f, inner.width, inner.height - 28f);
+
+            switch (rightPanelTab)
+            {
+                case 0:  DrawEffectsPanelBody(bodyRect);         break;
+                case 1:  DrawVisualEffectsPanelBody(bodyRect);   break;
+                default: DrawRCPanelBody(bodyRect);              break;
+            }
+        }
+
+        /// <summary>
+        /// 效果列表正文（原 DrawEffectsPanel 去掉外框）
+        /// </summary>
+        private void DrawEffectsPanelBody(Rect rect)
+        {
+            // 添加按钮行
+            if (Widgets.ButtonText(new Rect(rect.x, rect.y, rect.width, 24f), "CS_Studio_Effect_Add".Translate()))
+                ShowAddEffectMenu();
+
+            GUI.color = UIHelper.SubtleColor;
+            Widgets.Label(new Rect(rect.x, rect.y + 26f, rect.width, 20f),
+                "CS_Studio_Ability_EffectsSummary".Translate(
+                    selectedAbility?.effects?.Count ?? 0,
+                    selectedAbility?.runtimeComponents?.Count ?? 0));
+            GUI.color = Color.white;
+
+            float listY = rect.y + 48f;
+            float listH = rect.height - 48f;
+            Rect  listRect = new Rect(rect.x, listY, rect.width, listH);
+
+            if (selectedAbility == null || selectedAbility.effects == null || selectedAbility.effects.Count == 0)
+            {
+                Widgets.DrawHighlight(listRect);
+                Text.Anchor = TextAnchor.MiddleCenter;
+                GUI.color   = Color.gray;
+                Widgets.Label(new Rect(listRect.x + 10f, listRect.y + 10f, listRect.width - 20f, 60f),
+                    "CS_Studio_Effect_EmptyHint".Translate());
+                GUI.color   = Color.white;
+                Text.Anchor = TextAnchor.UpperLeft;
+                return;
+            }
+
+            Rect viewRect = new Rect(0, 0, listRect.width - 16f, selectedAbility.effects.Count * 150f);
+            Widgets.BeginScrollView(listRect, ref effectsScrollPos, viewRect);
+            float cy = 0;
+            for (int i = 0; i < selectedAbility.effects.Count; i++)
+            {
+                DrawEffectItem(new Rect(0, cy, viewRect.width, 140f), selectedAbility.effects[i], i);
+                cy += 150f;
+            }
+            Widgets.EndScrollView();
+        }
+
+        /// <summary>
+        /// 视觉特效正文
+        /// </summary>
+        private void DrawVisualEffectsPanelBody(Rect rect)
+        {
+            if (Widgets.ButtonText(new Rect(rect.x, rect.y, rect.width, 24f), "CS_Studio_VFX_Add".Translate()))
+                ShowAddVfxMenu();
+
+            float listY    = rect.y + 28f;
+            float listH    = rect.height - 28f;
+            Rect  listRect = new Rect(rect.x, listY, rect.width, listH);
+
+            if (selectedAbility == null || selectedAbility.visualEffects == null || selectedAbility.visualEffects.Count == 0)
+            {
+                Widgets.DrawHighlight(listRect);
+                Text.Anchor = TextAnchor.MiddleCenter;
+                GUI.color   = Color.gray;
+                Widgets.Label(new Rect(listRect.x + 10f, listRect.y + 10f, listRect.width - 20f, 50f),
+                    "CS_Studio_VFX_EmptyHint".Translate());
+                GUI.color   = Color.white;
+                Text.Anchor = TextAnchor.UpperLeft;
+                return;
+            }
+
+            const float ItemH = 120f;
+            const float ItemGap = 4f;
+            Rect viewRect = new Rect(0, 0, listRect.width - 16f,
+                selectedAbility.visualEffects.Count * (ItemH + ItemGap));
+            Widgets.BeginScrollView(listRect, ref vfxScrollPos, viewRect);
+            float cy = 0;
+            for (int i = 0; i < selectedAbility.visualEffects.Count; i++)
+            {
+                DrawVfxItem(new Rect(0, cy, viewRect.width, ItemH), selectedAbility.visualEffects[i], i);
+                cy += ItemH + ItemGap;
+            }
+            Widgets.EndScrollView();
+        }
+
+        /// <summary>
+        /// 运行时组件正文（原 DrawRuntimeComponentsSection 内容拆出，带自有滚动）
+        /// </summary>
+        private void DrawRCPanelBody(Rect rect)
+        {
+            if (selectedAbility == null) return;
+
+            if (Widgets.ButtonText(new Rect(rect.x, rect.y, rect.width, 24f),
+                "CS_Studio_Runtime_AddComponent".Translate()))
+                ShowAddRuntimeComponentMenu();
+
+            float listY    = rect.y + 28f;
+            float listH    = rect.height - 28f;
+            Rect  listRect = new Rect(rect.x, listY, rect.width, listH);
+
+            if (selectedAbility.runtimeComponents == null || selectedAbility.runtimeComponents.Count == 0)
+            {
+                Widgets.DrawHighlight(listRect);
+                Text.Anchor = TextAnchor.MiddleCenter;
+                GUI.color   = Color.gray;
+                Widgets.Label(new Rect(listRect.x + 10f, listRect.y + 10f, listRect.width - 20f, 50f),
+                    "CS_Studio_Runtime_Empty".Translate());
+                GUI.color   = Color.white;
+                Text.Anchor = TextAnchor.UpperLeft;
+                return;
+            }
+
+            // 计算动态内容高度
+            float totalH = 0;
+            foreach (var comp in selectedAbility.runtimeComponents)
+            {
+                if (comp == null) continue;
+                float bh = comp.type switch
+                {
+                    AbilityRuntimeComponentType.QComboWindow       => 86f,
+                    AbilityRuntimeComponentType.EShortJump         => 140f,
+                    AbilityRuntimeComponentType.RStackDetonation   => 250f,
+                    _                                              => 64f
+                };
+                totalH += bh + 6f;
+            }
+
+            Rect viewRect = new Rect(0, 0, listRect.width - 16f, Mathf.Max(totalH, listRect.height));
+            Widgets.BeginScrollView(listRect, ref rcScrollPos, viewRect);
+
+            // DrawRuntimeComponentsSection 内部自行遍历所有组件并累加 y
+            // 这里传入 y=0（滚动视图局部坐标）和视图宽度即可
+            float y2 = 0f;
+            DrawRuntimeComponentsInBody(ref y2, viewRect.width);
+
+            Widgets.EndScrollView();
+        }
+
+        /// <summary>
+        /// 在滚动视图内绘制所有运行时组件块（不含标题/添加按钮，供 DrawRCPanelBody 使用）
+        /// </summary>
+        private void DrawRuntimeComponentsInBody(ref float y, float width)
+        {
+            if (selectedAbility == null) return;
+
+            if (selectedAbility.runtimeComponents == null || selectedAbility.runtimeComponents.Count == 0)
+            {
+                GUI.color = Color.gray;
+                Widgets.Label(new Rect(0, y, width, 24f), "CS_Studio_Runtime_Empty".Translate());
+                GUI.color = Color.white;
+                y += 28f;
+                return;
+            }
+
+            for (int i = 0; i < selectedAbility.runtimeComponents.Count; i++)
+            {
+                var comp = selectedAbility.runtimeComponents[i];
+                if (comp == null) continue;
+
+                float blockHeight = 64f;
+                switch (comp.type)
+                {
+                    case AbilityRuntimeComponentType.QComboWindow:     blockHeight = 86f;  break;
+                    case AbilityRuntimeComponentType.EShortJump:       blockHeight = 140f; break;
+                    case AbilityRuntimeComponentType.RStackDetonation: blockHeight = 250f; break;
+                }
+
+                Rect block = new Rect(0, y, width, blockHeight);
+                Widgets.DrawMenuSection(block);
+                Rect inner = block.ContractedBy(5f);
+
+                Widgets.Label(new Rect(inner.x, inner.y, inner.width - 100f, 24f),
+                    $"#{i + 1} {GetRuntimeComponentTypeLabel(comp.type)}");
+                bool enabled = comp.enabled;
+                Widgets.Checkbox(new Vector2(inner.x + inner.width - 96f, inner.y + 2f), ref enabled, 24f, false);
+                comp.enabled = enabled;
+
+                if (Widgets.ButtonText(new Rect(inner.x + inner.width - 68f, inner.y, 64f, 24f), "X"))
+                {
+                    selectedAbility.runtimeComponents.RemoveAt(i);
+                    i--;
+                    y += blockHeight + 6f;
+                    continue;
+                }
+
+                float rowY  = inner.y + 28f;
+                float labelW = 160f;
+                float valueW = inner.width - labelW - 6f;
+
+                if (comp.type == AbilityRuntimeComponentType.QComboWindow)
+                {
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_QWindowTicks".Translate());
+                    string s = comp.comboWindowTicks.ToString();
+                    Widgets.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.comboWindowTicks, ref s, 1, 9999);
+                }
+                else if (comp.type == AbilityRuntimeComponentType.EShortJump)
+                {
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_ECooldownTicks".Translate());
+                    string cd = comp.cooldownTicks.ToString();
+                    Widgets.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.cooldownTicks, ref cd, 0, 99999);
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_EJumpDistance".Translate());
+                    string dist = comp.jumpDistance.ToString();
+                    Widgets.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.jumpDistance, ref dist, 1, 100);
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_EFindRadius".Translate());
+                    string find = comp.findCellRadius.ToString();
+                    Widgets.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.findCellRadius, ref find, 0, 30);
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_ETriggerEffects".Translate());
+                    bool trigger = comp.triggerAbilityEffectsAfterJump;
+                    Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref trigger, 24f, false);
+                    comp.triggerAbilityEffectsAfterJump = trigger;
+                }
+                else if (comp.type == AbilityRuntimeComponentType.RStackDetonation)
+                {
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_RRequiredStacks".Translate());
+                    string stacks = comp.requiredStacks.ToString();
+                    Widgets.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.requiredStacks, ref stacks, 1, 999);
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_RDelayTicks".Translate());
+                    string delay = comp.delayTicks.ToString();
+                    Widgets.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.delayTicks, ref delay, 0, 99999);
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_RWave1".Translate());
+                    string w1r = comp.wave1Radius.ToString();
+                    string w1d = comp.wave1Damage.ToString();
+                    Widgets.TextFieldNumeric(new Rect(inner.x + labelW, rowY, (valueW - 6f) / 2f, 24f), ref comp.wave1Radius, ref w1r, 0.1f, 99f);
+                    Widgets.TextFieldNumeric(new Rect(inner.x + labelW + (valueW - 6f) / 2f + 6f, rowY, (valueW - 6f) / 2f, 24f), ref comp.wave1Damage, ref w1d, 1f, 99999f);
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_RWave2".Translate());
+                    string w2r = comp.wave2Radius.ToString();
+                    string w2d = comp.wave2Damage.ToString();
+                    Widgets.TextFieldNumeric(new Rect(inner.x + labelW, rowY, (valueW - 6f) / 2f, 24f), ref comp.wave2Radius, ref w2r, 0.1f, 99f);
+                    Widgets.TextFieldNumeric(new Rect(inner.x + labelW + (valueW - 6f) / 2f + 6f, rowY, (valueW - 6f) / 2f, 24f), ref comp.wave2Damage, ref w2d, 1f, 99999f);
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_RWave3".Translate());
+                    string w3r = comp.wave3Radius.ToString();
+                    string w3d = comp.wave3Damage.ToString();
+                    Widgets.TextFieldNumeric(new Rect(inner.x + labelW, rowY, (valueW - 6f) / 2f, 24f), ref comp.wave3Radius, ref w3r, 0.1f, 99f);
+                    Widgets.TextFieldNumeric(new Rect(inner.x + labelW + (valueW - 6f) / 2f + 6f, rowY, (valueW - 6f) / 2f, 24f), ref comp.wave3Damage, ref w3d, 1f, 99999f);
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_RDamageDef".Translate());
+                    if (Widgets.ButtonText(new Rect(inner.x + labelW, rowY, valueW, 24f),
+                        comp.waveDamageDef?.label ?? "CS_Studio_None".Translate()))
+                        ShowDamageDefSelectorForRuntime(comp);
+                }
+
+                y += blockHeight + 6f;
+            }
+        }
+
+        private void DrawVisualEffectsPanel(Rect rect)
+        {
+            Widgets.DrawMenuSection(rect);
+            Rect contentRect = rect.ContractedBy(Margin);
+
+            // 标题行
+            Widgets.Label(new Rect(contentRect.x, contentRect.y, contentRect.width - 82f, 24f),
+                "<b>" + "CS_Studio_VFX_Title".Translate() + "</b>");
+            if (Widgets.ButtonText(new Rect(contentRect.x + contentRect.width - 72f, contentRect.y, 72f, 24f),
+                "CS_Studio_VFX_Add".Translate()))
+            {
+                ShowAddVfxMenu();
+            }
+
+            float listY    = contentRect.y + 28f;
+            float listH    = contentRect.height - 28f;
+            Rect  listRect = new Rect(contentRect.x, listY, contentRect.width, listH);
+
+            if (selectedAbility == null || selectedAbility.visualEffects == null || selectedAbility.visualEffects.Count == 0)
+            {
+                Widgets.DrawHighlight(listRect);
+                Text.Anchor = TextAnchor.MiddleCenter;
+                GUI.color   = Color.gray;
+                Widgets.Label(new Rect(listRect.x + 10f, listRect.y + 10f, listRect.width - 20f, 50f),
+                    "CS_Studio_VFX_EmptyHint".Translate());
+                GUI.color   = Color.white;
+                Text.Anchor = TextAnchor.UpperLeft;
+                return;
+            }
+
+            const float ItemH = 120f;
+            const float ItemGap = 4f;
+            Rect viewRect = new Rect(0, 0, listRect.width - 16f, selectedAbility.visualEffects.Count * (ItemH + ItemGap));
+            Widgets.BeginScrollView(listRect, ref vfxScrollPos, viewRect);
+
+            float cy = 0;
+            for (int i = 0; i < selectedAbility.visualEffects.Count; i++)
+            {
+                var vfx = selectedAbility.visualEffects[i];
+                DrawVfxItem(new Rect(0, cy, viewRect.width, ItemH), vfx, i);
+                cy += ItemH + ItemGap;
+            }
+
+            Widgets.EndScrollView();
+        }
+
+        private void DrawVfxItem(Rect rect, CharacterStudio.Abilities.AbilityVisualEffectConfig vfx, int index)
+        {
+            Widgets.DrawMenuSection(rect);
+            Rect inner = rect.ContractedBy(5);
+
+            // 标题 + 删除
+            string titleLabel = $"#{index + 1} {GetVfxTypeLabel(vfx.type)}";
+            Widgets.Label(new Rect(inner.x, inner.y, inner.width - 28f, 24f), titleLabel);
+            if (Widgets.ButtonText(new Rect(inner.x + inner.width - 26f, inner.y, 24f, 24f), "X"))
+            {
+                selectedAbility?.visualEffects.RemoveAt(index);
+                return;
+            }
+
+            float y       = inner.y + 28f;
+            float labelW  = Mathf.Max(56f, Text.CalcSize("CS_Studio_VFX_Target".Translate()).x + 6f);
+            float fieldW  = inner.width - labelW - 4f;
+
+            // 特效类型
+            Widgets.Label(new Rect(inner.x, y, labelW, 24f), "CS_Studio_VFX_Type".Translate());
+            if (Widgets.ButtonText(new Rect(inner.x + labelW, y, fieldW, 24f), GetVfxTypeLabel(vfx.type)))
+            {
+                var options = new System.Collections.Generic.List<Verse.FloatMenuOption>();
+                foreach (CharacterStudio.Abilities.AbilityVisualEffectType t
+                    in System.Enum.GetValues(typeof(CharacterStudio.Abilities.AbilityVisualEffectType)))
+                {
+                    var captured = t;
+                    options.Add(new Verse.FloatMenuOption(GetVfxTypeLabel(captured), () => vfx.type = captured));
+                }
+                Find.WindowStack.Add(new Verse.FloatMenu(options));
+            }
+            y += RowHeight;
+
+            // 作用目标
+            Widgets.Label(new Rect(inner.x, y, labelW, 24f), "CS_Studio_VFX_Target".Translate());
+            if (Widgets.ButtonText(new Rect(inner.x + labelW, y, fieldW, 24f), GetVfxTargetLabel(vfx.target)))
+            {
+                var options = new System.Collections.Generic.List<Verse.FloatMenuOption>();
+                foreach (CharacterStudio.Abilities.VisualEffectTarget t
+                    in System.Enum.GetValues(typeof(CharacterStudio.Abilities.VisualEffectTarget)))
+                {
+                    var captured = t;
+                    options.Add(new Verse.FloatMenuOption(GetVfxTargetLabel(captured), () => vfx.target = captured));
+                }
+                Find.WindowStack.Add(new Verse.FloatMenu(options));
+            }
+            y += RowHeight;
+
+            // 延迟 ticks
+            Widgets.Label(new Rect(inner.x, y, labelW, 24f), "CS_Studio_VFX_Delay".Translate());
+            string delayStr = vfx.delayTicks.ToString();
+            Widgets.TextFieldNumeric(new Rect(inner.x + labelW, y, fieldW, 24f),
+                ref vfx.delayTicks, ref delayStr, 0, 600);
+            y += RowHeight;
+
+            // 规模
+            Widgets.Label(new Rect(inner.x, y, labelW, 24f), "CS_Studio_VFX_Scale".Translate());
+            string scaleStr = vfx.scale.ToString("F2");
+            Widgets.TextFieldNumeric(new Rect(inner.x + labelW, y, fieldW, 24f),
+                ref vfx.scale, ref scaleStr, 0.1f, 5f);
+        }
+
+        private void ShowAddVfxMenu()
+        {
+            var options = new System.Collections.Generic.List<Verse.FloatMenuOption>();
+            foreach (CharacterStudio.Abilities.AbilityVisualEffectType t
+                in System.Enum.GetValues(typeof(CharacterStudio.Abilities.AbilityVisualEffectType)))
+            {
+                var captured = t;
+                options.Add(new Verse.FloatMenuOption(GetVfxTypeLabel(captured), () =>
+                {
+                    selectedAbility?.visualEffects.Add(new CharacterStudio.Abilities.AbilityVisualEffectConfig
+                    {
+                        type        = captured,
+                        target      = CharacterStudio.Abilities.VisualEffectTarget.Target,
+                        delayTicks  = 0,
+                        scale       = 1f
+                    });
+                }));
+            }
+            Find.WindowStack.Add(new Verse.FloatMenu(options));
+        }
+
+        private static string GetVfxTypeLabel(CharacterStudio.Abilities.AbilityVisualEffectType type)
+        {
+            return ("CS_Studio_VFX_Type_" + type).Translate();
+        }
+
+        private static string GetVfxTargetLabel(CharacterStudio.Abilities.VisualEffectTarget target)
+        {
+            return ("CS_Studio_VFX_Target_" + target).Translate();
         }
 
         private void DrawEffectItem(Rect rect, AbilityEffectConfig effect, int index)

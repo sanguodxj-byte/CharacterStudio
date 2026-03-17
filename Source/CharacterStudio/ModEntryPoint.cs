@@ -82,6 +82,9 @@ namespace CharacterStudio
                 // 应用技能 Gizmo 补丁（皮肤技能按钮）
                 UI.Patch_AbilityGizmos.Apply(HarmonyInstance);
 
+                // 应用武器渲染覆写补丁
+                Rendering.Patch_WeaponRender.Apply(HarmonyInstance);
+
                 Log.Message("[CharacterStudio] 所有补丁已应用");
             }
             catch (System.Exception ex)

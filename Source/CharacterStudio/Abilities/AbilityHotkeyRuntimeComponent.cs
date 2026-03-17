@@ -19,6 +19,7 @@ namespace CharacterStudio.Abilities
         }
 
         private const int DefaultQWComboWindowTicks = 12;      // 0.2s
+        private const int MinSlotCooldownTicks = 30;           // 0.5s — 所有槽位的最短 CD
         private const int DefaultEShortJumpCooldownTicks = 120; // 2.0s
         private const int DefaultEShortJumpDistance = 6;
         private const int DefaultEShortJumpFindCellRadius = 3;
@@ -70,6 +71,30 @@ namespace CharacterStudio.Abilities
             }
         }
 
+        /// <summary>获取指定槽位的当前 CD 截止 Tick</summary>
+        private static int GetSlotCooldownUntil(CompPawnSkin comp, AbilityHotkeySlot slot)
+        {
+            switch (slot)
+            {
+                case AbilityHotkeySlot.Q: return comp.qCooldownUntilTick;
+                case AbilityHotkeySlot.W: return comp.wCooldownUntilTick;
+                case AbilityHotkeySlot.E: return comp.eCooldownUntilTick;
+                default:                  return comp.rCooldownUntilTick;
+            }
+        }
+
+        /// <summary>写入指定槽位的 CD 截止 Tick</summary>
+        private static void SetSlotCooldown(CompPawnSkin comp, AbilityHotkeySlot slot, int untilTick)
+        {
+            switch (slot)
+            {
+                case AbilityHotkeySlot.Q: comp.qCooldownUntilTick = untilTick; break;
+                case AbilityHotkeySlot.W: comp.wCooldownUntilTick = untilTick; break;
+                case AbilityHotkeySlot.E: comp.eCooldownUntilTick = untilTick; break;
+                default:                  comp.rCooldownUntilTick = untilTick; break;
+            }
+        }
+
         private static void TryCastForSelectedPawn(AbilityHotkeySlot slot, int tick)
         {
             Pawn? selectedPawn = Find.Selector?.SingleSelectedThing as Pawn;
@@ -83,6 +108,17 @@ namespace CharacterStudio.Abilities
             var skin = skinComp?.ActiveSkin;
             if (skinComp == null || skin == null || skin.abilityHotkeys == null || !skin.abilityHotkeys.enabled)
             {
+                return;
+            }
+
+            // ── 最小槽位 CD 门控（0.5s）──
+            int slotCdUntil = GetSlotCooldownUntil(skinComp, slot);
+            if (tick < slotCdUntil)
+            {
+                int remain = slotCdUntil - tick;
+                Messages.Message(
+                    "CS_Ability_Hotkey_SlotCooldown".Translate(slot.ToString(), (remain / 60f).ToString("F1")),
+                    MessageTypeDefOf.RejectInput, false);
                 return;
             }
 
@@ -127,12 +163,20 @@ namespace CharacterStudio.Abilities
                     break;
             }
 
-            if (casted && ability != null)
+            if (casted)
             {
-                Messages.Message(
-                    "CS_Ability_Hotkey_CastSuccess".Translate(slot.ToString(), ability.label ?? ability.defName),
-                    MessageTypeDefOf.NeutralEvent,
-                    false);
+                // 写入最小 CD（0.5s），取 max(当前CD, 最小CD) 以免覆盖 E 技能自己设置的更长 CD
+                int minCdEnd = tick + MinSlotCooldownTicks;
+                int curCdEnd = GetSlotCooldownUntil(skinComp, slot);
+                SetSlotCooldown(skinComp, slot, Mathf.Max(curCdEnd, minCdEnd));
+
+                if (ability != null)
+                {
+                    Messages.Message(
+                        "CS_Ability_Hotkey_CastSuccess".Translate(slot.ToString(), ability.label ?? ability.defName),
+                        MessageTypeDefOf.NeutralEvent,
+                        false);
+                }
             }
         }
 

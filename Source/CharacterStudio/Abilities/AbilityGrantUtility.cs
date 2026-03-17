@@ -24,6 +24,9 @@ namespace CharacterStudio.Abilities
         private static readonly Dictionary<string, AbilityDef> runtimeAbilityDefs =
             new Dictionary<string, AbilityDef>(StringComparer.OrdinalIgnoreCase);
 
+        /// <summary>所有 CS 技能的最小冷却时间（0.5s = 30 ticks），防止技能被连点刷屏</summary>
+        private const int MinAbilityCooldownTicks = 30;
+
         // ─────────────────────────────────────────────
         // 公共入口
         // ─────────────────────────────────────────────
@@ -133,6 +136,10 @@ namespace CharacterStudio.Abilities
 
             try
             {
+                // 强制最小 CD：无论 ModularAbilityDef.cooldownTicks 如何配置，
+                // 原版技能栏中的技能也必须至少有 MinAbilityCooldownTicks（0.5s）的冷却，
+                // 防止玩家连点刷屏产生重复效果。
+                int resolvedCd = Mathf.Max((int)modAbility.cooldownTicks, MinAbilityCooldownTicks);
                 var abilityDef = new AbilityDef
                 {
                     defName            = "CS_RT_" + key,
@@ -141,7 +148,7 @@ namespace CharacterStudio.Abilities
                     iconPath           = string.IsNullOrEmpty(modAbility.iconPath)
                                          ? "UI/Abilities/Shoot"   // 占位图标
                                          : modAbility.iconPath,
-                    cooldownTicksRange = new IntRange((int)modAbility.cooldownTicks, (int)modAbility.cooldownTicks),
+                    cooldownTicksRange = new IntRange(resolvedCd, resolvedCd),
                     charges            = modAbility.charges,
                     aiCanUse           = modAbility.aiCanUse > 0.5f
                 };

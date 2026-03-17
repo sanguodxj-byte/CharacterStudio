@@ -102,6 +102,9 @@ namespace CharacterStudio.Core
         /// <summary>角色属性画像（供编辑器与 LLM 生成使用）</summary>
         public CharacterAttributeProfile attributes = new CharacterAttributeProfile();
 
+        /// <summary>武器渲染覆写配置（偏移 / 缩放）</summary>
+        public WeaponRenderConfig weaponRenderConfig = new WeaponRenderConfig();
+
         // ─────────────────────────────────────────────
         // 运行时方法
         // ─────────────────────────────────────────────
@@ -153,7 +156,8 @@ namespace CharacterStudio.Core
                 faceConfig = this.faceConfig?.Clone() ?? new PawnFaceConfig(),
                 abilityHotkeys = this.abilityHotkeys?.Clone() ?? new SkinAbilityHotkeyConfig(),
                 baseAppearance = this.baseAppearance?.Clone() ?? new BaseAppearanceConfig(),
-                attributes = this.attributes?.Clone() ?? new CharacterAttributeProfile()
+                attributes = this.attributes?.Clone() ?? new CharacterAttributeProfile(),
+                weaponRenderConfig = this.weaponRenderConfig?.Clone() ?? new WeaponRenderConfig()
             };
 
             // 复制图层

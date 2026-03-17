@@ -169,7 +169,6 @@ namespace CharacterStudio.Introspection
                     out float   runtimeRotation,
                     out bool    runtimeDataValid);
 
-                runtimeScale  = new Vector3(nodeScale, 1f, nodeScale);
                 Color runtimeColor = nodeColor;
 
                 if (shouldDebug)

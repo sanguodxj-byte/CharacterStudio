@@ -87,8 +87,11 @@ namespace CharacterStudio.Exporter
                 // 目标种族
                 GenerateListElement("targetRaces", skin.targetRaces),
 
-                // 面部配置
-                skin.faceConfig != null && (skin.faceConfig.enabled || skin.faceConfig.HasAnyExpression()) ? GenerateFaceConfigXml(skin.faceConfig) : null,
+                // 面部配置（eyeDirectionConfig 已嵌套在 faceConfig 内由 GenerateFaceConfigXml 序列化，无需单独输出）
+                skin.faceConfig != null && (skin.faceConfig.enabled || skin.faceConfig.HasAnyExpression() || skin.faceConfig.eyeDirectionConfig?.HasAnyTex() == true) ? GenerateFaceConfigXml(skin.faceConfig) : null,
+
+                // 武器渲染配置
+                skin.weaponRenderConfig != null && skin.weaponRenderConfig.enabled ? GenerateWeaponRenderConfigXml(skin.weaponRenderConfig) : null,
 
                 // 技能与热键
                 GenerateAbilitiesXml(skin.abilities),
@@ -119,6 +122,7 @@ namespace CharacterStudio.Exporter
                     new XElement("radius", ability.radius),
                     ability.projectileDef != null ? new XElement("projectileDef", ability.projectileDef.defName) : null,
                     GenerateEffectsXml(ability.effects),
+                    GenerateVisualEffectsXml(ability.visualEffects),
                     GenerateRuntimeComponentsXml(ability.runtimeComponents)
                 );
 
@@ -351,7 +355,70 @@ namespace CharacterStudio.Exporter
                 if (exprsEl.HasElements) element.Add(exprsEl);
             }
 
+            // 序列化眼睛方向配置（仅当存在且至少配置了一张贴图时写入）
+            if (config.eyeDirectionConfig != null && config.eyeDirectionConfig.HasAnyTex())
+            {
+                var eyeEl = GenerateEyeDirectionConfigXml(config.eyeDirectionConfig);
+                if (eyeEl != null) element.Add(eyeEl);
+            }
+
             return element;
+        }
+
+        private static XElement? GenerateVisualEffectsXml(List<CharacterStudio.Abilities.AbilityVisualEffectConfig>? vfxList)
+        {
+            if (vfxList == null || vfxList.Count == 0) return null;
+
+            var root = new XElement("visualEffects");
+            foreach (var vfx in vfxList)
+            {
+                if (vfx == null) continue;
+                root.Add(new XElement("li",
+                    new XElement("type",       vfx.type.ToString()),
+                    new XElement("target",     vfx.target.ToString()),
+                    new XElement("delayTicks", vfx.delayTicks),
+                    new XElement("scale",      vfx.scale)
+                ));
+            }
+            return root;
+        }
+
+        private static XElement? GenerateEyeDirectionConfigXml(CharacterStudio.Core.PawnEyeDirectionConfig eyeCfg)
+        {
+            if (eyeCfg == null) return null;
+
+            var el = new XElement("eyeDirectionConfig",
+                new XElement("enabled", eyeCfg.enabled.ToString().ToLower())
+            );
+
+            if (!string.IsNullOrEmpty(eyeCfg.texCenter)) el.Add(new XElement("texCenter", eyeCfg.texCenter));
+            if (!string.IsNullOrEmpty(eyeCfg.texLeft))   el.Add(new XElement("texLeft",   eyeCfg.texLeft));
+            if (!string.IsNullOrEmpty(eyeCfg.texRight))  el.Add(new XElement("texRight",  eyeCfg.texRight));
+            if (!string.IsNullOrEmpty(eyeCfg.texUp))     el.Add(new XElement("texUp",     eyeCfg.texUp));
+            if (!string.IsNullOrEmpty(eyeCfg.texDown))   el.Add(new XElement("texDown",   eyeCfg.texDown));
+            if (eyeCfg.pupilMoveRange != 0f)             el.Add(new XElement("pupilMoveRange", eyeCfg.pupilMoveRange.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)));
+
+            return el;
+        }
+
+        private static XElement GenerateWeaponRenderConfigXml(CharacterStudio.Core.WeaponRenderConfig cfg)
+        {
+            var el = new XElement("weaponRenderConfig",
+                new XElement("enabled", cfg.enabled.ToString().ToLower()),
+                new XElement("applyToOffHand", cfg.applyToOffHand.ToString().ToLower()),
+                new XElement("scale", $"({cfg.scale.x:F3}, {cfg.scale.y:F3})")
+            );
+
+            if (cfg.offset != UnityEngine.Vector3.zero)
+                el.Add(new XElement("offset", $"({cfg.offset.x:F3}, {cfg.offset.y:F3}, {cfg.offset.z:F3})"));
+            if (cfg.offsetSouth != UnityEngine.Vector3.zero)
+                el.Add(new XElement("offsetSouth", $"({cfg.offsetSouth.x:F3}, {cfg.offsetSouth.y:F3}, {cfg.offsetSouth.z:F3})"));
+            if (cfg.offsetNorth != UnityEngine.Vector3.zero)
+                el.Add(new XElement("offsetNorth", $"({cfg.offsetNorth.x:F3}, {cfg.offsetNorth.y:F3}, {cfg.offsetNorth.z:F3})"));
+            if (cfg.offsetEast != UnityEngine.Vector3.zero)
+                el.Add(new XElement("offsetEast", $"({cfg.offsetEast.x:F3}, {cfg.offsetEast.y:F3}, {cfg.offsetEast.z:F3})"));
+
+            return el;
         }
     }
 }

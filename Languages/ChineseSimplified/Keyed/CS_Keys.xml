@@ -583,6 +583,22 @@
     <CS_Studio_Face_HeadTexHint>为每种表情指定整张头部贴图路径，或点击 [+F] 添加多帧实现帧动画。</CS_Studio_Face_HeadTexHint>
     <CS_Studio_Face_ExpressionMappings>表情贴图配置</CS_Studio_Face_ExpressionMappings>
     <CS_Studio_Face_Assigned>已配置</CS_Studio_Face_Assigned>
+    <!-- 眼睛方向 -->
+    <CS_Studio_Face_EyeDir_Title>眼睛方向配置</CS_Studio_Face_EyeDir_Title>
+    <CS_Studio_Face_EyeDir_Hint>为每个注视方向指定覆盖贴图，渲染时自动叠加在头部之上。未配置方向自动回退到 Center。</CS_Studio_Face_EyeDir_Hint>
+    <CS_Studio_Face_EyeDir_Create>创建眼睛方向配置</CS_Studio_Face_EyeDir_Create>
+    <CS_Studio_Face_EyeDir_Enable>启用眼睛方向</CS_Studio_Face_EyeDir_Enable>
+    <CS_Studio_Face_EyeDir_Preview>预览方向</CS_Studio_Face_EyeDir_Preview>
+    <CS_Studio_Face_EyeDir_Auto>自动（运行时推断）</CS_Studio_Face_EyeDir_Auto>
+    <CS_Studio_Face_EyeDir_Center>正视</CS_Studio_Face_EyeDir_Center>
+    <CS_Studio_Face_EyeDir_Left>向左</CS_Studio_Face_EyeDir_Left>
+    <CS_Studio_Face_EyeDir_Right>向右</CS_Studio_Face_EyeDir_Right>
+    <CS_Studio_Face_EyeDir_Up>向上</CS_Studio_Face_EyeDir_Up>
+    <CS_Studio_Face_EyeDir_Down>向下</CS_Studio_Face_EyeDir_Down>
+    <CS_Studio_Face_EyeDir_Remove>移除眼睛方向配置</CS_Studio_Face_EyeDir_Remove>
+    <CS_Studio_Face_EyeDir_PupilMoveRange>瞳孔偏移量（UV 模式）</CS_Studio_Face_EyeDir_PupilMoveRange>
+    <CS_Ability_Hotkey_SlotCooldown>{0} 技能冷却中，剩余 {1}s</CS_Ability_Hotkey_SlotCooldown>
+    <CS_Studio_Face_EyeDir_UVModeHint>UV 偏移模式已启用：无需 Left/Right/Up/Down 贴图，方向感由代码驱动</CS_Studio_Face_EyeDir_UVModeHint>
     <!-- 表情枚举翻译 -->
     <CS_Expression_Neutral>平静</CS_Expression_Neutral>
     <CS_Expression_Happy>快乐</CS_Expression_Happy>
@@ -680,5 +696,47 @@
     <!-- 工具提示 -->
     <CS_Studio_Tip_ExpandAll>展开全部属性区域</CS_Studio_Tip_ExpandAll>
     <CS_Studio_Tip_CollapseAll>折叠全部属性区域</CS_Studio_Tip_CollapseAll>
+
+    <!-- 外观特效（技能编辑器） -->
+    <CS_Studio_VFX_Title>外观特效</CS_Studio_VFX_Title>
+    <CS_Studio_VFX_Add>+ 添加</CS_Studio_VFX_Add>
+    <CS_Studio_VFX_EmptyHint>暂无外观特效。点击「+ 添加」可配置技能触发时播放的粒子/闪光效果。</CS_Studio_VFX_EmptyHint>
+    <CS_Studio_VFX_Type>特效类型</CS_Studio_VFX_Type>
+    <CS_Studio_VFX_Target>作用目标</CS_Studio_VFX_Target>
+    <CS_Studio_VFX_Delay>延迟(ticks)</CS_Studio_VFX_Delay>
+    <CS_Studio_VFX_Scale>规模</CS_Studio_VFX_Scale>
+    <!-- 特效类型枚举标签 -->
+    <CS_Studio_VFX_Type_DustPuff>尘埃喷溅</CS_Studio_VFX_Type_DustPuff>
+    <CS_Studio_VFX_Type_MicroSparks>微型火花</CS_Studio_VFX_Type_MicroSparks>
+    <CS_Studio_VFX_Type_LightningGlow>闪电光晕</CS_Studio_VFX_Type_LightningGlow>
+    <CS_Studio_VFX_Type_FireGlow>火焰光晕</CS_Studio_VFX_Type_FireGlow>
+    <CS_Studio_VFX_Type_Smoke>烟雾</CS_Studio_VFX_Type_Smoke>
+    <CS_Studio_VFX_Type_ExplosionEffect>爆炸闪光</CS_Studio_VFX_Type_ExplosionEffect>
+    <!-- 作用目标枚举标签 -->
+    <CS_Studio_VFX_Target_Caster>施法者</CS_Studio_VFX_Target_Caster>
+    <CS_Studio_VFX_Target_Target>命中目标</CS_Studio_VFX_Target_Target>
+    <CS_Studio_VFX_Target_Both>双方</CS_Studio_VFX_Target_Both>
+
+    <!-- 武器渲染覆写 -->
+    <CS_Studio_Section_WeaponRender>武器渲染覆写</CS_Studio_Section_WeaponRender>
+    <CS_Studio_WeaponRender_Enable>启用武器覆写</CS_Studio_WeaponRender_Enable>
+    <CS_Studio_WeaponRender_ApplyOffHand>应用到副手武器</CS_Studio_WeaponRender_ApplyOffHand>
+    <CS_Studio_WeaponRender_ScaleX>缩放 X</CS_Studio_WeaponRender_ScaleX>
+    <CS_Studio_WeaponRender_ScaleY>缩放 Y</CS_Studio_WeaponRender_ScaleY>
+    <CS_Studio_WeaponRender_OffsetX>偏移 X（通用）</CS_Studio_WeaponRender_OffsetX>
+    <CS_Studio_WeaponRender_OffsetY>偏移 Y（通用）</CS_Studio_WeaponRender_OffsetY>
+    <CS_Studio_WeaponRender_OffsetZ>偏移 Z（通用）</CS_Studio_WeaponRender_OffsetZ>
+    <CS_Studio_WeaponRender_DirOffsets>方向偏移</CS_Studio_WeaponRender_DirOffsets>
+    <CS_Studio_WeaponRender_OffSouthX>南向偏移 X</CS_Studio_WeaponRender_OffSouthX>
+    <CS_Studio_WeaponRender_OffSouthZ>南向偏移 Z</CS_Studio_WeaponRender_OffSouthZ>
+    <CS_Studio_WeaponRender_OffNorthX>北向偏移 X</CS_Studio_WeaponRender_OffNorthX>
+    <CS_Studio_WeaponRender_OffNorthZ>北向偏移 Z</CS_Studio_WeaponRender_OffNorthZ>
+    <CS_Studio_WeaponRender_OffEastX>东/西向偏移 X</CS_Studio_WeaponRender_OffEastX>
+    <CS_Studio_WeaponRender_OffEastZ>东/西向偏移 Z</CS_Studio_WeaponRender_OffEastZ>
+    <CS_Studio_WeaponRender_Reset>重置武器配置</CS_Studio_WeaponRender_Reset>
+
+    <!-- 表情最小集进度 -->
+    <!-- {0} = 已完成数, {1} = 最小集总数 -->
+    <CS_Studio_Face_MinSetProgress>最小集 {0}/{1} 已完成（★ 标记为推荐优先配置）</CS_Studio_Face_MinSetProgress>
 </LanguageData>
 

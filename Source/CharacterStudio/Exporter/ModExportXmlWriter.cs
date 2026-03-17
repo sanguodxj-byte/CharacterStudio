@@ -137,6 +137,13 @@ namespace CharacterStudio.Exporter
                 if (exprsEl.HasElements) element.Add(exprsEl);
             }
 
+            // 序列化眼睛方向配置（嵌套在 faceConfig 内）
+            if (config.eyeDirectionConfig != null && config.eyeDirectionConfig.HasAnyTex())
+            {
+                var eyeEl = GenerateEyeDirectionConfigXml(config.eyeDirectionConfig);
+                if (eyeEl != null) element.Add(eyeEl);
+            }
+
             return element;
         }
 
@@ -373,7 +380,8 @@ namespace CharacterStudio.Exporter
                         GenerateBaseAppearanceXml(skin.baseAppearance),
                         GenerateLayersXml(skin.layers),
                         GenerateTargetRacesXml(skin.targetRaces),
-                        skin.faceConfig != null && (skin.faceConfig.enabled || skin.faceConfig.HasAnyExpression()) ? GenerateFaceConfigXml(skin.faceConfig) : null,
+                        skin.faceConfig != null && (skin.faceConfig.enabled || skin.faceConfig.HasAnyExpression() || skin.faceConfig.eyeDirectionConfig?.HasAnyTex() == true) ? GenerateFaceConfigXml(skin.faceConfig) : null,
+                        skin.weaponRenderConfig != null && skin.weaponRenderConfig.enabled ? GenerateWeaponRenderConfigXml(skin.weaponRenderConfig) : null,
                         GenerateSkinAbilitiesXml(skin.abilities),
                         GenerateAbilityHotkeysXml(skin.abilityHotkeys)
                     )
@@ -603,6 +611,40 @@ namespace CharacterStudio.Exporter
                     )
                 )
             );
+        }
+
+        public static XElement? GenerateEyeDirectionConfigXml(PawnEyeDirectionConfig eyeCfg)
+        {
+            if (eyeCfg == null) return null;
+
+            var el = new XElement("eyeDirectionConfig",
+                new XElement("enabled", eyeCfg.enabled.ToString().ToLower())
+            );
+
+            if (!string.IsNullOrEmpty(eyeCfg.texCenter)) el.Add(new XElement("texCenter", eyeCfg.texCenter));
+            if (!string.IsNullOrEmpty(eyeCfg.texLeft))   el.Add(new XElement("texLeft",   eyeCfg.texLeft));
+            if (!string.IsNullOrEmpty(eyeCfg.texRight))  el.Add(new XElement("texRight",  eyeCfg.texRight));
+            if (!string.IsNullOrEmpty(eyeCfg.texUp))     el.Add(new XElement("texUp",     eyeCfg.texUp));
+            if (!string.IsNullOrEmpty(eyeCfg.texDown))   el.Add(new XElement("texDown",   eyeCfg.texDown));
+            if (eyeCfg.pupilMoveRange != 0f)             el.Add(new XElement("pupilMoveRange", eyeCfg.pupilMoveRange.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)));
+
+            return el;
+        }
+
+        public static XElement GenerateWeaponRenderConfigXml(WeaponRenderConfig cfg)
+        {
+            var el = new XElement("weaponRenderConfig",
+                new XElement("enabled",         cfg.enabled.ToString().ToLower()),
+                new XElement("applyToOffHand",  cfg.applyToOffHand.ToString().ToLower()),
+                new XElement("scale",           FormatVector2(cfg.scale))
+            );
+
+            if (cfg.offset      != Vector3.zero) el.Add(new XElement("offset",      FormatVector3(cfg.offset)));
+            if (cfg.offsetSouth != Vector3.zero) el.Add(new XElement("offsetSouth", FormatVector3(cfg.offsetSouth)));
+            if (cfg.offsetNorth != Vector3.zero) el.Add(new XElement("offsetNorth", FormatVector3(cfg.offsetNorth)));
+            if (cfg.offsetEast  != Vector3.zero) el.Add(new XElement("offsetEast",  FormatVector3(cfg.offsetEast)));
+
+            return el;
         }
 
         private static string FormatVector3(Vector3 value)

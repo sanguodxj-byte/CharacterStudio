@@ -177,6 +177,16 @@ namespace CharacterStudio.Exporter
                 }
             }
 
+            if (skinDef.faceConfig?.eyeDirectionConfig != null)
+            {
+                var eyeCfg = skinDef.faceConfig.eyeDirectionConfig;
+                yield return eyeCfg.texCenter;
+                yield return eyeCfg.texLeft;
+                yield return eyeCfg.texRight;
+                yield return eyeCfg.texUp;
+                yield return eyeCfg.texDown;
+            }
+
             if (!string.IsNullOrWhiteSpace(geneIconPath))
             {
                 yield return geneIconPath;

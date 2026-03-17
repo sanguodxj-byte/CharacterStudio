@@ -21,7 +21,7 @@ namespace CharacterStudio.UI
         // ─────────────────────────────────────────────
         // 常量
         // ─────────────────────────────────────────────
-        private const float LeftPanelWidth = 200f;
+        private const float LeftPanelWidth = 240f;
         private const float RightPanelWidth = 280f;
         private const float TopMenuHeight = 30f;
         private const float BottomStatusHeight = 25f;
@@ -42,11 +42,30 @@ namespace CharacterStudio.UI
         private Vector2 faceScrollPos;
         private Vector2 baseScrollPos;
         private bool isDirty = false;
+        /// <summary>表情贴图路径内联编辑缓冲，每帧实时同步到 faceConfig</summary>
+        private readonly Dictionary<ExpressionType, string> exprPathBuffer = new Dictionary<ExpressionType, string>();
  
         private enum EditorTab { BaseAppearance, Layers, Face, Attributes }
         private EditorTab currentTab = EditorTab.BaseAppearance;
         private string statusMessage = "";
         private float statusMessageTime = 0f;
+
+        /// <summary>
+        /// 推荐最小集表情：完成这 8 种即可覆盖绝大多数游戏状态。
+        /// Sleeping 与 Blink 共用同一张闭眼贴图，Pain、Dead 亦可共用，
+        /// 故实际美术文件可进一步减少。
+        /// </summary>
+        private static readonly HashSet<ExpressionType> MinSetExpressions = new HashSet<ExpressionType>
+        {
+            ExpressionType.Neutral,
+            ExpressionType.Happy,
+            ExpressionType.Sad,
+            ExpressionType.Angry,
+            ExpressionType.Sleeping,
+            ExpressionType.Blink,
+            ExpressionType.Dead,
+            ExpressionType.Pain,
+        };
 
         // 预览管理
         private MannequinManager? mannequin;
@@ -56,6 +75,10 @@ namespace CharacterStudio.UI
         private ExpressionType previewExpression = ExpressionType.Neutral;
         private const KeyCode ReferenceGhostHotkey = KeyCode.F;
         private const float ReferenceGhostAlpha = 0.35f;
+        /// <summary>
+        /// F键虚影状态：在 DoWindowContents 最开始读取，避免被 IMGUI TextField 拦截。
+        /// </summary>
+        private bool isHoldingReferenceGhost = false;
 
         // 编辑目标 Pawn（可空，空表示仅预览模式）
         private Pawn? targetPawn;
@@ -175,6 +198,9 @@ namespace CharacterStudio.UI
                 // 更新热加载
                 mannequin?.Update();
 
+                // 在任何 IMGUI 控件绘制前读取 F 键状态，避免 TextField 焦点拦截
+                isHoldingReferenceGhost = Input.GetKey(ReferenceGhostHotkey);
+
                 // 更新状态消息计时
                 if (statusMessageTime > 0)
                 {
@@ -198,12 +224,12 @@ namespace CharacterStudio.UI
                 // 绘制左侧面板（图层树 或 表情配置）
                 Rect leftRect = new Rect(0, contentY, LeftPanelWidth, contentHeight);
                 
-                // 绘制选项卡切换按钮
-                Rect tabRect = new Rect(leftRect.x, leftRect.y, leftRect.width, 30f);
+                // 绘制选项卡切换按钮（2行×2列）
+                Rect tabRect = new Rect(leftRect.x, leftRect.y, leftRect.width, 56f);
                 DrawTabButtons(tabRect);
- 
+
                 // 调整左侧面板内容区域
-                Rect leftContentRect = new Rect(leftRect.x, leftRect.y + 35f, leftRect.width, leftRect.height - 35f);
+                Rect leftContentRect = new Rect(leftRect.x, leftRect.y + 60f, leftRect.width, leftRect.height - 60f);
  
                 if (currentTab == EditorTab.BaseAppearance)
                 {
@@ -249,27 +275,37 @@ namespace CharacterStudio.UI
 
         private void DrawTabButtons(Rect rect)
         {
-            float tabWidth = rect.width / 4f;
-            
-            if (UIHelper.DrawTabButton(new Rect(rect.x, rect.y, tabWidth, rect.height), "CS_Studio_Tab_BaseAppearance".Translate(), currentTab == EditorTab.BaseAppearance))
-            {
-                currentTab = EditorTab.BaseAppearance;
-            }
- 
-            if (UIHelper.DrawTabButton(new Rect(rect.x + tabWidth, rect.y, tabWidth, rect.height), "CS_Studio_Tab_Layers".Translate(), currentTab == EditorTab.Layers))
-            {
-                currentTab = EditorTab.Layers;
-            }
- 
-            if (UIHelper.DrawTabButton(new Rect(rect.x + tabWidth * 2f, rect.y, tabWidth, rect.height), "CS_Studio_Tab_Face".Translate(), currentTab == EditorTab.Face))
-            {
-                currentTab = EditorTab.Face;
-            }
+            // 2 行 × 2 列布局：每格宽 = rect.width/2，高 = rect.height/2
+            float halfW = rect.width / 2f;
+            float halfH = rect.height / 2f;
+            float row0 = rect.y;
+            float row1 = rect.y + halfH;
 
-            if (UIHelper.DrawTabButton(new Rect(rect.x + tabWidth * 3f, rect.y, tabWidth, rect.height), "CS_Studio_Tab_Attributes".Translate(), currentTab == EditorTab.Attributes))
-            {
+            // 行 0
+            if (UIHelper.DrawTabButton(
+                new Rect(rect.x, row0, halfW, halfH),
+                "CS_Studio_Tab_BaseAppearance".Translate(),
+                currentTab == EditorTab.BaseAppearance))
+                currentTab = EditorTab.BaseAppearance;
+
+            if (UIHelper.DrawTabButton(
+                new Rect(rect.x + halfW, row0, halfW, halfH),
+                "CS_Studio_Tab_Layers".Translate(),
+                currentTab == EditorTab.Layers))
+                currentTab = EditorTab.Layers;
+
+            // 行 1
+            if (UIHelper.DrawTabButton(
+                new Rect(rect.x, row1, halfW, halfH),
+                "CS_Studio_Tab_Face".Translate(),
+                currentTab == EditorTab.Face))
+                currentTab = EditorTab.Face;
+
+            if (UIHelper.DrawTabButton(
+                new Rect(rect.x + halfW, row1, halfW, halfH),
+                "CS_Studio_Tab_Attributes".Translate(),
+                currentTab == EditorTab.Attributes))
                 currentTab = EditorTab.Attributes;
-            }
         }
 
         // ─────────────────────────────────────────────
@@ -468,7 +504,9 @@ namespace CharacterStudio.UI
             DrawIconButton(new Rect(rect.x + Margin * 7 + btnWidth * 6, btnY, btnWidth, btnHeight), "↓", "CS_Studio_Tip_MoveDown".Translate(), () => MoveSelectedLayerDown());
 
             float listY = btnY + btnHeight + 8f;
+
             float listHeight = rect.height - listY + rect.y - Margin;
+
             Rect listRect = new Rect(rect.x + Margin, listY, rect.width - Margin * 2, listHeight);
             Widgets.DrawBoxSolid(listRect, UIHelper.PanelFillSoftColor);
             GUI.color = UIHelper.BorderColor;
@@ -739,6 +777,9 @@ namespace CharacterStudio.UI
 
             int assignedCount = fc.expressions.Count(e =>
                 !string.IsNullOrEmpty(e.texPath) || (e.frames != null && e.frames.Count > 0));
+            int minSetDone = fc.expressions.Count(e =>
+                MinSetExpressions.Contains(e.expression) &&
+                (!string.IsNullOrEmpty(e.texPath) || (e.frames != null && e.frames.Count > 0)));
             Text.Font = GameFont.Tiny;
             GUI.color = UIHelper.SubtleColor;
             Widgets.Label(new Rect(0f, y, width, 18f),
@@ -746,6 +787,18 @@ namespace CharacterStudio.UI
             GUI.color = Color.white;
             Text.Font = GameFont.Small;
             y += 20f;
+            // 最小集完成进度
+            {
+                bool minSetComplete = minSetDone >= MinSetExpressions.Count;
+                GUI.color = minSetComplete ? new Color(0.4f, 0.9f, 0.4f) : new Color(1f, 0.85f, 0.3f);
+                Text.Font = GameFont.Tiny;
+                string minSetLabel = "CS_Studio_Face_MinSetProgress".Translate(minSetDone, MinSetExpressions.Count);
+                Widgets.Label(new Rect(0f, y, width, 18f), "★ " + minSetLabel);
+                GUI.color = Color.white;
+                Text.Font = GameFont.Small;
+                y += 18f;
+            }
+            y += 4f;
 
             foreach (ExpressionType expression in Enum.GetValues(typeof(ExpressionType)))
             {
@@ -763,14 +816,29 @@ namespace CharacterStudio.UI
                 // 表情名称（左侧，全宽减去按钮区）
                 Text.Font = GameFont.Small;
                 Text.Anchor = TextAnchor.MiddleLeft;
-                Widgets.Label(new Rect(6f, y, width - 76f, 24f), GetExpressionTypeLabel(localExpr));
+                bool isMinSet = MinSetExpressions.Contains(localExpr);
+                if (isMinSet)
+                {
+                    GUI.color = hasContent ? new Color(1f, 0.95f, 0.5f) : new Color(1f, 0.85f, 0.3f, 0.9f);
+                    Widgets.Label(new Rect(6f, y, 16f, 24f), "★");
+                    GUI.color = Color.white;
+                }
+                Widgets.Label(new Rect(isMinSet ? 22f : 6f, y, width - (isMinSet ? 118f : 102f), 24f), GetExpressionTypeLabel(localExpr));
                 Text.Anchor = TextAnchor.UpperLeft;
 
-                // 右侧按钮组：[选择/编辑] [+F] [X]
-                float bx = width - 74f;
+                // 右侧按钮组：[◉ 预览] [选择/编辑] [+F] [X]
+                float bx = width - 96f;
+
+                // [◉] 预览按钮：点击切换预览表情
+                bool isPreviewActive = previewExpressionOverrideEnabled && previewExpression == localExpr;
+                GUI.color = isPreviewActive ? UIHelper.AccentColor : UIHelper.SubtleColor;
+                if (Widgets.ButtonText(new Rect(bx, y, 20f, 22f), "◉", false))
+                    ApplyPreviewExpressionOverride(!isPreviewActive || previewExpression != localExpr, localExpr);
+                TooltipHandler.TipRegion(new Rect(bx, y, 20f, 22f), "CS_Studio_Face_PreviewActive".Translate(GetExpressionTypeLabel(localExpr), GetExpressionTypeLabel(localExpr)));
+                GUI.color = Color.white;
 
                 // [选择/编辑] 按钮
-                if (Widgets.ButtonText(new Rect(bx, y, 36f, 22f), isAnimated ? "…" : "..."))
+                if (Widgets.ButtonText(new Rect(bx + 22f, y, 36f, 22f), isAnimated ? "…" : "..."))
                 {
                     if (isAnimated)
                     {
@@ -814,7 +882,7 @@ namespace CharacterStudio.UI
                 }
 
                 // [+F] 按钮：追加帧
-                Rect addFrameRect = new Rect(bx + 38f, y, 18f, 22f);
+                Rect addFrameRect = new Rect(bx + 60f, y, 18f, 22f);
                 TooltipHandler.TipRegion(addFrameRect, "CS_Studio_Face_AddFrame".Translate());
                 if (Widgets.ButtonText(addFrameRect, "+"))
                 {
@@ -830,7 +898,7 @@ namespace CharacterStudio.UI
                 }
 
                 // [X] 清除按钮
-                Rect clearRect = new Rect(bx + 58f, y, 18f, 22f);
+                Rect clearRect = new Rect(bx + 80f, y, 18f, 22f);
                 TooltipHandler.TipRegion(clearRect, "CS_Studio_Face_ClearPath".Translate());
                 if (Widgets.ButtonText(clearRect, "X"))
                 {
@@ -841,23 +909,61 @@ namespace CharacterStudio.UI
 
                 y += 26f;
 
-                // ── 第二行：贴图路径/帧摘要（缩进，灰色小字）──
-                Text.Font = GameFont.Tiny;
-                GUI.color = hasContent ? Color.white : UIHelper.SubtleColor;
-                string pathDisplay;
+                // ── 第二行：动画模式显示帧摘要；单帧模式改为内联路径编辑框 ──
                 if (isAnimated)
-                    pathDisplay = $"  ▶ {exactMatch!.frames.Count} " + "CS_Studio_Face_Frames".Translate();
+                {
+                    Text.Font = GameFont.Tiny;
+                    GUI.color = UIHelper.SubtleColor;
+                    Widgets.Label(new Rect(6f, y, width - 12f, 18f),
+                        $"  ▶ {exactMatch!.frames.Count} " + "CS_Studio_Face_Frames".Translate());
+                    GUI.color = Color.white;
+                    Text.Font = GameFont.Small;
+                    y += 20f;
+                }
                 else
                 {
-                    string rawPath = exactMatch?.texPath ?? string.Empty;
-                    pathDisplay = string.IsNullOrEmpty(rawPath)
-                        ? $"  {(string)"CS_Studio_None".Translate()}"
-                        : $"  {System.IO.Path.GetFileName(rawPath)}";
+                    // 同步缓冲：若缓冲未初始化或当前无焦点则以数据层为准
+                    if (!exprPathBuffer.TryGetValue(localExpr, out string bufPath))
+                        bufPath = exactMatch?.texPath ?? string.Empty;
+
+                    // TextField（占大部分宽度）+ [...] 文件浏览按钮
+                    string controlName = $"ExprPath_{localExpr}";
+                    GUI.SetNextControlName(controlName);
+                    string newBuf = Widgets.TextField(new Rect(6f, y, width - 38f, 18f), bufPath);
+                    if (newBuf != bufPath)
+                    {
+                        exprPathBuffer[localExpr] = newBuf;
+                        // 实时写入：路径看起来合理（非空）时立即更新数据层
+                        fc.SetTexPath(localExpr, newBuf);
+                        isDirty = true;
+                        if (previewExpressionOverrideEnabled && previewExpression == localExpr)
+                            ApplyPreviewExpressionOverride(true, localExpr);
+                        else
+                            RefreshPreview();
+                    }
+                    else
+                    {
+                        // 无编辑时保持缓冲与数据层同步
+                        exprPathBuffer[localExpr] = exactMatch?.texPath ?? string.Empty;
+                    }
+
+                    // [...] 打开文件浏览器
+                    if (Widgets.ButtonText(new Rect(width - 30f, y, 26f, 18f), "…"))
+                    {
+                        string cur = exactMatch?.texPath ?? string.Empty;
+                        Find.WindowStack.Add(new Dialog_FileBrowser(cur, path =>
+                        {
+                            fc.SetTexPath(localExpr, path);
+                            exprPathBuffer[localExpr] = path;
+                            isDirty = true;
+                            if (previewExpressionOverrideEnabled && previewExpression == localExpr)
+                                ApplyPreviewExpressionOverride(true, localExpr);
+                            else
+                                RefreshPreview();
+                        }));
+                    }
+                    y += 22f;
                 }
-                Widgets.Label(new Rect(6f, y, width - 12f, 18f), pathDisplay);
-                GUI.color = Color.white;
-                Text.Font = GameFont.Small;
-                y += 20f;
 
                 // ── 帧动画展开列表（仅 isAnimated 时显示）──
                 if (isAnimated && exactMatch != null)
@@ -931,8 +1037,179 @@ namespace CharacterStudio.UI
                 }
             }
 
+            // ── 眼睛方向配置段落 ──────────────────────────────────
+            y += 8f;
+            UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_EyeDir_Title".Translate());
+
+            // 说明文字
+            Text.Font = GameFont.Tiny;
+            GUI.color = UIHelper.SubtleColor;
+            Widgets.Label(new Rect(0f, y, width, 28f), "CS_Studio_Face_EyeDir_Hint".Translate());
+            GUI.color = Color.white;
+            Text.Font = GameFont.Small;
+            y += 32f;
+
+            // 若尚无 eyeDirectionConfig，提供创建按钮
+            if (fc.eyeDirectionConfig == null)
+            {
+                if (Widgets.ButtonText(new Rect(0f, y, width, 28f), "CS_Studio_Face_EyeDir_Create".Translate()))
+                {
+                    fc.eyeDirectionConfig = new CharacterStudio.Core.PawnEyeDirectionConfig();
+                    isDirty = true;
+                    RefreshPreview();
+                }
+                y += 36f;
+            }
+            else
+            {
+                var eyeCfg = fc.eyeDirectionConfig;
+
+                // 启用开关
+                bool eyeEnabled = eyeCfg.enabled;
+                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Face_EyeDir_Enable".Translate(), ref eyeEnabled);
+                if (eyeEnabled != eyeCfg.enabled)
+                {
+                    eyeCfg.enabled = eyeEnabled;
+                    isDirty = true;
+                    RefreshPreview();
+                }
+
+                // 预览方向选择器
+                if (eyeEnabled)
+                {
+                    var comp = mannequin?.CurrentPawn?.GetComp<CharacterStudio.Core.CompPawnSkin>();
+                    string previewDirLabel = comp != null
+                        ? comp.CurEyeDirection.ToString()
+                        : CharacterStudio.Core.EyeDirection.Center.ToString();
+                    UIHelper.DrawPropertyFieldWithButton(ref y, width,
+                        "CS_Studio_Face_EyeDir_Preview".Translate(), previewDirLabel,
+                        () => OpenPreviewEyeDirectionMenu(comp));
+                    y += 4f;
+                }
+
+                // 瞳孔 UV 偏移模式（pupilMoveRange > 0 则开启代码驱动，无需 4 张方向贴图）
+                y += 4f;
+                float pupilRange = eyeCfg.pupilMoveRange;
+                UIHelper.DrawPropertySlider(ref y, width,
+                    "CS_Studio_Face_EyeDir_PupilMoveRange".Translate(),
+                    ref pupilRange, 0f, 0.15f, "F3");
+                if (pupilRange != eyeCfg.pupilMoveRange)
+                {
+                    eyeCfg.pupilMoveRange = pupilRange;
+                    isDirty = true;
+                    RefreshPreview();
+                }
+
+                y += 4f;
+                // 5个方向的贴图路径输入（UV 模式下 Left/Right/Up/Down 贴图不再使用，折叠显示提示）
+                if (eyeCfg.pupilMoveRange > 0f)
+                {
+                    // UV 偏移模式：只需要 Center 贴图
+                    DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Center".Translate(),
+                        eyeCfg.texCenter, path => { eyeCfg.texCenter = path; isDirty = true; RefreshPreview(); });
+                    UIHelper.DrawPropertyLabel(ref y, width,
+                        "CS_Studio_Face_EyeDir_UVModeHint".Translate(), "");
+                }
+                else
+                {
+                    // 贴图替换模式：5 方向贴图均可配置
+                    DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Center".Translate(),
+                        eyeCfg.texCenter, path => { eyeCfg.texCenter = path; isDirty = true; RefreshPreview(); });
+                    DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Left".Translate(),
+                        eyeCfg.texLeft,   path => { eyeCfg.texLeft   = path; isDirty = true; RefreshPreview(); });
+                    DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Right".Translate(),
+                        eyeCfg.texRight,  path => { eyeCfg.texRight  = path; isDirty = true; RefreshPreview(); });
+                    DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Up".Translate(),
+                        eyeCfg.texUp,     path => { eyeCfg.texUp     = path; isDirty = true; RefreshPreview(); });
+                    DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Down".Translate(),
+                        eyeCfg.texDown,   path => { eyeCfg.texDown   = path; isDirty = true; RefreshPreview(); });
+                }
+
+                // 删除整个配置按钮
+                y += 4f;
+                GUI.color = new Color(1f, 0.4f, 0.4f);
+                if (Widgets.ButtonText(new Rect(0f, y, width, 24f), "CS_Studio_Face_EyeDir_Remove".Translate()))
+                {
+                    fc.eyeDirectionConfig = null;
+                    isDirty = true;
+                    RefreshPreview();
+                }
+                GUI.color = Color.white;
+                y += 28f;
+            }
+
             viewRect.height = Mathf.Max(y + 10f, contentRect.height - 4f);
             Widgets.EndScrollView();
+        }
+
+        // ─────────────────────────────────────────────
+        // 眼睛方向 UI 辅助
+        // ─────────────────────────────────────────────
+
+        /// <summary>绘制单行眼睛方向贴图输入行</summary>
+        private void DrawEyeDirTexRow(ref float y, float width, string label, string currentPath, System.Action<string> onChanged)
+        {
+            float rowH = 24f;
+            float labelW = 56f;
+            float btnW   = 28f;
+            float clearW = 20f;
+            float pathW  = width - labelW - btnW - clearW - 6f;
+
+            // 标签
+            Widgets.Label(new Rect(0f, y + 3f, labelW, rowH), label);
+
+            // 路径文本（只读显示，点击弹出 FileBrowser）
+            string display = string.IsNullOrEmpty(currentPath) ? "—" : System.IO.Path.GetFileName(currentPath);
+            Text.Font = GameFont.Tiny;
+            GUI.color = string.IsNullOrEmpty(currentPath) ? UIHelper.SubtleColor : Color.white;
+            Widgets.Label(new Rect(labelW + 2f, y + 5f, pathW, rowH), display);
+            GUI.color = Color.white;
+            Text.Font = GameFont.Small;
+
+            // […] 选择贴图
+            if (Widgets.ButtonText(new Rect(labelW + pathW + 2f, y + 2f, btnW, 20f), "…"))
+            {
+                string capturedPath = currentPath;
+                Find.WindowStack.Add(new Dialog_FileBrowser(capturedPath, newPath =>
+                {
+                    if (!string.IsNullOrEmpty(newPath))
+                        onChanged(newPath);
+                }));
+            }
+
+            // [×] 清空
+            if (!string.IsNullOrEmpty(currentPath))
+            {
+                if (Widgets.ButtonText(new Rect(labelW + pathW + btnW + 4f, y + 2f, clearW, 20f), "×"))
+                    onChanged(string.Empty);
+            }
+
+            y += rowH;
+        }
+
+        /// <summary>弹出眼睛方向预览菜单</summary>
+        private void OpenPreviewEyeDirectionMenu(CharacterStudio.Core.CompPawnSkin? comp)
+        {
+            var options = new List<FloatMenuOption>();
+
+            // "自动" 选项
+            options.Add(new FloatMenuOption("CS_Studio_Face_EyeDir_Auto".Translate(), () =>
+            {
+                comp?.SetPreviewEyeDirection(null);
+                RefreshPreview();
+            }));
+
+            foreach (CharacterStudio.Core.EyeDirection dir in System.Enum.GetValues(typeof(CharacterStudio.Core.EyeDirection)))
+            {
+                var localDir = dir;
+                options.Add(new FloatMenuOption(dir.ToString(), () =>
+                {
+                    comp?.SetPreviewEyeDirection(localDir);
+                    RefreshPreview();
+                }));
+            }
+
+            Find.WindowStack.Add(new FloatMenu(options));
         }
 
         /// <summary>
@@ -1551,7 +1828,8 @@ namespace CharacterStudio.UI
 
         private void DrawReferenceGhostOverlay(Rect previewRect)
         {
-            if (targetPawn == null || !Input.GetKey(ReferenceGhostHotkey))
+            // 使用帧开始时预读的状态，避免 IMGUI TextField 拦截 Input.GetKey
+            if (targetPawn == null || !isHoldingReferenceGhost)
             {
                 return;
             }

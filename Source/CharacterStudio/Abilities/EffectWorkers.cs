@@ -138,12 +138,15 @@ namespace CharacterStudio.Abilities
         {
             if (target.Thing is not Pawn targetPawn) return;
 
-            // 应用眩晕效果
+            // 应用眩晕效果：先创建并设置持续时间，再添加到 Pawn
             if (config.duration > 0)
             {
                 var stunHediff = HediffMaker.MakeHediff(HediffDefOf.Anesthetic, targetPawn);
-                int durationTicks = (int)(config.duration * 60f); // 转换为tick
-                stunHediff.TryGetComp<HediffComp_Disappears>()?.SetDuration(durationTicks);
+                int durationTicks = (int)(config.duration * 60f);
+                // 直接赋值 ticksToDisappear，兼容所有 RimWorld 版本
+                var disappears = stunHediff.TryGetComp<HediffComp_Disappears>();
+                if (disappears != null)
+                    disappears.ticksToDisappear = durationTicks;
                 targetPawn.health.AddHediff(stunHediff);
             }
         }

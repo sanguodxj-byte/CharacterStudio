@@ -80,6 +80,12 @@ namespace CharacterStudio.Abilities
         public List<AbilityEffectConfig> effects = new List<AbilityEffectConfig>();
 
         // ─────────────────────────────────────────────
+        // 视觉特效 (Visual Effects)
+        // 技能触发时的外观粒子/闪光效果
+        // ─────────────────────────────────────────────
+        public List<AbilityVisualEffectConfig> visualEffects = new List<AbilityVisualEffectConfig>();
+
+        // ─────────────────────────────────────────────
         // 运行时组件 (Runtime Components)
         // 用于组合复杂技能行为，让玩家通过编辑器配置
         // ─────────────────────────────────────────────
@@ -114,6 +120,11 @@ namespace CharacterStudio.Abilities
             foreach (var component in this.runtimeComponents)
             {
                 clone.runtimeComponents.Add(component.Clone());
+            }
+
+            foreach (var vfx in this.visualEffects)
+            {
+                clone.visualEffects.Add(vfx.Clone());
             }
 
             return clone;
@@ -238,6 +249,47 @@ namespace CharacterStudio.Abilities
         Teleport,   // 位移
         Control,    // 控制（击晕/强制移动）
         Terraform   // 地形改变（生成掩体/清除污秽）
+    }
+
+    /// <summary>
+    /// 视觉特效类型（外观粒子/闪光）
+    /// </summary>
+    public enum AbilityVisualEffectType
+    {
+        DustPuff,       // 尘埃喷溅
+        MicroSparks,    // 微型火花
+        LightningGlow,  // 闪电光晕
+        FireGlow,       // 火焰光晕
+        Smoke,          // 烟雾
+        ExplosionEffect // 爆炸闪光
+    }
+
+    /// <summary>
+    /// 视觉特效作用目标
+    /// </summary>
+    public enum VisualEffectTarget
+    {
+        Caster,     // 施法者
+        Target,     // 命中目标
+        Both        // 双方
+    }
+
+    /// <summary>
+    /// 单个视觉特效配置
+    /// </summary>
+    public class AbilityVisualEffectConfig
+    {
+        public AbilityVisualEffectType type = AbilityVisualEffectType.DustPuff;
+        public VisualEffectTarget target = VisualEffectTarget.Target;
+        /// <summary>在效果执行后延迟多少 ticks 再播放特效（0 = 立即）</summary>
+        public int delayTicks = 0;
+        /// <summary>特效规模缩放（1.0 = 正常）</summary>
+        public float scale = 1.0f;
+
+        public AbilityVisualEffectConfig Clone()
+        {
+            return (AbilityVisualEffectConfig)MemberwiseClone();
+        }
     }
 
     /// <summary>

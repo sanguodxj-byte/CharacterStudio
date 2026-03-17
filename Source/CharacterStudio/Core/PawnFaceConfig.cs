@@ -139,6 +139,12 @@ namespace CharacterStudio.Core
         /// <summary>各表情对应的贴图/帧序列配置（XML 序列化用）</summary>
         public List<ExpressionTexPath> expressions = new List<ExpressionTexPath>();
 
+        /// <summary>
+        /// 眼睛方向覆盖层配置（可选，为 null 时不启用方向功能）
+        /// 空值安全：渲染与编辑器侧均需做 null 防护。
+        /// </summary>
+        public PawnEyeDirectionConfig? eyeDirectionConfig = null;
+
         // Dictionary 缓存，首次 GetExpression 时懒初始化
         private Dictionary<ExpressionType, ExpressionTexPath>? _lookupCache;
 
@@ -274,6 +280,8 @@ namespace CharacterStudio.Core
                 }
                 clone.expressions.Add(clonedExp);
             }
+            // 克隆眼睛方向配置（若存在）
+            clone.eyeDirectionConfig = this.eyeDirectionConfig?.Clone();
             // _lookupCache 保持 null，首次使用时懒初始化
             return clone;
         }

@@ -70,8 +70,12 @@ namespace CharacterStudio.Core
         /// <summary>着色器名称（用于 ShaderDatabase.LoadShader 加载，如 "Cutout", "CutoutComplex"）</summary>
         public string shaderDefName = "Cutout";
 
-        /// <summary>颜色来源</summary>
-        public LayerColorSource colorSource = LayerColorSource.Fixed;
+        /// <summary>
+        /// 颜色来源。
+        /// 默认 PawnHair：尾巴、耳朵、呆毛等附加图层绝大多数情况下应跟随发色，
+        /// 用户可在属性面板随时修改。
+        /// </summary>
+        public LayerColorSource colorSource = LayerColorSource.PawnHair;
 
         /// <summary>
         /// [废弃] 旧版颜色类型桥接属性，将旧 LayerColorType 枚举映射到 colorSource。
@@ -87,8 +91,11 @@ namespace CharacterStudio.Core
         /// <summary>自定义颜色</summary>
         public Color customColor = Color.white;
 
-        /// <summary>第二颜色来源 (Mask)</summary>
-        public LayerColorSource colorTwoSource = LayerColorSource.Fixed;
+        /// <summary>
+        /// 第二颜色来源 (Mask)。
+        /// 默认 PawnHair：与主颜色来源保持一致，通常用于 Mask 通道着色。
+        /// </summary>
+        public LayerColorSource colorTwoSource = LayerColorSource.PawnHair;
 
         /// <summary>自定义颜色2（用于 Mask 通道等）</summary>
         public Color customColorTwo = Color.white;

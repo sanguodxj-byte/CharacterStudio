@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CharacterStudio.AI;
+using CharacterStudio.Core;
 using UnityEngine;
 using Verse;
 
@@ -13,6 +14,10 @@ namespace CharacterStudio.UI
         private string attributesTagsCsv = string.Empty;
         private string attributesTraitsCsv = string.Empty;
         private string attributesApparelCsv = string.Empty;
+        // LLM 生成状态（异步）
+        private bool llmCharacterGenerating = false;
+        private LlmGeneratedCharacterDesign? llmCharacterPendingResult = null;
+        private string? llmCharacterPendingError = null;
 
         private void DrawAttributesPanel(Rect rect)
         {
@@ -59,10 +64,31 @@ namespace CharacterStudio.UI
             y += 44f;
 
             float buttonWidth = (width - 10f) / 2f;
-            if (Widgets.ButtonText(new Rect(0f, y, buttonWidth, 28f), "CS_LLM_GenerateCharacter".Translate()))
+
+            // 处理异步回调结果（在主线程 UI 帧中消费）
+            if (llmCharacterPendingResult != null)
+            {
+                ApplyGeneratedCharacter(llmCharacterPendingResult);
+                llmCharacterPendingResult = null;
+                llmCharacterGenerating = false;
+                ShowStatus("CS_LLM_GenerateCharacterSuccess".Translate());
+                isDirty = true;
+                RefreshPreview();
+            }
+            if (llmCharacterPendingError != null)
+            {
+                ShowStatus("CS_LLM_GenerateFailed".Translate(llmCharacterPendingError));
+                llmCharacterPendingError = null;
+                llmCharacterGenerating = false;
+            }
+
+            GUI.enabled = !llmCharacterGenerating;
+            string generateLabel = llmCharacterGenerating ? "CS_LLM_Generating".Translate() : "CS_LLM_GenerateCharacter".Translate();
+            if (Widgets.ButtonText(new Rect(0f, y, buttonWidth, 28f), generateLabel))
             {
                 GenerateCharacterFromPrompt();
             }
+            GUI.enabled = true;
 
             if (Widgets.ButtonText(new Rect(buttonWidth + 10f, y, buttonWidth, 28f), "CS_LLM_OpenSettings".Translate()))
             {
@@ -123,34 +149,38 @@ namespace CharacterStudio.UI
 
         private void GenerateCharacterFromPrompt()
         {
-            try
-            {
-                var settings = LlmSettingsRepository.GetOrLoad();
-                if (!settings.enabled || !settings.IsConfigured)
-                {
-                    ShowStatus("CS_LLM_Settings_NotConfigured".Translate());
-                    Find.WindowStack.Add(new Dialog_LlmSettings());
-                    return;
-                }
+            if (llmCharacterGenerating) return;
 
-                if (string.IsNullOrWhiteSpace(llmCharacterPrompt))
-                {
-                    ShowStatus("CS_LLM_CharacterPrompt_Empty".Translate());
-                    return;
-                }
-
-                SyncAbilitiesToSkin();
-                var result = LlmGenerationService.GenerateCharacterDesign(settings, llmCharacterPrompt, workingSkin, workingAbilities);
-                ApplyGeneratedCharacter(result.payload);
-                ShowStatus("CS_LLM_GenerateCharacterSuccess".Translate());
-                isDirty = true;
-                RefreshPreview();
-            }
-            catch (Exception ex)
+            var settings = LlmSettingsRepository.GetOrLoad();
+            if (!settings.enabled || !settings.IsConfigured)
             {
-                Log.Error($"[CharacterStudio] 角色 LLM 生成失败: {ex}");
-                ShowStatus("CS_LLM_GenerateFailed".Translate(ex.Message));
+                ShowStatus("CS_LLM_Settings_NotConfigured".Translate());
+                Find.WindowStack.Add(new Dialog_LlmSettings());
+                return;
             }
+
+            if (string.IsNullOrWhiteSpace(llmCharacterPrompt))
+            {
+                ShowStatus("CS_LLM_CharacterPrompt_Empty".Translate());
+                return;
+            }
+
+            SyncAbilitiesToSkin();
+            llmCharacterGenerating = true;
+            ShowStatus("CS_LLM_Generating".Translate());
+
+            // 捕获不可变副本，避免后台线程访问主线程数据竞争
+            var skinSnapshot = workingSkin.Clone();
+            var abilitiesSnapshot = new System.Collections.Generic.List<Abilities.ModularAbilityDef>(workingAbilities);
+
+            LlmGenerationService.GenerateCharacterDesignAsync(
+                settings,
+                llmCharacterPrompt,
+                skinSnapshot,
+                abilitiesSnapshot,
+                result  => { llmCharacterPendingResult = result.payload; },
+                errMsg  => { llmCharacterPendingError  = errMsg; }
+            );
         }
 
         private void ApplyGeneratedCharacter(LlmGeneratedCharacterDesign? design)

@@ -24,14 +24,23 @@ namespace CharacterStudio.Core
         // 帧动画 Tick 计数器（每 Tick +1，用于多帧表情序列定位）
         private int expressionAnimTick = 0;
 
+        // 眼睛注视方向
+        public EyeDirection curEyeDirection = EyeDirection.Center;
+        /// <summary>编辑器预览强制覆盖方向（null = 自动）</summary>
+        private EyeDirection? previewEyeDirectionOverride = null;
+
         // Q 键四段轮换模式索引（0..3）
         public int qHotkeyModeIndex = 0;
 
         // Q->W 连段窗口（单位：Tick）
         public int qComboWindowEndTick = 0;
 
-        // E 技能短 CD
+        // 各槽位技能 CD（单位：Tick）
+        // E 槽由 AbilityHotkeyRuntimeComponent 写入，Q/W/R 由统一门控写入
+        public int qCooldownUntilTick = 0;
+        public int wCooldownUntilTick = 0;
         public int eCooldownUntilTick = 0;
+        public int rCooldownUntilTick = 0;
 
         // R 两段机制状态
         public bool rStackingEnabled = false;
@@ -109,6 +118,13 @@ namespace CharacterStudio.Core
 
                 // 眨眼逻辑
                 UpdateBlinkLogic();
+
+                // 眼睛方向推断（仅当配置启用时）
+                if (activeSkin?.faceConfig?.eyeDirectionConfig?.enabled == true)
+                {
+                    if (Pawn.IsHashIntervalTick(15))
+                        UpdateEyeDirectionState();
+                }
             }
         }
 
@@ -137,19 +153,26 @@ namespace CharacterStudio.Core
             {
                 curExpression = ExpressionType.Eating;
             }
+            else if (job == JobDefOf.Lovin)
+            {
+                curExpression = ExpressionType.Lovin;
+            }
             else if (job != null && (
-                job.defName == "LayDown" || job == JobDefOf.Lovin
+                job.defName == "LayDown"
                 || job.defName.IndexOf("LayDown", StringComparison.OrdinalIgnoreCase) >= 0))
             {
                 curExpression = ExpressionType.LayDown;
             }
             else if (job != null && (
-                job.defName.IndexOf("Strip", StringComparison.OrdinalIgnoreCase) >= 0))
+                job == JobDefOf.Strip
+                || job.defName.IndexOf("Strip", StringComparison.OrdinalIgnoreCase) >= 0))
             {
                 curExpression = ExpressionType.Strip;
             }
             else if (job != null && (
-                job.defName.IndexOf("Haul", StringComparison.OrdinalIgnoreCase) >= 0
+                job == JobDefOf.HaulToCell
+                || job == JobDefOf.HaulToContainer
+                || job.defName.IndexOf("Haul", StringComparison.OrdinalIgnoreCase) >= 0
                 || job.defName.IndexOf("Carry", StringComparison.OrdinalIgnoreCase) >= 0))
             {
                 curExpression = ExpressionType.Hauling;
@@ -161,22 +184,32 @@ namespace CharacterStudio.Core
                 curExpression = ExpressionType.Reading;
             }
             else if (job != null && (
-                job.defName.IndexOf("SocialRelax", StringComparison.OrdinalIgnoreCase) >= 0
-                || job.defName.IndexOf("Social", StringComparison.OrdinalIgnoreCase) >= 0
+                job == JobDefOf.SocialRelax
+                || job.defName.IndexOf("SocialRelax", StringComparison.OrdinalIgnoreCase) >= 0
                 || job.defName.IndexOf("Chat", StringComparison.OrdinalIgnoreCase) >= 0))
             {
                 curExpression = ExpressionType.SocialRelax;
             }
             else if (job != null && (
-                job.defName.IndexOf("DoBill", StringComparison.OrdinalIgnoreCase) >= 0
+                job == JobDefOf.DoBill
+                || job.defName.IndexOf("DoBill", StringComparison.OrdinalIgnoreCase) >= 0
                 || job.defName.IndexOf("Craft", StringComparison.OrdinalIgnoreCase) >= 0
-                || job.defName.IndexOf("Cook", StringComparison.OrdinalIgnoreCase) >= 0))
+                || job.defName.IndexOf("Cook", StringComparison.OrdinalIgnoreCase) >= 0
+                || job.defName.IndexOf("Smelt", StringComparison.OrdinalIgnoreCase) >= 0
+                || job.defName.IndexOf("Mine", StringComparison.OrdinalIgnoreCase) >= 0
+                || job.defName.IndexOf("Repair", StringComparison.OrdinalIgnoreCase) >= 0
+                || job.defName.IndexOf("Build", StringComparison.OrdinalIgnoreCase) >= 0
+                || job.defName.IndexOf("Sow", StringComparison.OrdinalIgnoreCase) >= 0
+                || job.defName.IndexOf("Harvest", StringComparison.OrdinalIgnoreCase) >= 0
+                || job.defName.IndexOf("Clean", StringComparison.OrdinalIgnoreCase) >= 0
+                || job.defName.IndexOf("Train", StringComparison.OrdinalIgnoreCase) >= 0
+                || job.defName.IndexOf("Tend", StringComparison.OrdinalIgnoreCase) >= 0
+                || job.defName.IndexOf("Research", StringComparison.OrdinalIgnoreCase) >= 0))
             {
                 curExpression = ExpressionType.Working;
             }
             else if (job != null && (
-                job.defName.IndexOf("WaitCombat", StringComparison.OrdinalIgnoreCase) >= 0
-                || job.defName.IndexOf("AttackStatic", StringComparison.OrdinalIgnoreCase) >= 0))
+                job.defName.IndexOf("WaitCombat", StringComparison.OrdinalIgnoreCase) >= 0))
             {
                 curExpression = ExpressionType.WaitCombat;
             }
@@ -186,16 +219,11 @@ namespace CharacterStudio.Core
                 curExpression = ExpressionType.AttackMelee;
             }
             else if (job != null && (
-                job.defName.IndexOf("Shoot", StringComparison.OrdinalIgnoreCase) >= 0
+                job.defName.IndexOf("AttackStatic", StringComparison.OrdinalIgnoreCase) >= 0
+                || job.defName.IndexOf("Shoot", StringComparison.OrdinalIgnoreCase) >= 0
                 || job.defName.IndexOf("Burst", StringComparison.OrdinalIgnoreCase) >= 0))
             {
                 curExpression = ExpressionType.AttackRanged;
-            }
-            else if (job != null && (
-                job.defName.IndexOf("Goto", StringComparison.OrdinalIgnoreCase) >= 0
-                || job == JobDefOf.Goto))
-            {
-                curExpression = ExpressionType.Goto;
             }
             // ── 精神状态（Mental State）──
             else if (pawn.InMentalState)
@@ -305,6 +333,128 @@ namespace CharacterStudio.Core
         /// <summary>获取当前帧动画 Tick（供 FaceComponent 渲染时定位帧）</summary>
         public int GetExpressionAnimTick() => expressionAnimTick;
 
+        // ─────────────────────────────────────────────
+        // 眼睛方向 API
+        // ─────────────────────────────────────────────
+
+        /// <summary>
+        /// 获取当前有效的眼睛方向。
+        /// 若编辑器设置了预览覆盖，优先返回覆盖值；否则返回运行时推断值。
+        /// </summary>
+        public EyeDirection CurEyeDirection
+        {
+            get => previewEyeDirectionOverride ?? curEyeDirection;
+        }
+
+        /// <summary>设置编辑器预览方向覆盖（null = 取消覆盖，恢复自动）</summary>
+        public void SetPreviewEyeDirection(EyeDirection? dir)
+        {
+            previewEyeDirectionOverride = dir;
+            RequestRenderRefresh();
+        }
+
+        /// <summary>
+        /// 根据 Pawn 当前状态推断眼睛注视方向，并在发生变化时触发渲染刷新。
+        /// 推断规则（优先级从高到低）：
+        ///   1. 死亡/倒地/睡眠 → Center
+        ///   2. 有 Job 目标单元 → 按目标相对方向映射 Left/Right/Up/Down
+        ///   3. 当前行走朝向推断（Rotation） → 对应方向
+        ///   4. 默认 Center
+        /// </summary>
+        private void UpdateEyeDirectionState()
+        {
+            if (Pawn == null) return;
+            if (activeSkin?.faceConfig?.eyeDirectionConfig?.enabled != true) return;
+
+            var pawn = Pawn!;
+            var oldDir = curEyeDirection;
+
+            // 死亡 / 倒地 / 睡眠 → 始终 Center（眼神涣散 / 闭眼）
+            if (pawn.Dead || pawn.Downed || RestUtility.InBed(pawn))
+            {
+                curEyeDirection = EyeDirection.Center;
+            }
+            else
+            {
+                // 有 Job 目标：根据目标相对方向决定眼神
+                var targetCell = GetJobTargetCell(pawn);
+                if (targetCell.IsValid && pawn.Position.IsValid)
+                {
+                    IntVec3 delta = targetCell - pawn.Position;
+                    curEyeDirection = MapDeltaToEyeDirection(delta, pawn.Rotation);
+                }
+                else
+                {
+                    // 无目标时按角色面朝方向给出轻微方向感
+                    curEyeDirection = MapRotationToEyeDirection(pawn.Rotation);
+                }
+            }
+
+            if (oldDir != curEyeDirection)
+                RequestRenderRefresh();
+        }
+
+        /// <summary>获取 Pawn 当前 Job 的目标单元（安全获取，失败返回 IntVec3.Invalid）</summary>
+        private static IntVec3 GetJobTargetCell(Pawn pawn)
+        {
+            try
+            {
+                var job = pawn.CurJob;
+                if (job == null) return IntVec3.Invalid;
+
+                // 优先取 targetA 位置
+                var targetA = job.targetA;
+                if (targetA.HasThing && targetA.Thing?.Position.IsValid == true)
+                    return targetA.Thing.Position;
+                if (targetA.Cell.IsValid)
+                    return targetA.Cell;
+
+                return IntVec3.Invalid;
+            }
+            catch
+            {
+                return IntVec3.Invalid;
+            }
+        }
+
+        /// <summary>
+        /// 将目标相对向量映射到 EyeDirection。
+        /// 以 Pawn 自身朝向为参考系：Pawn 面南（默认 Rot4.South）时，
+        ///   屏幕 X+ = Right，Z+ = Down（向画面底部）。
+        /// </summary>
+        private static EyeDirection MapDeltaToEyeDirection(IntVec3 delta, Rot4 rot)
+        {
+            if (delta == IntVec3.Zero) return EyeDirection.Center;
+
+            // 将世界坐标 delta 转换到角色面向局部坐标
+            // Rot4.South (face down) → local(x,z) = world(x, z)
+            // Rot4.North (face up)   → local(x,z) = world(-x, -z)
+            // Rot4.East  (face right)→ local(x,z) = world(z, -x)
+            // Rot4.West  (face left) → local(x,z) = world(-z, x)
+            int localX, localZ;
+            if (rot == Rot4.North)      { localX = -delta.x; localZ = -delta.z; }
+            else if (rot == Rot4.East)  { localX =  delta.z; localZ = -delta.x; }
+            else if (rot == Rot4.West)  { localX = -delta.z; localZ =  delta.x; }
+            else /* South */            { localX =  delta.x; localZ =  delta.z; }
+
+            int absX = Math.Abs(localX);
+            int absZ = Math.Abs(localZ);
+
+            if (absX <= 1 && absZ <= 1) return EyeDirection.Center;
+
+            if (absX >= absZ)
+                return localX > 0 ? EyeDirection.Right : EyeDirection.Left;
+            else
+                return localZ > 0 ? EyeDirection.Down : EyeDirection.Up;
+        }
+
+        /// <summary>无目标时按面朝方向给出默认眼神方向</summary>
+        private static EyeDirection MapRotationToEyeDirection(Rot4 rot)
+        {
+            // 等距视角：面北时略偏上，面南时略偏下，左右适中 → 均默认 Center
+            return EyeDirection.Center;
+        }
+
         public void RequestRenderRefresh()
         {
             if (Pawn?.Drawer?.renderer != null)
@@ -327,7 +477,10 @@ namespace CharacterStudio.Core
             Scribe_Values.Look(ref activeSkinDefName, "activeSkinDefName");
             Scribe_Values.Look(ref qHotkeyModeIndex, "qHotkeyModeIndex", 0);
             Scribe_Values.Look(ref qComboWindowEndTick, "qComboWindowEndTick", 0);
+            Scribe_Values.Look(ref qCooldownUntilTick, "qCooldownUntilTick", 0);
+            Scribe_Values.Look(ref wCooldownUntilTick, "wCooldownUntilTick", 0);
             Scribe_Values.Look(ref eCooldownUntilTick, "eCooldownUntilTick", 0);
+            Scribe_Values.Look(ref rCooldownUntilTick, "rCooldownUntilTick", 0);
 
             Scribe_Values.Look(ref rStackingEnabled, "rStackingEnabled", false);
             Scribe_Values.Look(ref rStackCount, "rStackCount", 0);

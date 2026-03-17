@@ -488,6 +488,16 @@ namespace CharacterStudio.Exporter
                 }
             }
 
+            if (skin.faceConfig?.eyeDirectionConfig != null)
+            {
+                var eyeCfg = skin.faceConfig.eyeDirectionConfig;
+                eyeCfg.texCenter = Remap(eyeCfg.texCenter);
+                eyeCfg.texLeft   = Remap(eyeCfg.texLeft);
+                eyeCfg.texRight  = Remap(eyeCfg.texRight);
+                eyeCfg.texUp     = Remap(eyeCfg.texUp);
+                eyeCfg.texDown   = Remap(eyeCfg.texDown);
+            }
+
             if (!string.IsNullOrWhiteSpace(config.GeneIconPath))
             {
                 config.GeneIconPath = Remap(config.GeneIconPath);

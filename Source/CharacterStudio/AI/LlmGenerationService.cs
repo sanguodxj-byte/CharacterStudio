@@ -5,6 +5,7 @@ using System.Net;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using System.Text;
+using System.Threading;
 using CharacterStudio.Abilities;
 using CharacterStudio.Core;
 using Verse;
@@ -13,6 +14,65 @@ namespace CharacterStudio.AI
 {
     public static class LlmGenerationService
     {
+        // ─────────────────────────────────────────────
+        // 异步请求入口（避免主线程阻塞）
+        // ─────────────────────────────────────────────
+
+        /// <summary>
+        /// 在后台线程异步生成角色设计。
+        /// onComplete 在后台线程回调；调用方负责将结果 marshal 到主线程（如通过队列）。
+        /// onError 在后台线程回调，参数为异常信息字符串。
+        /// </summary>
+        public static void GenerateCharacterDesignAsync(
+            CharacterStudioLlmSettings settings,
+            string userPrompt,
+            PawnSkinDef skin,
+            List<ModularAbilityDef> currentAbilities,
+            Action<LlmGenerationEnvelope<LlmGeneratedCharacterDesign>> onComplete,
+            Action<string> onError)
+        {
+            ThreadPool.QueueUserWorkItem(_ =>
+            {
+                try
+                {
+                    var result = GenerateCharacterDesign(settings, userPrompt, skin, currentAbilities);
+                    onComplete?.Invoke(result);
+                }
+                catch (Exception ex)
+                {
+                    onError?.Invoke(ex.Message);
+                }
+            });
+        }
+
+        /// <summary>
+        /// 在后台线程异步生成技能列表。
+        /// </summary>
+        public static void GenerateAbilitiesAsync(
+            CharacterStudioLlmSettings settings,
+            string userPrompt,
+            PawnSkinDef skin,
+            List<ModularAbilityDef> currentAbilities,
+            Action<LlmGenerationEnvelope<List<ModularAbilityDef>>> onComplete,
+            Action<string> onError)
+        {
+            ThreadPool.QueueUserWorkItem(_ =>
+            {
+                try
+                {
+                    var result = GenerateAbilities(settings, userPrompt, skin, currentAbilities);
+                    onComplete?.Invoke(result);
+                }
+                catch (Exception ex)
+                {
+                    onError?.Invoke(ex.Message);
+                }
+            });
+        }
+
+        // ─────────────────────────────────────────────
+        // 同步实现（供 Async 包装器内部调用，或测试用）
+        // ─────────────────────────────────────────────
 
         public static LlmGenerationEnvelope<LlmGeneratedCharacterDesign> GenerateCharacterDesign(
             CharacterStudioLlmSettings settings,

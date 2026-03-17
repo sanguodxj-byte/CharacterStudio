@@ -279,6 +279,9 @@ namespace CharacterStudio.Rendering
 
                 bool anyNodesInjected = InjectCustomLayers(__instance, pawn, skinDef);
 
+                // 注入眼睛方向覆盖层（与 RefreshHiddenNodes 保持一致）
+                InjectEyeDirectionLayer(__instance, pawn, skinDef);
+
                 if (!overlayMode && anyNodesInjected)
                 {
                     try
