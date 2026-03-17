@@ -259,7 +259,7 @@ namespace CharacterStudio.UI
             // 查找已授予此 Pawn 的 CS 技能并生成 Gizmo
             var grantedNames = CharacterStudio.Abilities.AbilityGrantUtility.GetGrantedAbilityNames(__instance);
             var skinAbilityNames = comp?.ActiveSkin?.abilities?.Select(a => a?.defName)
-                .Where(n => n != null).ToHashSet() ?? new System.Collections.Generic.HashSet<string>();
+                .Where(n => n != null).ToHashSet() ?? new System.Collections.Generic.HashSet<string?>();
 
             foreach (var defName in grantedNames)
             {

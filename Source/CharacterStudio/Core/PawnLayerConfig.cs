@@ -148,7 +148,9 @@ namespace CharacterStudio.Core
                 rotDrawMode = this.rotDrawMode,
                 workerClass = this.workerClass,
                 graphicClass = this.graphicClass,
+#pragma warning disable CS0618
                 shaderTypeDef = this.shaderTypeDef,
+#pragma warning restore CS0618
                 shaderDefName = this.shaderDefName,
                 colorSource = this.colorSource,
                 customColor = this.customColor,

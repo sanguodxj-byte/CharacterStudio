@@ -2360,16 +2360,7 @@ namespace CharacterStudio.UI
                             RefreshPreview();
                         });
     
-                    // FaceComponent Worker 已移除组件类型选择 - 整张头部贴图切换模式
-                    if (false) { } /* FaceComponent不再需要组件类型选择 */ if (false)
-                    if (currentWorker == "FaceComponent")
-                    {
-                        // Face Component Type
-                        UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Prop_Worker".Translate(), currentWorker, // faceComponent removed
-                            new string[0],
-                            s => s,
-                            val => { isDirty = true; RefreshPreview(); });
-                    }
+                    // FaceComponent 不再需要组件类型选择（整张头部贴图切换模式）
     
 #pragma warning disable CS0618 // colorType 仅用于旧版图层编辑兼容
                     UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Prop_ColorType".Translate(), layer.colorType,

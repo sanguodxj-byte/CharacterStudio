@@ -184,8 +184,7 @@ namespace CharacterStudio.Core
                 curExpression = ExpressionType.Reading;
             }
             else if (job != null && (
-                job == JobDefOf.SocialRelax
-                || job.defName.IndexOf("SocialRelax", StringComparison.OrdinalIgnoreCase) >= 0
+                job.defName.IndexOf("SocialRelax", StringComparison.OrdinalIgnoreCase) >= 0
                 || job.defName.IndexOf("Chat", StringComparison.OrdinalIgnoreCase) >= 0))
             {
                 curExpression = ExpressionType.SocialRelax;

@@ -40,10 +40,12 @@ namespace CharacterStudio.UI
         private string abilitySearchText = string.Empty;
         private string llmAbilityPrompt = string.Empty;
         private readonly SkinAbilityHotkeyConfig? boundHotkeys;
-        // LLM 生成状态（异步）
+        // LLM 生成状态（异步）— 结果字段为 TODO：异步回调完成后读取
+#pragma warning disable CS0414
         private bool llmAbilitiesGenerating = false;
         private (bool replaceExisting, List<ModularAbilityDef> result)? llmAbilitiesPendingResult = null;
         private string? llmAbilitiesPendingError = null;
+#pragma warning restore CS0414
 
         private readonly PawnSkinDef? boundSkin;
         // 绑定目标 Pawn（可从编辑器直接授予/撤销技能）
