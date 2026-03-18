@@ -1,4 +1,4 @@
-﻿﻿using System;
+﻿﻿﻿﻿﻿﻿﻿﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
@@ -74,6 +74,46 @@ namespace CharacterStudio.Rendering
             return null;
         }
 
+        private static void ReplaceNodeGraphicsCache(PawnRenderNode node, Graphic? graphic)
+        {
+            var field = GetGraphicsField();
+            if (field == null) return;
+
+            var val = field.GetValue(node);
+            if (val is List<Graphic> list)
+            {
+                list.Clear();
+                if (graphic != null)
+                {
+                    list.Add(graphic);
+                }
+            }
+            else
+            {
+                field.SetValue(node, graphic != null ? new Graphic[] { graphic } : Array.Empty<Graphic>());
+            }
+
+            primaryGraphicField?.SetValue(node, graphic);
+        }
+
+        private static void ClearNodeGraphicsCacheDirect(PawnRenderNode node)
+        {
+            var field = GetGraphicsField();
+            if (field == null) return;
+
+            var val = field.GetValue(node);
+            if (val is List<Graphic> list)
+            {
+                list.Clear();
+            }
+            else
+            {
+                field.SetValue(node, Array.Empty<Graphic>());
+            }
+
+            primaryGraphicField?.SetValue(node, null);
+        }
+
         static Patch_PawnRenderTree() { }
 
         // ─────────────────────────────────────────────
@@ -98,6 +138,8 @@ namespace CharacterStudio.Rendering
                 {
                     Log.Warning("[CharacterStudio] 无法找到 PawnRenderTree.TrySetupGraphIfNeeded 方法");
                 }
+
+                ApplyBaseAppearanceRuntimePatches(harmony);
 
                 var canDrawMethod = AccessTools.Method(typeof(PawnRenderNodeWorker), nameof(PawnRenderNodeWorker.CanDrawNow));
                 var canDrawPrefix = AccessTools.Method(typeof(Patch_PawnRenderTree), nameof(CanDrawNow_Prefix));
@@ -173,6 +215,8 @@ namespace CharacterStudio.Rendering
                 var originalMethod = AccessTools.Method(typeof(PawnRenderTree), "TrySetupGraphIfNeeded");
                 if (originalMethod != null)
                     harmonyInstance.Unpatch(originalMethod, HarmonyPatchType.Postfix, harmonyInstance.Id);
+
+                UnpatchBaseAppearanceRuntimePatches(harmonyInstance);
 
                 List<MethodInfo> methodsToUnpatch;
                 lock (patchStateLock)
@@ -396,13 +440,18 @@ namespace CharacterStudio.Rendering
             tagHidingAvailable = nodesByTag != null;
             bool canUseTag = tagHidingAvailable;
 
-            if (canUseTag && (hideHead || skinDef.hideVanillaHead))
+            // 自动检测 BaseAppearance 启用的槽位，决定是否隐藏对应的原版节点
+            bool shouldHideHead = hideHead || skinDef.hideVanillaHead || HasEnabledBaseSlot(skinDef, BaseAppearanceSlotType.Head);
+            bool shouldHideHair = hideHair || skinDef.hideVanillaHair || HasEnabledBaseSlot(skinDef, BaseAppearanceSlotType.Hair);
+            bool shouldHideBody = skinDef.hideVanillaBody || HasEnabledBaseSlot(skinDef, BaseAppearanceSlotType.Body);
+
+            if (canUseTag && shouldHideHead)
                 HideNodeByTagName(nodesByTag!, "Head");
 
-            if (canUseTag && (hideHair || skinDef.hideVanillaHair))
+            if (canUseTag && shouldHideHair)
                 HideNodeByTagName(nodesByTag!, "Hair");
 
-            if (skinDef.hideVanillaBody)
+            if (shouldHideBody)
             {
                 if (canUseTag)
                 {
@@ -470,6 +519,16 @@ namespace CharacterStudio.Rendering
                     HideNodeByTagName(nodesByTag!, t);
             }
 #pragma warning restore CS0618
+        }
+
+        /// <summary>
+        /// 检查 BaseAppearance 是否启用了指定槽位（且有贴图路径）
+        /// </summary>
+        private static bool HasEnabledBaseSlot(PawnSkinDef skinDef, BaseAppearanceSlotType slotType)
+        {
+            if (skinDef?.baseAppearance == null) return false;
+            var slot = skinDef.baseAppearance.GetSlot(slotType);
+            return slot != null && slot.enabled && !string.IsNullOrWhiteSpace(slot.texPath);
         }
     }
 }

@@ -56,7 +56,8 @@ namespace CharacterStudio.Introspection
             return true;
         }
 
-        private static bool IsVerboseDebugEnabled => Prefs.DevMode;
+        // 默认关闭大体量节点日志，避免 Player.log 被刷爆。
+        private static bool IsVerboseDebugEnabled => false;
 
         // ─────────────────────────────────────────────
         // 公共入口

@@ -402,6 +402,7 @@
     <CS_Studio_Effect_PawnKind>PawnKind</CS_Studio_Effect_PawnKind>
     <CS_Studio_Effect_SummonCount>数量</CS_Studio_Effect_SummonCount>
     <CS_Studio_Effect_Hediff>Hediff</CS_Studio_Effect_Hediff>
+    <CS_Studio_Effect_CanHurtSelf>可以伤害自身</CS_Studio_Effect_CanHurtSelf>
 
     <!-- LLM / 属性编辑 -->
     <CS_LLM_Settings_Title>LLM 设置</CS_LLM_Settings_Title>
@@ -738,5 +739,11 @@
     <!-- 表情最小集进度 -->
     <!-- {0} = 已完成数, {1} = 最小集总数 -->
     <CS_Studio_Face_MinSetProgress>最小集 {0}/{1} 已完成（★ 标记为推荐优先配置）</CS_Studio_Face_MinSetProgress>
+
+    <!-- 种族身份 / Race Identity -->
+    <CS_Studio_Section_RaceIdentity>种族身份</CS_Studio_Section_RaceIdentity>
+    <CS_Studio_RaceDisplayName>种族显示名</CS_Studio_RaceDisplayName>
+    <CS_Studio_XenotypeDefName>绑定 Xenotype</CS_Studio_XenotypeDefName>
+    <CS_Studio_None>（无）</CS_Studio_None>
 </LanguageData>
 

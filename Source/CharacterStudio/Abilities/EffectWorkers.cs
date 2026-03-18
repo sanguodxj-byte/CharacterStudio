@@ -131,6 +131,7 @@ namespace CharacterStudio.Abilities
 
     /// <summary>
     /// 控制效果（击晕/强制移动）
+    /// 使用 StunHandler 实现真正的眩晕效果，而不是麻醉 Hediff
     /// </summary>
     public class EffectWorker_Control : EffectWorker
     {
@@ -138,17 +139,42 @@ namespace CharacterStudio.Abilities
         {
             if (target.Thing is not Pawn targetPawn) return;
 
-            // 应用眩晕效果：先创建并设置持续时间，再添加到 Pawn
+            // 应用眩晕效果：使用 StunHandler 实现真正的眩晕
             if (config.duration > 0)
             {
-                var stunHediff = HediffMaker.MakeHediff(HediffDefOf.Anesthetic, targetPawn);
                 int durationTicks = (int)(config.duration * 60f);
-                // 直接赋值 ticksToDisappear，兼容所有 RimWorld 版本
-                var disappears = stunHediff.TryGetComp<HediffComp_Disappears>();
-                if (disappears != null)
-                    disappears.ticksToDisappear = durationTicks;
-                targetPawn.health.AddHediff(stunHediff);
+                
+                // 使用 StunHandler.StunFor 实现眩晕
+                // 这会让目标无法移动、无法执行动作，但不会倒地
+                if (targetPawn.stances != null && targetPawn.stances.stunner != null)
+                {
+                    targetPawn.stances.stunner.StunFor(durationTicks, caster, false);
+                }
+                else
+                {
+                    // 回退方案：如果 StunHandler 不可用，使用 Hediff
+                    FallbackStun(targetPawn, durationTicks);
+                }
             }
+        }
+
+        /// <summary>
+        /// 回退眩晕方案：创建临时眩晕 Hediff
+        /// </summary>
+        private void FallbackStun(Pawn target, int durationTicks)
+        {
+            // 使用 PsychicallyDeafened 作为临时眩晕效果（不会导致倒地）
+            // 如果没有更好的选择，使用 Anesthetic 但设置较短时间
+            var stunHediff = HediffMaker.MakeHediff(HediffDefOf.Anesthetic, target);
+            var disappears = stunHediff.TryGetComp<HediffComp_Disappears>();
+            if (disappears != null)
+            {
+                disappears.ticksToDisappear = durationTicks;
+            }
+            target.health.AddHediff(stunHediff);
+            
+            // 记录警告，建议检查 StunHandler
+            Log.Warning($"[CharacterStudio] StunHandler 不可用于 {target.LabelShort}，已使用回退眩晕方案");
         }
     }
 

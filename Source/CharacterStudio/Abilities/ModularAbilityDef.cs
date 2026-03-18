@@ -310,6 +310,9 @@ namespace CharacterStudio.Abilities
         public PawnKindDef? summonKind;
         public int summonCount = 1;
 
+        /// <summary>是否可以伤害施法者自身（默认 false = 不伤害自己）</summary>
+        public bool canHurtSelf = false;
+
         public AbilityEffectConfig Clone()
         {
             return (AbilityEffectConfig)MemberwiseClone();

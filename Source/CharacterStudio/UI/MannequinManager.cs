@@ -101,6 +101,18 @@ namespace CharacterStudio.UI
         }
 
         /// <summary>
+        /// 强制重建人偶（包含同种族时），用于新建皮肤时清除旧外观残留。
+        /// </summary>
+        public void ForceReset(ThingDef? raceDef = null)
+        {
+            currentRace = raceDef ?? ThingDefOf.Human;
+            DestroyMannequin();
+            fileModificationTimes.Clear();
+            CreateMannequin();
+            needsRefresh = true;
+        }
+
+        /// <summary>
         /// 从源 Pawn 复制外观特征到人偶
         /// </summary>
         public void CopyAppearanceFrom(Pawn source)

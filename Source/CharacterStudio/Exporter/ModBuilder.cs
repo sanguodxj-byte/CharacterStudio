@@ -644,6 +644,24 @@ namespace CharacterStudio.Exporter
             string unitDefsPath = Path.Combine(modPath, "Defs", "UnitDefs.xml");
             doc.Save(unitDefsPath);
 
+            // ── XenotypeDef 独立文件（可选）────────────────────────────────
+            if (!string.IsNullOrEmpty(config.SkinDef.xenotypeDefName))
+            {
+                string xenoLabel = string.IsNullOrEmpty(config.SkinDef.raceDisplayName)
+                    ? config.ModName
+                    : config.SkinDef.raceDisplayName;
+
+                var xenoDoc = ModExportXmlWriter.CreateXenotypeDefDocument(
+                    config.SkinDef.xenotypeDefName,
+                    xenoLabel,
+                    skinDefName);
+
+                string xenoDefsPath = Path.Combine(modPath, "Defs", "XenotypeDefs.xml");
+                xenoDoc.Save(xenoDefsPath);
+
+                Log.Message($"[CharacterStudio] XenotypeDef 已生成: {xenoDefsPath}");
+            }
+
             Log.Message($"[CharacterStudio] 单位定义已生成: {unitDefsPath}");
         }
 

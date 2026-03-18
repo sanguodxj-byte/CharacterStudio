@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using RimWorld;
@@ -2776,6 +2776,40 @@ namespace CharacterStudio.UI
             float y = 0f;
             float width = viewRect.width;
 
+            bool DrawPathFieldWithBrowser(ref float rowY, string label, ref string value, Action browseAction)
+            {
+                Rect rowRect = new Rect(0f, rowY, width, UIHelper.RowHeight);
+                Text.Font = GameFont.Small;
+
+                float actualLabelWidth = Mathf.Max(UIHelper.LabelWidth, Text.CalcSize(label).x + 10f);
+                float buttonWidth = 30f;
+                float spacing = 5f;
+                float fieldWidth = Mathf.Max(40f, rowRect.width - actualLabelWidth - buttonWidth - spacing);
+
+                Widgets.Label(new Rect(rowRect.x, rowRect.y, actualLabelWidth, 24f), label);
+
+                string newValue = Widgets.TextField(
+                    new Rect(rowRect.x + actualLabelWidth, rowRect.y, fieldWidth, 24f),
+                    value ?? string.Empty);
+
+                bool changed = false;
+                if (newValue != value)
+                {
+                    value = UIHelper.SanitizeInput(newValue, 260);
+                    changed = true;
+                }
+
+                if (Widgets.ButtonText(
+                    new Rect(rowRect.x + actualLabelWidth + fieldWidth + spacing, rowRect.y, buttonWidth, 24f),
+                    "..."))
+                {
+                    browseAction?.Invoke();
+                }
+
+                rowY += UIHelper.RowHeight;
+                return changed;
+            }
+
             if (DrawCollapsibleSection(ref y, width, "CS_Studio_BaseSlot_Section".Translate(BaseAppearanceUtility.GetDisplayName(slotType)), "BaseSlotBase"))
             {
                 bool enabled = slot.enabled;
@@ -2789,34 +2823,53 @@ namespace CharacterStudio.UI
                     RefreshRenderTree();
                 }
 
-                string texPath = slot.texPath;
-                UIHelper.DrawPropertyFieldWithButton(ref y, width, "CS_Studio_Prop_TexturePath".Translate(), texPath, () =>
-                {
-                    Find.WindowStack.Add(new Dialog_FileBrowser(slot.texPath, path =>
+                string texPath = slot.texPath ?? string.Empty;
+                if (DrawPathFieldWithBrowser(ref y, "CS_Studio_Prop_TexturePath".Translate(), ref texPath, () =>
+                    Find.WindowStack.Add(new Dialog_FileBrowser(slot.texPath ?? string.Empty, path =>
                     {
-                        slot.texPath = path;
-                        if (!string.IsNullOrEmpty(path))
-                        {
-                            slot.enabled = true;
-                        }
+                        CaptureUndoSnapshot();
+                        slot.texPath = path ?? string.Empty;
+                        slot.enabled = !string.IsNullOrWhiteSpace(slot.texPath);
                         isDirty = true;
                         RefreshPreview();
                         RefreshRenderTree();
-                    }));
-                });
-
-                string maskPath = slot.maskTexPath;
-                UIHelper.DrawPropertyFieldWithButton(ref y, width, "CS_Studio_BaseSlot_MaskTexture".Translate(), maskPath, () =>
+                    }))))
                 {
-                    Find.WindowStack.Add(new Dialog_FileBrowser(slot.maskTexPath, path =>
+                    CaptureUndoSnapshot();
+                    slot.texPath = texPath;
+                    slot.enabled = !string.IsNullOrWhiteSpace(texPath);
+                    isDirty = true;
+                    RefreshPreview();
+                    RefreshRenderTree();
+                }
+
+                string maskPath = slot.maskTexPath ?? string.Empty;
+                if (DrawPathFieldWithBrowser(ref y, "CS_Studio_BaseSlot_MaskTexture".Translate(), ref maskPath, () =>
+                    Find.WindowStack.Add(new Dialog_FileBrowser(slot.maskTexPath ?? string.Empty, path =>
                     {
-                        slot.maskTexPath = path;
+                        CaptureUndoSnapshot();
+                        slot.maskTexPath = path ?? string.Empty;
                         isDirty = true;
                         RefreshPreview();
-                    }));
-                });
+                        RefreshRenderTree();
+                    }))))
+                {
+                    CaptureUndoSnapshot();
+                    slot.maskTexPath = maskPath;
+                    isDirty = true;
+                    RefreshPreview();
+                    RefreshRenderTree();
+                }
 
-                UIHelper.DrawPropertyField(ref y, width, "CS_Studio_BaseSlot_Shader".Translate(), ref slot.shaderDefName);
+                string shaderDefName = slot.shaderDefName ?? string.Empty;
+                UIHelper.DrawPropertyField(ref y, width, "CS_Studio_BaseSlot_Shader".Translate(), ref shaderDefName);
+                if (shaderDefName != (slot.shaderDefName ?? string.Empty))
+                {
+                    CaptureUndoSnapshot();
+                    slot.shaderDefName = shaderDefName;
+                    isDirty = true;
+                    RefreshPreview();
+                }
 
                 string anchorTag = BaseAppearanceUtility.GetAnchorTag(slotType);
                 UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Prop_AnchorPoint".Translate(), anchorTag);
@@ -3103,10 +3156,18 @@ namespace CharacterStudio.UI
             selectedBaseSlotType = null;
             currentTab = EditorTab.BaseAppearance;
             isDirty = false;
+            exprPathBuffer.Clear();
             
             // 清除隐藏节点状态
             Rendering.Patch_PawnRenderTree.ClearHiddenNodes();
+
+            // 强制将人偶重置为默认人类种族：
+            // 若上次编辑的是其他种族皮肤，mannequin 仍保持那个种族的渲染树，
+            // BaseAppearance 节点路径会找不到匹配项，导致贴图无法生效且预览不刷新。
+            // ForceReset 不受同种族检查限制，始终销毁重建，彻底清除旧外观残留。
+            mannequin?.ForceReset(RimWorld.ThingDefOf.Human);
             
+            RefreshRenderTree();
             RefreshPreview();
         }
 
@@ -3522,4 +3583,3 @@ namespace CharacterStudio.UI
         }
     }
 }
-

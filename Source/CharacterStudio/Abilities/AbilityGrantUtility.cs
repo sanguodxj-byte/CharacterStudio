@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
@@ -168,7 +168,7 @@ namespace CharacterStudio.Abilities
                         verbProps = BuildVerbProps_Area(modAbility.range);
                         break;
                     case AbilityCarrierType.Projectile:
-                        verbProps = BuildVerbProps_Target(modAbility.range);
+                        verbProps = BuildVerbProps_Projectile(modAbility.range, modAbility.projectileDef);
                         break;
                     default:
                         verbProps = BuildVerbProps_Self();
@@ -226,6 +226,24 @@ namespace CharacterStudio.Abilities
                 targetParams = new TargetingParameters { canTargetPawns = true, canTargetLocations = true }
             };
 
+        /// <summary>
+        /// 构建投射物载体的 VerbProperties
+        /// 使用 Verb_LaunchProjectile 实现真正的投射物发射
+        /// </summary>
+        private static VerbProperties BuildVerbProps_Projectile(float range, ThingDef? projectileDef)
+        {
+            // 如果没有指定投射物，尝试使用常见默认投射物
+            var projectile = projectileDef ?? DefDatabase<ThingDef>.GetNamedSilentFail("Bullet_Basic");
+
+            return new VerbProperties
+            {
+                verbClass        = typeof(Verb_LaunchProjectile),
+                range            = Mathf.Max(range, 1f),
+                targetParams     = new TargetingParameters { canTargetPawns = true, canTargetLocations = true },
+                defaultProjectile = projectile
+            };
+        }
+
         private static HashSet<string> GetOrCreateGrantedSet(Pawn pawn)
         {
             int id = pawn.thingIDNumber;
@@ -238,5 +256,3 @@ namespace CharacterStudio.Abilities
         }
     }
 }
-
-

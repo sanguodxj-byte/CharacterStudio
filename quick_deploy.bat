@@ -52,13 +52,20 @@ if not errorlevel 1 (
 :: Step 3: 复制文件
 echo [3/3] 复制模组文件...
 
-if not exist "%TARGET_DIR%" mkdir "%TARGET_DIR%"
+if exist "%TARGET_DIR%" rmdir /s /q "%TARGET_DIR%"
+mkdir "%TARGET_DIR%"
 
-xcopy "%SOURCE_DIR%About" "%TARGET_DIR%\About\" /e /i /y /q >nul
-if exist "%SOURCE_DIR%1.6" xcopy "%SOURCE_DIR%1.6" "%TARGET_DIR%\1.6\" /e /i /y /q >nul
-if exist "%SOURCE_DIR%Languages" xcopy "%SOURCE_DIR%Languages" "%TARGET_DIR%\Languages\" /e /i /y /q >nul
-if exist "%SOURCE_DIR%Defs" xcopy "%SOURCE_DIR%Defs" "%TARGET_DIR%\Defs\" /e /i /y /q >nul
-if exist "%SOURCE_DIR%Textures" xcopy "%SOURCE_DIR%Textures" "%TARGET_DIR%\Textures\" /e /i /y /q >nul
+mkdir "%TARGET_DIR%\About" >nul 2>nul
+mkdir "%TARGET_DIR%\1.6" >nul 2>nul
+mkdir "%TARGET_DIR%\Languages" >nul 2>nul
+mkdir "%TARGET_DIR%\Defs" >nul 2>nul
+mkdir "%TARGET_DIR%\Textures" >nul 2>nul
+
+xcopy "%SOURCE_DIR%About\*" "%TARGET_DIR%\About\" /e /i /y /q >nul
+if exist "%SOURCE_DIR%1.6" xcopy "%SOURCE_DIR%1.6\*" "%TARGET_DIR%\1.6\" /e /i /y /q >nul
+if exist "%SOURCE_DIR%Languages" xcopy "%SOURCE_DIR%Languages\*" "%TARGET_DIR%\Languages\" /e /i /y /q >nul
+if exist "%SOURCE_DIR%Defs" xcopy "%SOURCE_DIR%Defs\*" "%TARGET_DIR%\Defs\" /e /i /y /q >nul
+if exist "%SOURCE_DIR%Textures" xcopy "%SOURCE_DIR%Textures\*" "%TARGET_DIR%\Textures\" /e /i /y /q >nul
 
 echo.
 echo ========================================

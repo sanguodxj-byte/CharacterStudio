@@ -44,15 +44,9 @@ namespace CharacterStudio.Abilities
             }
 
             int tick = Find.TickManager.TicksGame;
-            if (tick == lastProcessedTick)
-            {
-                return;
-            }
-            lastProcessedTick = tick;
 
-            UpdateRStackingStates();
-            ProcessPendingRSecondStages(tick);
-
+            // ── 热键检测：每 Unity 帧都必须检测（Input.GetKeyDown 仅在按下那帧返回 true），
+            //    不能放在 lastProcessedTick 节流保护之内，否则同 tick 后续帧全部被 return 跳过。
             if (Input.GetKeyDown(KeyCode.Q))
             {
                 TryCastForSelectedPawn(AbilityHotkeySlot.Q, tick);
@@ -69,6 +63,16 @@ namespace CharacterStudio.Abilities
             {
                 TryCastForSelectedPawn(AbilityHotkeySlot.R, tick);
             }
+
+            // ── 以下逻辑基于 tick 驱动，每 tick 只需执行一次 ──
+            if (tick == lastProcessedTick)
+            {
+                return;
+            }
+            lastProcessedTick = tick;
+
+            UpdateRStackingStates();
+            ProcessPendingRSecondStages(tick);
         }
 
         /// <summary>获取指定槽位的当前 CD 截止 Tick</summary>
@@ -247,7 +251,7 @@ namespace CharacterStudio.Abilities
             }
 
             int cooldownTicks = jumpComp.cooldownTicks > 0 ? jumpComp.cooldownTicks : DefaultEShortJumpCooldownTicks;
-            int jumpDistance = jumpComp.jumpDistance > 0 ? jumpComp.jumpDistance : DefaultEShortJumpDistance;
+            int maxJumpDistance = jumpComp.jumpDistance > 0 ? jumpComp.jumpDistance : DefaultEShortJumpDistance;
             int findCellRadius = jumpComp.findCellRadius >= 0 ? jumpComp.findCellRadius : DefaultEShortJumpFindCellRadius;
 
             if (tick < skinComp.eCooldownUntilTick)
@@ -265,7 +269,32 @@ namespace CharacterStudio.Abilities
                 return false;
             }
 
-            IntVec3 desired = caster.Position + caster.Rotation.FacingCell * jumpDistance;
+            // E 技能：鼠标指向位置位移
+            IntVec3 mouseCell = global::Verse.UI.MouseCell();
+            if (!mouseCell.InBounds(caster.Map))
+            {
+                Messages.Message("CS_Ability_R_TargetInvalid".Translate(), MessageTypeDefOf.RejectInput, false);
+                return false;
+            }
+
+            // 计算鼠标位置与施法者的距离，限制最大位移距离
+            float distanceToMouse = (mouseCell - caster.Position).LengthHorizontal;
+            int actualJumpDistance = Mathf.Min((int)distanceToMouse, maxJumpDistance);
+
+            // 计算目标位置：从施法者朝鼠标方向移动 actualJumpDistance 格
+            IntVec3 direction = (mouseCell - caster.Position);
+            IntVec3 desired;
+            if (direction == IntVec3.Zero || distanceToMouse < 0.1f)
+            {
+                // 鼠标就在当前位置，使用面朝方向
+                desired = caster.Position + caster.Rotation.FacingCell * Mathf.Min(maxJumpDistance, 1);
+            }
+            else
+            {
+                // 归一化方向向量并计算目标位置
+                Vector3 dirNorm = new Vector3(direction.x, 0, direction.z).normalized;
+                desired = caster.Position + new IntVec3(Mathf.RoundToInt(dirNorm.x * actualJumpDistance), 0, Mathf.RoundToInt(dirNorm.z * actualJumpDistance));
+            }
             IntVec3 dest = desired;
 
             if (!dest.InBounds(caster.Map) || !dest.Standable(caster.Map))
@@ -282,7 +311,10 @@ namespace CharacterStudio.Abilities
 
             if (jumpComp.triggerAbilityEffectsAfterJump)
             {
-                ExecuteAbilityOnCells(caster, ability, new List<IntVec3> { dest });
+                // 使用技能定义的范围效果（radius）
+                float radius = ability.radius > 0 ? ability.radius : 1.5f;
+                var cells = GenRadial.RadialCellsAround(dest, radius, true);
+                ExecuteAbilityOnCells(caster, ability, cells);
             }
 
             skinComp.eCooldownUntilTick = tick + cooldownTicks;
@@ -520,7 +552,11 @@ namespace CharacterStudio.Abilities
                 _thingBuffer.Clear();
                 _thingBuffer.AddRange(cell.GetThingList(map));
                 foreach (var thing in _thingBuffer)
+                {
+                    // 过滤自身：R 技能爆发波不应伤害施法者
+                    if (thing == caster) continue;
                     worker.Apply(_waveEffectCache, new LocalTargetInfo(thing), caster);
+                }
             }
         }
 
@@ -596,6 +632,8 @@ namespace CharacterStudio.Abilities
                             _thingBuffer.AddRange(cell.GetThingList(map));
                             foreach (var thing in _thingBuffer)
                             {
+                                // 根据 canHurtSelf 配置过滤自身伤害
+                                if (thing == caster && !effect.canHurtSelf) continue;
                                 worker.Apply(effect, new LocalTargetInfo(thing), caster);
                                 applied = true;
                             }

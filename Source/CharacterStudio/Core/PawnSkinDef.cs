@@ -106,6 +106,16 @@ namespace CharacterStudio.Core
         public WeaponRenderConfig weaponRenderConfig = new WeaponRenderConfig();
 
         // ─────────────────────────────────────────────
+        // 种族身份
+        // ─────────────────────────────────────────────
+
+        /// <summary>绑定的 XenotypeDef defName（留空则不绑定）</summary>
+        public string xenotypeDefName = "";
+
+        /// <summary>在角色卡/信息界面中覆盖显示的种族名称（留空则使用原版）</summary>
+        public string raceDisplayName = "";
+
+        // ─────────────────────────────────────────────
         // 运行时方法
         // ─────────────────────────────────────────────
 
@@ -159,6 +169,9 @@ namespace CharacterStudio.Core
                 attributes = this.attributes?.Clone() ?? new CharacterAttributeProfile(),
                 weaponRenderConfig = this.weaponRenderConfig?.Clone() ?? new WeaponRenderConfig()
             };
+
+            clone.xenotypeDefName = this.xenotypeDefName;
+            clone.raceDisplayName = this.raceDisplayName;
 
             // 复制图层
             foreach (var layer in this.layers)

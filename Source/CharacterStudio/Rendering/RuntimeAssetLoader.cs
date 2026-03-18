@@ -10,7 +10,7 @@ namespace CharacterStudio.Rendering
     /// <summary>
     /// 运行时资源加载器
     /// 用于从文件系统动态加载纹理
-    /// 线程安全实现
+    /// 缓存容器访问已加锁；Unity 对象相关操作仍应在主线程执行
     /// </summary>
     public static class RuntimeAssetLoader
     {
@@ -19,7 +19,7 @@ namespace CharacterStudio.Rendering
         
         // 材质缓存
         private static readonly Dictionary<string, Material> materialCache = new Dictionary<string, Material>();
-        private static readonly Dictionary<int, string> textureMaterialCacheKeys = new Dictionary<int, string>();
+        private static readonly Dictionary<int, HashSet<string>> textureMaterialCacheKeys = new Dictionary<int, HashSet<string>>();
 
         // 文件修改时间缓存（用于热加载检测）
         private static readonly Dictionary<string, DateTime> fileLastWriteTimes = new Dictionary<string, DateTime>();
@@ -240,7 +240,7 @@ namespace CharacterStudio.Rendering
                     );
 
                     materialCache[cacheKey] = mat;
-                    textureMaterialCacheKeys[texture.GetInstanceID()] = cacheKey;
+                    RegisterMaterialCacheKeyForTexture(texture.GetInstanceID(), cacheKey);
                     return mat;
                 }
             }
@@ -292,6 +292,7 @@ namespace CharacterStudio.Rendering
             {
                 // 材质由 MaterialPool 管理，不需要手动销毁
                 materialCache.Clear();
+                textureMaterialCacheKeys.Clear();
             }
 
             Log.Message("[CharacterStudio] 缓存已清除");
@@ -306,23 +307,6 @@ namespace CharacterStudio.Rendering
             {
                 RemoveFromCacheInternal(fullPath);
             }
-
-            lock (materialCacheLock)
-            {
-                // 同时清除相关材质缓存
-                var keysToRemove = new List<string>();
-                foreach (var key in materialCache.Keys)
-                {
-                    if (key.StartsWith(Path.GetFileNameWithoutExtension(fullPath)))
-                    {
-                        keysToRemove.Add(key);
-                    }
-                }
-                foreach (var key in keysToRemove)
-                {
-                    materialCache.Remove(key);
-                }
-            }
         }
 
         /// <summary>
@@ -334,18 +318,58 @@ namespace CharacterStudio.Rendering
             {
                 if (tex != null)
                 {
-                    lock (materialCacheLock)
-                    {
-                        textureMaterialCacheKeys.Remove(tex.GetInstanceID());
-                    }
-
+                    RemoveMaterialCacheEntriesForTextureInternal(tex.GetInstanceID());
                     UnityEngine.Object.Destroy(tex);
                 }
+
                 textureCache.Remove(fullPath);
             }
             
             fileLastWriteTimes.Remove(fullPath);
             cacheAccessTimes.Remove(fullPath);
+        }
+
+        private static void RegisterMaterialCacheKeyForTexture(int textureInstanceId, string cacheKey)
+        {
+            if (!textureMaterialCacheKeys.TryGetValue(textureInstanceId, out var cacheKeys))
+            {
+                cacheKeys = new HashSet<string>();
+                textureMaterialCacheKeys[textureInstanceId] = cacheKeys;
+            }
+
+            cacheKeys.Add(cacheKey);
+        }
+
+        private static void RemoveMaterialCacheEntriesForTextureInternal(int textureInstanceId)
+        {
+            lock (materialCacheLock)
+            {
+                if (!textureMaterialCacheKeys.TryGetValue(textureInstanceId, out var cacheKeys))
+                {
+                    return;
+                }
+
+                foreach (var cacheKey in cacheKeys)
+                {
+                    materialCache.Remove(cacheKey);
+                }
+
+                textureMaterialCacheKeys.Remove(textureInstanceId);
+            }
+        }
+
+        private static void RemoveMaterialCacheKeyInternal(int textureInstanceId, string cacheKey)
+        {
+            if (!textureMaterialCacheKeys.TryGetValue(textureInstanceId, out var cacheKeys))
+            {
+                return;
+            }
+
+            cacheKeys.Remove(cacheKey);
+            if (cacheKeys.Count == 0)
+            {
+                textureMaterialCacheKeys.Remove(textureInstanceId);
+            }
         }
 
         /// <summary>
@@ -392,8 +416,10 @@ namespace CharacterStudio.Rendering
                         // 如果是纹理，需要销毁
                         if (item is Texture2D tex)
                         {
+                            RemoveMaterialCacheEntriesForTextureInternal(tex.GetInstanceID());
                             UnityEngine.Object.Destroy(tex);
                         }
+
                         cache.Remove(key);
                     }
                     accessTimes.Remove(key);
@@ -406,9 +432,9 @@ namespace CharacterStudio.Rendering
                 var keysToRemove = cache.Keys.Take(toRemove).ToList();
                 foreach (var key in keysToRemove)
                 {
-                    if (cache.TryGetValue(key, out var item) && item is Material material && material.mainTexture != null)
+                    if (cache.TryGetValue(key, out var item) && item is Material material && material.mainTexture is Texture2D texture)
                     {
-                        textureMaterialCacheKeys.Remove(material.mainTexture.GetInstanceID());
+                        RemoveMaterialCacheKeyInternal(texture.GetInstanceID(), key);
                     }
 
                     cache.Remove(key);

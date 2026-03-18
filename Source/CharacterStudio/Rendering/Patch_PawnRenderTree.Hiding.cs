@@ -88,7 +88,7 @@ namespace CharacterStudio.Rendering
                     {
                         savedGraphicsByNode.Remove(node);
                         savedGraphicsByNode.Add(node, arr);
-                        field.SetValue(node, Array.Empty<Graphic>());
+                        ClearNodeGraphicsCacheDirect(node);
                     }
                 }
             }
@@ -115,7 +115,7 @@ namespace CharacterStudio.Rendering
                     }
                     else
                     {
-                        field.SetValue(node, saved);
+                        ReplaceNodeGraphicsCache(node, saved != null && saved.Length > 0 ? saved[0] : null);
                     }
                     savedGraphicsByNode.Remove(node);
                 }

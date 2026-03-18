@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using RimWorld;
 using Verse;
 using UnityEngine;
@@ -61,6 +61,7 @@ namespace CharacterStudio.Core
                     activeSkinDefName = value?.defName;
                     needsRefresh = true;
                     RequestRenderRefresh();
+                    SyncXenotype(value);
                 }
             }
         }
@@ -78,6 +79,38 @@ namespace CharacterStudio.Core
         }
 
         public bool HasActiveSkin => activeSkin != null;
+
+        // ─────────────────────────────────────────────
+        // Xenotype 同步
+        // ─────────────────────────────────────────────
+
+        /// <summary>
+        /// 应用皮肤时，将 pawn 的 Xenotype 同步到皮肤绑定的 XenotypeDef。
+        /// xenotypeDefName 为空时静默跳过，保持向后兼容。
+        /// </summary>
+        private void SyncXenotype(PawnSkinDef? skin)
+        {
+            if (skin == null || string.IsNullOrEmpty(skin.xenotypeDefName))
+                return;
+
+            var pawn = Pawn;
+            if (pawn == null || pawn.genes == null)
+                return;
+
+            // 避免在 spawning 阶段之前执行（地图尚未初始化时 Spawned 为 false）
+            if (!pawn.Spawned)
+                return;
+
+            var xenotype = DefDatabase<XenotypeDef>.GetNamedSilentFail(skin.xenotypeDefName);
+            if (xenotype == null)
+            {
+                Log.Warning($"[CharacterStudio] SyncXenotype: XenotypeDef '{skin.xenotypeDefName}' not found for skin '{skin.defName}'.");
+                return;
+            }
+
+            pawn.genes.SetXenotype(xenotype);
+        }
+
         public Pawn? Pawn => parent as Pawn;
 
         public override void PostSpawnSetup(bool respawningAfterLoad)

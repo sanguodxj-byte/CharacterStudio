@@ -85,6 +85,9 @@ namespace CharacterStudio
                 // 应用武器渲染覆写补丁
                 Rendering.Patch_WeaponRender.Apply(HarmonyInstance);
 
+                // 应用种族显示名 Transpiler 补丁（角色卡种族行覆盖）
+                Patches.Patch_RaceLabel.Apply(HarmonyInstance);
+
                 Log.Message("[CharacterStudio] 所有补丁已应用");
             }
             catch (System.Exception ex)

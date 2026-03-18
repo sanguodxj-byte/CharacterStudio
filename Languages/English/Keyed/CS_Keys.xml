@@ -188,7 +188,7 @@
     <CS_Studio_Skin_HideVanillaBody>Hide Vanilla Body</CS_Studio_Skin_HideVanillaBody>
     <CS_Studio_Skin_HideVanillaApparel>Hide Vanilla Apparel</CS_Studio_Skin_HideVanillaApparel>
     <CS_Studio_Skin_TargetRaces>Target Races</CS_Studio_Skin_TargetRaces>
-    <CS_Studio_Skin_Humanlike Only>Humanlike Only</CS_Studio_Skin_HumanlikeOnly>
+    <CS_Studio_Skin_HumanlikeOnly>Humanlike Only</CS_Studio_Skin_HumanlikeOnly>
     
     <!-- New Skin Settings -->
     <CS_Studio_Label>Label</CS_Studio_Label>
@@ -383,6 +383,7 @@ Use the button below to add the first effect, or load the QWER examples to inspe
     <CS_Studio_Effect_PawnKind>PawnKind</CS_Studio_Effect_PawnKind>
     <CS_Studio_Effect_SummonCount>Count</CS_Studio_Effect_SummonCount>
     <CS_Studio_Effect_Hediff>Hediff</CS_Studio_Effect_Hediff>
+    <CS_Studio_Effect_CanHurtSelf>Can Hurt Self</CS_Studio_Effect_CanHurtSelf>
 
     <!-- LLM / Attribute Editing -->
     <CS_LLM_Settings_Title>LLM Settings</CS_LLM_Settings_Title>
@@ -719,5 +720,11 @@ Use the button below to add the first effect, or load the QWER examples to inspe
     <!-- Expression minimum set progress -->
     <!-- {0} = done count, {1} = min set total -->
     <CS_Studio_Face_MinSetProgress>Min Set {0}/{1} complete (★ = recommended priority)</CS_Studio_Face_MinSetProgress>
+
+    <!-- Race Identity -->
+    <CS_Studio_Section_RaceIdentity>Race Identity</CS_Studio_Section_RaceIdentity>
+    <CS_Studio_RaceDisplayName>Race Display Name</CS_Studio_RaceDisplayName>
+    <CS_Studio_XenotypeDefName>Bind Xenotype</CS_Studio_XenotypeDefName>
+    <CS_Studio_None>(None)</CS_Studio_None>
 </LanguageData>
 

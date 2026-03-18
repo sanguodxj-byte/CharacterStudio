@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CharacterStudio.Core;
+using RimWorld;
 using UnityEngine;
 using Verse;
 
@@ -21,13 +22,15 @@ namespace CharacterStudio.UI
         private string tempAuthor;
         private string tempVersion;
         private bool tempHotkeysEnabled;
+        private string tempXenotypeDefName;
+        private string tempRaceDisplayName;
         private string tempQAbilityDefName;
         private string tempWAbilityDefName;
         private string tempEAbilityDefName;
         private string tempRAbilityDefName;
         private string tempWComboAbilityDefName;
 
-        public override Vector2 InitialSize => new Vector2(500f, 500f);
+        public override Vector2 InitialSize => new Vector2(500f, 560f);
 
         public Dialog_SkinSettings(PawnSkinDef skin, Action? onChangedCallback = null)
         {
@@ -46,6 +49,8 @@ namespace CharacterStudio.UI
             tempAuthor = skin.author ?? "";
             tempVersion = skin.version ?? "1.0.0";
             tempHotkeysEnabled = skin.abilityHotkeys?.enabled ?? false;
+            tempXenotypeDefName = skin.xenotypeDefName ?? "";
+            tempRaceDisplayName = skin.raceDisplayName ?? "";
             tempQAbilityDefName = skin.abilityHotkeys?.qAbilityDefName ?? "";
             tempWAbilityDefName = skin.abilityHotkeys?.wAbilityDefName ?? "";
             tempEAbilityDefName = skin.abilityHotkeys?.eAbilityDefName ?? "";
@@ -70,7 +75,7 @@ namespace CharacterStudio.UI
             float fieldWidth = inRect.width - labelWidth - 20;
 
             Rect scrollRect = new Rect(0, y, inRect.width, inRect.height - y - 50);
-            Rect viewRect = new Rect(0, 0, scrollRect.width - 16, 760);
+            Rect viewRect = new Rect(0, 0, scrollRect.width - 16, 930);
 
             Widgets.BeginScrollView(scrollRect, ref scrollPos, viewRect);
 
@@ -103,6 +108,25 @@ namespace CharacterStudio.UI
 
             string racesText = skinDef.targetRaces != null && skinDef.targetRaces.Count > 0 ? string.Join(", ", skinDef.targetRaces) : "CS_Studio_AllRaces".Translate();
             UIHelper.DrawPropertyFieldWithButton(ref vy, width, "CS_Studio_Skin_TargetRaces".Translate(), racesText, ShowRaceSelector);
+
+            // ─────────────────────────────────────────────
+            // 种族身份（Xenotype 绑定 & 显示名覆盖）
+            // ─────────────────────────────────────────────
+            UIHelper.DrawSectionTitle(ref vy, width, "CS_Studio_Section_RaceIdentity".Translate());
+
+            // 种族显示名：角色卡中替换"智人"等原版名称，留空则不覆盖
+            UIHelper.DrawPropertyField(ref vy, width, "CS_Studio_RaceDisplayName".Translate(), ref tempRaceDisplayName);
+
+            // Xenotype 绑定：激活皮肤时同步 pawn.genes 到指定 XenotypeDef，留空则不绑定
+            // 使用浮动菜单从已加载的 XenotypeDef 中选择
+            string xenotypeDisplay = string.IsNullOrEmpty(tempXenotypeDefName)
+                ? "CS_Studio_None".Translate().ToString()
+                : tempXenotypeDefName;
+            UIHelper.DrawPropertyFieldWithButton(
+                ref vy, width,
+                "CS_Studio_XenotypeDefName".Translate(),
+                xenotypeDisplay,
+                ShowXenotypeSelector);
 
             // 技能热键映射
             UIHelper.DrawSectionTitle(ref vy, width, "CS_Studio_Section_AbilityHotkeys".Translate());
@@ -180,6 +204,9 @@ namespace CharacterStudio.UI
             skinDef.abilityHotkeys.rAbilityDefName = tempRAbilityDefName;
             skinDef.abilityHotkeys.wComboAbilityDefName = tempWComboAbilityDefName;
 
+            skinDef.xenotypeDefName = tempXenotypeDefName;
+            skinDef.raceDisplayName = tempRaceDisplayName;
+
             onChanged?.Invoke();
         }
 
@@ -214,6 +241,41 @@ namespace CharacterStudio.UI
                         onChanged?.Invoke();
                     }));
                 }
+            }
+
+            Find.WindowStack.Add(new FloatMenu(options));
+        }
+
+        private void ShowXenotypeSelector()
+        {
+            var options = new List<FloatMenuOption>();
+
+            // 清除绑定
+            options.Add(new FloatMenuOption(
+                "CS_Studio_None".Translate(),
+                () =>
+                {
+                    tempXenotypeDefName = "";
+                    onChanged?.Invoke();
+                }));
+
+            // 枚举所有已加载的 XenotypeDef
+            var xenotypes = DefDatabase<XenotypeDef>.AllDefs
+                .OrderBy(x => x.label ?? x.defName);
+
+            foreach (var xeno in xenotypes)
+            {
+                string xenoLabel = string.IsNullOrEmpty(xeno.label)
+                    ? xeno.defName
+                    : $"{xeno.label} ({xeno.defName})";
+                bool isSelected = tempXenotypeDefName == xeno.defName;
+                string menuLabel = isSelected ? $"\u2713 {xenoLabel}" : xenoLabel;
+                var captured = xeno;
+                options.Add(new FloatMenuOption(menuLabel, () =>
+                {
+                    tempXenotypeDefName = captured.defName;
+                    onChanged?.Invoke();
+                }));
             }
 
             Find.WindowStack.Add(new FloatMenu(options));

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -168,8 +168,8 @@ namespace CharacterStudio.Core
         }
 
         /// <summary>
-        /// 将 source 的所有内容覆写到 target，保留 target 的 defName / defNameHash / modContentPack。
-        /// 使用 Clone() 实现，避免手工字段列举遗漏新增字段的风险。
+        /// 将 source 的内容覆写到 target，保留 target 的 defName / defNameHash / modContentPack。
+        /// 通过 Clone() 先完成深拷贝，再把需要同步的字段写回 target。
         /// </summary>
         private static void OverwriteDefContent(PawnSkinDef target, PawnSkinDef source)
         {
@@ -196,6 +196,9 @@ namespace CharacterStudio.Core
             target.abilityHotkeys   = cloned.abilityHotkeys;
             target.faceConfig       = cloned.faceConfig;
             target.baseAppearance   = cloned.baseAppearance;
+            target.weaponRenderConfig = cloned.weaponRenderConfig ?? new WeaponRenderConfig();
+            target.xenotypeDefName  = cloned.xenotypeDefName;
+            target.raceDisplayName  = cloned.raceDisplayName;
 
             target.abilities.Clear();
             target.abilities.AddRange(cloned.abilities);
@@ -220,4 +223,3 @@ namespace CharacterStudio.Core
         }
     }
 }
-
