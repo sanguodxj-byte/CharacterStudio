@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
     <!-- 模组信息 -->
     <CS_Studio_ModName>第二席位：角色工作室</CS_Studio_ModName>
@@ -20,17 +20,103 @@
     <CS_Studio_File_Open>打开</CS_Studio_File_Open>
     <CS_Studio_File_Save>保存</CS_Studio_File_Save>
     <CS_Studio_File_SaveAs>另存为</CS_Studio_File_SaveAs>
+    <CS_Studio_File_OpenSkinFolder>皮肤文件夹</CS_Studio_File_OpenSkinFolder>
+    <CS_Studio_Msg_OpenSkinFolder>已打开皮肤文件夹：{0}</CS_Studio_Msg_OpenSkinFolder>
+    <CS_Studio_Err_OpenSkinFolder>打开失败，路径已复制到剪贴板：{0}</CS_Studio_Err_OpenSkinFolder>
     <CS_Studio_File_Export>导出为模组</CS_Studio_File_Export>
     <CS_Studio_File_Import>导入</CS_Studio_File_Import>
     <CS_Studio_Import_Source_Map>从地图角色导入</CS_Studio_Import_Source_Map>
     <CS_Studio_Import_Source_Race>从种族列表导入</CS_Studio_Import_Source_Race>
     <CS_Studio_Import_Source_ProjectSkin>从项目角色列表导入</CS_Studio_Import_Source_ProjectSkin>
+    <CS_Studio_Workflow_StandardLayers>标准分层工作流</CS_Studio_Workflow_StandardLayers>
+    <CS_Studio_Workflow_CompositeBase>主体底图工作流</CS_Studio_Workflow_CompositeBase>
+    <CS_Studio_Workflow_AnimalStandardLayers>动物分层工作流</CS_Studio_Workflow_AnimalStandardLayers>
+    <CS_Studio_Workflow_MechanoidStandardLayers>机械体分层工作流</CS_Studio_Workflow_MechanoidStandardLayers>
+    <CS_Studio_Workflow_CompositeBaseLayerName>主体底图</CS_Studio_Workflow_CompositeBaseLayerName>
+    <CS_Studio_Workflow_CompositeBase_Hint>一张主体底图包含 body/head/hair，不含服装头饰表情；服装头饰由原版装备覆盖，表情建议使用 Head 透明覆盖层。</CS_Studio_Workflow_CompositeBase_Hint>
 
     <!-- 选项卡 -->
     <CS_Studio_Tab_BaseAppearance>基础槽位</CS_Studio_Tab_BaseAppearance>
     <CS_Studio_Tab_Layers>图层</CS_Studio_Tab_Layers>
+    <CS_Studio_Tab_Weapon>武器</CS_Studio_Tab_Weapon>
     <CS_Studio_Tab_Face>表情</CS_Studio_Tab_Face>
     <CS_Studio_Tab_Attributes>属性</CS_Studio_Tab_Attributes>
+    <CS_Studio_Tab_Equipment>装备</CS_Studio_Tab_Equipment>
+    <CS_Studio_Equip_Btn_New>新建</CS_Studio_Equip_Btn_New>
+    <CS_Studio_Equip_Btn_Abilities>技能</CS_Studio_Equip_Btn_Abilities>
+    <CS_Studio_Equip_Btn_ExportXml>导出 XML</CS_Studio_Equip_Btn_ExportXml>
+    <CS_Studio_Equip_SelectHint>选择一个装备条目后，可在右侧面板编辑其完整属性。</CS_Studio_Equip_SelectHint>
+    <CS_Studio_Equip_BoundAbilities>已绑定技能</CS_Studio_Equip_BoundAbilities>
+    <CS_Studio_Equip_NoAbilities>未绑定技能</CS_Studio_Equip_NoAbilities>
+    <CS_Studio_Equip_NoSelection>未选择装备。</CS_Studio_Equip_NoSelection>
+    <CS_Studio_Equip_InvalidSelection>当前所选装备无效。</CS_Studio_Equip_InvalidSelection>
+    <CS_Studio_Equip_Added>已添加装备：{0}</CS_Studio_Equip_Added>
+    <CS_Studio_Equip_Duplicated>已复制装备：{0}</CS_Studio_Equip_Duplicated>
+    <CS_Studio_Equip_Deleted>已删除装备：{0}</CS_Studio_Equip_Deleted>
+    <CS_Studio_Equip_Exported>装备已导出：{0}</CS_Studio_Equip_Exported>
+    <CS_Studio_Equip_ExportFailed>装备导出失败：{0}</CS_Studio_Equip_ExportFailed>
+    <CS_Studio_Equip_ImportXmlTitle>导入装备 XML</CS_Studio_Equip_ImportXmlTitle>
+    <CS_Studio_Equip_ImportXmlHint>填写装备 XML 路径。替换会清空当前装备列表，追加会保留现有装备。</CS_Studio_Equip_ImportXmlHint>
+    <CS_Studio_Equip_ImportNoResults>XML 中未找到可导入的装备。</CS_Studio_Equip_ImportNoResults>
+    <CS_Studio_Equip_ImportReplaced>已从 {1} 导入 {0} 个装备，并替换当前列表。</CS_Studio_Equip_ImportReplaced>
+    <CS_Studio_Equip_ImportAppended>已从 {1} 追加导入 {0} 个装备。</CS_Studio_Equip_ImportAppended>
+    <CS_Studio_Equip_ImportFailed>装备 XML 导入失败：{0}</CS_Studio_Equip_ImportFailed>
+    <CS_Studio_Equip_SelectEntry>请选择一个装备条目进行编辑。</CS_Studio_Equip_SelectEntry>
+    <CS_Studio_Equip_Section_Base>装备 / 基础信息</CS_Studio_Equip_Section_Base>
+    <CS_Studio_Equip_DefName>装备 DefName</CS_Studio_Equip_DefName>
+    <CS_Studio_Equip_DefName_Hint>仅允许字母、数字和下划线。导出时该值会作为 XML DefName 使用。</CS_Studio_Equip_DefName_Hint>
+    <CS_Studio_Equip_DefName_Invalid>DefName 只能包含字母、数字和下划线。</CS_Studio_Equip_DefName_Invalid>
+    <CS_Studio_Equip_SlotTag>槽位标签</CS_Studio_Equip_SlotTag>
+    <CS_Studio_Equip_SlotTag_Hint>该装备条目的逻辑槽位标识，例如 WeaponBack、Hairpin、Cape。</CS_Studio_Equip_SlotTag_Hint>
+    <CS_Studio_Equip_LinkedThingDef>关联 ThingDef</CS_Studio_Equip_LinkedThingDef>
+    <CS_Studio_Equip_LinkedThingDef_Hint>可选地将此装备条目绑定到游戏内 ThingDef，用于联动或自动匹配。</CS_Studio_Equip_LinkedThingDef_Hint>
+    <CS_Studio_Equip_PreviewTexture>预览贴图</CS_Studio_Equip_PreviewTexture>
+    <CS_Studio_Equip_SourceNote>来源备注</CS_Studio_Equip_SourceNote>
+    <CS_Studio_Equip_Section_Abilities>装备 / 绑定技能</CS_Studio_Equip_Section_Abilities>
+    <CS_Studio_Equip_OpenAbilityEditor>打开共享技能编辑器</CS_Studio_Equip_OpenAbilityEditor>
+    <CS_Studio_Equip_NoAbilityPool>当前没有可用的共享技能，请先创建或导入技能。</CS_Studio_Equip_NoAbilityPool>
+    <CS_Studio_Equip_Section_VisualBase>装备 / 视觉基础</CS_Studio_Equip_Section_VisualBase>
+    <CS_Studio_Equip_VisualLayerName>视觉图层名称</CS_Studio_Equip_VisualLayerName>
+    <CS_Studio_Equip_AnchorTag>视觉锚点标签</CS_Studio_Equip_AnchorTag>
+    <CS_Studio_Equip_AnchorTag_Hint>当未填写明确锚点路径时，使用此渲染锚点标签进行挂载。</CS_Studio_Equip_AnchorTag_Hint>
+    <CS_Studio_Equip_AnchorPath>视觉锚点路径</CS_Studio_Equip_AnchorPath>
+    <CS_Studio_Equip_AnchorPath_Hint>可选的精确渲染树路径。填写后会优先于锚点标签。</CS_Studio_Equip_AnchorPath_Hint>
+    <CS_Studio_Equip_ShaderDef>视觉 Shader Def</CS_Studio_Equip_ShaderDef>
+    <CS_Studio_Equip_ShaderDef_Hint>选择该装备视觉图层使用的渲染 Shader。</CS_Studio_Equip_ShaderDef_Hint>
+    <CS_Studio_Equip_Section_VisualTransform>装备 / 视觉变换</CS_Studio_Equip_Section_VisualTransform>
+    <CS_Studio_Equip_EastOffsetX>侧视偏移 X</CS_Studio_Equip_EastOffsetX>
+    <CS_Studio_Equip_EastOffsetY>侧视偏移 Y</CS_Studio_Equip_EastOffsetY>
+    <CS_Studio_Equip_EastOffsetZ>侧视偏移 Z</CS_Studio_Equip_EastOffsetZ>
+    <CS_Studio_Equip_NorthOffsetX>北向偏移 X</CS_Studio_Equip_NorthOffsetX>
+    <CS_Studio_Equip_NorthOffsetY>北向偏移 Y</CS_Studio_Equip_NorthOffsetY>
+    <CS_Studio_Equip_NorthOffsetZ>北向偏移 Z</CS_Studio_Equip_NorthOffsetZ>
+    <CS_Studio_Equip_ScaleX>缩放 X</CS_Studio_Equip_ScaleX>
+    <CS_Studio_Equip_ScaleY>缩放 Y</CS_Studio_Equip_ScaleY>
+    <CS_Studio_Equip_RotationEastOffset>侧视旋转偏移</CS_Studio_Equip_RotationEastOffset>
+    <CS_Studio_Equip_RotationNorthOffset>北向旋转偏移</CS_Studio_Equip_RotationNorthOffset>
+    <CS_Studio_Equip_Section_VisualVariants>装备 / 视觉变体</CS_Studio_Equip_Section_VisualVariants>
+    <CS_Studio_Equip_Section_VisualAnimation>装备 / 视觉动画</CS_Studio_Equip_Section_VisualAnimation>
+    <CS_Studio_Section_VariantsExpression>变体 / 表情</CS_Studio_Section_VariantsExpression>
+    <CS_Studio_Variant_LayerRole>图层角色</CS_Studio_Variant_LayerRole>
+    <CS_Studio_Variant_Logic>变体逻辑</CS_Studio_Variant_Logic>
+    <CS_Studio_Variant_BaseName>变体基础名称</CS_Studio_Variant_BaseName>
+    <CS_Studio_Variant_UseDirectionalSuffix>使用朝向后缀</CS_Studio_Variant_UseDirectionalSuffix>
+    <CS_Studio_Variant_UseExpressionSuffix>使用表情后缀</CS_Studio_Variant_UseExpressionSuffix>
+    <CS_Studio_Variant_UseEyeDirectionSuffix>使用视线方向后缀</CS_Studio_Variant_UseEyeDirectionSuffix>
+    <CS_Studio_Variant_UseBlinkSuffix>使用眨眼后缀</CS_Studio_Variant_UseBlinkSuffix>
+    <CS_Studio_Variant_UseFrameSequence>使用帧序列</CS_Studio_Variant_UseFrameSequence>
+    <CS_Studio_Variant_HideWhenMissing>缺失变体时隐藏</CS_Studio_Variant_HideWhenMissing>
+    <CS_Studio_Variant_EyeRenderMode>眼睛渲染模式</CS_Studio_Variant_EyeRenderMode>
+    <CS_Studio_Variant_EyeUvMoveRange>眼睛 UV 移动范围</CS_Studio_Variant_EyeUvMoveRange>
+    <CS_Studio_Variant_VisibleExpressions>可见表情</CS_Studio_Variant_VisibleExpressions>
+    <CS_Studio_Variant_HiddenExpressions>隐藏表情</CS_Studio_Variant_HiddenExpressions>
+    <CS_Studio_Section_WeaponCarryVisual>状态武器视觉</CS_Studio_Section_WeaponCarryVisual>
+    <CS_Studio_WeaponCarry_Enable>启用状态武器视觉</CS_Studio_WeaponCarry_Enable>
+    <CS_Studio_WeaponCarry_PreviewState>预览状态</CS_Studio_WeaponCarry_PreviewState>
+    <CS_Studio_WeaponCarry_Anchor>挂载锚点</CS_Studio_WeaponCarry_Anchor>
+    <CS_Studio_WeaponCarry_State_Undrafted>非征召</CS_Studio_WeaponCarry_State_Undrafted>
+    <CS_Studio_WeaponCarry_State_Drafted>征召</CS_Studio_WeaponCarry_State_Drafted>
+    <CS_Studio_WeaponCarry_State_Casting>施法中</CS_Studio_WeaponCarry_State_Casting>
 
     <!-- 图层面板 -->
     <CS_Studio_Panel_Layers>渲染树</CS_Studio_Panel_Layers>
@@ -61,6 +147,8 @@
     <CS_Studio_Preview_ResetView>重置视图</CS_Studio_Preview_ResetView>
     <CS_Studio_Preview_Exp>表情</CS_Studio_Preview_Exp>
     <CS_Studio_Preview_Var>变体</CS_Studio_Preview_Var>
+    <CS_Studio_Preview_EditPerFacing>仅编辑当前朝向</CS_Studio_Preview_EditPerFacing>
+    <CS_Studio_Preview_EditPerFacingTip>启用后，预览区拖拽与方向键微调只会修改当前朝向对应的偏移数据。南向修改基础 Offset，东/西向修改侧视 Offset，北向修改北向 Offset。</CS_Studio_Preview_EditPerFacingTip>
     <CS_Studio_Preview_RefHint>按住 F 显示导入角色的原始半透明参考虚影（鼠标移入预览区可跟随）</CS_Studio_Preview_RefHint>
 
     <!-- 属性面板 -->
@@ -142,17 +230,17 @@
     <CS_Studio_Section_RuntimeComponents>运行时组件</CS_Studio_Section_RuntimeComponents>
     <CS_Studio_Runtime_AddComponent>+ 添加组件</CS_Studio_Runtime_AddComponent>
     <CS_Studio_Runtime_Empty>(未添加任何运行时组件)</CS_Studio_Runtime_Empty>
-    <CS_Studio_Runtime_QWindowTicks>Q连段窗口(Tick)</CS_Studio_Runtime_QWindowTicks>
-    <CS_Studio_Runtime_ECooldownTicks>E冷却(Tick)</CS_Studio_Runtime_ECooldownTicks>
-    <CS_Studio_Runtime_EJumpDistance>E跳跃距离</CS_Studio_Runtime_EJumpDistance>
-    <CS_Studio_Runtime_EFindRadius>E落点搜索半径</CS_Studio_Runtime_EFindRadius>
-    <CS_Studio_Runtime_ETriggerEffects>E后触发技能效果</CS_Studio_Runtime_ETriggerEffects>
-    <CS_Studio_Runtime_RRequiredStacks>R所需层数</CS_Studio_Runtime_RRequiredStacks>
-    <CS_Studio_Runtime_RDelayTicks>R延迟(Tick)</CS_Studio_Runtime_RDelayTicks>
-    <CS_Studio_Runtime_RWave1>R波次1(半径/伤害)</CS_Studio_Runtime_RWave1>
-    <CS_Studio_Runtime_RWave2>R波次2(半径/伤害)</CS_Studio_Runtime_RWave2>
-    <CS_Studio_Runtime_RWave3>R波次3(半径/伤害)</CS_Studio_Runtime_RWave3>
-    <CS_Studio_Runtime_RDamageDef>R伤害类型</CS_Studio_Runtime_RDamageDef>
+    <CS_Studio_Runtime_QWindowTicks>连段窗口时长(Tick)</CS_Studio_Runtime_QWindowTicks>
+    <CS_Studio_Runtime_ECooldownTicks>位移冷却(Tick)</CS_Studio_Runtime_ECooldownTicks>
+    <CS_Studio_Runtime_EJumpDistance>位移距离</CS_Studio_Runtime_EJumpDistance>
+    <CS_Studio_Runtime_EFindRadius>落点搜索半径</CS_Studio_Runtime_EFindRadius>
+    <CS_Studio_Runtime_ETriggerEffects>位移后触发技能效果</CS_Studio_Runtime_ETriggerEffects>
+    <CS_Studio_Runtime_RRequiredStacks>所需层数</CS_Studio_Runtime_RRequiredStacks>
+    <CS_Studio_Runtime_RDelayTicks>延迟(Tick)</CS_Studio_Runtime_RDelayTicks>
+    <CS_Studio_Runtime_RWave1>波次1(半径/伤害)</CS_Studio_Runtime_RWave1>
+    <CS_Studio_Runtime_RWave2>波次2(半径/伤害)</CS_Studio_Runtime_RWave2>
+    <CS_Studio_Runtime_RWave3>波次3(半径/伤害)</CS_Studio_Runtime_RWave3>
+    <CS_Studio_Runtime_RDamageDef>伤害类型</CS_Studio_Runtime_RDamageDef>
 
     <!-- 颜色类型 -->
     <CS_Studio_ColorType_Custom>自定义</CS_Studio_ColorType_Custom>
@@ -175,6 +263,7 @@
     <CS_Studio_Anchor_BodyTattoo>身体纹身</CS_Studio_Anchor_BodyTattoo>
     <CS_Studio_Anchor_Apparel>服装</CS_Studio_Anchor_Apparel>
     <CS_Studio_Anchor_Headgear>头部装备</CS_Studio_Anchor_Headgear>
+    <CS_Studio_Anchor_Root>根节点</CS_Studio_Anchor_Root>
 
     <!-- 导出对话框 -->
     <CS_Studio_Export_Title>导出为模组</CS_Studio_Export_Title>
@@ -205,6 +294,9 @@
     <CS_Studio_Skin_HideVanillaApparel>隐藏原版服装</CS_Studio_Skin_HideVanillaApparel>
     <CS_Studio_Skin_TargetRaces>目标种族</CS_Studio_Skin_TargetRaces>
     <CS_Studio_Skin_HumanlikeOnly>仅人形</CS_Studio_Skin_HumanlikeOnly>
+    <CS_Studio_Skin_DefaultForTargetRaces>作为目标种族默认皮肤</CS_Studio_Skin_DefaultForTargetRaces>
+    <CS_Studio_Skin_DefaultForTargetRaces_Tip>启用后，匹配 targetRaces 的种族会在运行时自动应用此皮肤；已有手动皮肤的 Pawn 不会被覆盖。</CS_Studio_Skin_DefaultForTargetRaces_Tip>
+    <CS_Studio_Skin_DefaultRacePriority>默认皮肤优先级</CS_Studio_Skin_DefaultRacePriority>
     
     <!-- 新增皮肤设置 -->
     <CS_Studio_Label>标签</CS_Studio_Label>
@@ -228,6 +320,8 @@
     <CS_Studio_Msg_LoadSuccess>加载成功！</CS_Studio_Msg_LoadSuccess>
     <CS_Studio_Msg_TargetPawnRequired>请先导入或绑定一个可应用的目标角色</CS_Studio_Msg_TargetPawnRequired>
     <CS_Studio_Msg_AppliedToPawn>已应用到 {0}</CS_Studio_Msg_AppliedToPawn>
+    <CS_Studio_Msg_PreviewApplied>预览已刷新</CS_Studio_Msg_PreviewApplied>
+    <CS_Studio_Warn_RuntimeSkinDefNameMissing>当前设计尚未填写 DefName，将以临时运行时皮肤参与预览/应用</CS_Studio_Warn_RuntimeSkinDefNameMissing>
     <CS_Studio_Err_ApplyNoSkinComp>应用失败：目标角色缺少皮肤组件</CS_Studio_Err_ApplyNoSkinComp>
     <CS_Studio_Err_ApplyFailedCheckLog>应用失败，请查看日志</CS_Studio_Err_ApplyFailedCheckLog>
     <CS_Studio_Msg_ImportedBoundPawn>已导入并绑定目标角色: {0}</CS_Studio_Msg_ImportedBoundPawn>
@@ -353,6 +447,16 @@
     <CS_Studio_Ability_EditorTitle>技能编辑器</CS_Studio_Ability_EditorTitle>
     <CS_Studio_Ability_LoadQwerExamples>载入 QWER 示例技能</CS_Studio_Ability_LoadQwerExamples>
     <CS_Studio_Ability_QwerExamplesLoaded>已载入 QWER 示例技能并绑定热键</CS_Studio_Ability_QwerExamplesLoaded>
+    <CS_Studio_Ability_ImportXml>导入 XML</CS_Studio_Ability_ImportXml>
+    <CS_Studio_Ability_ImportXmlTitle>导入技能 XML</CS_Studio_Ability_ImportXmlTitle>
+    <CS_Studio_Ability_ImportXmlHint>输入一个已有 XML 文件路径。支持直接导入 ModularAbilityDef、PawnSkinDef 内嵌 abilities，或标准 AbilityDef，并转换为技能编辑器可编辑格式。</CS_Studio_Ability_ImportXmlHint>
+    <CS_Studio_Ability_ImportXmlPath>XML 路径</CS_Studio_Ability_ImportXmlPath>
+    <CS_Studio_Ability_ImportReplace>清空并导入</CS_Studio_Ability_ImportReplace>
+    <CS_Studio_Ability_ImportAppend>追加导入</CS_Studio_Ability_ImportAppend>
+    <CS_Studio_Ability_ImportNoAbilities>未在该 XML 中找到可导入的技能</CS_Studio_Ability_ImportNoAbilities>
+    <CS_Studio_Ability_ImportReplaced>已从 {1} 导入 {0} 个技能，并替换当前列表</CS_Studio_Ability_ImportReplaced>
+    <CS_Studio_Ability_ImportAppended>已从 {1} 追加导入 {0} 个技能（原有 {2} 个，当前共 {3} 个）</CS_Studio_Ability_ImportAppended>
+    <CS_Studio_Ability_ImportFailed>技能 XML 导入失败：{0}</CS_Studio_Ability_ImportFailed>
     <CS_Studio_Ability_SelectOrCreate>请选择或创建一个技能</CS_Studio_Ability_SelectOrCreate>
     <CS_Studio_Ability_Search>搜索技能</CS_Studio_Ability_Search>
     <CS_Studio_Ability_CountSummary>显示 {0} / {1} 个技能</CS_Studio_Ability_CountSummary>
@@ -372,6 +476,9 @@
     <CS_Studio_Ability_ValidWithWarnings>校验通过（有警告）</CS_Studio_Ability_ValidWithWarnings>
     <CS_Studio_Ability_Invalid>校验失败</CS_Studio_Ability_Invalid>
     <CS_Studio_Ability_Type>类型</CS_Studio_Ability_Type>
+    <CS_Studio_Ability_TargetType>目标类型</CS_Studio_Ability_TargetType>
+    <CS_Studio_Ability_UseRadius>使用范围</CS_Studio_Ability_UseRadius>
+    <CS_Studio_Ability_AreaCenter>范围中心</CS_Studio_Ability_AreaCenter>
     <CS_Studio_Ability_Range>射程</CS_Studio_Ability_Range>
     <CS_Studio_Ability_Radius>爆炸半径</CS_Studio_Ability_Radius>
     <CS_Studio_Ability_Projectile>投射物</CS_Studio_Ability_Projectile>
@@ -403,6 +510,19 @@
     <CS_Studio_Effect_SummonCount>数量</CS_Studio_Effect_SummonCount>
     <CS_Studio_Effect_Hediff>Hediff</CS_Studio_Effect_Hediff>
     <CS_Studio_Effect_CanHurtSelf>可以伤害自身</CS_Studio_Effect_CanHurtSelf>
+    <CS_Studio_Effect_ControlMode>控制效果</CS_Studio_Effect_ControlMode>
+    <CS_Studio_Effect_ControlMoveDistance>移动距离</CS_Studio_Effect_ControlMoveDistance>
+    <CS_Studio_Effect_ControlMode_Stun>眩晕</CS_Studio_Effect_ControlMode_Stun>
+    <CS_Studio_Effect_ControlMode_Knockback>击退</CS_Studio_Effect_ControlMode_Knockback>
+    <CS_Studio_Effect_ControlMode_Pull>拉近</CS_Studio_Effect_ControlMode_Pull>
+    <CS_Studio_Effect_TerraformMode>地形改造类型</CS_Studio_Effect_TerraformMode>
+    <CS_Studio_Effect_TerraformMode_CleanFilth>清理污秽</CS_Studio_Effect_TerraformMode_CleanFilth>
+    <CS_Studio_Effect_TerraformMode_SpawnThing>生成物体</CS_Studio_Effect_TerraformMode_SpawnThing>
+    <CS_Studio_Effect_TerraformMode_ReplaceTerrain>替换地形</CS_Studio_Effect_TerraformMode_ReplaceTerrain>
+    <CS_Studio_Effect_TerraformCleanFilthHint>将清理目标地格上的污秽物</CS_Studio_Effect_TerraformCleanFilthHint>
+    <CS_Studio_Effect_TerraformThing>生成对象</CS_Studio_Effect_TerraformThing>
+    <CS_Studio_Effect_TerraformTerrain>目标地形</CS_Studio_Effect_TerraformTerrain>
+    <CS_Studio_Effect_TerraformSpawnCount>生成数量</CS_Studio_Effect_TerraformSpawnCount>
 
     <!-- LLM / 属性编辑 -->
     <CS_LLM_Settings_Title>LLM 设置</CS_LLM_Settings_Title>
@@ -479,14 +599,19 @@
     <CS_Ability_R_SecondStageCast>R 二段已释放：瞬移并引爆三段冲击</CS_Ability_R_SecondStageCast>
     <CS_Ability_Validate_Failed>验证失败:</CS_Ability_Validate_Failed>
     <CS_Ability_Validate_Warnings>警告:</CS_Ability_Validate_Warnings>
-    <CS_Ability_Validate_QComboWindowTicks>Q 连段窗口时长必须大于 0 tick</CS_Ability_Validate_QComboWindowTicks>
-    <CS_Ability_Validate_EShortJumpCooldown>E 短跳冷却不能为负数</CS_Ability_Validate_EShortJumpCooldown>
-    <CS_Ability_Validate_EShortJumpDistance>E 短跳距离必须大于 0</CS_Ability_Validate_EShortJumpDistance>
-    <CS_Ability_Validate_EShortJumpFindCellRadius>E 短跳寻位半径不能为负数</CS_Ability_Validate_EShortJumpFindCellRadius>
-    <CS_Ability_Validate_RRequiredStacks>R 所需层数必须大于 0</CS_Ability_Validate_RRequiredStacks>
+    <CS_Ability_Validate_QComboWindowTicks>连段窗口时长必须大于 0 tick</CS_Ability_Validate_QComboWindowTicks>
+    <CS_Ability_Validate_EShortJumpCooldown>位移冷却不能为负数</CS_Ability_Validate_EShortJumpCooldown>
+    <CS_Ability_Validate_EShortJumpDistance>位移距离必须大于 0</CS_Ability_Validate_EShortJumpDistance>
+    <CS_Ability_Validate_EShortJumpFindCellRadius>位移寻位半径不能为负数</CS_Ability_Validate_EShortJumpFindCellRadius>
+    <CS_Ability_Validate_RRequiredStacks>所需层数必须大于 0</CS_Ability_Validate_RRequiredStacks>
     <CS_Ability_Validate_RDelayTicks>R 延迟时间不能为负数</CS_Ability_Validate_RDelayTicks>
     <CS_Ability_Validate_RWaveRadius>R 三段半径必须大于 0</CS_Ability_Validate_RWaveRadius>
     <CS_Ability_Validate_RWaveDamage>R 三段伤害必须大于 0</CS_Ability_Validate_RWaveDamage>
+    <CS_Ability_Validate_ControlDuration>控制效果持续时间不能为负数</CS_Ability_Validate_ControlDuration>
+    <CS_Ability_Validate_ControlMoveDistance>控制效果移动距离必须大于 0</CS_Ability_Validate_ControlMoveDistance>
+    <CS_Ability_Validate_TerraformThingRequired>生成物体模式必须指定 ThingDef</CS_Ability_Validate_TerraformThingRequired>
+    <CS_Ability_Validate_TerraformSpawnCount>生成数量必须大于 0</CS_Ability_Validate_TerraformSpawnCount>
+    <CS_Ability_Validate_TerraformTerrainRequired>替换地形模式必须指定 TerrainDef</CS_Ability_Validate_TerraformTerrainRequired>
     <CS_Ability_Validate_EffectNegativeAmount>效果数值为负数，可能导致意外行为</CS_Ability_Validate_EffectNegativeAmount>
     <CS_Ability_Validate_EffectChanceRange>触发几率必须在 0-1 之间，当前值: {0}</CS_Ability_Validate_EffectChanceRange>
     <CS_Ability_Validate_DamageAmount>伤害效果的数值必须大于 0</CS_Ability_Validate_DamageAmount>
@@ -514,6 +639,11 @@
     <CS_Ability_CarrierType_Target>目标</CS_Ability_CarrierType_Target>
     <CS_Ability_CarrierType_Projectile>投射物</CS_Ability_CarrierType_Projectile>
     <CS_Ability_CarrierType_Area>范围</CS_Ability_CarrierType_Area>
+    <CS_Ability_TargetType_Self>自身</CS_Ability_TargetType_Self>
+    <CS_Ability_TargetType_Entity>实体</CS_Ability_TargetType_Entity>
+    <CS_Ability_TargetType_Cell>地格</CS_Ability_TargetType_Cell>
+    <CS_Ability_AreaCenter_Self>以自身为中心</CS_Ability_AreaCenter_Self>
+    <CS_Ability_AreaCenter_Target>以目标为中心</CS_Ability_AreaCenter_Target>
     <CS_Ability_EffectType_Damage>伤害</CS_Ability_EffectType_Damage>
     <CS_Ability_EffectType_Heal>治疗</CS_Ability_EffectType_Heal>
     <CS_Ability_EffectType_Buff>增益</CS_Ability_EffectType_Buff>
@@ -522,9 +652,9 @@
     <CS_Ability_EffectType_Teleport>位移</CS_Ability_EffectType_Teleport>
     <CS_Ability_EffectType_Control>控制</CS_Ability_EffectType_Control>
     <CS_Ability_EffectType_Terraform>地形改造</CS_Ability_EffectType_Terraform>
-    <CS_Ability_RuntimeComponentType_QComboWindow>Q 连段窗口</CS_Ability_RuntimeComponentType_QComboWindow>
-    <CS_Ability_RuntimeComponentType_EShortJump>E 短跳</CS_Ability_RuntimeComponentType_EShortJump>
-    <CS_Ability_RuntimeComponentType_RStackDetonation>R 叠层引爆</CS_Ability_RuntimeComponentType_RStackDetonation>
+    <CS_Ability_RuntimeComponentType_QComboWindow>连段窗口</CS_Ability_RuntimeComponentType_QComboWindow>
+    <CS_Ability_RuntimeComponentType_EShortJump>位移</CS_Ability_RuntimeComponentType_EShortJump>
+    <CS_Ability_RuntimeComponentType_RStackDetonation>叠层引爆</CS_Ability_RuntimeComponentType_RStackDetonation>
 
     <!-- 基础槽位 -->
     <CS_Studio_BaseSlot_Unset>(未设置)</CS_Studio_BaseSlot_Unset>
@@ -584,6 +714,28 @@
     <CS_Studio_Face_HeadTexHint>为每种表情指定整张头部贴图路径，或点击 [+F] 添加多帧实现帧动画。</CS_Studio_Face_HeadTexHint>
     <CS_Studio_Face_ExpressionMappings>表情贴图配置</CS_Studio_Face_ExpressionMappings>
     <CS_Studio_Face_Assigned>已配置</CS_Studio_Face_Assigned>
+    <CS_Studio_Face_Workflow>表情工作流</CS_Studio_Face_Workflow>
+    <CS_Studio_Face_Workflow_FullFaceSwap>整脸切换</CS_Studio_Face_Workflow_FullFaceSwap>
+    <CS_Studio_Face_Workflow_LayeredDynamic>分层动态</CS_Studio_Face_Workflow_LayeredDynamic>
+    <CS_Studio_Face_Workflow_FullFaceSwap_Desc>传统工作流：为每种表情指定一张完整面部贴图，也可使用帧动画。</CS_Studio_Face_Workflow_FullFaceSwap_Desc>
+    <CS_Studio_Face_Workflow_LayeredDynamic_Desc>分层工作流：按表情配置命名的面部部件，运行时由代码自动处理定位与回退。</CS_Studio_Face_Workflow_LayeredDynamic_Desc>
+    <CS_Studio_Face_Layered_Title>分层面部部件</CS_Studio_Face_Layered_Title>
+    <CS_Studio_Face_Layered_Hint>当素材被拆分为可复用的眉、眼、嘴等部件时使用此模式。通常只需命名部件并填写路径，移动与回退由代码驱动。</CS_Studio_Face_Layered_Hint>
+    <CS_Studio_Face_Layered_SourceRoot>分层资源根目录</CS_Studio_Face_Layered_SourceRoot>
+    <CS_Studio_Face_Layered_Stats>已配置 {0} 条路径，覆盖 {2}/{3} 个部件组，共支持 {1} 种表情。</CS_Studio_Face_Layered_Stats>
+    <CS_Studio_Face_Layered_PartSummary>该部件已配置 {0}/{1} 种表情。</CS_Studio_Face_Layered_PartSummary>
+    <CS_Studio_Face_Layered_Enable>启用该分层部件条目</CS_Studio_Face_Layered_Enable>
+    <CS_Studio_Face_LayeredPart_Base>基础脸层</CS_Studio_Face_LayeredPart_Base>
+    <CS_Studio_Face_LayeredPart_Brow>眉毛层</CS_Studio_Face_LayeredPart_Brow>
+    <CS_Studio_Face_LayeredPart_Eye>眼睛层</CS_Studio_Face_LayeredPart_Eye>
+    <CS_Studio_Face_LayeredPart_Pupil>瞳孔层</CS_Studio_Face_LayeredPart_Pupil>
+    <CS_Studio_Face_LayeredPart_UpperLid>上眼睑层</CS_Studio_Face_LayeredPart_UpperLid>
+    <CS_Studio_Face_LayeredPart_LowerLid>下眼睑层</CS_Studio_Face_LayeredPart_LowerLid>
+    <CS_Studio_Face_LayeredPart_Mouth>嘴部层</CS_Studio_Face_LayeredPart_Mouth>
+    <CS_Studio_Face_LayeredPart_Blush>脸红层</CS_Studio_Face_LayeredPart_Blush>
+    <CS_Studio_Face_LayeredPart_Sweat>汗滴层</CS_Studio_Face_LayeredPart_Sweat>
+    <CS_Studio_Face_LayeredPart_Tear>泪滴层</CS_Studio_Face_LayeredPart_Tear>
+    <CS_Studio_Face_LayeredPart_Overlay>覆盖层</CS_Studio_Face_LayeredPart_Overlay>
     <!-- 眼睛方向 -->
     <CS_Studio_Face_EyeDir_Title>眼睛方向配置</CS_Studio_Face_EyeDir_Title>
     <CS_Studio_Face_EyeDir_Hint>为每个注视方向指定覆盖贴图，渲染时自动叠加在头部之上。未配置方向自动回退到 Center。</CS_Studio_Face_EyeDir_Hint>
@@ -706,6 +858,24 @@
     <CS_Studio_VFX_Target>作用目标</CS_Studio_VFX_Target>
     <CS_Studio_VFX_Delay>延迟(ticks)</CS_Studio_VFX_Delay>
     <CS_Studio_VFX_Scale>规模</CS_Studio_VFX_Scale>
+    <CS_Studio_VFX_Enabled>启用</CS_Studio_VFX_Enabled>
+    <CS_Studio_VFX_TypeShort>类型</CS_Studio_VFX_TypeShort>
+    <CS_Studio_VFX_SourceModeShort>来源</CS_Studio_VFX_SourceModeShort>
+    <CS_Studio_VFX_PresetShort>预设</CS_Studio_VFX_PresetShort>
+    <CS_Studio_VFX_TargetShort>目标</CS_Studio_VFX_TargetShort>
+    <CS_Studio_VFX_TriggerShort>时机</CS_Studio_VFX_TriggerShort>
+    <CS_Studio_VFX_DelayShort>延迟</CS_Studio_VFX_DelayShort>
+    <CS_Studio_VFX_ScaleShort>缩放</CS_Studio_VFX_ScaleShort>
+    <CS_Studio_VFX_RepeatCountShort>次数</CS_Studio_VFX_RepeatCountShort>
+    <CS_Studio_VFX_RepeatIntervalShort>间隔</CS_Studio_VFX_RepeatIntervalShort>
+    <CS_Studio_VFX_SourceMode_BuiltIn>内建</CS_Studio_VFX_SourceMode_BuiltIn>
+    <CS_Studio_VFX_SourceMode_Preset>预设</CS_Studio_VFX_SourceMode_Preset>
+    <CS_Studio_VFX_Trigger_OnCastStart>施法开始</CS_Studio_VFX_Trigger_OnCastStart>
+    <CS_Studio_VFX_Trigger_OnWarmup>前摇阶段</CS_Studio_VFX_Trigger_OnWarmup>
+    <CS_Studio_VFX_Trigger_OnCastFinish>施法完成</CS_Studio_VFX_Trigger_OnCastFinish>
+    <CS_Studio_VFX_Trigger_OnTargetApply>命中生效</CS_Studio_VFX_Trigger_OnTargetApply>
+    <CS_Studio_VFX_Trigger_OnDurationTick>持续触发</CS_Studio_VFX_Trigger_OnDurationTick>
+    <CS_Studio_VFX_Trigger_OnExpire>结束时</CS_Studio_VFX_Trigger_OnExpire>
     <!-- 特效类型枚举标签 -->
     <CS_Studio_VFX_Type_DustPuff>尘埃喷溅</CS_Studio_VFX_Type_DustPuff>
     <CS_Studio_VFX_Type_MicroSparks>微型火花</CS_Studio_VFX_Type_MicroSparks>
@@ -722,6 +892,24 @@
     <CS_Studio_Section_WeaponRender>武器渲染覆写</CS_Studio_Section_WeaponRender>
     <CS_Studio_WeaponRender_Enable>启用武器覆写</CS_Studio_WeaponRender_Enable>
     <CS_Studio_WeaponRender_ApplyOffHand>应用到副手武器</CS_Studio_WeaponRender_ApplyOffHand>
+    <CS_Studio_WeaponRender_PreviewTexture>预览武器贴图</CS_Studio_WeaponRender_PreviewTexture>
+    <CS_Studio_WeaponRender_PreviewHint>此贴图仅用于编辑器预览。可填写游戏内 TexPath，或通过浏览按钮选择外部图片文件。</CS_Studio_WeaponRender_PreviewHint>
+    <CS_Studio_WeaponCarry_TexUndrafted>非征召贴图</CS_Studio_WeaponCarry_TexUndrafted>
+    <CS_Studio_WeaponCarry_TexDrafted>征召贴图</CS_Studio_WeaponCarry_TexDrafted>
+    <CS_Studio_WeaponCarry_TexCasting>施法中贴图</CS_Studio_WeaponCarry_TexCasting>
+    <CS_Studio_WeaponCarry_Hint>这是通用状态武器视觉：按“非征召 / 征召 / 施法中”切换贴图，不硬编码具体武器类型。可通过偏移将其摆在背上或腰上。</CS_Studio_WeaponCarry_Hint>
+    <CS_Studio_WeaponCarry_DrawOrder>状态武器层级</CS_Studio_WeaponCarry_DrawOrder>
+    <CS_Studio_WeaponCarry_ScaleX>状态缩放 X</CS_Studio_WeaponCarry_ScaleX>
+    <CS_Studio_WeaponCarry_ScaleY>状态缩放 Y</CS_Studio_WeaponCarry_ScaleY>
+    <CS_Studio_WeaponCarry_OffsetX>状态偏移 X（通用）</CS_Studio_WeaponCarry_OffsetX>
+    <CS_Studio_WeaponCarry_OffsetY>状态偏移 Y（通用）</CS_Studio_WeaponCarry_OffsetY>
+    <CS_Studio_WeaponCarry_OffsetZ>状态偏移 Z（通用）</CS_Studio_WeaponCarry_OffsetZ>
+    <CS_Studio_WeaponCarry_DirOffsets>状态方向偏移</CS_Studio_WeaponCarry_DirOffsets>
+    <CS_Studio_WeaponCarry_OffNorthX>北向偏移 X</CS_Studio_WeaponCarry_OffNorthX>
+    <CS_Studio_WeaponCarry_OffNorthZ>北向偏移 Z</CS_Studio_WeaponCarry_OffNorthZ>
+    <CS_Studio_WeaponCarry_OffEastX>东/西向偏移 X</CS_Studio_WeaponCarry_OffEastX>
+    <CS_Studio_WeaponCarry_OffEastZ>东/西向偏移 Z</CS_Studio_WeaponCarry_OffEastZ>
+    <CS_Studio_WeaponCarry_Reset>重置状态武器视觉</CS_Studio_WeaponCarry_Reset>
     <CS_Studio_WeaponRender_ScaleX>缩放 X</CS_Studio_WeaponRender_ScaleX>
     <CS_Studio_WeaponRender_ScaleY>缩放 Y</CS_Studio_WeaponRender_ScaleY>
     <CS_Studio_WeaponRender_OffsetX>偏移 X（通用）</CS_Studio_WeaponRender_OffsetX>
@@ -746,4 +934,3 @@
     <CS_Studio_XenotypeDefName>绑定 Xenotype</CS_Studio_XenotypeDefName>
     <CS_Studio_None>（无）</CS_Studio_None>
 </LanguageData>
-

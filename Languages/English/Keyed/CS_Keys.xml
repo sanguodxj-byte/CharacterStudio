@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
     <!-- Mod Info -->
     <CS_Studio_ModName>The Second Seat: Character Studio</CS_Studio_ModName>
@@ -19,17 +19,103 @@
     <CS_Studio_File_Open>Open</CS_Studio_File_Open>
     <CS_Studio_File_Save>Save</CS_Studio_File_Save>
     <CS_Studio_File_SaveAs>Save As</CS_Studio_File_SaveAs>
+    <CS_Studio_File_OpenSkinFolder>Skin Folder</CS_Studio_File_OpenSkinFolder>
+    <CS_Studio_Msg_OpenSkinFolder>Opened skin folder: {0}</CS_Studio_Msg_OpenSkinFolder>
+    <CS_Studio_Err_OpenSkinFolder>Failed to open folder. Path copied to clipboard: {0}</CS_Studio_Err_OpenSkinFolder>
     <CS_Studio_File_Export>Export as Mod</CS_Studio_File_Export>
     <CS_Studio_File_Import>Import</CS_Studio_File_Import>
     <CS_Studio_Import_Source_Map>Import from Map Pawn</CS_Studio_Import_Source_Map>
     <CS_Studio_Import_Source_Race>Import from Race List</CS_Studio_Import_Source_Race>
     <CS_Studio_Import_Source_ProjectSkin>Import from Project Character List</CS_Studio_Import_Source_ProjectSkin>
+    <CS_Studio_Workflow_StandardLayers>Standard Layered Workflow</CS_Studio_Workflow_StandardLayers>
+    <CS_Studio_Workflow_CompositeBase>Composite Base Workflow</CS_Studio_Workflow_CompositeBase>
+    <CS_Studio_Workflow_AnimalStandardLayers>Animal Layered Workflow</CS_Studio_Workflow_AnimalStandardLayers>
+    <CS_Studio_Workflow_MechanoidStandardLayers>Mechanoid Layered Workflow</CS_Studio_Workflow_MechanoidStandardLayers>
+    <CS_Studio_Workflow_CompositeBaseLayerName>Composite Base</CS_Studio_Workflow_CompositeBaseLayerName>
+    <CS_Studio_Workflow_CompositeBase_Hint>A single composite base contains body/head/hair but no apparel, headgear, or expressions; vanilla apparel and headgear render on top, while expressions should use transparent Head overlays.</CS_Studio_Workflow_CompositeBase_Hint>
 
     <!-- Tabs -->
     <CS_Studio_Tab_BaseAppearance>Base Slots</CS_Studio_Tab_BaseAppearance>
     <CS_Studio_Tab_Layers>Layers</CS_Studio_Tab_Layers>
+    <CS_Studio_Tab_Weapon>Weapon</CS_Studio_Tab_Weapon>
     <CS_Studio_Tab_Face>Face</CS_Studio_Tab_Face>
     <CS_Studio_Tab_Attributes>Attributes</CS_Studio_Tab_Attributes>
+    <CS_Studio_Tab_Equipment>Equipment</CS_Studio_Tab_Equipment>
+    <CS_Studio_Equip_Btn_New>New</CS_Studio_Equip_Btn_New>
+    <CS_Studio_Equip_Btn_Abilities>Abilities</CS_Studio_Equip_Btn_Abilities>
+    <CS_Studio_Equip_Btn_ExportXml>Export XML</CS_Studio_Equip_Btn_ExportXml>
+    <CS_Studio_Equip_SelectHint>Select an equipment entry to edit full properties in the right panel.</CS_Studio_Equip_SelectHint>
+    <CS_Studio_Equip_BoundAbilities>Bound abilities</CS_Studio_Equip_BoundAbilities>
+    <CS_Studio_Equip_NoAbilities>No abilities</CS_Studio_Equip_NoAbilities>
+    <CS_Studio_Equip_NoSelection>No equipment selected.</CS_Studio_Equip_NoSelection>
+    <CS_Studio_Equip_InvalidSelection>Selected equipment is invalid.</CS_Studio_Equip_InvalidSelection>
+    <CS_Studio_Equip_Added>Added equipment: {0}</CS_Studio_Equip_Added>
+    <CS_Studio_Equip_Duplicated>Duplicated equipment: {0}</CS_Studio_Equip_Duplicated>
+    <CS_Studio_Equip_Deleted>Deleted equipment: {0}</CS_Studio_Equip_Deleted>
+    <CS_Studio_Equip_Exported>Equipment exported: {0}</CS_Studio_Equip_Exported>
+    <CS_Studio_Equip_ExportFailed>Equipment export failed: {0}</CS_Studio_Equip_ExportFailed>
+    <CS_Studio_Equip_ImportXmlTitle>Import Equipment XML</CS_Studio_Equip_ImportXmlTitle>
+    <CS_Studio_Equip_ImportXmlHint>Provide an equipment XML path. Replace clears current equipments, Append keeps them.</CS_Studio_Equip_ImportXmlHint>
+    <CS_Studio_Equip_ImportNoResults>No equipments found in XML.</CS_Studio_Equip_ImportNoResults>
+    <CS_Studio_Equip_ImportReplaced>Imported {0} equipments from {1}.</CS_Studio_Equip_ImportReplaced>
+    <CS_Studio_Equip_ImportAppended>Appended {0} equipments from {1}.</CS_Studio_Equip_ImportAppended>
+    <CS_Studio_Equip_ImportFailed>Equipment import failed: {0}</CS_Studio_Equip_ImportFailed>
+    <CS_Studio_Equip_SelectEntry>Select an equipment entry to edit.</CS_Studio_Equip_SelectEntry>
+    <CS_Studio_Equip_Section_Base>Equipment / Basic</CS_Studio_Equip_Section_Base>
+    <CS_Studio_Equip_DefName>Equipment DefName</CS_Studio_Equip_DefName>
+    <CS_Studio_Equip_DefName_Hint>Use only letters, numbers, and underscores. This value is used as the XML DefName when exporting.</CS_Studio_Equip_DefName_Hint>
+    <CS_Studio_Equip_DefName_Invalid>DefName may only contain letters, numbers, and underscores.</CS_Studio_Equip_DefName_Invalid>
+    <CS_Studio_Equip_SlotTag>Slot Tag</CS_Studio_Equip_SlotTag>
+    <CS_Studio_Equip_SlotTag_Hint>Logical slot identifier for this equipment entry, such as WeaponBack, Hairpin, or Cape.</CS_Studio_Equip_SlotTag_Hint>
+    <CS_Studio_Equip_LinkedThingDef>Linked ThingDef</CS_Studio_Equip_LinkedThingDef>
+    <CS_Studio_Equip_LinkedThingDef_Hint>Optionally bind this equipment entry to an in-game ThingDef for integration or auto-matching.</CS_Studio_Equip_LinkedThingDef_Hint>
+    <CS_Studio_Equip_PreviewTexture>Preview Texture</CS_Studio_Equip_PreviewTexture>
+    <CS_Studio_Equip_SourceNote>Source Note</CS_Studio_Equip_SourceNote>
+    <CS_Studio_Equip_Section_Abilities>Equipment / Bound Abilities</CS_Studio_Equip_Section_Abilities>
+    <CS_Studio_Equip_OpenAbilityEditor>Open Shared Ability Editor</CS_Studio_Equip_OpenAbilityEditor>
+    <CS_Studio_Equip_NoAbilityPool>No shared abilities available. Create or import abilities first.</CS_Studio_Equip_NoAbilityPool>
+    <CS_Studio_Equip_Section_VisualBase>Equipment / Visual Base</CS_Studio_Equip_Section_VisualBase>
+    <CS_Studio_Equip_VisualLayerName>Visual Layer Name</CS_Studio_Equip_VisualLayerName>
+    <CS_Studio_Equip_AnchorTag>Visual Anchor Tag</CS_Studio_Equip_AnchorTag>
+    <CS_Studio_Equip_AnchorTag_Hint>Select the render anchor tag used when no explicit anchor path is provided.</CS_Studio_Equip_AnchorTag_Hint>
+    <CS_Studio_Equip_AnchorPath>Visual Anchor Path</CS_Studio_Equip_AnchorPath>
+    <CS_Studio_Equip_AnchorPath_Hint>Optional exact render-tree path. When set, it takes priority over the anchor tag.</CS_Studio_Equip_AnchorPath_Hint>
+    <CS_Studio_Equip_ShaderDef>Visual Shader Def</CS_Studio_Equip_ShaderDef>
+    <CS_Studio_Equip_ShaderDef_Hint>Choose the shader used to render this equipment visual layer.</CS_Studio_Equip_ShaderDef_Hint>
+    <CS_Studio_Equip_Section_VisualTransform>Equipment / Visual Transform</CS_Studio_Equip_Section_VisualTransform>
+    <CS_Studio_Equip_EastOffsetX>East Offset X</CS_Studio_Equip_EastOffsetX>
+    <CS_Studio_Equip_EastOffsetY>East Offset Y</CS_Studio_Equip_EastOffsetY>
+    <CS_Studio_Equip_EastOffsetZ>East Offset Z</CS_Studio_Equip_EastOffsetZ>
+    <CS_Studio_Equip_NorthOffsetX>North Offset X</CS_Studio_Equip_NorthOffsetX>
+    <CS_Studio_Equip_NorthOffsetY>North Offset Y</CS_Studio_Equip_NorthOffsetY>
+    <CS_Studio_Equip_NorthOffsetZ>North Offset Z</CS_Studio_Equip_NorthOffsetZ>
+    <CS_Studio_Equip_ScaleX>Scale X</CS_Studio_Equip_ScaleX>
+    <CS_Studio_Equip_ScaleY>Scale Y</CS_Studio_Equip_ScaleY>
+    <CS_Studio_Equip_RotationEastOffset>Rotation East Offset</CS_Studio_Equip_RotationEastOffset>
+    <CS_Studio_Equip_RotationNorthOffset>Rotation North Offset</CS_Studio_Equip_RotationNorthOffset>
+    <CS_Studio_Equip_Section_VisualVariants>Equipment / Visual Variants</CS_Studio_Equip_Section_VisualVariants>
+    <CS_Studio_Equip_Section_VisualAnimation>Equipment / Visual Animation</CS_Studio_Equip_Section_VisualAnimation>
+    <CS_Studio_Section_VariantsExpression>Variants / Expression</CS_Studio_Section_VariantsExpression>
+    <CS_Studio_Variant_LayerRole>Layer Role</CS_Studio_Variant_LayerRole>
+    <CS_Studio_Variant_Logic>Variant Logic</CS_Studio_Variant_Logic>
+    <CS_Studio_Variant_BaseName>Variant Base Name</CS_Studio_Variant_BaseName>
+    <CS_Studio_Variant_UseDirectionalSuffix>Use Directional Suffix</CS_Studio_Variant_UseDirectionalSuffix>
+    <CS_Studio_Variant_UseExpressionSuffix>Use Expression Suffix</CS_Studio_Variant_UseExpressionSuffix>
+    <CS_Studio_Variant_UseEyeDirectionSuffix>Use Eye Direction Suffix</CS_Studio_Variant_UseEyeDirectionSuffix>
+    <CS_Studio_Variant_UseBlinkSuffix>Use Blink Suffix</CS_Studio_Variant_UseBlinkSuffix>
+    <CS_Studio_Variant_UseFrameSequence>Use Frame Sequence</CS_Studio_Variant_UseFrameSequence>
+    <CS_Studio_Variant_HideWhenMissing>Hide When Missing Variant</CS_Studio_Variant_HideWhenMissing>
+    <CS_Studio_Variant_EyeRenderMode>Eye Render Mode</CS_Studio_Variant_EyeRenderMode>
+    <CS_Studio_Variant_EyeUvMoveRange>Eye UV Move Range</CS_Studio_Variant_EyeUvMoveRange>
+    <CS_Studio_Variant_VisibleExpressions>Visible Expressions</CS_Studio_Variant_VisibleExpressions>
+    <CS_Studio_Variant_HiddenExpressions>Hidden Expressions</CS_Studio_Variant_HiddenExpressions>
+    <CS_Studio_Section_WeaponCarryVisual>State Weapon Visual</CS_Studio_Section_WeaponCarryVisual>
+    <CS_Studio_WeaponCarry_Enable>Enable State Weapon Visual</CS_Studio_WeaponCarry_Enable>
+    <CS_Studio_WeaponCarry_PreviewState>Preview State</CS_Studio_WeaponCarry_PreviewState>
+    <CS_Studio_WeaponCarry_Anchor>Anchor Tag</CS_Studio_WeaponCarry_Anchor>
+    <CS_Studio_WeaponCarry_State_Undrafted>Undrafted</CS_Studio_WeaponCarry_State_Undrafted>
+    <CS_Studio_WeaponCarry_State_Drafted>Drafted</CS_Studio_WeaponCarry_State_Drafted>
+    <CS_Studio_WeaponCarry_State_Casting>Casting</CS_Studio_WeaponCarry_State_Casting>
 
     <!-- Layers Panel -->
     <CS_Studio_Panel_Layers>Layers</CS_Studio_Panel_Layers>
@@ -56,10 +142,17 @@
     <CS_Studio_Preview_ResetView>Reset View</CS_Studio_Preview_ResetView>
     <CS_Studio_Preview_Exp>Expression</CS_Studio_Preview_Exp>
     <CS_Studio_Preview_Var>Variant</CS_Studio_Preview_Var>
+    <CS_Studio_Preview_EditPerFacing>Edit current facing only</CS_Studio_Preview_EditPerFacing>
+    <CS_Studio_Preview_EditPerFacingTip>When enabled, preview dragging and arrow-key nudging only modify the offset data for the current facing. South edits base Offset, East/West edit East Offset, and North edits North Offset.</CS_Studio_Preview_EditPerFacingTip>
     <CS_Studio_Preview_RefHint>Hold F to show a translucent reference ghost of the imported pawn (follows cursor inside preview)</CS_Studio_Preview_RefHint>
 
     <!-- Properties Panel -->
     <CS_Studio_Panel_Properties>Properties</CS_Studio_Panel_Properties>
+    <CS_Studio_Section_Base>Base</CS_Studio_Section_Base>
+    <CS_Studio_Section_Transform>Transform</CS_Studio_Section_Transform>
+    <CS_Studio_Section_EastOffset>East Offset</CS_Studio_Section_EastOffset>
+    <CS_Studio_Section_HideVanilla>Hide Vanilla</CS_Studio_Section_HideVanilla>
+    <CS_Studio_Section_Misc>Misc</CS_Studio_Section_Misc>
     <CS_Studio_Prop_LayerName>Layer Name</CS_Studio_Prop_LayerName>
     <CS_Studio_Prop_TexturePath>Texture Path</CS_Studio_Prop_TexturePath>
     <CS_Studio_Prop_AnchorPoint>Anchor Point</CS_Studio_Prop_AnchorPoint>
@@ -126,17 +219,17 @@
     <CS_Studio_Section_RuntimeComponents>Runtime Components</CS_Studio_Section_RuntimeComponents>
     <CS_Studio_Runtime_AddComponent>+ Add Component</CS_Studio_Runtime_AddComponent>
     <CS_Studio_Runtime_Empty>(No runtime components)</CS_Studio_Runtime_Empty>
-    <CS_Studio_Runtime_QWindowTicks>Q Combo Window (ticks)</CS_Studio_Runtime_QWindowTicks>
-    <CS_Studio_Runtime_ECooldownTicks>E Cooldown (ticks)</CS_Studio_Runtime_ECooldownTicks>
-    <CS_Studio_Runtime_EJumpDistance>E Jump Distance</CS_Studio_Runtime_EJumpDistance>
-    <CS_Studio_Runtime_EFindRadius>E Landing Search Radius</CS_Studio_Runtime_EFindRadius>
-    <CS_Studio_Runtime_ETriggerEffects>Trigger ability effects after E jump</CS_Studio_Runtime_ETriggerEffects>
-    <CS_Studio_Runtime_RRequiredStacks>R Required Stacks</CS_Studio_Runtime_RRequiredStacks>
-    <CS_Studio_Runtime_RDelayTicks>R Delay (ticks)</CS_Studio_Runtime_RDelayTicks>
-    <CS_Studio_Runtime_RWave1>R Wave 1 (radius/damage)</CS_Studio_Runtime_RWave1>
-    <CS_Studio_Runtime_RWave2>R Wave 2 (radius/damage)</CS_Studio_Runtime_RWave2>
-    <CS_Studio_Runtime_RWave3>R Wave 3 (radius/damage)</CS_Studio_Runtime_RWave3>
-    <CS_Studio_Runtime_RDamageDef>R Damage Type</CS_Studio_Runtime_RDamageDef>
+    <CS_Studio_Runtime_QWindowTicks>Combo Window (ticks)</CS_Studio_Runtime_QWindowTicks>
+    <CS_Studio_Runtime_ECooldownTicks>Displacement Cooldown (ticks)</CS_Studio_Runtime_ECooldownTicks>
+    <CS_Studio_Runtime_EJumpDistance>Displacement Distance</CS_Studio_Runtime_EJumpDistance>
+    <CS_Studio_Runtime_EFindRadius>Landing Search Radius</CS_Studio_Runtime_EFindRadius>
+    <CS_Studio_Runtime_ETriggerEffects>Trigger ability effects after displacement</CS_Studio_Runtime_ETriggerEffects>
+    <CS_Studio_Runtime_RRequiredStacks>Required Stacks</CS_Studio_Runtime_RRequiredStacks>
+    <CS_Studio_Runtime_RDelayTicks>Delay (ticks)</CS_Studio_Runtime_RDelayTicks>
+    <CS_Studio_Runtime_RWave1>Wave 1 (radius/damage)</CS_Studio_Runtime_RWave1>
+    <CS_Studio_Runtime_RWave2>Wave 2 (radius/damage)</CS_Studio_Runtime_RWave2>
+    <CS_Studio_Runtime_RWave3>Wave 3 (radius/damage)</CS_Studio_Runtime_RWave3>
+    <CS_Studio_Runtime_RDamageDef>Damage Type</CS_Studio_Runtime_RDamageDef>
 
     <!-- Color Types -->
     <CS_Studio_ColorType_Custom>Custom</CS_Studio_ColorType_Custom>
@@ -159,6 +252,7 @@
     <CS_Studio_Anchor_BodyTattoo>Body Tattoo</CS_Studio_Anchor_BodyTattoo>
     <CS_Studio_Anchor_Apparel>Apparel</CS_Studio_Anchor_Apparel>
     <CS_Studio_Anchor_Headgear>Headgear</CS_Studio_Anchor_Headgear>
+    <CS_Studio_Anchor_Root>Root</CS_Studio_Anchor_Root>
 
     <!-- Export Dialog -->
     <CS_Studio_Export_Title>Export as Mod</CS_Studio_Export_Title>
@@ -189,6 +283,9 @@
     <CS_Studio_Skin_HideVanillaApparel>Hide Vanilla Apparel</CS_Studio_Skin_HideVanillaApparel>
     <CS_Studio_Skin_TargetRaces>Target Races</CS_Studio_Skin_TargetRaces>
     <CS_Studio_Skin_HumanlikeOnly>Humanlike Only</CS_Studio_Skin_HumanlikeOnly>
+    <CS_Studio_Skin_DefaultForTargetRaces>Use as default skin for target races</CS_Studio_Skin_DefaultForTargetRaces>
+    <CS_Studio_Skin_DefaultForTargetRaces_Tip>When enabled, races matching targetRaces automatically receive this skin at runtime. Pawns with an existing manual skin are not overridden.</CS_Studio_Skin_DefaultForTargetRaces_Tip>
+    <CS_Studio_Skin_DefaultRacePriority>Default skin priority</CS_Studio_Skin_DefaultRacePriority>
     
     <!-- New Skin Settings -->
     <CS_Studio_Label>Label</CS_Studio_Label>
@@ -212,6 +309,8 @@
     <CS_Studio_Msg_LoadSuccess>Load successful!</CS_Studio_Msg_LoadSuccess>
     <CS_Studio_Msg_TargetPawnRequired>Please import or bind a valid target pawn first</CS_Studio_Msg_TargetPawnRequired>
     <CS_Studio_Msg_AppliedToPawn>Applied to {0}</CS_Studio_Msg_AppliedToPawn>
+    <CS_Studio_Msg_PreviewApplied>Preview refreshed</CS_Studio_Msg_PreviewApplied>
+    <CS_Studio_Warn_RuntimeSkinDefNameMissing>The current design has no DefName yet; preview/apply will use a temporary runtime skin.</CS_Studio_Warn_RuntimeSkinDefNameMissing>
     <CS_Studio_Err_ApplyNoSkinComp>Apply failed: target pawn has no skin component</CS_Studio_Err_ApplyNoSkinComp>
     <CS_Studio_Err_ApplyFailedCheckLog>Apply failed, check the log</CS_Studio_Err_ApplyFailedCheckLog>
     <CS_Studio_Msg_ImportedBoundPawn>Imported and bound target pawn: {0}</CS_Studio_Msg_ImportedBoundPawn>
@@ -334,6 +433,16 @@
     <CS_Studio_Ability_EditorTitle>Ability Editor</CS_Studio_Ability_EditorTitle>
     <CS_Studio_Ability_LoadQwerExamples>Load QWER Example Abilities</CS_Studio_Ability_LoadQwerExamples>
     <CS_Studio_Ability_QwerExamplesLoaded>Loaded QWER example abilities and bound hotkeys</CS_Studio_Ability_QwerExamplesLoaded>
+    <CS_Studio_Ability_ImportXml>Import XML</CS_Studio_Ability_ImportXml>
+    <CS_Studio_Ability_ImportXmlTitle>Import Ability XML</CS_Studio_Ability_ImportXmlTitle>
+    <CS_Studio_Ability_ImportXmlHint>Enter the path to an existing XML file. Supports direct ModularAbilityDef XML, PawnSkinDef embedded abilities, or standard AbilityDef XML, and converts them into the editor's editable ability format.</CS_Studio_Ability_ImportXmlHint>
+    <CS_Studio_Ability_ImportXmlPath>XML Path</CS_Studio_Ability_ImportXmlPath>
+    <CS_Studio_Ability_ImportReplace>Clear and Import</CS_Studio_Ability_ImportReplace>
+    <CS_Studio_Ability_ImportAppend>Append Import</CS_Studio_Ability_ImportAppend>
+    <CS_Studio_Ability_ImportNoAbilities>No importable abilities were found in this XML</CS_Studio_Ability_ImportNoAbilities>
+    <CS_Studio_Ability_ImportReplaced>Imported {0} abilities from {1} and replaced the current list</CS_Studio_Ability_ImportReplaced>
+    <CS_Studio_Ability_ImportAppended>Appended {0} abilities from {1} (was {2}, now {3})</CS_Studio_Ability_ImportAppended>
+    <CS_Studio_Ability_ImportFailed>Ability XML import failed: {0}</CS_Studio_Ability_ImportFailed>
     <CS_Studio_Ability_SelectOrCreate>Please select or create an ability</CS_Studio_Ability_SelectOrCreate>
     <CS_Studio_Ability_Search>Search Abilities</CS_Studio_Ability_Search>
     <CS_Studio_Ability_CountSummary>Showing {0} / {1} abilities</CS_Studio_Ability_CountSummary>
@@ -353,6 +462,9 @@
     <CS_Studio_Ability_ValidWithWarnings>Valid with warnings</CS_Studio_Ability_ValidWithWarnings>
     <CS_Studio_Ability_Invalid>Invalid</CS_Studio_Ability_Invalid>
     <CS_Studio_Ability_Type>Type</CS_Studio_Ability_Type>
+    <CS_Studio_Ability_TargetType>Target Type</CS_Studio_Ability_TargetType>
+    <CS_Studio_Ability_UseRadius>Use Radius</CS_Studio_Ability_UseRadius>
+    <CS_Studio_Ability_AreaCenter>Area Center</CS_Studio_Ability_AreaCenter>
     <CS_Studio_Ability_Range>Range</CS_Studio_Ability_Range>
     <CS_Studio_Ability_Radius>Explosion Radius</CS_Studio_Ability_Radius>
     <CS_Studio_Ability_Projectile>Projectile</CS_Studio_Ability_Projectile>
@@ -384,6 +496,19 @@ Use the button below to add the first effect, or load the QWER examples to inspe
     <CS_Studio_Effect_SummonCount>Count</CS_Studio_Effect_SummonCount>
     <CS_Studio_Effect_Hediff>Hediff</CS_Studio_Effect_Hediff>
     <CS_Studio_Effect_CanHurtSelf>Can Hurt Self</CS_Studio_Effect_CanHurtSelf>
+    <CS_Studio_Effect_ControlMode>Control Mode</CS_Studio_Effect_ControlMode>
+    <CS_Studio_Effect_ControlMoveDistance>Move Distance</CS_Studio_Effect_ControlMoveDistance>
+    <CS_Studio_Effect_ControlMode_Stun>Stun</CS_Studio_Effect_ControlMode_Stun>
+    <CS_Studio_Effect_ControlMode_Knockback>Knockback</CS_Studio_Effect_ControlMode_Knockback>
+    <CS_Studio_Effect_ControlMode_Pull>Pull</CS_Studio_Effect_ControlMode_Pull>
+    <CS_Studio_Effect_TerraformMode>Terraform Mode</CS_Studio_Effect_TerraformMode>
+    <CS_Studio_Effect_TerraformMode_CleanFilth>Clean Filth</CS_Studio_Effect_TerraformMode_CleanFilth>
+    <CS_Studio_Effect_TerraformMode_SpawnThing>Spawn Thing</CS_Studio_Effect_TerraformMode_SpawnThing>
+    <CS_Studio_Effect_TerraformMode_ReplaceTerrain>Replace Terrain</CS_Studio_Effect_TerraformMode_ReplaceTerrain>
+    <CS_Studio_Effect_TerraformCleanFilthHint>This will remove filth from the target cell</CS_Studio_Effect_TerraformCleanFilthHint>
+    <CS_Studio_Effect_TerraformThing>Thing To Spawn</CS_Studio_Effect_TerraformThing>
+    <CS_Studio_Effect_TerraformTerrain>Terrain</CS_Studio_Effect_TerraformTerrain>
+    <CS_Studio_Effect_TerraformSpawnCount>Spawn Count</CS_Studio_Effect_TerraformSpawnCount>
 
     <!-- LLM / Attribute Editing -->
     <CS_LLM_Settings_Title>LLM Settings</CS_LLM_Settings_Title>
@@ -460,14 +585,19 @@ Use the button below to add the first effect, or load the QWER examples to inspe
     <CS_Ability_R_SecondStageCast>R stage 2 cast: blink and triple shockwaves</CS_Ability_R_SecondStageCast>
     <CS_Ability_Validate_Failed>Validation failed:</CS_Ability_Validate_Failed>
     <CS_Ability_Validate_Warnings>Warnings:</CS_Ability_Validate_Warnings>
-    <CS_Ability_Validate_QComboWindowTicks>Q combo window must be greater than 0 ticks</CS_Ability_Validate_QComboWindowTicks>
-    <CS_Ability_Validate_EShortJumpCooldown>E short-jump cooldown cannot be negative</CS_Ability_Validate_EShortJumpCooldown>
-    <CS_Ability_Validate_EShortJumpDistance>E short-jump distance must be greater than 0</CS_Ability_Validate_EShortJumpDistance>
-    <CS_Ability_Validate_EShortJumpFindCellRadius>E short-jump find-cell radius cannot be negative</CS_Ability_Validate_EShortJumpFindCellRadius>
-    <CS_Ability_Validate_RRequiredStacks>R required stacks must be greater than 0</CS_Ability_Validate_RRequiredStacks>
-    <CS_Ability_Validate_RDelayTicks>R delay cannot be negative</CS_Ability_Validate_RDelayTicks>
-    <CS_Ability_Validate_RWaveRadius>All R wave radii must be greater than 0</CS_Ability_Validate_RWaveRadius>
-    <CS_Ability_Validate_RWaveDamage>All R wave damage values must be greater than 0</CS_Ability_Validate_RWaveDamage>
+    <CS_Ability_Validate_QComboWindowTicks>Combo window must be greater than 0 ticks</CS_Ability_Validate_QComboWindowTicks>
+    <CS_Ability_Validate_EShortJumpCooldown>Displacement cooldown cannot be negative</CS_Ability_Validate_EShortJumpCooldown>
+    <CS_Ability_Validate_EShortJumpDistance>Displacement distance must be greater than 0</CS_Ability_Validate_EShortJumpDistance>
+    <CS_Ability_Validate_EShortJumpFindCellRadius>Displacement search radius cannot be negative</CS_Ability_Validate_EShortJumpFindCellRadius>
+    <CS_Ability_Validate_RRequiredStacks>Required stacks must be greater than 0</CS_Ability_Validate_RRequiredStacks>
+    <CS_Ability_Validate_RDelayTicks>Delay cannot be negative</CS_Ability_Validate_RDelayTicks>
+    <CS_Ability_Validate_RWaveRadius>All wave radii must be greater than 0</CS_Ability_Validate_RWaveRadius>
+    <CS_Ability_Validate_RWaveDamage>All wave damage values must be greater than 0</CS_Ability_Validate_RWaveDamage>
+    <CS_Ability_Validate_ControlDuration>Control effect duration cannot be negative</CS_Ability_Validate_ControlDuration>
+    <CS_Ability_Validate_ControlMoveDistance>Control move distance must be greater than 0</CS_Ability_Validate_ControlMoveDistance>
+    <CS_Ability_Validate_TerraformThingRequired>Spawn Thing mode requires a ThingDef</CS_Ability_Validate_TerraformThingRequired>
+    <CS_Ability_Validate_TerraformSpawnCount>Spawn count must be greater than 0</CS_Ability_Validate_TerraformSpawnCount>
+    <CS_Ability_Validate_TerraformTerrainRequired>Replace Terrain mode requires a TerrainDef</CS_Ability_Validate_TerraformTerrainRequired>
     <CS_Ability_Validate_EffectNegativeAmount>Effect amount is negative and may cause unexpected behavior</CS_Ability_Validate_EffectNegativeAmount>
     <CS_Ability_Validate_EffectChanceRange>Trigger chance must be between 0 and 1, current value: {0}</CS_Ability_Validate_EffectChanceRange>
     <CS_Ability_Validate_DamageAmount>Damage effect amount must be greater than 0</CS_Ability_Validate_DamageAmount>
@@ -496,6 +626,11 @@ Use the button below to add the first effect, or load the QWER examples to inspe
     <CS_Ability_CarrierType_Target>Target</CS_Ability_CarrierType_Target>
     <CS_Ability_CarrierType_Projectile>Projectile</CS_Ability_CarrierType_Projectile>
     <CS_Ability_CarrierType_Area>Area</CS_Ability_CarrierType_Area>
+    <CS_Ability_TargetType_Self>Self</CS_Ability_TargetType_Self>
+    <CS_Ability_TargetType_Entity>Entity</CS_Ability_TargetType_Entity>
+    <CS_Ability_TargetType_Cell>Cell</CS_Ability_TargetType_Cell>
+    <CS_Ability_AreaCenter_Self>Centered On Self</CS_Ability_AreaCenter_Self>
+    <CS_Ability_AreaCenter_Target>Centered On Target</CS_Ability_AreaCenter_Target>
     <CS_Ability_EffectType_Damage>Damage</CS_Ability_EffectType_Damage>
     <CS_Ability_EffectType_Heal>Heal</CS_Ability_EffectType_Heal>
     <CS_Ability_EffectType_Buff>Buff</CS_Ability_EffectType_Buff>
@@ -504,9 +639,9 @@ Use the button below to add the first effect, or load the QWER examples to inspe
     <CS_Ability_EffectType_Teleport>Teleport</CS_Ability_EffectType_Teleport>
     <CS_Ability_EffectType_Control>Control</CS_Ability_EffectType_Control>
     <CS_Ability_EffectType_Terraform>Terraform</CS_Ability_EffectType_Terraform>
-    <CS_Ability_RuntimeComponentType_QComboWindow>Q Combo Window</CS_Ability_RuntimeComponentType_QComboWindow>
-    <CS_Ability_RuntimeComponentType_EShortJump>E Short Jump</CS_Ability_RuntimeComponentType_EShortJump>
-    <CS_Ability_RuntimeComponentType_RStackDetonation>R Stack Detonation</CS_Ability_RuntimeComponentType_RStackDetonation>
+    <CS_Ability_RuntimeComponentType_QComboWindow>Combo Window</CS_Ability_RuntimeComponentType_QComboWindow>
+    <CS_Ability_RuntimeComponentType_EShortJump>Displacement</CS_Ability_RuntimeComponentType_EShortJump>
+    <CS_Ability_RuntimeComponentType_RStackDetonation>Stack Detonation</CS_Ability_RuntimeComponentType_RStackDetonation>
 
     <!-- Base Appearance -->
     <CS_Studio_BaseSlot_Unset>(Unset)</CS_Studio_BaseSlot_Unset>
@@ -551,6 +686,28 @@ Use the button below to add the first effect, or load the QWER examples to inspe
     <CS_Studio_Face_HeadTexHint>Assign a full head texture for each expression, or click [+F] to add multiple frames for animation.</CS_Studio_Face_HeadTexHint>
     <CS_Studio_Face_ExpressionMappings>Expression Texture Mappings</CS_Studio_Face_ExpressionMappings>
     <CS_Studio_Face_Assigned>configured</CS_Studio_Face_Assigned>
+    <CS_Studio_Face_Workflow>Face Workflow</CS_Studio_Face_Workflow>
+    <CS_Studio_Face_Workflow_FullFaceSwap>Full Face Swap</CS_Studio_Face_Workflow_FullFaceSwap>
+    <CS_Studio_Face_Workflow_LayeredDynamic>Layered Dynamic</CS_Studio_Face_Workflow_LayeredDynamic>
+    <CS_Studio_Face_Workflow_FullFaceSwap_Desc>Classic workflow: assign one full-face texture per expression, optionally using frame animation.</CS_Studio_Face_Workflow_FullFaceSwap_Desc>
+    <CS_Studio_Face_Workflow_LayeredDynamic_Desc>Layered workflow: configure named facial parts per expression. Runtime code drives positioning and fallback automatically.</CS_Studio_Face_Workflow_LayeredDynamic_Desc>
+    <CS_Studio_Face_Layered_Title>Layered Face Parts</CS_Studio_Face_Layered_Title>
+    <CS_Studio_Face_Layered_Hint>Use this mode when your art is split into reusable facial parts. Usually you only need to name the parts and assign paths; movement and fallback are code-driven.</CS_Studio_Face_Layered_Hint>
+    <CS_Studio_Face_Layered_SourceRoot>Layered Source Root</CS_Studio_Face_Layered_SourceRoot>
+    <CS_Studio_Face_Layered_Stats>{0} paths assigned across {2}/{3} part groups, for {1} expressions.</CS_Studio_Face_Layered_Stats>
+    <CS_Studio_Face_Layered_PartSummary>{0}/{1} expressions configured for this part.</CS_Studio_Face_Layered_PartSummary>
+    <CS_Studio_Face_Layered_Enable>Enable this layered part entry</CS_Studio_Face_Layered_Enable>
+    <CS_Studio_Face_LayeredPart_Base>Base Face</CS_Studio_Face_LayeredPart_Base>
+    <CS_Studio_Face_LayeredPart_Brow>Brow</CS_Studio_Face_LayeredPart_Brow>
+    <CS_Studio_Face_LayeredPart_Eye>Eye</CS_Studio_Face_LayeredPart_Eye>
+    <CS_Studio_Face_LayeredPart_Pupil>Pupil</CS_Studio_Face_LayeredPart_Pupil>
+    <CS_Studio_Face_LayeredPart_UpperLid>Upper Lid</CS_Studio_Face_LayeredPart_UpperLid>
+    <CS_Studio_Face_LayeredPart_LowerLid>Lower Lid</CS_Studio_Face_LayeredPart_LowerLid>
+    <CS_Studio_Face_LayeredPart_Mouth>Mouth</CS_Studio_Face_LayeredPart_Mouth>
+    <CS_Studio_Face_LayeredPart_Blush>Blush</CS_Studio_Face_LayeredPart_Blush>
+    <CS_Studio_Face_LayeredPart_Sweat>Sweat</CS_Studio_Face_LayeredPart_Sweat>
+    <CS_Studio_Face_LayeredPart_Tear>Tear</CS_Studio_Face_LayeredPart_Tear>
+    <CS_Studio_Face_LayeredPart_Overlay>Overlay</CS_Studio_Face_LayeredPart_Overlay>
     <!-- Eye Direction -->
     <CS_Studio_Face_EyeDir_Title>Eye Direction Config</CS_Studio_Face_EyeDir_Title>
     <CS_Studio_Face_EyeDir_Hint>Assign an overlay texture for each gaze direction. Missing directions fall back to Center automatically.</CS_Studio_Face_EyeDir_Hint>
@@ -687,6 +844,24 @@ Use the button below to add the first effect, or load the QWER examples to inspe
     <CS_Studio_VFX_Target>Target</CS_Studio_VFX_Target>
     <CS_Studio_VFX_Delay>Delay (ticks)</CS_Studio_VFX_Delay>
     <CS_Studio_VFX_Scale>Scale</CS_Studio_VFX_Scale>
+    <CS_Studio_VFX_Enabled>Enabled</CS_Studio_VFX_Enabled>
+    <CS_Studio_VFX_TypeShort>Type</CS_Studio_VFX_TypeShort>
+    <CS_Studio_VFX_SourceModeShort>Source</CS_Studio_VFX_SourceModeShort>
+    <CS_Studio_VFX_PresetShort>Preset</CS_Studio_VFX_PresetShort>
+    <CS_Studio_VFX_TargetShort>Target</CS_Studio_VFX_TargetShort>
+    <CS_Studio_VFX_TriggerShort>Trigger</CS_Studio_VFX_TriggerShort>
+    <CS_Studio_VFX_DelayShort>Delay</CS_Studio_VFX_DelayShort>
+    <CS_Studio_VFX_ScaleShort>Scale</CS_Studio_VFX_ScaleShort>
+    <CS_Studio_VFX_RepeatCountShort>Repeats</CS_Studio_VFX_RepeatCountShort>
+    <CS_Studio_VFX_RepeatIntervalShort>Interval</CS_Studio_VFX_RepeatIntervalShort>
+    <CS_Studio_VFX_SourceMode_BuiltIn>Built-in</CS_Studio_VFX_SourceMode_BuiltIn>
+    <CS_Studio_VFX_SourceMode_Preset>Preset</CS_Studio_VFX_SourceMode_Preset>
+    <CS_Studio_VFX_Trigger_OnCastStart>Cast Start</CS_Studio_VFX_Trigger_OnCastStart>
+    <CS_Studio_VFX_Trigger_OnWarmup>Warmup</CS_Studio_VFX_Trigger_OnWarmup>
+    <CS_Studio_VFX_Trigger_OnCastFinish>Cast Finish</CS_Studio_VFX_Trigger_OnCastFinish>
+    <CS_Studio_VFX_Trigger_OnTargetApply>On Apply</CS_Studio_VFX_Trigger_OnTargetApply>
+    <CS_Studio_VFX_Trigger_OnDurationTick>Duration Tick</CS_Studio_VFX_Trigger_OnDurationTick>
+    <CS_Studio_VFX_Trigger_OnExpire>On Expire</CS_Studio_VFX_Trigger_OnExpire>
     <!-- Effect type labels -->
     <CS_Studio_VFX_Type_DustPuff>Dust Puff</CS_Studio_VFX_Type_DustPuff>
     <CS_Studio_VFX_Type_MicroSparks>Micro Sparks</CS_Studio_VFX_Type_MicroSparks>
@@ -703,6 +878,24 @@ Use the button below to add the first effect, or load the QWER examples to inspe
     <CS_Studio_Section_WeaponRender>Weapon Render Override</CS_Studio_Section_WeaponRender>
     <CS_Studio_WeaponRender_Enable>Enable Weapon Override</CS_Studio_WeaponRender_Enable>
     <CS_Studio_WeaponRender_ApplyOffHand>Apply to Off-Hand Weapon</CS_Studio_WeaponRender_ApplyOffHand>
+    <CS_Studio_WeaponRender_PreviewTexture>Preview Weapon Texture</CS_Studio_WeaponRender_PreviewTexture>
+    <CS_Studio_WeaponRender_PreviewHint>This texture is only used for editor preview. You can enter an in-game TexPath or browse for an external image file.</CS_Studio_WeaponRender_PreviewHint>
+    <CS_Studio_WeaponCarry_TexUndrafted>Undrafted Texture</CS_Studio_WeaponCarry_TexUndrafted>
+    <CS_Studio_WeaponCarry_TexDrafted>Drafted Texture</CS_Studio_WeaponCarry_TexDrafted>
+    <CS_Studio_WeaponCarry_TexCasting>Casting Texture</CS_Studio_WeaponCarry_TexCasting>
+    <CS_Studio_WeaponCarry_Hint>This is a generic state-driven weapon visual. It switches between Undrafted / Drafted / Casting textures and is not hardcoded to any specific sword type. Use offsets to place it on the back or waist.</CS_Studio_WeaponCarry_Hint>
+    <CS_Studio_WeaponCarry_DrawOrder>State Visual Draw Order</CS_Studio_WeaponCarry_DrawOrder>
+    <CS_Studio_WeaponCarry_ScaleX>State Scale X</CS_Studio_WeaponCarry_ScaleX>
+    <CS_Studio_WeaponCarry_ScaleY>State Scale Y</CS_Studio_WeaponCarry_ScaleY>
+    <CS_Studio_WeaponCarry_OffsetX>State Offset X (Global)</CS_Studio_WeaponCarry_OffsetX>
+    <CS_Studio_WeaponCarry_OffsetY>State Offset Y (Global)</CS_Studio_WeaponCarry_OffsetY>
+    <CS_Studio_WeaponCarry_OffsetZ>State Offset Z (Global)</CS_Studio_WeaponCarry_OffsetZ>
+    <CS_Studio_WeaponCarry_DirOffsets>State Directional Offsets</CS_Studio_WeaponCarry_DirOffsets>
+    <CS_Studio_WeaponCarry_OffNorthX>North Offset X</CS_Studio_WeaponCarry_OffNorthX>
+    <CS_Studio_WeaponCarry_OffNorthZ>North Offset Z</CS_Studio_WeaponCarry_OffNorthZ>
+    <CS_Studio_WeaponCarry_OffEastX>East/West Offset X</CS_Studio_WeaponCarry_OffEastX>
+    <CS_Studio_WeaponCarry_OffEastZ>East/West Offset Z</CS_Studio_WeaponCarry_OffEastZ>
+    <CS_Studio_WeaponCarry_Reset>Reset State Weapon Visual</CS_Studio_WeaponCarry_Reset>
     <CS_Studio_WeaponRender_ScaleX>Scale X</CS_Studio_WeaponRender_ScaleX>
     <CS_Studio_WeaponRender_ScaleY>Scale Y</CS_Studio_WeaponRender_ScaleY>
     <CS_Studio_WeaponRender_OffsetX>Offset X (Global)</CS_Studio_WeaponRender_OffsetX>
@@ -727,4 +920,3 @@ Use the button below to add the first effect, or load the QWER examples to inspe
     <CS_Studio_XenotypeDefName>Bind Xenotype</CS_Studio_XenotypeDefName>
     <CS_Studio_None>(None)</CS_Studio_None>
 </LanguageData>
-
