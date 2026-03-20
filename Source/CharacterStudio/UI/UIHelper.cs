@@ -68,6 +68,8 @@ namespace CharacterStudio.UI
         public const float VerticalPadding = 4f;
         public const float LabelWidth = 100f;
 
+        private static int sliderControlId;
+
         // 颜色常量
         public static readonly Color HeaderColor = new Color(0.78f, 0.86f, 1f);
         public static readonly Color SubtleColor = new Color(0.72f, 0.75f, 0.82f);
@@ -192,13 +194,46 @@ namespace CharacterStudio.UI
             
             Widgets.Label(new Rect(rect.x, rect.y, actualLabelWidth, 24), label);
             
-            float inputWidth = 50f;
+            float inputWidth = 64f;
             float sliderWidth = rect.width - actualLabelWidth - inputWidth - 5f;
             
             float newValue = Widgets.HorizontalSlider(new Rect(rect.x + actualLabelWidth, rect.y + 4, sliderWidth, 16), value, min, max);
-            
-            string buffer = value.ToString();
-            Widgets.TextFieldNumeric<float>(new Rect(rect.x + actualLabelWidth + sliderWidth + 5, rect.y, inputWidth, 24), ref newValue, ref buffer, min, max);
+            newValue = Mathf.Clamp(newValue, min, max);
+
+            string numericFormat = string.IsNullOrWhiteSpace(format) ? "F2" : format;
+            int decimals = GetDecimalsFromNumericFormat(numericFormat);
+            string controlName = $"CS_SliderNumeric_{sliderControlId++}_{Mathf.RoundToInt(rect.y)}_{Mathf.RoundToInt(rect.x)}";
+            string buffer = value.ToString(numericFormat);
+            Rect inputRect = new Rect(rect.x + actualLabelWidth + sliderWidth + 5, rect.y, inputWidth, 24);
+
+            GUI.SetNextControlName(controlName);
+            Widgets.TextFieldNumeric<float>(inputRect, ref newValue, ref buffer, min, max);
+
+            if (GUI.GetNameOfFocusedControl() == controlName && Event.current.type == EventType.KeyDown)
+            {
+                float step = GetNumericStepForFormat(decimals);
+                if (Event.current.shift)
+                {
+                    step *= 10f;
+                }
+                if (Event.current.control)
+                {
+                    step *= 0.1f;
+                }
+
+                if (Event.current.keyCode == KeyCode.UpArrow)
+                {
+                    newValue = QuantizeFloat(Mathf.Clamp(newValue + step, min, max), decimals);
+                    Event.current.Use();
+                }
+                else if (Event.current.keyCode == KeyCode.DownArrow)
+                {
+                    newValue = QuantizeFloat(Mathf.Clamp(newValue - step, min, max), decimals);
+                    Event.current.Use();
+                }
+            }
+
+            newValue = Mathf.Clamp(newValue, min, max);
 
             if (Math.Abs(newValue - value) > 0.0001f)
             {
@@ -206,6 +241,39 @@ namespace CharacterStudio.UI
             }
 
             y += RowHeight;
+        }
+
+        private static int GetDecimalsFromNumericFormat(string format)
+        {
+            if (string.IsNullOrWhiteSpace(format) || format.Length < 2)
+            {
+                return 2;
+            }
+
+            char prefix = char.ToUpperInvariant(format[0]);
+            if (prefix != 'F' && prefix != 'N')
+            {
+                return 2;
+            }
+
+            if (int.TryParse(format.Substring(1), out int decimals))
+            {
+                return Mathf.Clamp(decimals, 0, 6);
+            }
+
+            return 2;
+        }
+
+        private static float GetNumericStepForFormat(int decimals)
+        {
+            decimals = Mathf.Clamp(decimals, 0, 6);
+            return Mathf.Pow(10f, -decimals);
+        }
+
+        private static float QuantizeFloat(float value, int decimals)
+        {
+            float multiplier = Mathf.Pow(10f, Mathf.Clamp(decimals, 0, 6));
+            return Mathf.Round(value * multiplier) / multiplier;
         }
 
         /// <summary>

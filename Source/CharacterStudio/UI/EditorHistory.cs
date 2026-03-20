@@ -1,23 +1,23 @@
 using System.Collections.Generic;
-using CharacterStudio.Core;
+using CharacterStudio.Design;
 
 namespace CharacterStudio.UI
 {
     /// <summary>
     /// 编辑器历史记录（Undo/Redo）
-    /// 基于 PawnSkinDef 深拷贝快照。
+    /// 基于 CharacterDesignDocument 深拷贝快照。
     /// </summary>
     public class EditorHistory
     {
         public sealed class Snapshot
         {
-            public PawnSkinDef Skin { get; }
+            public CharacterDesignDocument Document { get; }
             public int SelectedLayerIndex { get; }
             public HashSet<int> SelectedLayerIndices { get; }
 
-            public Snapshot(PawnSkinDef skin, int selectedLayerIndex, HashSet<int> selectedLayerIndices)
+            public Snapshot(CharacterDesignDocument document, int selectedLayerIndex, HashSet<int> selectedLayerIndices)
             {
-                Skin = skin.Clone();
+                Document = document.Clone();
                 SelectedLayerIndex = selectedLayerIndex;
                 SelectedLayerIndices = new HashSet<int>(selectedLayerIndices);
             }
@@ -38,14 +38,14 @@ namespace CharacterStudio.UI
             redoStack.Clear();
         }
 
-        public void PushUndo(PawnSkinDef currentSkin, int selectedLayerIndex, HashSet<int> selectedLayerIndices)
+        public void PushUndo(CharacterDesignDocument currentDocument, int selectedLayerIndex, HashSet<int> selectedLayerIndices)
         {
-            undoStack.Push(new Snapshot(currentSkin, selectedLayerIndex, selectedLayerIndices));
+            undoStack.Push(new Snapshot(currentDocument, selectedLayerIndex, selectedLayerIndices));
             TrimUndoDepth();
             redoStack.Clear();
         }
 
-        public bool TryUndo(PawnSkinDef currentSkin, int selectedLayerIndex, HashSet<int> selectedLayerIndices, out Snapshot? snapshot)
+        public bool TryUndo(CharacterDesignDocument currentDocument, int selectedLayerIndex, HashSet<int> selectedLayerIndices, out Snapshot? snapshot)
         {
             if (undoStack.Count == 0)
             {
@@ -53,12 +53,12 @@ namespace CharacterStudio.UI
                 return false;
             }
 
-            redoStack.Push(new Snapshot(currentSkin, selectedLayerIndex, selectedLayerIndices));
+            redoStack.Push(new Snapshot(currentDocument, selectedLayerIndex, selectedLayerIndices));
             snapshot = undoStack.Pop();
             return true;
         }
 
-        public bool TryRedo(PawnSkinDef currentSkin, int selectedLayerIndex, HashSet<int> selectedLayerIndices, out Snapshot? snapshot)
+        public bool TryRedo(CharacterDesignDocument currentDocument, int selectedLayerIndex, HashSet<int> selectedLayerIndices, out Snapshot? snapshot)
         {
             if (redoStack.Count == 0)
             {
@@ -66,7 +66,7 @@ namespace CharacterStudio.UI
                 return false;
             }
 
-            undoStack.Push(new Snapshot(currentSkin, selectedLayerIndex, selectedLayerIndices));
+            undoStack.Push(new Snapshot(currentDocument, selectedLayerIndex, selectedLayerIndices));
             snapshot = redoStack.Pop();
             return true;
         }

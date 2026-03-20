@@ -22,9 +22,21 @@ namespace CharacterStudio.Rendering
             // 尝试加载纹理
             // 这里的 req.path 应该是完整文件路径
             Texture2D? tex = RuntimeAssetLoader.LoadTextureRaw(req.path);
-            
+
             if (tex == null)
             {
+                bool looksLikeExternalPath = !string.IsNullOrEmpty(req.path)
+                    && (req.path.Contains(":") || req.path.StartsWith("/") || System.IO.Path.IsPathRooted(req.path));
+
+                bool externalFileExists = looksLikeExternalPath && System.IO.File.Exists(req.path);
+
+                // 外部纹理在非主线程首次触发渲染时，RuntimeAssetLoader 会主动拒绝即时创建 Texture2D，
+                // 以避免 Unity 崩溃。这种情况下不要把它当成真正错误刷红日志。
+                if (externalFileExists && !RuntimeAssetLoader.IsMainThread())
+                {
+                    return;
+                }
+
                 Log.Error($"[CharacterStudio] 无法加载纹理: {req.path}");
                 return;
             }

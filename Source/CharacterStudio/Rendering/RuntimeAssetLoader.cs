@@ -34,6 +34,7 @@ namespace CharacterStudio.Rendering
         // 线程同步锁
         private static readonly object textureCacheLock = new object();
         private static readonly object materialCacheLock = new object();
+        private static readonly HashSet<string> nonMainThreadLoadWarnings = new HashSet<string>();
 
         // ─────────────────────────────────────────────
         // 节点数据注册表 (Patch层 → Worker层 数据传递)
@@ -99,6 +100,18 @@ namespace CharacterStudio.Rendering
                     return null;
                 }
 
+                if (!IsMainThread())
+                {
+                    lock (textureCacheLock)
+                    {
+                        if (nonMainThreadLoadWarnings.Add(fullPath))
+                        {
+                            Log.Warning($"[CharacterStudio] 阻止在非主线程即时加载外部纹理，避免 Unity 崩溃: {fullPath}");
+                        }
+                    }
+                    return null;
+                }
+
                 // Log.Message($"[CharacterStudio] 正在加载外部纹理: {fullPath}"); // 调试日志
 
                 // 读取文件字节（在锁外执行IO操作）
@@ -107,7 +120,7 @@ namespace CharacterStudio.Rendering
                 // 创建纹理（需要在主线程执行）
                 var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
                 tex.name = Path.GetFileNameWithoutExtension(fullPath);
-                tex.filterMode = FilterMode.Point;
+                tex.filterMode = FilterMode.Bilinear;
                 tex.wrapMode = TextureWrapMode.Clamp;
 
                 // 加载图像数据
@@ -286,6 +299,7 @@ namespace CharacterStudio.Rendering
                 textureCache.Clear();
                 fileLastWriteTimes.Clear();
                 cacheAccessTimes.Clear();
+                nonMainThreadLoadWarnings.Clear();
             }
 
             lock (materialCacheLock)
@@ -327,6 +341,7 @@ namespace CharacterStudio.Rendering
             
             fileLastWriteTimes.Remove(fullPath);
             cacheAccessTimes.Remove(fullPath);
+            nonMainThreadLoadWarnings.Remove(fullPath);
         }
 
         private static void RegisterMaterialCacheKeyForTexture(int textureInstanceId, string cacheKey)

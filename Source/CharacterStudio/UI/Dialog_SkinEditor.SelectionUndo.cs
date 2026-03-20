@@ -80,18 +80,27 @@ namespace CharacterStudio.UI
 
         private void CaptureUndoSnapshot()
         {
-            editorHistory.PushUndo(workingSkin, selectedLayerIndex, selectedLayerIndices);
+            SyncAbilitiesToSkin();
+            workingDocument.runtimeSkin = workingSkin;
+            workingDocument.SyncMetadataFromRuntimeSkin();
+            editorHistory.PushUndo(workingDocument, selectedLayerIndex, selectedLayerIndices);
         }
 
         private void ApplyUndoSnapshot()
         {
-            if (!editorHistory.TryUndo(workingSkin, selectedLayerIndex, selectedLayerIndices, out var snapshot) || snapshot == null)
+            SyncAbilitiesToSkin();
+            workingDocument.runtimeSkin = workingSkin;
+            workingDocument.SyncMetadataFromRuntimeSkin();
+
+            if (!editorHistory.TryUndo(workingDocument, selectedLayerIndex, selectedLayerIndices, out var snapshot) || snapshot == null)
             {
                 ShowStatus("CS_Studio_Msg_NothingToUndo".Translate());
                 return;
             }
 
-            workingSkin = snapshot.Skin.Clone();
+            workingDocument = snapshot.Document.Clone();
+            workingSkin = workingDocument.runtimeSkin;
+            SyncAbilitiesFromSkin();
             selectedLayerIndex = snapshot.SelectedLayerIndex;
             selectedLayerIndices = new HashSet<int>(snapshot.SelectedLayerIndices);
 
@@ -104,13 +113,19 @@ namespace CharacterStudio.UI
 
         private void ApplyRedoSnapshot()
         {
-            if (!editorHistory.TryRedo(workingSkin, selectedLayerIndex, selectedLayerIndices, out var snapshot) || snapshot == null)
+            SyncAbilitiesToSkin();
+            workingDocument.runtimeSkin = workingSkin;
+            workingDocument.SyncMetadataFromRuntimeSkin();
+
+            if (!editorHistory.TryRedo(workingDocument, selectedLayerIndex, selectedLayerIndices, out var snapshot) || snapshot == null)
             {
                 ShowStatus("CS_Studio_Msg_NothingToRedo".Translate());
                 return;
             }
 
-            workingSkin = snapshot.Skin.Clone();
+            workingDocument = snapshot.Document.Clone();
+            workingSkin = workingDocument.runtimeSkin;
+            SyncAbilitiesFromSkin();
             selectedLayerIndex = snapshot.SelectedLayerIndex;
             selectedLayerIndices = new HashSet<int>(snapshot.SelectedLayerIndices);
 
@@ -228,6 +243,55 @@ namespace CharacterStudio.UI
             }
 
             return targets;
+        }
+
+        private bool DeleteSelectedLayers(int? requestedIndex = null)
+        {
+            List<int> targets;
+
+            if (requestedIndex.HasValue)
+            {
+                int index = requestedIndex.Value;
+                if (index < 0 || index >= workingSkin.layers.Count)
+                {
+                    return false;
+                }
+
+                bool shouldDeleteSelection = selectedLayerIndices.Contains(index) && GetSelectedLayerTargets().Count > 1;
+                targets = shouldDeleteSelection ? GetSelectedLayerTargets() : new List<int> { index };
+            }
+            else
+            {
+                targets = GetSelectedLayerTargets();
+            }
+
+            if (targets.Count == 0)
+            {
+                return false;
+            }
+
+            CaptureUndoSnapshot();
+
+            foreach (int index in targets.OrderByDescending(i => i))
+            {
+                workingSkin.layers.RemoveAt(index);
+            }
+
+            selectedLayerIndices.Clear();
+            if (workingSkin.layers.Count == 0)
+            {
+                selectedLayerIndex = -1;
+            }
+            else
+            {
+                selectedLayerIndex = Mathf.Clamp(targets.Min(), 0, workingSkin.layers.Count - 1);
+                selectedLayerIndices.Add(selectedLayerIndex);
+            }
+
+            SanitizeLayerSelection();
+            isDirty = true;
+            RefreshPreview();
+            return true;
         }
 
         private int ApplyUniformScaleToSelectedLayers(float uniformScale, bool captureUndo)

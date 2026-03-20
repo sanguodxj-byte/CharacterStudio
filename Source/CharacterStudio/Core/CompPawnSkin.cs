@@ -14,6 +14,11 @@ namespace CharacterStudio.Core
         private PawnSkinDef? activeSkin;
         private string? activeSkinDefName;
         private bool needsRefresh = false;
+        private bool activeSkinFromDefaultRaceBinding = false;
+
+        // 双轨面部运行时状态（第一阶段：先接入状态层，不直接改动渲染 worker）
+        private FaceRuntimeState? faceRuntimeState = null;
+        private FaceRuntimeCompiledData? faceRuntimeCompiledData = null;
 
         // 表情状态
         public ExpressionType curExpression = ExpressionType.Neutral;
@@ -28,6 +33,12 @@ namespace CharacterStudio.Core
         public EyeDirection curEyeDirection = EyeDirection.Center;
         /// <summary>编辑器预览强制覆盖方向（null = 自动）</summary>
         private EyeDirection? previewEyeDirectionOverride = null;
+
+        // 统一表情图层的通道状态预览覆盖
+        private MouthState? previewMouthStateOverride = null;
+        private LidState? previewLidStateOverride = null;
+        private BrowState? previewBrowStateOverride = null;
+        private EmotionOverlayState? previewEmotionOverlayStateOverride = null;
 
         // Q 键四段轮换模式索引（0..3）
         public int qHotkeyModeIndex = 0;
@@ -50,6 +61,9 @@ namespace CharacterStudio.Core
         public bool rSecondStageHasTarget = false;
         public IntVec3 rSecondStageTargetCell = IntVec3.Invalid;
 
+        // 状态武器视觉：施法中窗口
+        public int weaponCarryCastingUntilTick = -1;
+
         public PawnSkinDef? ActiveSkin
         {
             get => activeSkin;
@@ -62,6 +76,7 @@ namespace CharacterStudio.Core
                     needsRefresh = true;
                     RequestRenderRefresh();
                     SyncXenotype(value);
+                    MarkFaceRuntimeDirty();
                 }
             }
         }
@@ -76,9 +91,22 @@ namespace CharacterStudio.Core
             activeSkin        = skin;
             activeSkinDefName = skin?.defName;
             needsRefresh      = false; // 调用方负责触发刷新
+            MarkFaceRuntimeDirty();
         }
 
         public bool HasActiveSkin => activeSkin != null;
+        public bool ActiveSkinFromDefaultRaceBinding => activeSkinFromDefaultRaceBinding;
+
+        internal void SetActiveSkinSource(bool fromDefaultRaceBinding)
+        {
+            activeSkinFromDefaultRaceBinding = fromDefaultRaceBinding;
+        }
+
+        internal void SetActiveSkinWithSource(PawnSkinDef? skin, bool fromDefaultRaceBinding)
+        {
+            SetActiveSkinSilent(skin);
+            activeSkinFromDefaultRaceBinding = fromDefaultRaceBinding;
+        }
 
         // ─────────────────────────────────────────────
         // Xenotype 同步
@@ -113,6 +141,82 @@ namespace CharacterStudio.Core
 
         public Pawn? Pawn => parent as Pawn;
 
+        /// <summary>
+        /// 当前 Pawn 的双轨运行时状态。
+        /// 第一阶段先作为状态同步与后续渲染接入的统一入口。
+        /// </summary>
+        public FaceRuntimeState CurrentFaceRuntimeState => faceRuntimeState ??= new FaceRuntimeState();
+
+        /// <summary>
+        /// 当前 Pawn 的面部编译缓存。
+        /// 由 Runtime Compiler 按皮肤内容签名构建并缓存。
+        /// </summary>
+        public FaceRuntimeCompiledData CurrentFaceRuntimeCompiledData
+            => faceRuntimeCompiledData ??= FaceRuntimeCompiler.GetOrBuild(activeSkin);
+
+        private void MarkFaceRuntimeDirty()
+        {
+            faceRuntimeCompiledData = null;
+
+            if (faceRuntimeState == null)
+                faceRuntimeState = new FaceRuntimeState();
+            else
+                faceRuntimeState.MarkAllDirty();
+        }
+
+        private void EnsureFaceRuntimeStateUpdated()
+        {
+            if (Pawn == null || activeSkin?.faceConfig?.enabled != true)
+                return;
+
+            var runtimeState = CurrentFaceRuntimeState;
+            var compiledData = CurrentFaceRuntimeCompiledData;
+            int currentTick = Find.TickManager?.TicksGame ?? 0;
+
+            bool shouldUpdateTrackAndLod = runtimeState.trackDirty
+                || runtimeState.lodDirty
+                || runtimeState.compiledDataDirty;
+
+            if (runtimeState.currentTrack == FaceRenderTrack.Portrait)
+                shouldUpdateTrackAndLod |= currentTick >= runtimeState.nextPortraitUpdateTick;
+            else
+                shouldUpdateTrackAndLod |= currentTick >= runtimeState.nextWorldUpdateTick;
+
+            if (shouldUpdateTrackAndLod)
+            {
+                FaceRuntimePolicy.UpdateRuntimeState(Pawn, this, runtimeState, compiledData, currentTick);
+
+                if (runtimeState.trackDirty || runtimeState.lodDirty)
+                    RequestRenderRefresh();
+
+                runtimeState.trackDirty = false;
+                runtimeState.lodDirty = false;
+                runtimeState.compiledDataDirty = false;
+            }
+
+            ExpressionType effectiveExpression = GetEffectiveExpression();
+            EyeDirection effectiveEyeDirection = CurEyeDirection;
+            MouthState effectiveMouthState = GetEffectiveMouthState();
+            LidState effectiveLidState = GetEffectiveLidState();
+            BrowState effectiveBrowState = GetEffectiveBrowState();
+            EmotionOverlayState effectiveEmotionOverlayState = GetEffectiveEmotionOverlayState();
+
+            runtimeState.expressionDirty =
+                runtimeState.currentExpression != effectiveExpression
+                || runtimeState.currentEyeDirection != effectiveEyeDirection
+                || runtimeState.currentMouthState != effectiveMouthState
+                || runtimeState.currentLidState != effectiveLidState
+                || runtimeState.currentBrowState != effectiveBrowState
+                || runtimeState.currentEmotionOverlayState != effectiveEmotionOverlayState;
+
+            runtimeState.currentExpression = effectiveExpression;
+            runtimeState.currentEyeDirection = effectiveEyeDirection;
+            runtimeState.currentMouthState = effectiveMouthState;
+            runtimeState.currentLidState = effectiveLidState;
+            runtimeState.currentBrowState = effectiveBrowState;
+            runtimeState.currentEmotionOverlayState = effectiveEmotionOverlayState;
+        }
+
         public override void PostSpawnSetup(bool respawningAfterLoad)
         {
             base.PostSpawnSetup(respawningAfterLoad);
@@ -120,6 +224,9 @@ namespace CharacterStudio.Core
             {
                 activeSkin = DefDatabase<PawnSkinDef>.GetNamedSilentFail(activeSkinDefName);
             }
+            if (activeSkin == null)
+                TryApplyDefaultRaceSkinIfNeeded();
+
             if (activeSkin != null)
             {
                 RequestRenderRefresh();
@@ -139,6 +246,8 @@ namespace CharacterStudio.Core
 
             if (activeSkin?.faceConfig?.enabled == true)
             {
+                EnsureFaceRuntimeStateUpdated();
+
                 // 帧动画 Tick 累加（驱动多帧表情序列）
                 expressionAnimTick++;
 
@@ -362,6 +471,239 @@ namespace CharacterStudio.Core
             return curExpression;
         }
 
+        /// <summary>当前是否处于 Blink 有效态（包含预览覆盖）</summary>
+        public bool IsBlinkActive() => GetEffectiveExpression() == ExpressionType.Blink;
+
+        public void SetPreviewMouthState(MouthState? state)
+        {
+            bool changed = previewMouthStateOverride != state;
+            previewMouthStateOverride = state;
+            if (changed)
+                RequestRenderRefresh();
+        }
+
+        public void SetPreviewLidState(LidState? state)
+        {
+            bool changed = previewLidStateOverride != state;
+            previewLidStateOverride = state;
+            if (changed)
+                RequestRenderRefresh();
+        }
+
+        public void SetPreviewBrowState(BrowState? state)
+        {
+            bool changed = previewBrowStateOverride != state;
+            previewBrowStateOverride = state;
+            if (changed)
+                RequestRenderRefresh();
+        }
+
+        public void SetPreviewEmotionOverlayState(EmotionOverlayState? state)
+        {
+            bool changed = previewEmotionOverlayStateOverride != state;
+            previewEmotionOverlayStateOverride = state;
+            if (changed)
+                RequestRenderRefresh();
+        }
+
+        public void ClearPreviewChannelOverrides()
+        {
+            bool changed = previewMouthStateOverride.HasValue
+                || previewLidStateOverride.HasValue
+                || previewBrowStateOverride.HasValue
+                || previewEmotionOverlayStateOverride.HasValue;
+
+            previewMouthStateOverride = null;
+            previewLidStateOverride = null;
+            previewBrowStateOverride = null;
+            previewEmotionOverlayStateOverride = null;
+
+            if (changed)
+                RequestRenderRefresh();
+        }
+
+        public MouthState GetEffectiveMouthState()
+        {
+            if (previewMouthStateOverride.HasValue)
+                return previewMouthStateOverride.Value;
+
+            return ResolveMouthState(GetEffectiveExpression());
+        }
+
+        public LidState GetEffectiveLidState()
+        {
+            if (previewLidStateOverride.HasValue)
+                return previewLidStateOverride.Value;
+
+            return ResolveLidState(GetEffectiveExpression());
+        }
+
+        public BrowState GetEffectiveBrowState()
+        {
+            if (previewBrowStateOverride.HasValue)
+                return previewBrowStateOverride.Value;
+
+            return ResolveBrowState(GetEffectiveExpression());
+        }
+
+        public EmotionOverlayState GetEffectiveEmotionOverlayState()
+        {
+            if (previewEmotionOverlayStateOverride.HasValue)
+                return previewEmotionOverlayStateOverride.Value;
+
+            return ResolveEmotionOverlayState(GetEffectiveExpression());
+        }
+
+        /// <summary>
+        /// 统一图层系统按 LayerRole 获取当前推荐状态后缀。
+        /// 返回 null 表示该角色当前没有可用状态后缀。
+        /// </summary>
+        public string? GetChannelStateSuffix(LayerRole role)
+        {
+            switch (role)
+            {
+                case LayerRole.Mouth:
+                    return GetEffectiveMouthState().ToString();
+
+                case LayerRole.Lid:
+                    return GetEffectiveLidState().ToString();
+
+                case LayerRole.Brow:
+                    return GetEffectiveBrowState().ToString();
+
+                case LayerRole.Emotion:
+                    EmotionOverlayState emotionState = GetEffectiveEmotionOverlayState();
+                    return emotionState == EmotionOverlayState.None ? null : emotionState.ToString();
+
+                case LayerRole.Eye:
+                    return CurEyeDirection.ToString();
+
+                default:
+                    return null;
+            }
+        }
+
+        private MouthState ResolveMouthState(ExpressionType expression)
+        {
+            switch (expression)
+            {
+                case ExpressionType.Happy:
+                case ExpressionType.Cheerful:
+                case ExpressionType.Lovin:
+                case ExpressionType.SocialRelax:
+                    return MouthState.Smile;
+
+                case ExpressionType.Eating:
+                case ExpressionType.AttackMelee:
+                case ExpressionType.AttackRanged:
+                case ExpressionType.Scared:
+                    return MouthState.Open;
+
+                case ExpressionType.Gloomy:
+                case ExpressionType.Sad:
+                case ExpressionType.Hopeless:
+                case ExpressionType.Pain:
+                case ExpressionType.Tired:
+                    return MouthState.Down;
+
+                case ExpressionType.Sleeping:
+                case ExpressionType.LayDown:
+                case ExpressionType.Dead:
+                    return MouthState.Sleep;
+
+                default:
+                    return MouthState.Normal;
+            }
+        }
+
+        private LidState ResolveLidState(ExpressionType expression)
+        {
+            switch (expression)
+            {
+                case ExpressionType.Blink:
+                    return LidState.Blink;
+
+                case ExpressionType.Sleeping:
+                case ExpressionType.Dead:
+                    return LidState.Close;
+
+                case ExpressionType.Tired:
+                case ExpressionType.Gloomy:
+                case ExpressionType.Sad:
+                case ExpressionType.Hopeless:
+                case ExpressionType.Pain:
+                case ExpressionType.LayDown:
+                    return LidState.Half;
+
+                case ExpressionType.Happy:
+                case ExpressionType.Cheerful:
+                case ExpressionType.Lovin:
+                    return LidState.Happy;
+
+                default:
+                    return LidState.Normal;
+            }
+        }
+
+        private BrowState ResolveBrowState(ExpressionType expression)
+        {
+            switch (expression)
+            {
+                case ExpressionType.Angry:
+                case ExpressionType.WaitCombat:
+                case ExpressionType.AttackMelee:
+                case ExpressionType.AttackRanged:
+                    return BrowState.Angry;
+
+                case ExpressionType.Gloomy:
+                case ExpressionType.Sad:
+                case ExpressionType.Hopeless:
+                case ExpressionType.Tired:
+                case ExpressionType.Pain:
+                case ExpressionType.Dead:
+                    return BrowState.Sad;
+
+                case ExpressionType.Happy:
+                case ExpressionType.Cheerful:
+                case ExpressionType.Lovin:
+                    return BrowState.Happy;
+
+                default:
+                    return BrowState.Normal;
+            }
+        }
+
+        private EmotionOverlayState ResolveEmotionOverlayState(ExpressionType expression)
+        {
+            switch (expression)
+            {
+                case ExpressionType.Lovin:
+                    return EmotionOverlayState.Lovin;
+
+                case ExpressionType.Gloomy:
+                case ExpressionType.Sad:
+                case ExpressionType.Hopeless:
+                    return EmotionOverlayState.Gloomy;
+
+                default:
+                    return EmotionOverlayState.None;
+            }
+        }
+
+        public void SetWeaponCarryCastingWindow(int durationTicks)
+        {
+            int now = Find.TickManager?.TicksGame ?? 0;
+            int resolvedDuration = Math.Max(1, durationTicks);
+            weaponCarryCastingUntilTick = now + resolvedDuration;
+            RequestRenderRefresh();
+        }
+
+        public bool IsWeaponCarryCastingNow()
+        {
+            int now = Find.TickManager?.TicksGame ?? 0;
+            return weaponCarryCastingUntilTick >= now;
+        }
+
         /// <summary>获取当前帧动画 Tick（供 FaceComponent 渲染时定位帧）</summary>
         public int GetExpressionAnimTick() => expressionAnimTick;
 
@@ -496,17 +838,60 @@ namespace CharacterStudio.Core
             }
         }
 
+        public void EnsureFaceRuntimeStateReadyForPreview()
+        {
+            if (Pawn == null || activeSkin?.faceConfig?.enabled != true)
+                return;
+
+            var runtimeState = CurrentFaceRuntimeState;
+            var compiledData = CurrentFaceRuntimeCompiledData;
+            int currentTick = Find.TickManager?.TicksGame ?? 0;
+
+            FaceRuntimePolicy.UpdateRuntimeState(Pawn, this, runtimeState, compiledData, currentTick);
+
+            runtimeState.trackDirty = false;
+            runtimeState.lodDirty = false;
+            runtimeState.compiledDataDirty = false;
+
+            runtimeState.currentExpression = GetEffectiveExpression();
+            runtimeState.currentEyeDirection = CurEyeDirection;
+            runtimeState.currentMouthState = GetEffectiveMouthState();
+            runtimeState.currentLidState = GetEffectiveLidState();
+            runtimeState.currentBrowState = GetEffectiveBrowState();
+            runtimeState.currentEmotionOverlayState = GetEffectiveEmotionOverlayState();
+            runtimeState.expressionDirty = false;
+        }
+
         public void ClearSkin()
         {
             activeSkin = null;
             activeSkinDefName = null;
+            activeSkinFromDefaultRaceBinding = false;
+            MarkFaceRuntimeDirty();
             RequestRenderRefresh();
+        }
+
+        private void TryApplyDefaultRaceSkinIfNeeded()
+        {
+            if (Pawn == null || Pawn.def == null) return;
+            if (!Pawn.RaceProps.Humanlike) return;
+            if (activeSkin != null) return;
+
+            var defaultSkin = PawnSkinDefRegistry.GetDefaultSkinForRace(Pawn.def);
+            if (defaultSkin == null) return;
+
+            activeSkin = defaultSkin.Clone();
+            activeSkinDefName = activeSkin.defName;
+            activeSkinFromDefaultRaceBinding = true;
+            MarkFaceRuntimeDirty();
+            needsRefresh = true;
         }
 
         public override void PostExposeData()
         {
             base.PostExposeData();
             Scribe_Values.Look(ref activeSkinDefName, "activeSkinDefName");
+            Scribe_Values.Look(ref activeSkinFromDefaultRaceBinding, "activeSkinFromDefaultRaceBinding", false);
             Scribe_Values.Look(ref qHotkeyModeIndex, "qHotkeyModeIndex", 0);
             Scribe_Values.Look(ref qComboWindowEndTick, "qComboWindowEndTick", 0);
             Scribe_Values.Look(ref qCooldownUntilTick, "qCooldownUntilTick", 0);
@@ -558,5 +943,40 @@ namespace CharacterStudio.Core
     public class CompProperties_PawnSkin : CompProperties
     {
         public CompProperties_PawnSkin() => this.compClass = typeof(CompPawnSkin);
+    }
+
+    public enum MouthState
+    {
+        Normal,
+        Smile,
+        Open,
+        Down,
+        Sleep
+    }
+
+    public enum LidState
+    {
+        Normal,
+        Blink,
+        Half,
+        Close,
+        Happy
+    }
+
+    public enum BrowState
+    {
+        Normal,
+        Angry,
+        Sad,
+        Happy
+    }
+
+    public enum EmotionOverlayState
+    {
+        None,
+        Blush,
+        Tear,
+        Gloomy,
+        Lovin
     }
 }

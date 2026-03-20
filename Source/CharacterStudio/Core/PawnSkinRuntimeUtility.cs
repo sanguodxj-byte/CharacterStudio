@@ -12,7 +12,7 @@ namespace CharacterStudio.Core
     /// </summary>
     public static class PawnSkinRuntimeUtility
     {
-        public static bool ApplySkinToPawn(Pawn? pawn, PawnSkinDef? skin)
+        public static bool ApplySkinToPawn(Pawn? pawn, PawnSkinDef? skin, bool fromDefaultRaceBinding = false)
         {
             if (pawn == null) return false;
 
@@ -23,10 +23,12 @@ namespace CharacterStudio.Core
                 return false;
             }
 
+            var preparedSkin = PawnSkinRuntimeValidator.PrepareForRuntime(skin);
+
             // 使用静默赋值避免 setter 在此处触发 RequestRenderRefresh，
             // 后续 RefreshHiddenNodes + ForceRebuildRenderTree 负责完整刷新，
             // 防止同一帧对同一 Pawn 产生三次冗余重绘。
-            comp.SetActiveSkinSilent(skin);
+            comp.SetActiveSkinWithSource(preparedSkin, fromDefaultRaceBinding);
 
             // 皮肤切换时清除表情图形缓存，避免新皮肤使用旧贴图
             CharacterStudio.Rendering.PawnRenderNodeWorker_FaceComponent.ClearCache();
@@ -45,8 +47,8 @@ namespace CharacterStudio.Core
             }
 
             // 同步授予皮肤中的技能给 Pawn
-            if (skin != null)
-                AbilityGrantUtility.GrantSkinAbilitiesToPawn(pawn, skin);
+            if (preparedSkin != null)
+                AbilityGrantUtility.GrantSkinAbilitiesToPawn(pawn, preparedSkin);
 
             return true;
         }

@@ -45,14 +45,93 @@ namespace CharacterStudio.Exporter
                     )
                 );
 
-                doc.Save(filePath);
+                string tempFilePath = filePath + ".tmp";
+                if (File.Exists(tempFilePath))
+                {
+                    File.Delete(tempFilePath);
+                }
+
+                doc.Save(tempFilePath);
+
+                if (File.Exists(filePath))
+                {
+                    File.Copy(tempFilePath, filePath, true);
+                    File.Delete(tempFilePath);
+                }
+                else
+                {
+                    File.Move(tempFilePath, filePath);
+                }
+
                 Log.Message($"[CharacterStudio] 皮肤已保存至: {filePath}");
             }
             catch (Exception ex)
             {
-                Log.Error($"[CharacterStudio] 保存皮肤失败: {ex}");
+                Log.Error($"[CharacterStudio] 保存皮肤失败: path={filePath}, kind={ClassifySaveFailure(ex)}, {ex}");
                 throw;
             }
+        }
+
+        public static string GetSaveFailureMessageKey(Exception ex)
+        {
+            if (IsDiskFullException(ex))
+            {
+                return "CS_Studio_Err_SaveFailedDiskFull";
+            }
+
+            return "CS_Studio_Err_SaveFailed";
+        }
+
+        private static string ClassifySaveFailure(Exception ex)
+        {
+            if (IsDiskFullException(ex))
+            {
+                return "DiskFull";
+            }
+
+            if (ex is UnauthorizedAccessException)
+            {
+                return "UnauthorizedAccess";
+            }
+
+            if (ex is PathTooLongException)
+            {
+                return "PathTooLong";
+            }
+
+            if (ex is DirectoryNotFoundException)
+            {
+                return "DirectoryNotFound";
+            }
+
+            if (ex is IOException)
+            {
+                return "IOException";
+            }
+
+            return ex.GetType().Name;
+        }
+
+        private static bool IsDiskFullException(Exception ex)
+        {
+            for (Exception? current = ex; current != null; current = current.InnerException)
+            {
+                if (current is IOException ioEx)
+                {
+                    int win32Code = ioEx.HResult & 0xFFFF;
+                    if (win32Code == 112)
+                    {
+                        return true;
+                    }
+                }
+
+                if (current.Message.IndexOf("Win32 IO returned 112", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static XElement GenerateSkinDefElement(PawnSkinDef skin)
@@ -86,16 +165,104 @@ namespace CharacterStudio.Exporter
                 
                 // 目标种族
                 GenerateListElement("targetRaces", skin.targetRaces),
+                skin.applyAsDefaultForTargetRaces ? new XElement("applyAsDefaultForTargetRaces", "true") : null,
+                skin.defaultRacePriority != 0 ? new XElement("defaultRacePriority", skin.defaultRacePriority) : null,
 
                 // 面部配置（eyeDirectionConfig 已嵌套在 faceConfig 内由 GenerateFaceConfigXml 序列化，无需单独输出）
-                skin.faceConfig != null && (skin.faceConfig.enabled || skin.faceConfig.HasAnyExpression() || skin.faceConfig.eyeDirectionConfig?.HasAnyTex() == true) ? GenerateFaceConfigXml(skin.faceConfig) : null,
+                skin.faceConfig != null && (skin.faceConfig.enabled || skin.faceConfig.HasAnyExpression() || skin.faceConfig.HasAnyLayeredPart() || skin.faceConfig.eyeDirectionConfig?.HasAnyTex() == true) ? GenerateFaceConfigXml(skin.faceConfig) : null,
 
                 // 武器渲染配置
                 skin.weaponRenderConfig != null && skin.weaponRenderConfig.enabled ? GenerateWeaponRenderConfigXml(skin.weaponRenderConfig) : null,
 
+                // 装备配置
+                GenerateEquipmentsXml(skin.equipments),
+
                 // 技能与热键
                 GenerateAbilitiesXml(skin.abilities),
                 GenerateAbilityHotkeysXml(skin.abilityHotkeys)
+            );
+        }
+
+        private static XElement? GenerateEquipmentsXml(List<CharacterEquipmentDef>? equipments)
+        {
+            if (equipments == null || equipments.Count == 0) return null;
+
+            var root = new XElement("equipments");
+            foreach (var equipment in equipments)
+            {
+                if (equipment == null) continue;
+
+                equipment.EnsureDefaults();
+
+                var equipmentEl = new XElement("li",
+                    !string.IsNullOrWhiteSpace(equipment.defName) ? new XElement("defName", equipment.defName) : null,
+                    !string.IsNullOrWhiteSpace(equipment.label) ? new XElement("label", equipment.label) : null,
+                    !string.IsNullOrWhiteSpace(equipment.description) ? new XElement("description", equipment.description) : null,
+                    new XElement("enabled", equipment.enabled.ToString().ToLower()),
+                    !string.IsNullOrWhiteSpace(equipment.slotTag) ? new XElement("slotTag", equipment.slotTag) : null,
+                    !string.IsNullOrWhiteSpace(equipment.linkedThingDefName) ? new XElement("linkedThingDefName", equipment.linkedThingDefName) : null,
+                    !string.IsNullOrWhiteSpace(equipment.previewTexPath) ? new XElement("previewTexPath", equipment.previewTexPath) : null,
+                    !string.IsNullOrWhiteSpace(equipment.sourceNote) ? new XElement("sourceNote", equipment.sourceNote) : null,
+                    GenerateListElement("tags", equipment.tags),
+                    GenerateListElement("abilityDefNames", equipment.abilityDefNames),
+                    GenerateEquipmentVisualXml(equipment.visual)
+                );
+
+                root.Add(equipmentEl);
+            }
+
+            return root.HasElements ? root : null;
+        }
+
+        private static XElement? GenerateEquipmentVisualXml(PawnLayerConfig? layer)
+        {
+            if (layer == null) return null;
+
+            return new XElement("visual",
+                !string.IsNullOrEmpty(layer.layerName) ? new XElement("layerName", layer.layerName) : null,
+                !string.IsNullOrEmpty(layer.texPath) ? new XElement("texPath", layer.texPath) : null,
+                !string.IsNullOrEmpty(layer.anchorTag) ? new XElement("anchorTag", layer.anchorTag) : null,
+                !string.IsNullOrEmpty(layer.anchorPath) ? new XElement("anchorPath", layer.anchorPath) : null,
+                !string.IsNullOrEmpty(layer.maskTexPath) ? new XElement("maskTexPath", layer.maskTexPath) : null,
+                !string.IsNullOrEmpty(layer.shaderDefName) ? new XElement("shaderDefName", layer.shaderDefName) : null,
+                new XElement("offset", $"({layer.offset.x:F3}, {layer.offset.y:F3}, {layer.offset.z:F3})"),
+                layer.offsetEast != Vector3.zero ? new XElement("offsetEast", $"({layer.offsetEast.x:F3}, {layer.offsetEast.y:F3}, {layer.offsetEast.z:F3})") : null,
+                layer.offsetNorth != Vector3.zero ? new XElement("offsetNorth", $"({layer.offsetNorth.x:F3}, {layer.offsetNorth.y:F3}, {layer.offsetNorth.z:F3})") : null,
+                new XElement("drawOrder", layer.drawOrder),
+                new XElement("scale", $"({layer.scale.x:F2}, {layer.scale.y:F2})"),
+                layer.scaleEastMultiplier != Vector2.one ? new XElement("scaleEastMultiplier", $"({layer.scaleEastMultiplier.x:F3}, {layer.scaleEastMultiplier.y:F3})") : null,
+                layer.scaleNorthMultiplier != Vector2.one ? new XElement("scaleNorthMultiplier", $"({layer.scaleNorthMultiplier.x:F3}, {layer.scaleNorthMultiplier.y:F3})") : null,
+                new XElement("rotation", layer.rotation),
+                layer.rotationEastOffset != 0f ? new XElement("rotationEastOffset", layer.rotationEastOffset) : null,
+                layer.rotationNorthOffset != 0f ? new XElement("rotationNorthOffset", layer.rotationNorthOffset) : null,
+                new XElement("flipHorizontal", layer.flipHorizontal.ToString().ToLower()),
+                new XElement("colorSource", layer.colorSource.ToString()),
+                layer.colorSource == LayerColorSource.Fixed ? new XElement("customColor", $"({layer.customColor.r:F3}, {layer.customColor.g:F3}, {layer.customColor.b:F3}, {layer.customColor.a:F3})") : null,
+                new XElement("colorTwoSource", layer.colorTwoSource.ToString()),
+                layer.colorTwoSource == LayerColorSource.Fixed ? new XElement("customColorTwo", $"({layer.customColorTwo.r:F3}, {layer.customColorTwo.g:F3}, {layer.customColorTwo.b:F3}, {layer.customColorTwo.a:F3})") : null,
+                new XElement("visible", layer.visible.ToString().ToLower()),
+                new XElement("role", layer.role.ToString()),
+                new XElement("variantLogic", layer.variantLogic.ToString()),
+                !string.IsNullOrEmpty(layer.variantBaseName) ? new XElement("variantBaseName", layer.variantBaseName) : null,
+                !layer.useDirectionalSuffix ? new XElement("useDirectionalSuffix", layer.useDirectionalSuffix.ToString().ToLower()) : null,
+                layer.useExpressionSuffix ? new XElement("useExpressionSuffix", layer.useExpressionSuffix.ToString().ToLower()) : null,
+                layer.useEyeDirectionSuffix ? new XElement("useEyeDirectionSuffix", layer.useEyeDirectionSuffix.ToString().ToLower()) : null,
+                layer.useBlinkSuffix ? new XElement("useBlinkSuffix", layer.useBlinkSuffix.ToString().ToLower()) : null,
+                layer.useFrameSequence ? new XElement("useFrameSequence", layer.useFrameSequence.ToString().ToLower()) : null,
+                layer.hideWhenMissingVariant ? new XElement("hideWhenMissingVariant", layer.hideWhenMissingVariant.ToString().ToLower()) : null,
+                layer.eyeRenderMode != EyeRenderMode.TextureSwap ? new XElement("eyeRenderMode", layer.eyeRenderMode.ToString()) : null,
+                layer.eyeUvMoveRange != 0f ? new XElement("eyeUvMoveRange", layer.eyeUvMoveRange.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)) : null,
+                GenerateStringArrayElement("visibleExpressions", layer.visibleExpressions),
+                GenerateStringArrayElement("hiddenExpressions", layer.hiddenExpressions),
+                layer.workerClass != null ? new XElement("workerClass", layer.workerClass.FullName) : null,
+                layer.graphicClass != null ? new XElement("graphicClass", layer.graphicClass.FullName) : null,
+                layer.animationType != LayerAnimationType.None ? new XElement("animationType", layer.animationType.ToString()) : null,
+                layer.animationType != LayerAnimationType.None ? new XElement("animFrequency", layer.animFrequency) : null,
+                layer.animationType != LayerAnimationType.None ? new XElement("animAmplitude", layer.animAmplitude) : null,
+                layer.animationType != LayerAnimationType.None ? new XElement("animSpeed", layer.animSpeed) : null,
+                layer.animationType != LayerAnimationType.None ? new XElement("animPhaseOffset", layer.animPhaseOffset) : null,
+                layer.animationType != LayerAnimationType.None ? new XElement("animAffectsOffset", layer.animAffectsOffset.ToString().ToLower()) : null,
+                layer.animationType != LayerAnimationType.None ? new XElement("animOffsetAmplitude", layer.animOffsetAmplitude) : null
             );
         }
 
@@ -118,6 +285,9 @@ namespace CharacterStudio.Exporter
                     new XElement("charges", ability.charges),
                     new XElement("aiCanUse", ability.aiCanUse),
                     new XElement("carrierType", ability.carrierType.ToString()),
+                    new XElement("targetType", ability.targetType.ToString()),
+                    new XElement("useRadius", ability.useRadius.ToString().ToLower()),
+                    new XElement("areaCenter", ability.areaCenter.ToString()),
                     new XElement("range", ability.range),
                     new XElement("radius", ability.radius),
                     ability.projectileDef != null ? new XElement("projectileDef", ability.projectileDef.defName) : null,
@@ -149,7 +319,13 @@ namespace CharacterStudio.Exporter
                     effect.damageDef != null ? new XElement("damageDef", effect.damageDef.defName) : null,
                     effect.hediffDef != null ? new XElement("hediffDef", effect.hediffDef.defName) : null,
                     effect.summonKind != null ? new XElement("summonKind", effect.summonKind.defName) : null,
-                    new XElement("summonCount", effect.summonCount)
+                    new XElement("summonCount", effect.summonCount),
+                    new XElement("controlMode", effect.controlMode.ToString()),
+                    new XElement("controlMoveDistance", effect.controlMoveDistance),
+                    new XElement("terraformMode", effect.terraformMode.ToString()),
+                    effect.terraformThingDef != null ? new XElement("terraformThingDef", effect.terraformThingDef.defName) : null,
+                    effect.terraformTerrainDef != null ? new XElement("terraformTerrainDef", effect.terraformTerrainDef.defName) : null,
+                    new XElement("terraformSpawnCount", effect.terraformSpawnCount)
                 );
 
                 effectsEl.Add(effectEl);
@@ -221,6 +397,22 @@ namespace CharacterStudio.Exporter
             return element;
         }
 
+        private static XElement? GenerateStringArrayElement(string tagName, string[]? items)
+        {
+            if (items == null || items.Length == 0) return null;
+
+            var element = new XElement(tagName);
+            foreach (var item in items)
+            {
+                if (!string.IsNullOrWhiteSpace(item))
+                {
+                    element.Add(new XElement("li", item));
+                }
+            }
+
+            return element.HasElements ? element : null;
+        }
+
         private static XElement? GenerateAttributesXml(CharacterStudio.AI.CharacterAttributeProfile? attributes)
         {
             if (attributes == null)
@@ -274,10 +466,14 @@ namespace CharacterStudio.Exporter
                     new XElement("colorTwoSource", slot.colorTwoSource.ToString()),
                     slot.colorTwoSource == LayerColorSource.Fixed ? new XElement("customColorTwo", $"({slot.customColorTwo.r:F3}, {slot.customColorTwo.g:F3}, {slot.customColorTwo.b:F3}, {slot.customColorTwo.a:F3})") : null,
                     new XElement("scale", $"({slot.scale.x:F2}, {slot.scale.y:F2})"),
+                    slot.scaleEastMultiplier != Vector2.one ? new XElement("scaleEastMultiplier", $"({slot.scaleEastMultiplier.x:F3}, {slot.scaleEastMultiplier.y:F3})") : null,
+                    slot.scaleNorthMultiplier != Vector2.one ? new XElement("scaleNorthMultiplier", $"({slot.scaleNorthMultiplier.x:F3}, {slot.scaleNorthMultiplier.y:F3})") : null,
                     new XElement("offset", $"({slot.offset.x:F3}, {slot.offset.y:F3}, {slot.offset.z:F3})"),
                     slot.offsetEast != Vector3.zero ? new XElement("offsetEast", $"({slot.offsetEast.x:F3}, {slot.offsetEast.y:F3}, {slot.offsetEast.z:F3})") : null,
                     slot.offsetNorth != Vector3.zero ? new XElement("offsetNorth", $"({slot.offsetNorth.x:F3}, {slot.offsetNorth.y:F3}, {slot.offsetNorth.z:F3})") : null,
                     new XElement("rotation", slot.rotation),
+                    slot.rotationEastOffset != 0f ? new XElement("rotationEastOffset", slot.rotationEastOffset) : null,
+                    slot.rotationNorthOffset != 0f ? new XElement("rotationNorthOffset", slot.rotationNorthOffset) : null,
                     new XElement("flipHorizontal", slot.flipHorizontal.ToString().ToLower()),
                     new XElement("drawOrderOffset", slot.drawOrderOffset),
                     slot.graphicClass != null ? new XElement("graphicClass", slot.graphicClass.FullName) : null
@@ -300,26 +496,47 @@ namespace CharacterStudio.Exporter
                     new XElement("texPath", layer.texPath ?? ""),
                     new XElement("anchorTag", layer.anchorTag ?? "Head"),
                     !string.IsNullOrEmpty(layer.anchorPath) ? new XElement("anchorPath", layer.anchorPath) : null,
-                    
+                    !string.IsNullOrEmpty(layer.maskTexPath) ? new XElement("maskTexPath", layer.maskTexPath) : null,
+                    !string.IsNullOrEmpty(layer.shaderDefName) ? new XElement("shaderDefName", layer.shaderDefName) : null,
+
                     // 变换
                     new XElement("offset", $"({layer.offset.x:F3}, {layer.offset.y:F3}, {layer.offset.z:F3})"),
                     layer.offsetEast != Vector3.zero ? new XElement("offsetEast", $"({layer.offsetEast.x:F3}, {layer.offsetEast.y:F3}, {layer.offsetEast.z:F3})") : null,
                     layer.offsetNorth != Vector3.zero ? new XElement("offsetNorth", $"({layer.offsetNorth.x:F3}, {layer.offsetNorth.y:F3}, {layer.offsetNorth.z:F3})") : null,
-                    
+
                     new XElement("drawOrder", layer.drawOrder),
                     new XElement("scale", $"({layer.scale.x:F2}, {layer.scale.y:F2})"),
+                    layer.scaleEastMultiplier != Vector2.one ? new XElement("scaleEastMultiplier", $"({layer.scaleEastMultiplier.x:F3}, {layer.scaleEastMultiplier.y:F3})") : null,
+                    layer.scaleNorthMultiplier != Vector2.one ? new XElement("scaleNorthMultiplier", $"({layer.scaleNorthMultiplier.x:F3}, {layer.scaleNorthMultiplier.y:F3})") : null,
                     new XElement("rotation", layer.rotation),
+                    layer.rotationEastOffset != 0f ? new XElement("rotationEastOffset", layer.rotationEastOffset) : null,
+                    layer.rotationNorthOffset != 0f ? new XElement("rotationNorthOffset", layer.rotationNorthOffset) : null,
                     new XElement("flipHorizontal", layer.flipHorizontal.ToString().ToLower()),
-                    
+
                     // 颜色
                     new XElement("colorSource", layer.colorSource.ToString()),
                     layer.colorSource == LayerColorSource.Fixed ? new XElement("customColor", $"({layer.customColor.r:F3}, {layer.customColor.g:F3}, {layer.customColor.b:F3}, {layer.customColor.a:F3})") : null,
+                    new XElement("colorTwoSource", layer.colorTwoSource.ToString()),
                     layer.colorTwoSource == LayerColorSource.Fixed ? new XElement("customColorTwo", $"({layer.customColorTwo.r:F3}, {layer.customColorTwo.g:F3}, {layer.customColorTwo.b:F3}, {layer.customColorTwo.a:F3})") : null,
-                    
+
                     new XElement("visible", layer.visible.ToString().ToLower()),
-                    
-                    // Worker
+                    new XElement("role", layer.role.ToString()),
+                    new XElement("variantLogic", layer.variantLogic.ToString()),
+                    !string.IsNullOrEmpty(layer.variantBaseName) ? new XElement("variantBaseName", layer.variantBaseName) : null,
+                    !layer.useDirectionalSuffix ? new XElement("useDirectionalSuffix", layer.useDirectionalSuffix.ToString().ToLower()) : null,
+                    layer.useExpressionSuffix ? new XElement("useExpressionSuffix", layer.useExpressionSuffix.ToString().ToLower()) : null,
+                    layer.useEyeDirectionSuffix ? new XElement("useEyeDirectionSuffix", layer.useEyeDirectionSuffix.ToString().ToLower()) : null,
+                    layer.useBlinkSuffix ? new XElement("useBlinkSuffix", layer.useBlinkSuffix.ToString().ToLower()) : null,
+                    layer.useFrameSequence ? new XElement("useFrameSequence", layer.useFrameSequence.ToString().ToLower()) : null,
+                    layer.hideWhenMissingVariant ? new XElement("hideWhenMissingVariant", layer.hideWhenMissingVariant.ToString().ToLower()) : null,
+                    layer.eyeRenderMode != EyeRenderMode.TextureSwap ? new XElement("eyeRenderMode", layer.eyeRenderMode.ToString()) : null,
+                    layer.eyeUvMoveRange != 0f ? new XElement("eyeUvMoveRange", layer.eyeUvMoveRange.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)) : null,
+                    GenerateStringArrayElement("visibleExpressions", layer.visibleExpressions),
+                    GenerateStringArrayElement("hiddenExpressions", layer.hiddenExpressions),
+
+                    // Worker / Graphic
                     layer.workerClass != null ? new XElement("workerClass", layer.workerClass.FullName) : null,
+                    layer.graphicClass != null ? new XElement("graphicClass", layer.graphicClass.FullName) : null,
 
                     // 动画
                     layer.animationType != LayerAnimationType.None ? new XElement("animationType", layer.animationType.ToString()) : null,
@@ -338,21 +555,83 @@ namespace CharacterStudio.Exporter
         private static XElement GenerateFaceConfigXml(PawnFaceConfig config)
         {
             var element = new XElement("faceConfig",
-                new XElement("enabled", config.enabled.ToString().ToLower())
+                new XElement("enabled", config.enabled.ToString().ToLower()),
+                new XElement("workflowMode", config.workflowMode.ToString())
             );
+
+            if (!string.IsNullOrWhiteSpace(config.layeredSourceRoot))
+            {
+                element.Add(new XElement("layeredSourceRoot", config.layeredSourceRoot));
+            }
 
             if (config.expressions != null && config.expressions.Count > 0)
             {
                 var exprsEl = new XElement("expressions");
                 foreach (var expr in config.expressions)
                 {
-                    if (expr == null || string.IsNullOrEmpty(expr.texPath)) continue;
-                    exprsEl.Add(new XElement("li",
+                    if (expr == null) continue;
+
+                    bool hasStatic = !string.IsNullOrEmpty(expr.texPath);
+                    List<ExpressionFrame>? frames = expr.frames;
+                    bool hasFrames = frames != null && frames.Count > 0;
+                    if (!hasStatic && !hasFrames) continue;
+
+                    var exprEl = new XElement("li",
                         new XElement("expression", expr.expression.ToString()),
-                        new XElement("texPath", expr.texPath)
+                        hasStatic ? new XElement("texPath", expr.texPath) : null
+                    );
+
+                    if (hasFrames)
+                    {
+                        List<ExpressionFrame> nonNullFrames = frames!;
+                        var framesEl = new XElement("frames");
+                        foreach (var frame in nonNullFrames)
+                        {
+                            if (frame == null || string.IsNullOrWhiteSpace(frame.texPath)) continue;
+
+                            framesEl.Add(new XElement("li",
+                                new XElement("texPath", frame.texPath),
+                                new XElement("durationTicks", frame.durationTicks)
+                            ));
+                        }
+
+                        if (framesEl.HasElements)
+                        {
+                            exprEl.Add(framesEl);
+                        }
+                    }
+
+                    exprsEl.Add(exprEl);
+                }
+
+                if (exprsEl.HasElements) element.Add(exprsEl);
+            }
+
+            if (config.layeredParts != null && config.layeredParts.Count > 0)
+            {
+                var layeredPartsEl = new XElement("layeredParts");
+                foreach (var part in config.layeredParts)
+                {
+                    if (part == null || string.IsNullOrWhiteSpace(part.texPath)) continue;
+
+                    layeredPartsEl.Add(new XElement("li",
+                        new XElement("partType", part.partType.ToString()),
+                        new XElement("expression", part.expression.ToString()),
+                        new XElement("texPath", part.texPath),
+                        new XElement("enabled", part.enabled.ToString().ToLower()),
+                        part.partType == LayeredFacePartType.Overlay && !string.IsNullOrWhiteSpace(part.overlayId)
+                            ? new XElement("overlayId", part.overlayId)
+                            : null,
+                        part.partType == LayeredFacePartType.Overlay
+                            ? new XElement("overlayOrder", part.overlayOrder)
+                            : null,
+                        part.anchorCorrection != Vector2.zero
+                            ? new XElement("anchorCorrection", $"({part.anchorCorrection.x:F3}, {part.anchorCorrection.y:F3})")
+                            : null
                     ));
                 }
-                if (exprsEl.HasElements) element.Add(exprsEl);
+
+                if (layeredPartsEl.HasElements) element.Add(layeredPartsEl);
             }
 
             // 序列化眼睛方向配置（仅当存在且至少配置了一张贴图时写入）
@@ -409,6 +688,8 @@ namespace CharacterStudio.Exporter
                 new XElement("scale", $"({cfg.scale.x:F3}, {cfg.scale.y:F3})")
             );
 
+            if (cfg.carryVisual != null && cfg.carryVisual.enabled) el.Add(GenerateWeaponCarryVisualXml(cfg.carryVisual));
+
             if (cfg.offset != UnityEngine.Vector3.zero)
                 el.Add(new XElement("offset", $"({cfg.offset.x:F3}, {cfg.offset.y:F3}, {cfg.offset.z:F3})"));
             if (cfg.offsetSouth != UnityEngine.Vector3.zero)
@@ -417,6 +698,25 @@ namespace CharacterStudio.Exporter
                 el.Add(new XElement("offsetNorth", $"({cfg.offsetNorth.x:F3}, {cfg.offsetNorth.y:F3}, {cfg.offsetNorth.z:F3})"));
             if (cfg.offsetEast != UnityEngine.Vector3.zero)
                 el.Add(new XElement("offsetEast", $"({cfg.offsetEast.x:F3}, {cfg.offsetEast.y:F3}, {cfg.offsetEast.z:F3})"));
+
+            return el;
+        }
+
+        private static XElement GenerateWeaponCarryVisualXml(CharacterStudio.Core.WeaponCarryVisualConfig cfg)
+        {
+            var el = new XElement("carryVisual",
+                new XElement("enabled", cfg.enabled.ToString().ToLower()),
+                new XElement("anchorTag", cfg.anchorTag ?? "Body"),
+                new XElement("scale", $"({cfg.scale.x:F3}, {cfg.scale.y:F3})"),
+                new XElement("drawOrder", cfg.drawOrder.ToString("F3", System.Globalization.CultureInfo.InvariantCulture))
+            );
+
+            if (!string.IsNullOrEmpty(cfg.texUndrafted)) el.Add(new XElement("texUndrafted", cfg.texUndrafted));
+            if (!string.IsNullOrEmpty(cfg.texDrafted))   el.Add(new XElement("texDrafted", cfg.texDrafted));
+            if (!string.IsNullOrEmpty(cfg.texCasting))   el.Add(new XElement("texCasting", cfg.texCasting));
+            if (cfg.offset != UnityEngine.Vector3.zero)      el.Add(new XElement("offset", $"({cfg.offset.x:F3}, {cfg.offset.y:F3}, {cfg.offset.z:F3})"));
+            if (cfg.offsetNorth != UnityEngine.Vector3.zero) el.Add(new XElement("offsetNorth", $"({cfg.offsetNorth.x:F3}, {cfg.offsetNorth.y:F3}, {cfg.offsetNorth.z:F3})"));
+            if (cfg.offsetEast != UnityEngine.Vector3.zero)  el.Add(new XElement("offsetEast", $"({cfg.offsetEast.x:F3}, {cfg.offsetEast.y:F3}, {cfg.offsetEast.z:F3})"));
 
             return el;
         }

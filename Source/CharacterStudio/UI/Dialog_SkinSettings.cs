@@ -108,6 +108,9 @@ namespace CharacterStudio.UI
 
             string racesText = skinDef.targetRaces != null && skinDef.targetRaces.Count > 0 ? string.Join(", ", skinDef.targetRaces) : "CS_Studio_AllRaces".Translate();
             UIHelper.DrawPropertyFieldWithButton(ref vy, width, "CS_Studio_Skin_TargetRaces".Translate(), racesText, ShowRaceSelector);
+            UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Skin_DefaultForTargetRaces".Translate(), ref skinDef.applyAsDefaultForTargetRaces,
+                "CS_Studio_Skin_DefaultForTargetRaces_Tip".Translate());
+            UIHelper.DrawNumericField<int>(ref vy, width, "CS_Studio_Skin_DefaultRacePriority".Translate(), ref skinDef.defaultRacePriority, -9999, 9999);
 
             // ─────────────────────────────────────────────
             // 种族身份（Xenotype 绑定 & 显示名覆盖）

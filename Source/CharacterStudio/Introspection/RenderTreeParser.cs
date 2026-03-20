@@ -138,7 +138,7 @@ namespace CharacterStudio.Introspection
                 string  maskPath        = "";
                 string  colorChannel    = "";
 
-                CaptureGraphicInfo(gameNode, pawn, label, tagDef,
+                CaptureGraphicInfo(gameNode, pawn, label, tagDef, resolvedTexPath,
                     out graphicClass, out graphicDrawSize,
                     out graphicColor, out graphicColorTwo,
                     out shaderName, out maskPath);

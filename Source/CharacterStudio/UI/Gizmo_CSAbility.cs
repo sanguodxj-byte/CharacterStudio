@@ -1,4 +1,4 @@
-﻿﻿using System.Collections.Generic;
+﻿﻿﻿﻿﻿﻿using System.Collections.Generic;
 using System.Linq;
 using CharacterStudio.Abilities;
 using CharacterStudio.Core;
@@ -33,7 +33,7 @@ namespace CharacterStudio.UI
 
             if (!string.IsNullOrEmpty(modAbility.iconPath))
                 iconTex = ContentFinder<Texture2D>.Get(modAbility.iconPath, false);
-            iconTex ??= ContentFinder<Texture2D>.Get("UI/Abilities/Shoot", false);
+            iconTex ??= ContentFinder<Texture2D>.Get("UI/Designators/Strip", true);
 
             this.Order = 10f;
         }
@@ -168,6 +168,7 @@ namespace CharacterStudio.UI
         private bool CanPawnUseAbility()
         {
             if (pawn.Dead || pawn.Downed || pawn.InMentalState) return false;
+            if (!pawn.Drafted) return false;
             if (runtimeDef == null) return false;
             return pawn.abilities?.GetAbility(runtimeDef) != null;
         }
@@ -240,7 +241,7 @@ namespace CharacterStudio.UI
 
         private static void GetGizmos_Postfix(Pawn __instance, ref IEnumerable<Gizmo> __result)
         {
-            if (!__instance.IsColonistPlayerControlled) return;
+            if (!__instance.IsColonistPlayerControlled || !__instance.Drafted) return;
 
             var list = __result.ToList();
 

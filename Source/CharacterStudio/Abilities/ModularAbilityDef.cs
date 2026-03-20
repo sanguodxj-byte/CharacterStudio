@@ -69,6 +69,9 @@ namespace CharacterStudio.Abilities
         // 决定技能如何触达目标
         // ─────────────────────────────────────────────
         public AbilityCarrierType carrierType = AbilityCarrierType.Self;
+        public AbilityTargetType targetType = AbilityTargetType.Self;
+        public bool useRadius = false;
+        public AbilityAreaCenter areaCenter = AbilityAreaCenter.Target;
         public float range = 20f;
         public float radius = 0f; // 范围半径（用于爆炸/光环）
         public ThingDef? projectileDef; // 投射物定义（如果是 Projectile）
@@ -107,6 +110,9 @@ namespace CharacterStudio.Abilities
                 charges = this.charges,
                 aiCanUse = this.aiCanUse,
                 carrierType = this.carrierType,
+                targetType = this.targetType,
+                useRadius = this.useRadius,
+                areaCenter = this.areaCenter,
                 range = this.range,
                 radius = this.radius,
                 projectileDef = this.projectileDef
@@ -133,9 +139,9 @@ namespace CharacterStudio.Abilities
 
     public enum AbilityRuntimeComponentType
     {
-        QComboWindow,      // Q 施放后开启连段窗口（如 W 连段）
-        EShortJump,        // E 热键短位移
-        RStackDetonation   // R 两段：叠层-选点-延时爆发
+        QComboWindow,      // 施放后开启连段窗口（如 W 连段）
+        EShortJump,        // 热键触发位移到目标落点
+        RStackDetonation   // 两段：叠层-选点-延时爆发
     }
 
     public class AbilityRuntimeComponentConfig
@@ -143,16 +149,16 @@ namespace CharacterStudio.Abilities
         public AbilityRuntimeComponentType type;
         public bool enabled = true;
 
-        // Q 连段组件
+        // 连段窗口组件
         public int comboWindowTicks = 12;
 
-        // E 短跳组件
+        // 位移组件
         public int cooldownTicks = 120;
         public int jumpDistance = 6;
         public int findCellRadius = 3;
         public bool triggerAbilityEffectsAfterJump = true;
 
-        // R 两段组件
+        // 叠层引爆组件
         public int requiredStacks = 7;
         public int delayTicks = 180;
         public float wave1Radius = 3f;
@@ -229,11 +235,26 @@ namespace CharacterStudio.Abilities
     /// </summary>
     public enum AbilityCarrierType
     {
-        Self,       // 自身施法（强化/治疗自身）
-        Touch,      // 接触施法（近战/治疗他人）
-        Target,     // 指定目标（瞬发/引导）
-        Projectile, // 投射物（火球/箭矢）
-        Area        // 范围作用（以自身为中心或目标点）
+        Self,       // 自身施法
+        Target,     // 直接作用到目标
+        Projectile, // 投射物命中目标
+
+        // 兼容旧存档/旧 XML 的遗留值
+        Touch,
+        Area
+    }
+
+    public enum AbilityTargetType
+    {
+        Self,
+        Entity,
+        Cell
+    }
+
+    public enum AbilityAreaCenter
+    {
+        Self,
+        Target
     }
 
     /// <summary>
@@ -275,16 +296,78 @@ namespace CharacterStudio.Abilities
     }
 
     /// <summary>
+    /// 视觉特效来源模式
+    /// </summary>
+    public enum AbilityVisualEffectSourceMode
+    {
+        BuiltIn,    // 当前内建 Fleck / 组合效果
+        Preset      // CharacterStudio 原生特效预设（第一阶段先保留导出/配置骨架）
+    }
+
+    /// <summary>
+    /// 视觉特效触发时机
+    /// 第一阶段运行时先完整支持 OnTargetApply / OnCastFinish，并将其余时机安全回退为当前 Apply 时机。
+    /// </summary>
+    public enum AbilityVisualEffectTrigger
+    {
+        OnCastStart,
+        OnWarmup,
+        OnCastFinish,
+        OnTargetApply,
+        OnDurationTick,
+        OnExpire
+    }
+
+    /// <summary>
     /// 单个视觉特效配置
     /// </summary>
     public class AbilityVisualEffectConfig
     {
+        /// <summary>
+        /// 旧内建特效类型；为兼容现有数据和运行时逻辑保留。
+        /// </summary>
         public AbilityVisualEffectType type = AbilityVisualEffectType.DustPuff;
+
+        /// <summary>
+        /// 新来源模式。默认 BuiltIn 以兼容旧数据。
+        /// </summary>
+        public AbilityVisualEffectSourceMode sourceMode = AbilityVisualEffectSourceMode.BuiltIn;
+
+        /// <summary>
+        /// CharacterStudio 原生预设名。仅在 sourceMode=Preset 时使用。
+        /// </summary>
+        public string presetDefName = string.Empty;
+
         public VisualEffectTarget target = VisualEffectTarget.Target;
+
+        /// <summary>
+        /// 触发时机。
+        /// </summary>
+        public AbilityVisualEffectTrigger trigger = AbilityVisualEffectTrigger.OnTargetApply;
+
         /// <summary>在效果执行后延迟多少 ticks 再播放特效（0 = 立即）</summary>
         public int delayTicks = 0;
+
         /// <summary>特效规模缩放（1.0 = 正常）</summary>
         public float scale = 1.0f;
+
+        /// <summary>重复次数（包含首次播放）；最小为 1。</summary>
+        public int repeatCount = 1;
+
+        /// <summary>重复播放间隔 tick。</summary>
+        public int repeatIntervalTicks = 0;
+
+        /// <summary>附加偏移，供后续预设/运行时扩展使用。</summary>
+        public Vector3 offset = Vector3.zero;
+
+        /// <summary>是否附着到 Pawn（供后续预设播放扩展使用）。</summary>
+        public bool attachToPawn = false;
+
+        /// <summary>是否附着到目标格（供后续预设播放扩展使用）。</summary>
+        public bool attachToTargetCell = false;
+
+        /// <summary>是否启用此特效条目。</summary>
+        public bool enabled = true;
 
         public AbilityVisualEffectConfig Clone()
         {
@@ -295,6 +378,20 @@ namespace CharacterStudio.Abilities
     /// <summary>
     /// 单个效果配置
     /// </summary>
+    public enum ControlEffectMode
+    {
+        Stun,
+        Knockback,
+        Pull
+    }
+
+    public enum TerraformEffectMode
+    {
+        CleanFilth,
+        SpawnThing,
+        ReplaceTerrain
+    }
+
     public class AbilityEffectConfig
     {
         public AbilityEffectType type;
@@ -309,6 +406,15 @@ namespace CharacterStudio.Abilities
         public HediffDef? hediffDef;
         public PawnKindDef? summonKind;
         public int summonCount = 1;
+        public FactionDef? summonFactionDef;
+
+        public ControlEffectMode controlMode = ControlEffectMode.Stun;
+        public int controlMoveDistance = 3;
+
+        public TerraformEffectMode terraformMode = TerraformEffectMode.CleanFilth;
+        public ThingDef? terraformThingDef;
+        public TerrainDef? terraformTerrainDef;
+        public int terraformSpawnCount = 1;
 
         /// <summary>是否可以伤害施法者自身（默认 false = 不伤害自己）</summary>
         public bool canHurtSelf = false;
@@ -362,6 +468,39 @@ namespace CharacterStudio.Abilities
                     if (summonCount <= 0)
                     {
                         result.AddError("CS_Ability_Validate_SummonCount".Translate());
+                    }
+                    break;
+
+                case AbilityEffectType.Control:
+                    if (controlMode != ControlEffectMode.Stun && controlMoveDistance <= 0)
+                    {
+                        result.AddError("CS_Ability_Validate_ControlMoveDistance".Translate());
+                    }
+                    if (duration < 0f)
+                    {
+                        result.AddError("CS_Ability_Validate_ControlDuration".Translate());
+                    }
+                    break;
+
+                case AbilityEffectType.Terraform:
+                    switch (terraformMode)
+                    {
+                        case TerraformEffectMode.SpawnThing:
+                            if (terraformThingDef == null)
+                            {
+                                result.AddError("CS_Ability_Validate_TerraformThingRequired".Translate());
+                            }
+                            if (terraformSpawnCount <= 0)
+                            {
+                                result.AddError("CS_Ability_Validate_TerraformSpawnCount".Translate());
+                            }
+                            break;
+                        case TerraformEffectMode.ReplaceTerrain:
+                            if (terraformTerrainDef == null)
+                            {
+                                result.AddError("CS_Ability_Validate_TerraformTerrainRequired".Translate());
+                            }
+                            break;
                     }
                     break;
             }
@@ -423,20 +562,20 @@ namespace CharacterStudio.Abilities
                 result.AddError("CS_Ability_Validate_RadiusNegative".Translate());
             }
 
-            // 载体类型验证
-            switch (ability.carrierType)
+            AbilityCarrierType normalizedCarrier = NormalizeCarrierType(ability.carrierType);
+            AbilityTargetType normalizedTarget = NormalizeTargetType(ability);
+
+            if (CarrierNeedsRange(normalizedCarrier, normalizedTarget) && ability.range <= 0)
             {
-                case AbilityCarrierType.Target:
-                case AbilityCarrierType.Projectile:
-                case AbilityCarrierType.Area:
-                    if (ability.range <= 0)
-                    {
-                        result.AddWarning("CS_Ability_Validate_CarrierNeedsRange".Translate(GetCarrierTypeLabel(ability.carrierType)));
-                    }
-                    break;
+                result.AddWarning("CS_Ability_Validate_CarrierNeedsRange".Translate(GetCarrierTypeLabel(normalizedCarrier)));
             }
 
-            if (ability.carrierType == AbilityCarrierType.Projectile && ability.projectileDef == null)
+            if (ability.useRadius && ability.radius <= 0)
+            {
+                result.AddError("CS_Ability_Validate_AreaRadiusPositive".Translate());
+            }
+
+            if (normalizedCarrier == AbilityCarrierType.Projectile && ability.projectileDef == null)
             {
                 result.AddWarning("CS_Ability_Validate_ProjectileDefMissing".Translate());
             }
@@ -495,9 +634,66 @@ namespace CharacterStudio.Abilities
             return result;
         }
 
+        public static AbilityCarrierType NormalizeCarrierType(AbilityCarrierType type)
+        {
+            return type switch
+            {
+                AbilityCarrierType.Touch => AbilityCarrierType.Target,
+                AbilityCarrierType.Area => AbilityCarrierType.Target,
+                _ => type
+            };
+        }
+
+        public static AbilityTargetType NormalizeTargetType(ModularAbilityDef ability)
+        {
+            if (ability == null)
+            {
+                return AbilityTargetType.Self;
+            }
+
+            if (ability.targetType != AbilityTargetType.Self || ability.useRadius || ability.projectileDef != null)
+            {
+                return ability.targetType;
+            }
+
+            return ability.carrierType switch
+            {
+                AbilityCarrierType.Self => AbilityTargetType.Self,
+                AbilityCarrierType.Area => AbilityTargetType.Cell,
+                AbilityCarrierType.Projectile => AbilityTargetType.Entity,
+                AbilityCarrierType.Touch => AbilityTargetType.Entity,
+                AbilityCarrierType.Target => AbilityTargetType.Entity,
+                _ => AbilityTargetType.Entity
+            };
+        }
+
+        public static AbilityAreaCenter NormalizeAreaCenter(ModularAbilityDef ability)
+        {
+            if (ability == null)
+            {
+                return AbilityAreaCenter.Target;
+            }
+
+            if (ability.areaCenter != AbilityAreaCenter.Target || ability.targetType != AbilityTargetType.Self)
+            {
+                return ability.areaCenter;
+            }
+
+            return ability.carrierType == AbilityCarrierType.Area
+                ? AbilityAreaCenter.Target
+                : AbilityAreaCenter.Self;
+        }
+
+        public static bool CarrierNeedsRange(AbilityCarrierType carrierType, AbilityTargetType targetType)
+        {
+            carrierType = NormalizeCarrierType(carrierType);
+            return carrierType == AbilityCarrierType.Projectile
+                || carrierType == AbilityCarrierType.Target && targetType != AbilityTargetType.Self;
+        }
+
         private static string GetCarrierTypeLabel(AbilityCarrierType type)
         {
-            return ($"CS_Ability_CarrierType_{type}").Translate();
+            return ($"CS_Ability_CarrierType_{NormalizeCarrierType(type)}").Translate();
         }
 
         private static string GetEffectTypeLabel(AbilityEffectType type)

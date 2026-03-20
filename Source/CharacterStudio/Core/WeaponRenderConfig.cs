@@ -2,6 +2,107 @@ using UnityEngine;
 
 namespace CharacterStudio.Core
 {
+    public enum WeaponCarryVisualState
+    {
+        Undrafted,
+        Drafted,
+        Casting
+    }
+
+    /// <summary>
+    /// 武器收纳/拔刀视觉配置。
+    /// 用于通用角色编辑器，不硬编码任何具体武器类型，
+    /// 仅按 Pawn 状态在“非征召 / 征召 / 施法中”三种贴图之间切换。
+    /// </summary>
+    public class WeaponCarryVisualConfig
+    {
+        /// <summary>是否启用状态武器视觉</summary>
+        public bool enabled = false;
+
+        /// <summary>挂载锚点（通常为 Body，可通过偏移放到背上/腰上）</summary>
+        public string anchorTag = "Body";
+
+        /// <summary>非征召状态贴图</summary>
+        public string texUndrafted = string.Empty;
+
+        /// <summary>征召状态贴图</summary>
+        public string texDrafted = string.Empty;
+
+        /// <summary>施法中状态贴图</summary>
+        public string texCasting = string.Empty;
+
+        /// <summary>通用偏移</summary>
+        public Vector3 offset = Vector3.zero;
+
+        /// <summary>北向偏移</summary>
+        public Vector3 offsetNorth = Vector3.zero;
+
+        /// <summary>东/西向偏移</summary>
+        public Vector3 offsetEast = Vector3.zero;
+
+        /// <summary>缩放</summary>
+        public Vector2 scale = Vector2.one;
+        public Vector2 scaleNorthMultiplier = Vector2.one;
+        public Vector2 scaleEastMultiplier = Vector2.one;
+
+        /// <summary>旋转</summary>
+        public float rotation = 0f;
+        public float rotationNorthOffset = 0f;
+        public float rotationEastOffset = 0f;
+
+        /// <summary>绘制层级</summary>
+        public float drawOrder = 80f;
+
+        public string GetTexPath(WeaponCarryVisualState state)
+        {
+            return state switch
+            {
+                WeaponCarryVisualState.Casting when !string.IsNullOrWhiteSpace(texCasting) => texCasting,
+                WeaponCarryVisualState.Drafted when !string.IsNullOrWhiteSpace(texDrafted) => texDrafted,
+                _ => texUndrafted
+            };
+        }
+
+        public Vector3 GetOffsetForRotation(Verse.Rot4 rot)
+        {
+            Vector3 directional = rot.AsInt switch
+            {
+                0 => offsetNorth,
+                1 => offsetEast,
+                3 => offsetEast,
+                _ => Vector3.zero
+            };
+
+            return offset + directional;
+        }
+
+        public string GetAnyTexPath()
+        {
+            if (!string.IsNullOrWhiteSpace(texUndrafted)) return texUndrafted;
+            if (!string.IsNullOrWhiteSpace(texDrafted)) return texDrafted;
+            return texCasting;
+        }
+
+        public WeaponCarryVisualConfig Clone() => new WeaponCarryVisualConfig
+        {
+            enabled = this.enabled,
+            anchorTag = this.anchorTag,
+            texUndrafted = this.texUndrafted,
+            texDrafted = this.texDrafted,
+            texCasting = this.texCasting,
+            offset = this.offset,
+            offsetNorth = this.offsetNorth,
+            offsetEast = this.offsetEast,
+            scale = this.scale,
+            scaleNorthMultiplier = this.scaleNorthMultiplier,
+            scaleEastMultiplier = this.scaleEastMultiplier,
+            rotation = this.rotation,
+            rotationNorthOffset = this.rotationNorthOffset,
+            rotationEastOffset = this.rotationEastOffset,
+            drawOrder = this.drawOrder,
+        };
+    }
+
     /// <summary>
     /// 武器渲染覆盖配置
     /// 允许皮肤定义对武器节点的偏移量和缩放进行自定义覆写。
@@ -33,6 +134,9 @@ namespace CharacterStudio.Core
 
         /// <summary>是否对副手武器（OffHand/LeftHand）应用同样的配置</summary>
         public bool applyToOffHand = true;
+
+        /// <summary>通用状态武器视觉（非征召 / 征召 / 施法中）</summary>
+        public WeaponCarryVisualConfig carryVisual = new WeaponCarryVisualConfig();
 
         // ─────────────────────────────────────────────
         // 查询 API
@@ -68,6 +172,7 @@ namespace CharacterStudio.Core
             offsetEast   = this.offsetEast,
             scale        = this.scale,
             applyToOffHand = this.applyToOffHand,
+            carryVisual   = this.carryVisual?.Clone() ?? new WeaponCarryVisualConfig(),
         };
     }
 }

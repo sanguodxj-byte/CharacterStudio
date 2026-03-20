@@ -31,10 +31,14 @@ namespace CharacterStudio.Core
         public LayerColorSource colorTwoSource = LayerColorSource.Fixed;
         public Color customColorTwo = Color.white;
         public Vector2 scale = Vector2.one;
+        public Vector2 scaleEastMultiplier = Vector2.one;
+        public Vector2 scaleNorthMultiplier = Vector2.one;
         public Vector3 offset = Vector3.zero;
         public Vector3 offsetEast = Vector3.zero;
         public Vector3 offsetNorth = Vector3.zero;
         public float rotation = 0f;
+        public float rotationEastOffset = 0f;
+        public float rotationNorthOffset = 0f;
         public bool flipHorizontal = false;
         public float drawOrderOffset = 0f;
         public Type? graphicClass;
@@ -53,10 +57,14 @@ namespace CharacterStudio.Core
                 colorTwoSource = this.colorTwoSource,
                 customColorTwo = this.customColorTwo,
                 scale = this.scale,
+                scaleEastMultiplier = this.scaleEastMultiplier,
+                scaleNorthMultiplier = this.scaleNorthMultiplier,
                 offset = this.offset,
                 offsetEast = this.offsetEast,
                 offsetNorth = this.offsetNorth,
                 rotation = this.rotation,
+                rotationEastOffset = this.rotationEastOffset,
+                rotationNorthOffset = this.rotationNorthOffset,
                 flipHorizontal = this.flipHorizontal,
                 drawOrderOffset = this.drawOrderOffset,
                 graphicClass = this.graphicClass
@@ -76,7 +84,11 @@ namespace CharacterStudio.Core
                 offsetNorth = offsetNorth,
                 drawOrder = baseDrawOrder + drawOrderOffset,
                 scale = scale,
+                scaleEastMultiplier = scaleEastMultiplier,
+                scaleNorthMultiplier = scaleNorthMultiplier,
                 rotation = rotation,
+                rotationEastOffset = rotationEastOffset,
+                rotationNorthOffset = rotationNorthOffset,
                 flipHorizontal = flipHorizontal,
                 shaderDefName = string.IsNullOrEmpty(shaderDefName) ? "Cutout" : shaderDefName,
                 colorSource = colorSource,

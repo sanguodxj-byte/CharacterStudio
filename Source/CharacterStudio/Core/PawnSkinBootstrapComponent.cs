@@ -19,6 +19,7 @@ namespace CharacterStudio.Core
         {
             base.LoadedGame();
             EnsureAllMapsPawnsHaveSkinComp();
+            ApplyDefaultSkinsToAllMapsPawns();
             // 存档重载后重新授予所有 CS 技能
             // （运行时 AbilityDef 不持久化到存档，每次加载都需重建）
             ReGrantAllSkinAbilities();
@@ -28,12 +29,14 @@ namespace CharacterStudio.Core
         {
             base.StartedNewGame();
             EnsureAllMapsPawnsHaveSkinComp();
+            ApplyDefaultSkinsToAllMapsPawns();
         }
 
         public override void FinalizeInit()
         {
             base.FinalizeInit();
             EnsureAllMapsPawnsHaveSkinComp();
+            ApplyDefaultSkinsToAllMapsPawns();
         }
 
         private static void ReGrantAllSkinAbilities()
@@ -93,6 +96,55 @@ namespace CharacterStudio.Core
             {
                 Log.Message($"[CharacterStudio] 已为现存地图 Pawn 补全 CompPawnSkin: {added}");
             }
+        }
+
+        public static void ApplyDefaultSkinsToCurrentGame()
+        {
+            ApplyDefaultSkinsToAllMapsPawns();
+        }
+
+        private static void ApplyDefaultSkinsToAllMapsPawns()
+        {
+            if (Current.Game == null) return;
+
+            int applied = 0;
+            foreach (var map in Current.Game.Maps)
+            {
+                var pawns = map?.mapPawns?.AllPawnsSpawned;
+                if (pawns == null) continue;
+
+                foreach (var pawn in pawns)
+                {
+                    if (pawn == null || pawn.def?.race == null || !pawn.RaceProps.Humanlike)
+                        continue;
+
+                    var defaultSkin = PawnSkinDefRegistry.GetDefaultSkinForRace(pawn.def);
+                    if (defaultSkin == null)
+                        continue;
+
+                    var comp = pawn.GetComp<CompPawnSkin>();
+                    bool hasManualSkin = comp?.ActiveSkin != null && !comp.ActiveSkinFromDefaultRaceBinding;
+                    if (hasManualSkin)
+                        continue;
+
+                    bool alreadyUsingSameDefault = comp?.ActiveSkin?.defName == defaultSkin.defName && comp.ActiveSkinFromDefaultRaceBinding;
+                    if (alreadyUsingSameDefault)
+                        continue;
+
+                    try
+                    {
+                        if (PawnSkinRuntimeUtility.ApplySkinToPawn(pawn, defaultSkin.Clone(), fromDefaultRaceBinding: true))
+                            applied++;
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning($"[CharacterStudio] 默认种族皮肤应用失败 ({pawn.LabelShort} / {pawn.def.defName}): {ex.Message}");
+                    }
+                }
+            }
+
+            if (applied > 0)
+                Log.Message($"[CharacterStudio] 已为 {applied} 个 Pawn 自动应用默认种族皮肤");
         }
 
         private static void AddCompToPawn(Pawn pawn)

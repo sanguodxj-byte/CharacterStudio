@@ -14,6 +14,7 @@ namespace CharacterStudio.UI
     /// </summary>
     public class MannequinManager
     {
+        public static readonly Vector3 PreviewCameraOffset = new Vector3(0f, 0.22f, 0.15f);
         // ─────────────────────────────────────────────
         // 状态
         // ─────────────────────────────────────────────
@@ -187,6 +188,29 @@ namespace CharacterStudio.UI
             catch (Exception ex)
             {
                 Log.Error($"[CharacterStudio] 应用皮肤失败: {ex}");
+            }
+        }
+
+        public void ApplyPlan(CharacterStudio.Design.CharacterApplicationPlan? plan)
+        {
+            if (mannequinPawn == null || plan == null)
+            {
+                return;
+            }
+
+            try
+            {
+                plan.targetPawn = mannequinPawn;
+                if (!CharacterStudio.Design.CharacterApplicationExecutor.Execute(plan))
+                {
+                    return;
+                }
+
+                needsRefresh = true;
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"[CharacterStudio] 应用计划到预览人偶失败: {ex}");
             }
         }
 
@@ -380,7 +404,7 @@ namespace CharacterStudio.UI
                     mannequinPawn,
                     portraitSize,
                     rotation,
-                    new Vector3(0f, 0f, 0.15f), // 稍微调整摄像机 Z 轴偏移
+                    PreviewCameraOffset, // 以头部区域为预览中心，而非默认身体中心
                     zoom // 传递 zoom 参数给 PortraitsCache
                 );
 
@@ -455,10 +479,14 @@ namespace CharacterStudio.UI
         /// <summary>
         /// 获取可用的种族列表
         /// </summary>
-        public static ThingDef[] GetAvailableRaces()
+        public static ThingDef[] GetAvailableRaces(bool includeHumanlike = true, bool includeAnimals = false, bool includeMechanoids = false)
         {
             return DefDatabase<ThingDef>.AllDefs
-                .Where(d => d.race != null && d.race.Humanlike)
+                .Where(d => d.race != null)
+                .Where(d =>
+                    (includeHumanlike && d.race.Humanlike)
+                    || (includeAnimals && d.race.Animal)
+                    || (includeMechanoids && d.race.IsMechanoid))
                 .OrderBy(d => d.label)
                 .ToArray();
         }

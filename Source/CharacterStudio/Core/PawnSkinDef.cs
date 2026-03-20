@@ -77,6 +77,12 @@ namespace CharacterStudio.Core
         /// <summary>是否仅限人形（Humanlike）</summary>
         public bool humanlikeOnly = true;
 
+        /// <summary>是否将此皮肤作为 targetRaces 对应种族的默认皮肤自动绑定</summary>
+        public bool applyAsDefaultForTargetRaces = false;
+
+        /// <summary>默认种族绑定优先级（同种族多套皮肤时，高优先级覆盖低优先级）</summary>
+        public int defaultRacePriority = 0;
+
         // ─────────────────────────────────────────────
         // 元数据
         // ─────────────────────────────────────────────
@@ -104,6 +110,9 @@ namespace CharacterStudio.Core
 
         /// <summary>武器渲染覆写配置（偏移 / 缩放）</summary>
         public WeaponRenderConfig weaponRenderConfig = new WeaponRenderConfig();
+
+        /// <summary>装备定义列表（编辑器内创建/导入/导出的装备条目）</summary>
+        public List<CharacterEquipmentDef> equipments = new List<CharacterEquipmentDef>();
 
         // ─────────────────────────────────────────────
         // 种族身份
@@ -160,6 +169,8 @@ namespace CharacterStudio.Core
                 hideVanillaBody = this.hideVanillaBody,
                 hideVanillaApparel = this.hideVanillaApparel,
                 humanlikeOnly = this.humanlikeOnly,
+                applyAsDefaultForTargetRaces = this.applyAsDefaultForTargetRaces,
+                defaultRacePriority = this.defaultRacePriority,
                 author = this.author,
                 version = this.version,
                 previewTexPath = this.previewTexPath,
@@ -189,6 +200,18 @@ namespace CharacterStudio.Core
 
             // 复制隐藏路径
             clone.hiddenPaths = new List<string>(this.hiddenPaths);
+
+            // 复制装备
+            if (this.equipments != null)
+            {
+                foreach (var equipment in this.equipments)
+                {
+                    if (equipment != null)
+                    {
+                        clone.equipments.Add(equipment.Clone());
+                    }
+                }
+            }
 
             // 复制技能
             if (this.abilities != null)

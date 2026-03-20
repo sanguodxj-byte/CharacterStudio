@@ -1,10 +1,40 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Verse;
 using UnityEngine;
 
 namespace CharacterStudio.Core
 {
+    /// <summary>
+    /// 表情工作流模式
+    /// FullFaceSwap = 传统整脸换图
+    /// LayeredDynamic = 分层资源配置（眉眼嘴/覆盖层等）
+    /// </summary>
+    public enum FaceWorkflowMode
+    {
+        FullFaceSwap,
+        LayeredDynamic
+    }
+
+    /// <summary>
+    /// 分层面部部件类型
+    /// </summary>
+    public enum LayeredFacePartType
+    {
+        Base,
+        Brow,
+        Eye,
+        Pupil,
+        UpperLid,
+        LowerLid,
+        Mouth,
+        Blush,
+        Sweat,
+        Tear,
+        Overlay
+    }
+
     /// <summary>
     /// 表情类型枚举
     /// 完整覆盖 NL Facial Animation 所有状态类别 + CS 独有状态
@@ -125,16 +155,68 @@ namespace CharacterStudio.Core
     }
 
     /// <summary>
+    /// 分层面部部件配置
+    /// path 命名遵循资源规范，由代码在运行时决定如何使用。
+    /// </summary>
+    public class LayeredFacePartConfig
+    {
+        public LayeredFacePartType partType = LayeredFacePartType.Base;
+        public ExpressionType expression = ExpressionType.Neutral;
+        public string texPath = string.Empty;
+        public bool enabled = true;
+
+        /// <summary>
+        /// 当 partType = Overlay 时，用于区分多个 Overlay 条目。
+        /// 旧数据为空时会在运行时被视为默认 "Overlay"。
+        /// </summary>
+        public string overlayId = string.Empty;
+
+        /// <summary>
+        /// 当 partType = Overlay 时，表示编辑器内排序顺序。数值越小越先绘制。
+        /// </summary>
+        public int overlayOrder = 0;
+
+        /// <summary>
+        /// 仅用于少量兜底修正；正常工作流应由代码自动定位和移动。
+        /// </summary>
+        public Vector2 anchorCorrection = Vector2.zero;
+
+        public LayeredFacePartConfig Clone()
+        {
+            return new LayeredFacePartConfig
+            {
+                partType = this.partType,
+                expression = this.expression,
+                texPath = this.texPath,
+                enabled = this.enabled,
+                overlayId = this.overlayId,
+                overlayOrder = this.overlayOrder,
+                anchorCorrection = this.anchorCorrection
+            };
+        }
+    }
+
+    /// <summary>
     /// 完整的面部表情配置
     ///
-    /// 设计思路：通过切换整张头部贴图（或帧序列）来实现表情变化。
-    /// 支持帧动画：为同一表情配置多帧 ExpressionFrame，系统按 Tick 自动循环播放。
+    /// 设计思路：
+    /// 1. FullFaceSwap：通过切换整张头部贴图（或帧序列）实现表情变化；
+    /// 2. LayeredDynamic：通过命名驱动的分层资源记录部件素材，为后续动态眉眼嘴/覆盖层工作流提供数据基础。
     ///
     /// 性能优化：内部维护 Dictionary 缓存，GetTexPath 为 O(1) 查找。
     /// </summary>
     public class PawnFaceConfig
     {
         public bool enabled = false;
+
+        /// <summary>表情工作流模式：整脸换图 / 分层动态</summary>
+        public FaceWorkflowMode workflowMode = FaceWorkflowMode.FullFaceSwap;
+
+        /// <summary>分层模式的资源根目录（可选）</summary>
+        public string layeredSourceRoot = string.Empty;
+
+        /// <summary>分层模式识别到的部件资源列表</summary>
+        public List<LayeredFacePartConfig> layeredParts = new List<LayeredFacePartConfig>();
 
         /// <summary>各表情对应的贴图/帧序列配置（XML 序列化用）</summary>
         public List<ExpressionTexPath> expressions = new List<ExpressionTexPath>();
@@ -164,6 +246,101 @@ namespace CharacterStudio.Core
         }
 
         private void InvalidateLookup() => _lookupCache = null;
+
+        private static bool IsOverlayPart(LayeredFacePartType partType)
+        {
+            return partType == LayeredFacePartType.Overlay;
+        }
+
+        private static string NormalizeOverlayId(string? overlayId)
+        {
+            return string.IsNullOrWhiteSpace(overlayId) ? "Overlay" : overlayId!.Trim();
+        }
+
+        private static bool MatchesOverlayId(LayeredFacePartConfig? part, string overlayId)
+        {
+            if (part == null)
+                return false;
+
+            return string.Equals(
+                NormalizeOverlayId(part.overlayId),
+                NormalizeOverlayId(overlayId),
+                StringComparison.OrdinalIgnoreCase);
+        }
+
+        private IEnumerable<LayeredFacePartConfig> EnumerateLayeredParts(
+            LayeredFacePartType partType,
+            string? overlayId = null,
+            bool includeAllOverlayGroups = false)
+        {
+            if (layeredParts == null || layeredParts.Count == 0)
+                return Enumerable.Empty<LayeredFacePartConfig>();
+
+            IEnumerable<LayeredFacePartConfig> query = layeredParts.Where(p => p != null && p.partType == partType);
+
+            if (IsOverlayPart(partType) && !includeAllOverlayGroups)
+            {
+                string normalizedOverlayId = NormalizeOverlayId(overlayId);
+                query = query.Where(p => MatchesOverlayId(p, normalizedOverlayId));
+            }
+
+            if (IsOverlayPart(partType))
+            {
+                query = query
+                    .OrderBy(p => p.overlayOrder)
+                    .ThenBy(p => NormalizeOverlayId(p.overlayId), StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(p => p.expression);
+            }
+            else
+            {
+                query = query.OrderBy(p => p.expression);
+            }
+
+            return query;
+        }
+
+        private LayeredFacePartConfig? GetLayeredPartConfigInternal(
+            LayeredFacePartType partType,
+            ExpressionType expression,
+            string? overlayId = null,
+            bool includeAllOverlayGroups = false)
+        {
+            if (layeredParts == null || layeredParts.Count == 0)
+                return null;
+
+            LayeredFacePartConfig? exact = EnumerateLayeredParts(partType, overlayId, includeAllOverlayGroups)
+                .FirstOrDefault(p =>
+                    p.enabled
+                    && p.expression == expression
+                    && !string.IsNullOrWhiteSpace(p.texPath));
+
+            if (exact != null)
+                return exact;
+
+            if (expression != ExpressionType.Neutral)
+            {
+                LayeredFacePartConfig? neutral = EnumerateLayeredParts(partType, overlayId, includeAllOverlayGroups)
+                    .FirstOrDefault(p =>
+                        p.enabled
+                        && p.expression == ExpressionType.Neutral
+                        && !string.IsNullOrWhiteSpace(p.texPath));
+
+                if (neutral != null)
+                    return neutral;
+            }
+
+            return null;
+        }
+
+        public LayeredFacePartConfig? GetLayeredPartConfig(LayeredFacePartType partType, ExpressionType expression)
+        {
+            return GetLayeredPartConfigInternal(partType, expression, null, includeAllOverlayGroups: true);
+        }
+
+        public LayeredFacePartConfig? GetLayeredPartConfig(LayeredFacePartType partType, ExpressionType expression, string overlayId)
+        {
+            return GetLayeredPartConfigInternal(partType, expression, overlayId, includeAllOverlayGroups: false);
+        }
 
         /// <summary>
         /// 获取指定表情在指定 Tick 的贴图路径（O(1) 查找 + 帧动画支持）。
@@ -198,6 +375,183 @@ namespace CharacterStudio.Core
             if (expression != ExpressionType.Neutral
                 && lookup.TryGetValue(ExpressionType.Neutral, out var neutral)) return neutral;
             return null;
+        }
+
+        /// <summary>
+        /// 获取分层模式中指定部件类型/表情的贴图路径。
+        /// 优先精确表情匹配，失败时回退 Neutral。
+        /// Overlay 未指定 overlayId 时，会按 overlayOrder 返回第一个可用条目。
+        /// </summary>
+        public string GetLayeredPartPath(LayeredFacePartType partType, ExpressionType expression)
+        {
+            return GetLayeredPartConfigInternal(partType, expression, null, includeAllOverlayGroups: true)?.texPath ?? string.Empty;
+        }
+
+        /// <summary>
+        /// 获取指定 Overlay 分组中的贴图路径。
+        /// </summary>
+        public string GetLayeredPartPath(LayeredFacePartType partType, ExpressionType expression, string overlayId)
+        {
+            return GetLayeredPartConfigInternal(partType, expression, overlayId, includeAllOverlayGroups: false)?.texPath ?? string.Empty;
+        }
+
+        /// <summary>获取指定类型的已启用分层部件数量</summary>
+        public int CountLayeredParts(LayeredFacePartType partType)
+        {
+            return EnumerateLayeredParts(partType, null, includeAllOverlayGroups: true).Count(p =>
+                p.enabled && !string.IsNullOrWhiteSpace(p.texPath));
+        }
+
+        /// <summary>获取指定 Overlay 分组内的已启用分层部件数量</summary>
+        public int CountLayeredParts(LayeredFacePartType partType, string overlayId)
+        {
+            return EnumerateLayeredParts(partType, overlayId, includeAllOverlayGroups: false).Count(p =>
+                p.enabled && !string.IsNullOrWhiteSpace(p.texPath));
+        }
+
+        /// <summary>
+        /// 获取指定分层部件类型的任意可用贴图路径。
+        /// 优先返回 Neutral，对未配置 Neutral 的旧数据则回退到首个已启用路径。
+        /// Overlay 未指定 overlayId 时，会按 overlayOrder 返回第一个可用条目。
+        /// </summary>
+        public string GetAnyLayeredPartPath(LayeredFacePartType partType)
+        {
+            if (layeredParts == null || layeredParts.Count == 0)
+                return string.Empty;
+
+            LayeredFacePartConfig? neutral = EnumerateLayeredParts(partType, null, includeAllOverlayGroups: true)
+                .FirstOrDefault(p =>
+                    p.enabled
+                    && p.expression == ExpressionType.Neutral
+                    && !string.IsNullOrWhiteSpace(p.texPath));
+
+            if (neutral != null)
+                return neutral.texPath ?? string.Empty;
+
+            LayeredFacePartConfig? first = EnumerateLayeredParts(partType, null, includeAllOverlayGroups: true)
+                .FirstOrDefault(p =>
+                    p.enabled
+                    && !string.IsNullOrWhiteSpace(p.texPath));
+
+            return first?.texPath ?? string.Empty;
+        }
+
+        /// <summary>
+        /// 获取指定 Overlay 分组的任意可用贴图路径。
+        /// 优先返回 Neutral，对未配置 Neutral 的旧数据则回退到首个已启用路径。
+        /// </summary>
+        public string GetAnyLayeredPartPath(LayeredFacePartType partType, string overlayId)
+        {
+            if (layeredParts == null || layeredParts.Count == 0)
+                return string.Empty;
+
+            LayeredFacePartConfig? neutral = EnumerateLayeredParts(partType, overlayId, includeAllOverlayGroups: false)
+                .FirstOrDefault(p =>
+                    p.enabled
+                    && p.expression == ExpressionType.Neutral
+                    && !string.IsNullOrWhiteSpace(p.texPath));
+
+            if (neutral != null)
+                return neutral.texPath ?? string.Empty;
+
+            LayeredFacePartConfig? first = EnumerateLayeredParts(partType, overlayId, includeAllOverlayGroups: false)
+                .FirstOrDefault(p =>
+                    p.enabled
+                    && !string.IsNullOrWhiteSpace(p.texPath));
+
+            return first?.texPath ?? string.Empty;
+        }
+
+        public List<string> GetOrderedOverlayIds()
+        {
+            if (layeredParts == null || layeredParts.Count == 0)
+                return new List<string>();
+
+            return layeredParts
+                .Where(p => p != null && p.partType == LayeredFacePartType.Overlay)
+                .GroupBy(p => NormalizeOverlayId(p.overlayId), StringComparer.OrdinalIgnoreCase)
+                .OrderBy(g => g.Min(p => p.overlayOrder))
+                .ThenBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.Key)
+                .ToList();
+        }
+
+        public int GetOverlayOrder(string overlayId)
+        {
+            if (layeredParts == null || layeredParts.Count == 0)
+                return 0;
+
+            string normalized = NormalizeOverlayId(overlayId);
+            return layeredParts
+                .Where(p => p != null
+                    && p.partType == LayeredFacePartType.Overlay
+                    && MatchesOverlayId(p, normalized))
+                .Select(p => p.overlayOrder)
+                .DefaultIfEmpty(0)
+                .Min();
+        }
+
+        public void SetOverlayOrder(string overlayId, int overlayOrder)
+        {
+            if (layeredParts == null || layeredParts.Count == 0)
+                return;
+
+            string normalized = NormalizeOverlayId(overlayId);
+            foreach (var part in layeredParts.Where(p =>
+                         p != null
+                         && p.partType == LayeredFacePartType.Overlay
+                         && MatchesOverlayId(p, normalized)))
+            {
+                part.overlayId = normalized;
+                part.overlayOrder = overlayOrder;
+            }
+        }
+
+        public void NormalizeOverlayOrders()
+        {
+            List<string> orderedOverlayIds = GetOrderedOverlayIds();
+            for (int i = 0; i < orderedOverlayIds.Count; i++)
+            {
+                SetOverlayOrder(orderedOverlayIds[i], i);
+            }
+        }
+
+        public void EnsureOverlayEntry(string overlayId)
+        {
+            layeredParts ??= new List<LayeredFacePartConfig>();
+
+            string normalized = NormalizeOverlayId(overlayId);
+            bool exists = layeredParts.Any(p =>
+                p != null
+                && p.partType == LayeredFacePartType.Overlay
+                && MatchesOverlayId(p, normalized));
+
+            if (exists)
+                return;
+
+            layeredParts.Add(new LayeredFacePartConfig
+            {
+                partType = LayeredFacePartType.Overlay,
+                expression = ExpressionType.Neutral,
+                texPath = string.Empty,
+                enabled = false,
+                overlayId = normalized,
+                overlayOrder = GetOrderedOverlayIds().Count
+            });
+        }
+
+        public void RemoveOverlayGroup(string overlayId)
+        {
+            if (layeredParts == null || layeredParts.Count == 0)
+                return;
+
+            string normalized = NormalizeOverlayId(overlayId);
+            layeredParts.RemoveAll(p =>
+                p != null
+                && p.partType == LayeredFacePartType.Overlay
+                && MatchesOverlayId(p, normalized));
+
+            NormalizeOverlayOrders();
         }
 
         /// <summary>
@@ -257,21 +611,125 @@ namespace CharacterStudio.Core
             InvalidateLookup();
         }
 
+        public void SetLayeredPart(LayeredFacePartType partType, ExpressionType expression, string texPath)
+        {
+            if (IsOverlayPart(partType))
+            {
+                SetLayeredPart(partType, expression, texPath, "Overlay", 0);
+                return;
+            }
+
+            layeredParts ??= new List<LayeredFacePartConfig>();
+            var existing = layeredParts.FirstOrDefault(p => p.partType == partType && p.expression == expression);
+            if (existing != null)
+            {
+                existing.texPath = texPath ?? string.Empty;
+                existing.enabled = !string.IsNullOrWhiteSpace(texPath);
+            }
+            else
+            {
+                layeredParts.Add(new LayeredFacePartConfig
+                {
+                    partType = partType,
+                    expression = expression,
+                    texPath = texPath ?? string.Empty,
+                    enabled = !string.IsNullOrWhiteSpace(texPath)
+                });
+            }
+        }
+
+        public void SetLayeredPart(LayeredFacePartType partType, ExpressionType expression, string texPath, string overlayId, int overlayOrder = 0)
+        {
+            if (!IsOverlayPart(partType))
+            {
+                SetLayeredPart(partType, expression, texPath);
+                return;
+            }
+
+            layeredParts ??= new List<LayeredFacePartConfig>();
+            string normalizedOverlayId = NormalizeOverlayId(overlayId);
+
+            var existing = layeredParts.FirstOrDefault(p =>
+                p.partType == partType
+                && p.expression == expression
+                && MatchesOverlayId(p, normalizedOverlayId));
+
+            if (existing != null)
+            {
+                existing.texPath = texPath ?? string.Empty;
+                existing.enabled = !string.IsNullOrWhiteSpace(texPath);
+                existing.overlayId = normalizedOverlayId;
+                existing.overlayOrder = overlayOrder;
+            }
+            else
+            {
+                layeredParts.Add(new LayeredFacePartConfig
+                {
+                    partType = partType,
+                    expression = expression,
+                    texPath = texPath ?? string.Empty,
+                    enabled = !string.IsNullOrWhiteSpace(texPath),
+                    overlayId = normalizedOverlayId,
+                    overlayOrder = overlayOrder
+                });
+            }
+        }
+
+        public void RemoveLayeredPart(LayeredFacePartType partType, ExpressionType expression)
+        {
+            if (IsOverlayPart(partType))
+            {
+                RemoveLayeredPart(partType, expression, "Overlay");
+                return;
+            }
+
+            layeredParts?.RemoveAll(p => p.partType == partType && p.expression == expression);
+        }
+
+        public void RemoveLayeredPart(LayeredFacePartType partType, ExpressionType expression, string overlayId)
+        {
+            if (!IsOverlayPart(partType))
+            {
+                RemoveLayeredPart(partType, expression);
+                return;
+            }
+
+            string normalizedOverlayId = NormalizeOverlayId(overlayId);
+            layeredParts?.RemoveAll(p =>
+                p.partType == partType
+                && p.expression == expression
+                && MatchesOverlayId(p, normalizedOverlayId));
+
+            NormalizeOverlayOrders();
+        }
+
         /// <summary>是否配置了任何表情贴图</summary>
         public bool HasAnyExpression()
             => expressions.Exists(e =>
                 !string.IsNullOrEmpty(e.texPath)
                 || (e.frames != null && e.frames.Count > 0));
 
+        public bool HasAnyLayeredPart()
+            => layeredParts != null && layeredParts.Exists(p =>
+                p != null
+                && p.enabled
+                && !string.IsNullOrWhiteSpace(p.texPath));
+
         public PawnFaceConfig Clone()
         {
-            var clone = new PawnFaceConfig { enabled = this.enabled };
+            var clone = new PawnFaceConfig
+            {
+                enabled = this.enabled,
+                workflowMode = this.workflowMode,
+                layeredSourceRoot = this.layeredSourceRoot
+            };
+
             foreach (var exp in this.expressions)
             {
                 var clonedExp = new ExpressionTexPath
                 {
                     expression = exp.expression,
-                    texPath    = exp.texPath
+                    texPath = exp.texPath
                 };
                 if (exp.frames != null)
                 {
@@ -280,6 +738,16 @@ namespace CharacterStudio.Core
                 }
                 clone.expressions.Add(clonedExp);
             }
+
+            if (this.layeredParts != null)
+            {
+                foreach (var part in this.layeredParts)
+                {
+                    if (part != null)
+                        clone.layeredParts.Add(part.Clone());
+                }
+            }
+
             // 克隆眼睛方向配置（若存在）
             clone.eyeDirectionConfig = this.eyeDirectionConfig?.Clone();
             // _lookupCache 保持 null，首次使用时懒初始化

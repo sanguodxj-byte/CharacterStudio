@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using RimWorld;
@@ -553,6 +553,11 @@ namespace CharacterStudio.Core
             slot.offsetNorth = Vector3.zero;
             slot.rotation = 0f;
             slot.graphicClass = node.graphicClass;
+
+            if (!string.IsNullOrEmpty(slot.texPath) &&
+                (System.IO.Path.IsPathRooted(slot.texPath) || slot.texPath.StartsWith("/")))
+                slot.graphicClass = typeof(CharacterStudio.Rendering.Graphic_Runtime);
+
         }
 
         private static BaseAppearanceSlotType? TryResolveBaseSlotType(RenderNodeSnapshot node)

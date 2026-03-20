@@ -47,11 +47,16 @@ namespace CharacterStudio.Rendering
         {
             if (!base.CanDrawNow(node, parms)) return false;
 
-            var eyeCfg = GetEyeDirectionConfig(parms.pawn);
-            if (eyeCfg == null || !eyeCfg.enabled) return false;
+            var skinComp = parms.pawn?.TryGetComp<CompPawnSkin>();
+            var eyeData = skinComp?.CurrentFaceRuntimeCompiledData?.portraitTrack?.eyeDirection;
+            if (eyeData == null || !eyeData.enabled) return false;
+
+            // 双轨运行时裁剪：
+            // World Track 目标是保底单节点脸，因此关闭旧眼方向覆盖层。
+            if (skinComp?.CurrentFaceRuntimeState.currentTrack == FaceRenderTrack.World)
+                return false;
 
             // 眨眼 / 睡眠 / 死亡时隐藏眼方向层（闭眼状态不需要方向感）
-            var skinComp = parms.pawn?.TryGetComp<CompPawnSkin>();
             if (skinComp != null)
             {
                 var expr = skinComp.GetEffectiveExpression();
@@ -61,12 +66,12 @@ namespace CharacterStudio.Rendering
                     return false;
             }
 
-            // UV 偏移模式：pupilMoveRange > 0 时，仅需 texCenter 存在即可绘制（方向由 UV 控制）
-            if (eyeCfg.pupilMoveRange > 0f)
-                return !string.IsNullOrEmpty(eyeCfg.texCenter);
+            // UV 偏移模式：仅需中心贴图存在即可绘制（方向由 UV 控制）
+            if (eyeData.useUvOffset)
+                return !string.IsNullOrEmpty(eyeData.texCenter);
 
             var dir = GetCurrentDirection(parms.pawn);
-            return !string.IsNullOrEmpty(eyeCfg.GetTexPath(dir));
+            return !string.IsNullOrEmpty(eyeData.GetTexPath(dir));
         }
 
         /// <summary>
@@ -75,21 +80,21 @@ namespace CharacterStudio.Rendering
         /// </summary>
         protected override Graphic? GetGraphic(PawnRenderNode node, PawnDrawParms parms)
         {
-            var eyeCfg = GetEyeDirectionConfig(parms.pawn);
-            if (eyeCfg == null || !eyeCfg.enabled) return null;
+            var eyeData = GetRuntimeEyeDirectionData(parms.pawn);
+            if (eyeData == null || !eyeData.enabled) return null;
 
-            Shader shader    = node.ShaderFor(parms.pawn) ?? ShaderDatabase.Cutout!;
-            Color  nodeColor = node.Props?.color ?? Color.white;
+            Shader shader = node.ShaderFor(parms.pawn) ?? ShaderDatabase.Cutout!;
+            Color nodeColor = node.Props?.color ?? Color.white;
 
             // UV 偏移模式：始终用 Center 贴图，偏移由 MaterialPropertyBlock 驱动
-            if (eyeCfg.pupilMoveRange > 0f)
+            if (eyeData.useUvOffset)
             {
-                if (string.IsNullOrEmpty(eyeCfg.texCenter)) return null;
-                return GetOrBuildGraphic(eyeCfg.texCenter, shader, nodeColor);
+                if (string.IsNullOrEmpty(eyeData.texCenter)) return null;
+                return GetOrBuildGraphic(eyeData.texCenter, shader, nodeColor);
             }
 
-            var dir  = GetCurrentDirection(parms.pawn);
-            string path = eyeCfg.GetTexPath(dir);
+            var dir = GetCurrentDirection(parms.pawn);
+            string path = eyeData.GetTexPath(dir);
             if (string.IsNullOrEmpty(path)) return null;
 
             return GetOrBuildGraphic(path, shader, nodeColor);
@@ -112,12 +117,12 @@ namespace CharacterStudio.Rendering
         {
             var mpb = base.GetMaterialPropertyBlock(node, material, parms);
 
-            var eyeCfg = GetEyeDirectionConfig(parms.pawn);
-            if (eyeCfg == null || !eyeCfg.enabled || eyeCfg.pupilMoveRange <= 0f)
+            var eyeData = GetRuntimeEyeDirectionData(parms.pawn);
+            if (eyeData == null || !eyeData.enabled || !eyeData.useUvOffset || eyeData.uvMoveRange <= 0f)
                 return mpb;
 
-            float r   = eyeCfg.pupilMoveRange;
-            var   dir = GetCurrentDirection(parms.pawn);
+            float r = eyeData.uvMoveRange;
+            var dir = GetCurrentDirection(parms.pawn);
 
             float offsetX = 0f, offsetY = 0f;
             switch (dir)
@@ -140,11 +145,11 @@ namespace CharacterStudio.Rendering
         // 辅助：配置 / 方向获取
         // ─────────────────────────────────────────────
 
-        private static PawnEyeDirectionConfig? GetEyeDirectionConfig(Pawn? pawn)
+        private static FaceEyeDirectionRuntimeData? GetRuntimeEyeDirectionData(Pawn? pawn)
         {
             if (pawn == null) return null;
             var comp = pawn.GetComp<CompPawnSkin>();
-            return comp?.ActiveSkin?.faceConfig?.eyeDirectionConfig;
+            return comp?.CurrentFaceRuntimeCompiledData?.portraitTrack?.eyeDirection;
         }
 
         private static EyeDirection GetCurrentDirection(Pawn? pawn)

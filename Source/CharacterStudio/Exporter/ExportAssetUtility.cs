@@ -166,13 +166,52 @@ namespace CharacterStudio.Exporter
                 }
             }
 
+            if (skinDef.equipments != null)
+            {
+                foreach (var equipment in skinDef.equipments)
+                {
+                    if (equipment == null)
+                    {
+                        continue;
+                    }
+
+                    yield return equipment.previewTexPath;
+                    yield return equipment.visual?.texPath;
+                    yield return equipment.visual?.maskTexPath;
+                }
+            }
+
             if (skinDef.faceConfig?.expressions != null)
             {
                 foreach (var expression in skinDef.faceConfig.expressions)
                 {
-                    if (expression != null)
+                    if (expression == null)
                     {
-                        yield return expression.texPath;
+                        continue;
+                    }
+
+                    yield return expression.texPath;
+
+                    if (expression.frames != null)
+                    {
+                        foreach (var frame in expression.frames)
+                        {
+                            if (frame != null)
+                            {
+                                yield return frame.texPath;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (skinDef.faceConfig?.layeredParts != null)
+            {
+                foreach (var part in skinDef.faceConfig.layeredParts)
+                {
+                    if (part != null)
+                    {
+                        yield return part.texPath;
                     }
                 }
             }

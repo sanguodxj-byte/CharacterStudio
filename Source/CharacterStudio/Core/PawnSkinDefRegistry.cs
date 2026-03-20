@@ -26,6 +26,27 @@ namespace CharacterStudio.Core
 
         public static IEnumerable<PawnSkinDef> AllRuntimeDefs => runtimeDefsByName.Values;
 
+        public static PawnSkinDef? GetDefaultSkinForRace(string? raceDefName)
+        {
+            if (string.IsNullOrWhiteSpace(raceDefName))
+                return null;
+
+            string resolvedRaceDefName = raceDefName!;
+
+            if (!loaded && !loading)
+                LoadFromConfig();
+
+            return runtimeDefsByName.Values
+                .Where(def => def != null && def.applyAsDefaultForTargetRaces)
+                .Where(def => def.targetRaces != null && def.targetRaces.Contains(resolvedRaceDefName))
+                .OrderByDescending(def => def.defaultRacePriority)
+                .ThenBy(def => def.defName)
+                .FirstOrDefault();
+        }
+
+        public static PawnSkinDef? GetDefaultSkinForRace(ThingDef? raceDef)
+            => raceDef == null ? null : GetDefaultSkinForRace(raceDef.defName);
+
         public static PawnSkinDef? TryGet(string? defName)
         {
             if (string.IsNullOrEmpty(defName)) return null;
@@ -189,6 +210,8 @@ namespace CharacterStudio.Core
             target.hideVanillaBody  = cloned.hideVanillaBody;
             target.hideVanillaApparel= cloned.hideVanillaApparel;
             target.humanlikeOnly    = cloned.humanlikeOnly;
+            target.applyAsDefaultForTargetRaces = cloned.applyAsDefaultForTargetRaces;
+            target.defaultRacePriority = cloned.defaultRacePriority;
             target.author           = cloned.author;
             target.version          = cloned.version;
             target.previewTexPath   = cloned.previewTexPath;
@@ -199,6 +222,9 @@ namespace CharacterStudio.Core
             target.weaponRenderConfig = cloned.weaponRenderConfig ?? new WeaponRenderConfig();
             target.xenotypeDefName  = cloned.xenotypeDefName;
             target.raceDisplayName  = cloned.raceDisplayName;
+
+            target.equipments.Clear();
+            target.equipments.AddRange(cloned.equipments);
 
             target.abilities.Clear();
             target.abilities.AddRange(cloned.abilities);

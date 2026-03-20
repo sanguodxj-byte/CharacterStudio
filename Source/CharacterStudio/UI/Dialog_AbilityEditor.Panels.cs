@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CharacterStudio.Abilities;
 using RimWorld;
 using UnityEngine;
@@ -15,9 +16,8 @@ namespace CharacterStudio.UI
             Rect contentRect = rect.ContractedBy(Margin);
 
             Widgets.Label(new Rect(contentRect.x, contentRect.y, contentRect.width - 90f, 24), "<b>" + "CS_Studio_Effect_Title".Translate() + "</b>");
-            if (Widgets.ButtonText(new Rect(contentRect.x + contentRect.width - 80, contentRect.y, 80, 24), "CS_Studio_Effect_Add".Translate()))
+            if (DrawPanelButton(new Rect(contentRect.x + contentRect.width - 80, contentRect.y, 80, 24), "CS_Studio_Effect_Add".Translate(), ShowAddEffectMenu, true))
             {
-                ShowAddEffectMenu();
             }
 
             Widgets.Label(new Rect(contentRect.x, contentRect.y + 24f, contentRect.width, 24f), "CS_Studio_Ability_EffectsSummary".Translate(selectedAbility?.effects?.Count ?? 0, selectedAbility?.runtimeComponents?.Count ?? 0));
@@ -34,9 +34,8 @@ namespace CharacterStudio.UI
                 Widgets.Label(new Rect(listRect.x + 10f, listRect.y + 20f, listRect.width - 20f, 70f), "CS_Studio_Effect_EmptyHint".Translate());
                 GUI.color = Color.white;
                 Text.Anchor = TextAnchor.UpperLeft;
-                if (Widgets.ButtonText(new Rect(listRect.x + 30f, listRect.y + 92f, listRect.width - 60f, 28f), "CS_Studio_Effect_Add".Translate()))
+                if (DrawPanelButton(new Rect(listRect.x + 30f, listRect.y + 92f, listRect.width - 60f, 28f), "CS_Studio_Effect_Add".Translate(), ShowAddEffectMenu, true))
                 {
-                    ShowAddEffectMenu();
                 }
                 return;
             }
@@ -63,6 +62,28 @@ namespace CharacterStudio.UI
             Widgets.DrawMenuSection(rect);
             Rect inner = rect.ContractedBy(Margin);
 
+            bool DrawBarButton(Rect buttonRect, string label, Action action, bool active = false)
+            {
+                Widgets.DrawBoxSolid(buttonRect, active ? UIHelper.ActiveTabColor : UIHelper.PanelFillSoftColor);
+                Widgets.DrawBoxSolid(new Rect(buttonRect.x, buttonRect.yMax - 2f, buttonRect.width, 2f), active ? UIHelper.AccentColor : UIHelper.AccentSoftColor);
+                GUI.color = Mouse.IsOver(buttonRect) ? UIHelper.HoverOutlineColor : UIHelper.BorderColor;
+                Widgets.DrawBox(buttonRect, 1);
+                GUI.color = Color.white;
+
+                GameFont oldFont = Text.Font;
+                Text.Font = GameFont.Tiny;
+                Text.Anchor = TextAnchor.MiddleCenter;
+                GUI.color = active ? Color.white : UIHelper.HeaderColor;
+                Widgets.Label(buttonRect, label);
+                GUI.color = Color.white;
+                Text.Anchor = TextAnchor.UpperLeft;
+                Text.Font = oldFont;
+
+                if (!Widgets.ButtonInvisible(buttonRect)) return false;
+                action();
+                return true;
+            }
+
             // 标签按钮行
             float tabW = inner.width / 3f;
             int effectCount = selectedAbility?.effects?.Count ?? 0;
@@ -79,9 +100,10 @@ namespace CharacterStudio.UI
             {
                 Rect tabRect = new Rect(inner.x + tabW * i, inner.y, tabW, 26f);
                 bool active  = rightPanelTab == i;
-                if (active) Widgets.DrawHighlight(tabRect);
-                if (Widgets.ButtonText(tabRect, tabs[i]))
+                if (DrawBarButton(tabRect, tabs[i], () =>
+                {
                     rightPanelTab = i;
+                }, active)) { }
             }
 
             Rect bodyRect = new Rect(inner.x, inner.y + 28f, inner.width, inner.height - 28f);
@@ -100,7 +122,16 @@ namespace CharacterStudio.UI
         private void DrawEffectsPanelBody(Rect rect)
         {
             // 添加按钮行
-            if (Widgets.ButtonText(new Rect(rect.x, rect.y, rect.width, 24f), "CS_Studio_Effect_Add".Translate()))
+            Rect addRect = new Rect(rect.x, rect.y, rect.width, 24f);
+            Widgets.DrawBoxSolid(addRect, UIHelper.PanelFillSoftColor);
+            Widgets.DrawBoxSolid(new Rect(addRect.x, addRect.yMax - 2f, addRect.width, 2f), UIHelper.AccentSoftColor);
+            GUI.color = Mouse.IsOver(addRect) ? UIHelper.HoverOutlineColor : UIHelper.BorderColor;
+            Widgets.DrawBox(addRect, 1);
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.MiddleCenter;
+            Widgets.Label(addRect, "CS_Studio_Effect_Add".Translate());
+            Text.Anchor = TextAnchor.UpperLeft;
+            if (Widgets.ButtonInvisible(addRect))
                 ShowAddEffectMenu();
 
             GUI.color = UIHelper.SubtleColor;
@@ -142,7 +173,16 @@ namespace CharacterStudio.UI
         /// </summary>
         private void DrawVisualEffectsPanelBody(Rect rect)
         {
-            if (Widgets.ButtonText(new Rect(rect.x, rect.y, rect.width, 24f), "CS_Studio_VFX_Add".Translate()))
+            Rect addRect = new Rect(rect.x, rect.y, rect.width, 24f);
+            Widgets.DrawBoxSolid(addRect, UIHelper.PanelFillSoftColor);
+            Widgets.DrawBoxSolid(new Rect(addRect.x, addRect.yMax - 2f, addRect.width, 2f), UIHelper.AccentSoftColor);
+            GUI.color = Mouse.IsOver(addRect) ? UIHelper.HoverOutlineColor : UIHelper.BorderColor;
+            Widgets.DrawBox(addRect, 1);
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.MiddleCenter;
+            Widgets.Label(addRect, "CS_Studio_VFX_Add".Translate());
+            Text.Anchor = TextAnchor.UpperLeft;
+            if (Widgets.ButtonInvisible(addRect))
                 ShowAddVfxMenu();
 
             float listY    = rect.y + 28f;
@@ -161,7 +201,7 @@ namespace CharacterStudio.UI
                 return;
             }
 
-            const float ItemH = 120f;
+            const float ItemH = 188f;
             const float ItemGap = 4f;
             Rect viewRect = new Rect(0, 0, listRect.width - 16f,
                 selectedAbility.visualEffects.Count * (ItemH + ItemGap));
@@ -182,8 +222,16 @@ namespace CharacterStudio.UI
         {
             if (selectedAbility == null) return;
 
-            if (Widgets.ButtonText(new Rect(rect.x, rect.y, rect.width, 24f),
-                "CS_Studio_Runtime_AddComponent".Translate()))
+            Rect addRect = new Rect(rect.x, rect.y, rect.width, 24f);
+            Widgets.DrawBoxSolid(addRect, UIHelper.PanelFillSoftColor);
+            Widgets.DrawBoxSolid(new Rect(addRect.x, addRect.yMax - 2f, addRect.width, 2f), UIHelper.AccentSoftColor);
+            GUI.color = Mouse.IsOver(addRect) ? UIHelper.HoverOutlineColor : UIHelper.BorderColor;
+            Widgets.DrawBox(addRect, 1);
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.MiddleCenter;
+            Widgets.Label(addRect, "CS_Studio_Runtime_AddComponent".Translate());
+            Text.Anchor = TextAnchor.UpperLeft;
+            if (Widgets.ButtonInvisible(addRect))
                 ShowAddRuntimeComponentMenu();
 
             float listY    = rect.y + 28f;
@@ -231,6 +279,84 @@ namespace CharacterStudio.UI
         /// <summary>
         /// 在滚动视图内绘制所有运行时组件块（不含标题/添加按钮，供 DrawRCPanelBody 使用）
         /// </summary>
+        private bool DrawPanelButton(Rect buttonRect, string label, Action action, bool accent = false)
+        {
+            Widgets.DrawBoxSolid(buttonRect, accent ? UIHelper.ActiveTabColor : UIHelper.PanelFillSoftColor);
+            Widgets.DrawBoxSolid(new Rect(buttonRect.x, buttonRect.yMax - 2f, buttonRect.width, 2f), accent ? UIHelper.AccentColor : UIHelper.AccentSoftColor);
+            GUI.color = Mouse.IsOver(buttonRect) ? UIHelper.HoverOutlineColor : UIHelper.BorderColor;
+            Widgets.DrawBox(buttonRect, 1);
+            GUI.color = Color.white;
+
+            GameFont oldFont = Text.Font;
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.MiddleCenter;
+            GUI.color = accent ? Color.white : UIHelper.HeaderColor;
+            Widgets.Label(buttonRect, label);
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = oldFont;
+
+            if (Widgets.ButtonInvisible(buttonRect))
+            {
+                action();
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool DrawCompactIconButton(Rect buttonRect, string label, Action action, bool accent = false)
+        {
+            Widgets.DrawBoxSolid(buttonRect, accent ? UIHelper.ActiveTabColor : UIHelper.PanelFillSoftColor);
+            Widgets.DrawBoxSolid(new Rect(buttonRect.x, buttonRect.yMax - 2f, buttonRect.width, 2f), accent ? UIHelper.AccentColor : new Color(1f, 1f, 1f, 0.05f));
+            GUI.color = Mouse.IsOver(buttonRect) ? UIHelper.HoverOutlineColor : UIHelper.BorderColor;
+            Widgets.DrawBox(buttonRect, 1);
+            GUI.color = Color.white;
+
+            GameFont oldFont = Text.Font;
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.MiddleCenter;
+            GUI.color = accent ? Color.white : UIHelper.HeaderColor;
+            Widgets.Label(buttonRect, label);
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = oldFont;
+
+            if (Widgets.ButtonInvisible(buttonRect))
+            {
+                action();
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool DrawSelectionFieldButton(Rect buttonRect, string label, Action action)
+        {
+            Widgets.DrawBoxSolid(buttonRect, UIHelper.PanelFillSoftColor);
+            Widgets.DrawBoxSolid(new Rect(buttonRect.x, buttonRect.yMax - 2f, buttonRect.width, 2f), new Color(1f, 1f, 1f, 0.05f));
+            GUI.color = Mouse.IsOver(buttonRect) ? UIHelper.HoverOutlineColor : UIHelper.BorderColor;
+            Widgets.DrawBox(buttonRect, 1);
+            GUI.color = Color.white;
+
+            GameFont oldFont = Text.Font;
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.MiddleCenter;
+            GUI.color = UIHelper.HeaderColor;
+            Widgets.Label(buttonRect, label);
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = oldFont;
+
+            if (Widgets.ButtonInvisible(buttonRect))
+            {
+                action();
+                return true;
+            }
+
+            return false;
+        }
+
         private void DrawRuntimeComponentsInBody(ref float y, float width)
         {
             if (selectedAbility == null) return;
@@ -258,7 +384,11 @@ namespace CharacterStudio.UI
                 }
 
                 Rect block = new Rect(0, y, width, blockHeight);
-                Widgets.DrawMenuSection(block);
+                Widgets.DrawBoxSolid(block, UIHelper.PanelFillSoftColor);
+                Widgets.DrawBoxSolid(new Rect(block.x, block.yMax - 2f, block.width, 2f), UIHelper.AccentSoftColor);
+                GUI.color = UIHelper.BorderColor;
+                Widgets.DrawBox(block, 1);
+                GUI.color = Color.white;
                 Rect inner = block.ContractedBy(5f);
 
                 Widgets.Label(new Rect(inner.x, inner.y, inner.width - 100f, 24f),
@@ -267,9 +397,8 @@ namespace CharacterStudio.UI
                 Widgets.Checkbox(new Vector2(inner.x + inner.width - 96f, inner.y + 2f), ref enabled, 24f, false);
                 comp.enabled = enabled;
 
-                if (Widgets.ButtonText(new Rect(inner.x + inner.width - 68f, inner.y, 64f, 24f), "X"))
+                if (DrawCompactIconButton(new Rect(inner.x + inner.width - 68f, inner.y, 64f, 24f), "X", () => selectedAbility.runtimeComponents.RemoveAt(i)))
                 {
-                    selectedAbility.runtimeComponents.RemoveAt(i);
                     i--;
                     y += blockHeight + 6f;
                     continue;
@@ -341,9 +470,10 @@ namespace CharacterStudio.UI
                     rowY += 26f;
 
                     Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_RDamageDef".Translate());
-                    if (Widgets.ButtonText(new Rect(inner.x + labelW, rowY, valueW, 24f),
-                        comp.waveDamageDef?.label ?? "CS_Studio_None".Translate()))
-                        ShowDamageDefSelectorForRuntime(comp);
+                    if (DrawSelectionFieldButton(new Rect(inner.x + labelW, rowY, valueW, 24f),
+                        comp.waveDamageDef?.label ?? "CS_Studio_None".Translate(), () => ShowDamageDefSelectorForRuntime(comp)))
+                    {
+                    }
                 }
 
                 y += blockHeight + 6f;
@@ -358,10 +488,9 @@ namespace CharacterStudio.UI
             // 标题行
             Widgets.Label(new Rect(contentRect.x, contentRect.y, contentRect.width - 82f, 24f),
                 "<b>" + "CS_Studio_VFX_Title".Translate() + "</b>");
-            if (Widgets.ButtonText(new Rect(contentRect.x + contentRect.width - 72f, contentRect.y, 72f, 24f),
-                "CS_Studio_VFX_Add".Translate()))
+            if (DrawPanelButton(new Rect(contentRect.x + contentRect.width - 72f, contentRect.y, 72f, 24f),
+                "CS_Studio_VFX_Add".Translate(), ShowAddVfxMenu, true))
             {
-                ShowAddVfxMenu();
             }
 
             float listY    = contentRect.y + 28f;
@@ -380,7 +509,7 @@ namespace CharacterStudio.UI
                 return;
             }
 
-            const float ItemH = 120f;
+            const float ItemH = 188f;
             const float ItemGap = 4f;
             Rect viewRect = new Rect(0, 0, listRect.width - 16f, selectedAbility.visualEffects.Count * (ItemH + ItemGap));
             Widgets.BeginScrollView(listRect, ref vfxScrollPos, viewRect);
@@ -399,63 +528,122 @@ namespace CharacterStudio.UI
         private void DrawVfxItem(Rect rect, CharacterStudio.Abilities.AbilityVisualEffectConfig vfx, int index)
         {
             Widgets.DrawMenuSection(rect);
-            Rect inner = rect.ContractedBy(5);
+            Rect inner = rect.ContractedBy(5f);
 
-            // 标题 + 删除
             string titleLabel = $"#{index + 1} {GetVfxTypeLabel(vfx.type)}";
-            Widgets.Label(new Rect(inner.x, inner.y, inner.width - 28f, 24f), titleLabel);
-            if (Widgets.ButtonText(new Rect(inner.x + inner.width - 26f, inner.y, 24f, 24f), "X"))
+            if (vfx.sourceMode == AbilityVisualEffectSourceMode.Preset && !string.IsNullOrWhiteSpace(vfx.presetDefName))
             {
-                selectedAbility?.visualEffects.RemoveAt(index);
+                titleLabel += $" [{vfx.presetDefName}]";
+            }
+
+            GUI.color = vfx.enabled ? Color.white : Color.gray;
+            Widgets.Label(new Rect(inner.x, inner.y, inner.width - 120f, 24f), titleLabel);
+            GUI.color = Color.white;
+
+            bool enabled = vfx.enabled;
+            Widgets.Checkbox(new Vector2(inner.x + inner.width - 116f, inner.y + 2f), ref enabled, 24f, false);
+            vfx.enabled = enabled;
+            Widgets.Label(new Rect(inner.x + inner.width - 94f, inner.y, 26f, 24f), "CS_Studio_VFX_Enabled".Translate());
+
+            float buttonX = inner.x + inner.width - 66f;
+            if (selectedAbility != null && index > 0 && DrawCompactIconButton(new Rect(buttonX, inner.y, 20f, 24f), "▲", () => SwapVfx(index, index - 1)))
+            {
                 return;
             }
 
-            float y       = inner.y + 28f;
-            float labelW  = Mathf.Max(56f, Text.CalcSize("CS_Studio_VFX_Target".Translate()).x + 6f);
-            float fieldW  = inner.width - labelW - 4f;
-
-            // 特效类型
-            Widgets.Label(new Rect(inner.x, y, labelW, 24f), "CS_Studio_VFX_Type".Translate());
-            if (Widgets.ButtonText(new Rect(inner.x + labelW, y, fieldW, 24f), GetVfxTypeLabel(vfx.type)))
+            buttonX += 22f;
+            if (selectedAbility != null && index < selectedAbility.visualEffects.Count - 1 && DrawCompactIconButton(new Rect(buttonX, inner.y, 20f, 24f), "▼", () => SwapVfx(index, index + 1)))
             {
-                var options = new System.Collections.Generic.List<Verse.FloatMenuOption>();
-                foreach (CharacterStudio.Abilities.AbilityVisualEffectType t
-                    in System.Enum.GetValues(typeof(CharacterStudio.Abilities.AbilityVisualEffectType)))
+                return;
+            }
+
+            buttonX += 22f;
+            if (DrawCompactIconButton(new Rect(buttonX, inner.y, 20f, 24f), "X", () => selectedAbility?.visualEffects.RemoveAt(index)))
+            {
+                return;
+            }
+
+            float y = inner.y + 30f;
+            float gap = 6f;
+            float colW = (inner.width - gap) / 2f;
+            float labelW = 38f;
+            float fieldW = colW - labelW - 4f;
+
+            DrawVfxDropdownRow(inner.x, y, labelW, fieldW, "CS_Studio_VFX_TypeShort".Translate(), GetVfxTypeLabel(vfx.type), () =>
+            {
+                var options = new List<FloatMenuOption>();
+                foreach (AbilityVisualEffectType t in Enum.GetValues(typeof(AbilityVisualEffectType)))
                 {
                     var captured = t;
-                    options.Add(new Verse.FloatMenuOption(GetVfxTypeLabel(captured), () => vfx.type = captured));
+                    options.Add(new FloatMenuOption(GetVfxTypeLabel(captured), () => vfx.type = captured));
                 }
-                Find.WindowStack.Add(new Verse.FloatMenu(options));
-            }
+                Find.WindowStack.Add(new FloatMenu(options));
+            });
+
+            DrawVfxDropdownRow(inner.x + colW + gap, y, labelW, fieldW, "CS_Studio_VFX_SourceModeShort".Translate(), GetVfxSourceModeLabel(vfx.sourceMode), () =>
+            {
+                var options = new List<FloatMenuOption>();
+                foreach (AbilityVisualEffectSourceMode mode in Enum.GetValues(typeof(AbilityVisualEffectSourceMode)))
+                {
+                    var captured = mode;
+                    options.Add(new FloatMenuOption(GetVfxSourceModeLabel(captured), () => vfx.sourceMode = captured));
+                }
+                Find.WindowStack.Add(new FloatMenu(options));
+            });
             y += RowHeight;
 
-            // 作用目标
-            Widgets.Label(new Rect(inner.x, y, labelW, 24f), "CS_Studio_VFX_Target".Translate());
-            if (Widgets.ButtonText(new Rect(inner.x + labelW, y, fieldW, 24f), GetVfxTargetLabel(vfx.target)))
+            if (vfx.sourceMode == AbilityVisualEffectSourceMode.Preset)
             {
-                var options = new System.Collections.Generic.List<Verse.FloatMenuOption>();
-                foreach (CharacterStudio.Abilities.VisualEffectTarget t
-                    in System.Enum.GetValues(typeof(CharacterStudio.Abilities.VisualEffectTarget)))
+                Widgets.Label(new Rect(inner.x, y, 44f, 24f), "CS_Studio_VFX_PresetShort".Translate());
+                vfx.presetDefName = Widgets.TextField(
+                    new Rect(inner.x + 44f, y, inner.width - 44f, 24f),
+                    vfx.presetDefName ?? string.Empty);
+                y += RowHeight;
+            }
+
+            DrawVfxDropdownRow(inner.x, y, labelW, fieldW, "CS_Studio_VFX_TargetShort".Translate(), GetVfxTargetLabel(vfx.target), () =>
+            {
+                var options = new List<FloatMenuOption>();
+                foreach (VisualEffectTarget t in Enum.GetValues(typeof(VisualEffectTarget)))
                 {
                     var captured = t;
-                    options.Add(new Verse.FloatMenuOption(GetVfxTargetLabel(captured), () => vfx.target = captured));
+                    options.Add(new FloatMenuOption(GetVfxTargetLabel(captured), () => vfx.target = captured));
                 }
-                Find.WindowStack.Add(new Verse.FloatMenu(options));
-            }
+                Find.WindowStack.Add(new FloatMenu(options));
+            });
+
+            DrawVfxDropdownRow(inner.x + colW + gap, y, labelW, fieldW, "CS_Studio_VFX_TriggerShort".Translate(), GetVfxTriggerLabel(vfx.trigger), () =>
+            {
+                var options = new List<FloatMenuOption>();
+                foreach (AbilityVisualEffectTrigger trigger in Enum.GetValues(typeof(AbilityVisualEffectTrigger)))
+                {
+                    var captured = trigger;
+                    options.Add(new FloatMenuOption(GetVfxTriggerLabel(captured), () => vfx.trigger = captured));
+                }
+                Find.WindowStack.Add(new FloatMenu(options));
+            });
             y += RowHeight;
 
-            // 延迟 ticks
-            Widgets.Label(new Rect(inner.x, y, labelW, 24f), "CS_Studio_VFX_Delay".Translate());
+            Widgets.Label(new Rect(inner.x, y, labelW, 24f), "CS_Studio_VFX_DelayShort".Translate());
             string delayStr = vfx.delayTicks.ToString();
             Widgets.TextFieldNumeric(new Rect(inner.x + labelW, y, fieldW, 24f),
-                ref vfx.delayTicks, ref delayStr, 0, 600);
+                ref vfx.delayTicks, ref delayStr, 0, 60000);
+
+            Widgets.Label(new Rect(inner.x + colW + gap, y, labelW, 24f), "CS_Studio_VFX_ScaleShort".Translate());
+            string scaleStr = vfx.scale.ToString("F2");
+            Widgets.TextFieldNumeric(new Rect(inner.x + colW + gap + labelW, y, fieldW, 24f),
+                ref vfx.scale, ref scaleStr, 0.1f, 5f);
             y += RowHeight;
 
-            // 规模
-            Widgets.Label(new Rect(inner.x, y, labelW, 24f), "CS_Studio_VFX_Scale".Translate());
-            string scaleStr = vfx.scale.ToString("F2");
+            Widgets.Label(new Rect(inner.x, y, labelW, 24f), "CS_Studio_VFX_RepeatCountShort".Translate());
+            string repeatCountStr = vfx.repeatCount.ToString();
             Widgets.TextFieldNumeric(new Rect(inner.x + labelW, y, fieldW, 24f),
-                ref vfx.scale, ref scaleStr, 0.1f, 5f);
+                ref vfx.repeatCount, ref repeatCountStr, 1, 999);
+
+            Widgets.Label(new Rect(inner.x + colW + gap, y, labelW, 24f), "CS_Studio_VFX_RepeatIntervalShort".Translate());
+            string repeatIntervalStr = vfx.repeatIntervalTicks.ToString();
+            Widgets.TextFieldNumeric(new Rect(inner.x + colW + gap + labelW, y, fieldW, 24f),
+                ref vfx.repeatIntervalTicks, ref repeatIntervalStr, 0, 60000);
         }
 
         private void ShowAddVfxMenu()
@@ -489,6 +677,38 @@ namespace CharacterStudio.UI
             return ("CS_Studio_VFX_Target_" + target).Translate();
         }
 
+        private static string GetVfxSourceModeLabel(CharacterStudio.Abilities.AbilityVisualEffectSourceMode mode)
+        {
+            return mode switch
+            {
+                CharacterStudio.Abilities.AbilityVisualEffectSourceMode.BuiltIn => "CS_Studio_VFX_SourceMode_BuiltIn".Translate(),
+                CharacterStudio.Abilities.AbilityVisualEffectSourceMode.Preset => "CS_Studio_VFX_SourceMode_Preset".Translate(),
+                _ => mode.ToString()
+            };
+        }
+
+        private static string GetVfxTriggerLabel(CharacterStudio.Abilities.AbilityVisualEffectTrigger trigger)
+        {
+            return trigger switch
+            {
+                CharacterStudio.Abilities.AbilityVisualEffectTrigger.OnCastStart => "CS_Studio_VFX_Trigger_OnCastStart".Translate(),
+                CharacterStudio.Abilities.AbilityVisualEffectTrigger.OnWarmup => "CS_Studio_VFX_Trigger_OnWarmup".Translate(),
+                CharacterStudio.Abilities.AbilityVisualEffectTrigger.OnCastFinish => "CS_Studio_VFX_Trigger_OnCastFinish".Translate(),
+                CharacterStudio.Abilities.AbilityVisualEffectTrigger.OnTargetApply => "CS_Studio_VFX_Trigger_OnTargetApply".Translate(),
+                CharacterStudio.Abilities.AbilityVisualEffectTrigger.OnDurationTick => "CS_Studio_VFX_Trigger_OnDurationTick".Translate(),
+                CharacterStudio.Abilities.AbilityVisualEffectTrigger.OnExpire => "CS_Studio_VFX_Trigger_OnExpire".Translate(),
+                _ => trigger.ToString()
+            };
+        }
+
+        private void DrawVfxDropdownRow(float x, float y, float labelW, float fieldW, string label, string value, Action onClick)
+        {
+            Widgets.Label(new Rect(x, y, labelW, 24f), label);
+            if (DrawSelectionFieldButton(new Rect(x + labelW, y, fieldW, 24f), value, onClick))
+            {
+            }
+        }
+
         private void DrawEffectItem(Rect rect, AbilityEffectConfig effect, int index)
         {
             Widgets.DrawMenuSection(rect);
@@ -498,21 +718,18 @@ namespace CharacterStudio.UI
             Widgets.Label(new Rect(inner.x, inner.y, 130, 24), $"#{index + 1} {GetEffectTypeLabel(effect.type)}");
 
             float buttonX = inner.x + inner.width - 78;
-            if (Widgets.ButtonText(new Rect(buttonX, inner.y, 24, 24), "▲") && selectedAbility != null && index > 0)
+            if (selectedAbility != null && index > 0 && DrawCompactIconButton(new Rect(buttonX, inner.y, 24, 24), "▲", () => SwapEffects(index, index - 1)))
             {
-                SwapEffects(index, index - 1);
                 return;
             }
             buttonX += 26;
-            if (Widgets.ButtonText(new Rect(buttonX, inner.y, 24, 24), "▼") && selectedAbility != null && index < selectedAbility.effects.Count - 1)
+            if (selectedAbility != null && index < selectedAbility.effects.Count - 1 && DrawCompactIconButton(new Rect(buttonX, inner.y, 24, 24), "▼", () => SwapEffects(index, index + 1)))
             {
-                SwapEffects(index, index + 1);
                 return;
             }
             buttonX += 26;
-            if (Widgets.ButtonText(new Rect(buttonX, inner.y, 24, 24), "X"))
+            if (DrawCompactIconButton(new Rect(buttonX, inner.y, 24, 24), "X", () => selectedAbility?.effects.RemoveAt(index)))
             {
-                selectedAbility?.effects.RemoveAt(index);
                 return;
             }
 
@@ -546,9 +763,10 @@ namespace CharacterStudio.UI
             {
                 case AbilityEffectType.Damage:
                     Widgets.Label(new Rect(inner.x, y, extraLabelW, 24), "CS_Studio_Effect_DamageDef".Translate());
-                    if (Widgets.ButtonText(new Rect(inner.x + extraLabelW, y, extraFieldW, 24),
-                        effect.damageDef?.label ?? "CS_Studio_None".Translate()))
-                        ShowDamageDefSelector(effect);
+                    if (DrawSelectionFieldButton(new Rect(inner.x + extraLabelW, y, extraFieldW, 24),
+                        effect.damageDef?.label ?? "CS_Studio_None".Translate(), () => ShowDamageDefSelector(effect)))
+                    {
+                    }
                     y += 30;
                     // 自伤选项
                     bool canHurtSelf = effect.canHurtSelf;
@@ -558,9 +776,16 @@ namespace CharacterStudio.UI
                     break;
                 case AbilityEffectType.Summon:
                     Widgets.Label(new Rect(inner.x, y, extraLabelW, 24), "CS_Studio_Effect_PawnKind".Translate());
-                    if (Widgets.ButtonText(new Rect(inner.x + extraLabelW, y, extraFieldW, 24),
-                        effect.summonKind?.label ?? "CS_Studio_None".Translate()))
-                        ShowPawnKindSelector(effect);
+                    if (DrawSelectionFieldButton(new Rect(inner.x + extraLabelW, y, extraFieldW, 24),
+                        effect.summonKind?.label ?? "CS_Studio_None".Translate(), () => ShowPawnKindSelector(effect)))
+                    {
+                    }
+                    y += 30;
+                    Widgets.Label(new Rect(inner.x, y, extraLabelW, 24), "召唤阵营");
+                    if (DrawSelectionFieldButton(new Rect(inner.x + extraLabelW, y, extraFieldW, 24),
+                        effect.summonFactionDef?.label ?? "CS_Studio_None".Translate(), () => ShowFactionSelector(effect)))
+                    {
+                    }
                     y += 30;
                     Widgets.Label(new Rect(inner.x, y, extraLabelW, 24), "CS_Studio_Effect_SummonCount".Translate());
                     string summonCountStr = effect.summonCount.ToString();
@@ -570,9 +795,10 @@ namespace CharacterStudio.UI
                 case AbilityEffectType.Buff:
                 case AbilityEffectType.Debuff:
                     Widgets.Label(new Rect(inner.x, y, extraLabelW, 24), "CS_Studio_Effect_Hediff".Translate());
-                    if (Widgets.ButtonText(new Rect(inner.x + extraLabelW, y, extraFieldW, 24),
-                        effect.hediffDef?.label ?? "CS_Studio_None".Translate()))
-                        ShowHediffSelector(effect);
+                    if (DrawSelectionFieldButton(new Rect(inner.x + extraLabelW, y, extraFieldW, 24),
+                        effect.hediffDef?.label ?? "CS_Studio_None".Translate(), () => ShowHediffSelector(effect)))
+                    {
+                    }
                     y += 30;
                     Widgets.Label(new Rect(inner.x, y, extraLabelW, 24), "CS_Studio_Effect_Duration".Translate());
                     string buffDurationStr = effect.duration.ToString();
@@ -580,17 +806,67 @@ namespace CharacterStudio.UI
                         ref effect.duration, ref buffDurationStr, 0f, 600f);
                     break;
                 case AbilityEffectType.Control:
+                    Widgets.Label(new Rect(inner.x, y, extraLabelW, 24), "CS_Studio_Effect_ControlMode".Translate());
+                    if (DrawSelectionFieldButton(new Rect(inner.x + extraLabelW, y, extraFieldW, 24), GetControlModeLabel(effect.controlMode), () => ShowControlModeSelector(effect)))
+                    {
+                    }
+                    y += 30;
+
                     Widgets.Label(new Rect(inner.x, y, extraLabelW, 24), "CS_Studio_Effect_Duration".Translate());
                     string controlDurationStr = effect.duration.ToString();
                     Widgets.TextFieldNumeric(new Rect(inner.x + extraLabelW, y, extraFieldW, 24),
                         ref effect.duration, ref controlDurationStr, 0f, 600f);
+                    y += 30;
+
+                    if (effect.controlMode != ControlEffectMode.Stun)
+                    {
+                        Widgets.Label(new Rect(inner.x, y, extraLabelW, 24), "CS_Studio_Effect_ControlMoveDistance".Translate());
+                        string moveDistanceStr = effect.controlMoveDistance.ToString();
+                        Widgets.TextFieldNumeric(new Rect(inner.x + extraLabelW, y, extraFieldW, 24),
+                            ref effect.controlMoveDistance, ref moveDistanceStr, 1, 30);
+                    }
                     break;
                 case AbilityEffectType.Heal:
                 case AbilityEffectType.Teleport:
-                case AbilityEffectType.Terraform:
                     GUI.color = UIHelper.SubtleColor;
                     Widgets.Label(new Rect(inner.x, y, inner.width, 24), "CS_Studio_Effect_NoExtraParams".Translate());
                     GUI.color = Color.white;
+                    break;
+                case AbilityEffectType.Terraform:
+                    Widgets.Label(new Rect(inner.x, y, extraLabelW, 24), "CS_Studio_Effect_TerraformMode".Translate());
+                    if (DrawSelectionFieldButton(new Rect(inner.x + extraLabelW, y, extraFieldW, 24), GetTerraformModeLabel(effect.terraformMode), () => ShowTerraformModeSelector(effect)))
+                    {
+                    }
+                    y += 30;
+
+                    switch (effect.terraformMode)
+                    {
+                        case TerraformEffectMode.CleanFilth:
+                            GUI.color = UIHelper.SubtleColor;
+                            Widgets.Label(new Rect(inner.x, y, inner.width, 24), "CS_Studio_Effect_TerraformCleanFilthHint".Translate());
+                            GUI.color = Color.white;
+                            break;
+                        case TerraformEffectMode.SpawnThing:
+                            Widgets.Label(new Rect(inner.x, y, extraLabelW, 24), "CS_Studio_Effect_TerraformThing".Translate());
+                            if (DrawSelectionFieldButton(new Rect(inner.x + extraLabelW, y, extraFieldW, 24),
+                                effect.terraformThingDef?.label ?? "CS_Studio_None".Translate(), () => ShowTerraformThingSelector(effect)))
+                            {
+                            }
+                            y += 30;
+
+                            Widgets.Label(new Rect(inner.x, y, extraLabelW, 24), "CS_Studio_Effect_TerraformSpawnCount".Translate());
+                            string spawnCountStr = effect.terraformSpawnCount.ToString();
+                            Widgets.TextFieldNumeric(new Rect(inner.x + extraLabelW, y, extraFieldW, 24),
+                                ref effect.terraformSpawnCount, ref spawnCountStr, 1, 999);
+                            break;
+                        case TerraformEffectMode.ReplaceTerrain:
+                            Widgets.Label(new Rect(inner.x, y, extraLabelW, 24), "CS_Studio_Effect_TerraformTerrain".Translate());
+                            if (DrawSelectionFieldButton(new Rect(inner.x + extraLabelW, y, extraFieldW, 24),
+                                effect.terraformTerrainDef?.label ?? "CS_Studio_None".Translate(), () => ShowTerraformTerrainSelector(effect)))
+                            {
+                            }
+                            break;
+                    }
                     break;
             }
         }
@@ -731,6 +1007,110 @@ namespace CharacterStudio.UI
             Find.WindowStack.Add(new FloatMenu(options));
         }
 
+        private void ShowFactionSelector(AbilityEffectConfig effect)
+        {
+            var options = new List<FloatMenuOption>
+            {
+                new FloatMenuOption("CS_Studio_None".Translate(), () => effect.summonFactionDef = null)
+            };
+
+            foreach (var factionDef in DefDatabase<FactionDef>.AllDefsListForReading.OrderBy(f => f.label ?? f.defName))
+            {
+                var localDef = factionDef;
+                string label = localDef.label ?? localDef.defName;
+                options.Add(new FloatMenuOption(label, () => effect.summonFactionDef = localDef));
+            }
+
+            Find.WindowStack.Add(new FloatMenu(options));
+        }
+
+        private void ShowControlModeSelector(AbilityEffectConfig effect)
+        {
+            var options = new List<FloatMenuOption>();
+            foreach (ControlEffectMode mode in Enum.GetValues(typeof(ControlEffectMode)))
+            {
+                var localMode = mode;
+                options.Add(new FloatMenuOption(GetControlModeLabel(localMode), () => effect.controlMode = localMode));
+            }
+            Find.WindowStack.Add(new FloatMenu(options));
+        }
+
+        private void ShowTerraformModeSelector(AbilityEffectConfig effect)
+        {
+            var options = new List<FloatMenuOption>();
+            foreach (TerraformEffectMode mode in Enum.GetValues(typeof(TerraformEffectMode)))
+            {
+                var localMode = mode;
+                options.Add(new FloatMenuOption(GetTerraformModeLabel(localMode), () => effect.terraformMode = localMode));
+            }
+            Find.WindowStack.Add(new FloatMenu(options));
+        }
+
+        private void ShowTerraformThingSelector(AbilityEffectConfig effect)
+        {
+            var options = new List<FloatMenuOption>
+            {
+                new FloatMenuOption("CS_Studio_None".Translate(), () => effect.terraformThingDef = null)
+            };
+
+            var defs = DefDatabase<ThingDef>.AllDefsListForReading;
+            var sorted = new List<ThingDef>();
+            foreach (var def in defs)
+            {
+                if (def != null && def.category != ThingCategory.Mote && def.category != ThingCategory.Ethereal)
+                {
+                    sorted.Add(def);
+                }
+            }
+            sorted.Sort((a, b) => string.Compare(a.label ?? a.defName, b.label ?? b.defName, StringComparison.OrdinalIgnoreCase));
+
+            foreach (var thingDef in sorted)
+            {
+                var localDef = thingDef;
+                string label = localDef.label ?? localDef.defName;
+                options.Add(new FloatMenuOption(label, () => effect.terraformThingDef = localDef));
+            }
+
+            Find.WindowStack.Add(new FloatMenu(options));
+        }
+
+        private void ShowTerraformTerrainSelector(AbilityEffectConfig effect)
+        {
+            var options = new List<FloatMenuOption>
+            {
+                new FloatMenuOption("CS_Studio_None".Translate(), () => effect.terraformTerrainDef = null)
+            };
+
+            foreach (var terrainDef in DefDatabase<TerrainDef>.AllDefsListForReading.OrderBy(t => t.label ?? t.defName))
+            {
+                var localDef = terrainDef;
+                string label = localDef.label ?? localDef.defName;
+                options.Add(new FloatMenuOption(label, () => effect.terraformTerrainDef = localDef));
+            }
+
+            Find.WindowStack.Add(new FloatMenu(options));
+        }
+
+        private static string GetControlModeLabel(ControlEffectMode mode)
+        {
+            return mode switch
+            {
+                ControlEffectMode.Knockback => "CS_Studio_Effect_ControlMode_Knockback".Translate(),
+                ControlEffectMode.Pull => "CS_Studio_Effect_ControlMode_Pull".Translate(),
+                _ => "CS_Studio_Effect_ControlMode_Stun".Translate()
+            };
+        }
+
+        private static string GetTerraformModeLabel(TerraformEffectMode mode)
+        {
+            return mode switch
+            {
+                TerraformEffectMode.SpawnThing => "CS_Studio_Effect_TerraformMode_SpawnThing".Translate(),
+                TerraformEffectMode.ReplaceTerrain => "CS_Studio_Effect_TerraformMode_ReplaceTerrain".Translate(),
+                _ => "CS_Studio_Effect_TerraformMode_CleanFilth".Translate()
+            };
+        }
+
         private void DrawRuntimeComponentsSection(ref float y, float width)
         {
             if (selectedAbility == null)
@@ -740,9 +1120,8 @@ namespace CharacterStudio.UI
 
             UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Section_RuntimeComponents".Translate());
 
-            if (Widgets.ButtonText(new Rect(0, y, width, 24f), "CS_Studio_Runtime_AddComponent".Translate()))
+            if (DrawPanelButton(new Rect(0, y, width, 24f), "CS_Studio_Runtime_AddComponent".Translate(), ShowAddRuntimeComponentMenu, true))
             {
-                ShowAddRuntimeComponentMenu();
             }
             y += 28f;
 
@@ -776,7 +1155,11 @@ namespace CharacterStudio.UI
                 }
 
                 Rect block = new Rect(0, y, width, blockHeight);
-                Widgets.DrawMenuSection(block);
+                Widgets.DrawBoxSolid(block, UIHelper.PanelFillSoftColor);
+                Widgets.DrawBoxSolid(new Rect(block.x, block.yMax - 2f, block.width, 2f), UIHelper.AccentSoftColor);
+                GUI.color = UIHelper.BorderColor;
+                Widgets.DrawBox(block, 1);
+                GUI.color = Color.white;
                 Rect inner = block.ContractedBy(5f);
 
                 Widgets.Label(new Rect(inner.x, inner.y, inner.width - 100f, 24f), $"#{i + 1} {GetRuntimeComponentTypeLabel(comp.type)}");
@@ -784,9 +1167,8 @@ namespace CharacterStudio.UI
                 Widgets.Checkbox(new Vector2(inner.x + inner.width - 96f, inner.y + 2f), ref enabled, 24f, false);
                 comp.enabled = enabled;
 
-                if (Widgets.ButtonText(new Rect(inner.x + inner.width - 68f, inner.y, 64f, 24f), "X"))
+                if (DrawCompactIconButton(new Rect(inner.x + inner.width - 68f, inner.y, 64f, 24f), "X", () => selectedAbility.runtimeComponents.RemoveAt(i)))
                 {
-                    selectedAbility.runtimeComponents.RemoveAt(i);
                     y += blockHeight + 6f;
                     continue;
                 }
@@ -857,9 +1239,8 @@ namespace CharacterStudio.UI
                     rowY += 26f;
 
                     Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_RDamageDef".Translate());
-                    if (Widgets.ButtonText(new Rect(inner.x + labelW, rowY, valueW, 24f), comp.waveDamageDef?.label ?? "CS_Studio_None".Translate()))
+                    if (DrawSelectionFieldButton(new Rect(inner.x + labelW, rowY, valueW, 24f), comp.waveDamageDef?.label ?? "CS_Studio_None".Translate(), () => ShowDamageDefSelectorForRuntime(comp)))
                     {
-                        ShowDamageDefSelectorForRuntime(comp);
                     }
                 }
 
@@ -935,6 +1316,19 @@ namespace CharacterStudio.UI
             var temp = selectedAbility.effects[indexA];
             selectedAbility.effects[indexA] = selectedAbility.effects[indexB];
             selectedAbility.effects[indexB] = temp;
+        }
+
+        private void SwapVfx(int indexA, int indexB)
+        {
+            if (selectedAbility == null || selectedAbility.visualEffects == null) return;
+            if (indexA < 0 || indexB < 0 || indexA >= selectedAbility.visualEffects.Count || indexB >= selectedAbility.visualEffects.Count)
+            {
+                return;
+            }
+
+            var temp = selectedAbility.visualEffects[indexA];
+            selectedAbility.visualEffects[indexA] = selectedAbility.visualEffects[indexB];
+            selectedAbility.visualEffects[indexB] = temp;
         }
     }
 }

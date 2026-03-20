@@ -45,8 +45,16 @@ namespace CharacterStudio.Core
         /// <summary>图层缩放</summary>
         public Vector2 scale = Vector2.one;
 
+        /// <summary>侧向缩放乘数（East/West，1=不覆盖）</summary>
+        public Vector2 scaleEastMultiplier = Vector2.one;
+
+        /// <summary>北向缩放乘数（North，1=不覆盖）</summary>
+        public Vector2 scaleNorthMultiplier = Vector2.one;
+
         /// <summary>旋转角度（度）</summary>
         public float rotation = 0f;
+        public float rotationEastOffset = 0f;
+        public float rotationNorthOffset = 0f;
 
         /// <summary>是否根据方向翻转</summary>
         public bool flipHorizontal = false;
@@ -103,8 +111,59 @@ namespace CharacterStudio.Core
         /// <summary>Mask 纹理路径</summary>
         public string maskTexPath = "";
 
+        /// <summary>可选：武器状态视觉配置（供动态武器携带层使用）</summary>
+        public WeaponCarryVisualConfig? weaponCarryVisual;
+
         /// <summary>是否可见</summary>
         public bool visible = true;
+
+        /// <summary>图层在统一表情系统中的角色</summary>
+        public LayerRole role = LayerRole.Decoration;
+
+        /// <summary>图层纹理变体解析逻辑</summary>
+        public LayerVariantLogic variantLogic = LayerVariantLogic.None;
+
+        /// <summary>
+        /// 变体解析基础名称。为空时回退到 <see cref="texPath"/>。
+        /// 可用于让多个状态图层共享同一基础命名空间。
+        /// </summary>
+        public string variantBaseName = "";
+
+        /// <summary>是否启用朝向后缀解析（例如 _east / _north）</summary>
+        public bool useDirectionalSuffix = true;
+
+        /// <summary>是否启用高层表情后缀解析（例如 _Happy / _Angry）</summary>
+        public bool useExpressionSuffix = false;
+
+        /// <summary>是否启用眼睛方向后缀解析（例如 _Left / _Right）</summary>
+        public bool useEyeDirectionSuffix = false;
+
+        /// <summary>是否启用 Blink 后缀解析（例如 _Blink）</summary>
+        public bool useBlinkSuffix = false;
+
+        /// <summary>是否启用帧序列后缀解析（例如 _f0 / _f1）</summary>
+        public bool useFrameSequence = false;
+
+        /// <summary>当找不到任何可用变体时是否隐藏图层，而不是回退到基础图</summary>
+        public bool hideWhenMissingVariant = false;
+
+        /// <summary>眼睛层的渲染模式</summary>
+        public EyeRenderMode eyeRenderMode = EyeRenderMode.TextureSwap;
+
+        /// <summary>眼球 UV 偏移范围（供后续 UvOffset 模式使用）</summary>
+        public float eyeUvMoveRange = 0f;
+
+        /// <summary>
+        /// 指定可见的高层表情名称列表；为空表示不限制。
+        /// 使用 <see cref="ExpressionType"/> 的名称进行匹配。
+        /// </summary>
+        public string[] visibleExpressions = Array.Empty<string>();
+
+        /// <summary>
+        /// 指定隐藏的高层表情名称列表；为空表示不限制。
+        /// 使用 <see cref="ExpressionType"/> 的名称进行匹配。
+        /// </summary>
+        public string[] hiddenExpressions = Array.Empty<string>();
 
         /// <summary>动画类型</summary>
         public LayerAnimationType animationType = LayerAnimationType.None;
@@ -143,7 +202,11 @@ namespace CharacterStudio.Core
                 offsetNorth = this.offsetNorth,
                 drawOrder = this.drawOrder,
                 scale = this.scale,
+                scaleEastMultiplier = this.scaleEastMultiplier,
+                scaleNorthMultiplier = this.scaleNorthMultiplier,
                 rotation = this.rotation,
+                rotationEastOffset = this.rotationEastOffset,
+                rotationNorthOffset = this.rotationNorthOffset,
                 flipHorizontal = this.flipHorizontal,
                 rotDrawMode = this.rotDrawMode,
                 workerClass = this.workerClass,
@@ -157,7 +220,21 @@ namespace CharacterStudio.Core
                 colorTwoSource = this.colorTwoSource,
                 customColorTwo = this.customColorTwo,
                 maskTexPath = this.maskTexPath,
+                weaponCarryVisual = this.weaponCarryVisual?.Clone(),
                 visible = this.visible,
+                role = this.role,
+                variantLogic = this.variantLogic,
+                variantBaseName = this.variantBaseName,
+                useDirectionalSuffix = this.useDirectionalSuffix,
+                useExpressionSuffix = this.useExpressionSuffix,
+                useEyeDirectionSuffix = this.useEyeDirectionSuffix,
+                useBlinkSuffix = this.useBlinkSuffix,
+                useFrameSequence = this.useFrameSequence,
+                hideWhenMissingVariant = this.hideWhenMissingVariant,
+                eyeRenderMode = this.eyeRenderMode,
+                eyeUvMoveRange = this.eyeUvMoveRange,
+                visibleExpressions = (string[])this.visibleExpressions.Clone(),
+                hiddenExpressions = (string[])this.hiddenExpressions.Clone(),
                 animationType = this.animationType,
                 animFrequency = this.animFrequency,
                 animAmplitude = this.animAmplitude,
@@ -167,6 +244,45 @@ namespace CharacterStudio.Core
                 animPhaseOffset = this.animPhaseOffset
             };
         }
+    }
+
+    /// <summary>
+    /// 图层角色
+    /// </summary>
+    public enum LayerRole
+    {
+        Base,
+        Head,
+        Brow,
+        Eye,
+        Lid,
+        Mouth,
+        Emotion,
+        SkinMark,
+        Decoration
+    }
+
+    /// <summary>
+    /// 图层变体逻辑
+    /// </summary>
+    public enum LayerVariantLogic
+    {
+        None,
+        ExpressionOnly,
+        EyeDirectionOnly,
+        BlinkOnly,
+        ExpressionAndDirection,
+        ChannelState,
+        Sequence
+    }
+
+    /// <summary>
+    /// 眼睛渲染模式
+    /// </summary>
+    public enum EyeRenderMode
+    {
+        TextureSwap,
+        UvOffset
     }
 
     /// <summary>

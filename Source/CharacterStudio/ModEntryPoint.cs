@@ -35,6 +35,9 @@ namespace CharacterStudio
             // 初始化 Harmony
             InitializeHarmony();
 
+            // 先屏蔽普通信息日志，避免初始化过程刷屏
+            ApplyLogSilencer();
+
             // 加载运行时皮肤定义
             PawnSkinDefRegistry.LoadFromConfig();
 
@@ -57,6 +60,21 @@ namespace CharacterStudio
             catch (System.Exception ex)
             {
                 Log.Error($"[CharacterStudio] 初始化 Harmony 失败: {ex}");
+            }
+        }
+
+        private static void ApplyLogSilencer()
+        {
+            if (HarmonyInstance == null)
+                return;
+
+            try
+            {
+                Patch_LogSilencer.Apply(HarmonyInstance);
+            }
+            catch (System.Exception ex)
+            {
+                Log.Error($"[CharacterStudio] 应用日志屏蔽补丁时出错: {ex}");
             }
         }
 

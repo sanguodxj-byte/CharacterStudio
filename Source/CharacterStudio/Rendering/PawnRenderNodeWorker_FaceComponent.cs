@@ -50,7 +50,7 @@ namespace CharacterStudio.Rendering
 
             if (node is PawnRenderNode_Custom customNode && customNode.config != null)
             {
-                Vector2 cfg = customNode.config.scale;
+                Vector2 cfg = GetConfiguredScale(customNode.config, parms.facing);
                 float sx = cfg.x <= 0f ? 1f : cfg.x;
                 float sy = cfg.y <= 0f ? 1f : cfg.y;
                 baseScale = new Vector3(sx * baseScale.x, 1f, sy * baseScale.z);
@@ -71,12 +71,39 @@ namespace CharacterStudio.Rendering
 
             if (node is PawnRenderNode_Custom customNode && customNode.config != null)
             {
-                float rot = customNode.config.rotation;
+                float rot = GetConfiguredRotation(customNode.config, parms.facing);
                 if (Mathf.Abs(rot) > 0.01f)
                     baseRot *= Quaternion.Euler(0f, rot, 0f);
             }
 
             return baseRot;
+        }
+
+        private static Vector2 GetConfiguredScale(PawnLayerConfig config, Rot4 facing)
+        {
+            Vector2 scale = config.scale;
+            if (facing == Rot4.North)
+                return new Vector2(scale.x * config.scaleNorthMultiplier.x, scale.y * config.scaleNorthMultiplier.y);
+
+            if (facing == Rot4.East || facing == Rot4.West)
+                return new Vector2(scale.x * config.scaleEastMultiplier.x, scale.y * config.scaleEastMultiplier.y);
+
+            return scale;
+        }
+
+        private static float GetConfiguredRotation(PawnLayerConfig config, Rot4 facing)
+        {
+            float rotation = config.rotation;
+            if (facing == Rot4.North)
+                return rotation + config.rotationNorthOffset;
+
+            if (facing == Rot4.East)
+                return rotation + config.rotationEastOffset;
+
+            if (facing == Rot4.West)
+                return rotation - config.rotationEastOffset;
+
+            return rotation;
         }
 
         /// <summary>
@@ -87,23 +114,44 @@ namespace CharacterStudio.Rendering
         {
             var comp = parms.pawn.GetComp<CompPawnSkin>();
             var skin = comp?.ActiveSkin;
+            var runtimeState = comp?.CurrentFaceRuntimeState;
+            var compiledData = comp?.CurrentFaceRuntimeCompiledData;
 
             if (skin?.faceConfig?.enabled == true)
             {
-                ExpressionType exp  = comp?.GetEffectiveExpression() ?? ExpressionType.Neutral;
-                // 传入当前帧动画 Tick，供帧序列定位当前帧
-                int  animTick = comp?.GetExpressionAnimTick() ?? 0;
-                string path  = skin.faceConfig.GetTexPath(exp, animTick);
+                ExpressionType exp = comp?.GetEffectiveExpression() ?? ExpressionType.Neutral;
+                int animTick = comp?.GetExpressionAnimTick() ?? 0;
+                FaceRenderTrack currentTrack = runtimeState?.currentTrack ?? FaceRenderTrack.World;
+
+                string path = string.Empty;
+                int cacheTickKey = 0;
+
+                if (currentTrack == FaceRenderTrack.World)
+                {
+                    path = ResolveWorldTrackPath(compiledData, exp);
+                }
+                else if (skin.faceConfig.workflowMode == FaceWorkflowMode.LayeredDynamic)
+                {
+                    path = ResolvePortraitBasePath(compiledData, exp);
+                    if (string.IsNullOrWhiteSpace(path))
+                        path = skin.faceConfig.GetLayeredPartPath(LayeredFacePartType.Base, exp);
+                }
+                else
+                {
+                    path = skin.faceConfig.GetTexPath(exp, animTick);
+                    var expEntry = skin.faceConfig.GetExpression(exp);
+                    cacheTickKey = (expEntry?.IsAnimated == true) ? animTick : 0;
+
+                    if (string.IsNullOrWhiteSpace(path))
+                        path = ResolveWorldTrackPath(compiledData, exp);
+                }
 
                 if (!string.IsNullOrEmpty(path))
                 {
-                    Shader shader    = node.ShaderFor(parms.pawn) ?? ShaderDatabase.Cutout;
-                    Color  nodeColor = node.Props?.color ?? Color.white;
-
-                    // 帧动画表情：缓存键加入 animTick（区分每帧），静态表情 tick=0
-                    var expEntry = skin.faceConfig.GetExpression(exp);
-                    int cacheTickKey = (expEntry?.IsAnimated == true) ? animTick : 0;
-                    return GetOrBuildGraphic(path, shader, nodeColor, cacheTickKey);
+                    string directionalPath = ResolveDirectionalVariant(path, parms.facing);
+                    Shader shader = node.ShaderFor(parms.pawn) ?? ShaderDatabase.Cutout;
+                    Color nodeColor = node.Props?.color ?? Color.white;
+                    return GetOrBuildGraphic(directionalPath, shader, nodeColor, cacheTickKey);
                 }
             }
 
@@ -113,9 +161,90 @@ namespace CharacterStudio.Rendering
         public override bool CanDrawNow(PawnRenderNode node, PawnDrawParms parms)
             => base.CanDrawNow(node, parms);
 
+        private static string ResolveWorldTrackPath(FaceRuntimeCompiledData? compiledData, ExpressionType expression)
+        {
+            if (compiledData?.worldTrack?.expressionCaches != null
+                && compiledData.worldTrack.expressionCaches.TryGetValue(expression, out FaceExpressionRuntimeCache? cache)
+                && cache != null
+                && !string.IsNullOrWhiteSpace(cache.worldPath))
+            {
+                return cache.worldPath;
+            }
+
+            return compiledData?.worldTrack?.defaultPath ?? string.Empty;
+        }
+
+        private static string ResolvePortraitBasePath(FaceRuntimeCompiledData? compiledData, ExpressionType expression)
+        {
+            if (compiledData?.portraitTrack?.expressionCaches != null
+                && compiledData.portraitTrack.expressionCaches.TryGetValue(expression, out FaceExpressionRuntimeCache? cache)
+                && cache?.portraitPartPaths != null
+                && cache.portraitPartPaths.TryGetValue(LayeredFacePartType.Base, out string path)
+                && !string.IsNullOrWhiteSpace(path))
+            {
+                return path;
+            }
+
+            return compiledData?.portraitTrack?.basePath ?? string.Empty;
+        }
+
         // ─────────────────────────────────────────────
         // 缓存辅助
         // ─────────────────────────────────────────────
+
+        private static string ResolveDirectionalVariant(string basePath, Rot4 facing)
+        {
+            if (string.IsNullOrEmpty(basePath))
+                return basePath;
+
+            string? directionalSuffix = null;
+            switch (facing.AsInt)
+            {
+                case 0: // North
+                    directionalSuffix = "_north";
+                    break;
+                case 1: // East
+                case 3: // West
+                    directionalSuffix = "_east";
+                    break;
+                default: // South 使用基准图
+                    return basePath;
+            }
+
+            if (string.IsNullOrEmpty(directionalSuffix))
+                return basePath;
+
+            string directionalPath = AppendDirectionalSuffix(basePath, directionalSuffix);
+            return TextureExists(directionalPath) ? directionalPath : basePath;
+        }
+
+        private static string AppendDirectionalSuffix(string basePath, string suffix)
+        {
+            if (string.IsNullOrEmpty(basePath) || string.IsNullOrEmpty(suffix))
+                return basePath;
+
+            string extension = System.IO.Path.GetExtension(basePath);
+            if (!string.IsNullOrEmpty(extension))
+            {
+                string withoutExtension = basePath.Substring(0, basePath.Length - extension.Length);
+                return withoutExtension + suffix + extension;
+            }
+
+            return basePath + suffix;
+        }
+
+        private static bool TextureExists(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return false;
+
+            if (System.IO.Path.IsPathRooted(path) || path.StartsWith("/"))
+                return System.IO.File.Exists(path);
+
+            if (ContentFinder<Texture2D>.Get(path, false) != null)
+                return true;
+
+            return ContentFinder<Texture2D>.Get(path + "_north", false) != null;
+        }
 
         private static Graphic GetOrBuildGraphic(string path, Shader shader, Color color, int tickKey = 0)
         {

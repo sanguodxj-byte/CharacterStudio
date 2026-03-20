@@ -66,8 +66,17 @@ namespace CharacterStudio.UI
 
             if (this.abilities.Count == 0)
             {
-                // 初始化默认技能
-                CreateNewAbility();
+                var persisted = TryLoadAbilityEditorSessionFromDisk();
+                if (persisted.Count > 0)
+                {
+                    this.abilities = persisted;
+                    selectedAbility = this.abilities[0];
+                }
+                else
+                {
+                    // 初始化默认技能
+                    CreateNewAbility();
+                }
             }
             else
             {
@@ -75,9 +84,62 @@ namespace CharacterStudio.UI
             }
         }
 
+        private bool DrawToolbarButton(Rect buttonRect, string label, Action action, bool accent = false)
+        {
+            Widgets.DrawBoxSolid(buttonRect, accent ? UIHelper.ActiveTabColor : UIHelper.PanelFillSoftColor);
+            Widgets.DrawBoxSolid(new Rect(buttonRect.x, buttonRect.yMax - 2f, buttonRect.width, 2f), accent ? UIHelper.AccentColor : UIHelper.AccentSoftColor);
+            GUI.color = Mouse.IsOver(buttonRect) ? UIHelper.HoverOutlineColor : UIHelper.BorderColor;
+            Widgets.DrawBox(buttonRect, 1);
+            GUI.color = Color.white;
+
+            GameFont oldFont = Text.Font;
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.MiddleCenter;
+            GUI.color = accent ? Color.white : UIHelper.HeaderColor;
+            Widgets.Label(buttonRect, label);
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = oldFont;
+
+            if (Widgets.ButtonInvisible(buttonRect))
+            {
+                action();
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool DrawInlineValueButton(Rect buttonRect, string label, Action action, bool accent = false)
+        {
+            Widgets.DrawBoxSolid(buttonRect, accent ? UIHelper.ActiveTabColor : UIHelper.PanelFillSoftColor);
+            Widgets.DrawBoxSolid(new Rect(buttonRect.x, buttonRect.yMax - 2f, buttonRect.width, 2f), accent ? UIHelper.AccentColor : new Color(1f, 1f, 1f, 0.05f));
+            GUI.color = Mouse.IsOver(buttonRect) ? UIHelper.HoverOutlineColor : UIHelper.BorderColor;
+            Widgets.DrawBox(buttonRect, 1);
+            GUI.color = Color.white;
+
+            GameFont oldFont = Text.Font;
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.MiddleCenter;
+            GUI.color = accent ? Color.white : UIHelper.HeaderColor;
+            Widgets.Label(buttonRect, label);
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = oldFont;
+
+            if (Widgets.ButtonInvisible(buttonRect))
+            {
+                action();
+                return true;
+            }
+
+            return false;
+        }
+
         public override void PreClose()
         {
             base.PreClose();
+            SaveAbilityEditorSessionToDisk();
             // 当能力编辑器关闭时，自动将当前修改同步回皮肤对象
             if (boundSkin != null)
             {
@@ -136,25 +198,19 @@ namespace CharacterStudio.UI
             Widgets.DrawMenuSection(rect);
 
             Rect inner = rect.ContractedBy(Margin);
+            float tripleButtonWidth = (inner.width - 20f) / 3f;
+            float tripleButtonGap = 10f;
             float buttonWidth = (inner.width - 10f) / 2f;
 
-            if (Widgets.ButtonText(new Rect(inner.x, inner.y, buttonWidth, 24f), "CS_Studio_File_New".Translate()))
+            if (DrawToolbarButton(new Rect(inner.x, inner.y, tripleButtonWidth, 24f), "CS_Studio_File_New".Translate(), CreateNewAbility, true))
             {
-                CreateNewAbility();
             }
 
-            if (Widgets.ButtonText(new Rect(inner.x + buttonWidth + 10f, inner.y, buttonWidth, 24f), "CS_Studio_Panel_Duplicate".Translate()))
+            if (DrawToolbarButton(new Rect(inner.x + tripleButtonWidth + tripleButtonGap, inner.y, tripleButtonWidth, 24f), "CS_Studio_Panel_Duplicate".Translate(), DuplicateSelectedAbility))
             {
-                DuplicateSelectedAbility();
             }
 
-            float secondRowY = inner.y + 30f;
-            if (Widgets.ButtonText(new Rect(inner.x, secondRowY, buttonWidth, 24f), "CS_Studio_Ability_LoadQwerExamples".Translate()))
-            {
-                LoadQwerExamples();
-            }
-
-            if (Widgets.ButtonText(new Rect(inner.x + buttonWidth + 10f, secondRowY, buttonWidth, 24f), "CS_Studio_Btn_Delete".Translate()))
+            if (DrawToolbarButton(new Rect(inner.x + (tripleButtonWidth + tripleButtonGap) * 2f, inner.y, tripleButtonWidth, 24f), "CS_Studio_Btn_Delete".Translate(), () =>
             {
                 if (selectedAbility != null)
                 {
@@ -162,19 +218,33 @@ namespace CharacterStudio.UI
                     if (abilities.Count > 0) selectedAbility = abilities[0];
                     else selectedAbility = null;
                 }
+            }))
+            {
             }
 
-            float thirdRowY = secondRowY + 30f;
+            float secondRowY = inner.y + 30f;
+            if (DrawToolbarButton(new Rect(inner.x, secondRowY, tripleButtonWidth, 24f), "CS_Studio_Ability_LoadQwerExamples".Translate(), LoadQwerExamples))
+            {
+            }
+
+            if (DrawToolbarButton(new Rect(inner.x + tripleButtonWidth + tripleButtonGap, secondRowY, tripleButtonWidth, 24f), "CS_Studio_Ability_ImportXml".Translate(), OpenImportXmlDialog))
+            {
+            }
+
+            if (DrawToolbarButton(new Rect(inner.x + (tripleButtonWidth + tripleButtonGap) * 2f, secondRowY, tripleButtonWidth, 24f), "CS_Studio_File_Export".Translate(), ExportAbilitiesToDefaultPath))
+            {
+            }
+
+            float settingsRowY = secondRowY + 30f;
+            if (DrawToolbarButton(new Rect(inner.x, settingsRowY, inner.width, 24f), "CS_LLM_OpenSettings".Translate(), () => Find.WindowStack.Add(new Dialog_LlmSettings())))
+            {
+            }
+
+            float thirdRowY = settingsRowY + 30f;
             GUI.enabled = !llmAbilitiesGenerating;
             string genLabel = llmAbilitiesGenerating ? "CS_LLM_Generating".Translate().ToString() : "CS_LLM_GenerateAbilities".Translate().ToString();
-            if (Widgets.ButtonText(new Rect(inner.x, thirdRowY, buttonWidth, 24f), genLabel))
+            if (DrawToolbarButton(new Rect(inner.x, thirdRowY, inner.width, 24f), genLabel, () => GenerateAbilitiesFromPrompt(false), true))
             {
-                GenerateAbilitiesFromPrompt(false);
-            }
-
-            if (Widgets.ButtonText(new Rect(inner.x + buttonWidth + 10f, thirdRowY, buttonWidth, 24f), "CS_LLM_OpenSettings".Translate()))
-            {
-                Find.WindowStack.Add(new Dialog_LlmSettings());
             }
 
             float promptY = thirdRowY + 30f;
@@ -183,14 +253,12 @@ namespace CharacterStudio.UI
             Widgets.Label(new Rect(inner.x, promptY + 102f, inner.width, 40f), "CS_LLM_EditorTool_AbilityHint".Translate());
 
             float promptButtonsY = promptY + 144f;
-            if (Widgets.ButtonText(new Rect(inner.x, promptButtonsY, buttonWidth, 24f), "CS_LLM_ApplyReplace".Translate()))
+            if (DrawToolbarButton(new Rect(inner.x, promptButtonsY, buttonWidth, 24f), "CS_LLM_ApplyReplace".Translate(), () => GenerateAbilitiesFromPrompt(true)))
             {
-                GenerateAbilitiesFromPrompt(true);
             }
 
-            if (Widgets.ButtonText(new Rect(inner.x + buttonWidth + 10f, promptButtonsY, buttonWidth, 24f), "CS_LLM_ApplyAppend".Translate()))
+            if (DrawToolbarButton(new Rect(inner.x + buttonWidth + 10f, promptButtonsY, buttonWidth, 24f), "CS_LLM_ApplyAppend".Translate(), () => GenerateAbilitiesFromPrompt(false), true))
             {
-                GenerateAbilitiesFromPrompt(false);
             }
 
             float searchY = promptButtonsY + 34f;
@@ -258,36 +326,64 @@ namespace CharacterStudio.UI
 
             // 载体设置
             UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Section_Carrier".Translate());
-            UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Ability_Type".Translate(), selectedAbility.carrierType,
-                (AbilityCarrierType[])Enum.GetValues(typeof(AbilityCarrierType)),
+            UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Ability_Type".Translate(), ModularAbilityDefExtensions.NormalizeCarrierType(selectedAbility.carrierType),
+                new[] { AbilityCarrierType.Self, AbilityCarrierType.Target, AbilityCarrierType.Projectile },
                 GetCarrierTypeLabel,
-                val => selectedAbility.carrierType = val);
+                val =>
+                {
+                    selectedAbility.carrierType = val;
+                    if (val == AbilityCarrierType.Self)
+                    {
+                        selectedAbility.targetType = AbilityTargetType.Self;
+                        selectedAbility.useRadius = false;
+                        selectedAbility.areaCenter = AbilityAreaCenter.Self;
+                    }
+                    else if (selectedAbility.targetType == AbilityTargetType.Self)
+                    {
+                        selectedAbility.targetType = AbilityTargetType.Entity;
+                    }
+                });
 
-            // 范围
-            if (selectedAbility.carrierType != AbilityCarrierType.Self && selectedAbility.carrierType != AbilityCarrierType.Touch)
+            UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Ability_TargetType".Translate(), ModularAbilityDefExtensions.NormalizeTargetType(selectedAbility),
+                GetAvailableTargetTypes(selectedAbility),
+                GetTargetTypeLabel,
+                val => selectedAbility.targetType = val);
+
+            AbilityCarrierType normalizedCarrier = ModularAbilityDefExtensions.NormalizeCarrierType(selectedAbility.carrierType);
+            AbilityTargetType normalizedTarget = ModularAbilityDefExtensions.NormalizeTargetType(selectedAbility);
+
+            if (ModularAbilityDefExtensions.CarrierNeedsRange(normalizedCarrier, normalizedTarget))
             {
                 UIHelper.DrawNumericField(ref y, width, "CS_Studio_Ability_Range".Translate(), ref selectedAbility.range, 0, 100);
             }
 
-            // 半径
-            if (selectedAbility.carrierType == AbilityCarrierType.Area || selectedAbility.carrierType == AbilityCarrierType.Projectile)
+            bool useRadius = selectedAbility.useRadius;
+            Widgets.Checkbox(new Vector2(0, y), ref useRadius, 24f);
+            selectedAbility.useRadius = useRadius;
+            Widgets.Label(new Rect(28f, y, width - 28f, 24f), "CS_Studio_Ability_UseRadius".Translate());
+            y += RowHeight;
+
+            if (selectedAbility.useRadius)
             {
+                UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Ability_AreaCenter".Translate(), ModularAbilityDefExtensions.NormalizeAreaCenter(selectedAbility),
+                    GetAvailableAreaCenters(selectedAbility),
+                    GetAreaCenterLabel,
+                    val => selectedAbility.areaCenter = val);
                 UIHelper.DrawNumericField(ref y, width, "CS_Studio_Ability_Radius".Translate(), ref selectedAbility.radius, 0, 20);
             }
 
-            if (selectedAbility.carrierType == AbilityCarrierType.Projectile)
+            if (normalizedCarrier == AbilityCarrierType.Projectile)
             {
                 Widgets.Label(new Rect(0, y, labelWidth, 24), "CS_Studio_Ability_Projectile".Translate());
-                if (Widgets.ButtonText(new Rect(labelWidth, y, fieldWidth, 24), selectedAbility.projectileDef?.label ?? "CS_Studio_None".Translate()))
+                if (DrawInlineValueButton(new Rect(labelWidth, y, fieldWidth, 24), selectedAbility.projectileDef?.label ?? "CS_Studio_None".Translate(), () => ShowProjectileSelector(selectedAbility)))
                 {
-                    ShowProjectileSelector(selectedAbility);
                 }
                 y += RowHeight;
             }
 
             // 运行时组件已移至右侧标签页，这里仅保留验证按钮
             y += 10f;
-            if (Widgets.ButtonText(new Rect(0, y, width, 28f), "CS_Studio_Ability_Validate".Translate()))
+            if (DrawToolbarButton(new Rect(0, y, width, 28f), "CS_Studio_Ability_Validate".Translate(), () =>
             {
                 var result = selectedAbility.Validate();
                 validationSummary = result.IsValid
@@ -295,6 +391,8 @@ namespace CharacterStudio.UI
                         ? "CS_Studio_Ability_ValidWithWarnings".Translate() + " (" + result.Warnings.Count + ")"
                         : "CS_Studio_Ability_Valid".Translate())
                     : "CS_Studio_Ability_Invalid".Translate() + " (" + result.Errors.Count + ")";
+            }, true))
+            {
             }
 
             if (!string.IsNullOrEmpty(validationSummary))
@@ -311,7 +409,7 @@ namespace CharacterStudio.UI
             if (selectedAbility == null) return;
 
             var copy = selectedAbility.Clone();
-            copy.defName = $"{selectedAbility.defName}_Copy_{DateTime.Now.Ticks}";
+            copy.defName = GetUniqueAbilityDefName($"{selectedAbility.defName}_Copy");
             copy.label = "CS_Studio_Ability_CopyLabel".Translate(selectedAbility.label ?? "CS_Studio_Ability_DefaultName".Translate());
             abilities.Add(copy);
             selectedAbility = copy;
@@ -393,6 +491,9 @@ namespace CharacterStudio.UI
                 charges = source.charges,
                 aiCanUse = source.aiCanUse,
                 carrierType = source.carrierType,
+                targetType = source.targetType,
+                useRadius = source.useRadius,
+                areaCenter = source.areaCenter,
                 range = source.range,
                 radius = source.radius,
                 projectileDef = source.projectileDef
@@ -438,7 +539,7 @@ namespace CharacterStudio.UI
         {
             var newAbility = new ModularAbilityDef
             {
-                defName = $"CS_Ability_{DateTime.Now.Ticks}",
+                defName = GetUniqueAbilityDefName("CS_Ability"),
                 label = "CS_Studio_Ability_DefaultName".Translate()
             };
             abilities.Add(newAbility);
@@ -502,28 +603,36 @@ namespace CharacterStudio.UI
             float btnW = (rect.width - 4f) / 2f;
 
             // 选择角色
-            if (Widgets.ButtonText(new Rect(rect.x, rect.y + 22f, btnW, btnH), "CS_Ability_SelectPawn".Translate()))
-                ShowSelectPawnMenu();
-
-            // 授予 / 撤销
-            bool hasAbilities = abilities != null && abilities.Count > 0;
-            if (boundPawn != null && hasAbilities)
+            if (DrawToolbarButton(new Rect(rect.x, rect.y + 22f, btnW, btnH), "CS_Ability_SelectPawn".Translate(), ShowSelectPawnMenu))
             {
-                if (Widgets.ButtonText(new Rect(rect.x + btnW + 4f, rect.y + 22f, btnW, btnH),
-                    "CS_Ability_Grant".Translate()))
-                {
-                    GrantAbilitiesToBoundPawn();
-                }
             }
-            else if (boundPawn != null)
+
+            bool hasAbilities = abilities != null && abilities.Count > 0;
+            if (boundPawn != null)
             {
-                if (Widgets.ButtonText(new Rect(rect.x + btnW + 4f, rect.y + 22f, btnW, btnH),
-                    "CS_Ability_Revoke".Translate()))
+                if (hasAbilities)
+                {
+                    if (DrawToolbarButton(new Rect(rect.x + btnW + 4f, rect.y + 22f, btnW, btnH),
+                        "CS_Ability_Grant".Translate(), GrantAbilitiesToBoundPawn, true))
+                    {
+                    }
+                }
+
+                if (DrawToolbarButton(new Rect(rect.x, rect.y + 48f, rect.width, btnH),
+                    "CS_Ability_Revoke".Translate(), () =>
                 {
                     CharacterStudio.Abilities.AbilityGrantUtility.RevokeAllCSAbilitiesFromPawn(boundPawn);
                     Messages.Message("CS_Ability_RevokeSuccess".Translate(boundPawn.LabelShort),
                         MessageTypeDefOf.NeutralEvent, false);
+                }))
+                {
                 }
+            }
+            else
+            {
+                GUI.color = Color.gray;
+                Widgets.Label(new Rect(rect.x + btnW + 4f, rect.y + 22f, btnW, btnH), "CS_Ability_Grant".Translate());
+                GUI.color = Color.white;
             }
         }
 
@@ -602,7 +711,7 @@ namespace CharacterStudio.UI
             string displayName = string.IsNullOrWhiteSpace(ability.label) ? ability.defName : ability.label;
 
             // subline 分两段：左侧 carrierType + CD，右侧 validation（Tiny 字体）
-            string sublineLeft  = $"{GetCarrierTypeLabel(ability.carrierType)}  CD:{ability.cooldownTicks:0}t";
+            string sublineLeft  = $"{GetCarrierTypeLabel(ability.carrierType)} / {GetTargetTypeLabel(ModularAbilityDefExtensions.NormalizeTargetType(ability))}  CD:{ability.cooldownTicks:0}t";
             string sublineRight = GetValidationLabel(validation);
 
             Widgets.Label(new Rect(rowRect.x + 6f, rowRect.y + 2f, rowRect.width - 12f, 20f), $"{statusIcon} {displayName}");
@@ -666,7 +775,8 @@ namespace CharacterStudio.UI
             return abilities.Where(a => a != null &&
                 ((a.label?.IndexOf(search, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0 ||
                  (a.defName?.IndexOf(search, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0 ||
-                 GetCarrierTypeLabel(a.carrierType).IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0)).ToList();
+                 GetCarrierTypeLabel(a.carrierType).IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                 GetTargetTypeLabel(ModularAbilityDefExtensions.NormalizeTargetType(a)).IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0)).ToList();
         }
 
         private string GetValidationLabel(AbilityValidationResult validation)
@@ -716,7 +826,36 @@ namespace CharacterStudio.UI
 
         private static string GetCarrierTypeLabel(AbilityCarrierType type)
         {
-            return ($"CS_Ability_CarrierType_{type}").Translate();
+            return ($"CS_Ability_CarrierType_{ModularAbilityDefExtensions.NormalizeCarrierType(type)}").Translate();
+        }
+
+        private static string GetTargetTypeLabel(AbilityTargetType type)
+        {
+            return ($"CS_Ability_TargetType_{type}").Translate();
+        }
+
+        private static string GetAreaCenterLabel(AbilityAreaCenter center)
+        {
+            return ($"CS_Ability_AreaCenter_{center}").Translate();
+        }
+
+        private static AbilityTargetType[] GetAvailableTargetTypes(ModularAbilityDef ability)
+        {
+            AbilityCarrierType carrier = ModularAbilityDefExtensions.NormalizeCarrierType(ability.carrierType);
+            return carrier switch
+            {
+                AbilityCarrierType.Self => new[] { AbilityTargetType.Self },
+                AbilityCarrierType.Projectile => new[] { AbilityTargetType.Entity, AbilityTargetType.Cell },
+                _ => new[] { AbilityTargetType.Entity, AbilityTargetType.Cell }
+            };
+        }
+
+        private static AbilityAreaCenter[] GetAvailableAreaCenters(ModularAbilityDef ability)
+        {
+            AbilityTargetType target = ModularAbilityDefExtensions.NormalizeTargetType(ability);
+            return target == AbilityTargetType.Self
+                ? new[] { AbilityAreaCenter.Self }
+                : new[] { AbilityAreaCenter.Self, AbilityAreaCenter.Target };
         }
 
         private static string GetEffectTypeLabel(AbilityEffectType type)
@@ -782,6 +921,8 @@ namespace CharacterStudio.UI
                     return;
                 }
 
+                NormalizeImportedAbilityDefNames(generated, replaceExisting ? null : abilities);
+
                 if (replaceExisting)
                 {
                     abilities.Clear();
@@ -798,6 +939,42 @@ namespace CharacterStudio.UI
             {
                 Log.Error($"[CharacterStudio] 技能 LLM 生成失败: {ex}");
                 validationSummary = "CS_LLM_GenerateFailed".Translate(ex.Message);
+            }
+        }
+
+        private string GetUniqueAbilityDefName(string desiredBase)
+        {
+            string baseName = string.IsNullOrWhiteSpace(desiredBase) ? "CS_Ability" : desiredBase.Trim();
+            string candidate = baseName;
+            int suffix = 1;
+
+            while (abilities.Any(a => a != null && string.Equals(a.defName, candidate, StringComparison.OrdinalIgnoreCase)))
+            {
+                candidate = $"{baseName}_{suffix++}";
+            }
+
+            return candidate;
+        }
+
+        private static void NormalizeImportedAbilityDefNames(IEnumerable<ModularAbilityDef> incoming, IEnumerable<ModularAbilityDef>? existing)
+        {
+            var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (existing != null)
+            {
+                foreach (var ability in existing)
+                    if (ability != null && !string.IsNullOrWhiteSpace(ability.defName))
+                        used.Add(ability.defName);
+            }
+
+            foreach (var ability in incoming)
+            {
+                if (ability == null) continue;
+                string baseName = string.IsNullOrWhiteSpace(ability.defName) ? "CS_ImportedAbility" : ability.defName.Trim();
+                string candidate = baseName;
+                int suffix = 1;
+                while (!used.Add(candidate))
+                    candidate = $"{baseName}_{suffix++}";
+                ability.defName = candidate;
             }
         }
     }

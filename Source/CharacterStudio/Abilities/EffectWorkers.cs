@@ -92,7 +92,11 @@ namespace CharacterStudio.Abilities
 
             for (int i = 0; i < config.summonCount; i++)
             {
-                Pawn pawn = PawnGenerator.GeneratePawn(config.summonKind, Faction.OfPlayer);
+                Faction? faction = config.summonFactionDef != null
+                    ? Find.FactionManager?.FirstFactionOfDef(config.summonFactionDef)
+                    : Faction.OfPlayer;
+                faction ??= Faction.OfPlayer;
+                Pawn pawn = PawnGenerator.GeneratePawn(config.summonKind, faction);
                 GenSpawn.Spawn(pawn, loc, map, WipeMode.Vanish);
             }
         }
@@ -139,23 +143,59 @@ namespace CharacterStudio.Abilities
         {
             if (target.Thing is not Pawn targetPawn) return;
 
-            // 应用眩晕效果：使用 StunHandler 实现真正的眩晕
-            if (config.duration > 0)
+            switch (config.controlMode)
             {
-                int durationTicks = (int)(config.duration * 60f);
-                
-                // 使用 StunHandler.StunFor 实现眩晕
-                // 这会让目标无法移动、无法执行动作，但不会倒地
-                if (targetPawn.stances != null && targetPawn.stances.stunner != null)
-                {
-                    targetPawn.stances.stunner.StunFor(durationTicks, caster, false);
-                }
-                else
-                {
-                    // 回退方案：如果 StunHandler 不可用，使用 Hediff
-                    FallbackStun(targetPawn, durationTicks);
-                }
+                case ControlEffectMode.Knockback:
+                    ApplyForcedMove(targetPawn, caster, config.controlMoveDistance, pushAway: true);
+                    break;
+                case ControlEffectMode.Pull:
+                    ApplyForcedMove(targetPawn, caster, config.controlMoveDistance, pushAway: false);
+                    break;
+                default:
+                    ApplyStun(targetPawn, caster, config.duration);
+                    break;
             }
+        }
+
+        private void ApplyStun(Pawn targetPawn, Pawn caster, float durationSeconds)
+        {
+            if (durationSeconds <= 0f) return;
+
+            int durationTicks = (int)(durationSeconds * 60f);
+            if (targetPawn.stances != null && targetPawn.stances.stunner != null)
+            {
+                targetPawn.stances.stunner.StunFor(durationTicks, caster, false);
+            }
+            else
+            {
+                FallbackStun(targetPawn, durationTicks);
+            }
+        }
+
+        private void ApplyForcedMove(Pawn targetPawn, Pawn caster, int distance, bool pushAway)
+        {
+            if (caster.Map == null || distance <= 0) return;
+
+            IntVec3 direction = targetPawn.Position - caster.Position;
+            if (direction == IntVec3.Zero)
+                direction = caster.Rotation.FacingCell;
+
+            direction = new IntVec3(Math.Sign(direction.x), 0, Math.Sign(direction.z));
+
+            if (!pushAway)
+                direction = new IntVec3(-direction.x, 0, -direction.z);
+
+            IntVec3 bestCell = targetPawn.Position;
+            for (int i = 0; i < distance; i++)
+            {
+                IntVec3 next = bestCell + direction;
+                if (!next.InBounds(caster.Map) || !next.Standable(caster.Map))
+                    break;
+                bestCell = next;
+            }
+
+            if (bestCell != targetPawn.Position)
+                targetPawn.Position = bestCell;
         }
 
         /// <summary>
@@ -189,16 +229,61 @@ namespace CharacterStudio.Abilities
 
             IntVec3 cell = target.Cell;
             Map map = caster.Map;
+            if (!cell.InBounds(map)) return;
 
-            // 清除污秽物
+            switch (config.terraformMode)
+            {
+                case TerraformEffectMode.SpawnThing:
+                    SpawnThing(config, cell, map);
+                    break;
+                case TerraformEffectMode.ReplaceTerrain:
+                    ReplaceTerrain(config, cell, map);
+                    break;
+                default:
+                    CleanFilth(cell, map);
+                    break;
+            }
+        }
+
+        private static void CleanFilth(IntVec3 cell, Map map)
+        {
             var filthList = cell.GetThingList(map).FindAll(t => t is Filth);
             foreach (var filth in filthList)
             {
                 filth.Destroy();
             }
+        }
 
-            // 可选：生成掩体（如果配置中指定）
-            // 这里仅作为框架，实际实现需要更多配置参数
+        private static void SpawnThing(AbilityEffectConfig config, IntVec3 cell, Map map)
+        {
+            ThingDef thingDef = config.terraformThingDef;
+            if (thingDef == null)
+            {
+                return;
+            }
+
+            int count = Math.Max(1, config.terraformSpawnCount);
+            for (int i = 0; i < count; i++)
+            {
+                Thing thing = ThingMaker.MakeThing(thingDef);
+                if (thing.stackCount > 1)
+                {
+                    thing.stackCount = 1;
+                }
+
+                GenSpawn.Spawn(thing, cell, map, WipeMode.Vanish);
+            }
+        }
+
+        private static void ReplaceTerrain(AbilityEffectConfig config, IntVec3 cell, Map map)
+        {
+            TerrainDef terrainDef = config.terraformTerrainDef;
+            if (terrainDef == null)
+            {
+                return;
+            }
+
+            map.terrainGrid.SetTerrain(cell, terrainDef);
         }
     }
 

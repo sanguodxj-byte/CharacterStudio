@@ -169,14 +169,17 @@ namespace CharacterStudio.AI
         {
             return "输出 JSON 对象，字段包含：summary, suggestedDefName, suggestedLabel, suggestedDescription, attributes, hiddenNodePaths, targetRaceDefs, visualDirectives, abilities。" +
                    "attributes 必须包含：title, factionRole, combatRole, backstorySummary, personality, bodyTypeDefName, headTypeDefName, hairDefName, favoriteColorHex, biologicalAge, chronologicalAge, moveSpeedMultiplier, meleePower, shootingAccuracy, armorRating, psychicSensitivity, marketValue, tags, keyTraits, startingApparelDefs。" +
-                   "abilities 必须是技能数组，每个技能字段包含：defName, label, description, iconPath, cooldownTicks, warmupTicks, charges, aiCanUse, carrierType, range, radius, effects, runtimeComponents。" +
-                   "carrierType 只能是 Self/Touch/Target/Projectile/Area。effect.type 只能是 Damage/Heal/Buff/Debuff/Summon/Teleport/Control/Terraform。不要输出 schema 之外的说明文字。";
+                   "abilities 必须是技能数组，每个技能字段包含：defName, label, description, iconPath, cooldownTicks, warmupTicks, charges, aiCanUse, carrierType, targetType, useRadius, areaCenter, range, radius, projectileDef, effects, runtimeComponents。" +
+                   "carrierType 只能是 Self/Target/Projectile。targetType 只能是 Self/Entity/Cell。areaCenter 只能是 Self/Target。effect.type 只能是 Damage/Heal/Buff/Debuff/Summon/Teleport/Control/Terraform。" +
+                   "effect 对象字段包含：type, amount, duration, chance, damageDef, hediffDef, summonKind, summonCount, controlMode, controlMoveDistance, terraformMode, terraformThingDef, terraformTerrainDef, terraformSpawnCount。" +
+                   "runtimeComponents 对象字段包含：type, enabled, comboWindowTicks, cooldownTicks, jumpDistance, findCellRadius, triggerAbilityEffectsAfterJump, requiredStacks, delayTicks, wave1Radius, wave1Damage, wave2Radius, wave2Damage, wave3Radius, wave3Damage, waveDamageDef。不要输出 schema 之外的说明文字。";
         }
 
         private static string BuildAbilitySchemaPrompt()
         {
-            return "输出 JSON 数组。数组中的每个技能对象字段必须包含：defName, label, description, iconPath, cooldownTicks, warmupTicks, charges, aiCanUse, carrierType, range, radius, effects, runtimeComponents。" +
-                   "effect 对象字段包含：type, amount, duration, chance, damageDef, hediffDef, summonKind, summonCount。" +
+            return "输出 JSON 数组。数组中的每个技能对象字段必须包含：defName, label, description, iconPath, cooldownTicks, warmupTicks, charges, aiCanUse, carrierType, targetType, useRadius, areaCenter, range, radius, projectileDef, effects, runtimeComponents。" +
+                   "carrierType 只能是 Self/Target/Projectile。targetType 只能是 Self/Entity/Cell。areaCenter 只能是 Self/Target。" +
+                   "effect 对象字段包含：type, amount, duration, chance, damageDef, hediffDef, summonKind, summonCount, controlMode, controlMoveDistance, terraformMode, terraformThingDef, terraformTerrainDef, terraformSpawnCount。" +
                    "runtimeComponents 对象字段包含：type, enabled, comboWindowTicks, cooldownTicks, jumpDistance, findCellRadius, triggerAbilityEffectsAfterJump, requiredStacks, delayTicks, wave1Radius, wave1Damage, wave2Radius, wave2Damage, wave3Radius, wave3Damage, waveDamageDef。" +
                    "严格返回 JSON 数组。";
         }

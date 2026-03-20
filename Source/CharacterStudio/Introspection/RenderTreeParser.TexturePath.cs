@@ -139,6 +139,7 @@ namespace CharacterStudio.Introspection
             Pawn pawn,
             string label,
             string tagDef,
+            string resolvedTexPath,
             out Type?   graphicClass,
             out Vector2 graphicDrawSize,
             out Color   graphicColor,
@@ -157,6 +158,14 @@ namespace CharacterStudio.Introspection
 
             try
             {
+                if (!string.IsNullOrEmpty(resolvedTexPath) &&
+                    (System.IO.Path.IsPathRooted(resolvedTexPath) || resolvedTexPath.StartsWith("/")))
+                {
+                    graphicClass    = typeof(CharacterStudio.Rendering.Graphic_Runtime);
+                    graphicDrawSize = Vector2.one;
+                    return;
+                }
+
                 var graphic = gameNode.GraphicFor(pawn);
                 if (graphic == null)
                     graphic = AccessTools.Property(typeof(PawnRenderNode), "Graphic")?.GetValue(gameNode, null) as Graphic;

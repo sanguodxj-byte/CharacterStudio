@@ -13,6 +13,23 @@ namespace CharacterStudio.Rendering
         /// <summary>关联的图层配置</summary>
         public PawnLayerConfig? config;
 
+        /// <summary>
+        /// 当该自定义节点用于 LayeredDynamic 面部系统时，标记当前节点所代表的面部部件类型。
+        /// null 表示普通自定义图层节点。
+        /// </summary>
+        public LayeredFacePartType? layeredFacePartType;
+
+        /// <summary>
+        /// 当该节点代表 Overlay 分组时，记录对应的 Overlay 标识。
+        /// 空字符串表示默认 Overlay 组或非 Overlay 节点。
+        /// </summary>
+        public string layeredOverlayId = string.Empty;
+
+        /// <summary>
+        /// Overlay 组的编辑器排序值。数值越小越先绘制。
+        /// </summary>
+        public int layeredOverlayOrder = 0;
+
         // ─────────────────────────────────────────────
         // 动画状态
         // ─────────────────────────────────────────────
@@ -37,6 +54,18 @@ namespace CharacterStudio.Rendering
 
         /// <summary>动画基础相位（用于错开不同图层）</summary>
         public float basePhase = 0f;
+
+        /// <summary>面部分层程序化变形上次更新 Tick</summary>
+        public int lastProgrammaticFaceTick = int.MinValue;
+
+        /// <summary>程序化表情附加旋转角</summary>
+        public float currentProgrammaticAngle = 0f;
+
+        /// <summary>程序化表情附加位移</summary>
+        public Vector3 currentProgrammaticOffset = Vector3.zero;
+
+        /// <summary>程序化表情附加缩放</summary>
+        public Vector3 currentProgrammaticScale = Vector3.one;
 
         public PawnRenderNode_Custom(Pawn pawn, PawnRenderNodeProperties props, PawnRenderTree tree)
             : base(pawn, props, tree)

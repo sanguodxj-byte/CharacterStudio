@@ -22,6 +22,10 @@ namespace CharacterStudio.Rendering
         private static ConditionalWeakTable<PawnRenderNode, Graphic[]> savedGraphicsByNode =
             new ConditionalWeakTable<PawnRenderNode, Graphic[]>();
 
+        // 保存被隐藏节点的 useGraphic 原值，确保 synthetic-layer 模式下
+        // 能暂时关闭父节点自身绘制，同时在恢复时还原。
+        private static ConditionalWeakTable<PawnRenderNode, BoxedBool> savedUseGraphicByNode = new ConditionalWeakTable<PawnRenderNode, BoxedBool>();
+
         private static HashSet<PawnRenderNode> GetHiddenSet(PawnRenderTree tree)
         {
             return hiddenNodesByTree.GetOrCreateValue(tree);
@@ -44,6 +48,7 @@ namespace CharacterStudio.Rendering
                 return;
 
             ClearNodeGraphicsCache(node);
+            DisableNodeGraphic(node);
             HideChildNodes(node, hidden);
         }
 
@@ -98,6 +103,35 @@ namespace CharacterStudio.Rendering
             }
         }
 
+        private sealed class BoxedBool
+        {
+            public bool value;
+        }
+
+        private static void DisableNodeGraphic(PawnRenderNode node)
+        {
+            if (node?.Props == null) return;
+
+            savedUseGraphicByNode.Remove(node);
+            savedUseGraphicByNode.Add(node, new BoxedBool { value = node.Props.useGraphic });
+            node.Props.useGraphic = false;
+        }
+
+        private static void RestoreNodeGraphicFlag(PawnRenderNode node)
+        {
+            if (node?.Props == null) return;
+
+            if (savedUseGraphicByNode.TryGetValue(node, out var boxed))
+            {
+                node.Props.useGraphic = boxed.value;
+                savedUseGraphicByNode.Remove(node);
+            }
+            else
+            {
+                node.Props.useGraphic = true;
+            }
+        }
+
         private static void RestoreNodeGraphicsCache(PawnRenderNode node)
         {
             var field = GetGraphicsField();
@@ -119,6 +153,7 @@ namespace CharacterStudio.Rendering
                     }
                     savedGraphicsByNode.Remove(node);
                 }
+                RestoreNodeGraphicFlag(node);
             }
             catch (Exception ex)
             {
@@ -316,6 +351,7 @@ namespace CharacterStudio.Rendering
         {
             hiddenNodesByTree = new ConditionalWeakTable<PawnRenderTree, HashSet<PawnRenderNode>>();
             savedGraphicsByNode = new ConditionalWeakTable<PawnRenderNode, Graphic[]>();
+            savedUseGraphicByNode = new ConditionalWeakTable<PawnRenderNode, BoxedBool>();
         }
 
         private static void RestoreAndRemoveHiddenForTree(PawnRenderTree tree)

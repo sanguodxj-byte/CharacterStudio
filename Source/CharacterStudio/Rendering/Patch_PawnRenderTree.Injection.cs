@@ -30,17 +30,13 @@ namespace CharacterStudio.Rendering
             {
                 ProcessVanillaHiding(tree, skinDef, skinDef.hideVanillaHead, skinDef.hideVanillaHair, out _);
 
-                // 修复：恢复与 TrySetupGraphIfNeeded_Postfix 相同的调用顺序：
-                // BaseAppearance 覆写必须在自定义图层注入之前，
-                // 否则手动刷新后槽位贴图（Body/Head/Hair）会丢失。
-                ApplyBaseAppearanceOverrides(tree, pawn, skinDef);
-
                 bool anyNodesInjected = InjectCustomLayers(tree, pawn, skinDef);
+                bool anyLayeredFaceInjected = InjectLayeredFaceLayers(tree, pawn, skinDef);
 
-                // 注入眼睛方向覆盖层（仅当配置启用时）
+                // 注入眼睛方向覆盖层（仅当配置启用且未被新的分层面部系统接管时）
                 InjectEyeDirectionLayer(tree, pawn, skinDef);
 
-                if (anyNodesInjected && IsGraphicsReadyForVanillaNodes(tree))
+                if ((anyNodesInjected || anyLayeredFaceInjected) && IsGraphicsReadyForVanillaNodes(tree))
                     HideVanillaNodesByImportedTexPaths(tree, skinDef);
             }
 
@@ -147,7 +143,17 @@ namespace CharacterStudio.Rendering
         /// <summary>注入自定义图层，anchorPath 优先于 anchorTag</summary>
         private static bool InjectCustomLayers(PawnRenderTree tree, Pawn pawn, PawnSkinDef skinDef)
         {
-            var allLayers = skinDef.layers ?? new List<PawnLayerConfig>();
+            var allLayers = new List<PawnLayerConfig>();
+            if (skinDef.layers != null)
+                allLayers.AddRange(skinDef.layers);
+
+            allLayers.AddRange(BaseAppearanceUtility.BuildSyntheticLayers(skinDef));
+            allLayers.AddRange(BuildEquipmentVisualLayers(skinDef));
+
+            var carryVisualLayer = BuildWeaponCarryVisualLayer(skinDef);
+            if (carryVisualLayer != null)
+                allLayers.Add(carryVisualLayer);
+
             if (allLayers.Count == 0) return false;
 
             bool anyNodesInjected = false;
@@ -239,9 +245,14 @@ namespace CharacterStudio.Rendering
 
         private static PawnRenderNodeProperties CreateNodeProperties(PawnLayerConfig layer)
         {
+            bool isExternalTexture = !string.IsNullOrWhiteSpace(layer.texPath)
+                && (System.IO.Path.IsPathRooted(layer.texPath)
+                    || layer.texPath.StartsWith("/", StringComparison.Ordinal)
+                    || System.IO.File.Exists(layer.texPath));
+
             var props = new PawnRenderNodeProperties
             {
-                texPath      = layer.texPath,
+                texPath      = isExternalTexture ? string.Empty : layer.texPath,
                 workerClass  = layer.workerClass ?? typeof(PawnRenderNodeWorker_CustomLayer),
                 nodeClass    = typeof(PawnRenderNode_Custom),
                 baseLayer    = layer.drawOrder,
@@ -266,6 +277,56 @@ namespace CharacterStudio.Rendering
             }
 
             return props;
+        }
+
+        private static IEnumerable<PawnLayerConfig> BuildEquipmentVisualLayers(PawnSkinDef skinDef)
+        {
+            if (skinDef?.equipments == null || skinDef.equipments.Count == 0)
+                yield break;
+
+            foreach (var equipment in skinDef.equipments)
+            {
+                if (equipment == null || !equipment.enabled)
+                    continue;
+
+                equipment.EnsureDefaults();
+
+                if (equipment.visual == null || string.IsNullOrWhiteSpace(equipment.visual.texPath))
+                    continue;
+
+                var layer = equipment.visual.Clone();
+                layer.layerName = string.IsNullOrWhiteSpace(layer.layerName)
+                    ? $"[Equipment] {equipment.GetDisplayLabel()}"
+                    : $"[Equipment] {layer.layerName}";
+                layer.anchorTag = string.IsNullOrWhiteSpace(layer.anchorTag) ? "Apparel" : layer.anchorTag;
+                layer.shaderDefName = string.IsNullOrWhiteSpace(layer.shaderDefName) ? "Cutout" : layer.shaderDefName;
+                yield return layer;
+            }
+        }
+
+        private static PawnLayerConfig? BuildWeaponCarryVisualLayer(PawnSkinDef skinDef)
+        {
+            var carryVisual = skinDef?.weaponRenderConfig?.carryVisual;
+            if (carryVisual == null || !carryVisual.enabled)
+                return null;
+
+            string texPath = carryVisual.GetAnyTexPath();
+            if (string.IsNullOrWhiteSpace(texPath))
+                return null;
+
+            return new PawnLayerConfig
+            {
+                layerName = "[WeaponCarry] State Visual",
+                texPath = texPath,
+                anchorTag = string.IsNullOrWhiteSpace(carryVisual.anchorTag) ? "Body" : carryVisual.anchorTag,
+                offset = Vector3.zero,
+                offsetEast = Vector3.zero,
+                offsetNorth = Vector3.zero,
+                scale = Vector2.one,
+                drawOrder = carryVisual.drawOrder,
+                workerClass = typeof(PawnRenderNodeWorker_WeaponCarryVisual),
+                weaponCarryVisual = carryVisual.Clone()
+            };
         }
 
         private static PawnRenderNode? FindParentNode(PawnRenderTree tree, string anchorTag)
@@ -344,6 +405,208 @@ namespace CharacterStudio.Rendering
         }
 
         // ─────────────────────────────────────────────
+        // LayeredDynamic 面部分层节点注入
+        // ─────────────────────────────────────────────
+
+        private static bool InjectLayeredFaceLayers(PawnRenderTree tree, Pawn pawn, PawnSkinDef skinDef)
+        {
+            try
+            {
+                var faceConfig = skinDef?.faceConfig;
+                if (faceConfig == null
+                    || !faceConfig.enabled
+                    || faceConfig.workflowMode != FaceWorkflowMode.LayeredDynamic
+                    || !faceConfig.HasAnyLayeredPart())
+                    return false;
+
+                PawnRenderNode? parentNode = FindParentNode(tree, "Head");
+                if (parentNode == null)
+                    return false;
+
+                bool anyInjected = false;
+                foreach (LayeredFacePartType partType in GetLayeredFaceInjectionOrder())
+                {
+                    if (partType == LayeredFacePartType.Overlay)
+                    {
+                        List<string> overlayIds = faceConfig.GetOrderedOverlayIds();
+                        foreach (string overlayId in overlayIds)
+                        {
+                            string overlayTexPath = faceConfig.GetAnyLayeredPartPath(partType, overlayId);
+                            if (string.IsNullOrWhiteSpace(overlayTexPath))
+                                continue;
+
+                            int overlayOrder = faceConfig.GetOverlayOrder(overlayId);
+                            PawnLayerConfig overlayLayer = BuildLayeredFacePartLayer(faceConfig, partType, overlayTexPath, overlayId, overlayOrder);
+                            PawnRenderNodeProperties overlayProps = CreateNodeProperties(overlayLayer);
+
+                            var overlayNode = (PawnRenderNode)Activator.CreateInstance(
+                                typeof(PawnRenderNode_Custom),
+                                new object[] { pawn, overlayProps, tree });
+
+                            if (overlayNode is not PawnRenderNode_Custom overlayCustomNode)
+                                continue;
+
+                            overlayCustomNode.config = overlayLayer;
+                            overlayCustomNode.layeredFacePartType = partType;
+                            overlayCustomNode.layeredOverlayId = overlayId;
+                            overlayCustomNode.layeredOverlayOrder = overlayOrder;
+                            overlayNode.parent = parentNode;
+                            overlayNode.debugOffset = overlayLayer.offset;
+
+                            AddChildToNode(parentNode, overlayNode);
+                            anyInjected = true;
+                        }
+
+                        continue;
+                    }
+
+                    string texPath = faceConfig.GetAnyLayeredPartPath(partType);
+                    if (string.IsNullOrWhiteSpace(texPath))
+                        continue;
+
+                    PawnLayerConfig layer = BuildLayeredFacePartLayer(faceConfig, partType, texPath);
+                    PawnRenderNodeProperties props = CreateNodeProperties(layer);
+
+                    var node = (PawnRenderNode)Activator.CreateInstance(
+                        typeof(PawnRenderNode_Custom),
+                        new object[] { pawn, props, tree });
+
+                    if (node is not PawnRenderNode_Custom customNode)
+                        continue;
+
+                    customNode.config = layer;
+                    customNode.layeredFacePartType = partType;
+                    node.parent = parentNode;
+                    node.debugOffset = layer.offset;
+
+                    AddChildToNode(parentNode, node);
+                    anyInjected = true;
+                }
+
+                if (anyInjected)
+                    ReinitializeNodeAncestors(tree);
+
+                return anyInjected;
+            }
+            catch (Exception ex)
+            {
+                Log.Warning($"[CharacterStudio] 注入 LayeredDynamic 面部分层节点时出错: {ex.Message}");
+                return false;
+            }
+        }
+
+        private static IEnumerable<LayeredFacePartType> GetLayeredFaceInjectionOrder()
+        {
+            yield return LayeredFacePartType.Base;
+            yield return LayeredFacePartType.Eye;
+            yield return LayeredFacePartType.Pupil;
+            yield return LayeredFacePartType.UpperLid;
+            yield return LayeredFacePartType.LowerLid;
+            yield return LayeredFacePartType.Brow;
+            yield return LayeredFacePartType.Mouth;
+            yield return LayeredFacePartType.Blush;
+            yield return LayeredFacePartType.Tear;
+            yield return LayeredFacePartType.Sweat;
+            yield return LayeredFacePartType.Overlay;
+        }
+
+        private static PawnLayerConfig BuildLayeredFacePartLayer(
+            PawnFaceConfig faceConfig,
+            LayeredFacePartType partType,
+            string texPath,
+            string overlayId = "",
+            int overlayOrder = 0)
+        {
+            float pupilMoveRange = faceConfig.eyeDirectionConfig?.pupilMoveRange ?? 0f;
+            string overlayLabel = string.IsNullOrWhiteSpace(overlayId) ? string.Empty : $"[{overlayId}]";
+
+            return new PawnLayerConfig
+            {
+                layerName = $"[Face] {partType}{overlayLabel}",
+                texPath = texPath,
+                anchorTag = "Head",
+                anchorPath = string.Empty,
+                offset = Vector3.zero,
+                offsetEast = Vector3.zero,
+                offsetNorth = Vector3.zero,
+                scale = Vector2.one,
+                rotation = 0f,
+                drawOrder = GetLayeredFaceDrawOrder(partType, overlayOrder),
+                workerClass = typeof(PawnRenderNodeWorker_CustomLayer),
+                shaderDefName = "Cutout",
+                colorSource = LayerColorSource.White,
+                customColor = Color.white,
+                colorTwoSource = LayerColorSource.White,
+                customColorTwo = Color.white,
+                visible = true,
+                role = GetLayeredFaceRole(partType),
+                variantLogic = LayerVariantLogic.None,
+                useDirectionalSuffix = true,
+                eyeRenderMode = partType == LayeredFacePartType.Pupil && pupilMoveRange > 0f
+                    ? EyeRenderMode.UvOffset
+                    : EyeRenderMode.TextureSwap,
+                eyeUvMoveRange = partType == LayeredFacePartType.Pupil ? pupilMoveRange : 0f
+            };
+        }
+
+        private static LayerRole GetLayeredFaceRole(LayeredFacePartType partType)
+        {
+            switch (partType)
+            {
+                case LayeredFacePartType.Base:
+                    return LayerRole.Head;
+                case LayeredFacePartType.Brow:
+                    return LayerRole.Brow;
+                case LayeredFacePartType.Eye:
+                case LayeredFacePartType.UpperLid:
+                case LayeredFacePartType.LowerLid:
+                    return LayerRole.Lid;
+                case LayeredFacePartType.Pupil:
+                    return LayerRole.Eye;
+                case LayeredFacePartType.Mouth:
+                    return LayerRole.Mouth;
+                case LayeredFacePartType.Blush:
+                case LayeredFacePartType.Sweat:
+                case LayeredFacePartType.Tear:
+                case LayeredFacePartType.Overlay:
+                    return LayerRole.Emotion;
+                default:
+                    return LayerRole.Decoration;
+            }
+        }
+
+        private static float GetLayeredFaceDrawOrder(LayeredFacePartType partType, int overlayOrder = 0)
+        {
+            switch (partType)
+            {
+                case LayeredFacePartType.Base:
+                    return 50.05f;
+                case LayeredFacePartType.Eye:
+                    return 50.12f;
+                case LayeredFacePartType.Pupil:
+                    return 50.14f;
+                case LayeredFacePartType.UpperLid:
+                    return 50.145f;
+                case LayeredFacePartType.LowerLid:
+                    return 50.147f;
+                case LayeredFacePartType.Brow:
+                    return 50.16f;
+                case LayeredFacePartType.Mouth:
+                    return 50.18f;
+                case LayeredFacePartType.Blush:
+                    return 50.22f;
+                case LayeredFacePartType.Tear:
+                    return 50.24f;
+                case LayeredFacePartType.Sweat:
+                    return 50.26f;
+                case LayeredFacePartType.Overlay:
+                    return 50.30f + overlayOrder * 0.002f;
+                default:
+                    return 50.20f;
+            }
+        }
+
+        // ─────────────────────────────────────────────
         // 眼睛方向覆盖层注入
         // ─────────────────────────────────────────────
 
@@ -360,14 +623,28 @@ namespace CharacterStudio.Rendering
         {
             try
             {
-                var eyeCfg = skinDef?.faceConfig?.eyeDirectionConfig;
-                if (eyeCfg == null || !eyeCfg.enabled || !eyeCfg.HasAnyTex()) return;
+                CompPawnSkin? skinComp = pawn?.GetComp<CompPawnSkin>();
+                FaceRuntimeCompiledData? compiledData = skinComp?.CurrentFaceRuntimeCompiledData;
+                FaceEyeDirectionRuntimeData? eyeData = compiledData?.portraitTrack?.eyeDirection;
+
+                var faceConfig = skinDef?.faceConfig;
+                if (eyeData == null || !eyeData.enabled || !eyeData.HasAnyTex())
+                    return;
+
+                // LayeredDynamic 已存在 Eye / Pupil 分层时，旧的眼睛方向覆盖层退出，
+                // 避免与新的分层面部系统重复绘制。
+                if (faceConfig?.workflowMode == FaceWorkflowMode.LayeredDynamic
+                    && ((faceConfig.CountLayeredParts(LayeredFacePartType.Eye) > 0)
+                        || (faceConfig.CountLayeredParts(LayeredFacePartType.Pupil) > 0)))
+                    return;
 
                 // 尝试挂载到头部节点；找不到时回退到根节点
                 PawnRenderNode? parentNode = FindParentNode(tree, "Head");
                 if (parentNode == null || parentNode == tree.rootNode)
                     parentNode = tree.rootNode;
                 if (parentNode == null) return; // rootNode 为 null 时安全退出
+
+                PawnRenderNode resolvedParentNode = parentNode;
 
                 var props = new PawnRenderNodeProperties
                 {
@@ -378,14 +655,15 @@ namespace CharacterStudio.Rendering
                     debugLabel  = "[CS] EyeDirection",
                 };
 
-                var node = (PawnRenderNode)Activator.CreateInstance(
+                object? createdNode = Activator.CreateInstance(
                     typeof(PawnRenderNode_Custom),
-                    new object[] { pawn, props, tree });
+                    new object?[] { pawn, props, tree });
 
-                if (node == null) return;
+                if (createdNode is not PawnRenderNode node)
+                    return;
 
-                node.parent = parentNode;
-                AddChildToNode(parentNode, node);
+                node.parent = resolvedParentNode;
+                AddChildToNode(resolvedParentNode, node);
 
                 ReinitializeNodeAncestors(tree);
             }

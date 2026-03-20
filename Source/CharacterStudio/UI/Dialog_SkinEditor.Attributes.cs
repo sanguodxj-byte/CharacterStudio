@@ -21,14 +21,54 @@ namespace CharacterStudio.UI
 
         private void DrawAttributesPanel(Rect rect)
         {
-            Widgets.DrawMenuSection(rect);
+            Widgets.DrawBoxSolid(rect, UIHelper.PanelFillColor);
+            GUI.color = UIHelper.BorderColor;
+            Widgets.DrawBox(rect, 1);
+            GUI.color = Color.white;
 
-            Rect contentRect = rect.ContractedBy(Margin);
-            Rect viewRect = new Rect(0f, 0f, contentRect.width - 16f, 980f);
-            Widgets.BeginScrollView(contentRect, ref attributesScrollPos, viewRect);
+            Rect titleRect = new Rect(rect.x + Margin, rect.y + Margin, rect.width - Margin * 2, 26f);
+            Widgets.DrawBoxSolid(titleRect, UIHelper.PanelFillSoftColor);
+            Widgets.DrawBoxSolid(new Rect(titleRect.x, titleRect.yMax - 2f, titleRect.width, 2f), UIHelper.AccentSoftColor);
+            GUI.color = UIHelper.BorderColor;
+            Widgets.DrawBox(titleRect, 1);
+            GUI.color = Color.white;
+
+            GameFont oldFont = Text.Font;
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.MiddleLeft;
+            GUI.color = UIHelper.HeaderColor;
+            Widgets.Label(new Rect(titleRect.x + 8f, titleRect.y, titleRect.width - 16f, titleRect.height), "CS_Studio_Tab_Attributes".Translate());
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = oldFont;
 
             workingSkin.attributes ??= new CharacterAttributeProfile();
             CharacterAttributeProfile attributes = workingSkin.attributes;
+
+            Rect summaryRect = new Rect(rect.x + Margin, titleRect.yMax + 6f, rect.width - Margin * 2, 24f);
+            Widgets.DrawBoxSolid(summaryRect, UIHelper.PanelFillSoftColor);
+            GUI.color = UIHelper.BorderColor;
+            Widgets.DrawBox(summaryRect, 1);
+            GUI.color = Color.white;
+
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.MiddleLeft;
+            GUI.color = UIHelper.SubtleColor;
+            Widgets.Label(new Rect(summaryRect.x + 8f, summaryRect.y, summaryRect.width - 16f, summaryRect.height), $"标签 {attributes.tags?.Count ?? 0} · 特质 {attributes.keyTraits?.Count ?? 0} · 初始装备 {attributes.startingApparelDefs?.Count ?? 0}");
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = GameFont.Small;
+
+            float contentY = summaryRect.yMax + 8f;
+            float contentHeight = rect.height - contentY + rect.y - Margin;
+            Rect contentRect = new Rect(rect.x + Margin, contentY, rect.width - Margin * 2, contentHeight);
+            Widgets.DrawBoxSolid(contentRect, UIHelper.PanelFillSoftColor);
+            GUI.color = UIHelper.BorderColor;
+            Widgets.DrawBox(contentRect, 1);
+            GUI.color = Color.white;
+
+            Rect viewRect = new Rect(0f, 0f, contentRect.width - 20f, 980f);
+            Widgets.BeginScrollView(contentRect.ContractedBy(2f), ref attributesScrollPos, viewRect);
 
             float y = 0f;
             float width = viewRect.width;
@@ -51,17 +91,37 @@ namespace CharacterStudio.UI
             UIHelper.DrawNumericField(ref y, width, "CS_Attr_PsychicSensitivity".Translate(), ref attributes.psychicSensitivity, 0f, 10f);
             UIHelper.DrawNumericField(ref y, width, "CS_Attr_MarketValue".Translate(), ref attributes.marketValue, 0f, 100000f);
 
+            attributes.tags ??= new List<string>();
+            attributes.keyTraits ??= new List<string>();
+            attributes.startingApparelDefs ??= new List<string>();
             EnsureAttributeCsvBuffers(attributes);
             DrawStringListEditor(ref y, width, "CS_Attr_Tags".Translate(), attributes.tags, ref attributesTagsCsv);
             DrawStringListEditor(ref y, width, "CS_Attr_KeyTraits".Translate(), attributes.keyTraits, ref attributesTraitsCsv);
             DrawStringListEditor(ref y, width, "CS_Attr_StartingApparel".Translate(), attributes.startingApparelDefs, ref attributesApparelCsv);
 
             UIHelper.DrawSectionTitle(ref y, width, "CS_LLM_CharacterSection".Translate());
+
+            string llmHint = "CS_LLM_EditorTool_CharacterHint".Translate();
+            Text.Font = GameFont.Tiny;
+            float llmHintHeight = Mathf.Max(40f, Text.CalcHeight(llmHint, Mathf.Max(40f, width - 16f)) + 12f);
+            Rect llmHintRect = new Rect(0f, y, width, llmHintHeight);
+            Widgets.DrawBoxSolid(llmHintRect, new Color(UIHelper.AccentColor.r, UIHelper.AccentColor.g, UIHelper.AccentColor.b, 0.10f));
+            GUI.color = UIHelper.BorderColor;
+            Widgets.DrawBox(llmHintRect, 1);
+            GUI.color = UIHelper.SubtleColor;
+            Widgets.Label(new Rect(8f, y + 4f, width - 16f, llmHintHeight - 8f), llmHint);
+            GUI.color = Color.white;
+            Text.Font = GameFont.Small;
+            y += llmHintHeight + 6f;
+
             Widgets.Label(new Rect(0f, y, width, 24f), "CS_LLM_CharacterPrompt".Translate());
-            llmCharacterPrompt = Widgets.TextArea(new Rect(0f, y + 26f, width, 110f), llmCharacterPrompt ?? string.Empty);
-            y += 140f;
-            Widgets.Label(new Rect(0f, y, width, 40f), "CS_LLM_EditorTool_CharacterHint".Translate());
-            y += 44f;
+            Rect promptRect = new Rect(0f, y + 26f, width, 110f);
+            Widgets.DrawBoxSolid(promptRect, UIHelper.PanelFillColor);
+            GUI.color = UIHelper.BorderColor;
+            Widgets.DrawBox(promptRect, 1);
+            GUI.color = Color.white;
+            llmCharacterPrompt = Widgets.TextArea(promptRect.ContractedBy(4f), llmCharacterPrompt ?? string.Empty);
+            y += 144f;
 
             float buttonWidth = (width - 10f) / 2f;
 
@@ -84,13 +144,37 @@ namespace CharacterStudio.UI
 
             GUI.enabled = !llmCharacterGenerating;
             string generateLabel = llmCharacterGenerating ? "CS_LLM_Generating".Translate() : "CS_LLM_GenerateCharacter".Translate();
-            if (Widgets.ButtonText(new Rect(0f, y, buttonWidth, 28f), generateLabel))
+            Rect generateRect = new Rect(0f, y, buttonWidth, 28f);
+            Widgets.DrawBoxSolid(generateRect, llmCharacterGenerating ? UIHelper.PanelFillSoftColor : UIHelper.ActiveTabColor);
+            Widgets.DrawBoxSolid(new Rect(generateRect.x, generateRect.yMax - 2f, generateRect.width, 2f), llmCharacterGenerating ? UIHelper.AccentSoftColor : UIHelper.AccentColor);
+            GUI.color = Mouse.IsOver(generateRect) ? UIHelper.HoverOutlineColor : UIHelper.BorderColor;
+            Widgets.DrawBox(generateRect, 1);
+            GUI.color = llmCharacterGenerating ? UIHelper.SubtleColor : Color.white;
+            Text.Anchor = TextAnchor.MiddleCenter;
+            Text.Font = GameFont.Tiny;
+            Widgets.Label(generateRect, generateLabel);
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = GameFont.Small;
+            if (Widgets.ButtonInvisible(generateRect))
             {
                 GenerateCharacterFromPrompt();
             }
             GUI.enabled = true;
 
-            if (Widgets.ButtonText(new Rect(buttonWidth + 10f, y, buttonWidth, 28f), "CS_LLM_OpenSettings".Translate()))
+            Rect settingsRect = new Rect(buttonWidth + 10f, y, buttonWidth, 28f);
+            Widgets.DrawBoxSolid(settingsRect, UIHelper.PanelFillSoftColor);
+            Widgets.DrawBoxSolid(new Rect(settingsRect.x, settingsRect.yMax - 2f, settingsRect.width, 2f), new Color(1f, 1f, 1f, 0.05f));
+            GUI.color = Mouse.IsOver(settingsRect) ? UIHelper.HoverOutlineColor : UIHelper.BorderColor;
+            Widgets.DrawBox(settingsRect, 1);
+            GUI.color = UIHelper.HeaderColor;
+            Text.Anchor = TextAnchor.MiddleCenter;
+            Text.Font = GameFont.Tiny;
+            Widgets.Label(settingsRect, "CS_LLM_OpenSettings".Translate());
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = GameFont.Small;
+            if (Widgets.ButtonInvisible(settingsRect))
             {
                 OnOpenLlmSettings();
             }

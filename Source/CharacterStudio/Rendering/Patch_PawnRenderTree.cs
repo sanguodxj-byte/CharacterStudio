@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
@@ -139,8 +139,6 @@ namespace CharacterStudio.Rendering
                     Log.Warning("[CharacterStudio] 无法找到 PawnRenderTree.TrySetupGraphIfNeeded 方法");
                 }
 
-                ApplyBaseAppearanceRuntimePatches(harmony);
-
                 var canDrawMethod = AccessTools.Method(typeof(PawnRenderNodeWorker), nameof(PawnRenderNodeWorker.CanDrawNow));
                 var canDrawPrefix = AccessTools.Method(typeof(Patch_PawnRenderTree), nameof(CanDrawNow_Prefix));
 
@@ -215,8 +213,6 @@ namespace CharacterStudio.Rendering
                 var originalMethod = AccessTools.Method(typeof(PawnRenderTree), "TrySetupGraphIfNeeded");
                 if (originalMethod != null)
                     harmonyInstance.Unpatch(originalMethod, HarmonyPatchType.Postfix, harmonyInstance.Id);
-
-                UnpatchBaseAppearanceRuntimePatches(harmonyInstance);
 
                 List<MethodInfo> methodsToUnpatch;
                 lock (patchStateLock)
@@ -319,14 +315,13 @@ namespace CharacterStudio.Rendering
                 if (!overlayMode)
                     ProcessVanillaHiding(__instance, skinDef, hideVanillaHead, hideVanillaHair, out _);
 
-                ApplyBaseAppearanceOverrides(__instance, pawn, skinDef);
-
                 bool anyNodesInjected = InjectCustomLayers(__instance, pawn, skinDef);
+                bool anyLayeredFaceInjected = InjectLayeredFaceLayers(__instance, pawn, skinDef);
 
                 // 注入眼睛方向覆盖层（与 RefreshHiddenNodes 保持一致）
                 InjectEyeDirectionLayer(__instance, pawn, skinDef);
 
-                if (!overlayMode && anyNodesInjected)
+                if (!overlayMode && (anyNodesInjected || anyLayeredFaceInjected))
                 {
                     try
                     {
@@ -519,16 +514,6 @@ namespace CharacterStudio.Rendering
                     HideNodeByTagName(nodesByTag!, t);
             }
 #pragma warning restore CS0618
-        }
-
-        /// <summary>
-        /// 检查 BaseAppearance 是否启用了指定槽位（且有贴图路径）
-        /// </summary>
-        private static bool HasEnabledBaseSlot(PawnSkinDef skinDef, BaseAppearanceSlotType slotType)
-        {
-            if (skinDef?.baseAppearance == null) return false;
-            var slot = skinDef.baseAppearance.GetSlot(slotType);
-            return slot != null && slot.enabled && !string.IsNullOrWhiteSpace(slot.texPath);
         }
     }
 }

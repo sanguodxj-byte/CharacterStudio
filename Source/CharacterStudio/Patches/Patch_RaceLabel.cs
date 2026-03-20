@@ -9,9 +9,9 @@ using Verse;
 namespace CharacterStudio.Patches
 {
     /// <summary>
-    /// Harmony Transpiler：拦截 CharacterCardUtility.DrawCharacterCard 中对 pawn.def.LabelCap 的调用，
-    /// 若当前 pawn 装备了含 raceDisplayName 的皮肤，则替换为皮肤自定义名称。
-    /// 这样角色卡上的种族行会显示皮肤定义的标签，而不是原版「智人」。
+    /// Harmony Transpiler：兼容不同版本的 CharacterCardUtility.DrawCharacterCard。
+    /// 旧版本可能直接读取 pawn.def.LabelCap，1.6/Biotech 场景则通常显示 pawn.genes.XenotypeLabelCap。
+    /// 若当前 pawn 装备了含 raceDisplayName 的皮肤，则统一替换为皮肤自定义名称。
     /// </summary>
     [HarmonyPatch]
     public static class Patch_RaceLabel
@@ -50,64 +50,87 @@ namespace CharacterStudio.Patches
             IEnumerable<CodeInstruction> instructions,
             ILGenerator generator)
         {
-            // 我们要替换的 IL 序列：
-            //   ldarg / ldloc  (把 pawn 推上栈)
-            //   ldfld / callvirt  ThingDef Pawn::def
-            //   callvirt  string Def::get_LabelCap()
-            // 替换成调用我们的静态辅助方法 GetRaceLabel(Pawn)
+            // 兼容两种 IL：
+            // 1) pawn.def.LabelCap
+            // 2) pawn.genes.XenotypeLabelCap（RimWorld 1.6 角色卡常见路径）
+            // 两种情况都替换为调用我们的静态辅助方法 GetRaceLabel(Pawn)。
 
-            var defField      = typeof(Thing).GetField("def");
+            var defField = typeof(Thing).GetField("def");
             var labelCapGetter = typeof(Def).GetProperty("LabelCap")?.GetGetMethod();
-            var helperMethod  = typeof(Patch_RaceLabel).GetMethod(
+            var genesGetter = typeof(Pawn).GetProperty("genes")?.GetGetMethod();
+            var xenotypeLabelGetter = typeof(Pawn_GeneTracker).GetProperty("XenotypeLabelCap")?.GetGetMethod();
+            var helperMethod = typeof(Patch_RaceLabel).GetMethod(
                 nameof(GetRaceLabel), BindingFlags.Public | BindingFlags.Static);
 
-            if (defField == null || labelCapGetter == null || helperMethod == null)
+            if (helperMethod == null)
             {
-                Log.Warning("[CharacterStudio] Patch_RaceLabel: 无法定位目标成员，Transpiler 跳过。");
+                Log.Warning("[CharacterStudio] Patch_RaceLabel: 无法定位辅助方法，Transpiler 跳过。");
                 foreach (var inst in instructions) yield return inst;
                 yield break;
             }
 
             var codes = new List<CodeInstruction>(instructions);
-            bool patched = false;
+            bool patchedLegacyDefLabel = false;
+            bool patchedXenotypeLabel = false;
 
             for (int i = 0; i < codes.Count - 1; i++)
             {
-                var cur  = codes[i];
+                var cur = codes[i];
                 var next = codes[i + 1];
 
-                // 识别模式：ldfld ThingDef Thing::def  +  callvirt get_LabelCap
-                bool isDefLoad = cur.opcode == OpCodes.Ldfld && cur.operand is FieldInfo fi && fi == defField;
-                bool isLabelCap = next.opcode == OpCodes.Callvirt && next.operand is MethodInfo mi && mi == labelCapGetter;
+                bool isDefLoad = defField != null
+                    && cur.opcode == OpCodes.Ldfld
+                    && cur.operand is FieldInfo defFieldInfo
+                    && defFieldInfo == defField;
+                bool isLabelCapCall = labelCapGetter != null
+                    && (next.opcode == OpCodes.Call || next.opcode == OpCodes.Callvirt)
+                    && next.operand is MethodInfo labelMethod
+                    && labelMethod == labelCapGetter;
 
-                if (isDefLoad && isLabelCap)
+                bool isGenesGetterCall = genesGetter != null
+                    && (cur.opcode == OpCodes.Call || cur.opcode == OpCodes.Callvirt)
+                    && cur.operand is MethodInfo genesMethod
+                    && genesMethod == genesGetter;
+                bool isXenotypeLabelCall = xenotypeLabelGetter != null
+                    && (next.opcode == OpCodes.Call || next.opcode == OpCodes.Callvirt)
+                    && next.operand is MethodInfo xenotypeMethod
+                    && xenotypeMethod == xenotypeLabelGetter;
+
+                if (isDefLoad && isLabelCapCall)
                 {
-                    // 此时栈顶是 pawn（Thing），cur 会把 def push 上去。
-                    // 我们把这两条指令替换为：
-                    //   call GetRaceLabel(Pawn)   ← 栈顶已有 pawn，直接消费
-                    // 注意：cur (ldfld) 消耗 pawn 并 push def，我们要保留 pawn 在栈上
-                    // 所以跳过 cur（ldfld），把 next（callvirt LabelCap）换成 call GetRaceLabel
-
-                    // 保留 cur 的 label（可能有跳转目标），但改变它为 nop
-                    cur.opcode  = OpCodes.Nop;
+                    cur.opcode = OpCodes.Nop;
                     cur.operand = null;
 
-                    next.opcode  = OpCodes.Call;
+                    next.opcode = OpCodes.Call;
                     next.operand = helperMethod;
 
-                    patched = true;
-                    // 跳过 next，i 正常递增即可
+                    patchedLegacyDefLabel = true;
+                }
+                else if (isGenesGetterCall && isXenotypeLabelCall)
+                {
+                    cur.opcode = OpCodes.Nop;
+                    cur.operand = null;
+
+                    next.opcode = OpCodes.Call;
+                    next.operand = helperMethod;
+
+                    patchedXenotypeLabel = true;
                 }
 
                 yield return cur;
             }
 
-            // 输出最后一条
             if (codes.Count > 0)
                 yield return codes[codes.Count - 1];
 
-            if (!patched)
-                Log.Warning("[CharacterStudio] Patch_RaceLabel: 未能找到 ldfld::def + callvirt::LabelCap 指令对，种族名替换未生效。");
+            if (!patchedLegacyDefLabel && !patchedXenotypeLabel)
+            {
+                Log.Warning("[CharacterStudio] Patch_RaceLabel: 未能找到 def.LabelCap 或 genes.XenotypeLabelCap 指令对，种族名替换未生效。");
+            }
+            else
+            {
+                Log.Message($"[CharacterStudio] Patch_RaceLabel: legacyDefLabel={patchedLegacyDefLabel}, xenotypeLabel={patchedXenotypeLabel}");
+            }
         }
 
         // ─────────────────────────────────────────────

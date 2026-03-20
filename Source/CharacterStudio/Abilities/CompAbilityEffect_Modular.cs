@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CharacterStudio.Core;
 using RimWorld;
 using Verse;
 
@@ -33,23 +34,55 @@ namespace CharacterStudio.Abilities
                 }
             }
 
-            // 排队视觉特效（立即或延迟）
-            if (Props.visualEffects != null)
+            HandleRuntimeComponentsAtApply();
+            QueueVisualEffects(target);
+        }
+
+        private void HandleRuntimeComponentsAtApply()
+        {
+            if (Props.runtimeComponents == null || Props.runtimeComponents.Count == 0)
             {
-                int nowTick = Find.TickManager?.TicksGame ?? 0;
-                foreach (var vfx in Props.visualEffects)
+                return;
+            }
+
+            Pawn? caster = parent?.pawn;
+            CompPawnSkin? skinComp = caster?.GetComp<CompPawnSkin>();
+            if (caster == null || skinComp == null)
+            {
+                return;
+            }
+
+            int nowTick = Find.TickManager?.TicksGame ?? 0;
+            foreach (var component in Props.runtimeComponents)
+            {
+                if (component == null || !component.enabled)
                 {
-                    if (vfx == null) continue;
-                    if (vfx.delayTicks <= 0)
-                    {
-                        // 立即播放
-                        PlayVfx(vfx, target);
-                    }
-                    else
-                    {
-                        // 入队延迟播放
-                        pendingVfx.Add((nowTick + vfx.delayTicks, vfx, target));
-                    }
+                    continue;
+                }
+
+                switch (component.type)
+                {
+                    case AbilityRuntimeComponentType.QComboWindow:
+                        int comboWindow = component.comboWindowTicks > 0 ? component.comboWindowTicks : 12;
+                        skinComp.qComboWindowEndTick = nowTick + comboWindow;
+                        break;
+                    case AbilityRuntimeComponentType.RStackDetonation:
+                        if (skinComp.rStackingEnabled && !skinComp.rSecondStageReady)
+                        {
+                            int requiredStacks = component.requiredStacks > 0 ? component.requiredStacks : 7;
+                            skinComp.rStackCount = System.Math.Min(requiredStacks, skinComp.rStackCount + 1);
+                            if (skinComp.rStackCount >= requiredStacks)
+                            {
+                                skinComp.rStackingEnabled = false;
+                                skinComp.rSecondStageReady = true;
+                                Messages.Message("CS_Ability_R_Ready".Translate(), MessageTypeDefOf.PositiveEvent, false);
+                            }
+                            else
+                            {
+                                Messages.Message("CS_Ability_R_StackGain".Translate(skinComp.rStackCount, requiredStacks), MessageTypeDefOf.NeutralEvent, false);
+                            }
+                        }
+                        break;
                 }
             }
         }
@@ -72,12 +105,72 @@ namespace CharacterStudio.Abilities
             }
         }
 
+        private void QueueVisualEffects(LocalTargetInfo target)
+        {
+            if (Props.visualEffects == null || Props.visualEffects.Count == 0)
+            {
+                return;
+            }
+
+            int nowTick = Find.TickManager?.TicksGame ?? 0;
+            foreach (var vfx in Props.visualEffects)
+            {
+                if (vfx == null || !vfx.enabled)
+                {
+                    continue;
+                }
+
+                if (!ShouldHandleTriggerAtApply(vfx.trigger))
+                {
+                    continue;
+                }
+
+                int repeatCount = vfx.repeatCount <= 0 ? 1 : vfx.repeatCount;
+                int repeatIntervalTicks = vfx.repeatIntervalTicks < 0 ? 0 : vfx.repeatIntervalTicks;
+
+                for (int repeatIndex = 0; repeatIndex < repeatCount; repeatIndex++)
+                {
+                    int totalDelay = vfx.delayTicks + (repeatIndex * repeatIntervalTicks);
+                    if (totalDelay <= 0)
+                    {
+                        PlayVfx(vfx, target);
+                    }
+                    else
+                    {
+                        pendingVfx.Add((nowTick + totalDelay, vfx, target));
+                    }
+                }
+            }
+        }
+
+        private static bool ShouldHandleTriggerAtApply(AbilityVisualEffectTrigger trigger)
+        {
+            switch (trigger)
+            {
+                case AbilityVisualEffectTrigger.OnTargetApply:
+                case AbilityVisualEffectTrigger.OnCastFinish:
+                    return true;
+                case AbilityVisualEffectTrigger.OnCastStart:
+                case AbilityVisualEffectTrigger.OnWarmup:
+                case AbilityVisualEffectTrigger.OnDurationTick:
+                case AbilityVisualEffectTrigger.OnExpire:
+                default:
+                    return true;
+            }
+        }
+
         private void PlayVfx(AbilityVisualEffectConfig vfx, LocalTargetInfo target)
         {
             var caster = parent?.pawn;
             if (caster == null || caster.Map == null) return;
+
             try
             {
+                if (vfx.sourceMode == AbilityVisualEffectSourceMode.Preset && !string.IsNullOrWhiteSpace(vfx.presetDefName))
+                {
+                    Log.Warning($"[CharacterStudio] 视觉特效预设 '{vfx.presetDefName}' 当前阶段尚未接入运行时，已回退到内建特效 {vfx.type}。");
+                }
+
                 var worker = VisualEffectWorkerFactory.GetWorker(vfx.type);
                 worker.Play(vfx, target, caster);
             }
@@ -95,6 +188,9 @@ namespace CharacterStudio.Abilities
 
         // 视觉特效列表
         public List<AbilityVisualEffectConfig> visualEffects = new List<AbilityVisualEffectConfig>();
+
+        // 运行时组件列表（用于 Q 连段 / E 短跳 / R 叠层引爆 等扩展行为）
+        public List<AbilityRuntimeComponentConfig> runtimeComponents = new List<AbilityRuntimeComponentConfig>();
 
         public CompProperties_AbilityModular()
         {

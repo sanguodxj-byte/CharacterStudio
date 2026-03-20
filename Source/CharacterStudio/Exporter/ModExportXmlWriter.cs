@@ -39,10 +39,14 @@ namespace CharacterStudio.Exporter
                     new XElement("colorTwoSource", slot.colorTwoSource.ToString()),
                     slot.colorTwoSource == LayerColorSource.Fixed ? new XElement("customColorTwo", FormatColor(slot.customColorTwo)) : null,
                     new XElement("scale", FormatVector2(slot.scale)),
+                    slot.scaleEastMultiplier != Vector2.one ? new XElement("scaleEastMultiplier", FormatVector2(slot.scaleEastMultiplier)) : null,
+                    slot.scaleNorthMultiplier != Vector2.one ? new XElement("scaleNorthMultiplier", FormatVector2(slot.scaleNorthMultiplier)) : null,
                     new XElement("offset", FormatVector3(slot.offset)),
                     slot.offsetEast != Vector3.zero ? new XElement("offsetEast", FormatVector3(slot.offsetEast)) : null,
                     slot.offsetNorth != Vector3.zero ? new XElement("offsetNorth", FormatVector3(slot.offsetNorth)) : null,
                     new XElement("rotation", slot.rotation),
+                    slot.rotationEastOffset != 0f ? new XElement("rotationEastOffset", slot.rotationEastOffset) : null,
+                    slot.rotationNorthOffset != 0f ? new XElement("rotationNorthOffset", slot.rotationNorthOffset) : null,
                     new XElement("flipHorizontal", slot.flipHorizontal.ToString().ToLower()),
                     new XElement("drawOrderOffset", slot.drawOrderOffset),
                     slot.graphicClass != null ? new XElement("graphicClass", slot.graphicClass.FullName) : null
@@ -64,38 +68,151 @@ namespace CharacterStudio.Exporter
 
             foreach (var layer in layers)
             {
-                element.Add(new XElement("li",
-                    new XElement("layerName", layer.layerName ?? ""),
-                    new XElement("texPath", layer.texPath ?? ""),
-                    new XElement("anchorTag", layer.anchorTag ?? "Head"),
-                    !string.IsNullOrEmpty(layer.anchorPath) ? new XElement("anchorPath", layer.anchorPath) : null,
-                    !string.IsNullOrEmpty(layer.maskTexPath) ? new XElement("maskTexPath", layer.maskTexPath) : null,
-                    !string.IsNullOrEmpty(layer.shaderDefName) ? new XElement("shaderDefName", layer.shaderDefName) : null,
-                    new XElement("offset", FormatVector3(layer.offset)),
-                    layer.offsetEast != Vector3.zero ? new XElement("offsetEast", FormatVector3(layer.offsetEast)) : null,
-                    layer.offsetNorth != Vector3.zero ? new XElement("offsetNorth", FormatVector3(layer.offsetNorth)) : null,
-                    new XElement("drawOrder", layer.drawOrder),
-                    new XElement("scale", FormatVector2(layer.scale)),
-                    new XElement("rotation", layer.rotation),
-                    new XElement("flipHorizontal", layer.flipHorizontal.ToString().ToLower()),
-                    new XElement("colorSource", layer.colorSource.ToString()),
-                    layer.colorSource == LayerColorSource.Fixed ? new XElement("customColor", FormatColor(layer.customColor)) : null,
-                    new XElement("colorTwoSource", layer.colorTwoSource.ToString()),
-                    layer.colorTwoSource == LayerColorSource.Fixed ? new XElement("customColorTwo", FormatColor(layer.customColorTwo)) : null,
-                    new XElement("visible", layer.visible.ToString().ToLower()),
-                    layer.workerClass != null ? new XElement("workerClass", layer.workerClass.FullName) : null,
-                    layer.graphicClass != null ? new XElement("graphicClass", layer.graphicClass.FullName) : null,
-                    layer.animationType != LayerAnimationType.None ? new XElement("animationType", layer.animationType.ToString()) : null,
-                    layer.animationType != LayerAnimationType.None ? new XElement("animFrequency", layer.animFrequency) : null,
-                    layer.animationType != LayerAnimationType.None ? new XElement("animAmplitude", layer.animAmplitude) : null,
-                    layer.animationType != LayerAnimationType.None ? new XElement("animSpeed", layer.animSpeed) : null,
-                    layer.animationType != LayerAnimationType.None ? new XElement("animPhaseOffset", layer.animPhaseOffset) : null,
-                    layer.animationType != LayerAnimationType.None ? new XElement("animAffectsOffset", layer.animAffectsOffset.ToString().ToLower()) : null,
-                    layer.animationType != LayerAnimationType.None ? new XElement("animOffsetAmplitude", layer.animOffsetAmplitude) : null
-                ));
+                element.Add(new XElement("li", GeneratePawnLayerXmlContent(layer)));
             }
 
             return element;
+        }
+
+        public static XElement? GenerateEquipmentsXml(List<CharacterEquipmentDef>? equipments)
+        {
+            if (equipments == null || equipments.Count == 0)
+            {
+                return null;
+            }
+
+            var element = new XElement("equipments");
+            foreach (var equipment in equipments)
+            {
+                if (equipment == null)
+                {
+                    continue;
+                }
+
+                equipment.EnsureDefaults();
+
+                var equipmentEl = new XElement("li",
+                    !string.IsNullOrWhiteSpace(equipment.defName) ? new XElement("defName", equipment.defName) : null,
+                    !string.IsNullOrWhiteSpace(equipment.label) ? new XElement("label", equipment.label) : null,
+                    !string.IsNullOrWhiteSpace(equipment.description) ? new XElement("description", equipment.description) : null,
+                    new XElement("enabled", equipment.enabled.ToString().ToLower()),
+                    !string.IsNullOrWhiteSpace(equipment.slotTag) ? new XElement("slotTag", equipment.slotTag) : null,
+                    !string.IsNullOrWhiteSpace(equipment.linkedThingDefName) ? new XElement("linkedThingDefName", equipment.linkedThingDefName) : null,
+                    !string.IsNullOrWhiteSpace(equipment.previewTexPath) ? new XElement("previewTexPath", equipment.previewTexPath) : null,
+                    !string.IsNullOrWhiteSpace(equipment.sourceNote) ? new XElement("sourceNote", equipment.sourceNote) : null,
+                    GenerateStringListXml("tags", equipment.tags),
+                    GenerateStringListXml("abilityDefNames", equipment.abilityDefNames),
+                    GenerateEquipmentVisualXml(equipment.visual)
+                );
+
+                element.Add(equipmentEl);
+            }
+
+            return element.HasElements ? element : null;
+        }
+
+        private static XElement? GenerateEquipmentVisualXml(PawnLayerConfig? layer)
+        {
+            if (layer == null)
+            {
+                return null;
+            }
+
+            return new XElement("visual", GeneratePawnLayerXmlContent(layer));
+        }
+
+        private static IEnumerable<object?> GeneratePawnLayerXmlContent(PawnLayerConfig layer)
+        {
+            yield return new XElement("layerName", layer.layerName ?? "");
+            yield return new XElement("texPath", layer.texPath ?? "");
+            yield return new XElement("anchorTag", layer.anchorTag ?? "Head");
+
+            if (!string.IsNullOrEmpty(layer.anchorPath))
+                yield return new XElement("anchorPath", layer.anchorPath);
+            if (!string.IsNullOrEmpty(layer.maskTexPath))
+                yield return new XElement("maskTexPath", layer.maskTexPath);
+            if (!string.IsNullOrEmpty(layer.shaderDefName))
+                yield return new XElement("shaderDefName", layer.shaderDefName);
+
+            yield return new XElement("offset", FormatVector3(layer.offset));
+
+            if (layer.offsetEast != Vector3.zero)
+                yield return new XElement("offsetEast", FormatVector3(layer.offsetEast));
+            if (layer.offsetNorth != Vector3.zero)
+                yield return new XElement("offsetNorth", FormatVector3(layer.offsetNorth));
+
+            yield return new XElement("drawOrder", layer.drawOrder);
+            yield return new XElement("scale", FormatVector2(layer.scale));
+
+            if (layer.scaleEastMultiplier != Vector2.one)
+                yield return new XElement("scaleEastMultiplier", FormatVector2(layer.scaleEastMultiplier));
+            if (layer.scaleNorthMultiplier != Vector2.one)
+                yield return new XElement("scaleNorthMultiplier", FormatVector2(layer.scaleNorthMultiplier));
+
+            yield return new XElement("rotation", layer.rotation);
+
+            if (layer.rotationEastOffset != 0f)
+                yield return new XElement("rotationEastOffset", layer.rotationEastOffset);
+            if (layer.rotationNorthOffset != 0f)
+                yield return new XElement("rotationNorthOffset", layer.rotationNorthOffset);
+
+            yield return new XElement("flipHorizontal", layer.flipHorizontal.ToString().ToLower());
+            yield return new XElement("colorSource", layer.colorSource.ToString());
+
+            if (layer.colorSource == LayerColorSource.Fixed)
+                yield return new XElement("customColor", FormatColor(layer.customColor));
+
+            yield return new XElement("colorTwoSource", layer.colorTwoSource.ToString());
+
+            if (layer.colorTwoSource == LayerColorSource.Fixed)
+                yield return new XElement("customColorTwo", FormatColor(layer.customColorTwo));
+
+            yield return new XElement("visible", layer.visible.ToString().ToLower());
+            yield return new XElement("role", layer.role.ToString());
+            yield return new XElement("variantLogic", layer.variantLogic.ToString());
+
+            if (!string.IsNullOrEmpty(layer.variantBaseName))
+                yield return new XElement("variantBaseName", layer.variantBaseName);
+            if (!layer.useDirectionalSuffix)
+                yield return new XElement("useDirectionalSuffix", layer.useDirectionalSuffix.ToString().ToLower());
+            if (layer.useExpressionSuffix)
+                yield return new XElement("useExpressionSuffix", layer.useExpressionSuffix.ToString().ToLower());
+            if (layer.useEyeDirectionSuffix)
+                yield return new XElement("useEyeDirectionSuffix", layer.useEyeDirectionSuffix.ToString().ToLower());
+            if (layer.useBlinkSuffix)
+                yield return new XElement("useBlinkSuffix", layer.useBlinkSuffix.ToString().ToLower());
+            if (layer.useFrameSequence)
+                yield return new XElement("useFrameSequence", layer.useFrameSequence.ToString().ToLower());
+            if (layer.hideWhenMissingVariant)
+                yield return new XElement("hideWhenMissingVariant", layer.hideWhenMissingVariant.ToString().ToLower());
+            if (layer.eyeRenderMode != EyeRenderMode.TextureSwap)
+                yield return new XElement("eyeRenderMode", layer.eyeRenderMode.ToString());
+            if (layer.eyeUvMoveRange != 0f)
+                yield return new XElement("eyeUvMoveRange", layer.eyeUvMoveRange.ToString("F4", System.Globalization.CultureInfo.InvariantCulture));
+
+            var visibleExpressions = GenerateStringArrayXml("visibleExpressions", layer.visibleExpressions);
+            if (visibleExpressions != null)
+                yield return visibleExpressions;
+
+            var hiddenExpressions = GenerateStringArrayXml("hiddenExpressions", layer.hiddenExpressions);
+            if (hiddenExpressions != null)
+                yield return hiddenExpressions;
+
+            if (layer.workerClass != null)
+                yield return new XElement("workerClass", layer.workerClass.FullName);
+            if (layer.graphicClass != null)
+                yield return new XElement("graphicClass", layer.graphicClass.FullName);
+
+            if (layer.animationType != LayerAnimationType.None)
+            {
+                yield return new XElement("animationType", layer.animationType.ToString());
+                yield return new XElement("animFrequency", layer.animFrequency);
+                yield return new XElement("animAmplitude", layer.animAmplitude);
+                yield return new XElement("animSpeed", layer.animSpeed);
+                yield return new XElement("animPhaseOffset", layer.animPhaseOffset);
+                yield return new XElement("animAffectsOffset", layer.animAffectsOffset.ToString().ToLower());
+                yield return new XElement("animOffsetAmplitude", layer.animOffsetAmplitude);
+            }
         }
 
         public static XElement? GenerateStringListXml(string tagName, List<string>? values)
@@ -117,24 +234,104 @@ namespace CharacterStudio.Exporter
             return element.HasElements ? element : null;
         }
 
+        public static XElement? GenerateStringArrayXml(string tagName, string[]? values)
+        {
+            if (values == null || values.Length == 0)
+            {
+                return null;
+            }
+
+            var element = new XElement(tagName);
+            foreach (var value in values)
+            {
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    element.Add(new XElement("li", value));
+                }
+            }
+
+            return element.HasElements ? element : null;
+        }
+
         public static XElement GenerateFaceConfigXml(PawnFaceConfig config)
         {
             var element = new XElement("faceConfig",
-                new XElement("enabled", config.enabled.ToString().ToLower())
+                new XElement("enabled", config.enabled.ToString().ToLower()),
+                new XElement("workflowMode", config.workflowMode.ToString())
             );
+
+            if (!string.IsNullOrWhiteSpace(config.layeredSourceRoot))
+            {
+                element.Add(new XElement("layeredSourceRoot", config.layeredSourceRoot));
+            }
 
             if (config.expressions != null && config.expressions.Count > 0)
             {
                 var exprsEl = new XElement("expressions");
                 foreach (var expression in config.expressions)
                 {
-                    if (expression == null || string.IsNullOrEmpty(expression.texPath)) continue;
-                    exprsEl.Add(new XElement("li",
+                    if (expression == null) continue;
+
+                    bool hasStatic = !string.IsNullOrEmpty(expression.texPath);
+                    List<ExpressionFrame>? frames = expression.frames;
+                    bool hasFrames = frames != null && frames.Count > 0;
+                    if (!hasStatic && !hasFrames) continue;
+
+                    var exprEl = new XElement("li",
                         new XElement("expression", expression.expression.ToString()),
-                        new XElement("texPath", expression.texPath)
-                    ));
+                        hasStatic ? new XElement("texPath", expression.texPath) : null
+                    );
+
+                    if (hasFrames)
+                    {
+                        List<ExpressionFrame> nonNullFrames = frames!;
+                        var framesEl = new XElement("frames");
+                        foreach (var frame in nonNullFrames)
+                        {
+                            if (frame == null || string.IsNullOrWhiteSpace(frame.texPath)) continue;
+
+                            framesEl.Add(new XElement("li",
+                                new XElement("texPath", frame.texPath),
+                                new XElement("durationTicks", frame.durationTicks)
+                            ));
+                        }
+
+                        if (framesEl.HasElements)
+                        {
+                            exprEl.Add(framesEl);
+                        }
+                    }
+
+                    exprsEl.Add(exprEl);
                 }
                 if (exprsEl.HasElements) element.Add(exprsEl);
+            }
+
+            if (config.layeredParts != null && config.layeredParts.Count > 0)
+            {
+                var layeredPartsEl = new XElement("layeredParts");
+                foreach (var part in config.layeredParts)
+                {
+                    if (part == null || string.IsNullOrWhiteSpace(part.texPath)) continue;
+
+                    layeredPartsEl.Add(new XElement("li",
+                        new XElement("partType", part.partType.ToString()),
+                        new XElement("expression", part.expression.ToString()),
+                        new XElement("texPath", part.texPath),
+                        new XElement("enabled", part.enabled.ToString().ToLower()),
+                        part.partType == LayeredFacePartType.Overlay && !string.IsNullOrWhiteSpace(part.overlayId)
+                            ? new XElement("overlayId", part.overlayId)
+                            : null,
+                        part.partType == LayeredFacePartType.Overlay
+                            ? new XElement("overlayOrder", part.overlayOrder)
+                            : null,
+                        part.anchorCorrection != Vector2.zero
+                            ? new XElement("anchorCorrection", FormatVector2(part.anchorCorrection))
+                            : null
+                    ));
+                }
+
+                if (layeredPartsEl.HasElements) element.Add(layeredPartsEl);
             }
 
             // 序列化眼睛方向配置（嵌套在 faceConfig 内）
@@ -186,10 +383,14 @@ namespace CharacterStudio.Exporter
                     new XElement("charges", ability.charges),
                     new XElement("aiCanUse", ability.aiCanUse),
                     new XElement("carrierType", ability.carrierType.ToString()),
+                    new XElement("targetType", ability.targetType.ToString()),
+                    new XElement("useRadius", ability.useRadius.ToString().ToLower()),
+                    new XElement("areaCenter", ability.areaCenter.ToString()),
                     new XElement("range", ability.range),
                     new XElement("radius", ability.radius),
                     ability.projectileDef != null ? new XElement("projectileDef", ability.projectileDef.defName) : null,
                     GenerateSkinAbilityEffectsXml(ability.effects),
+                    GenerateAbilityVisualEffectsXml(ability.visualEffects),
                     GenerateRuntimeComponentsXml(ability.runtimeComponents)
                 );
 
@@ -219,7 +420,13 @@ namespace CharacterStudio.Exporter
                     effect.damageDef != null ? new XElement("damageDef", effect.damageDef.defName) : null,
                     effect.hediffDef != null ? new XElement("hediffDef", effect.hediffDef.defName) : null,
                     effect.summonKind != null ? new XElement("summonKind", effect.summonKind.defName) : null,
-                    new XElement("summonCount", effect.summonCount)
+                    new XElement("summonCount", effect.summonCount),
+                    new XElement("controlMode", effect.controlMode.ToString()),
+                    new XElement("controlMoveDistance", effect.controlMoveDistance),
+                    new XElement("terraformMode", effect.terraformMode.ToString()),
+                    effect.terraformThingDef != null ? new XElement("terraformThingDef", effect.terraformThingDef.defName) : null,
+                    effect.terraformTerrainDef != null ? new XElement("terraformTerrainDef", effect.terraformTerrainDef.defName) : null,
+                    new XElement("terraformSpawnCount", effect.terraformSpawnCount)
                 );
 
                 effectsEl.Add(effectEl);
@@ -316,9 +523,49 @@ namespace CharacterStudio.Exporter
                     effectEl.Add(new XElement("hediffDef", effect.hediffDef.defName));
                 if (effect.summonKind != null)
                     effectEl.Add(new XElement("summonKind", effect.summonKind.defName));
+                if (effect.terraformThingDef != null)
+                    effectEl.Add(new XElement("terraformThingDef", effect.terraformThingDef.defName));
+                if (effect.terraformTerrainDef != null)
+                    effectEl.Add(new XElement("terraformTerrainDef", effect.terraformTerrainDef.defName));
 
                 effectEl.Add(new XElement("summonCount", effect.summonCount));
+                effectEl.Add(new XElement("controlMode", effect.controlMode.ToString()));
+                effectEl.Add(new XElement("controlMoveDistance", effect.controlMoveDistance));
+                effectEl.Add(new XElement("terraformMode", effect.terraformMode.ToString()));
+                effectEl.Add(new XElement("terraformSpawnCount", effect.terraformSpawnCount));
                 element.Add(effectEl);
+            }
+
+            return element;
+        }
+
+        public static XElement? GenerateAbilityVisualEffectsXml(List<AbilityVisualEffectConfig>? visualEffects)
+        {
+            if (visualEffects == null || visualEffects.Count == 0)
+            {
+                return null;
+            }
+
+            var element = new XElement("visualEffects");
+            foreach (var visualEffect in visualEffects)
+            {
+                if (visualEffect == null) continue;
+
+                element.Add(new XElement("li",
+                    new XElement("enabled", visualEffect.enabled.ToString().ToLower()),
+                    new XElement("type", visualEffect.type.ToString()),
+                    new XElement("sourceMode", visualEffect.sourceMode.ToString()),
+                    !string.IsNullOrWhiteSpace(visualEffect.presetDefName) ? new XElement("presetDefName", visualEffect.presetDefName) : null,
+                    new XElement("target", visualEffect.target.ToString()),
+                    new XElement("trigger", visualEffect.trigger.ToString()),
+                    new XElement("delayTicks", visualEffect.delayTicks),
+                    new XElement("scale", visualEffect.scale),
+                    new XElement("repeatCount", visualEffect.repeatCount),
+                    new XElement("repeatIntervalTicks", visualEffect.repeatIntervalTicks),
+                    visualEffect.offset != Vector3.zero ? new XElement("offset", FormatVector3(visualEffect.offset)) : null,
+                    new XElement("attachToPawn", visualEffect.attachToPawn.ToString().ToLower()),
+                    new XElement("attachToTargetCell", visualEffect.attachToTargetCell.ToString().ToLower())
+                ));
             }
 
             return element;
@@ -380,8 +627,11 @@ namespace CharacterStudio.Exporter
                         GenerateBaseAppearanceXml(skin.baseAppearance),
                         GenerateLayersXml(skin.layers),
                         GenerateTargetRacesXml(skin.targetRaces),
-                        skin.faceConfig != null && (skin.faceConfig.enabled || skin.faceConfig.HasAnyExpression() || skin.faceConfig.eyeDirectionConfig?.HasAnyTex() == true) ? GenerateFaceConfigXml(skin.faceConfig) : null,
+                        skin.applyAsDefaultForTargetRaces ? new XElement("applyAsDefaultForTargetRaces", "true") : null,
+                        skin.defaultRacePriority != 0 ? new XElement("defaultRacePriority", skin.defaultRacePriority) : null,
+                        skin.faceConfig != null && (skin.faceConfig.enabled || skin.faceConfig.HasAnyExpression() || skin.faceConfig.HasAnyLayeredPart() || skin.faceConfig.eyeDirectionConfig?.HasAnyTex() == true) ? GenerateFaceConfigXml(skin.faceConfig) : null,
                         skin.weaponRenderConfig != null && skin.weaponRenderConfig.enabled ? GenerateWeaponRenderConfigXml(skin.weaponRenderConfig) : null,
+                        GenerateEquipmentsXml(skin.equipments),
                         GenerateSkinAbilitiesXml(skin.abilities),
                         GenerateAbilityHotkeysXml(skin.abilityHotkeys)
                     )
@@ -553,7 +803,9 @@ namespace CharacterStudio.Exporter
                     ),
                     new XElement("comps",
                         new XElement("li", new XAttribute("Class", "CharacterStudio.Abilities.CompProperties_AbilityModular"),
-                            GenerateAbilityEffectsXml(ability.effects)
+                            GenerateAbilityEffectsXml(ability.effects),
+                            GenerateAbilityVisualEffectsXml(ability.visualEffects),
+                            GenerateRuntimeComponentsXml(ability.runtimeComponents)
                         )
                     )
                 );
@@ -651,8 +903,29 @@ namespace CharacterStudio.Exporter
                 new XElement("scale",           FormatVector2(cfg.scale))
             );
 
+            if (cfg.carryVisual != null && cfg.carryVisual.enabled) el.Add(GenerateWeaponCarryVisualXml(cfg.carryVisual));
+
             if (cfg.offset      != Vector3.zero) el.Add(new XElement("offset",      FormatVector3(cfg.offset)));
             if (cfg.offsetSouth != Vector3.zero) el.Add(new XElement("offsetSouth", FormatVector3(cfg.offsetSouth)));
+            if (cfg.offsetNorth != Vector3.zero) el.Add(new XElement("offsetNorth", FormatVector3(cfg.offsetNorth)));
+            if (cfg.offsetEast  != Vector3.zero) el.Add(new XElement("offsetEast",  FormatVector3(cfg.offsetEast)));
+
+            return el;
+        }
+
+        private static XElement GenerateWeaponCarryVisualXml(WeaponCarryVisualConfig cfg)
+        {
+            var el = new XElement("carryVisual",
+                new XElement("enabled", cfg.enabled.ToString().ToLower()),
+                new XElement("anchorTag", cfg.anchorTag ?? "Body"),
+                new XElement("scale", FormatVector2(cfg.scale)),
+                new XElement("drawOrder", cfg.drawOrder.ToString("F3", System.Globalization.CultureInfo.InvariantCulture))
+            );
+
+            if (!string.IsNullOrEmpty(cfg.texUndrafted)) el.Add(new XElement("texUndrafted", cfg.texUndrafted));
+            if (!string.IsNullOrEmpty(cfg.texDrafted))   el.Add(new XElement("texDrafted", cfg.texDrafted));
+            if (!string.IsNullOrEmpty(cfg.texCasting))   el.Add(new XElement("texCasting", cfg.texCasting));
+            if (cfg.offset      != Vector3.zero) el.Add(new XElement("offset",      FormatVector3(cfg.offset)));
             if (cfg.offsetNorth != Vector3.zero) el.Add(new XElement("offsetNorth", FormatVector3(cfg.offsetNorth)));
             if (cfg.offsetEast  != Vector3.zero) el.Add(new XElement("offsetEast",  FormatVector3(cfg.offsetEast)));
 

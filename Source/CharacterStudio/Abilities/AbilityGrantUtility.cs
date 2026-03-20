@@ -23,6 +23,8 @@ namespace CharacterStudio.Abilities
         // 动态生成的运行时 AbilityDef 缓存（按 ModularAbilityDef.defName）
         private static readonly Dictionary<string, AbilityDef> runtimeAbilityDefs =
             new Dictionary<string, AbilityDef>(StringComparer.OrdinalIgnoreCase);
+        private static readonly Dictionary<string, string> runtimeAbilityFingerprints =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>所有 CS 技能的最小冷却时间（0.5s = 30 ticks），防止技能被连点刷屏</summary>
         private const int MinAbilityCooldownTicks = 30;
@@ -131,8 +133,24 @@ namespace CharacterStudio.Abilities
         private static AbilityDef? GetOrBuildRuntimeAbilityDef(ModularAbilityDef modAbility)
         {
             string key = modAbility.defName;
+            string fingerprint = BuildAbilityFingerprint(modAbility);
+
             if (runtimeAbilityDefs.TryGetValue(key, out var cached))
-                return cached;
+            {
+                if (runtimeAbilityFingerprints.TryGetValue(key, out var oldFingerprint) && oldFingerprint == fingerprint)
+                    return cached;
+
+                try
+                {
+                    ConfigureRuntimeAbilityDef(cached, modAbility, key);
+                    runtimeAbilityFingerprints[key] = fingerprint;
+                    return cached;
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning($"[CharacterStudio] 刷新运行时 AbilityDef [{key}] 失败: {ex.Message}");
+                }
+            }
 
             try
             {
@@ -140,59 +158,12 @@ namespace CharacterStudio.Abilities
                 // 原版技能栏中的技能也必须至少有 MinAbilityCooldownTicks（0.5s）的冷却，
                 // 防止玩家连点刷屏产生重复效果。
                 int resolvedCd = Mathf.Max((int)modAbility.cooldownTicks, MinAbilityCooldownTicks);
-                var abilityDef = new AbilityDef
-                {
-                    defName            = "CS_RT_" + key,
-                    label              = modAbility.label ?? key,
-                    description        = modAbility.description ?? string.Empty,
-                    iconPath           = string.IsNullOrEmpty(modAbility.iconPath)
-                                         ? "UI/Abilities/Shoot"   // 占位图标
-                                         : modAbility.iconPath,
-                    cooldownTicksRange = new IntRange(resolvedCd, resolvedCd),
-                    charges            = modAbility.charges,
-                    aiCanUse           = modAbility.aiCanUse > 0.5f
-                };
-
-                // 设置载体类型（含 warmupTime）
-                VerbProperties verbProps;
-                switch (modAbility.carrierType)
-                {
-                    case AbilityCarrierType.Self:
-                        verbProps = BuildVerbProps_Self();
-                        break;
-                    case AbilityCarrierType.Touch:
-                    case AbilityCarrierType.Target:
-                        verbProps = BuildVerbProps_Target(modAbility.range);
-                        break;
-                    case AbilityCarrierType.Area:
-                        verbProps = BuildVerbProps_Area(modAbility.range);
-                        break;
-                    case AbilityCarrierType.Projectile:
-                        verbProps = BuildVerbProps_Projectile(modAbility.range, modAbility.projectileDef);
-                        break;
-                    default:
-                        verbProps = BuildVerbProps_Self();
-                        break;
-                }
-                // 修复：将编辑器中的 warmupTicks 设置到 VerbProperties.warmupTime
-                if (modAbility.warmupTicks > 0f)
-                    verbProps.warmupTime = modAbility.warmupTicks / 60f; // 转换为秒
-                abilityDef.verbProperties = verbProps;
-
-                // 注入效果组件
-                if (modAbility.effects != null && modAbility.effects.Count > 0)
-                {
-                    var compProps = new CompProperties_AbilityModular();
-                    compProps.effects.AddRange(modAbility.effects.Select(e => e.Clone()));
-                    abilityDef.comps = new List<AbilityCompProperties> { compProps };
-                }
-
-                // 注册到 DefDatabase（运行时注入）
-                abilityDef.ResolveReferences();
-                abilityDef.PostLoad();
+                var abilityDef = new AbilityDef();
+                ConfigureRuntimeAbilityDef(abilityDef, modAbility, key, resolvedCd);
                 DefDatabase<AbilityDef>.Add(abilityDef);
 
                 runtimeAbilityDefs[key] = abilityDef;
+                runtimeAbilityFingerprints[key] = fingerprint;
                 return abilityDef;
             }
             catch (Exception ex)
@@ -200,6 +171,110 @@ namespace CharacterStudio.Abilities
                 Log.Warning($"[CharacterStudio] 构建运行时 AbilityDef [{key}] 失败: {ex.Message}");
                 return null;
             }
+        }
+
+        private static void ConfigureRuntimeAbilityDef(AbilityDef abilityDef, ModularAbilityDef modAbility, string key, int? preResolvedCooldown = null)
+        {
+            int resolvedCd = preResolvedCooldown ?? Mathf.Max((int)modAbility.cooldownTicks, MinAbilityCooldownTicks);
+
+            abilityDef.defName = "CS_RT_" + key;
+            abilityDef.label = modAbility.label ?? key;
+            abilityDef.description = modAbility.description ?? string.Empty;
+            abilityDef.iconPath = string.IsNullOrEmpty(modAbility.iconPath)
+                ? "UI/Designators/Strip"
+                : modAbility.iconPath;
+            abilityDef.cooldownTicksRange = new IntRange(resolvedCd, resolvedCd);
+            abilityDef.charges = modAbility.charges;
+            abilityDef.aiCanUse = modAbility.aiCanUse > 0.5f;
+
+            AbilityCarrierType normalizedCarrier = ModularAbilityDefExtensions.NormalizeCarrierType(modAbility.carrierType);
+            AbilityTargetType normalizedTarget = ModularAbilityDefExtensions.NormalizeTargetType(modAbility);
+
+            VerbProperties verbProps = normalizedCarrier switch
+            {
+                AbilityCarrierType.Self => BuildVerbProps_Self(),
+                AbilityCarrierType.Target => BuildVerbProps_Target(modAbility.range, normalizedTarget),
+                AbilityCarrierType.Projectile => BuildVerbProps_Projectile(modAbility.range, normalizedTarget, modAbility.projectileDef),
+                _ => BuildVerbProps_Self()
+            };
+
+            if (modAbility.warmupTicks > 0f)
+                verbProps.warmupTime = modAbility.warmupTicks / 60f;
+            abilityDef.verbProperties = verbProps;
+
+            bool hasEffects = modAbility.effects != null && modAbility.effects.Count > 0;
+            bool hasVisualEffects = modAbility.visualEffects != null && modAbility.visualEffects.Count > 0;
+            bool hasRuntimeComponents = modAbility.runtimeComponents != null && modAbility.runtimeComponents.Count > 0;
+
+            if (hasEffects || hasVisualEffects || hasRuntimeComponents)
+            {
+                var compProps = new CompProperties_AbilityModular();
+                if (hasEffects)
+                    compProps.effects.AddRange(modAbility.effects.Where(e => e != null).Select(e => e.Clone()));
+                if (hasVisualEffects)
+                    compProps.visualEffects.AddRange(modAbility.visualEffects.Where(v => v != null).Select(v => v.Clone()));
+                if (hasRuntimeComponents)
+                    compProps.runtimeComponents.AddRange(modAbility.runtimeComponents.Where(c => c != null).Select(c => c.Clone()));
+                abilityDef.comps = new List<AbilityCompProperties> { compProps };
+            }
+            else
+            {
+                abilityDef.comps = null;
+            }
+
+            abilityDef.ResolveReferences();
+            abilityDef.PostLoad();
+        }
+
+        private static string BuildAbilityFingerprint(ModularAbilityDef modAbility)
+        {
+            var parts = new List<string>
+            {
+                modAbility.defName ?? string.Empty,
+                modAbility.label ?? string.Empty,
+                modAbility.description ?? string.Empty,
+                modAbility.iconPath ?? string.Empty,
+                modAbility.cooldownTicks.ToString("F3"),
+                modAbility.warmupTicks.ToString("F3"),
+                modAbility.charges.ToString(),
+                modAbility.aiCanUse.ToString("F3"),
+                modAbility.carrierType.ToString(),
+                modAbility.targetType.ToString(),
+                modAbility.useRadius.ToString(),
+                modAbility.areaCenter.ToString(),
+                modAbility.range.ToString("F3"),
+                modAbility.radius.ToString("F3"),
+                modAbility.projectileDef?.defName ?? string.Empty
+            };
+
+            if (modAbility.effects != null)
+            {
+                foreach (var effect in modAbility.effects)
+                {
+                    if (effect == null) continue;
+                    parts.Add($"E:{effect.type}|{effect.amount:F3}|{effect.duration:F3}|{effect.chance:F3}|{effect.damageDef?.defName}|{effect.hediffDef?.defName}|{effect.summonKind?.defName}|{effect.summonCount}|{effect.canHurtSelf}");
+                }
+            }
+
+            if (modAbility.visualEffects != null)
+            {
+                foreach (var vfx in modAbility.visualEffects)
+                {
+                    if (vfx == null) continue;
+                    parts.Add($"V:{vfx.type}|{vfx.sourceMode}|{vfx.presetDefName}|{vfx.target}|{vfx.trigger}|{vfx.delayTicks}|{vfx.scale:F3}|{vfx.repeatCount}|{vfx.repeatIntervalTicks}|{vfx.offset.x:F3},{vfx.offset.y:F3},{vfx.offset.z:F3}|{vfx.attachToPawn}|{vfx.attachToTargetCell}|{vfx.enabled}");
+                }
+            }
+
+            if (modAbility.runtimeComponents != null)
+            {
+                foreach (var component in modAbility.runtimeComponents)
+                {
+                    if (component == null) continue;
+                    parts.Add($"R:{component.type}|{component.enabled}|{component.comboWindowTicks}|{component.cooldownTicks}|{component.jumpDistance}|{component.findCellRadius}|{component.triggerAbilityEffectsAfterJump}|{component.requiredStacks}|{component.delayTicks}|{component.wave1Radius:F3}|{component.wave1Damage:F3}|{component.wave2Radius:F3}|{component.wave2Damage:F3}|{component.wave3Radius:F3}|{component.wave3Damage:F3}|{component.waveDamageDef?.defName}");
+                }
+            }
+
+            return string.Join("||", parts);
         }
 
         private static VerbProperties BuildVerbProps_Self()
@@ -210,37 +285,56 @@ namespace CharacterStudio.Abilities
                 targetParams = new TargetingParameters { canTargetSelf = true, canTargetPawns = false, canTargetLocations = false }
             };
 
-        private static VerbProperties BuildVerbProps_Target(float range)
+        private static VerbProperties BuildVerbProps_Target(float range, AbilityTargetType targetType)
             => new VerbProperties
             {
                 verbClass    = typeof(Verb_CastAbility),
                 range        = Mathf.Max(range, 1f),
-                targetParams = new TargetingParameters { canTargetPawns = true, canTargetLocations = false }
-            };
-
-        private static VerbProperties BuildVerbProps_Area(float range)
-            => new VerbProperties
-            {
-                verbClass    = typeof(Verb_CastAbility),
-                range        = Mathf.Max(range, 1f),
-                targetParams = new TargetingParameters { canTargetPawns = true, canTargetLocations = true }
+                targetParams = BuildTargetingParameters(targetType)
             };
 
         /// <summary>
         /// 构建投射物载体的 VerbProperties
         /// 使用 Verb_LaunchProjectile 实现真正的投射物发射
         /// </summary>
-        private static VerbProperties BuildVerbProps_Projectile(float range, ThingDef? projectileDef)
+        private static VerbProperties BuildVerbProps_Projectile(float range, AbilityTargetType targetType, ThingDef? projectileDef)
         {
-            // 如果没有指定投射物，尝试使用常见默认投射物
             var projectile = projectileDef ?? DefDatabase<ThingDef>.GetNamedSilentFail("Bullet_Basic");
 
             return new VerbProperties
             {
-                verbClass        = typeof(Verb_LaunchProjectile),
-                range            = Mathf.Max(range, 1f),
-                targetParams     = new TargetingParameters { canTargetPawns = true, canTargetLocations = true },
+                verbClass         = typeof(Verb_LaunchProjectile),
+                range             = Mathf.Max(range, 1f),
+                targetParams      = BuildTargetingParameters(targetType),
                 defaultProjectile = projectile
+            };
+        }
+
+        private static TargetingParameters BuildTargetingParameters(AbilityTargetType targetType)
+        {
+            return targetType switch
+            {
+                AbilityTargetType.Cell => new TargetingParameters
+                {
+                    canTargetLocations = true,
+                    canTargetPawns = false,
+                    canTargetBuildings = false,
+                    canTargetSelf = false
+                },
+                AbilityTargetType.Entity => new TargetingParameters
+                {
+                    canTargetPawns = true,
+                    canTargetBuildings = true,
+                    canTargetLocations = false,
+                    canTargetSelf = false
+                },
+                _ => new TargetingParameters
+                {
+                    canTargetSelf = true,
+                    canTargetPawns = false,
+                    canTargetBuildings = false,
+                    canTargetLocations = false
+                }
             };
         }
 

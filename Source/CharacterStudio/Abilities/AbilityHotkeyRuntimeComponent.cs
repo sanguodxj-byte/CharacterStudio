@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using CharacterStudio.Core;
+using HarmonyLib;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -102,10 +103,19 @@ namespace CharacterStudio.Abilities
         private static void TryCastForSelectedPawn(AbilityHotkeySlot slot, int tick)
         {
             Pawn? selectedPawn = Find.Selector?.SingleSelectedThing as Pawn;
-            if (selectedPawn == null || !selectedPawn.Spawned || selectedPawn.Map == null)
+            if (selectedPawn == null || !selectedPawn.Spawned || selectedPawn.Map == null || !selectedPawn.Drafted || !selectedPawn.IsColonistPlayerControlled)
             {
                 return;
             }
+
+            if (GUIUtility.keyboardControl != 0)
+                return;
+
+            if (Find.Targeter != null && Find.Targeter.IsTargeting)
+                return;
+
+            if (IsBlockingWindowOpen())
+                return;
 
             Pawn pawn = selectedPawn;
             var skinComp = pawn.GetComp<CompPawnSkin>();
@@ -181,6 +191,22 @@ namespace CharacterStudio.Abilities
                         MessageTypeDefOf.NeutralEvent,
                         false);
                 }
+            }
+        }
+
+        private static bool IsBlockingWindowOpen()
+        {
+            try
+            {
+                var windowsField = AccessTools.Field(typeof(WindowStack), "windows");
+                if (windowsField?.GetValue(Find.WindowStack) is not List<Window> windows)
+                    return false;
+
+                return windows.Any(w => w != null && (w.absorbInputAroundWindow || w.forcePause));
+            }
+            catch
+            {
+                return false;
             }
         }
 
@@ -311,10 +337,16 @@ namespace CharacterStudio.Abilities
 
             if (jumpComp.triggerAbilityEffectsAfterJump)
             {
-                // 使用技能定义的范围效果（radius）
-                float radius = ability.radius > 0 ? ability.radius : 1.5f;
-                var cells = GenRadial.RadialCellsAround(dest, radius, true);
-                ExecuteAbilityOnCells(caster, ability, cells);
+                if (ability.useRadius)
+                {
+                    float radius = ability.radius > 0 ? ability.radius : 1.5f;
+                    var cells = GenRadial.RadialCellsAround(dest, radius, true);
+                    ExecuteAbilityOnCells(caster, ability, cells);
+                }
+                else
+                {
+                    ExecuteAbilityOnCells(caster, ability, new[] { dest });
+                }
             }
 
             skinComp.eCooldownUntilTick = tick + cooldownTicks;
@@ -567,27 +599,126 @@ namespace CharacterStudio.Abilities
                 return false;
             }
 
-            IEnumerable<IntVec3> cells;
-            IntVec3 center = caster.Position + caster.Rotation.FacingCell;
-
-            switch (ability.carrierType)
+            var runtimeDef = AbilityGrantUtility.GetRuntimeAbilityDef(ability.defName);
+            var runtimeAbility = runtimeDef != null ? caster.abilities?.GetAbility(runtimeDef) : null;
+            if (runtimeAbility != null)
             {
-                case AbilityCarrierType.Self:
-                    cells = new List<IntVec3> { caster.Position };
-                    break;
-                case AbilityCarrierType.Area:
-                    float radius = Mathf.Max(ability.radius, 1f);
-                    cells = GenRadial.RadialCellsAround(center, radius, true);
-                    break;
-                case AbilityCarrierType.Touch:
-                case AbilityCarrierType.Target:
-                case AbilityCarrierType.Projectile:
-                default:
-                    cells = new List<IntVec3> { center };
-                    break;
+                try
+                {
+                    if (TryQueueRuntimeAbility(caster, runtimeAbility, ability))
+                        return true;
+                }
+                catch (System.Exception ex)
+                {
+                    Log.Warning($"[CharacterStudio] 热键施放运行时技能失败，回退到简化逻辑: {ex.Message}");
+                }
+            }
+
+            var skinComp = caster.GetComp<CompPawnSkin>();
+            if (skinComp != null)
+            {
+                int visualTicks = Mathf.Max((int)ability.warmupTicks, 8) + 8;
+                skinComp.SetWeaponCarryCastingWindow(visualTicks);
+            }
+
+            IEnumerable<IntVec3> cells;
+            AbilityCarrierType normalizedCarrier = ModularAbilityDefExtensions.NormalizeCarrierType(ability.carrierType);
+            AbilityTargetType normalizedTarget = ModularAbilityDefExtensions.NormalizeTargetType(ability);
+            IntVec3 center = normalizedTarget == AbilityTargetType.Self
+                ? caster.Position
+                : caster.Position + caster.Rotation.FacingCell;
+
+            if (ability.useRadius)
+            {
+                float radius = Mathf.Max(ability.radius, 1f);
+                IntVec3 areaCenter = ModularAbilityDefExtensions.NormalizeAreaCenter(ability) == AbilityAreaCenter.Self
+                    ? caster.Position
+                    : center;
+                cells = GenRadial.RadialCellsAround(areaCenter, radius, true);
+            }
+            else if (normalizedCarrier == AbilityCarrierType.Self || normalizedTarget == AbilityTargetType.Self)
+            {
+                cells = new List<IntVec3> { caster.Position };
+            }
+            else
+            {
+                cells = new List<IntVec3> { center };
             }
 
             return ExecuteAbilityOnCells(caster, ability, cells);
+        }
+
+        private static bool TryQueueRuntimeAbility(Pawn caster, Ability runtimeAbility, ModularAbilityDef ability)
+        {
+            AbilityCarrierType normalizedCarrier = ModularAbilityDefExtensions.NormalizeCarrierType(ability.carrierType);
+            AbilityTargetType normalizedTarget = ModularAbilityDefExtensions.NormalizeTargetType(ability);
+
+            if (normalizedCarrier == AbilityCarrierType.Self || normalizedTarget == AbilityTargetType.Self)
+            {
+                runtimeAbility.QueueCastingJob(caster, LocalTargetInfo.Invalid);
+                return true;
+            }
+
+            if (Find.Targeter == null)
+                return false;
+
+            TargetingParameters parms = BuildTargetingParameters(ability);
+            Texture2D? icon = LoadAbilityIcon(ability.iconPath);
+            Find.Targeter.BeginTargeting(parms,
+                target =>
+                {
+                    try
+                    {
+                        LocalTargetInfo dest = normalizedCarrier == AbilityCarrierType.Projectile && normalizedTarget == AbilityTargetType.Cell
+                            ? target
+                            : LocalTargetInfo.Invalid;
+                        runtimeAbility.QueueCastingJob(target, dest);
+                    }
+                    catch (System.Exception ex)
+                    {
+                        Log.Warning($"[CharacterStudio] 热键技能目标施放失败: {ex.Message}");
+                    }
+                },
+                caster,
+                null,
+                icon,
+                true);
+            return true;
+        }
+
+        private static TargetingParameters BuildTargetingParameters(ModularAbilityDef ability)
+        {
+            AbilityTargetType normalizedTarget = ModularAbilityDefExtensions.NormalizeTargetType(ability);
+            return normalizedTarget switch
+            {
+                AbilityTargetType.Cell => new TargetingParameters
+                {
+                    canTargetLocations = true,
+                    canTargetPawns = false,
+                    canTargetBuildings = false,
+                    canTargetSelf = false
+                },
+                AbilityTargetType.Entity => new TargetingParameters
+                {
+                    canTargetPawns = true,
+                    canTargetBuildings = true,
+                    canTargetLocations = false,
+                    canTargetSelf = false
+                },
+                _ => new TargetingParameters { canTargetSelf = true }
+            };
+        }
+
+        private static Texture2D? LoadAbilityIcon(string iconPath)
+        {
+            if (!string.IsNullOrWhiteSpace(iconPath))
+            {
+                var tex = ContentFinder<Texture2D>.Get(iconPath, false);
+                if (tex != null)
+                    return tex;
+            }
+
+            return ContentFinder<Texture2D>.Get("UI/Designators/Strip", true);
         }
 
         // 复用的 Thing 快照缓冲区，避免每格 GetThingList().ToList() 分配
