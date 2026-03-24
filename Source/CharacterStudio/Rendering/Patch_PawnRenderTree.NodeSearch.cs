@@ -117,6 +117,121 @@ namespace CharacterStudio.Rendering
         // Body/Head/Hair/Beard 通过 nodesByTag 直接查找
         // ─────────────────────────────────────────────
 
+        private static readonly string[] BodyAnchorAliases = { "Body", "AlienBody", "NakedBody", "BodyBase", "Torso", "Core" };
+        private static readonly string[] HeadAnchorAliases = { "Head", "AlienHead", "Face", "Skull" };
+        private static readonly string[] HairAnchorAliases = { "Hair", "AlienHair", "Fur" };
+        private static readonly string[] BeardAnchorAliases = { "Beard", "Moustache" };
+        private static readonly string[] ApparelAnchorAliases = { "Apparel", "Body", "AlienBody", "NakedBody", "BodyBase", "Torso", "Core" };
+        private static readonly string[] RootAnchorAliases = { "Root" };
+
+        private static PawnRenderNode? FindAnchorNode(PawnRenderTree tree, string? anchorTag)
+        {
+            if (tree?.rootNode == null)
+                return null;
+
+            foreach (string candidate in GetAnchorAliases(anchorTag))
+            {
+                PawnRenderNode? exactNode = FindNodeByExactTag(tree, candidate);
+                if (exactNode != null)
+                    return exactNode;
+            }
+
+            foreach (string candidate in GetAnchorAliases(anchorTag))
+            {
+                PawnRenderNode? semanticNode = FindNodeBySemanticHintRecursive(tree.rootNode, candidate);
+                if (semanticNode != null)
+                    return semanticNode;
+            }
+
+            return null;
+        }
+
+        private static IEnumerable<string> GetAnchorAliases(string? anchorTag)
+        {
+            if (string.IsNullOrWhiteSpace(anchorTag))
+                return RootAnchorAliases;
+
+            if (string.Equals(anchorTag, "Root", StringComparison.OrdinalIgnoreCase))
+                return RootAnchorAliases;
+
+            string normalizedAnchorTag = anchorTag!;
+
+            if (normalizedAnchorTag.IndexOf("Apparel", StringComparison.OrdinalIgnoreCase) >= 0)
+                return ApparelAnchorAliases;
+
+            if (normalizedAnchorTag.IndexOf("Body", StringComparison.OrdinalIgnoreCase) >= 0
+                || normalizedAnchorTag.IndexOf("Torso", StringComparison.OrdinalIgnoreCase) >= 0
+                || normalizedAnchorTag.IndexOf("Core", StringComparison.OrdinalIgnoreCase) >= 0)
+                return BodyAnchorAliases;
+
+            if (normalizedAnchorTag.IndexOf("Head", StringComparison.OrdinalIgnoreCase) >= 0
+                || normalizedAnchorTag.IndexOf("Face", StringComparison.OrdinalIgnoreCase) >= 0
+                || normalizedAnchorTag.IndexOf("Eye", StringComparison.OrdinalIgnoreCase) >= 0
+                || normalizedAnchorTag.IndexOf("Mouth", StringComparison.OrdinalIgnoreCase) >= 0)
+                return HeadAnchorAliases;
+
+            if (normalizedAnchorTag.IndexOf("Hair", StringComparison.OrdinalIgnoreCase) >= 0
+                || normalizedAnchorTag.IndexOf("Fur", StringComparison.OrdinalIgnoreCase) >= 0)
+                return HairAnchorAliases;
+
+            if (normalizedAnchorTag.IndexOf("Beard", StringComparison.OrdinalIgnoreCase) >= 0
+                || normalizedAnchorTag.IndexOf("Moustache", StringComparison.OrdinalIgnoreCase) >= 0)
+                return BeardAnchorAliases;
+
+            return new[] { normalizedAnchorTag };
+        }
+
+        private static PawnRenderNode? FindNodeByExactTag(PawnRenderTree tree, string tagName)
+        {
+            if (tree == null || string.IsNullOrWhiteSpace(tagName))
+                return null;
+
+            var nodesByTagField = AccessTools.Field(typeof(PawnRenderTree), "nodesByTag");
+            var nodesByTag = nodesByTagField?.GetValue(tree) as Dictionary<PawnRenderNodeTagDef, PawnRenderNode>;
+            if (nodesByTag == null)
+                return null;
+
+            foreach (var kvp in nodesByTag)
+            {
+                if (kvp.Key.defName == tagName && kvp.Value != null)
+                    return kvp.Value;
+            }
+
+            return null;
+        }
+
+        private static PawnRenderNode? FindNodeBySemanticHintRecursive(PawnRenderNode? node, string hint)
+        {
+            if (node == null || string.IsNullOrWhiteSpace(hint))
+                return null;
+
+            if (NodeMatchesSemanticHint(node, hint))
+                return node;
+
+            if (node.children == null)
+                return null;
+
+            foreach (var child in node.children)
+            {
+                PawnRenderNode? found = FindNodeBySemanticHintRecursive(child, hint);
+                if (found != null)
+                    return found;
+            }
+
+            return null;
+        }
+
+        private static bool NodeMatchesSemanticHint(PawnRenderNode node, string hint)
+        {
+            string tag = node.Props?.tagDef?.defName ?? string.Empty;
+            string workerName = node.Props?.workerClass?.Name ?? string.Empty;
+            string label = node.ToString() ?? string.Empty;
+
+            return tag.IndexOf(hint, StringComparison.OrdinalIgnoreCase) >= 0
+                || workerName.IndexOf(hint, StringComparison.OrdinalIgnoreCase) >= 0
+                || label.IndexOf(hint, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
         /// <summary>
         /// 根据槽位类型查找对应的渲染节点
         /// </summary>
@@ -135,7 +250,7 @@ namespace CharacterStudio.Rendering
             };
 
             if (directTag == null) return null;
-            return nodesByTag.FirstOrDefault(k => k.Key.defName == directTag).Value;
+            return FindAnchorNode(tree, directTag);
         }
     }
 }

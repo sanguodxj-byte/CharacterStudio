@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Xml;
 using CharacterStudio.Abilities;
+using CharacterStudio.Attributes;
 using Verse;
 
 namespace CharacterStudio.Core
@@ -184,8 +186,62 @@ namespace CharacterStudio.Core
             }
 
             var def = DirectXmlToObject.ObjectFromXml<PawnSkinDef>(defNode, true);
+            RestoreStatModifiersFromXml(defNode, def);
             EnsureDefIdentity(def);
             return def;
+        }
+
+        private static void RestoreStatModifiersFromXml(XmlNode defNode, PawnSkinDef def)
+        {
+            if (defNode == null || def == null)
+            {
+                return;
+            }
+
+            XmlNode? modifiersNode = defNode.SelectSingleNode("statModifiers");
+            if (modifiersNode == null)
+            {
+                def.statModifiers ??= new CharacterStatModifierProfile();
+                return;
+            }
+
+            var parsedProfile = new CharacterStatModifierProfile();
+            XmlNodeList? entryNodes = modifiersNode.SelectNodes("entries/li");
+            if (entryNodes == null || entryNodes.Count == 0)
+            {
+                entryNodes = modifiersNode.SelectNodes("li");
+            }
+
+            if (entryNodes != null)
+            {
+                foreach (XmlNode entryNode in entryNodes)
+                {
+                    string statDefName = entryNode.SelectSingleNode("statDefName")?.InnerText?.Trim() ?? string.Empty;
+                    if (string.IsNullOrWhiteSpace(statDefName))
+                    {
+                        continue;
+                    }
+
+                    CharacterStatModifierMode mode = CharacterStatModifierMode.Offset;
+                    string modeText = entryNode.SelectSingleNode("mode")?.InnerText?.Trim() ?? string.Empty;
+                    if (!string.IsNullOrWhiteSpace(modeText))
+                    {
+                        Enum.TryParse(modeText, ignoreCase: true, result: out mode);
+                    }
+
+                    float value = 0f;
+                    string valueText = entryNode.SelectSingleNode("value")?.InnerText?.Trim() ?? "0";
+                    float.TryParse(valueText, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
+
+                    bool enabled = true;
+                    string enabledText = entryNode.SelectSingleNode("enabled")?.InnerText?.Trim() ?? "true";
+                    bool.TryParse(enabledText, out enabled);
+
+                    parsedProfile.entries.Add(new CharacterStatModifierEntry { statDefName = statDefName, mode = mode, value = value, enabled = enabled });
+                }
+            }
+
+            def.statModifiers = parsedProfile;
         }
 
         /// <summary>
@@ -216,6 +272,7 @@ namespace CharacterStudio.Core
             target.version          = cloned.version;
             target.previewTexPath   = cloned.previewTexPath;
             target.attributes       = cloned.attributes;
+            target.statModifiers    = cloned.statModifiers;
             target.abilityHotkeys   = cloned.abilityHotkeys;
             target.faceConfig       = cloned.faceConfig;
             target.baseAppearance   = cloned.baseAppearance;

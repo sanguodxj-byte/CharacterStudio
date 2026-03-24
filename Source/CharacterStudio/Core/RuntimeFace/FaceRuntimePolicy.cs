@@ -4,11 +4,11 @@ using Verse;
 namespace CharacterStudio.Core
 {
     /// <summary>
-    /// 双轨面部系统的第一阶段运行时决策策略。
-    /// 当前版本刻意保持保守：
-    /// 1. 不依赖复杂相机/屏幕可见性判断；
-    /// 2. 优先用稳定且易维护的游戏状态决定 Track / LOD；
-    /// 3. 为后续引入视口、性能预算、重要目标优先级预留统一入口。
+    /// 双轨面部系统的运行时决策策略。
+    /// 当前版本：
+    /// 1. 编辑器预览人偶始终走肖像轨；
+    /// 2. 地图内 Pawn 优先按玩家当前可见范围判断是否进入肖像轨；
+    /// 3. 仍保留较保守的 LOD 与更新间隔策略。
     /// </summary>
     public static class FaceRuntimePolicy
     {
@@ -53,9 +53,11 @@ namespace CharacterStudio.Core
 
         /// <summary>
         /// 是否使用肖像轨。
-        /// 第一阶段规则：
-        /// - 当前被玩家单选中的 Pawn 进入肖像轨；
-        /// - 其他一律走世界轨。
+        /// 当前规则：
+        /// - 未 Spawned / 预览人偶：Portrait
+        /// - 当前被玩家单选：Portrait
+        /// - 位于玩家当前视口可见范围，且通过缩放 + 距离预算筛选：Portrait
+        /// - 其他：World
         /// </summary>
         public static FaceRenderTrack EvaluateTrack(Pawn pawn)
         {
@@ -72,7 +74,76 @@ namespace CharacterStudio.Core
             if (selectedPawn == pawn)
                 return FaceRenderTrack.Portrait;
 
+            if (CanUsePortraitTrackByVisibilityBudget(pawn))
+                return FaceRenderTrack.Portrait;
+
             return FaceRenderTrack.World;
+        }
+
+        private static bool CanUsePortraitTrackByVisibilityBudget(Pawn pawn)
+        {
+            if (pawn == null || !pawn.Spawned || pawn.Map == null)
+                return false;
+
+            if (pawn.Position.Fogged(pawn.Map))
+                return false;
+
+            CameraDriver? cameraDriver = Find.CameraDriver;
+            CellRect visibleRect = cameraDriver?.CurrentViewRect ?? CellRect.Empty;
+            if (!visibleRect.Contains(pawn.Position))
+                return false;
+
+            float rootSize = cameraDriver?.RootSize ?? 0f;
+            float maxDistance = GetPortraitTrackDistanceBudget(rootSize, pawn);
+            if (maxDistance <= 0f)
+                return false;
+
+            IntVec3 centerCell = visibleRect.CenterCell;
+            IntVec3 delta = pawn.Position - centerCell;
+            float distanceToCenter = delta.LengthHorizontal;
+            return distanceToCenter <= maxDistance;
+        }
+
+        private static float GetPortraitTrackDistanceBudget(float rootSize, Pawn pawn)
+        {
+            // RootSize 越大镜头越远，允许进入 Portrait 轨的距离预算越小；
+            // 高优先级角色可获得更高预算，提升玩家关注对象的细节表现。
+            float baseBudget;
+            if (rootSize <= 18f)
+                baseBudget = 999f;
+            else if (rootSize <= 24f)
+                baseBudget = 18f;
+            else if (rootSize <= 32f)
+                baseBudget = 10f;
+            else if (rootSize <= 40f)
+                baseBudget = 6f;
+            else
+                baseBudget = 0f;
+
+            float priorityBonus = GetPortraitTrackPriorityBudgetBonus(pawn);
+            if (baseBudget <= 0f)
+                return priorityBonus >= 10f ? 4f : 0f;
+
+            return baseBudget + priorityBonus;
+        }
+
+        private static float GetPortraitTrackPriorityBudgetBonus(Pawn pawn)
+        {
+            if (pawn == null)
+                return 0f;
+
+            float bonus = 0f;
+
+            if (pawn.Drafted)
+                bonus += 8f;
+
+            if (pawn.IsColonistPlayerControlled)
+                bonus += 6f;
+
+            if (pawn.InMentalState || pawn.Downed)
+                bonus += 5f;
+
+            return bonus;
         }
 
         /// <summary>

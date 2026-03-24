@@ -286,39 +286,94 @@ namespace CharacterStudio.UI
 
             if (DrawCollapsibleSection(ref y, width, "CS_Studio_Section_Misc".Translate(), "Misc"))
             {
-                Vector2 editableScale = GetEditableLayerScaleForPreview(layer);
-                float s = editableScale.x;
-                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_Scale".Translate(), ref s, 0.1f, 3f);
-                if (s != editableScale.x)
+                DrawPropertyHint(ref y, width, "CS_Studio_Transform_GlobalHint".Translate());
+
+                float scaleX = layer.scale.x;
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Transform_GlobalScaleX".Translate(), ref scaleX, 0.1f, 3f, "F3");
+                if (Math.Abs(scaleX - layer.scale.x) > 0.0001f)
                 {
-                    Vector2 desiredScale = new Vector2(s, s);
-                    SetEditableLayerScaleForPreview(layer, desiredScale);
-                    ApplyToOtherSelectedLayers(l => SetEditableLayerScaleForPreview(l, desiredScale));
+                    CaptureUndoSnapshot();
+                    layer.scale.x = scaleX;
+                    ApplyToOtherSelectedLayers(l => l.scale.x = scaleX);
                     isDirty = true;
                     RefreshPreview();
                 }
 
-                float rotation = GetEditableLayerRotationForPreview(layer);
-                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_BaseSlot_Rotation".Translate(), ref rotation, -180f, 180f, "F0");
-                if (Mathf.Abs(rotation - GetEditableLayerRotationForPreview(layer)) > 0.01f)
+                float scaleY = layer.scale.y;
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Transform_GlobalScaleY".Translate(), ref scaleY, 0.1f, 3f, "F3");
+                if (Math.Abs(scaleY - layer.scale.y) > 0.0001f)
                 {
-                    SetEditableLayerRotationForPreview(layer, rotation);
-                    ApplyToOtherSelectedLayers(l => SetEditableLayerRotationForPreview(l, rotation));
+                    CaptureUndoSnapshot();
+                    layer.scale.y = scaleY;
+                    ApplyToOtherSelectedLayers(l => l.scale.y = scaleY);
                     isDirty = true;
                     RefreshPreview();
                 }
+
+                float baseRotation = layer.rotation;
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Transform_BaseRotation".Translate(), ref baseRotation, -180f, 180f, "F0");
+                if (Math.Abs(baseRotation - layer.rotation) > 0.0001f)
+                {
+                    CaptureUndoSnapshot();
+                    layer.rotation = baseRotation;
+                    ApplyToOtherSelectedLayers(l => l.rotation = baseRotation);
+                    isDirty = true;
+                    RefreshPreview();
+                }
+
+                float currentScaleX = GetEditableLayerScaleForPreview(layer).x;
+                UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Transform_PreviewScaleX".Translate(), currentScaleX.ToString("F3"));
+
+                float currentScaleY = GetEditableLayerScaleForPreview(layer).y;
+                UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Transform_PreviewScaleY".Translate(), currentScaleY.ToString("F3"));
+
+                float currentRotation = GetEditableLayerRotationForPreview(layer);
+                UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Transform_PreviewRotation".Translate(), currentRotation.ToString("F0"));
 
                 float newDrawOrder = layer.drawOrder;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_DrawOrder".Translate(), ref newDrawOrder, -10f, 100f, "F0");
                 if (Mathf.Abs(newDrawOrder - layer.drawOrder) > 0.0001f)
                 {
+                    CaptureUndoSnapshot();
                     layer.drawOrder = newDrawOrder;
                     ApplyToOtherSelectedLayers(l => l.drawOrder = newDrawOrder);
                     isDirty = true;
                     RefreshPreview();
                 }
 
-                UIHelper.DrawPropertyLabel(ref y, width, "FinalDrawOrder", Mathf.Clamp(layer.drawOrder, -10f, 100f).ToString("F0"));
+                UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Transform_FinalDrawOrder".Translate(), Mathf.Clamp(layer.drawOrder, -10f, 100f).ToString("F0"));
+
+                bool flip = layer.flipHorizontal;
+                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Prop_FlipHorizontal".Translate(), ref flip);
+                if (flip != layer.flipHorizontal)
+                {
+                    CaptureUndoSnapshot();
+                    layer.flipHorizontal = flip;
+                    ApplyToOtherSelectedLayers(l => l.flipHorizontal = flip);
+                    isDirty = true;
+                    RefreshPreview();
+                }
+            }
+
+            bool isEastScaleActive = previewRotation == Rot4.East || previewRotation == Rot4.West;
+            if (DrawCollapsibleSection(ref y, width, "CS_Studio_Transform_EastRotation".Translate(), "EastScaleRotation", isEastScaleActive))
+            {
+                DrawPropertyHint(ref y, width, "CS_Studio_Transform_EastRotationHint".Translate());
+
+                float eastRotationOffset = layer.rotationEastOffset;
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Transform_RotationOffset".Translate(), ref eastRotationOffset, -180f, 180f, "F0");
+                if (Math.Abs(eastRotationOffset - layer.rotationEastOffset) > 0.0001f)
+                {
+                    CaptureUndoSnapshot();
+                    layer.rotationEastOffset = eastRotationOffset;
+                    ApplyToOtherSelectedLayers(l => l.rotationEastOffset = eastRotationOffset);
+                    isDirty = true;
+                    RefreshPreview();
+                }
+            }
+
+            if (DrawCollapsibleSection(ref y, width, "CS_Studio_Section_Rendering".Translate(), "Rendering"))
+            {
 
                 string[] workers = { "Default", "FaceComponent" };
                 string currentWorker = layer.workerClass == typeof(CharacterStudio.Rendering.PawnRenderNodeWorker_FaceComponent) ? "FaceComponent" : "Default";
@@ -370,15 +425,6 @@ namespace CharacterStudio.UI
                         });
                 }
 
-                bool flip = layer.flipHorizontal;
-                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Prop_FlipHorizontal".Translate(), ref flip);
-                if (flip != layer.flipHorizontal)
-                {
-                    layer.flipHorizontal = flip;
-                    ApplyToOtherSelectedLayers(l => l.flipHorizontal = flip);
-                    isDirty = true;
-                    RefreshPreview();
-                }
             }
 
             if (DrawCollapsibleSection(ref y, width, "CS_Studio_Section_VariantsExpression".Translate(), "Variants"))
@@ -623,6 +669,24 @@ namespace CharacterStudio.UI
                             RefreshPreview();
                         }
                     }
+
+                    // Spin 专属：枢轴偏移
+                    if (layer.animationType == LayerAnimationType.Spin)
+                    {
+                        float pivotX = layer.animPivotOffset.x;
+                        float pivotY = layer.animPivotOffset.y;
+                        UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_PivotX".Translate(), ref pivotX, -1f, 1f, "F3");
+                        UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_PivotY".Translate(), ref pivotY, -1f, 1f, "F3");
+                        var newPivot = new Vector2(pivotX, pivotY);
+                        if (newPivot != layer.animPivotOffset)
+                        {
+                            CaptureUndoSnapshot();
+                            layer.animPivotOffset = newPivot;
+                            ApplyToOtherSelectedLayers(l => l.animPivotOffset = newPivot);
+                            isDirty = true;
+                            RefreshPreview();
+                        }
+                    }
                 }
             }
 
@@ -634,14 +698,17 @@ namespace CharacterStudio.UI
                     y += 24;
                     foreach (var path in workingSkin.hiddenPaths.ToList())
                     {
-                        Rect pathRect = new Rect(0, y, propsRect.width - 50, 22);
+                        Rect removeRect = new Rect(propsRect.width - 48f, y - 1f, 32f, 22f);
+                        Rect pathRect = new Rect(0, y, propsRect.width - 56f, 22);
                         Widgets.Label(pathRect, $"  • {path}");
-                        if (Widgets.ButtonText(new Rect(propsRect.width - 45, y, 40, 20), "×"))
+                        if (UIHelper.DrawDangerButton(removeRect, tooltip: "CS_Studio_Delete".Translate(), onClick: () =>
                         {
                             workingSkin.hiddenPaths.Remove(path);
                             isDirty = true;
                             RefreshPreview();
                             RefreshRenderTree();
+                        }))
+                        {
                         }
                         y += 24;
                     }
@@ -661,14 +728,17 @@ namespace CharacterStudio.UI
                     y += 24;
                     foreach (var tag in workingSkin.hiddenTags.ToList())
                     {
-                        Rect tagRect = new Rect(0, y, propsRect.width - 50, 22);
+                        Rect removeRect = new Rect(propsRect.width - 48f, y - 1f, 32f, 22f);
+                        Rect tagRect = new Rect(0, y, propsRect.width - 56f, 22);
                         Widgets.Label(tagRect, $"  • {tag}");
-                        if (Widgets.ButtonText(new Rect(propsRect.width - 45, y, 40, 20), "×"))
+                        if (UIHelper.DrawDangerButton(removeRect, tooltip: "CS_Studio_Delete".Translate(), onClick: () =>
                         {
                             workingSkin.hiddenTags.Remove(tag);
                             isDirty = true;
                             RefreshPreview();
                             RefreshRenderTree();
+                        }))
+                        {
                         }
                         y += 24;
                     }
@@ -723,11 +793,11 @@ namespace CharacterStudio.UI
                     changed = true;
                 }
 
-                if (Widgets.ButtonText(
+                if (UIHelper.DrawBrowseButton(
                     new Rect(rowRect.x + actualLabelWidth + fieldWidth + spacing, rowRect.y, buttonWidth, 24f),
-                    "..."))
+                    browseAction,
+                    "…"))
                 {
-                    browseAction?.Invoke();
                 }
 
                 rowY += UIHelper.RowHeight;
@@ -1012,24 +1082,43 @@ namespace CharacterStudio.UI
 
             if (DrawCollapsibleSection(ref y, width, "CS_Studio_Section_Misc".Translate(), "BaseSlotMisc"))
             {
-                Vector2 editableScale = GetEditableSlotScaleForPreview(slot);
-                float scale = editableScale.x;
-                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_Scale".Translate(), ref scale, 0.1f, 3f, "F3");
-                if (Math.Abs(scale - editableScale.x) > 0.0001f)
+                DrawPropertyHint(ref y, width, "CS_Studio_Transform_GlobalHint".Translate());
+
+                float scaleX = slot.scale.x;
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Transform_GlobalScaleX".Translate(), ref scaleX, 0.1f, 3f, "F3");
+                if (Math.Abs(scaleX - slot.scale.x) > 0.0001f)
                 {
-                    SetEditableSlotScaleForPreview(slot, new Vector2(scale, scale));
+                    slot.scale.x = scaleX;
                     isDirty = true;
                     RefreshPreview();
                 }
 
-                float rotation = GetEditableSlotRotationForPreview(slot);
-                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_BaseSlot_Rotation".Translate(), ref rotation, -180f, 180f, "F0");
-                if (Math.Abs(rotation - GetEditableSlotRotationForPreview(slot)) > 0.0001f)
+                float scaleY = slot.scale.y;
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Transform_GlobalScaleY".Translate(), ref scaleY, 0.1f, 3f, "F3");
+                if (Math.Abs(scaleY - slot.scale.y) > 0.0001f)
                 {
-                    SetEditableSlotRotationForPreview(slot, rotation);
+                    slot.scale.y = scaleY;
                     isDirty = true;
                     RefreshPreview();
                 }
+
+                float baseRotation = slot.rotation;
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Transform_BaseRotation".Translate(), ref baseRotation, -180f, 180f, "F0");
+                if (Math.Abs(baseRotation - slot.rotation) > 0.0001f)
+                {
+                    slot.rotation = baseRotation;
+                    isDirty = true;
+                    RefreshPreview();
+                }
+
+                float currentScaleX = GetEditableSlotScaleForPreview(slot).x;
+                UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Transform_PreviewScaleX".Translate(), currentScaleX.ToString("F3"));
+
+                float currentScaleY = GetEditableSlotScaleForPreview(slot).y;
+                UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Transform_PreviewScaleY".Translate(), currentScaleY.ToString("F3"));
+
+                float currentRotation = GetEditableSlotRotationForPreview(slot);
+                UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Transform_PreviewRotation".Translate(), currentRotation.ToString("F0"));
 
                 float drawOrderOffset = slot.drawOrderOffset;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_BaseSlot_DrawOrderOffset".Translate(), ref drawOrderOffset, -50f, 50f, "F0");
@@ -1042,7 +1131,7 @@ namespace CharacterStudio.UI
 
                 float slotBaseLayer = BaseAppearanceUtility.GetBaseDrawOrder(slotType);
                 float finalSlotLayer = Mathf.Clamp(slotBaseLayer + slot.drawOrderOffset, -10f, 100f);
-                UIHelper.DrawPropertyLabel(ref y, width, "FinalDrawOrder", finalSlotLayer.ToString("F0"));
+                UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Transform_FinalDrawOrder".Translate(), finalSlotLayer.ToString("F0"));
 
                 bool flip = slot.flipHorizontal;
                 UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Prop_FlipHorizontal".Translate(), ref flip);
@@ -1052,6 +1141,25 @@ namespace CharacterStudio.UI
                     isDirty = true;
                     RefreshPreview();
                 }
+            }
+
+            bool isBaseSlotEastActive = previewRotation == Rot4.East || previewRotation == Rot4.West;
+            if (DrawCollapsibleSection(ref y, width, "CS_Studio_Transform_EastRotation".Translate(), "BaseSlotEastScaleRotation", isBaseSlotEastActive))
+            {
+                DrawPropertyHint(ref y, width, "CS_Studio_Transform_EastRotationHint".Translate());
+
+                float eastRotationOffset = slot.rotationEastOffset;
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Transform_RotationOffset".Translate(), ref eastRotationOffset, -180f, 180f, "F0");
+                if (Math.Abs(eastRotationOffset - slot.rotationEastOffset) > 0.0001f)
+                {
+                    slot.rotationEastOffset = eastRotationOffset;
+                    isDirty = true;
+                    RefreshPreview();
+                }
+            }
+
+            if (DrawCollapsibleSection(ref y, width, "CS_Studio_Section_Rendering".Translate(), "BaseSlotRendering"))
+            {
 
                 UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_BaseSlot_PrimaryColorSource".Translate(), slot.colorSource,
                     (LayerColorSource[])Enum.GetValues(typeof(LayerColorSource)),
@@ -1116,6 +1224,7 @@ namespace CharacterStudio.UI
             var equipment = workingSkin.equipments[selectedEquipmentIndex];
             equipment ??= new CharacterEquipmentDef();
             equipment.EnsureDefaults();
+            CharacterEquipmentRenderData renderData = equipment.renderData;
             workingSkin.equipments[selectedEquipmentIndex] = equipment;
 
             float propsY = GetPropertiesContentTop(rect);
@@ -1202,7 +1311,7 @@ namespace CharacterStudio.UI
                 {
                     CaptureUndoSnapshot();
                     equipment.label = label;
-                    equipment.visual.layerName = string.IsNullOrWhiteSpace(equipment.visual.layerName) ? label : equipment.visual.layerName;
+                    renderData.layerName = string.IsNullOrWhiteSpace(renderData.layerName) ? label : renderData.layerName;
                     MarkEquipmentDirty(false);
                 }
 
@@ -1225,13 +1334,25 @@ namespace CharacterStudio.UI
                 }
                 DrawPropertyHint(ref y, width, "CS_Studio_Equip_SlotTag_Hint".Translate());
 
-                DrawSelectionPropertyButton(
-                    ref y,
-                    width,
-                    "CS_Studio_Equip_LinkedThingDef".Translate(),
-                    GetEquipmentThingDefSelectionLabel(equipment.linkedThingDefName),
-                    () => ShowEquipmentLinkedThingDefSelector(equipment, () => MarkEquipmentDirty(false)));
+                string thingDefName = equipment.thingDefName ?? string.Empty;
+                UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_LinkedThingDef".Translate(), ref thingDefName);
+                if (thingDefName != (equipment.thingDefName ?? string.Empty))
+                {
+                    CaptureUndoSnapshot();
+                    equipment.thingDefName = thingDefName;
+                    MarkEquipmentDirty(false);
+                }
                 DrawPropertyHint(ref y, width, "CS_Studio_Equip_LinkedThingDef_Hint".Translate());
+
+                string parentThingDefName = equipment.parentThingDefName ?? string.Empty;
+                UIHelper.DrawPropertyField(ref y, width, "ParentName", ref parentThingDefName);
+                if (parentThingDefName != (equipment.parentThingDefName ?? string.Empty))
+                {
+                    CaptureUndoSnapshot();
+                    equipment.parentThingDefName = string.IsNullOrWhiteSpace(parentThingDefName) ? "ApparelMakeableBase" : parentThingDefName;
+                    MarkEquipmentDirty(false);
+                }
+                DrawPropertyHint(ref y, width, "ApparelMakeableBase / 可替换为其他 Apparel 父 Def");
 
                 string previewTexPath = equipment.previewTexPath ?? string.Empty;
                 if (DrawPathFieldWithBrowser(ref y, "CS_Studio_Equip_PreviewTexture".Translate(), ref previewTexPath, () =>
@@ -1317,45 +1438,168 @@ namespace CharacterStudio.UI
                 }
             }
 
+            if (DrawCollapsibleSection(ref y, width, "ThingDef / Apparel", "EquipmentDefinition"))
+            {
+                string worldTexPath = equipment.worldTexPath ?? string.Empty;
+                if (DrawPathFieldWithBrowser(ref y, "World TexPath", ref worldTexPath, () =>
+                    Find.WindowStack.Add(new Dialog_FileBrowser(equipment.worldTexPath ?? string.Empty, path =>
+                    {
+                        CaptureUndoSnapshot();
+                        equipment.worldTexPath = path ?? string.Empty;
+                        MarkEquipmentDirty(false);
+                    }))))
+                {
+                    CaptureUndoSnapshot();
+                    equipment.worldTexPath = worldTexPath;
+                    MarkEquipmentDirty(false);
+                }
+
+                string wornTexPath = equipment.wornTexPath ?? string.Empty;
+                if (DrawPathFieldWithBrowser(ref y, "Worn TexPath", ref wornTexPath, () =>
+                    Find.WindowStack.Add(new Dialog_FileBrowser(equipment.wornTexPath ?? string.Empty, path =>
+                    {
+                        CaptureUndoSnapshot();
+                        equipment.wornTexPath = path ?? string.Empty;
+                        MarkEquipmentDirty(false);
+                    }))))
+                {
+                    CaptureUndoSnapshot();
+                    equipment.wornTexPath = wornTexPath;
+                    MarkEquipmentDirty(false);
+                }
+
+                string equipmentMaskTexPath = equipment.maskTexPath ?? string.Empty;
+                if (DrawPathFieldWithBrowser(ref y, "Apparel Mask", ref equipmentMaskTexPath, () =>
+                    Find.WindowStack.Add(new Dialog_FileBrowser(equipment.maskTexPath ?? string.Empty, path =>
+                    {
+                        CaptureUndoSnapshot();
+                        equipment.maskTexPath = path ?? string.Empty;
+                        MarkEquipmentDirty(false);
+                    }))))
+                {
+                    CaptureUndoSnapshot();
+                    equipment.maskTexPath = equipmentMaskTexPath;
+                    MarkEquipmentDirty(false);
+                }
+
+                DrawSelectionPropertyButton(
+                    ref y,
+                    width,
+                    "CS_Studio_Equip_ShaderDef".Translate(),
+                    string.IsNullOrWhiteSpace(equipment.shaderDefName) ? "Cutout" : equipment.shaderDefName,
+                    () => ShowEquipmentShaderSelector(equipment, () => MarkEquipmentDirty()));
+                DrawPropertyHint(ref y, width, "CS_Studio_Equip_ShaderDef_Hint".Translate());
+
+                bool useWornGraphicMask = equipment.useWornGraphicMask;
+                UIHelper.DrawPropertyCheckbox(ref y, width, "useWornGraphicMask", ref useWornGraphicMask);
+                if (useWornGraphicMask != equipment.useWornGraphicMask)
+                {
+                    CaptureUndoSnapshot();
+                    equipment.useWornGraphicMask = useWornGraphicMask;
+                    MarkEquipmentDirty(false);
+                }
+
+                string thingCategoriesText = string.Join(", ", equipment.thingCategories ?? new List<string>());
+                UIHelper.DrawPropertyField(ref y, width, "ThingCategories", ref thingCategoriesText);
+                string normalizedThingCategoriesText = string.Join(", ", equipment.thingCategories ?? new List<string>());
+                if (thingCategoriesText != normalizedThingCategoriesText)
+                {
+                    CaptureUndoSnapshot();
+                    equipment.thingCategories = ParseCommaSeparatedList(thingCategoriesText).ToList();
+                    MarkEquipmentDirty(false);
+                }
+
+                string bodyPartGroupsText = string.Join(", ", equipment.bodyPartGroups ?? new List<string>());
+                UIHelper.DrawPropertyField(ref y, width, "BodyPartGroups", ref bodyPartGroupsText);
+                string normalizedBodyPartGroupsText = string.Join(", ", equipment.bodyPartGroups ?? new List<string>());
+                if (bodyPartGroupsText != normalizedBodyPartGroupsText)
+                {
+                    CaptureUndoSnapshot();
+                    equipment.bodyPartGroups = ParseCommaSeparatedList(bodyPartGroupsText).ToList();
+                    MarkEquipmentDirty(false);
+                }
+
+                string apparelLayersText = string.Join(", ", equipment.apparelLayers ?? new List<string>());
+                UIHelper.DrawPropertyField(ref y, width, "ApparelLayers", ref apparelLayersText);
+                string normalizedApparelLayersText = string.Join(", ", equipment.apparelLayers ?? new List<string>());
+                if (apparelLayersText != normalizedApparelLayersText)
+                {
+                    CaptureUndoSnapshot();
+                    equipment.apparelLayers = ParseCommaSeparatedList(apparelLayersText).ToList();
+                    MarkEquipmentDirty(false);
+                }
+
+                string apparelTagsText = string.Join(", ", equipment.apparelTags ?? new List<string>());
+                UIHelper.DrawPropertyField(ref y, width, "ApparelTags", ref apparelTagsText);
+                string normalizedApparelTagsText = string.Join(", ", equipment.apparelTags ?? new List<string>());
+                if (apparelTagsText != normalizedApparelTagsText)
+                {
+                    CaptureUndoSnapshot();
+                    equipment.apparelTags = ParseCommaSeparatedList(apparelTagsText).ToList();
+                    MarkEquipmentDirty(false);
+                }
+            }
+
             if (DrawCollapsibleSection(ref y, width, "CS_Studio_Equip_Section_VisualBase".Translate(), "EquipmentVisualBase"))
             {
-                equipment.visual ??= new PawnLayerConfig();
-                equipment.EnsureDefaults();
-
-                string layerName = equipment.visual.layerName ?? string.Empty;
+                string layerName = renderData.layerName ?? string.Empty;
                 UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_VisualLayerName".Translate(), ref layerName);
-                if (layerName != (equipment.visual.layerName ?? string.Empty))
+                if (layerName != (renderData.layerName ?? string.Empty))
                 {
                     CaptureUndoSnapshot();
-                    equipment.visual.layerName = layerName;
+                    renderData.layerName = layerName;
                     MarkEquipmentDirty();
                 }
 
-                string texPath = equipment.visual.texPath ?? string.Empty;
+                string texPath = renderData.texPath ?? string.Empty;
                 if (DrawPathFieldWithBrowser(ref y, "CS_Studio_Prop_TexturePath".Translate(), ref texPath, () =>
-                    Find.WindowStack.Add(new Dialog_FileBrowser(equipment.visual.texPath ?? string.Empty, path =>
+                    Find.WindowStack.Add(new Dialog_FileBrowser(renderData.texPath ?? string.Empty, path =>
                     {
                         CaptureUndoSnapshot();
-                        equipment.visual.texPath = path ?? string.Empty;
+                        renderData.texPath = path ?? string.Empty;
+                        if (string.IsNullOrWhiteSpace(equipment.worldTexPath))
+                        {
+                            equipment.worldTexPath = renderData.texPath;
+                        }
+                        if (string.IsNullOrWhiteSpace(equipment.wornTexPath))
+                        {
+                            equipment.wornTexPath = renderData.texPath;
+                        }
                         MarkEquipmentDirty();
                     }))))
                 {
                     CaptureUndoSnapshot();
-                    equipment.visual.texPath = texPath;
+                    renderData.texPath = texPath;
+                    if (string.IsNullOrWhiteSpace(equipment.worldTexPath))
+                    {
+                        equipment.worldTexPath = renderData.texPath;
+                    }
+                    if (string.IsNullOrWhiteSpace(equipment.wornTexPath))
+                    {
+                        equipment.wornTexPath = renderData.texPath;
+                    }
                     MarkEquipmentDirty();
                 }
 
-                string maskTexPath = equipment.visual.maskTexPath ?? string.Empty;
-                if (DrawPathFieldWithBrowser(ref y, "CS_Studio_BaseSlot_MaskTexture".Translate(), ref maskTexPath, () =>
-                    Find.WindowStack.Add(new Dialog_FileBrowser(equipment.visual.maskTexPath ?? string.Empty, path =>
+                string previewMaskTexPath = renderData.maskTexPath ?? string.Empty;
+                if (DrawPathFieldWithBrowser(ref y, "CS_Studio_BaseSlot_MaskTexture".Translate(), ref previewMaskTexPath, () =>
+                    Find.WindowStack.Add(new Dialog_FileBrowser(renderData.maskTexPath ?? string.Empty, path =>
                     {
                         CaptureUndoSnapshot();
-                        equipment.visual.maskTexPath = path ?? string.Empty;
+                        renderData.maskTexPath = path ?? string.Empty;
+                        if (string.IsNullOrWhiteSpace(equipment.maskTexPath))
+                        {
+                            equipment.maskTexPath = renderData.maskTexPath;
+                        }
                         MarkEquipmentDirty();
                     }))))
                 {
                     CaptureUndoSnapshot();
-                    equipment.visual.maskTexPath = maskTexPath;
+                    renderData.maskTexPath = previewMaskTexPath;
+                    if (string.IsNullOrWhiteSpace(equipment.maskTexPath))
+                    {
+                        equipment.maskTexPath = renderData.maskTexPath;
+                    }
                     MarkEquipmentDirty();
                 }
 
@@ -1366,7 +1610,7 @@ namespace CharacterStudio.UI
                     "FaceTattoo", "BodyTattoo", "Apparel", "Headgear", "Root"
                 };
 
-                UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Equip_AnchorTag".Translate(), equipment.visual.anchorTag,
+                UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Equip_AnchorTag".Translate(), renderData.anchorTag,
                     anchorOptions,
                     option =>
                     {
@@ -1376,92 +1620,84 @@ namespace CharacterStudio.UI
                     val =>
                     {
                         CaptureUndoSnapshot();
-                        equipment.visual.anchorTag = val;
+                        renderData.anchorTag = val;
                         MarkEquipmentDirty();
                     });
                 DrawPropertyHint(ref y, width, "CS_Studio_Equip_AnchorTag_Hint".Translate());
 
-                string anchorPath = equipment.visual.anchorPath ?? string.Empty;
+                string anchorPath = renderData.anchorPath ?? string.Empty;
                 UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_AnchorPath".Translate(), ref anchorPath);
-                if (anchorPath != (equipment.visual.anchorPath ?? string.Empty))
+                if (anchorPath != (renderData.anchorPath ?? string.Empty))
                 {
                     CaptureUndoSnapshot();
-                    equipment.visual.anchorPath = anchorPath;
+                    renderData.anchorPath = anchorPath;
                     MarkEquipmentDirty();
                 }
                 DrawPropertyHint(ref y, width, "CS_Studio_Equip_AnchorPath_Hint".Translate());
 
-                DrawSelectionPropertyButton(
-                    ref y,
-                    width,
-                    "CS_Studio_Equip_ShaderDef".Translate(),
-                    string.IsNullOrWhiteSpace(equipment.visual.shaderDefName) ? "Cutout" : equipment.visual.shaderDefName,
-                    () => ShowEquipmentShaderSelector(equipment, () => MarkEquipmentDirty()));
-                DrawPropertyHint(ref y, width, "CS_Studio_Equip_ShaderDef_Hint".Translate());
-
-                bool visible = equipment.visual.visible;
+                bool visible = renderData.visible;
                 UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Prop_Visible".Translate(), ref visible);
-                if (visible != equipment.visual.visible)
+                if (visible != renderData.visible)
                 {
                     CaptureUndoSnapshot();
-                    equipment.visual.visible = visible;
+                    renderData.visible = visible;
                     MarkEquipmentDirty();
                 }
 
-                float drawOrder = equipment.visual.drawOrder;
+                float drawOrder = renderData.drawOrder;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_DrawOrder".Translate(), ref drawOrder, -10f, 120f, "F0");
-                if (Math.Abs(drawOrder - equipment.visual.drawOrder) > 0.0001f)
+                if (Math.Abs(drawOrder - renderData.drawOrder) > 0.0001f)
                 {
                     CaptureUndoSnapshot();
-                    equipment.visual.drawOrder = drawOrder;
+                    renderData.drawOrder = drawOrder;
                     MarkEquipmentDirty();
                 }
 
-                bool flip = equipment.visual.flipHorizontal;
+                bool flip = renderData.flipHorizontal;
                 UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Prop_FlipHorizontal".Translate(), ref flip);
-                if (flip != equipment.visual.flipHorizontal)
+                if (flip != renderData.flipHorizontal)
                 {
                     CaptureUndoSnapshot();
-                    equipment.visual.flipHorizontal = flip;
+                    renderData.flipHorizontal = flip;
                     MarkEquipmentDirty();
                 }
 
-                UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_BaseSlot_PrimaryColorSource".Translate(), equipment.visual.colorSource,
+                UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_BaseSlot_PrimaryColorSource".Translate(), renderData.colorSource,
                     (LayerColorSource[])Enum.GetValues(typeof(LayerColorSource)),
                     option => option.ToString(),
                     val =>
                     {
                         CaptureUndoSnapshot();
-                        equipment.visual.colorSource = val;
+                        renderData.colorSource = val;
                         MarkEquipmentDirty();
                     });
 
-                if (equipment.visual.colorSource == LayerColorSource.Fixed)
+                if (renderData.colorSource == LayerColorSource.Fixed)
                 {
-                    UIHelper.DrawPropertyColor(ref y, width, "CS_Studio_BaseSlot_PrimaryColor".Translate(), equipment.visual.customColor, col =>
+                    UIHelper.DrawPropertyColor(ref y, width, "CS_Studio_BaseSlot_PrimaryColor".Translate(), renderData.customColor, col =>
                     {
                         CaptureUndoSnapshot();
-                        equipment.visual.customColor = col;
+                        renderData.customColor = col;
                         MarkEquipmentDirty();
                     });
                 }
 
-                UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_BaseSlot_SecondaryColorSource".Translate(), equipment.visual.colorTwoSource,
+                UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_BaseSlot_SecondaryColorSource".Translate(), renderData.colorTwoSource,
                     (LayerColorSource[])Enum.GetValues(typeof(LayerColorSource)),
                     option => option.ToString(),
                     val =>
                     {
                         CaptureUndoSnapshot();
-                        equipment.visual.colorTwoSource = val;
+                        renderData.colorTwoSource = val;
                         MarkEquipmentDirty();
                     });
 
-                if (equipment.visual.colorTwoSource == LayerColorSource.Fixed)
+                if (renderData.colorTwoSource == LayerColorSource.Fixed)
                 {
-                    UIHelper.DrawPropertyColor(ref y, width, "CS_Studio_BaseSlot_SecondaryColor".Translate(), equipment.visual.customColorTwo, col =>
+                    UIHelper.DrawPropertyColor(ref y, width, "CS_Studio_BaseSlot_SecondaryColor".Translate(), renderData.customColorTwo, col =>
                     {
                         CaptureUndoSnapshot();
-                        equipment.visual.customColorTwo = col;
+                        renderData.customColorTwo = col;
                         MarkEquipmentDirty();
                     });
                 }
@@ -1469,7 +1705,7 @@ namespace CharacterStudio.UI
 
             if (DrawCollapsibleSection(ref y, width, "CS_Studio_Equip_Section_VisualTransform".Translate(), "EquipmentVisualTransform"))
             {
-                Vector3 editableOffset = GetEditableLayerOffsetForPreview(equipment.visual);
+                Vector3 editableOffset = GetEditableLayerOffsetForPreview(renderData);
 
                 float offsetX = editableOffset.x;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_OffsetX".Translate(), ref offsetX, -2f, 2f, "F3");
@@ -1477,331 +1713,201 @@ namespace CharacterStudio.UI
                 {
                     CaptureUndoSnapshot();
                     editableOffset.x = offsetX;
-                    SetEditableLayerOffsetForPreview(equipment.visual, editableOffset);
+                    SetEditableLayerOffsetForPreview(renderData, editableOffset);
                     MarkEquipmentDirty();
                 }
 
-                editableOffset = GetEditableLayerOffsetForPreview(equipment.visual);
+                editableOffset = GetEditableLayerOffsetForPreview(renderData);
                 float offsetY = editableOffset.y;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_OffsetY".Translate(), ref offsetY, -2f, 2f, "F3");
                 if (Math.Abs(offsetY - editableOffset.y) > 0.0001f)
                 {
                     CaptureUndoSnapshot();
                     editableOffset.y = offsetY;
-                    SetEditableLayerOffsetForPreview(equipment.visual, editableOffset);
+                    SetEditableLayerOffsetForPreview(renderData, editableOffset);
                     MarkEquipmentDirty();
                 }
 
-                editableOffset = GetEditableLayerOffsetForPreview(equipment.visual);
+                editableOffset = GetEditableLayerOffsetForPreview(renderData);
                 float offsetZ = editableOffset.z;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_OffsetZ".Translate(), ref offsetZ, -2f, 2f, "F3");
                 if (Math.Abs(offsetZ - editableOffset.z) > 0.0001f)
                 {
                     CaptureUndoSnapshot();
                     editableOffset.z = offsetZ;
-                    SetEditableLayerOffsetForPreview(equipment.visual, editableOffset);
+                    SetEditableLayerOffsetForPreview(renderData, editableOffset);
                     MarkEquipmentDirty();
                 }
 
-                float eastX = equipment.visual.offsetEast.x;
+                float eastX = renderData.offsetEast.x;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Equip_EastOffsetX".Translate(), ref eastX, -2f, 2f, "F3");
-                if (Math.Abs(eastX - equipment.visual.offsetEast.x) > 0.0001f)
+                if (Math.Abs(eastX - renderData.offsetEast.x) > 0.0001f)
                 {
                     CaptureUndoSnapshot();
-                    equipment.visual.offsetEast.x = eastX;
+                    renderData.offsetEast.x = eastX;
                     MarkEquipmentDirty();
                 }
 
-                float eastY = equipment.visual.offsetEast.y;
+                float eastY = renderData.offsetEast.y;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Equip_EastOffsetY".Translate(), ref eastY, -2f, 2f, "F3");
-                if (Math.Abs(eastY - equipment.visual.offsetEast.y) > 0.0001f)
+                if (Math.Abs(eastY - renderData.offsetEast.y) > 0.0001f)
                 {
                     CaptureUndoSnapshot();
-                    equipment.visual.offsetEast.y = eastY;
+                    renderData.offsetEast.y = eastY;
                     MarkEquipmentDirty();
                 }
 
-                float eastZ = equipment.visual.offsetEast.z;
+                float eastZ = renderData.offsetEast.z;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Equip_EastOffsetZ".Translate(), ref eastZ, -2f, 2f, "F3");
-                if (Math.Abs(eastZ - equipment.visual.offsetEast.z) > 0.0001f)
+                if (Math.Abs(eastZ - renderData.offsetEast.z) > 0.0001f)
                 {
                     CaptureUndoSnapshot();
-                    equipment.visual.offsetEast.z = eastZ;
+                    renderData.offsetEast.z = eastZ;
                     MarkEquipmentDirty();
                 }
 
-                float northX = equipment.visual.offsetNorth.x;
+                float northX = renderData.offsetNorth.x;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Equip_NorthOffsetX".Translate(), ref northX, -2f, 2f, "F3");
-                if (Math.Abs(northX - equipment.visual.offsetNorth.x) > 0.0001f)
+                if (Math.Abs(northX - renderData.offsetNorth.x) > 0.0001f)
                 {
                     CaptureUndoSnapshot();
-                    equipment.visual.offsetNorth.x = northX;
+                    renderData.offsetNorth.x = northX;
                     MarkEquipmentDirty();
                 }
 
-                float northY = equipment.visual.offsetNorth.y;
+                float northY = renderData.offsetNorth.y;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Equip_NorthOffsetY".Translate(), ref northY, -2f, 2f, "F3");
-                if (Math.Abs(northY - equipment.visual.offsetNorth.y) > 0.0001f)
+                if (Math.Abs(northY - renderData.offsetNorth.y) > 0.0001f)
                 {
                     CaptureUndoSnapshot();
-                    equipment.visual.offsetNorth.y = northY;
+                    renderData.offsetNorth.y = northY;
                     MarkEquipmentDirty();
                 }
 
-                float northZ = equipment.visual.offsetNorth.z;
+                float northZ = renderData.offsetNorth.z;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Equip_NorthOffsetZ".Translate(), ref northZ, -2f, 2f, "F3");
-                if (Math.Abs(northZ - equipment.visual.offsetNorth.z) > 0.0001f)
+                if (Math.Abs(northZ - renderData.offsetNorth.z) > 0.0001f)
                 {
                     CaptureUndoSnapshot();
-                    equipment.visual.offsetNorth.z = northZ;
+                    renderData.offsetNorth.z = northZ;
                     MarkEquipmentDirty();
                 }
 
-                Vector2 editableScale = GetEditableLayerScaleForPreview(equipment.visual);
+                Vector2 editableScale = GetEditableLayerScaleForPreview(renderData);
                 float scaleX = editableScale.x;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Equip_ScaleX".Translate(), ref scaleX, 0.1f, 3f, "F2");
                 if (Math.Abs(scaleX - editableScale.x) > 0.0001f)
                 {
                     CaptureUndoSnapshot();
                     editableScale.x = scaleX;
-                    SetEditableLayerScaleForPreview(equipment.visual, editableScale);
+                    SetEditableLayerScaleForPreview(renderData, editableScale);
                     MarkEquipmentDirty();
                 }
 
-                editableScale = GetEditableLayerScaleForPreview(equipment.visual);
+                editableScale = GetEditableLayerScaleForPreview(renderData);
                 float scaleY = editableScale.y;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Equip_ScaleY".Translate(), ref scaleY, 0.1f, 3f, "F2");
                 if (Math.Abs(scaleY - editableScale.y) > 0.0001f)
                 {
                     CaptureUndoSnapshot();
                     editableScale.y = scaleY;
-                    SetEditableLayerScaleForPreview(equipment.visual, editableScale);
+                    SetEditableLayerScaleForPreview(renderData, editableScale);
                     MarkEquipmentDirty();
                 }
 
-                float rotation = GetEditableLayerRotationForPreview(equipment.visual);
+                float rotation = GetEditableLayerRotationForPreview(renderData);
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_BaseSlot_Rotation".Translate(), ref rotation, -180f, 180f, "F0");
-                if (Math.Abs(rotation - GetEditableLayerRotationForPreview(equipment.visual)) > 0.0001f)
+                if (Math.Abs(rotation - GetEditableLayerRotationForPreview(renderData)) > 0.0001f)
                 {
                     CaptureUndoSnapshot();
-                    SetEditableLayerRotationForPreview(equipment.visual, rotation);
+                    SetEditableLayerRotationForPreview(renderData, rotation);
                     MarkEquipmentDirty();
                 }
 
-                float rotationEastOffset = equipment.visual.rotationEastOffset;
+                float rotationEastOffset = renderData.rotationEastOffset;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Equip_RotationEastOffset".Translate(), ref rotationEastOffset, -180f, 180f, "F0");
-                if (Math.Abs(rotationEastOffset - equipment.visual.rotationEastOffset) > 0.0001f)
+                if (Math.Abs(rotationEastOffset - renderData.rotationEastOffset) > 0.0001f)
                 {
                     CaptureUndoSnapshot();
-                    equipment.visual.rotationEastOffset = rotationEastOffset;
+                    renderData.rotationEastOffset = rotationEastOffset;
                     MarkEquipmentDirty();
                 }
 
-                float rotationNorthOffset = equipment.visual.rotationNorthOffset;
+                float rotationNorthOffset = renderData.rotationNorthOffset;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Equip_RotationNorthOffset".Translate(), ref rotationNorthOffset, -180f, 180f, "F0");
-                if (Math.Abs(rotationNorthOffset - equipment.visual.rotationNorthOffset) > 0.0001f)
+                if (Math.Abs(rotationNorthOffset - renderData.rotationNorthOffset) > 0.0001f)
                 {
                     CaptureUndoSnapshot();
-                    equipment.visual.rotationNorthOffset = rotationNorthOffset;
+                    renderData.rotationNorthOffset = rotationNorthOffset;
                     MarkEquipmentDirty();
                 }
             }
 
-            if (DrawCollapsibleSection(ref y, width, "CS_Studio_Equip_Section_VisualVariants".Translate(), "EquipmentVisualVariants"))
+            if (DrawCollapsibleSection(ref y, width, "Triggered Animation", "EquipmentTriggeredAnimation"))
             {
-                UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Variant_LayerRole".Translate(), equipment.visual.role,
-                    (LayerRole[])Enum.GetValues(typeof(LayerRole)),
-                    option => option.ToString(),
-                    val =>
+                bool useTriggered = renderData.useTriggeredLocalAnimation;
+                UIHelper.DrawPropertyCheckbox(ref y, width, "Enable Triggered Animation", ref useTriggered);
+                if (useTriggered != renderData.useTriggeredLocalAnimation)
+                {
+                    CaptureUndoSnapshot();
+                    renderData.useTriggeredLocalAnimation = useTriggered;
+                    MarkEquipmentDirty();
+                }
+
+                if (renderData.useTriggeredLocalAnimation)
+                {
+                    string triggerAbilityDefName = renderData.triggerAbilityDefName ?? string.Empty;
+                    UIHelper.DrawPropertyField(ref y, width, "Trigger Ability DefName", ref triggerAbilityDefName);
+                    if (triggerAbilityDefName != (renderData.triggerAbilityDefName ?? string.Empty))
                     {
                         CaptureUndoSnapshot();
-                        equipment.visual.role = val;
-                        MarkEquipmentDirty();
-                    });
-
-                UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Variant_Logic".Translate(), equipment.visual.variantLogic,
-                    (LayerVariantLogic[])Enum.GetValues(typeof(LayerVariantLogic)),
-                    option => option.ToString(),
-                    val =>
-                    {
-                        CaptureUndoSnapshot();
-                        equipment.visual.variantLogic = val;
-                        MarkEquipmentDirty();
-                    });
-
-                string variantBaseName = equipment.visual.variantBaseName ?? string.Empty;
-                UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Variant_BaseName".Translate(), ref variantBaseName);
-                if (variantBaseName != (equipment.visual.variantBaseName ?? string.Empty))
-                {
-                    CaptureUndoSnapshot();
-                    equipment.visual.variantBaseName = variantBaseName;
-                    MarkEquipmentDirty();
-                }
-
-                bool useDirectionalSuffix = equipment.visual.useDirectionalSuffix;
-                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Variant_UseDirectionalSuffix".Translate(), ref useDirectionalSuffix);
-                if (useDirectionalSuffix != equipment.visual.useDirectionalSuffix)
-                {
-                    CaptureUndoSnapshot();
-                    equipment.visual.useDirectionalSuffix = useDirectionalSuffix;
-                    MarkEquipmentDirty();
-                }
-
-                bool useExpressionSuffix = equipment.visual.useExpressionSuffix;
-                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Variant_UseExpressionSuffix".Translate(), ref useExpressionSuffix);
-                if (useExpressionSuffix != equipment.visual.useExpressionSuffix)
-                {
-                    CaptureUndoSnapshot();
-                    equipment.visual.useExpressionSuffix = useExpressionSuffix;
-                    MarkEquipmentDirty();
-                }
-
-                bool useEyeDirectionSuffix = equipment.visual.useEyeDirectionSuffix;
-                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Variant_UseEyeDirectionSuffix".Translate(), ref useEyeDirectionSuffix);
-                if (useEyeDirectionSuffix != equipment.visual.useEyeDirectionSuffix)
-                {
-                    CaptureUndoSnapshot();
-                    equipment.visual.useEyeDirectionSuffix = useEyeDirectionSuffix;
-                    MarkEquipmentDirty();
-                }
-
-                bool useBlinkSuffix = equipment.visual.useBlinkSuffix;
-                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Variant_UseBlinkSuffix".Translate(), ref useBlinkSuffix);
-                if (useBlinkSuffix != equipment.visual.useBlinkSuffix)
-                {
-                    CaptureUndoSnapshot();
-                    equipment.visual.useBlinkSuffix = useBlinkSuffix;
-                    MarkEquipmentDirty();
-                }
-
-                bool useFrameSequence = equipment.visual.useFrameSequence;
-                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Variant_UseFrameSequence".Translate(), ref useFrameSequence);
-                if (useFrameSequence != equipment.visual.useFrameSequence)
-                {
-                    CaptureUndoSnapshot();
-                    equipment.visual.useFrameSequence = useFrameSequence;
-                    MarkEquipmentDirty();
-                }
-
-                bool hideWhenMissingVariant = equipment.visual.hideWhenMissingVariant;
-                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Variant_HideWhenMissing".Translate(), ref hideWhenMissingVariant);
-                if (hideWhenMissingVariant != equipment.visual.hideWhenMissingVariant)
-                {
-                    CaptureUndoSnapshot();
-                    equipment.visual.hideWhenMissingVariant = hideWhenMissingVariant;
-                    MarkEquipmentDirty();
-                }
-
-                UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Variant_EyeRenderMode".Translate(), equipment.visual.eyeRenderMode,
-                    (EyeRenderMode[])Enum.GetValues(typeof(EyeRenderMode)),
-                    option => option.ToString(),
-                    val =>
-                    {
-                        CaptureUndoSnapshot();
-                        equipment.visual.eyeRenderMode = val;
-                        MarkEquipmentDirty();
-                    });
-
-                if (equipment.visual.eyeRenderMode == EyeRenderMode.UvOffset)
-                {
-                    float eyeUvMoveRange = equipment.visual.eyeUvMoveRange;
-                    UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Variant_EyeUvMoveRange".Translate(), ref eyeUvMoveRange, 0f, 0.2f, "F3");
-                    if (Math.Abs(eyeUvMoveRange - equipment.visual.eyeUvMoveRange) > 0.0001f)
-                    {
-                        CaptureUndoSnapshot();
-                        equipment.visual.eyeUvMoveRange = eyeUvMoveRange;
-                        MarkEquipmentDirty();
-                    }
-                }
-
-                string visibleExpressionsText = string.Join(", ", equipment.visual.visibleExpressions ?? Array.Empty<string>());
-                UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Variant_VisibleExpressions".Translate(), ref visibleExpressionsText);
-                string normalizedVisibleExpressionsText = string.Join(", ", equipment.visual.visibleExpressions ?? Array.Empty<string>());
-                if (visibleExpressionsText != normalizedVisibleExpressionsText)
-                {
-                    CaptureUndoSnapshot();
-                    equipment.visual.visibleExpressions = ParseCommaSeparatedList(visibleExpressionsText);
-                    MarkEquipmentDirty();
-                }
-
-                string hiddenExpressionsText = string.Join(", ", equipment.visual.hiddenExpressions ?? Array.Empty<string>());
-                UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Variant_HiddenExpressions".Translate(), ref hiddenExpressionsText);
-                string normalizedHiddenExpressionsText = string.Join(", ", equipment.visual.hiddenExpressions ?? Array.Empty<string>());
-                if (hiddenExpressionsText != normalizedHiddenExpressionsText)
-                {
-                    CaptureUndoSnapshot();
-                    equipment.visual.hiddenExpressions = ParseCommaSeparatedList(hiddenExpressionsText);
-                    MarkEquipmentDirty();
-                }
-            }
-
-            if (DrawCollapsibleSection(ref y, width, "CS_Studio_Equip_Section_VisualAnimation".Translate(), "EquipmentVisualAnimation"))
-            {
-                UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Anim_Type".Translate(), equipment.visual.animationType,
-                    (LayerAnimationType[])Enum.GetValues(typeof(LayerAnimationType)),
-                    option => $"CS_Studio_Anim_{option}".Translate(),
-                    val =>
-                    {
-                        CaptureUndoSnapshot();
-                        equipment.visual.animationType = val;
-                        MarkEquipmentDirty();
-                    });
-
-                if (equipment.visual.animationType != LayerAnimationType.None)
-                {
-                    float freq = equipment.visual.animFrequency;
-                    UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_Frequency".Translate(), ref freq, 0.1f, 5f, "F2");
-                    if (Math.Abs(freq - equipment.visual.animFrequency) > 0.0001f)
-                    {
-                        CaptureUndoSnapshot();
-                        equipment.visual.animFrequency = freq;
-                        MarkEquipmentDirty();
+                        renderData.triggerAbilityDefName = triggerAbilityDefName;
+                        MarkEquipmentDirty(false);
                     }
 
-                    float amp = equipment.visual.animAmplitude;
-                    UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_Amplitude".Translate(), ref amp, 1f, 45f, "F1");
-                    if (Math.Abs(amp - equipment.visual.animAmplitude) > 0.0001f)
-                    {
-                        CaptureUndoSnapshot();
-                        equipment.visual.animAmplitude = amp;
-                        MarkEquipmentDirty();
-                    }
+                    UIHelper.DrawPropertyDropdown(ref y, width, "Triggered Role", renderData.triggeredAnimationRole,
+                        (EquipmentTriggeredAnimationRole[])Enum.GetValues(typeof(EquipmentTriggeredAnimationRole)),
+                        option => option.ToString(),
+                        val =>
+                        {
+                            CaptureUndoSnapshot();
+                            renderData.triggeredAnimationRole = val;
+                            MarkEquipmentDirty();
+                        });
 
-                    float speed = equipment.visual.animSpeed;
-                    UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_Speed".Translate(), ref speed, 0.1f, 3f, "F2");
-                    if (Math.Abs(speed - equipment.visual.animSpeed) > 0.0001f)
-                    {
-                        CaptureUndoSnapshot();
-                        equipment.visual.animSpeed = speed;
-                        MarkEquipmentDirty();
-                    }
+                    float deployAngle = renderData.triggeredDeployAngle;
+                    UIHelper.DrawPropertySlider(ref y, width, "Deploy Angle", ref deployAngle, -180f, 180f, "F0");
+                    if (Math.Abs(deployAngle - renderData.triggeredDeployAngle) > 0.0001f) { CaptureUndoSnapshot(); renderData.triggeredDeployAngle = deployAngle; MarkEquipmentDirty(); }
 
-                    float phase = equipment.visual.animPhaseOffset;
-                    UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_PhaseOffset".Translate(), ref phase, 0f, 1f, "F2");
-                    if (Math.Abs(phase - equipment.visual.animPhaseOffset) > 0.0001f)
-                    {
-                        CaptureUndoSnapshot();
-                        equipment.visual.animPhaseOffset = phase;
-                        MarkEquipmentDirty();
-                    }
+                    float returnAngle = renderData.triggeredReturnAngle;
+                    UIHelper.DrawPropertySlider(ref y, width, "Return Angle", ref returnAngle, -180f, 180f, "F0");
+                    if (Math.Abs(returnAngle - renderData.triggeredReturnAngle) > 0.0001f) { CaptureUndoSnapshot(); renderData.triggeredReturnAngle = returnAngle; MarkEquipmentDirty(); }
 
-                    bool affectsOffset = equipment.visual.animAffectsOffset;
-                    UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Anim_AffectsOffset".Translate(), ref affectsOffset);
-                    if (affectsOffset != equipment.visual.animAffectsOffset)
-                    {
-                        CaptureUndoSnapshot();
-                        equipment.visual.animAffectsOffset = affectsOffset;
-                        MarkEquipmentDirty();
-                    }
+                    float deployTicksValue = renderData.triggeredDeployTicks;
+                    UIHelper.DrawPropertySlider(ref y, width, "Deploy Ticks", ref deployTicksValue, 1f, 300f, "F0");
+                    int deployTicks = Mathf.RoundToInt(deployTicksValue);
+                    if (deployTicks != renderData.triggeredDeployTicks) { CaptureUndoSnapshot(); renderData.triggeredDeployTicks = deployTicks; MarkEquipmentDirty(false); }
 
-                    float offsetAmp = equipment.visual.animOffsetAmplitude;
-                    UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_OffsetAmplitude".Translate(), ref offsetAmp, 0.001f, 0.1f, "F3");
-                    if (Math.Abs(offsetAmp - equipment.visual.animOffsetAmplitude) > 0.0001f)
-                    {
-                        CaptureUndoSnapshot();
-                        equipment.visual.animOffsetAmplitude = offsetAmp;
-                        MarkEquipmentDirty();
-                    }
+                    float holdTicksValue = renderData.triggeredHoldTicks;
+                    UIHelper.DrawPropertySlider(ref y, width, "Hold Ticks", ref holdTicksValue, 0f, 600f, "F0");
+                    int holdTicks = Mathf.RoundToInt(holdTicksValue);
+                    if (holdTicks != renderData.triggeredHoldTicks) { CaptureUndoSnapshot(); renderData.triggeredHoldTicks = holdTicks; MarkEquipmentDirty(false); }
+
+                    float returnTicksValue = renderData.triggeredReturnTicks;
+                    UIHelper.DrawPropertySlider(ref y, width, "Return Ticks", ref returnTicksValue, 1f, 300f, "F0");
+                    int returnTicks = Mathf.RoundToInt(returnTicksValue);
+                    if (returnTicks != renderData.triggeredReturnTicks) { CaptureUndoSnapshot(); renderData.triggeredReturnTicks = returnTicks; MarkEquipmentDirty(false); }
+
+                    float pivotX = renderData.triggeredPivotOffset.x;
+                    UIHelper.DrawPropertySlider(ref y, width, "Pivot X", ref pivotX, -1f, 1f, "F3");
+                    float pivotY = renderData.triggeredPivotOffset.y;
+                    UIHelper.DrawPropertySlider(ref y, width, "Pivot Y", ref pivotY, -1f, 1f, "F3");
+                    Vector2 newPivot = new Vector2(pivotX, pivotY);
+                    if (newPivot != renderData.triggeredPivotOffset) { CaptureUndoSnapshot(); renderData.triggeredPivotOffset = newPivot; MarkEquipmentDirty(); }
+
+                    bool useVfxVisibility = renderData.triggeredUseVfxVisibility;
+                    UIHelper.DrawPropertyCheckbox(ref y, width, "Effect Layer Visibility By Cycle", ref useVfxVisibility);
+                    if (useVfxVisibility != renderData.triggeredUseVfxVisibility) { CaptureUndoSnapshot(); renderData.triggeredUseVfxVisibility = useVfxVisibility; MarkEquipmentDirty(); }
                 }
             }
 
@@ -1893,7 +1999,7 @@ namespace CharacterStudio.UI
                 new FloatMenuOption("CS_Studio_None".Translate(), () =>
                 {
                     CaptureUndoSnapshot();
-                    equipment.linkedThingDefName = string.Empty;
+                    equipment.thingDefName = string.Empty;
                     onChanged();
                 })
             };
@@ -1909,7 +2015,7 @@ namespace CharacterStudio.UI
                 options.Add(new FloatMenuOption($"{label} [{localDef.defName}]", () =>
                 {
                     CaptureUndoSnapshot();
-                    equipment.linkedThingDefName = localDef.defName;
+                    equipment.thingDefName = localDef.defName;
                     onChanged();
                 }));
             }
@@ -1927,7 +2033,8 @@ namespace CharacterStudio.UI
                 options.Add(new FloatMenuOption(localShader, () =>
                 {
                     CaptureUndoSnapshot();
-                    equipment.visual.shaderDefName = localShader;
+                    equipment.shaderDefName = localShader;
+                    equipment.renderData.shaderDefName = localShader;
                     onChanged();
                 }));
             }

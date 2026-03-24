@@ -16,10 +16,11 @@ namespace CharacterStudio.Rendering
     {
         // 纹理缓存
         private static readonly Dictionary<string, Texture2D> textureCache = new Dictionary<string, Texture2D>();
-        
+
         // 材质缓存
         private static readonly Dictionary<string, Material> materialCache = new Dictionary<string, Material>();
         private static readonly Dictionary<int, HashSet<string>> textureMaterialCacheKeys = new Dictionary<int, HashSet<string>>();
+        private static readonly Dictionary<int, bool> textureSemiTransparencyCache = new Dictionary<int, bool>();
 
         // 文件修改时间缓存（用于热加载检测）
         private static readonly Dictionary<string, DateTime> fileLastWriteTimes = new Dictionary<string, DateTime>();
@@ -35,6 +36,8 @@ namespace CharacterStudio.Rendering
         private static readonly object textureCacheLock = new object();
         private static readonly object materialCacheLock = new object();
         private static readonly HashSet<string> nonMainThreadLoadWarnings = new HashSet<string>();
+        private static readonly HashSet<string> missingFileWarnings = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private static readonly HashSet<string> textureLoadFailureErrors = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         // ─────────────────────────────────────────────
         // 节点数据注册表 (Patch层 → Worker层 数据传递)
@@ -58,35 +61,37 @@ namespace CharacterStudio.Rendering
         /// <returns>加载的纹理，失败返回 null</returns>
         public static Texture2D? LoadTextureRaw(string fullPath, bool useCache = true)
         {
-            if (string.IsNullOrEmpty(fullPath))
+            if (string.IsNullOrWhiteSpace(fullPath))
             {
-                Log.Warning("[CharacterStudio] 纹理路径为空");
                 return null;
             }
+
+            string requestedPath = fullPath;
+            string resolvedPath = ResolveExistingTexturePath(fullPath);
 
             // 检查缓存（线程安全）
             if (useCache)
             {
                 lock (textureCacheLock)
                 {
-                    if (textureCache.TryGetValue(fullPath, out var cachedTex))
+                    if (textureCache.TryGetValue(resolvedPath, out var cachedTex))
                     {
                         // 检查文件是否被修改（仅在编辑器模式下）
-                        if (IsFileModified(fullPath))
+                        if (IsFileModified(resolvedPath))
                         {
                             // 文件已修改，移除缓存并重新加载
-                            RemoveFromCacheInternal(fullPath);
+                            RemoveFromCacheInternal(resolvedPath);
                         }
                         else if (cachedTex != null)
                         {
                             // 更新访问时间
-                            cacheAccessTimes[fullPath] = DateTime.Now;
+                            cacheAccessTimes[resolvedPath] = DateTime.Now;
                             return cachedTex;
                         }
                         else
                         {
-                            textureCache.Remove(fullPath);
-                            cacheAccessTimes.Remove(fullPath);
+                            textureCache.Remove(resolvedPath);
+                            cacheAccessTimes.Remove(resolvedPath);
                         }
                     }
                 }
@@ -94,9 +99,12 @@ namespace CharacterStudio.Rendering
 
             try
             {
-                if (!File.Exists(fullPath))
+                if (!File.Exists(resolvedPath))
                 {
-                    Log.Warning($"[CharacterStudio] 文件不存在: {fullPath}");
+                    LogWarningOnce(
+                        missingFileWarnings,
+                        requestedPath.Trim(),
+                        $"[CharacterStudio] 外部纹理文件不存在，已跳过加载: {requestedPath}");
                     return null;
                 }
 
@@ -104,37 +112,49 @@ namespace CharacterStudio.Rendering
                 {
                     lock (textureCacheLock)
                     {
-                        if (nonMainThreadLoadWarnings.Add(fullPath))
+                        if (nonMainThreadLoadWarnings.Add(resolvedPath))
                         {
-                            Log.Warning($"[CharacterStudio] 阻止在非主线程即时加载外部纹理，避免 Unity 崩溃: {fullPath}");
+                            Log.Warning($"[CharacterStudio] 阻止在非主线程即时加载外部纹理，避免 Unity 崩溃: {resolvedPath}");
                         }
                     }
                     return null;
                 }
 
-                // Log.Message($"[CharacterStudio] 正在加载外部纹理: {fullPath}"); // 调试日志
+                if (!string.Equals(requestedPath, resolvedPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    Log.Message($"[CharacterStudio] 外部纹理路径已回退解析: {requestedPath} -> {resolvedPath}");
+                }
+
+                // Log.Message($"[CharacterStudio] 正在加载外部纹理: {resolvedPath}"); // 调试日志
 
                 // 读取文件字节（在锁外执行IO操作）
-                byte[] bytes = File.ReadAllBytes(fullPath);
-                
+                byte[] bytes = File.ReadAllBytes(resolvedPath);
+
                 // 创建纹理（需要在主线程执行）
                 var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-                tex.name = Path.GetFileNameWithoutExtension(fullPath);
+                tex.name = Path.GetFileNameWithoutExtension(resolvedPath);
                 tex.filterMode = FilterMode.Bilinear;
                 tex.wrapMode = TextureWrapMode.Clamp;
+                tex.anisoLevel = 0;
 
                 // 加载图像数据
                 if (!ImageConversion.LoadImage(tex, bytes))
                 {
-                    Log.Error($"[CharacterStudio] 无法解析图像: {fullPath}");
+                    LogErrorOnce(
+                        textureLoadFailureErrors,
+                        resolvedPath,
+                        $"[CharacterStudio] 无法解析图像: {resolvedPath}");
                     UnityEngine.Object.Destroy(tex);
                     return null;
                 }
 
+                FixTransparentEdgeBleeding(tex);
+
                 // 压缩纹理以节省内存 (暂时禁用压缩，以防兼容性问题导致显示空白)
                 // tex.Compress(true);
                 // 禁用 Mipmap 生成，因为我们在创建 Texture2D 时指定了 no mipmaps
-                // 且 FilterMode 为 Point，不需要 Mipmap
+                // 外部 PNG/JPG 运行时加载不会经过导入器的 Alpha Is Transparency 扩边流程，
+                // 因此这里先手动修正透明边缘颜色，再提交像素数据，避免五官边缘出现色差/硬边。
                 tex.Apply(false, false); // 保持可读以便调试，且暂不释放CPU内存
 
                 // 添加到缓存（线程安全）
@@ -143,11 +163,11 @@ namespace CharacterStudio.Rendering
                     lock (textureCacheLock)
                     {
                         // 更新文件修改时间
-                        fileLastWriteTimes[fullPath] = File.GetLastWriteTime(fullPath);
-                        
+                        fileLastWriteTimes[resolvedPath] = File.GetLastWriteTime(resolvedPath);
+
                         EnsureCacheCapacity(textureCache, cacheAccessTimes, MaxTextureCacheSize);
-                        textureCache[fullPath] = tex;
-                        cacheAccessTimes[fullPath] = DateTime.Now;
+                        textureCache[resolvedPath] = tex;
+                        cacheAccessTimes[resolvedPath] = DateTime.Now;
                     }
                 }
 
@@ -155,7 +175,10 @@ namespace CharacterStudio.Rendering
             }
             catch (Exception ex)
             {
-                Log.Error($"[CharacterStudio] 加载纹理时出错: {fullPath}\n{ex}");
+                LogErrorOnce(
+                    textureLoadFailureErrors,
+                    resolvedPath,
+                    $"[CharacterStudio] 加载纹理时出错: {resolvedPath}\n{ex}");
                 return null;
             }
         }
@@ -168,7 +191,7 @@ namespace CharacterStudio.Rendering
             try
             {
                 if (!File.Exists(fullPath)) return false;
-                
+
                 DateTime currentWriteTime = File.GetLastWriteTime(fullPath);
                 if (fileLastWriteTimes.TryGetValue(fullPath, out var lastWriteTime))
                 {
@@ -179,6 +202,203 @@ namespace CharacterStudio.Rendering
             catch
             {
                 return false;
+            }
+        }
+
+        public static string ResolveTexturePathForLoad(string fullPath)
+        {
+            return ResolveExistingTexturePath(fullPath);
+        }
+
+        public static bool LooksLikeExternalTexturePath(string? texturePath)
+        {
+            if (string.IsNullOrWhiteSpace(texturePath))
+            {
+                return false;
+            }
+
+            return texturePath != null
+                && (texturePath.Contains(":")
+                    || texturePath.StartsWith("/")
+                    || Path.IsPathRooted(texturePath));
+        }
+
+        public static bool ExternalTextureExists(string fullPath, out string resolvedPath)
+        {
+            resolvedPath = ResolveExistingTexturePath(fullPath);
+            return !string.IsNullOrWhiteSpace(resolvedPath) && File.Exists(resolvedPath);
+        }
+
+        private static void LogWarningOnce(HashSet<string> warningSet, string key, string message)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return;
+            }
+
+            lock (textureCacheLock)
+            {
+                if (!warningSet.Add(key))
+                {
+                    return;
+                }
+            }
+
+            Log.Warning(message);
+        }
+
+        private static void LogErrorOnce(HashSet<string> errorSet, string key, string message)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return;
+            }
+
+            lock (textureCacheLock)
+            {
+                if (!errorSet.Add(key))
+                {
+                    return;
+                }
+            }
+
+            Log.Error(message);
+        }
+
+        private static string ResolveExistingTexturePath(string fullPath)
+        {
+            if (string.IsNullOrWhiteSpace(fullPath))
+                return fullPath;
+
+            if (File.Exists(fullPath))
+                return fullPath;
+
+            try
+            {
+                string? directory = Path.GetDirectoryName(fullPath);
+                if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
+                    return fullPath;
+
+                string requestedFileName = Path.GetFileName(fullPath);
+                if (string.IsNullOrWhiteSpace(requestedFileName))
+                    return fullPath;
+
+                string[] siblingFiles = Directory.GetFiles(directory)
+                    .Where(IsSupportedImageFormat)
+                    .ToArray();
+                if (siblingFiles.Length == 0)
+                    return fullPath;
+
+                string? exactNameMatch = siblingFiles.FirstOrDefault(candidate =>
+                    string.Equals(Path.GetFileName(candidate), requestedFileName, StringComparison.OrdinalIgnoreCase));
+                if (!string.IsNullOrWhiteSpace(exactNameMatch))
+                    return exactNameMatch;
+
+                string requestedStem = Path.GetFileNameWithoutExtension(fullPath) ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(requestedStem))
+                    return fullPath;
+
+                string? exactStemMatch = siblingFiles.FirstOrDefault(candidate =>
+                    string.Equals(Path.GetFileNameWithoutExtension(candidate), requestedStem, StringComparison.OrdinalIgnoreCase));
+                if (!string.IsNullOrWhiteSpace(exactStemMatch))
+                    return exactStemMatch;
+
+                string prefix = requestedStem + "_";
+                string? variantStemMatch = siblingFiles
+                    .Where(candidate =>
+                    {
+                        string candidateStem = Path.GetFileNameWithoutExtension(candidate) ?? string.Empty;
+                        return candidateStem.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
+                    })
+                    .OrderBy(candidate => Path.GetFileName(candidate), StringComparer.OrdinalIgnoreCase)
+                    .FirstOrDefault();
+                if (!string.IsNullOrWhiteSpace(variantStemMatch))
+                    return variantStemMatch;
+            }
+            catch
+            {
+            }
+
+            return fullPath;
+        }
+
+        private static void FixTransparentEdgeBleeding(Texture2D texture)
+        {
+            try
+            {
+                int width = texture.width;
+                int height = texture.height;
+                if (width <= 1 || height <= 1)
+                {
+                    return;
+                }
+
+                Color32[] source = texture.GetPixels32();
+                Color32[] result = new Color32[source.Length];
+                Array.Copy(source, result, source.Length);
+
+                bool changed = false;
+                for (int y = 0; y < height; y++)
+                {
+                    for (int x = 0; x < width; x++)
+                    {
+                        int index = y * width + x;
+                        Color32 current = source[index];
+                        if (current.a > 8)
+                        {
+                            continue;
+                        }
+
+                        int totalR = 0;
+                        int totalG = 0;
+                        int totalB = 0;
+                        int totalWeight = 0;
+
+                        for (int ny = Math.Max(0, y - 1); ny <= Math.Min(height - 1, y + 1); ny++)
+                        {
+                            for (int nx = Math.Max(0, x - 1); nx <= Math.Min(width - 1, x + 1); nx++)
+                            {
+                                if (nx == x && ny == y)
+                                {
+                                    continue;
+                                }
+
+                                Color32 neighbor = source[ny * width + nx];
+                                if (neighbor.a <= 8)
+                                {
+                                    continue;
+                                }
+
+                                int weight = Math.Max(1, (int)neighbor.a);
+                                totalR += neighbor.r * weight;
+                                totalG += neighbor.g * weight;
+                                totalB += neighbor.b * weight;
+                                totalWeight += weight;
+                            }
+                        }
+
+                        if (totalWeight <= 0)
+                        {
+                            continue;
+                        }
+
+                        result[index] = new Color32(
+                            (byte)(totalR / totalWeight),
+                            (byte)(totalG / totalWeight),
+                            (byte)(totalB / totalWeight),
+                            current.a);
+                        changed = true;
+                    }
+                }
+
+                if (changed)
+                {
+                    texture.SetPixels32(result);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warning($"[CharacterStudio] 修正透明边缘采样时出错: {ex.Message}");
             }
         }
 
@@ -196,10 +416,10 @@ namespace CharacterStudio.Rendering
 
             // 构建完整路径
             string basePath = Path.Combine(modContentPack.RootDir, "Textures", relativePath);
-            
+
             // 尝试不同的扩展名
             string[] extensions = { ".png", ".PNG", ".jpg", ".JPG", ".jpeg", ".JPEG" };
-            
+
             foreach (var ext in extensions)
             {
                 string fullPath = basePath + ext;
@@ -232,6 +452,7 @@ namespace CharacterStudio.Rendering
             try
             {
                 shader ??= ShaderDatabase.Cutout;
+                shader = ResolveRecommendedShaderForTexture(texture, shader);
                 string cacheKey = GetMaterialCacheKey(texture, shader);
 
                 lock (materialCacheLock)
@@ -274,7 +495,84 @@ namespace CharacterStudio.Rendering
             {
                 return null;
             }
+
             return GetMaterialForTexture(tex, shader);
+        }
+
+        private static Shader ResolveRecommendedShaderForTexture(Texture2D texture, Shader? requestedShader)
+        {
+            Shader resolvedShader = requestedShader ?? ShaderDatabase.Cutout;
+            if (!IsCutoutLikeShader(resolvedShader))
+            {
+                return resolvedShader;
+            }
+
+            if (!TextureHasSemiTransparentPixels(texture))
+            {
+                return resolvedShader;
+            }
+
+            if (IsCutoutComplexShader(resolvedShader))
+            {
+                return ShaderDatabase.TransparentPostLight ?? ShaderDatabase.Transparent ?? resolvedShader;
+            }
+
+            return ShaderDatabase.Transparent ?? resolvedShader;
+        }
+
+        private static bool IsCutoutLikeShader(Shader shader)
+        {
+            string shaderName = shader.name ?? string.Empty;
+            return shaderName.IndexOf("Cutout", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool IsCutoutComplexShader(Shader shader)
+        {
+            string shaderName = shader.name ?? string.Empty;
+            return shaderName.IndexOf("CutoutComplex", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        public static bool TextureHasSemiTransparentPixels(Texture2D texture)
+        {
+            if (texture == null)
+            {
+                return false;
+            }
+
+            int textureInstanceId = texture.GetInstanceID();
+            lock (textureCacheLock)
+            {
+                if (textureSemiTransparencyCache.TryGetValue(textureInstanceId, out bool cachedValue))
+                {
+                    return cachedValue;
+                }
+            }
+
+            bool hasSemiTransparentPixels = false;
+            try
+            {
+                Color32[] pixels = texture.GetPixels32();
+                for (int i = 0; i < pixels.Length; i++)
+                {
+                    byte alpha = pixels[i].a;
+                    if (alpha > 0 && alpha < 255)
+                    {
+                        hasSemiTransparentPixels = true;
+                        break;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warning($"[CharacterStudio] 检测纹理半透明像素时出错: {texture.name} - {ex.Message}");
+            }
+
+            lock (textureCacheLock)
+            {
+                textureSemiTransparencyCache[textureInstanceId] = hasSemiTransparentPixels;
+            }
+
+            return hasSemiTransparentPixels;
         }
 
         // ─────────────────────────────────────────────
@@ -300,6 +598,9 @@ namespace CharacterStudio.Rendering
                 fileLastWriteTimes.Clear();
                 cacheAccessTimes.Clear();
                 nonMainThreadLoadWarnings.Clear();
+                missingFileWarnings.Clear();
+                textureLoadFailureErrors.Clear();
+                textureSemiTransparencyCache.Clear();
             }
 
             lock (materialCacheLock)
@@ -332,13 +633,15 @@ namespace CharacterStudio.Rendering
             {
                 if (tex != null)
                 {
-                    RemoveMaterialCacheEntriesForTextureInternal(tex.GetInstanceID());
+                    int textureInstanceId = tex.GetInstanceID();
+                    RemoveMaterialCacheEntriesForTextureInternal(textureInstanceId);
+                    textureSemiTransparencyCache.Remove(textureInstanceId);
                     UnityEngine.Object.Destroy(tex);
                 }
 
                 textureCache.Remove(fullPath);
             }
-            
+
             fileLastWriteTimes.Remove(fullPath);
             cacheAccessTimes.Remove(fullPath);
             nonMainThreadLoadWarnings.Remove(fullPath);
@@ -431,7 +734,9 @@ namespace CharacterStudio.Rendering
                         // 如果是纹理，需要销毁
                         if (item is Texture2D tex)
                         {
-                            RemoveMaterialCacheEntriesForTextureInternal(tex.GetInstanceID());
+                            int textureInstanceId = tex.GetInstanceID();
+                            RemoveMaterialCacheEntriesForTextureInternal(textureInstanceId);
+                            textureSemiTransparencyCache.Remove(textureInstanceId);
                             UnityEngine.Object.Destroy(tex);
                         }
 
@@ -639,6 +944,7 @@ namespace CharacterStudio.Rendering
 
             return Vector2Int.zero;
         }
+
         private static string GetMaterialCacheKey(Texture2D texture, Shader shader)
         {
             string textureIdentity = texture.name;

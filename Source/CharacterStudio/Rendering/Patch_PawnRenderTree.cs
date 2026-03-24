@@ -1,4 +1,4 @@
-﻿﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
@@ -278,6 +278,11 @@ namespace CharacterStudio.Rendering
                 var pawn = __instance.pawn;
                 if (pawn == null) return;
 
+                if (!RuntimeAssetLoader.IsMainThread())
+                {
+                    return;
+                }
+
                 PawnSkinDef? skinDef = null;
                 bool hideVanillaHead = false;
                 bool hideVanillaHair = false;
@@ -312,6 +317,8 @@ namespace CharacterStudio.Rendering
                 CheckForCustomNodes(__instance.rootNode, ref hasCustomNodes);
                 if (hasCustomNodes) return;
 
+                bool expectsInjectedOverrides = HasPotentialInjectedOverrides(pawn, skinDef);
+
                 if (!overlayMode)
                     ProcessVanillaHiding(__instance, skinDef, hideVanillaHead, hideVanillaHair, out _);
 
@@ -321,7 +328,12 @@ namespace CharacterStudio.Rendering
                 // 注入眼睛方向覆盖层（与 RefreshHiddenNodes 保持一致）
                 InjectEyeDirectionLayer(__instance, pawn, skinDef);
 
-                if (!overlayMode && (anyNodesInjected || anyLayeredFaceInjected))
+                if (expectsInjectedOverrides && !anyNodesInjected && !anyLayeredFaceInjected)
+                {
+                    RestoreAndRemoveHiddenForTree(__instance);
+                    Log.Warning($"[CharacterStudio] 图层注入失败，已恢复原始渲染节点以避免角色部件被隐藏: {pawn.LabelShortCap}");
+                }
+                else if (!overlayMode && (anyNodesInjected || anyLayeredFaceInjected))
                 {
                     try
                     {
@@ -435,10 +447,21 @@ namespace CharacterStudio.Rendering
             tagHidingAvailable = nodesByTag != null;
             bool canUseTag = tagHidingAvailable;
 
-            // 自动检测 BaseAppearance 启用的槽位，决定是否隐藏对应的原版节点
-            bool shouldHideHead = hideHead || skinDef.hideVanillaHead || HasEnabledBaseSlot(skinDef, BaseAppearanceSlotType.Head);
-            bool shouldHideHair = hideHair || skinDef.hideVanillaHair || HasEnabledBaseSlot(skinDef, BaseAppearanceSlotType.Hair);
-            bool shouldHideBody = skinDef.hideVanillaBody || HasEnabledBaseSlot(skinDef, BaseAppearanceSlotType.Body);
+            // 自动检测 BaseAppearance 启用的槽位，决定是否隐藏对应的原版节点。
+            // 分层面部 Base 现在也会以可编辑图层形式接管头部底图，因此同样需要触发原版 Head 隐藏。
+            bool hasHeadBaseSlot = HasEnabledBaseSlot(skinDef, BaseAppearanceSlotType.Head);
+            bool hasHairBaseSlot = HasEnabledBaseSlot(skinDef, BaseAppearanceSlotType.Hair);
+            bool hasBodyBaseSlot = HasEnabledBaseSlot(skinDef, BaseAppearanceSlotType.Body);
+            bool hasEditableLayeredFaceBase = HasEnabledEditableLayeredFaceBase(skinDef);
+
+            bool shouldHideHead = hideHead
+                || skinDef.hideVanillaHead
+                || hasHeadBaseSlot
+                || hasEditableLayeredFaceBase;
+            bool shouldHideHair = hideHair
+                || skinDef.hideVanillaHair
+                || hasHairBaseSlot;
+            bool shouldHideBody = skinDef.hideVanillaBody || hasBodyBaseSlot;
 
             if (canUseTag && shouldHideHead)
                 HideNodeByTagName(nodesByTag!, "Head");
@@ -517,4 +540,3 @@ namespace CharacterStudio.Rendering
         }
     }
 }
-

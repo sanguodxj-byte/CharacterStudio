@@ -1,11 +1,12 @@
 using System.Collections.Generic;
 using CharacterStudio.Abilities;
 using CharacterStudio.AI;
+using CharacterStudio.Attributes;
 using Verse;
 
 namespace CharacterStudio.Core
 {
-    public class SkinAbilityHotkeyConfig
+    public class SkinAbilityHotkeyConfig : IExposable
     {
         public bool enabled = false;
         public string qAbilityDefName = "";
@@ -25,6 +26,22 @@ namespace CharacterStudio.Core
                 rAbilityDefName = rAbilityDefName,
                 wComboAbilityDefName = wComboAbilityDefName
             };
+        }
+
+        public void ExposeData()
+        {
+            Scribe_Values.Look(ref enabled, "enabled", false);
+            Scribe_Values.Look(ref qAbilityDefName, "qAbilityDefName", "");
+            Scribe_Values.Look(ref wAbilityDefName, "wAbilityDefName", "");
+            Scribe_Values.Look(ref eAbilityDefName, "eAbilityDefName", "");
+            Scribe_Values.Look(ref rAbilityDefName, "rAbilityDefName", "");
+            Scribe_Values.Look(ref wComboAbilityDefName, "wComboAbilityDefName", "");
+
+            qAbilityDefName ??= string.Empty;
+            wAbilityDefName ??= string.Empty;
+            eAbilityDefName ??= string.Empty;
+            rAbilityDefName ??= string.Empty;
+            wComboAbilityDefName ??= string.Empty;
         }
     }
 
@@ -108,6 +125,9 @@ namespace CharacterStudio.Core
         /// <summary>角色属性画像（供编辑器与 LLM 生成使用）</summary>
         public CharacterAttributeProfile attributes = new CharacterAttributeProfile();
 
+        /// <summary>属性增强 Buff 配置：通过统一 Hediff 对宿主种族的最终数值做安全叠加</summary>
+        public CharacterStatModifierProfile statModifiers = new CharacterStatModifierProfile();
+
         /// <summary>武器渲染覆写配置（偏移 / 缩放）</summary>
         public WeaponRenderConfig weaponRenderConfig = new WeaponRenderConfig();
 
@@ -178,6 +198,7 @@ namespace CharacterStudio.Core
                 abilityHotkeys = this.abilityHotkeys?.Clone() ?? new SkinAbilityHotkeyConfig(),
                 baseAppearance = this.baseAppearance?.Clone() ?? new BaseAppearanceConfig(),
                 attributes = this.attributes?.Clone() ?? new CharacterAttributeProfile(),
+                statModifiers = this.statModifiers?.Clone() ?? new CharacterStatModifierProfile(),
                 weaponRenderConfig = this.weaponRenderConfig?.Clone() ?? new WeaponRenderConfig()
             };
 

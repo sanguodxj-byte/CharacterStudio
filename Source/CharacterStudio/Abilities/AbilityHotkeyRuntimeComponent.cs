@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using CharacterStudio.Core;
+using CharacterStudio.Rendering;
+using CharacterStudio.UI;
 using HarmonyLib;
 using RimWorld;
 using UnityEngine;
@@ -119,8 +121,9 @@ namespace CharacterStudio.Abilities
 
             Pawn pawn = selectedPawn;
             var skinComp = pawn.GetComp<CompPawnSkin>();
-            var skin = skinComp?.ActiveSkin;
-            if (skinComp == null || skin == null || skin.abilityHotkeys == null || !skin.abilityHotkeys.enabled)
+            CharacterAbilityLoadout? loadout = AbilityLoadoutRuntimeUtility.GetEffectiveLoadout(pawn);
+            SkinAbilityHotkeyConfig? hotkeys = loadout?.hotkeys;
+            if (skinComp == null || hotkeys == null || !hotkeys.enabled)
             {
                 return;
             }
@@ -136,8 +139,8 @@ namespace CharacterStudio.Abilities
                 return;
             }
 
-            string abilityDefName = ResolveAbilityDefNameBySlot(skin.abilityHotkeys, slot, skinComp, tick);
-            ModularAbilityDef? ability = ResolveAbilityByDefName(skin, abilityDefName);
+            string abilityDefName = ResolveAbilityDefNameBySlot(hotkeys, slot, skinComp, tick);
+            ModularAbilityDef? ability = ResolveAbilityByDefName(loadout, abilityDefName);
 
             if (ability == null && slot != AbilityHotkeySlot.R)
             {
@@ -157,7 +160,7 @@ namespace CharacterStudio.Abilities
                 case AbilityHotkeySlot.Q:
                     if (ability != null)
                     {
-                        casted = TryCastQModeAbility(pawn, skinComp, ability, tick);
+                        casted = TryCastQSmartAbility(pawn, skinComp, ability, tick);
                     }
                     break;
                 case AbilityHotkeySlot.W:
@@ -210,18 +213,24 @@ namespace CharacterStudio.Abilities
             }
         }
 
-        private static ModularAbilityDef? ResolveAbilityByDefName(PawnSkinDef skin, string abilityDefName)
+        private static ModularAbilityDef? ResolveAbilityByDefName(CharacterAbilityLoadout? loadout, string abilityDefName)
         {
-            if (string.IsNullOrEmpty(abilityDefName) || skin.abilities == null || skin.abilities.Count == 0)
-            {
-                return null;
-            }
-
-            return skin.abilities.FirstOrDefault(a => a != null && a.defName == abilityDefName);
+            return AbilityLoadoutRuntimeUtility.ResolveAbilityByDefName(loadout, abilityDefName);
         }
 
         private static string ResolveAbilityDefNameBySlot(SkinAbilityHotkeyConfig hotkeys, AbilityHotkeySlot slot, CompPawnSkin skinComp, int tick)
         {
+            string overrideDefName = GetActiveSlotOverrideAbilityDefName(skinComp, slot, tick);
+            if (!string.IsNullOrEmpty(overrideDefName))
+            {
+                return overrideDefName;
+            }
+
+            if (slot == AbilityHotkeySlot.Q)
+            {
+                return ResolveQModeAbilityDefName(hotkeys.qAbilityDefName, skinComp.qHotkeyModeIndex);
+            }
+
             if (slot == AbilityHotkeySlot.W)
             {
                 if (tick <= skinComp.qComboWindowEndTick && !string.IsNullOrEmpty(hotkeys.wComboAbilityDefName))
@@ -232,8 +241,6 @@ namespace CharacterStudio.Abilities
 
             switch (slot)
             {
-                case AbilityHotkeySlot.Q:
-                    return hotkeys.qAbilityDefName;
                 case AbilityHotkeySlot.W:
                     return hotkeys.wAbilityDefName;
                 case AbilityHotkeySlot.E:
@@ -241,6 +248,130 @@ namespace CharacterStudio.Abilities
                 default:
                     return hotkeys.rAbilityDefName;
             }
+        }
+
+        private static string ResolveQModeAbilityDefName(string baseDefName, int modeIndex)
+        {
+            if (string.IsNullOrWhiteSpace(baseDefName))
+            {
+                return string.Empty;
+            }
+
+            int normalizedModeIndex = Mathf.Clamp(modeIndex, 0, 3);
+            if (TryResolveSequentialQAbilityDefName(baseDefName, normalizedModeIndex, out string resolvedDefName))
+            {
+                return resolvedDefName;
+            }
+
+            return baseDefName;
+        }
+
+        private static bool TryResolveSequentialQAbilityDefName(string baseDefName, int modeIndex, out string resolvedDefName)
+        {
+            resolvedDefName = baseDefName;
+            if (string.IsNullOrWhiteSpace(baseDefName))
+            {
+                return false;
+            }
+
+            int markerIndex = baseDefName.LastIndexOf("_Q", System.StringComparison.OrdinalIgnoreCase);
+            if (markerIndex < 0 || markerIndex + 3 > baseDefName.Length)
+            {
+                return false;
+            }
+
+            char indexChar = baseDefName[markerIndex + 2];
+            if (!char.IsDigit(indexChar))
+            {
+                return false;
+            }
+
+            string prefix = baseDefName.Substring(0, markerIndex + 2);
+            string suffix = baseDefName.Substring(markerIndex + 3);
+            resolvedDefName = $"{prefix}{modeIndex + 1}{suffix}";
+            return true;
+        }
+
+        private static string GetActiveSlotOverrideAbilityDefName(CompPawnSkin skinComp, AbilityHotkeySlot slot, int tick)
+        {
+            string abilityDefName;
+            int expireTick;
+            GetSlotOverrideState(skinComp, slot, out abilityDefName, out expireTick);
+            if (string.IsNullOrEmpty(abilityDefName))
+            {
+                return string.Empty;
+            }
+
+            if (expireTick >= 0 && tick > expireTick)
+            {
+                ClearSlotOverrideState(skinComp, slot);
+                return string.Empty;
+            }
+
+            return abilityDefName;
+        }
+
+        private static void GetSlotOverrideState(CompPawnSkin skinComp, AbilityHotkeySlot slot, out string abilityDefName, out int expireTick)
+        {
+            switch (slot)
+            {
+                case AbilityHotkeySlot.Q:
+                    abilityDefName = skinComp.qOverrideAbilityDefName;
+                    expireTick = skinComp.qOverrideExpireTick;
+                    break;
+                case AbilityHotkeySlot.W:
+                    abilityDefName = skinComp.wOverrideAbilityDefName;
+                    expireTick = skinComp.wOverrideExpireTick;
+                    break;
+                case AbilityHotkeySlot.E:
+                    abilityDefName = skinComp.eOverrideAbilityDefName;
+                    expireTick = skinComp.eOverrideExpireTick;
+                    break;
+                default:
+                    abilityDefName = skinComp.rOverrideAbilityDefName;
+                    expireTick = skinComp.rOverrideExpireTick;
+                    break;
+            }
+        }
+
+        private static void ClearSlotOverrideState(CompPawnSkin skinComp, AbilityHotkeySlot slot)
+        {
+            switch (slot)
+            {
+                case AbilityHotkeySlot.Q:
+                    skinComp.qOverrideAbilityDefName = string.Empty;
+                    skinComp.qOverrideExpireTick = -1;
+                    break;
+                case AbilityHotkeySlot.W:
+                    skinComp.wOverrideAbilityDefName = string.Empty;
+                    skinComp.wOverrideExpireTick = -1;
+                    break;
+                case AbilityHotkeySlot.E:
+                    skinComp.eOverrideAbilityDefName = string.Empty;
+                    skinComp.eOverrideExpireTick = -1;
+                    break;
+                default:
+                    skinComp.rOverrideAbilityDefName = string.Empty;
+                    skinComp.rOverrideExpireTick = -1;
+                    break;
+            }
+        }
+
+        private static bool TryCastQSmartAbility(Pawn caster, CompPawnSkin skinComp, ModularAbilityDef ability, int tick)
+        {
+            AbilityRuntimeComponentConfig? jumpComp = GetSmartJumpComponent(ability);
+            if (jumpComp == null || !jumpComp.enabled)
+            {
+                return TryCastQModeAbility(caster, skinComp, ability, tick);
+            }
+
+            bool casted = TryCastSmartJumpAbility(caster, skinComp, ability, tick, jumpComp, AbilityHotkeySlot.Q);
+            if (casted)
+            {
+                skinComp.qComboWindowEndTick = tick + GetQComboWindowTicks(ability);
+            }
+
+            return casted;
         }
 
         private static bool TryCastQModeAbility(Pawn caster, CompPawnSkin skinComp, ModularAbilityDef ability, int tick)
@@ -270,87 +401,13 @@ namespace CharacterStudio.Abilities
                 return false;
             }
 
-            AbilityRuntimeComponentConfig? jumpComp = GetRuntimeComponent(ability, AbilityRuntimeComponentType.EShortJump);
+            AbilityRuntimeComponentConfig? jumpComp = GetSmartJumpComponent(ability);
             if (jumpComp == null || !jumpComp.enabled)
             {
                 return TryCastDefaultAbility(caster, ability);
             }
 
-            int cooldownTicks = jumpComp.cooldownTicks > 0 ? jumpComp.cooldownTicks : DefaultEShortJumpCooldownTicks;
-            int maxJumpDistance = jumpComp.jumpDistance > 0 ? jumpComp.jumpDistance : DefaultEShortJumpDistance;
-            int findCellRadius = jumpComp.findCellRadius >= 0 ? jumpComp.findCellRadius : DefaultEShortJumpFindCellRadius;
-
-            if (tick < skinComp.eCooldownUntilTick)
-            {
-                int remain = skinComp.eCooldownUntilTick - tick;
-                Messages.Message(
-                    "CS_Ability_Hotkey_ECooldown".Translate((remain / 60f).ToString("F1")),
-                    MessageTypeDefOf.RejectInput,
-                    false);
-                return false;
-            }
-
-            if (caster.Map == null)
-            {
-                return false;
-            }
-
-            // E 技能：鼠标指向位置位移
-            IntVec3 mouseCell = global::Verse.UI.MouseCell();
-            if (!mouseCell.InBounds(caster.Map))
-            {
-                Messages.Message("CS_Ability_R_TargetInvalid".Translate(), MessageTypeDefOf.RejectInput, false);
-                return false;
-            }
-
-            // 计算鼠标位置与施法者的距离，限制最大位移距离
-            float distanceToMouse = (mouseCell - caster.Position).LengthHorizontal;
-            int actualJumpDistance = Mathf.Min((int)distanceToMouse, maxJumpDistance);
-
-            // 计算目标位置：从施法者朝鼠标方向移动 actualJumpDistance 格
-            IntVec3 direction = (mouseCell - caster.Position);
-            IntVec3 desired;
-            if (direction == IntVec3.Zero || distanceToMouse < 0.1f)
-            {
-                // 鼠标就在当前位置，使用面朝方向
-                desired = caster.Position + caster.Rotation.FacingCell * Mathf.Min(maxJumpDistance, 1);
-            }
-            else
-            {
-                // 归一化方向向量并计算目标位置
-                Vector3 dirNorm = new Vector3(direction.x, 0, direction.z).normalized;
-                desired = caster.Position + new IntVec3(Mathf.RoundToInt(dirNorm.x * actualJumpDistance), 0, Mathf.RoundToInt(dirNorm.z * actualJumpDistance));
-            }
-            IntVec3 dest = desired;
-
-            if (!dest.InBounds(caster.Map) || !dest.Standable(caster.Map))
-            {
-                if (!CellFinder.TryFindRandomCellNear(desired, caster.Map, findCellRadius, c => c.Standable(caster.Map), out dest))
-                {
-                    return false;
-                }
-            }
-
-            caster.Position = dest;
-            caster.Notify_Teleported(true, true);
-            FleckMaker.ThrowDustPuff(dest, caster.Map, 1.2f);
-
-            if (jumpComp.triggerAbilityEffectsAfterJump)
-            {
-                if (ability.useRadius)
-                {
-                    float radius = ability.radius > 0 ? ability.radius : 1.5f;
-                    var cells = GenRadial.RadialCellsAround(dest, radius, true);
-                    ExecuteAbilityOnCells(caster, ability, cells);
-                }
-                else
-                {
-                    ExecuteAbilityOnCells(caster, ability, new[] { dest });
-                }
-            }
-
-            skinComp.eCooldownUntilTick = tick + cooldownTicks;
-            return true;
+            return TryCastSmartJumpAbility(caster, skinComp, ability, tick, jumpComp, AbilityHotkeySlot.E);
         }
 
         private static bool TryHandleRHotkey(Pawn caster, CompPawnSkin skinComp, ModularAbilityDef? ability, int tick)
@@ -605,12 +662,21 @@ namespace CharacterStudio.Abilities
             {
                 try
                 {
+                    if (TrySmartCastRuntimeAbility(caster, runtimeAbility, ability))
+                        return true;
+
+                    if (Patch_AbilityGizmos.TryProcessVanillaCommand(caster, ability.defName))
+                        return true;
+
                     if (TryQueueRuntimeAbility(caster, runtimeAbility, ability))
                         return true;
+
+                    return false;
                 }
                 catch (System.Exception ex)
                 {
-                    Log.Warning($"[CharacterStudio] 热键施放运行时技能失败，回退到简化逻辑: {ex.Message}");
+                    Log.Warning($"[CharacterStudio] 热键施放运行时技能失败: {ex.Message}");
+                    return false;
                 }
             }
 
@@ -621,31 +687,88 @@ namespace CharacterStudio.Abilities
                 skinComp.SetWeaponCarryCastingWindow(visualTicks);
             }
 
-            IEnumerable<IntVec3> cells;
-            AbilityCarrierType normalizedCarrier = ModularAbilityDefExtensions.NormalizeCarrierType(ability.carrierType);
             AbilityTargetType normalizedTarget = ModularAbilityDefExtensions.NormalizeTargetType(ability);
-            IntVec3 center = normalizedTarget == AbilityTargetType.Self
-                ? caster.Position
-                : caster.Position + caster.Rotation.FacingCell;
+            LocalTargetInfo fallbackTarget = normalizedTarget == AbilityTargetType.Self
+                ? new LocalTargetInfo(caster)
+                : new LocalTargetInfo(caster.Position + caster.Rotation.FacingCell);
 
-            if (ability.useRadius)
+            IEnumerable<IntVec3> cells = AbilityAreaUtility.BuildResolvedTargetCells(caster, ability, fallbackTarget);
+
+            if (!cells.Any())
             {
-                float radius = Mathf.Max(ability.radius, 1f);
-                IntVec3 areaCenter = ModularAbilityDefExtensions.NormalizeAreaCenter(ability) == AbilityAreaCenter.Self
-                    ? caster.Position
-                    : center;
-                cells = GenRadial.RadialCellsAround(areaCenter, radius, true);
-            }
-            else if (normalizedCarrier == AbilityCarrierType.Self || normalizedTarget == AbilityTargetType.Self)
-            {
-                cells = new List<IntVec3> { caster.Position };
-            }
-            else
-            {
-                cells = new List<IntVec3> { center };
+                cells = normalizedTarget == AbilityTargetType.Self
+                    ? new List<IntVec3> { caster.Position }
+                    : new List<IntVec3> { caster.Position + caster.Rotation.FacingCell };
             }
 
             return ExecuteAbilityOnCells(caster, ability, cells);
+        }
+
+        private static bool TrySmartCastRuntimeAbility(Pawn caster, Ability runtimeAbility, ModularAbilityDef ability)
+        {
+            AbilityCarrierType normalizedCarrier = ModularAbilityDefExtensions.NormalizeCarrierType(ability.carrierType);
+            AbilityTargetType normalizedTarget = ModularAbilityDefExtensions.NormalizeTargetType(ability);
+
+            if (normalizedCarrier == AbilityCarrierType.Self || normalizedTarget == AbilityTargetType.Self)
+            {
+                runtimeAbility.QueueCastingJob(caster, LocalTargetInfo.Invalid);
+                return true;
+            }
+
+            if (!TryGetSmartCastTarget(caster, ability, out LocalTargetInfo target, out LocalTargetInfo dest))
+            {
+                return false;
+            }
+
+            runtimeAbility.QueueCastingJob(target, dest);
+            return true;
+        }
+
+        private static bool TryGetSmartCastTarget(Pawn caster, ModularAbilityDef ability, out LocalTargetInfo target, out LocalTargetInfo dest)
+        {
+            target = LocalTargetInfo.Invalid;
+            dest = LocalTargetInfo.Invalid;
+
+            Map? map = caster.Map;
+            if (map == null)
+            {
+                return false;
+            }
+
+            IntVec3 mouseCell = global::Verse.UI.MouseCell();
+            if (!mouseCell.InBounds(map))
+            {
+                return false;
+            }
+
+            AbilityCarrierType normalizedCarrier = ModularAbilityDefExtensions.NormalizeCarrierType(ability.carrierType);
+            AbilityTargetType normalizedTarget = ModularAbilityDefExtensions.NormalizeTargetType(ability);
+
+            if (normalizedTarget == AbilityTargetType.Cell)
+            {
+                target = new LocalTargetInfo(mouseCell);
+                dest = normalizedCarrier == AbilityCarrierType.Projectile ? target : LocalTargetInfo.Invalid;
+                return true;
+            }
+
+            if (normalizedTarget != AbilityTargetType.Entity)
+            {
+                return false;
+            }
+
+            Thing? hoveredThing = mouseCell.GetThingList(map)
+                .Where(thing => thing != null && thing != caster)
+                .OrderByDescending(thing => thing is Pawn)
+                .ThenByDescending(thing => thing is Building)
+                .FirstOrDefault();
+
+            if (hoveredThing == null)
+            {
+                return false;
+            }
+
+            target = new LocalTargetInfo(hoveredThing);
+            return true;
         }
 
         private static bool TryQueueRuntimeAbility(Pawn caster, Ability runtimeAbility, ModularAbilityDef ability)
@@ -714,6 +837,10 @@ namespace CharacterStudio.Abilities
             if (!string.IsNullOrWhiteSpace(iconPath))
             {
                 var tex = ContentFinder<Texture2D>.Get(iconPath, false);
+                if (tex != null)
+                    return tex;
+
+                tex = RuntimeAssetLoader.LoadTextureRaw(iconPath, true);
                 if (tex != null)
                     return tex;
             }
@@ -836,6 +963,148 @@ namespace CharacterStudio.Abilities
             return cells.Where(c => c.InBounds(map));
         }
 
+        private static IEnumerable<IntVec3> BuildAbilityAreaCells(Pawn caster, ModularAbilityDef ability, IntVec3 impactCenter)
+        {
+            Map? map = caster.Map;
+            if (map == null)
+            {
+                return new List<IntVec3>();
+            }
+
+            IntVec3 anchor = ModularAbilityDefExtensions.NormalizeAreaCenter(ability) == AbilityAreaCenter.Self
+                ? caster.Position
+                : impactCenter;
+            IntVec3 forward = GetFacingDirection(caster.Position, impactCenter, caster.Rotation.FacingCell);
+            IntVec3 right = GetRight(forward);
+            AbilityAreaShape shape = ModularAbilityDefExtensions.NormalizeAreaShape(ability);
+            float rawRadius = shape == AbilityAreaShape.Irregular
+                ? Mathf.Max(0f, ability.radius)
+                : Mathf.Max(ability.radius, 1f);
+            int discreteRadius = Mathf.Max(1, Mathf.CeilToInt(rawRadius));
+            var cells = new HashSet<IntVec3>();
+
+            switch (shape)
+            {
+                case AbilityAreaShape.Line:
+                    for (int step = 0; step <= discreteRadius; step++)
+                    {
+                        cells.Add(anchor + forward * step);
+                    }
+                    break;
+                case AbilityAreaShape.Cone:
+                    for (int distance = 0; distance <= discreteRadius; distance++)
+                    {
+                        IntVec3 rowCenter = anchor + forward * distance;
+                        int halfWidth = distance;
+                        for (int side = -halfWidth; side <= halfWidth; side++)
+                        {
+                            cells.Add(rowCenter + right * side);
+                        }
+                    }
+                    break;
+                case AbilityAreaShape.Cross:
+                    cells.Add(anchor);
+                    for (int step = 1; step <= discreteRadius; step++)
+                    {
+                        cells.Add(anchor + forward * step);
+                        cells.Add(anchor - forward * step);
+                        cells.Add(anchor + right * step);
+                        cells.Add(anchor - right * step);
+                    }
+                    break;
+                case AbilityAreaShape.Square:
+                    for (int forwardOffset = -discreteRadius; forwardOffset <= discreteRadius; forwardOffset++)
+                    {
+                        for (int sideOffset = -discreteRadius; sideOffset <= discreteRadius; sideOffset++)
+                        {
+                            cells.Add(anchor + forward * forwardOffset + right * sideOffset);
+                        }
+                    }
+                    break;
+                case AbilityAreaShape.Irregular:
+                    bool addedIrregular = false;
+                    foreach (IntVec3 cell in BuildIrregularPatternCells(anchor, forward, right, ability.irregularAreaPattern))
+                    {
+                        cells.Add(cell);
+                        addedIrregular = true;
+                    }
+
+                    if (!addedIrregular)
+                    {
+                        cells.Add(anchor);
+                    }
+                    break;
+                default:
+                    foreach (IntVec3 cell in GenRadial.RadialCellsAround(anchor, rawRadius, true))
+                    {
+                        cells.Add(cell);
+                    }
+                    break;
+            }
+
+            return cells.Where(c => c.InBounds(map));
+        }
+
+        private static IEnumerable<IntVec3> BuildIrregularPatternCells(IntVec3 anchor, IntVec3 forward, IntVec3 right, string? pattern)
+        {
+            if (string.IsNullOrWhiteSpace(pattern))
+            {
+                yield break;
+            }
+
+            string normalized = pattern!.Replace("\r", string.Empty).Replace("/", "\n");
+            string[] rows = normalized
+                .Split(new[] { '\n' }, System.StringSplitOptions.RemoveEmptyEntries)
+                .Select(row => row.Trim())
+                .Where(row => row.Length > 0)
+                .ToArray();
+            if (rows.Length == 0)
+            {
+                yield break;
+            }
+
+            int rowCenter = rows.Length / 2;
+            int maxWidth = rows.Max(row => row.Length);
+            int colCenter = maxWidth / 2;
+
+            for (int rowIndex = 0; rowIndex < rows.Length; rowIndex++)
+            {
+                string row = rows[rowIndex];
+                for (int colIndex = 0; colIndex < row.Length; colIndex++)
+                {
+                    if (!IsFilledPatternCell(row[colIndex]))
+                    {
+                        continue;
+                    }
+
+                    int forwardOffset = rowCenter - rowIndex;
+                    int sideOffset = colIndex - colCenter;
+                    yield return anchor + forward * forwardOffset + right * sideOffset;
+                }
+            }
+        }
+
+        private static bool IsFilledPatternCell(char token)
+        {
+            return token == '1' || token == 'x' || token == 'X' || token == '#';
+        }
+
+        private static IntVec3 GetFacingDirection(IntVec3 origin, IntVec3 target, IntVec3 fallback)
+        {
+            IntVec3 delta = target - origin;
+            if (delta == IntVec3.Zero)
+            {
+                return fallback;
+            }
+
+            if (Mathf.Abs(delta.x) >= Mathf.Abs(delta.z))
+            {
+                return delta.x >= 0 ? IntVec3.East : IntVec3.West;
+            }
+
+            return delta.z >= 0 ? IntVec3.North : IntVec3.South;
+        }
+
         private static AbilityRuntimeComponentConfig? GetRuntimeComponent(ModularAbilityDef? ability, AbilityRuntimeComponentType type)
         {
             if (ability?.runtimeComponents == null)
@@ -846,6 +1115,216 @@ namespace CharacterStudio.Abilities
             return ability.runtimeComponents.FirstOrDefault(c => c != null && c.enabled && c.type == type);
         }
 
+        private static AbilityRuntimeComponentConfig? GetSmartJumpComponent(ModularAbilityDef? ability)
+        {
+            AbilityRuntimeComponentConfig? smart = GetRuntimeComponent(ability, AbilityRuntimeComponentType.SmartJump);
+            return smart ?? GetRuntimeComponent(ability, AbilityRuntimeComponentType.EShortJump);
+        }
+
+        private static bool TryCastSmartJumpAbility(Pawn caster, CompPawnSkin skinComp, ModularAbilityDef ability, int tick, AbilityRuntimeComponentConfig jumpComp, AbilityHotkeySlot slot)
+        {
+            int cooldownUntil = GetSlotCooldownUntil(skinComp, slot);
+            if (tick < cooldownUntil)
+            {
+                int remain = cooldownUntil - tick;
+                string key = slot == AbilityHotkeySlot.E
+                    ? "CS_Ability_Hotkey_ECooldown"
+                    : "CS_Ability_Hotkey_SlotCooldown";
+                string slotLabel = slot.ToString();
+                Messages.Message(
+                    slot == AbilityHotkeySlot.E
+                        ? key.Translate((remain / 60f).ToString("F1"))
+                        : key.Translate(slotLabel, (remain / 60f).ToString("F1")),
+                    MessageTypeDefOf.RejectInput,
+                    false);
+                return false;
+            }
+
+            AbilityDef? runtimeDef = AbilityGrantUtility.GetRuntimeAbilityDef(ability.defName);
+            Ability? runtimeAbility = runtimeDef != null ? caster.abilities?.GetAbility(runtimeDef) : null;
+            if (runtimeAbility == null)
+            {
+                return false;
+            }
+
+            Map? map = caster.Map;
+            if (map == null)
+            {
+                return false;
+            }
+
+            IntVec3 mouseCell = global::Verse.UI.MouseCell();
+            if (!mouseCell.InBounds(map))
+            {
+                Messages.Message("CS_Ability_R_TargetInvalid".Translate(), MessageTypeDefOf.RejectInput, false);
+                return false;
+            }
+
+            if (!TryResolveSmartJumpDestination(caster, jumpComp, slot, mouseCell, out IntVec3 jumpDestination))
+            {
+                Messages.Message("CS_Ability_R_TargetInvalid".Translate(), MessageTypeDefOf.RejectInput, false);
+                return false;
+            }
+
+            LocalTargetInfo jumpTarget = new LocalTargetInfo(jumpDestination);
+            runtimeAbility.QueueCastingJob(jumpTarget, LocalTargetInfo.Invalid);
+            int cooldownTicks = jumpComp.cooldownTicks > 0 ? jumpComp.cooldownTicks : DefaultEShortJumpCooldownTicks;
+            SetSlotCooldown(skinComp, slot, tick + cooldownTicks);
+            return true;
+        }
+
+        private static bool TryResolveSmartJumpDestination(Pawn caster, AbilityRuntimeComponentConfig jumpComp, AbilityHotkeySlot slot, IntVec3 mouseCell, out IntVec3 destination)
+        {
+            destination = IntVec3.Invalid;
+            Map? map = caster.Map;
+            if (map == null)
+            {
+                return false;
+            }
+
+            IntVec3 origin = caster.Position;
+            int maxDistance = jumpComp.jumpDistance > 0 ? jumpComp.jumpDistance : DefaultEShortJumpDistance;
+            int fallbackRadius = jumpComp.findCellRadius >= 0 ? jumpComp.findCellRadius : DefaultEShortJumpFindCellRadius;
+            bool clampToMaxDistance = jumpComp.smartCastClampToMaxDistance || slot == AbilityHotkeySlot.E;
+            bool allowFallbackForward = jumpComp.smartCastAllowFallbackForward;
+
+            IntVec3 desired = ResolveDesiredSmartJumpCell(origin, mouseCell, jumpComp, maxDistance, clampToMaxDistance);
+            IntVec3 clamped = ClampJumpDestination(origin, desired, maxDistance);
+
+            if (TryResolveStandableJumpCell(caster, clamped, fallbackRadius, allowFallbackForward, out destination))
+            {
+                return true;
+            }
+
+            if (clamped != mouseCell && TryResolveStandableJumpCell(caster, mouseCell, fallbackRadius, allowFallbackForward, out destination))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private static IntVec3 ResolveDesiredSmartJumpCell(IntVec3 origin, IntVec3 mouseCell, AbilityRuntimeComponentConfig jumpComp, int maxDistance, bool clampToMaxDistance)
+        {
+            int offsetCells = jumpComp.smartCastOffsetCells > 0 ? jumpComp.smartCastOffsetCells : 1;
+            if (!jumpComp.useMouseTargetCell)
+            {
+                IntVec3 fallbackForward = GetFacingDirection(origin, origin + IntVec3.North, IntVec3.North);
+                return origin + fallbackForward * offsetCells;
+            }
+
+            IntVec3 delta = mouseCell - origin;
+            if (delta == IntVec3.Zero)
+            {
+                return origin;
+            }
+
+            if (clampToMaxDistance)
+            {
+                return ClampJumpDestination(origin, mouseCell, maxDistance);
+            }
+
+            IntVec3 step = new IntVec3(System.Math.Sign(delta.x), 0, System.Math.Sign(delta.z));
+            if (offsetCells > 0)
+            {
+                int desiredSteps = System.Math.Max(System.Math.Abs(delta.x), System.Math.Abs(delta.z));
+                int moveSteps = System.Math.Min(offsetCells, desiredSteps);
+                return origin + step * moveSteps;
+            }
+
+            return mouseCell;
+        }
+
+        private static IntVec3 ClampJumpDestination(IntVec3 origin, IntVec3 desired, int maxDistance)
+        {
+            if (maxDistance <= 0)
+            {
+                return desired;
+            }
+
+            IntVec3 delta = desired - origin;
+            int stepX = System.Math.Sign(delta.x);
+            int stepZ = System.Math.Sign(delta.z);
+            int steps = System.Math.Max(System.Math.Abs(delta.x), System.Math.Abs(delta.z));
+            if (steps <= maxDistance)
+            {
+                return desired;
+            }
+
+            return origin + new IntVec3(stepX * maxDistance, 0, stepZ * maxDistance);
+        }
+
+        private static bool TryResolveStandableJumpCell(Pawn caster, IntVec3 desired, int fallbackRadius, bool allowFallbackForward, out IntVec3 destination)
+        {
+            destination = IntVec3.Invalid;
+            Map? map = caster.Map;
+            if (map == null || !desired.InBounds(map))
+            {
+                return false;
+            }
+
+            if (desired.Standable(map))
+            {
+                destination = desired;
+                return true;
+            }
+
+            if (allowFallbackForward && TryResolveForwardStandableJumpCell(caster, desired, out destination))
+            {
+                return true;
+            }
+
+            if (fallbackRadius > 0 && CellFinder.TryFindRandomCellNear(desired, map, fallbackRadius, c => c.InBounds(map) && c.Standable(map), out destination))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool TryResolveForwardStandableJumpCell(Pawn caster, IntVec3 desired, out IntVec3 destination)
+        {
+            destination = IntVec3.Invalid;
+            Map? map = caster.Map;
+            if (map == null)
+            {
+                return false;
+            }
+
+            IntVec3 current = caster.Position;
+            IntVec3 delta = desired - current;
+            IntVec3 step = new IntVec3(System.Math.Sign(delta.x), 0, System.Math.Sign(delta.z));
+            if (step == IntVec3.Zero)
+            {
+                return false;
+            }
+
+            IntVec3 best = current;
+            while (true)
+            {
+                IntVec3 next = best + step;
+                if (!next.InBounds(map) || !next.Standable(map))
+                {
+                    break;
+                }
+
+                best = next;
+                if (best == desired)
+                {
+                    destination = best;
+                    return true;
+                }
+            }
+
+            if (best != current)
+            {
+                destination = best;
+                return true;
+            }
+
+            return false;
+        }
+
         private static int GetQComboWindowTicks(ModularAbilityDef ability)
         {
             var qComp = GetRuntimeComponent(ability, AbilityRuntimeComponentType.QComboWindow);
@@ -854,14 +1333,14 @@ namespace CharacterStudio.Abilities
 
         private static AbilityRuntimeComponentConfig? ResolveRStackComponentConfig(Pawn pawn, CompPawnSkin skinComp)
         {
-            var skin = skinComp?.ActiveSkin;
-            var hotkeys = skin?.abilityHotkeys;
-            if (skin == null || hotkeys == null || string.IsNullOrEmpty(hotkeys.rAbilityDefName))
+            CharacterAbilityLoadout? loadout = AbilityLoadoutRuntimeUtility.GetEffectiveLoadout(pawn);
+            SkinAbilityHotkeyConfig? hotkeys = loadout?.hotkeys;
+            if (hotkeys == null || string.IsNullOrEmpty(hotkeys.rAbilityDefName))
             {
                 return null;
             }
 
-            var rAbility = ResolveAbilityByDefName(skin, hotkeys.rAbilityDefName);
+            var rAbility = ResolveAbilityByDefName(loadout, hotkeys.rAbilityDefName);
             return GetRuntimeComponent(rAbility, AbilityRuntimeComponentType.RStackDetonation);
         }
 

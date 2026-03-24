@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <CS_Attr_ArmorRating>Armor Rating</CS_Attr_ArmorRating>
+    <CS_Attr_BackstorySummary>Backstory</CS_Attr_BackstorySummary>
+    <CS_Attr_BiologicalAge>Biological Age</CS_Attr_BiologicalAge>
+    <CS_Attr_BodyType>BodyTypeDef</CS_Attr_BodyType>
+    <CS_Attr_ChronologicalAge>Chronological Age</CS_Attr_ChronologicalAge>
+    <CS_Attr_CombatRole>Combat Role</CS_Attr_CombatRole>
+    <CS_Attr_FactionRole>Faction Role</CS_Attr_FactionRole>
+    <CS_Attr_FavoriteColor>Favorite Color</CS_Attr_FavoriteColor>
+    <CS_Attr_HairDef>HairDef</CS_Attr_HairDef>
+    <CS_Attr_HeadType>HeadTypeDef</CS_Attr_HeadType>
+    <CS_Attr_KeyTraits>Key Traits</CS_Attr_KeyTraits>
+    <CS_Attr_MarketValue>Market Value</CS_Attr_MarketValue>
+    <CS_Attr_MeleePower>Melee Power</CS_Attr_MeleePower>
+    <CS_Attr_MoveSpeed>Move Speed Multiplier</CS_Attr_MoveSpeed>
+    <CS_Attr_Personality>Personality</CS_Attr_Personality>
+    <CS_Attr_PsychicSensitivity>Psychic Sensitivity</CS_Attr_PsychicSensitivity>
+    <CS_Attr_Section_Basic>Character Basics</CS_Attr_Section_Basic>
+    <CS_Attr_Section_Stats>Core Attributes</CS_Attr_Section_Stats>
+    <CS_Attr_ShootingAccuracy>Shooting Accuracy</CS_Attr_ShootingAccuracy>
+    <CS_Attr_StartingApparel>Starting Apparel Defs</CS_Attr_StartingApparel>
+    <CS_Attr_Tags>Tags</CS_Attr_Tags>
+    <CS_Attr_Title>Title</CS_Attr_Title>
+    <CS_AttrBuff_AddAny>Add Any Stat</CS_AttrBuff_AddAny>
+    <CS_AttrBuff_AddCommon>Add Common Stat</CS_AttrBuff_AddCommon>
+    <CS_AttrBuff_Category_Animal>Animal</CS_AttrBuff_Category_Animal>
+    <CS_AttrBuff_Category_Combat>Combat</CS_AttrBuff_Category_Combat>
+    <CS_AttrBuff_Category_Other>Other</CS_AttrBuff_Category_Other>
+    <CS_AttrBuff_Category_Psychic>Psychic</CS_AttrBuff_Category_Psychic>
+    <CS_AttrBuff_Category_Social>Social</CS_AttrBuff_Category_Social>
+    <CS_AttrBuff_Category_Survival>Survival</CS_AttrBuff_Category_Survival>
+    <CS_AttrBuff_Category_Work>Work</CS_AttrBuff_Category_Work>
+    <CS_AttrBuff_ClearAll>Clear All</CS_AttrBuff_ClearAll>
+    <CS_AttrBuff_CurrentValue>Current effect: {0}</CS_AttrBuff_CurrentValue>
+    <CS_AttrBuff_Empty>No attribute buffs configured yet.</CS_AttrBuff_Empty>
+    <CS_AttrBuff_ExplanationHeader>Character Studio Attribute Buff</CS_AttrBuff_ExplanationHeader>
+    <CS_AttrBuff_Mode_Factor>Percent Multiplier</CS_AttrBuff_Mode_Factor>
+    <CS_AttrBuff_Mode_Factor_Desc>Modify the final stat by percentage, for example 0.10 means +10%.</CS_AttrBuff_Mode_Factor_Desc>
+    <CS_AttrBuff_Mode_Offset>Flat Bonus</CS_AttrBuff_Mode_Offset>
+    <CS_AttrBuff_Mode_Offset_Desc>Add or subtract a flat amount from the final stat value.</CS_AttrBuff_Mode_Offset_Desc>
+    <CS_AttrBuff_Search>Search Stat</CS_AttrBuff_Search>
+    <CS_AttrBuff_Section>Attribute Buff</CS_AttrBuff_Section>
+    <CS_AttrBuff_Value>Value</CS_AttrBuff_Value>
+</LanguageData>

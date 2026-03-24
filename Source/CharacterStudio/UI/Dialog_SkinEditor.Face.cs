@@ -36,7 +36,8 @@ namespace CharacterStudio.UI
         private static string GetLayeredPartBufferKey(
             LayeredFacePartType partType,
             ExpressionType expression,
-            string? overlayId = null)
+            string? overlayId = null,
+            LayeredFacePartSide side = LayeredFacePartSide.None)
         {
             if (partType == LayeredFacePartType.Overlay)
             {
@@ -44,7 +45,26 @@ namespace CharacterStudio.UI
                 return $"{partType}|{resolvedOverlayId}|{expression}";
             }
 
-            return $"{partType}|{expression}";
+            LayeredFacePartSide normalizedSide = PawnFaceConfig.NormalizePartSide(partType, side);
+            return normalizedSide == LayeredFacePartSide.None
+                ? $"{partType}|{expression}"
+                : $"{partType}|{normalizedSide}|{expression}";
+        }
+
+        private static string NormalizePathForComparison(string? path)
+        {
+            string normalizedPath = path ?? string.Empty;
+            return string.IsNullOrWhiteSpace(normalizedPath)
+                ? string.Empty
+                : normalizedPath.Trim().Replace('\\', '/');
+        }
+
+        private static bool ArePathStringsEquivalent(string? left, string? right)
+        {
+            return string.Equals(
+                NormalizePathForComparison(left),
+                NormalizePathForComparison(right),
+                StringComparison.OrdinalIgnoreCase);
         }
 
         private bool DrawFaceToolbarButton(Rect buttonRect, string label, string tooltip, Action action, bool accent = false)
@@ -120,43 +140,7 @@ namespace CharacterStudio.UI
             Text.Font = oldFont;
 
             PawnFaceConfig? fc = workingSkin.faceConfig;
-            float toolbarY = titleRect.yMax + 6f;
-            float toolbarWidth = (rect.width - Margin * 5) / 4f;
-            float toolbarHeight = Mathf.Max(ButtonHeight - 2f, 22f);
-
-            if (fc != null)
-            {
-                DrawFaceToolbarButton(
-                    new Rect(rect.x + Margin, toolbarY, toolbarWidth, toolbarHeight),
-                    "★",
-                    "切换表情预览开关",
-                    () =>
-                    {
-                        ApplyPreviewExpressionOverride(!previewExpressionOverrideEnabled, previewExpression);
-                    },
-                    previewExpressionOverrideEnabled);
-
-                DrawFaceToolbarButton(
-                    new Rect(rect.x + Margin * 2 + toolbarWidth, toolbarY, toolbarWidth, toolbarHeight),
-                    "⟳",
-                    "刷新预览",
-                    RefreshPreview);
-
-                DrawFaceToolbarButton(
-                    new Rect(rect.x + Margin * 3 + toolbarWidth * 2, toolbarY, toolbarWidth, toolbarHeight),
-                    fc.workflowMode == FaceWorkflowMode.FullFaceSwap ? "FF" : "LD",
-                    "切换面部工作流",
-                    OpenFaceWorkflowMenu,
-                    true);
-
-                DrawFaceToolbarButton(
-                    new Rect(rect.x + Margin * 4 + toolbarWidth * 3, toolbarY, toolbarWidth, toolbarHeight),
-                    "…",
-                    "设置当前预览表情",
-                    OpenPreviewExpressionMenu);
-            }
-
-            float contentY = toolbarY + toolbarHeight + 8f;
+            float contentY = titleRect.yMax + 8f;
             float contentHeight = rect.height - contentY + rect.y - Margin;
             Rect contentRect = new Rect(rect.x + Margin, contentY, rect.width - Margin * 2, contentHeight);
             Widgets.DrawBoxSolid(contentRect, UIHelper.PanelFillSoftColor);
@@ -202,27 +186,12 @@ namespace CharacterStudio.UI
                 RefreshPreview();
             }
 
-            string activePreviewLabel = previewExpressionOverrideEnabled
-                ? GetExpressionTypeLabel(previewExpression)
-                : "CS_Studio_Face_PreviewAuto".Translate();
-            UIHelper.DrawPropertyFieldWithButton(ref y, width,
-                "CS_Studio_Face_PreviewActive".Translate(), activePreviewLabel,
-                OpenPreviewExpressionMenu);
-
-            y += 4f;
-            DrawFaceInfoBanner(ref y, width, "CS_Studio_Face_HeadTexHint".Translate());
-
             UIHelper.DrawPropertyFieldWithButton(
                 ref y,
                 width,
                 "CS_Studio_Face_Workflow".Translate(),
                 GetFaceWorkflowModeLabel(fc.workflowMode),
                 OpenFaceWorkflowMenu);
-
-            string workflowHint = fc.workflowMode == FaceWorkflowMode.FullFaceSwap
-                ? "CS_Studio_Face_Workflow_FullFaceSwap_Desc".Translate()
-                : "CS_Studio_Face_Workflow_LayeredDynamic_Desc".Translate();
-            DrawFaceInfoBanner(ref y, width, workflowHint, accent: true);
 
             if (fc.workflowMode == FaceWorkflowMode.FullFaceSwap)
             {
@@ -233,8 +202,11 @@ namespace CharacterStudio.UI
                 DrawLayeredDynamicSection(fc, ref y, width, exprCount);
             }
 
-            y += 8f;
-            DrawEyeDirectionSection(fc, ref y, width);
+            if (fc.workflowMode == FaceWorkflowMode.FullFaceSwap)
+            {
+                y += 8f;
+                DrawEyeDirectionSection(fc, ref y, width);
+            }
 
             viewRect.height = Mathf.Max(y + 10f, contentRect.height - 4f);
             Widgets.EndScrollView();
@@ -258,8 +230,10 @@ namespace CharacterStudio.UI
                     if (fc.workflowMode != localMode)
                     {
                         fc.workflowMode = localMode;
+                        ForceResetPreviewMannequin();
                         isDirty = true;
                         RefreshPreview();
+                        RefreshRenderTree();
                     }
                 }));
             }
@@ -320,9 +294,6 @@ namespace CharacterStudio.UI
 
         private void DrawLayeredDynamicSection(PawnFaceConfig fc, ref float y, float width, int exprCount)
         {
-            UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_Layered_Title".Translate());
-            DrawFaceInfoBanner(ref y, width, "CS_Studio_Face_Layered_Hint".Translate() + " 当前左侧面板仅显示各部件摘要数量，不再展开完整表情路径列表。", accent: true);
-
             UIHelper.DrawPropertyFieldWithButton(
                 ref y,
                 width,
@@ -339,137 +310,107 @@ namespace CharacterStudio.UI
 
             string currentRoot = fc.layeredSourceRoot ?? string.Empty;
             string newRoot = Widgets.TextField(new Rect(0f, y, width - 34f, 20f), currentRoot);
-            if (newRoot != currentRoot)
+            if (!ArePathStringsEquivalent(newRoot, currentRoot))
             {
                 fc.layeredSourceRoot = newRoot;
                 isDirty = true;
             }
 
-            if (Widgets.ButtonText(new Rect(width - 30f, y, 30f, 20f), "×"))
+            if (UIHelper.DrawDangerButton(new Rect(width - 32f, y - 1f, 28f, 22f), tooltip: "CS_Studio_Clear".Translate(), onClick: () =>
             {
                 fc.layeredSourceRoot = string.Empty;
                 isDirty = true;
+            }))
+            {
             }
 
             y += 30f;
+            DrawLayeredPartConfigSection(fc, ref y, width);
+        }
 
-            int assignedEntries = fc.layeredParts?.Count(p => p != null && !string.IsNullOrWhiteSpace(p.texPath)) ?? 0;
-            int configuredPartTypes = Enum.GetValues(typeof(LayeredFacePartType)).Cast<LayeredFacePartType>()
-                .Count(partType => fc.CountLayeredParts(partType) > 0);
-            int totalPartTypes = Enum.GetValues(typeof(LayeredFacePartType)).Length;
+        private void DrawLayeredPartConfigSection(PawnFaceConfig fc, ref float y, float width)
+        {
+            UIHelper.DrawSectionTitle(ref y, width, "通用表情与部件调整");
 
-            Rect layeredStatsRect = new Rect(0f, y, width, 58f);
-            Widgets.DrawBoxSolid(layeredStatsRect, UIHelper.PanelFillSoftColor);
-            GUI.color = UIHelper.BorderColor;
-            Widgets.DrawBox(layeredStatsRect, 1);
-            Text.Font = GameFont.Tiny;
-            GUI.color = UIHelper.SubtleColor;
-            Widgets.Label(new Rect(8f, y + 6f, width - 16f, 16f),
-                $"部件载入：{assignedEntries}/{exprCount * totalPartTypes}");
-            Widgets.Label(new Rect(8f, y + 24f, width - 16f, 16f),
-                $"已配置类型：{configuredPartTypes}/{totalPartTypes}");
-            GUI.color = Color.white;
-            Text.Font = GameFont.Small;
-            y += 64f;
+            UIHelper.DrawPropertyFieldWithButton(
+                ref y,
+                width,
+                "表情",
+                GetPreviewOverrideLabel(previewExpressionOverrideEnabled, GetExpressionTypeLabel(previewExpression)),
+                OpenPreviewExpressionMenu);
+            y += 4f;
 
-            foreach (LayeredFacePartType partType in Enum.GetValues(typeof(LayeredFacePartType)))
+            UIHelper.DrawPropertyFieldWithButton(
+                ref y,
+                width,
+                "眼球朝向",
+                GetPreviewOverrideLabel(previewEyeDirectionOverrideEnabled, previewEyeDirection.ToString()),
+                OpenPreviewEyeDirectionMenu);
+            y += 8f;
+
+            foreach (LayeredFacePartType partType in EnumerateLayeredPartEditorTypes())
             {
-                UIHelper.DrawSectionTitle(ref y, width, GetLayeredFacePartTypeLabel(partType));
+                DrawLayeredPartEditorGroup(fc, ref y, width, partType);
+            }
 
-                int partCount = fc.CountLayeredParts(partType);
-                Rect partSummaryRect = new Rect(0f, y, width, 24f);
-                Widgets.DrawBoxSolid(partSummaryRect, partCount > 0 ? UIHelper.AccentSoftColor : UIHelper.PanelFillSoftColor);
-                GUI.color = UIHelper.BorderColor;
-                Widgets.DrawBox(partSummaryRect, 1);
-                GUI.color = partCount > 0 ? UIHelper.HeaderColor : UIHelper.SubtleColor;
-                Text.Font = GameFont.Tiny;
-                Widgets.Label(new Rect(8f, y + 4f, width - 16f, 16f),
-                    $"{partCount}/{exprCount}");
-                GUI.color = Color.white;
-                Text.Font = GameFont.Small;
-                y += 30f;
+            List<string> overlayIds = fc.GetOrderedOverlayIds();
+            if (!overlayIds.Any())
+            {
+                overlayIds.Add("Overlay");
+            }
 
-                if (partType == LayeredFacePartType.Overlay)
-                {
-                    DrawOverlayGroupsSection(fc, ref y, width, exprCount);
-                }
+            UIHelper.DrawSectionTitle(ref y, width, "Overlay 图层");
+            foreach (string overlayId in overlayIds)
+            {
+                DrawLayeredPartRow(fc, ref y, width, LayeredFacePartType.Overlay, previewExpression, overlayId: overlayId);
             }
         }
 
-        private void DrawOverlayGroupsSection(PawnFaceConfig fc, ref float y, float width, int exprCount)
+        private IEnumerable<LayeredFacePartType> EnumerateLayeredPartEditorTypes()
         {
-            List<string> overlayIds = fc.GetOrderedOverlayIds();
-            if (overlayIds.Count == 0)
-            {
-                Text.Font = GameFont.Tiny;
-                GUI.color = UIHelper.SubtleColor;
-                Widgets.Label(new Rect(0f, y, width, 18f), "0/0");
-                GUI.color = Color.white;
-                Text.Font = GameFont.Small;
-                y += 22f;
-                return;
-            }
-
-            for (int i = 0; i < overlayIds.Count; i++)
-            {
-                string overlayId = overlayIds[i];
-                int assignedCount = fc.CountLayeredParts(LayeredFacePartType.Overlay, overlayId);
-
-                Rect overlayHeaderRect = new Rect(0f, y, width, 24f);
-                Widgets.DrawBoxSolid(overlayHeaderRect, assignedCount > 0 ? UIHelper.AccentSoftColor : UIHelper.PanelFillSoftColor);
-                GUI.color = UIHelper.BorderColor;
-                Widgets.DrawBox(overlayHeaderRect, 1);
-                GUI.color = Color.white;
-                Text.Anchor = TextAnchor.MiddleLeft;
-                Widgets.Label(new Rect(6f, y, width - 132f, 24f), $"{i + 1}. {overlayId}  {assignedCount}/{exprCount}");
-                Text.Anchor = TextAnchor.UpperLeft;
-
-                float buttonX = width - 78f;
-                if (Widgets.ButtonText(new Rect(buttonX, y + 2f, 22f, 20f), "↑") && i > 0)
-                {
-                    MoveOverlayGroup(fc, overlayId, -1);
-                    return;
-                }
-
-                if (Widgets.ButtonText(new Rect(buttonX + 24f, y + 2f, 22f, 20f), "↓") && i < overlayIds.Count - 1)
-                {
-                    MoveOverlayGroup(fc, overlayId, 1);
-                    return;
-                }
-
-                if (Widgets.ButtonText(new Rect(buttonX + 48f, y + 2f, 22f, 20f), "×"))
-                {
-                    fc.RemoveOverlayGroup(overlayId);
-                    isDirty = true;
-                    RefreshPreview();
-                    return;
-                }
-
-                y += 30f;
-            }
+            yield return LayeredFacePartType.Base;
+            yield return LayeredFacePartType.Eye;
+            yield return LayeredFacePartType.Pupil;
+            yield return LayeredFacePartType.UpperLid;
+            yield return LayeredFacePartType.LowerLid;
+            yield return LayeredFacePartType.Brow;
+            yield return LayeredFacePartType.Mouth;
         }
 
-        private void MoveOverlayGroup(PawnFaceConfig fc, string overlayId, int direction)
+        private void DrawLayeredPartEditorGroup(PawnFaceConfig fc, ref float y, float width, LayeredFacePartType partType)
         {
-            List<string> overlayIds = fc.GetOrderedOverlayIds();
-            int currentIndex = overlayIds.FindIndex(id => id.Equals(overlayId, StringComparison.OrdinalIgnoreCase));
-            int targetIndex = currentIndex + direction;
+            UIHelper.DrawSectionTitle(ref y, width, GetLayeredFacePartTypeLabel(partType));
 
-            if (currentIndex < 0 || targetIndex < 0 || targetIndex >= overlayIds.Count)
+            if (PawnFaceConfig.SupportsSideSpecificParts(partType))
             {
-                return;
+                bool hasExplicitSidedContent =
+                    fc.CountLayeredParts(partType, LayeredFacePartSide.Left) > 0
+                    || fc.CountLayeredParts(partType, LayeredFacePartSide.Right) > 0;
+
+                if (hasExplicitSidedContent)
+                {
+                    DrawLayeredPartRow(fc, ref y, width, partType, previewExpression, side: LayeredFacePartSide.Left);
+                    DrawLayeredPartRow(fc, ref y, width, partType, previewExpression, side: LayeredFacePartSide.Right);
+                    y += 4f;
+                    return;
+                }
             }
 
-            string otherOverlayId = overlayIds[targetIndex];
-            int currentOrder = fc.GetOverlayOrder(overlayId);
-            int otherOrder = fc.GetOverlayOrder(otherOverlayId);
+            DrawLayeredPartRow(fc, ref y, width, partType, previewExpression);
+            y += 4f;
+        }
 
-            fc.SetOverlayOrder(overlayId, otherOrder);
-            fc.SetOverlayOrder(otherOverlayId, currentOrder);
-            fc.NormalizeOverlayOrders();
+        private static string GetLayeredPartEditorLabel(LayeredFacePartType partType, LayeredFacePartSide side)
+        {
+            string label = GetLayeredFacePartTypeLabel(partType);
+            LayeredFacePartSide normalizedSide = PawnFaceConfig.NormalizePartSide(partType, side);
+            if (normalizedSide == LayeredFacePartSide.None)
+            {
+                return label;
+            }
 
-            isDirty = true;
-            RefreshPreview();
+            string sideLabel = normalizedSide == LayeredFacePartSide.Left ? "左侧" : "右侧";
+            return $"{label}[{sideLabel}]";
         }
 
         private void DrawLayeredPartRow(
@@ -478,15 +419,17 @@ namespace CharacterStudio.UI
             float width,
             LayeredFacePartType partType,
             ExpressionType expression,
-            string? overlayId = null)
+            string? overlayId = null,
+            LayeredFacePartSide side = LayeredFacePartSide.None)
         {
             bool isOverlay = partType == LayeredFacePartType.Overlay;
             string resolvedOverlayId = string.IsNullOrWhiteSpace(overlayId) ? "Overlay" : overlayId!;
-            string bufferKey = GetLayeredPartBufferKey(partType, expression, resolvedOverlayId);
+            LayeredFacePartSide normalizedSide = PawnFaceConfig.NormalizePartSide(partType, side);
+            string bufferKey = GetLayeredPartBufferKey(partType, expression, resolvedOverlayId, normalizedSide);
 
             LayeredFacePartConfig? existing = isOverlay
                 ? fc.GetLayeredPartConfig(partType, expression, resolvedOverlayId)
-                : fc.GetLayeredPartConfig(partType, expression);
+                : fc.GetLayeredPartConfig(partType, expression, normalizedSide);
 
             string actualPath = existing?.texPath ?? string.Empty;
             bool enabled = existing?.enabled ?? !string.IsNullOrWhiteSpace(actualPath);
@@ -499,7 +442,9 @@ namespace CharacterStudio.UI
             GUI.color = Color.white;
 
             Text.Anchor = TextAnchor.MiddleLeft;
-            Widgets.Label(new Rect(6f, y, 84f, 24f), GetExpressionTypeLabel(expression));
+            Widgets.Label(
+                new Rect(6f, y, 84f, 24f),
+                isOverlay ? resolvedOverlayId : GetLayeredPartEditorLabel(partType, normalizedSide));
             Text.Anchor = TextAnchor.UpperLeft;
 
             Rect toggleRect = new Rect(92f, y + 3f, 24f, 18f);
@@ -519,6 +464,10 @@ namespace CharacterStudio.UI
                     {
                         fc.SetLayeredPart(partType, expression, actualPath, resolvedOverlayId, fc.GetOverlayOrder(resolvedOverlayId));
                     }
+                    else if (normalizedSide != LayeredFacePartSide.None)
+                    {
+                        fc.SetLayeredPart(partType, expression, actualPath, normalizedSide);
+                    }
                     else
                     {
                         fc.SetLayeredPart(partType, expression, actualPath);
@@ -529,7 +478,7 @@ namespace CharacterStudio.UI
                 RefreshPreview();
                 existing = isOverlay
                     ? fc.GetLayeredPartConfig(partType, expression, resolvedOverlayId)
-                    : fc.GetLayeredPartConfig(partType, expression);
+                    : fc.GetLayeredPartConfig(partType, expression, normalizedSide);
                 actualPath = existing?.texPath ?? string.Empty;
             }
 
@@ -541,13 +490,17 @@ namespace CharacterStudio.UI
             float pathX = 120f;
             float pathWidth = width - pathX - 58f;
             string newBufferPath = Widgets.TextField(new Rect(pathX, y + 2f, pathWidth, 20f), bufferPath);
-            if (newBufferPath != bufferPath)
+            if (!ArePathStringsEquivalent(newBufferPath, bufferPath))
             {
                 layeredPartPathBuffer[bufferKey] = newBufferPath;
 
                 if (isOverlay)
                 {
                     fc.SetLayeredPart(partType, expression, newBufferPath, resolvedOverlayId, fc.GetOverlayOrder(resolvedOverlayId));
+                }
+                else if (normalizedSide != LayeredFacePartSide.None)
+                {
+                    fc.SetLayeredPart(partType, expression, newBufferPath, normalizedSide);
                 }
                 else
                 {
@@ -556,7 +509,7 @@ namespace CharacterStudio.UI
 
                 LayeredFacePartConfig? changedPart = isOverlay
                     ? fc.GetLayeredPartConfig(partType, expression, resolvedOverlayId)
-                    : fc.GetLayeredPartConfig(partType, expression);
+                    : fc.GetLayeredPartConfig(partType, expression, normalizedSide);
                 if (changedPart != null)
                 {
                     changedPart.enabled = !string.IsNullOrWhiteSpace(newBufferPath) && (existing?.enabled ?? true);
@@ -566,13 +519,15 @@ namespace CharacterStudio.UI
 
                 isDirty = true;
                 RefreshPreview();
+                existing = changedPart;
+                actualPath = changedPart?.texPath ?? string.Empty;
             }
             else
             {
                 layeredPartPathBuffer[bufferKey] = actualPath;
             }
 
-            if (Widgets.ButtonText(new Rect(width - 54f, y + 2f, 26f, 20f), "…"))
+            if (UIHelper.DrawBrowseButton(new Rect(width - 58f, y + 1f, 30f, 22f), () =>
             {
                 string browsePath = actualPath;
                 Find.WindowStack.Add(new Dialog_FileBrowser(browsePath, path =>
@@ -581,6 +536,10 @@ namespace CharacterStudio.UI
                     {
                         fc.SetLayeredPart(partType, expression, path ?? string.Empty, resolvedOverlayId, fc.GetOverlayOrder(resolvedOverlayId));
                     }
+                    else if (normalizedSide != LayeredFacePartSide.None)
+                    {
+                        fc.SetLayeredPart(partType, expression, path ?? string.Empty, normalizedSide);
+                    }
                     else
                     {
                         fc.SetLayeredPart(partType, expression, path ?? string.Empty);
@@ -588,7 +547,7 @@ namespace CharacterStudio.UI
 
                     LayeredFacePartConfig? changedPart = isOverlay
                         ? fc.GetLayeredPartConfig(partType, expression, resolvedOverlayId)
-                        : fc.GetLayeredPartConfig(partType, expression);
+                        : fc.GetLayeredPartConfig(partType, expression, normalizedSide);
                     if (changedPart != null)
                     {
                         changedPart.enabled = !string.IsNullOrWhiteSpace(path);
@@ -600,13 +559,19 @@ namespace CharacterStudio.UI
                     isDirty = true;
                     RefreshPreview();
                 }));
+            }))
+            {
             }
 
-            if (Widgets.ButtonText(new Rect(width - 26f, y + 2f, 22f, 20f), "×"))
+            if (UIHelper.DrawDangerButton(new Rect(width - 28f, y + 1f, 24f, 22f), tooltip: "CS_Studio_Clear".Translate(), onClick: () =>
             {
                 if (isOverlay)
                 {
                     fc.RemoveLayeredPart(partType, expression, resolvedOverlayId);
+                }
+                else if (normalizedSide != LayeredFacePartSide.None)
+                {
+                    fc.RemoveLayeredPart(partType, expression, normalizedSide);
                 }
                 else
                 {
@@ -616,9 +581,43 @@ namespace CharacterStudio.UI
                 layeredPartPathBuffer[bufferKey] = string.Empty;
                 isDirty = true;
                 RefreshPreview();
+                existing = null;
+                actualPath = string.Empty;
+            }))
+            {
             }
 
             y += 26f;
+
+            LayeredFacePartConfig? editablePart = isOverlay
+                ? fc.GetLayeredPartConfig(partType, expression, resolvedOverlayId)
+                : fc.GetLayeredPartConfig(partType, expression, normalizedSide);
+            if (editablePart == null)
+                return;
+
+            float correctionX = editablePart.anchorCorrection.x;
+            UIHelper.DrawPropertySlider(ref y, width,
+                "CS_Studio_Face_Layered_MotionAmplitudeX".Translate(),
+                ref correctionX, -0.01f, 0.01f, "F4", 20f);
+            if (!Mathf.Approximately(correctionX, editablePart.anchorCorrection.x))
+            {
+                editablePart.anchorCorrection.x = correctionX;
+                isDirty = true;
+                RefreshPreview();
+            }
+
+            float correctionY = editablePart.anchorCorrection.y;
+            UIHelper.DrawPropertySlider(ref y, width,
+                "CS_Studio_Face_Layered_MotionAmplitudeY".Translate(),
+                ref correctionY, -0.01f, 0.01f, "F4", 20f);
+            if (!Mathf.Approximately(correctionY, editablePart.anchorCorrection.y))
+            {
+                editablePart.anchorCorrection.y = correctionY;
+                isDirty = true;
+                RefreshPreview();
+            }
+
+            y += 4f;
         }
 
         private void DrawEyeDirectionSection(PawnFaceConfig fc, ref float y, float width)
@@ -654,8 +653,8 @@ namespace CharacterStudio.UI
                 {
                     var comp = mannequin?.CurrentPawn?.GetComp<CompPawnSkin>();
                     string previewDirLabel = comp != null
-                        ? comp.CurEyeDirection.ToString()
-                        : EyeDirection.Center.ToString();
+                        ? GetEyeDirectionLabel(comp.CurEyeDirection)
+                        : GetEyeDirectionLabel(EyeDirection.Center);
                     UIHelper.DrawPropertyFieldWithButton(ref y, width,
                         "CS_Studio_Face_EyeDir_Preview".Translate(), previewDirLabel,
                         () => OpenPreviewEyeDirectionMenu(comp));
@@ -670,6 +669,18 @@ namespace CharacterStudio.UI
                 if (pupilRange != eyeCfg.pupilMoveRange)
                 {
                     eyeCfg.pupilMoveRange = pupilRange;
+                    isDirty = true;
+                    RefreshPreview();
+                }
+
+                y += 4f;
+                float upperLidMoveDown = eyeCfg.upperLidMoveDown;
+                UIHelper.DrawPropertySlider(ref y, width,
+                    "CS_Studio_Face_EyeDir_UpperLidMoveDown".Translate(),
+                    ref upperLidMoveDown, 0f, 0.02f, "F4");
+                if (upperLidMoveDown != eyeCfg.upperLidMoveDown)
+                {
+                    eyeCfg.upperLidMoveDown = upperLidMoveDown;
                     isDirty = true;
                     RefreshPreview();
                 }
@@ -761,7 +772,7 @@ namespace CharacterStudio.UI
             GUI.color = Color.white;
             Text.Font = GameFont.Small;
 
-            if (Widgets.ButtonText(new Rect(labelW + pathW + 2f, y + 2f, btnW, 20f), "…"))
+            if (UIHelper.DrawBrowseButton(new Rect(labelW + pathW + 2f, y + 1f, btnW, 22f), () =>
             {
                 string capturedPath = currentPath;
                 Find.WindowStack.Add(new Dialog_FileBrowser(capturedPath, newPath =>
@@ -771,13 +782,14 @@ namespace CharacterStudio.UI
                         onChanged(newPath);
                     }
                 }));
+            }))
+            {
             }
 
             if (!string.IsNullOrEmpty(currentPath))
             {
-                if (Widgets.ButtonText(new Rect(labelW + pathW + btnW + 4f, y + 2f, clearW, 20f), "×"))
+                if (UIHelper.DrawDangerButton(new Rect(labelW + pathW + btnW + 2f, y + 1f, clearW + 4f, 22f), tooltip: "CS_Studio_Clear".Translate(), onClick: () => onChanged(string.Empty)))
                 {
-                    onChanged(string.Empty);
                 }
             }
 
@@ -798,7 +810,7 @@ namespace CharacterStudio.UI
             foreach (EyeDirection dir in System.Enum.GetValues(typeof(EyeDirection)))
             {
                 var localDir = dir;
-                options.Add(new FloatMenuOption(dir.ToString(), () =>
+                options.Add(new FloatMenuOption(GetEyeDirectionLabel(localDir), () =>
                 {
                     comp?.SetPreviewEyeDirection(localDir);
                     RefreshPreview();

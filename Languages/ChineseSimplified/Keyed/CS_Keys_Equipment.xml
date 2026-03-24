@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <CS_Studio_Equip_Added>已添加装备：{0}</CS_Studio_Equip_Added>
+    <CS_Studio_Equip_AnchorPath>视觉锚点路径</CS_Studio_Equip_AnchorPath>
+    <CS_Studio_Equip_AnchorTag>视觉锚点标签</CS_Studio_Equip_AnchorTag>
+    <CS_Studio_Equip_Btn_ExportXml>导出 XML</CS_Studio_Equip_Btn_ExportXml>
+    <CS_Studio_Equip_Btn_New>新建</CS_Studio_Equip_Btn_New>
+    <CS_Studio_Equip_DefName>装备 DefName</CS_Studio_Equip_DefName>
+    <CS_Studio_Equip_DefaultLabel>装备 {0}</CS_Studio_Equip_DefaultLabel>
+    <CS_Studio_Equip_Deleted>已删除装备：{0}</CS_Studio_Equip_Deleted>
+    <CS_Studio_Equip_Duplicated>已复制装备：{0}</CS_Studio_Equip_Duplicated>
+    <CS_Studio_Equip_EastOffsetX>侧视偏移 X</CS_Studio_Equip_EastOffsetX>
+    <CS_Studio_Equip_EastOffsetY>侧视偏移 Y</CS_Studio_Equip_EastOffsetY>
+    <CS_Studio_Equip_EastOffsetZ>侧视偏移 Z</CS_Studio_Equip_EastOffsetZ>
+    <CS_Studio_Equip_Exported>装备已导出：{0}</CS_Studio_Equip_Exported>
+    <CS_Studio_Equip_ExportFailed>装备导出失败：{0}</CS_Studio_Equip_ExportFailed>
+    <CS_Studio_Equip_ImportFailed>装备 XML 导入失败：{0}</CS_Studio_Equip_ImportFailed>
+    <CS_Studio_Equip_ImportXmlTitle>导入装备 XML</CS_Studio_Equip_ImportXmlTitle>
+    <CS_Studio_Equip_Label_Copy>{0}（复制）</CS_Studio_Equip_Label_Copy>
+    <CS_Studio_Equip_LinkedThingDef>关联 ThingDef</CS_Studio_Equip_LinkedThingDef>
+    <CS_Studio_Equip_NorthOffsetX>北向偏移 X</CS_Studio_Equip_NorthOffsetX>
+    <CS_Studio_Equip_NorthOffsetY>北向偏移 Y</CS_Studio_Equip_NorthOffsetY>
+    <CS_Studio_Equip_NorthOffsetZ>北向偏移 Z</CS_Studio_Equip_NorthOffsetZ>
+    <CS_Studio_Equip_OpenAbilityEditor>打开共享技能编辑器</CS_Studio_Equip_OpenAbilityEditor>
+    <CS_Studio_Equip_PreviewTexture>预览贴图</CS_Studio_Equip_PreviewTexture>
+    <CS_Studio_Equip_RotationEastOffset>侧视旋转偏移</CS_Studio_Equip_RotationEastOffset>
+    <CS_Studio_Equip_RotationNorthOffset>北向旋转偏移</CS_Studio_Equip_RotationNorthOffset>
+    <CS_Studio_Equip_ScaleX>缩放 X</CS_Studio_Equip_ScaleX>
+    <CS_Studio_Equip_ScaleY>缩放 Y</CS_Studio_Equip_ScaleY>
+    <CS_Studio_Equip_Section_Base>装备 / 基础信息</CS_Studio_Equip_Section_Base>
+    <CS_Studio_Equip_Section_VisualAnimation>装备 / 视觉动画</CS_Studio_Equip_Section_VisualAnimation>
+    <CS_Studio_Equip_Section_VisualBase>装备 / 视觉基础</CS_Studio_Equip_Section_VisualBase>
+    <CS_Studio_Equip_Section_VisualTransform>装备 / 视觉变换</CS_Studio_Equip_Section_VisualTransform>
+    <CS_Studio_Equip_Section_VisualVariants>装备 / 视觉变体</CS_Studio_Equip_Section_VisualVariants>
+    <CS_Studio_Equip_ShaderDef>视觉 Shader Def</CS_Studio_Equip_ShaderDef>
+    <CS_Studio_Equip_SlotTag>槽位标签</CS_Studio_Equip_SlotTag>
+    <CS_Studio_Equip_SourceNote>来源备注</CS_Studio_Equip_SourceNote>
+    <CS_Studio_Equip_VisualLayerName>视觉图层名称</CS_Studio_Equip_VisualLayerName>
+</LanguageData>

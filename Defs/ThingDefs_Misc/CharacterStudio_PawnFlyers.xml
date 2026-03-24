@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Defs>
+
+  <ThingDef ParentName="PawnFlyerBase">
+    <defName>CS_PawnFlyer_StraightJump</defName>
+    <label>straight jump</label>
+    <drawOffscreen>true</drawOffscreen>
+    <drawerType>RealtimeOnly</drawerType>
+    <altitudeLayer>Pawn</altitudeLayer>
+    <pawnFlyer>
+      <flightDurationMin>0.6</flightDurationMin>
+      <flightSpeed>18</flightSpeed>
+      <workerClass>PawnFlyerWorker</workerClass>
+      <heightFactor>0</heightFactor>
+      <progressCurve>
+        <points>
+          <li>(0, 0)</li>
+          <li>(0.1, 0.3)</li>
+          <li>(0.2, 0.47)</li>
+          <li>(0.3, 0.6)</li>
+          <li>(0.4, 0.69)</li>
+          <li>(0.5, 0.77)</li>
+          <li>(0.6, 0.84)</li>
+          <li>(0.7, 0.9)</li>
+          <li>(0.8, 0.95)</li>
+          <li>(0.9, 0.98)</li>
+          <li>(1, 1)</li>
+        </points>
+      </progressCurve>
+    </pawnFlyer>
+  </ThingDef>
+
+</Defs>

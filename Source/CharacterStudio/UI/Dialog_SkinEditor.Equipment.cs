@@ -115,18 +115,7 @@ namespace CharacterStudio.UI
             Text.Anchor = TextAnchor.UpperLeft;
             y += 20f;
 
-            GUI.color = UIHelper.SubtleColor;
-            Widgets.Label(new Rect(6f, y, viewRect.width - 12f, 20f), "CS_Studio_Equip_SelectHint".Translate());
-            GUI.color = Color.white;
-            y += 24f;
-
-            if (workingSkin.equipments.Count == 0)
-            {
-                GUI.color = UIHelper.SubtleColor;
-                Widgets.Label(new Rect(6f, y, viewRect.width - 12f, 22f), "CS_Studio_Equip_NoSelection".Translate());
-                GUI.color = Color.white;
-            }
-            else
+            if (workingSkin.equipments.Count > 0)
             {
                 for (int i = 0; i < workingSkin.equipments.Count; i++)
                 {
@@ -182,8 +171,9 @@ namespace CharacterStudio.UI
                 RefreshRenderTree();
             }
 
-            Rect nameRect = new Rect(46f, y + 1f, width - 92f, 16f);
-            Rect metaRect = new Rect(46f, y + 16f, width - 92f, 14f);
+            Rect deleteRect = new Rect(width - 28f, y + 5f, 24f, 22f);
+            Rect nameRect = new Rect(46f, y + 1f, width - 100f, 16f);
+            Rect metaRect = new Rect(46f, y + 16f, width - 100f, 14f);
 
             Text.Font = GameFont.Small;
             GUI.color = equipment.enabled ? Color.white : Color.gray;
@@ -197,11 +187,12 @@ namespace CharacterStudio.UI
             Widgets.Label(metaRect, meta);
             GUI.color = Color.white;
 
-            Rect deleteRect = new Rect(width - 22f, y + 7f, 20f, 20f);
-            if (Widgets.ButtonText(deleteRect, "×"))
+            if (UIHelper.DrawDangerButton(deleteRect, tooltip: "CS_Studio_Delete".Translate(), onClick: () =>
             {
                 SelectEquipment(index);
                 DeleteSelectedEquipment();
+            }))
+            {
                 return;
             }
 
@@ -336,7 +327,9 @@ namespace CharacterStudio.UI
             duplicate.defName = BuildUniqueEquipmentDefName(
                 string.IsNullOrWhiteSpace(duplicate.defName) ? "Equipment_Copy" : duplicate.defName + "_Copy",
                 workingSkin.equipments);
-            duplicate.label = string.IsNullOrWhiteSpace(duplicate.label) ? duplicate.defName : duplicate.label + " Copy";
+            duplicate.label = string.IsNullOrWhiteSpace(duplicate.label)
+                ? duplicate.defName
+                : "CS_Studio_Equip_Label_Copy".Translate(duplicate.label).ToString();
             duplicate.EnsureDefaults();
 
             workingSkin.equipments.Insert(selectedEquipmentIndex + 1, duplicate);
@@ -388,15 +381,17 @@ namespace CharacterStudio.UI
 
         private CharacterEquipmentDef CreateDefaultEquipment(int index)
         {
+            string defaultEquipmentLabel = "CS_Studio_Equip_DefaultLabel".Translate(index + 1).ToString();
+
             var equipment = new CharacterEquipmentDef
             {
                 defName = BuildUniqueEquipmentDefName($"CS_Equipment_{index + 1}", workingSkin.equipments),
-                label = $"Equipment {index + 1}",
+                label = defaultEquipmentLabel,
                 enabled = true,
                 slotTag = "Apparel",
-                visual = new PawnLayerConfig
+                renderData = new CharacterEquipmentRenderData
                 {
-                    layerName = $"Equipment {index + 1}",
+                    layerName = defaultEquipmentLabel,
                     anchorTag = "Apparel",
                     shaderDefName = "Cutout",
                     colorSource = LayerColorSource.White,
@@ -806,10 +801,8 @@ namespace CharacterStudio.UI
             Widgets.Label(new Rect(0f, 0f, inRect.width, 32f), "CS_Studio_Equip_ImportXmlTitle".Translate());
             Text.Font = GameFont.Small;
 
-            Widgets.Label(new Rect(0f, 38f, inRect.width, 44f), "CS_Studio_Equip_ImportXmlHint".Translate());
-
-            Widgets.Label(new Rect(0f, 86f, 110f, 24f), "CS_Studio_Ability_ImportXmlPath".Translate());
-            xmlPath = Widgets.TextField(new Rect(112f, 86f, inRect.width - 112f, 24f), xmlPath ?? string.Empty);
+            Widgets.Label(new Rect(0f, 44f, 110f, 24f), "CS_Studio_Ability_ImportXmlPath".Translate());
+            xmlPath = Widgets.TextField(new Rect(112f, 44f, inRect.width - 112f, 24f), xmlPath ?? string.Empty);
 
             float buttonY = inRect.height - 34f;
             float buttonWidth = (inRect.width - 10f) / 3f;

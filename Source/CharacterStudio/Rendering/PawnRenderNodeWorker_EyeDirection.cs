@@ -118,9 +118,12 @@ namespace CharacterStudio.Rendering
             var mpb = base.GetMaterialPropertyBlock(node, material, parms);
 
             var eyeData = GetRuntimeEyeDirectionData(parms.pawn);
+            CompPawnSkin? skinComp = parms.pawn?.GetComp<CompPawnSkin>();
             if (eyeData == null || !eyeData.enabled || !eyeData.useUvOffset || eyeData.uvMoveRange <= 0f)
                 return mpb;
 
+            float brightnessOffset = skinComp?.GetAbilityPupilBrightnessOffset() ?? 0f;
+            float contrastOffset = skinComp?.GetAbilityPupilContrastOffset() ?? 0f;
             float r = eyeData.uvMoveRange;
             var dir = GetCurrentDirection(parms.pawn);
 
@@ -129,14 +132,20 @@ namespace CharacterStudio.Rendering
             {
                 case EyeDirection.Left:  offsetX = +r; break;
                 case EyeDirection.Right: offsetX = -r; break;
-                case EyeDirection.Up:    offsetY = -r; break;
-                case EyeDirection.Down:  offsetY = +r; break;
+                case EyeDirection.Up:    offsetY = +r; break;
+                case EyeDirection.Down:  offsetY = -r; break;
                 // Center: 不偏移
             }
 
             // _MainTex_ST.xy = scale（保持 (1,1)），_MainTex_ST.zw = offset
             int stID = Shader.PropertyToID("_MainTex_ST");
             mpb.SetVector(stID, new Vector4(1f, 1f, offsetX, offsetY));
+
+            float tintScalar = Mathf.Clamp(1f + brightnessOffset + (contrastOffset * 0.5f), 0.2f, 3f);
+            int colorID = Shader.PropertyToID("_Color");
+            mpb.SetColor(colorID, new Color(tintScalar, tintScalar, tintScalar, 1f));
+            mpb.SetFloat(Shader.PropertyToID("_CS_PupilBrightnessOffset"), brightnessOffset);
+            mpb.SetFloat(Shader.PropertyToID("_CS_PupilContrastOffset"), contrastOffset);
 
             return mpb;
         }
@@ -207,6 +216,9 @@ namespace CharacterStudio.Rendering
         {
             if (isMultiCache.TryGetValue(path, out bool cached))
                 return cached;
+
+            if (!CharacterStudio.Rendering.RuntimeAssetLoader.IsMainThread())
+                return true;
 
             bool isMulti = ContentFinder<Texture2D>.Get(path + "_north", false) != null;
             isMultiCache[path] = isMulti;

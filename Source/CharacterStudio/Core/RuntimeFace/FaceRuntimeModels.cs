@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace CharacterStudio.Core
@@ -45,6 +46,66 @@ namespace CharacterStudio.Core
     }
 
     /// <summary>
+    /// LayeredDynamic 运行时缓存中使用的部件键。
+    /// 将 partType + side 组合为一个可直接作为 Dictionary Key 的值类型。
+    /// </summary>
+    public struct LayeredFacePartRuntimeKey : IEquatable<LayeredFacePartRuntimeKey>
+    {
+        public LayeredFacePartType partType;
+        public LayeredFacePartSide side;
+
+        public LayeredFacePartRuntimeKey(LayeredFacePartType partType, LayeredFacePartSide side)
+        {
+            this.partType = partType;
+            this.side = PawnFaceConfig.NormalizePartSide(partType, side);
+        }
+
+        public bool Equals(LayeredFacePartRuntimeKey other)
+        {
+            return partType == other.partType
+                && side == other.side;
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return obj is LayeredFacePartRuntimeKey other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return ((int)partType * 397) ^ (int)side;
+            }
+        }
+
+        /// <summary>
+        /// 枚举运行时缓存查询的候选 key。
+        /// side 查询时：先精确 side，再回退 unsided；
+        /// 默认查询时：先 unsided，再回退任意 sided（Left/Right）。
+        /// </summary>
+        public static IEnumerable<LayeredFacePartRuntimeKey> EnumerateLookupKeys(
+            LayeredFacePartType partType,
+            LayeredFacePartSide side)
+        {
+            LayeredFacePartRuntimeKey requestedKey = new LayeredFacePartRuntimeKey(partType, side);
+            yield return requestedKey;
+
+            if (requestedKey.side != LayeredFacePartSide.None)
+            {
+                yield return new LayeredFacePartRuntimeKey(partType, LayeredFacePartSide.None);
+                yield break;
+            }
+
+            if (PawnFaceConfig.SupportsSideSpecificParts(partType))
+            {
+                yield return new LayeredFacePartRuntimeKey(partType, LayeredFacePartSide.Left);
+                yield return new LayeredFacePartRuntimeKey(partType, LayeredFacePartSide.Right);
+            }
+        }
+    }
+
+    /// <summary>
     /// 表达式到运行时资源路径的缓存映射。
     /// worldPath 用于世界轨轻量渲染；
     /// portraitPartPaths 用于肖像轨分层路径快速查找。
@@ -53,17 +114,158 @@ namespace CharacterStudio.Core
     {
         public ExpressionType expression = ExpressionType.Neutral;
         public string worldPath = string.Empty;
-        public Dictionary<LayeredFacePartType, string> portraitPartPaths = new Dictionary<LayeredFacePartType, string>();
+        public Dictionary<LayeredFacePartRuntimeKey, string> portraitPartPaths = new Dictionary<LayeredFacePartRuntimeKey, string>();
+        public Dictionary<LayeredFacePartRuntimeKey, FaceDirectionAvailability> portraitPartDirections = new Dictionary<LayeredFacePartRuntimeKey, FaceDirectionAvailability>();
         public Dictionary<string, string> portraitOverlayPaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, FaceDirectionAvailability> portraitOverlayDirections = new Dictionary<string, FaceDirectionAvailability>(StringComparer.OrdinalIgnoreCase);
+
+        public void SetPortraitPartPath(
+            LayeredFacePartType partType,
+            string path,
+            LayeredFacePartSide side = LayeredFacePartSide.None)
+        {
+            LayeredFacePartRuntimeKey key = new LayeredFacePartRuntimeKey(partType, side);
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                portraitPartPaths.Remove(key);
+                portraitPartDirections.Remove(key);
+                return;
+            }
+
+            portraitPartPaths[key] = path;
+        }
+
+        public void SetPortraitPartDirectionAvailability(
+            LayeredFacePartType partType,
+            FaceDirectionAvailability availability,
+            LayeredFacePartSide side = LayeredFacePartSide.None)
+        {
+            LayeredFacePartRuntimeKey key = new LayeredFacePartRuntimeKey(partType, side);
+            if (availability == null)
+            {
+                portraitPartDirections.Remove(key);
+                return;
+            }
+
+            portraitPartDirections[key] = availability.Clone();
+        }
+
+        public bool TryGetPortraitPartPath(LayeredFacePartType partType, out string path)
+        {
+            return TryGetPortraitPartPath(partType, LayeredFacePartSide.None, out path);
+        }
+
+        public bool TryGetPortraitPartPath(
+            LayeredFacePartType partType,
+            LayeredFacePartSide side,
+            out string path)
+        {
+            path = string.Empty;
+            if (portraitPartPaths == null || portraitPartPaths.Count == 0)
+                return false;
+
+            foreach (LayeredFacePartRuntimeKey key in LayeredFacePartRuntimeKey.EnumerateLookupKeys(partType, side))
+            {
+                if (portraitPartPaths.TryGetValue(key, out string candidatePath)
+                    && !string.IsNullOrWhiteSpace(candidatePath))
+                {
+                    path = candidatePath;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public bool TryGetPortraitPartDirectionAvailability(
+            LayeredFacePartType partType,
+            LayeredFacePartSide side,
+            out FaceDirectionAvailability? availability)
+        {
+            availability = null;
+            if (portraitPartDirections == null || portraitPartDirections.Count == 0)
+                return false;
+
+            foreach (LayeredFacePartRuntimeKey key in LayeredFacePartRuntimeKey.EnumerateLookupKeys(partType, side))
+            {
+                if (portraitPartDirections.TryGetValue(key, out FaceDirectionAvailability candidate)
+                    && candidate != null)
+                {
+                    availability = candidate;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public void SetPortraitOverlayPath(string overlayId, string path)
+        {
+            string normalizedOverlayId = PawnFaceConfig.NormalizeOverlayId(overlayId);
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                portraitOverlayPaths.Remove(normalizedOverlayId);
+                portraitOverlayDirections.Remove(normalizedOverlayId);
+                return;
+            }
+
+            portraitOverlayPaths[normalizedOverlayId] = path;
+        }
+
+        public void SetPortraitOverlayDirectionAvailability(string overlayId, FaceDirectionAvailability availability)
+        {
+            string normalizedOverlayId = PawnFaceConfig.NormalizeOverlayId(overlayId);
+            if (availability == null)
+            {
+                portraitOverlayDirections.Remove(normalizedOverlayId);
+                return;
+            }
+
+            portraitOverlayDirections[normalizedOverlayId] = availability.Clone();
+        }
+
+        public bool TryGetPortraitOverlayPath(string overlayId, out string path)
+        {
+            path = string.Empty;
+            if (portraitOverlayPaths == null || portraitOverlayPaths.Count == 0)
+                return false;
+
+            return portraitOverlayPaths.TryGetValue(PawnFaceConfig.NormalizeOverlayId(overlayId), out path)
+                && !string.IsNullOrWhiteSpace(path);
+        }
+
+        public bool TryGetPortraitOverlayDirectionAvailability(string overlayId, out FaceDirectionAvailability? availability)
+        {
+            availability = null;
+            if (portraitOverlayDirections == null || portraitOverlayDirections.Count == 0)
+                return false;
+
+            return portraitOverlayDirections.TryGetValue(PawnFaceConfig.NormalizeOverlayId(overlayId), out availability)
+                && availability != null;
+        }
 
         public FaceExpressionRuntimeCache Clone()
         {
+            Dictionary<LayeredFacePartRuntimeKey, FaceDirectionAvailability> clonedPartDirections = new Dictionary<LayeredFacePartRuntimeKey, FaceDirectionAvailability>();
+            foreach (KeyValuePair<LayeredFacePartRuntimeKey, FaceDirectionAvailability> pair in portraitPartDirections)
+            {
+                clonedPartDirections[pair.Key] = pair.Value?.Clone() ?? new FaceDirectionAvailability();
+            }
+
+            Dictionary<string, FaceDirectionAvailability> clonedOverlayDirections = new Dictionary<string, FaceDirectionAvailability>(StringComparer.OrdinalIgnoreCase);
+            foreach (KeyValuePair<string, FaceDirectionAvailability> pair in portraitOverlayDirections)
+            {
+                clonedOverlayDirections[pair.Key] = pair.Value?.Clone() ?? new FaceDirectionAvailability();
+            }
+
             return new FaceExpressionRuntimeCache
             {
                 expression = expression,
                 worldPath = worldPath ?? string.Empty,
-                portraitPartPaths = new Dictionary<LayeredFacePartType, string>(portraitPartPaths),
-                portraitOverlayPaths = new Dictionary<string, string>(portraitOverlayPaths, StringComparer.OrdinalIgnoreCase)
+                portraitPartPaths = new Dictionary<LayeredFacePartRuntimeKey, string>(portraitPartPaths),
+                portraitPartDirections = clonedPartDirections,
+                portraitOverlayPaths = new Dictionary<string, string>(portraitOverlayPaths, StringComparer.OrdinalIgnoreCase),
+                portraitOverlayDirections = clonedOverlayDirections
             };
         }
     }
@@ -77,6 +279,7 @@ namespace CharacterStudio.Core
         public bool enabled = false;
         public bool useUvOffset = false;
         public float uvMoveRange = 0f;
+        public float upperLidMoveDown = 0.0044f;
 
         public string texCenter = string.Empty;
         public string texLeft = string.Empty;
@@ -117,6 +320,7 @@ namespace CharacterStudio.Core
                 enabled = enabled,
                 useUvOffset = useUvOffset,
                 uvMoveRange = uvMoveRange,
+                upperLidMoveDown = upperLidMoveDown,
                 texCenter = texCenter ?? string.Empty,
                 texLeft = texLeft ?? string.Empty,
                 texRight = texRight ?? string.Empty,
@@ -193,8 +397,8 @@ namespace CharacterStudio.Core
         public string basePath = string.Empty;
 
         /// <summary>各部件的方向资源可用性缓存。</summary>
-        public Dictionary<LayeredFacePartType, FaceDirectionAvailability> directionAvailability
-            = new Dictionary<LayeredFacePartType, FaceDirectionAvailability>();
+        public Dictionary<LayeredFacePartRuntimeKey, FaceDirectionAvailability> directionAvailability
+            = new Dictionary<LayeredFacePartRuntimeKey, FaceDirectionAvailability>();
 
         /// <summary>表达式 -> 分层资源缓存。</summary>
         public Dictionary<ExpressionType, FaceExpressionRuntimeCache> expressionCaches
@@ -206,15 +410,88 @@ namespace CharacterStudio.Core
         /// <summary>Overlay 顺序缓存。</summary>
         public Dictionary<string, int> overlayOrders = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
-        /// <summary>anchor correction 缓存（partType -> expression -> correction）。</summary>
-        public Dictionary<LayeredFacePartType, Dictionary<ExpressionType, Vector2>> anchorCorrections
-            = new Dictionary<LayeredFacePartType, Dictionary<ExpressionType, Vector2>>();
+        /// <summary>anchor correction 缓存（partType+side -> expression -> correction）。</summary>
+        public Dictionary<LayeredFacePartRuntimeKey, Dictionary<ExpressionType, Vector2>> anchorCorrections
+            = new Dictionary<LayeredFacePartRuntimeKey, Dictionary<ExpressionType, Vector2>>();
 
         /// <summary>肖像轨是否允许使用程序化表情补偿。</summary>
         public bool supportsProgrammaticAdjustments = true;
 
         /// <summary>旧 EyeDirection 覆盖层使用的眼方向资源缓存。</summary>
         public FaceEyeDirectionRuntimeData eyeDirection = new FaceEyeDirectionRuntimeData();
+
+        public void SetDirectionAvailability(
+            LayeredFacePartType partType,
+            FaceDirectionAvailability availability,
+            LayeredFacePartSide side = LayeredFacePartSide.None)
+        {
+            directionAvailability[new LayeredFacePartRuntimeKey(partType, side)] = availability?.Clone() ?? new FaceDirectionAvailability();
+        }
+
+        public FaceDirectionAvailability? GetDirectionAvailability(
+            LayeredFacePartType partType,
+            LayeredFacePartSide side = LayeredFacePartSide.None)
+        {
+            if (directionAvailability == null || directionAvailability.Count == 0)
+                return null;
+
+            foreach (LayeredFacePartRuntimeKey key in LayeredFacePartRuntimeKey.EnumerateLookupKeys(partType, side))
+            {
+                if (directionAvailability.TryGetValue(key, out FaceDirectionAvailability? availability)
+                    && availability != null)
+                {
+                    return availability;
+                }
+            }
+
+            return null;
+        }
+
+        public void SetAnchorCorrection(
+            LayeredFacePartType partType,
+            ExpressionType expression,
+            Vector2 correction,
+            LayeredFacePartSide side = LayeredFacePartSide.None)
+        {
+            LayeredFacePartRuntimeKey key = new LayeredFacePartRuntimeKey(partType, side);
+            if (!anchorCorrections.TryGetValue(key, out Dictionary<ExpressionType, Vector2>? byExpression)
+                || byExpression == null)
+            {
+                byExpression = new Dictionary<ExpressionType, Vector2>();
+                anchorCorrections[key] = byExpression;
+            }
+
+            byExpression[expression] = correction;
+        }
+
+        public Vector2 GetAnchorCorrection(
+            LayeredFacePartType partType,
+            ExpressionType expression,
+            LayeredFacePartSide side = LayeredFacePartSide.None)
+        {
+            if (anchorCorrections == null || anchorCorrections.Count == 0)
+                return Vector2.zero;
+
+            foreach (LayeredFacePartRuntimeKey key in LayeredFacePartRuntimeKey.EnumerateLookupKeys(partType, side))
+            {
+                if (!anchorCorrections.TryGetValue(key, out Dictionary<ExpressionType, Vector2>? byExpression)
+                    || byExpression == null)
+                {
+                    continue;
+                }
+
+                if (byExpression.TryGetValue(expression, out Vector2 exact))
+                    return exact;
+
+                if (expression != ExpressionType.Neutral
+                    && byExpression.TryGetValue(ExpressionType.Neutral, out Vector2 neutral))
+                {
+                    return neutral;
+                }
+            }
+
+            return Vector2.zero;
+        }
 
         public FacePortraitTrackData Clone()
         {
@@ -302,6 +579,8 @@ namespace CharacterStudio.Core
         public LidState currentLidState = LidState.Normal;
         public BrowState currentBrowState = BrowState.Normal;
         public EmotionOverlayState currentEmotionOverlayState = EmotionOverlayState.None;
+        public EyeAnimationVariant eyeDirectionRuntimeVariant = EyeAnimationVariant.NeutralOpen;
+        public PupilScaleVariant pupilScaleRuntimeVariant = PupilScaleVariant.Neutral;
 
         /// <summary>下次允许更新世界轨状态的 Tick。</summary>
         public int nextWorldUpdateTick = 0;

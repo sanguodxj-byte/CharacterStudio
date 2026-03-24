@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <CS_Studio_Equip_Added>Added equipment: {0}</CS_Studio_Equip_Added>
+    <CS_Studio_Equip_AnchorPath>Visual Anchor Path</CS_Studio_Equip_AnchorPath>
+    <CS_Studio_Equip_AnchorPath_Hint>Optional exact render-tree path. When set, it takes priority over the anchor tag.</CS_Studio_Equip_AnchorPath_Hint>
+    <CS_Studio_Equip_AnchorTag>Visual Anchor Tag</CS_Studio_Equip_AnchorTag>
+    <CS_Studio_Equip_AnchorTag_Hint>Select the render anchor tag used when no explicit anchor path is provided.</CS_Studio_Equip_AnchorTag_Hint>
+    <CS_Studio_Equip_BoundAbilities>Bound abilities</CS_Studio_Equip_BoundAbilities>
+    <CS_Studio_Equip_Btn_Abilities>Abilities</CS_Studio_Equip_Btn_Abilities>
+    <CS_Studio_Equip_Btn_ExportXml>Export XML</CS_Studio_Equip_Btn_ExportXml>
+    <CS_Studio_Equip_Btn_New>New</CS_Studio_Equip_Btn_New>
+    <CS_Studio_Equip_DefName>Equipment DefName</CS_Studio_Equip_DefName>
+    <CS_Studio_Equip_DefName_Hint>Use only letters, numbers, and underscores. This value is used as the XML DefName when exporting.</CS_Studio_Equip_DefName_Hint>
+    <CS_Studio_Equip_DefName_Invalid>DefName may only contain letters, numbers, and underscores.</CS_Studio_Equip_DefName_Invalid>
+    <CS_Studio_Equip_DefaultLabel>Equipment {0}</CS_Studio_Equip_DefaultLabel>
+    <CS_Studio_Equip_Deleted>Deleted equipment: {0}</CS_Studio_Equip_Deleted>
+    <CS_Studio_Equip_Duplicated>Duplicated equipment: {0}</CS_Studio_Equip_Duplicated>
+    <CS_Studio_Equip_EastOffsetX>East Offset X</CS_Studio_Equip_EastOffsetX>
+    <CS_Studio_Equip_EastOffsetY>East Offset Y</CS_Studio_Equip_EastOffsetY>
+    <CS_Studio_Equip_EastOffsetZ>East Offset Z</CS_Studio_Equip_EastOffsetZ>
+    <CS_Studio_Equip_Exported>Equipment exported: {0}</CS_Studio_Equip_Exported>
+    <CS_Studio_Equip_ExportFailed>Equipment export failed: {0}</CS_Studio_Equip_ExportFailed>
+    <CS_Studio_Equip_ImportAppended>Appended {0} equipments from {1}.</CS_Studio_Equip_ImportAppended>
+    <CS_Studio_Equip_ImportFailed>Equipment import failed: {0}</CS_Studio_Equip_ImportFailed>
+    <CS_Studio_Equip_ImportNoResults>No equipments found in XML.</CS_Studio_Equip_ImportNoResults>
+    <CS_Studio_Equip_ImportReplaced>Imported {0} equipments from {1}.</CS_Studio_Equip_ImportReplaced>
+    <CS_Studio_Equip_ImportXmlHint>Provide an equipment XML path. Replace clears current equipments, Append keeps them.</CS_Studio_Equip_ImportXmlHint>
+    <CS_Studio_Equip_ImportXmlTitle>Import Equipment XML</CS_Studio_Equip_ImportXmlTitle>
+    <CS_Studio_Equip_InvalidSelection>Selected equipment is invalid.</CS_Studio_Equip_InvalidSelection>
+    <CS_Studio_Equip_LinkedThingDef>Linked ThingDef</CS_Studio_Equip_LinkedThingDef>
+    <CS_Studio_Equip_LinkedThingDef_Hint>Optionally bind this equipment entry to an in-game ThingDef for integration or auto-matching.</CS_Studio_Equip_LinkedThingDef_Hint>
+    <CS_Studio_Equip_Label_Copy>{0} Copy</CS_Studio_Equip_Label_Copy>
+    <CS_Studio_Equip_NoAbilities>No abilities</CS_Studio_Equip_NoAbilities>
+    <CS_Studio_Equip_NoAbilityPool>No shared abilities available. Create or import abilities first.</CS_Studio_Equip_NoAbilityPool>
+    <CS_Studio_Equip_NorthOffsetX>North Offset X</CS_Studio_Equip_NorthOffsetX>
+    <CS_Studio_Equip_NorthOffsetY>North Offset Y</CS_Studio_Equip_NorthOffsetY>
+    <CS_Studio_Equip_NorthOffsetZ>North Offset Z</CS_Studio_Equip_NorthOffsetZ>
+    <CS_Studio_Equip_NoSelection>No equipment selected.</CS_Studio_Equip_NoSelection>
+    <CS_Studio_Equip_OpenAbilityEditor>Open Shared Ability Editor</CS_Studio_Equip_OpenAbilityEditor>
+    <CS_Studio_Equip_PreviewTexture>Preview Texture</CS_Studio_Equip_PreviewTexture>
+    <CS_Studio_Equip_RotationEastOffset>Rotation East Offset</CS_Studio_Equip_RotationEastOffset>
+    <CS_Studio_Equip_RotationNorthOffset>Rotation North Offset</CS_Studio_Equip_RotationNorthOffset>
+    <CS_Studio_Equip_ScaleX>Scale X</CS_Studio_Equip_ScaleX>
+    <CS_Studio_Equip_ScaleY>Scale Y</CS_Studio_Equip_ScaleY>
+    <CS_Studio_Equip_Section_Abilities>Equipment / Bound Abilities</CS_Studio_Equip_Section_Abilities>
+    <CS_Studio_Equip_Section_Base>Equipment / Basic</CS_Studio_Equip_Section_Base>
+    <CS_Studio_Equip_Section_VisualAnimation>Equipment / Visual Animation</CS_Studio_Equip_Section_VisualAnimation>
+    <CS_Studio_Equip_Section_VisualBase>Equipment / Visual Base</CS_Studio_Equip_Section_VisualBase>
+    <CS_Studio_Equip_Section_VisualTransform>Equipment / Visual Transform</CS_Studio_Equip_Section_VisualTransform>
+    <CS_Studio_Equip_Section_VisualVariants>Equipment / Visual Variants</CS_Studio_Equip_Section_VisualVariants>
+    <CS_Studio_Equip_SelectEntry>Select an equipment entry to edit.</CS_Studio_Equip_SelectEntry>
+    <CS_Studio_Equip_SelectHint>Select an equipment entry to edit full properties in the right panel.</CS_Studio_Equip_SelectHint>
+    <CS_Studio_Equip_ShaderDef>Visual Shader Def</CS_Studio_Equip_ShaderDef>
+    <CS_Studio_Equip_ShaderDef_Hint>Choose the shader used to render this equipment visual layer.</CS_Studio_Equip_ShaderDef_Hint>
+    <CS_Studio_Equip_SlotTag>Slot Tag</CS_Studio_Equip_SlotTag>
+    <CS_Studio_Equip_SlotTag_Hint>Logical slot identifier for this equipment entry, such as WeaponBack, Hairpin, or Cape.</CS_Studio_Equip_SlotTag_Hint>
+    <CS_Studio_Equip_SourceNote>Source Note</CS_Studio_Equip_SourceNote>
+    <CS_Studio_Equip_VisualLayerName>Visual Layer Name</CS_Studio_Equip_VisualLayerName>
+</LanguageData>

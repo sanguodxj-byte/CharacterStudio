@@ -1,3 +1,102 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 using System;
 using UnityEngine;
 using Verse;
@@ -187,6 +286,38 @@ namespace CharacterStudio.Core
         public float animPhaseOffset = 0f;
 
         /// <summary>
+        /// 旋转枢轴点本地偏移（相对于图层锚点，单位与 offset 相同）。
+        /// 仅在 animationType == Spin 时使用：图层将绕
+        /// (anchorWorldPos + animPivotOffset) 这一点持续旋转。
+        /// X/Z 分量对应世界平面内的水平/前后偏移。
+        /// </summary>
+        public Vector2 animPivotOffset = Vector2.zero;
+
+        // 技能驱动的装备局部闭环动画
+        public bool useTriggeredEquipmentAnimation = false;
+        public string triggerAbilityDefName = string.Empty;
+        public string triggeredAnimationGroupKey = string.Empty;
+        public EquipmentTriggeredAnimationRole triggeredAnimationRole = EquipmentTriggeredAnimationRole.MovablePart;
+        public float triggeredDeployAngle = 45f;
+        public float triggeredReturnAngle = 0f;
+        public int triggeredDeployTicks = 12;
+        public int triggeredHoldTicks = 24;
+        public int triggeredReturnTicks = 12;
+        public bool triggeredUseVfxVisibility = false;
+        public string triggeredIdleTexPath = string.Empty;
+        public string triggeredDeployTexPath = string.Empty;
+        public string triggeredHoldTexPath = string.Empty;
+        public string triggeredReturnTexPath = string.Empty;
+        public string triggeredIdleMaskTexPath = string.Empty;
+        public string triggeredDeployMaskTexPath = string.Empty;
+        public string triggeredHoldMaskTexPath = string.Empty;
+        public string triggeredReturnMaskTexPath = string.Empty;
+        public bool triggeredVisibleDuringDeploy = true;
+        public bool triggeredVisibleDuringHold = true;
+        public bool triggeredVisibleDuringReturn = true;
+        public bool triggeredVisibleOutsideCycle = true;
+
+        /// <summary>
         /// 复制当前配置
         /// </summary>
         public PawnLayerConfig Clone()
@@ -241,7 +372,30 @@ namespace CharacterStudio.Core
                 animSpeed = this.animSpeed,
                 animAffectsOffset = this.animAffectsOffset,
                 animOffsetAmplitude = this.animOffsetAmplitude,
-                animPhaseOffset = this.animPhaseOffset
+                animPhaseOffset = this.animPhaseOffset,
+                animPivotOffset = this.animPivotOffset,
+                useTriggeredEquipmentAnimation = this.useTriggeredEquipmentAnimation,
+                triggerAbilityDefName = this.triggerAbilityDefName,
+                triggeredAnimationGroupKey = this.triggeredAnimationGroupKey,
+                triggeredAnimationRole = this.triggeredAnimationRole,
+                triggeredDeployAngle = this.triggeredDeployAngle,
+                triggeredReturnAngle = this.triggeredReturnAngle,
+                triggeredDeployTicks = this.triggeredDeployTicks,
+                triggeredHoldTicks = this.triggeredHoldTicks,
+                triggeredReturnTicks = this.triggeredReturnTicks,
+                triggeredUseVfxVisibility = this.triggeredUseVfxVisibility,
+                triggeredIdleTexPath = this.triggeredIdleTexPath,
+                triggeredDeployTexPath = this.triggeredDeployTexPath,
+                triggeredHoldTexPath = this.triggeredHoldTexPath,
+                triggeredReturnTexPath = this.triggeredReturnTexPath,
+                triggeredIdleMaskTexPath = this.triggeredIdleMaskTexPath,
+                triggeredDeployMaskTexPath = this.triggeredDeployMaskTexPath,
+                triggeredHoldMaskTexPath = this.triggeredHoldMaskTexPath,
+                triggeredReturnMaskTexPath = this.triggeredReturnMaskTexPath,
+                triggeredVisibleDuringDeploy = this.triggeredVisibleDuringDeploy,
+                triggeredVisibleDuringHold = this.triggeredVisibleDuringHold,
+                triggeredVisibleDuringReturn = this.triggeredVisibleDuringReturn,
+                triggeredVisibleOutsideCycle = this.triggeredVisibleOutsideCycle
             };
         }
     }
@@ -299,7 +453,9 @@ namespace CharacterStudio.Core
         /// <summary>轻柔摇曳（如尾巴自然晃动，使用复合正弦波）</summary>
         IdleSway,
         /// <summary>呼吸起伏（缩放动画）</summary>
-        Breathe
+        Breathe,
+        /// <summary>持续旋转（以枢轴点为中心匀速旋转，适用于旋翼/飞行器等）</summary>
+        Spin
     }
 
     /// <summary>

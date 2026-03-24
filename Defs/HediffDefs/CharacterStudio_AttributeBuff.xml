@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <CharacterStudio.Attributes.CharacterAttributeBuffDef>
+    <defName>CS_CharacterAttributeBuff</defName>
+    <label>character studio attribute buff</label>
+    <description>Runtime stat modifier buff injected by Character Studio. It safely overlays stat changes on top of the host race without changing the race's base definition.</description>
+    <hediffClass>Verse.Hediff</hediffClass>
+    <isBad>false</isBad>
+    <initialSeverity>1.0</initialSeverity>
+    <stages>
+      <li>
+        <label>attribute buff active</label>
+      </li>
+    </stages>
+  </CharacterStudio.Attributes.CharacterAttributeBuffDef>
+</Defs>

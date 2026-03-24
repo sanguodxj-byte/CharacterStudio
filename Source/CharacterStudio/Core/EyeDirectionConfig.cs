@@ -57,6 +57,13 @@ namespace CharacterStudio.Core
         /// </summary>
         public float pupilMoveRange = 0f;
 
+        /// <summary>
+        /// 分层模式下，上眼睑在触发替换式眼部表情时的下移量。
+        /// 0 = 不额外移动；建议值 0.002 ~ 0.008。
+        /// 仅影响 LayeredDynamic 中的 UpperLid 程序位移。
+        /// </summary>
+        public float upperLidMoveDown = 0.0044f;
+
         // ─────────────────────────────────────────────
         // 查询 API
         // ─────────────────────────────────────────────
@@ -98,13 +105,14 @@ namespace CharacterStudio.Core
 
         public PawnEyeDirectionConfig Clone() => new PawnEyeDirectionConfig
         {
-            enabled        = this.enabled,
-            texCenter      = this.texCenter,
-            texLeft        = this.texLeft,
-            texRight       = this.texRight,
-            texUp          = this.texUp,
-            texDown        = this.texDown,
-            pupilMoveRange = this.pupilMoveRange,
+            enabled          = this.enabled,
+            texCenter        = this.texCenter,
+            texLeft          = this.texLeft,
+            texRight         = this.texRight,
+            texUp            = this.texUp,
+            texDown          = this.texDown,
+            pupilMoveRange   = this.pupilMoveRange,
+            upperLidMoveDown = this.upperLidMoveDown,
         };
     }
 }

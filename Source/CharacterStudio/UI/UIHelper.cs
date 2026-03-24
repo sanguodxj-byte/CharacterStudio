@@ -107,6 +107,52 @@ namespace CharacterStudio.UI
             y += 30f;
         }
 
+        public static bool DrawBrowseButton(Rect rect, Action onClick, string label = "…")
+        {
+            if (DrawSelectionButton(ExpandClickableRect(rect, 3f), label))
+            {
+                onClick?.Invoke();
+                return true;
+            }
+
+            return false;
+        }
+
+        public static bool DrawDangerButton(Rect rect, string label = "×", string? tooltip = null, Action? onClick = null)
+        {
+            Rect actualRect = ExpandClickableRect(rect, 4f);
+            Widgets.DrawBoxSolid(actualRect, new Color(0.42f, 0.12f, 0.12f, 0.90f));
+            Widgets.DrawBoxSolid(new Rect(actualRect.x, actualRect.yMax - 2f, actualRect.width, 2f), new Color(1f, 0.35f, 0.35f, 0.85f));
+            GUI.color = Mouse.IsOver(actualRect) ? new Color(1f, 0.72f, 0.72f, 0.95f) : new Color(0.72f, 0.28f, 0.28f, 0.95f);
+            Widgets.DrawBox(actualRect, 1);
+            GUI.color = Color.white;
+
+            GameFont oldFont = Text.Font;
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.MiddleCenter;
+            Widgets.Label(actualRect, label);
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = oldFont;
+
+            if (!string.IsNullOrEmpty(tooltip))
+            {
+                TooltipHandler.TipRegion(actualRect, tooltip);
+            }
+
+            if (Widgets.ButtonInvisible(actualRect))
+            {
+                onClick?.Invoke();
+                return true;
+            }
+
+            return false;
+        }
+
+        public static Rect ExpandClickableRect(Rect rect, float padding)
+        {
+            return new Rect(rect.x - padding, rect.y - padding, rect.width + padding * 2f, rect.height + padding * 2f);
+        }
+
         /// <summary>
         /// 绘制交替行背景
         /// </summary>
@@ -160,7 +206,7 @@ namespace CharacterStudio.UI
         /// <summary>
         /// 绘制带有选择按钮的字段
         /// </summary>
-        public static void DrawPropertyFieldWithButton(ref float y, float width, string label, string value, Action onButtonClick, string buttonText = "...", float labelWidth = LabelWidth)
+        public static void DrawPropertyFieldWithButton(ref float y, float width, string label, string value, Action onButtonClick, string buttonText = "…", float labelWidth = LabelWidth)
         {
             Rect rect = new Rect(0, y, width, RowHeight);
             
@@ -170,16 +216,36 @@ namespace CharacterStudio.UI
             Widgets.Label(new Rect(rect.x, rect.y, actualLabelWidth, 24), label);
             
             Text.Font = GameFont.Small;
-            float btnWidth = Mathf.Max(30f, Text.CalcSize(buttonText).x + 16f);
+            float btnWidth = Mathf.Max(32f, Text.CalcSize(buttonText).x + 18f);
             float fieldWidth = rect.width - actualLabelWidth - btnWidth - 5;
             
-            Widgets.Label(new Rect(rect.x + actualLabelWidth, rect.y, fieldWidth, 24), value ?? "(无)");
-            if (Widgets.ButtonText(new Rect(rect.x + actualLabelWidth + fieldWidth + 5, rect.y, btnWidth, 24), buttonText))
-            {
-                onButtonClick?.Invoke();
-            }
+            string displayValue = string.IsNullOrWhiteSpace(value)
+                ? "CS_Studio_None".Translate().ToString()
+                : value;
+            Widgets.Label(new Rect(rect.x + actualLabelWidth, rect.y, fieldWidth, 24), displayValue);
+            DrawBrowseButton(new Rect(rect.x + actualLabelWidth + fieldWidth + 5, rect.y, btnWidth, 24), onButtonClick, buttonText);
 
             y += RowHeight;
+        }
+
+        public static bool DrawSelectionButton(Rect rect, string label)
+        {
+            Widgets.DrawBoxSolid(rect, PanelFillSoftColor);
+            Widgets.DrawBoxSolid(new Rect(rect.x, rect.yMax - 2f, rect.width, 2f), AccentSoftColor);
+            GUI.color = Mouse.IsOver(rect) ? HoverOutlineColor : BorderColor;
+            Widgets.DrawBox(rect, 1);
+            GUI.color = Color.white;
+
+            GameFont oldFont = Text.Font;
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.MiddleCenter;
+            GUI.color = HeaderColor;
+            Widgets.Label(rect, label);
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = oldFont;
+
+            return Widgets.ButtonInvisible(rect);
         }
 
         /// <summary>
@@ -306,7 +372,7 @@ namespace CharacterStudio.UI
             
             Widgets.Label(new Rect(rect.x, rect.y, actualLabelWidth, 24), label);
             
-            if (Widgets.ButtonText(new Rect(rect.x + actualLabelWidth, rect.y, rect.width - actualLabelWidth, 24), labelMaker(currentValue)))
+            if (DrawSelectionButton(new Rect(rect.x + actualLabelWidth, rect.y, rect.width - actualLabelWidth, 24), labelMaker(currentValue)))
             {
                 List<FloatMenuOption> menuOptions = new List<FloatMenuOption>();
                 foreach (var option in options)
@@ -345,7 +411,7 @@ namespace CharacterStudio.UI
             }
             
             // 显示 RGB 文本
-            string colorText = $"R:{value.r:F2} G:{value.g:F2} B:{value.b:F2}";
+            string colorText = "CS_Studio_UI_ColorValueRGB".Translate(value.r.ToString("F2"), value.g.ToString("F2"), value.b.ToString("F2"));
             Widgets.Label(new Rect(colorRect.xMax + 10, rect.y, width - colorRect.xMax - 10, 24), colorText);
 
             y += RowHeight;
@@ -360,10 +426,24 @@ namespace CharacterStudio.UI
             
             Text.Font = GameFont.Small;
             float actualLabelWidth = Mathf.Max(labelWidth, Text.CalcSize(label).x + 10f);
-            
+            Rect toggleRect = new Rect(rect.x + actualLabelWidth, rect.y, Mathf.Max(44f, rect.width - actualLabelWidth), 24f);
+
             Widgets.Label(new Rect(rect.x, rect.y, actualLabelWidth, 24), label);
-            Widgets.Checkbox(new Vector2(rect.x + actualLabelWidth, rect.y + 2), ref value);
-            
+            Widgets.DrawBoxSolid(toggleRect, value ? ActiveTabColor : PanelFillSoftColor);
+            Widgets.DrawBoxSolid(new Rect(toggleRect.x, toggleRect.yMax - 2f, toggleRect.width, 2f), value ? AccentColor : AccentSoftColor);
+            GUI.color = Mouse.IsOver(toggleRect) ? HoverOutlineColor : BorderColor;
+            Widgets.DrawBox(toggleRect, 1);
+            GUI.color = Color.white;
+
+            Rect checkboxRect = new Rect(toggleRect.x + 6f, toggleRect.y + 2f, 20f, 20f);
+            Widgets.Checkbox(new Vector2(checkboxRect.x, checkboxRect.y), ref value, 20f, false);
+            GameFont oldFont = Text.Font;
+            Text.Font = GameFont.Tiny;
+            GUI.color = value ? HeaderColor : SubtleColor;
+            Widgets.Label(new Rect(toggleRect.x + 30f, toggleRect.y + 1f, toggleRect.width - 34f, toggleRect.height - 2f), value ? "CS_Studio_UI_On".Translate() : "CS_Studio_UI_Off".Translate());
+            GUI.color = Color.white;
+            Text.Font = oldFont;
+
             if (!string.IsNullOrEmpty(tooltip))
             {
                 TooltipHandler.TipRegion(rect, tooltip);

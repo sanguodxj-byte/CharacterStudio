@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <CS_Attr_BackstorySummary>背景故事</CS_Attr_BackstorySummary>
+    <CS_Attr_BiologicalAge>生理年龄</CS_Attr_BiologicalAge>
+    <CS_Attr_BodyType>BodyTypeDef</CS_Attr_BodyType>
+    <CS_Attr_ChronologicalAge>实际年龄</CS_Attr_ChronologicalAge>
+    <CS_Attr_CombatRole>战斗定位</CS_Attr_CombatRole>
+    <CS_Attr_FactionRole>阵营定位</CS_Attr_FactionRole>
+    <CS_Attr_FavoriteColor>偏好颜色</CS_Attr_FavoriteColor>
+    <CS_Attr_HairDef>HairDef</CS_Attr_HairDef>
+    <CS_Attr_HeadType>HeadTypeDef</CS_Attr_HeadType>
+    <CS_Attr_KeyTraits>关键特质</CS_Attr_KeyTraits>
+    <CS_Attr_MeleePower>近战强度</CS_Attr_MeleePower>
+    <CS_Attr_MoveSpeed>移动速度倍率</CS_Attr_MoveSpeed>
+    <CS_Attr_Personality>性格</CS_Attr_Personality>
+    <CS_Attr_Section_Basic>角色基础信息</CS_Attr_Section_Basic>
+    <CS_Attr_Section_Stats>核心属性</CS_Attr_Section_Stats>
+    <CS_Attr_ShootingAccuracy>射击精度</CS_Attr_ShootingAccuracy>
+    <CS_Attr_StartingApparel>初始服装 Def</CS_Attr_StartingApparel>
+    <CS_Attr_Tags>标签</CS_Attr_Tags>
+    <CS_Attr_Title>称号</CS_Attr_Title>
+    <CS_AttrBuff_AddAny>添加任意属性</CS_AttrBuff_AddAny>
+    <CS_AttrBuff_AddCommon>添加常用属性</CS_AttrBuff_AddCommon>
+    <CS_AttrBuff_Category_Animal>动物</CS_AttrBuff_Category_Animal>
+    <CS_AttrBuff_Category_Combat>战斗</CS_AttrBuff_Category_Combat>
+    <CS_AttrBuff_Category_Other>其他</CS_AttrBuff_Category_Other>
+    <CS_AttrBuff_Category_Psychic>灵能</CS_AttrBuff_Category_Psychic>
+    <CS_AttrBuff_Category_Social>社交</CS_AttrBuff_Category_Social>
+    <CS_AttrBuff_Category_Survival>生存</CS_AttrBuff_Category_Survival>
+    <CS_AttrBuff_Category_Work>工作</CS_AttrBuff_Category_Work>
+    <CS_AttrBuff_ClearAll>清空全部</CS_AttrBuff_ClearAll>
+    <CS_AttrBuff_CurrentValue>当前效果：{0}</CS_AttrBuff_CurrentValue>
+    <CS_AttrBuff_Empty>尚未配置属性增益。</CS_AttrBuff_Empty>
+    <CS_AttrBuff_ExplanationHeader>Character Studio 属性增益</CS_AttrBuff_ExplanationHeader>
+    <CS_AttrBuff_Mode_Factor>百分比倍率</CS_AttrBuff_Mode_Factor>
+    <CS_AttrBuff_Mode_Factor_Desc>按百分比修改最终属性，例如 0.10 表示 +10%。</CS_AttrBuff_Mode_Factor_Desc>
+    <CS_AttrBuff_Mode_Offset>固定加成</CS_AttrBuff_Mode_Offset>
+    <CS_AttrBuff_Mode_Offset_Desc>对最终属性值直接增加或减少一个固定数值。</CS_AttrBuff_Mode_Offset_Desc>
+    <CS_AttrBuff_Search>搜索属性</CS_AttrBuff_Search>
+    <CS_AttrBuff_Section>属性增益 Buff</CS_AttrBuff_Section>
+    <CS_AttrBuff_Value>数值</CS_AttrBuff_Value>
+</LanguageData>

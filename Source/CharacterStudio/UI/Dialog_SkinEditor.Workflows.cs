@@ -436,8 +436,10 @@ namespace CharacterStudio.UI
             Find.WindowStack.Add(new Dialog_FileBrowser(layer.texPath, path =>
             {
                 layer.texPath = path;
+                TrySyncEditableFaceLayerTextureToFaceConfig(layer);
                 isDirty = true;
                 RefreshPreview();
+                RefreshRenderTree();
             }));
         }
 

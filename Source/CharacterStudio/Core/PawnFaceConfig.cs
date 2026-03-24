@@ -35,6 +35,21 @@ namespace CharacterStudio.Core
         Overlay
     }
 
+    public enum LayeredFacePartSide
+    {
+        None,
+        Left,
+        Right
+    }
+
+    public enum LayeredOverlayKind
+    {
+        Blush,
+        Tear,
+        Sweat,
+        Generic
+    }
+
     /// <summary>
     /// 表情类型枚举
     /// 完整覆盖 NL Facial Animation 所有状态类别 + CS 独有状态
@@ -164,6 +179,16 @@ namespace CharacterStudio.Core
         public ExpressionType expression = ExpressionType.Neutral;
         public string texPath = string.Empty;
         public bool enabled = true;
+        public LayeredFacePartSide side = LayeredFacePartSide.None;
+
+        /// <summary>south / 默认朝向资源路径。</summary>
+        public string texPathSouth = string.Empty;
+
+        /// <summary>east / west 朝向资源路径。</summary>
+        public string texPathEast = string.Empty;
+
+        /// <summary>north 朝向资源路径。</summary>
+        public string texPathNorth = string.Empty;
 
         /// <summary>
         /// 当 partType = Overlay 时，用于区分多个 Overlay 条目。
@@ -181,6 +206,29 @@ namespace CharacterStudio.Core
         /// </summary>
         public Vector2 anchorCorrection = Vector2.zero;
 
+        public string GetDirectionalTexPath(Rot4 facing)
+        {
+            if (facing == Rot4.North && !string.IsNullOrWhiteSpace(texPathNorth))
+                return texPathNorth;
+
+            if ((facing == Rot4.East || facing == Rot4.West) && !string.IsNullOrWhiteSpace(texPathEast))
+                return texPathEast;
+
+            if (!string.IsNullOrWhiteSpace(texPathSouth))
+                return texPathSouth;
+
+            return texPath ?? string.Empty;
+        }
+
+        public void SyncDirectionalTexPathsFromLegacy()
+        {
+            if (string.IsNullOrWhiteSpace(texPathSouth) && !string.IsNullOrWhiteSpace(texPath))
+                texPathSouth = texPath;
+
+            if (string.IsNullOrWhiteSpace(texPath))
+                texPath = texPathSouth ?? string.Empty;
+        }
+
         public LayeredFacePartConfig Clone()
         {
             return new LayeredFacePartConfig
@@ -189,6 +237,10 @@ namespace CharacterStudio.Core
                 expression = this.expression,
                 texPath = this.texPath,
                 enabled = this.enabled,
+                side = this.side,
+                texPathSouth = this.texPathSouth,
+                texPathEast = this.texPathEast,
+                texPathNorth = this.texPathNorth,
                 overlayId = this.overlayId,
                 overlayOrder = this.overlayOrder,
                 anchorCorrection = this.anchorCorrection
@@ -252,9 +304,110 @@ namespace CharacterStudio.Core
             return partType == LayeredFacePartType.Overlay;
         }
 
-        private static string NormalizeOverlayId(string? overlayId)
+        public static bool SupportsSideSpecificParts(LayeredFacePartType partType)
         {
-            return string.IsNullOrWhiteSpace(overlayId) ? "Overlay" : overlayId!.Trim();
+            switch (partType)
+            {
+                case LayeredFacePartType.Brow:
+                case LayeredFacePartType.Eye:
+                case LayeredFacePartType.Pupil:
+                case LayeredFacePartType.UpperLid:
+                case LayeredFacePartType.LowerLid:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        public static LayeredFacePartSide NormalizePartSide(LayeredFacePartType partType, LayeredFacePartSide side)
+        {
+            return SupportsSideSpecificParts(partType) ? side : LayeredFacePartSide.None;
+        }
+
+        private static bool MatchesPartSide(LayeredFacePartConfig? part, LayeredFacePartType partType, LayeredFacePartSide side)
+        {
+            if (part == null)
+                return false;
+
+            return NormalizePartSide(partType, part.side) == NormalizePartSide(partType, side);
+        }
+
+        public static LayeredOverlayKind GetOverlayKind(string? overlayId)
+        {
+            string normalized = string.IsNullOrWhiteSpace(overlayId)
+                ? string.Empty
+                : overlayId!.Trim();
+
+            if (normalized.Equals("Blush", StringComparison.OrdinalIgnoreCase))
+                return LayeredOverlayKind.Blush;
+
+            if (normalized.Equals("Tear", StringComparison.OrdinalIgnoreCase))
+                return LayeredOverlayKind.Tear;
+
+            if (normalized.Equals("Sweat", StringComparison.OrdinalIgnoreCase))
+                return LayeredOverlayKind.Sweat;
+
+            return LayeredOverlayKind.Generic;
+        }
+
+        public static int GetCanonicalOverlayOrder(string? overlayId)
+        {
+            switch (GetOverlayKind(overlayId))
+            {
+                case LayeredOverlayKind.Blush:
+                    return 0;
+                case LayeredOverlayKind.Tear:
+                    return 1;
+                case LayeredOverlayKind.Sweat:
+                    return 2;
+                default:
+                    return 3;
+            }
+        }
+
+        public static LayeredFacePartType GetOverlayDisplayPartType(string? overlayId)
+        {
+            switch (GetOverlayKind(overlayId))
+            {
+                case LayeredOverlayKind.Blush:
+                    return LayeredFacePartType.Blush;
+                case LayeredOverlayKind.Tear:
+                    return LayeredFacePartType.Tear;
+                case LayeredOverlayKind.Sweat:
+                    return LayeredFacePartType.Sweat;
+                default:
+                    return LayeredFacePartType.Overlay;
+            }
+        }
+
+        public static string NormalizeOverlayId(string? overlayId)
+        {
+            string normalized = string.IsNullOrWhiteSpace(overlayId)
+                ? "Overlay"
+                : overlayId!.Trim().Replace('-', '_').Replace(' ', '_');
+
+            if (normalized.Equals("Blush", StringComparison.OrdinalIgnoreCase))
+                return "Blush";
+
+            if (normalized.Equals("Tear", StringComparison.OrdinalIgnoreCase))
+                return "Tear";
+
+            if (normalized.Equals("Sweat", StringComparison.OrdinalIgnoreCase))
+                return "Sweat";
+
+            if (normalized.Equals("Overlay", StringComparison.OrdinalIgnoreCase))
+                return "Overlay";
+
+            string[] segments = normalized
+                .Split(new[] { '_' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(segment => segment.Trim())
+                .Where(segment => !string.IsNullOrWhiteSpace(segment))
+                .ToArray();
+
+            if (segments.Length == 0)
+                return "Overlay";
+
+            return string.Join("_", segments);
         }
 
         private static bool MatchesOverlayId(LayeredFacePartConfig? part, string overlayId)
@@ -271,7 +424,8 @@ namespace CharacterStudio.Core
         private IEnumerable<LayeredFacePartConfig> EnumerateLayeredParts(
             LayeredFacePartType partType,
             string? overlayId = null,
-            bool includeAllOverlayGroups = false)
+            bool includeAllOverlayGroups = false,
+            LayeredFacePartSide? side = null)
         {
             if (layeredParts == null || layeredParts.Count == 0)
                 return Enumerable.Empty<LayeredFacePartConfig>();
@@ -284,16 +438,25 @@ namespace CharacterStudio.Core
                 query = query.Where(p => MatchesOverlayId(p, normalizedOverlayId));
             }
 
+            if (!IsOverlayPart(partType) && side.HasValue)
+            {
+                LayeredFacePartSide normalizedSide = NormalizePartSide(partType, side.Value);
+                query = query.Where(p => MatchesPartSide(p, partType, normalizedSide));
+            }
+
             if (IsOverlayPart(partType))
             {
                 query = query
-                    .OrderBy(p => p.overlayOrder)
+                    .OrderBy(p => GetCanonicalOverlayOrder(p.overlayId))
+                    .ThenBy(p => p.overlayOrder)
                     .ThenBy(p => NormalizeOverlayId(p.overlayId), StringComparer.OrdinalIgnoreCase)
                     .ThenBy(p => p.expression);
             }
             else
             {
-                query = query.OrderBy(p => p.expression);
+                query = query
+                    .OrderBy(p => p.expression)
+                    .ThenBy(p => (int)NormalizePartSide(partType, p.side));
             }
 
             return query;
@@ -303,30 +466,101 @@ namespace CharacterStudio.Core
             LayeredFacePartType partType,
             ExpressionType expression,
             string? overlayId = null,
-            bool includeAllOverlayGroups = false)
+            bool includeAllOverlayGroups = false,
+            LayeredFacePartSide? preferredSide = null)
         {
             if (layeredParts == null || layeredParts.Count == 0)
                 return null;
 
-            LayeredFacePartConfig? exact = EnumerateLayeredParts(partType, overlayId, includeAllOverlayGroups)
-                .FirstOrDefault(p =>
-                    p.enabled
-                    && p.expression == expression
-                    && !string.IsNullOrWhiteSpace(p.texPath));
+            LayeredFacePartConfig? Find(ExpressionType targetExpression, LayeredFacePartSide? targetSide)
+            {
+                return EnumerateLayeredParts(partType, overlayId, includeAllOverlayGroups, targetSide)
+                    .FirstOrDefault(p =>
+                        p.enabled
+                        && p.expression == targetExpression
+                        && !string.IsNullOrWhiteSpace(p.texPath));
+            }
 
+            LayeredFacePartConfig? FindAnySided(ExpressionType targetExpression)
+            {
+                return EnumerateLayeredParts(partType, overlayId, includeAllOverlayGroups)
+                    .FirstOrDefault(p =>
+                        p.enabled
+                        && p.expression == targetExpression
+                        && !string.IsNullOrWhiteSpace(p.texPath)
+                        && NormalizePartSide(partType, p.side) != LayeredFacePartSide.None);
+            }
+
+            if (IsOverlayPart(partType))
+            {
+                LayeredFacePartConfig? exactOverlay = Find(expression, null);
+                if (exactOverlay != null)
+                    return exactOverlay;
+
+                if (expression != ExpressionType.Neutral)
+                {
+                    LayeredFacePartConfig? neutralOverlay = Find(ExpressionType.Neutral, null);
+                    if (neutralOverlay != null)
+                        return neutralOverlay;
+                }
+
+                return null;
+            }
+
+            LayeredFacePartSide? normalizedPreferredSide = preferredSide.HasValue
+                ? NormalizePartSide(partType, preferredSide.Value)
+                : (LayeredFacePartSide?)null;
+
+            if (normalizedPreferredSide.HasValue && normalizedPreferredSide.Value != LayeredFacePartSide.None)
+            {
+                LayeredFacePartConfig? exactPreferred = Find(expression, normalizedPreferredSide.Value);
+                if (exactPreferred != null)
+                    return exactPreferred;
+
+                if (expression != ExpressionType.Neutral)
+                {
+                    LayeredFacePartConfig? neutralPreferred = Find(ExpressionType.Neutral, normalizedPreferredSide.Value);
+                    if (neutralPreferred != null)
+                        return neutralPreferred;
+                }
+
+                LayeredFacePartConfig? exactUnsided = Find(expression, LayeredFacePartSide.None);
+                if (exactUnsided != null)
+                    return exactUnsided;
+
+                if (expression != ExpressionType.Neutral)
+                {
+                    LayeredFacePartConfig? neutralUnsided = Find(ExpressionType.Neutral, LayeredFacePartSide.None);
+                    if (neutralUnsided != null)
+                        return neutralUnsided;
+                }
+
+                return null;
+            }
+
+            LayeredFacePartConfig? exact = Find(expression, LayeredFacePartSide.None);
             if (exact != null)
                 return exact;
 
             if (expression != ExpressionType.Neutral)
             {
-                LayeredFacePartConfig? neutral = EnumerateLayeredParts(partType, overlayId, includeAllOverlayGroups)
-                    .FirstOrDefault(p =>
-                        p.enabled
-                        && p.expression == ExpressionType.Neutral
-                        && !string.IsNullOrWhiteSpace(p.texPath));
-
+                LayeredFacePartConfig? neutral = Find(ExpressionType.Neutral, LayeredFacePartSide.None);
                 if (neutral != null)
                     return neutral;
+            }
+
+            if (!normalizedPreferredSide.HasValue)
+            {
+                LayeredFacePartConfig? exactSided = FindAnySided(expression);
+                if (exactSided != null)
+                    return exactSided;
+
+                if (expression != ExpressionType.Neutral)
+                {
+                    LayeredFacePartConfig? neutralSided = FindAnySided(ExpressionType.Neutral);
+                    if (neutralSided != null)
+                        return neutralSided;
+                }
             }
 
             return null;
@@ -334,12 +568,17 @@ namespace CharacterStudio.Core
 
         public LayeredFacePartConfig? GetLayeredPartConfig(LayeredFacePartType partType, ExpressionType expression)
         {
-            return GetLayeredPartConfigInternal(partType, expression, null, includeAllOverlayGroups: true);
+            return GetLayeredPartConfigInternal(partType, expression, null, includeAllOverlayGroups: true, preferredSide: null);
+        }
+
+        public LayeredFacePartConfig? GetLayeredPartConfig(LayeredFacePartType partType, ExpressionType expression, LayeredFacePartSide side)
+        {
+            return GetLayeredPartConfigInternal(partType, expression, null, includeAllOverlayGroups: true, preferredSide: side);
         }
 
         public LayeredFacePartConfig? GetLayeredPartConfig(LayeredFacePartType partType, ExpressionType expression, string overlayId)
         {
-            return GetLayeredPartConfigInternal(partType, expression, overlayId, includeAllOverlayGroups: false);
+            return GetLayeredPartConfigInternal(partType, expression, overlayId, includeAllOverlayGroups: false, preferredSide: null);
         }
 
         /// <summary>
@@ -384,7 +623,22 @@ namespace CharacterStudio.Core
         /// </summary>
         public string GetLayeredPartPath(LayeredFacePartType partType, ExpressionType expression)
         {
-            return GetLayeredPartConfigInternal(partType, expression, null, includeAllOverlayGroups: true)?.texPath ?? string.Empty;
+            return GetLayeredPartConfigInternal(partType, expression, null, includeAllOverlayGroups: true, preferredSide: null)?.texPath ?? string.Empty;
+        }
+
+        public string GetLayeredDirectionalPartPath(LayeredFacePartType partType, ExpressionType expression, Rot4 facing)
+        {
+            return GetLayeredPartConfigInternal(partType, expression, null, includeAllOverlayGroups: true, preferredSide: null)?.GetDirectionalTexPath(facing) ?? string.Empty;
+        }
+
+        public string GetLayeredPartPath(LayeredFacePartType partType, ExpressionType expression, LayeredFacePartSide side)
+        {
+            return GetLayeredPartConfigInternal(partType, expression, null, includeAllOverlayGroups: true, preferredSide: side)?.texPath ?? string.Empty;
+        }
+
+        public string GetLayeredDirectionalPartPath(LayeredFacePartType partType, ExpressionType expression, LayeredFacePartSide side, Rot4 facing)
+        {
+            return GetLayeredPartConfigInternal(partType, expression, null, includeAllOverlayGroups: true, preferredSide: side)?.GetDirectionalTexPath(facing) ?? string.Empty;
         }
 
         /// <summary>
@@ -392,13 +646,25 @@ namespace CharacterStudio.Core
         /// </summary>
         public string GetLayeredPartPath(LayeredFacePartType partType, ExpressionType expression, string overlayId)
         {
-            return GetLayeredPartConfigInternal(partType, expression, overlayId, includeAllOverlayGroups: false)?.texPath ?? string.Empty;
+            return GetLayeredPartConfigInternal(partType, expression, overlayId, includeAllOverlayGroups: false, preferredSide: null)?.texPath ?? string.Empty;
+        }
+
+        public string GetLayeredDirectionalPartPath(LayeredFacePartType partType, ExpressionType expression, string overlayId, Rot4 facing)
+        {
+            return GetLayeredPartConfigInternal(partType, expression, overlayId, includeAllOverlayGroups: false, preferredSide: null)?.GetDirectionalTexPath(facing) ?? string.Empty;
         }
 
         /// <summary>获取指定类型的已启用分层部件数量</summary>
         public int CountLayeredParts(LayeredFacePartType partType)
         {
             return EnumerateLayeredParts(partType, null, includeAllOverlayGroups: true).Count(p =>
+                p.enabled && !string.IsNullOrWhiteSpace(p.texPath));
+        }
+
+        public int CountLayeredParts(LayeredFacePartType partType, LayeredFacePartSide side)
+        {
+            LayeredFacePartSide normalizedSide = NormalizePartSide(partType, side);
+            return EnumerateLayeredParts(partType, null, includeAllOverlayGroups: true, normalizedSide).Count(p =>
                 p.enabled && !string.IsNullOrWhiteSpace(p.texPath));
         }
 
@@ -419,7 +685,7 @@ namespace CharacterStudio.Core
             if (layeredParts == null || layeredParts.Count == 0)
                 return string.Empty;
 
-            LayeredFacePartConfig? neutral = EnumerateLayeredParts(partType, null, includeAllOverlayGroups: true)
+            LayeredFacePartConfig? neutral = EnumerateLayeredParts(partType, null, includeAllOverlayGroups: true, LayeredFacePartSide.None)
                 .FirstOrDefault(p =>
                     p.enabled
                     && p.expression == ExpressionType.Neutral
@@ -428,12 +694,91 @@ namespace CharacterStudio.Core
             if (neutral != null)
                 return neutral.texPath ?? string.Empty;
 
+            LayeredFacePartConfig? neutralAny = EnumerateLayeredParts(partType, null, includeAllOverlayGroups: true)
+                .FirstOrDefault(p =>
+                    p.enabled
+                    && p.expression == ExpressionType.Neutral
+                    && !string.IsNullOrWhiteSpace(p.texPath));
+
+            if (neutralAny != null)
+                return neutralAny.texPath ?? string.Empty;
+
             LayeredFacePartConfig? first = EnumerateLayeredParts(partType, null, includeAllOverlayGroups: true)
                 .FirstOrDefault(p =>
                     p.enabled
                     && !string.IsNullOrWhiteSpace(p.texPath));
 
             return first?.texPath ?? string.Empty;
+        }
+
+        public string GetAnyDirectionalLayeredPartPath(LayeredFacePartType partType, Rot4 facing)
+        {
+            if (layeredParts == null || layeredParts.Count == 0)
+                return string.Empty;
+
+            LayeredFacePartConfig? neutral = EnumerateLayeredParts(partType, null, includeAllOverlayGroups: true, LayeredFacePartSide.None)
+                .FirstOrDefault(p => p.enabled && p.expression == ExpressionType.Neutral && !string.IsNullOrWhiteSpace(p.texPath));
+            if (neutral != null)
+                return neutral.GetDirectionalTexPath(facing);
+
+            LayeredFacePartConfig? neutralAny = EnumerateLayeredParts(partType, null, includeAllOverlayGroups: true)
+                .FirstOrDefault(p => p.enabled && p.expression == ExpressionType.Neutral && !string.IsNullOrWhiteSpace(p.texPath));
+            if (neutralAny != null)
+                return neutralAny.GetDirectionalTexPath(facing);
+
+            LayeredFacePartConfig? first = EnumerateLayeredParts(partType, null, includeAllOverlayGroups: true)
+                .FirstOrDefault(p => p.enabled && !string.IsNullOrWhiteSpace(p.texPath));
+            return first?.GetDirectionalTexPath(facing) ?? string.Empty;
+        }
+
+        public string GetAnyLayeredPartPath(LayeredFacePartType partType, LayeredFacePartSide side)
+        {
+            if (layeredParts == null || layeredParts.Count == 0)
+                return string.Empty;
+
+            LayeredFacePartSide normalizedSide = NormalizePartSide(partType, side);
+
+            LayeredFacePartConfig? neutralSide = EnumerateLayeredParts(partType, null, includeAllOverlayGroups: true, normalizedSide)
+                .FirstOrDefault(p =>
+                    p.enabled
+                    && p.expression == ExpressionType.Neutral
+                    && !string.IsNullOrWhiteSpace(p.texPath));
+
+            if (neutralSide != null)
+                return neutralSide.texPath ?? string.Empty;
+
+            if (normalizedSide != LayeredFacePartSide.None)
+            {
+                LayeredFacePartConfig? neutralUnsided = EnumerateLayeredParts(partType, null, includeAllOverlayGroups: true, LayeredFacePartSide.None)
+                    .FirstOrDefault(p =>
+                        p.enabled
+                        && p.expression == ExpressionType.Neutral
+                        && !string.IsNullOrWhiteSpace(p.texPath));
+
+                if (neutralUnsided != null)
+                    return neutralUnsided.texPath ?? string.Empty;
+            }
+
+            LayeredFacePartConfig? firstSide = EnumerateLayeredParts(partType, null, includeAllOverlayGroups: true, normalizedSide)
+                .FirstOrDefault(p =>
+                    p.enabled
+                    && !string.IsNullOrWhiteSpace(p.texPath));
+
+            if (firstSide != null)
+                return firstSide.texPath ?? string.Empty;
+
+            if (normalizedSide != LayeredFacePartSide.None)
+            {
+                LayeredFacePartConfig? firstUnsided = EnumerateLayeredParts(partType, null, includeAllOverlayGroups: true, LayeredFacePartSide.None)
+                    .FirstOrDefault(p =>
+                        p.enabled
+                        && !string.IsNullOrWhiteSpace(p.texPath));
+
+                if (firstUnsided != null)
+                    return firstUnsided.texPath ?? string.Empty;
+            }
+
+            return string.Empty;
         }
 
         /// <summary>
@@ -470,7 +815,8 @@ namespace CharacterStudio.Core
             return layeredParts
                 .Where(p => p != null && p.partType == LayeredFacePartType.Overlay)
                 .GroupBy(p => NormalizeOverlayId(p.overlayId), StringComparer.OrdinalIgnoreCase)
-                .OrderBy(g => g.Min(p => p.overlayOrder))
+                .OrderBy(g => GetCanonicalOverlayOrder(g.Key))
+                .ThenBy(g => g.Min(p => p.overlayOrder))
                 .ThenBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
                 .Select(g => g.Key)
                 .ToList();
@@ -478,16 +824,18 @@ namespace CharacterStudio.Core
 
         public int GetOverlayOrder(string overlayId)
         {
-            if (layeredParts == null || layeredParts.Count == 0)
-                return 0;
-
             string normalized = NormalizeOverlayId(overlayId);
+            int canonicalOrder = GetCanonicalOverlayOrder(normalized);
+
+            if (layeredParts == null || layeredParts.Count == 0)
+                return canonicalOrder;
+
             return layeredParts
                 .Where(p => p != null
                     && p.partType == LayeredFacePartType.Overlay
                     && MatchesOverlayId(p, normalized))
                 .Select(p => p.overlayOrder)
-                .DefaultIfEmpty(0)
+                .DefaultIfEmpty(canonicalOrder)
                 .Min();
         }
 
@@ -497,22 +845,28 @@ namespace CharacterStudio.Core
                 return;
 
             string normalized = NormalizeOverlayId(overlayId);
+            int resolvedOrder = Math.Max(GetCanonicalOverlayOrder(normalized), overlayOrder);
             foreach (var part in layeredParts.Where(p =>
                          p != null
                          && p.partType == LayeredFacePartType.Overlay
                          && MatchesOverlayId(p, normalized)))
             {
                 part.overlayId = normalized;
-                part.overlayOrder = overlayOrder;
+                part.overlayOrder = resolvedOrder;
             }
         }
 
         public void NormalizeOverlayOrders()
         {
             List<string> orderedOverlayIds = GetOrderedOverlayIds();
-            for (int i = 0; i < orderedOverlayIds.Count; i++)
+            int nextCustomOrder = 3;
+            foreach (string overlayId in orderedOverlayIds)
             {
-                SetOverlayOrder(orderedOverlayIds[i], i);
+                LayeredOverlayKind kind = GetOverlayKind(overlayId);
+                int normalizedOrder = kind == LayeredOverlayKind.Generic
+                    ? nextCustomOrder++
+                    : GetCanonicalOverlayOrder(overlayId);
+                SetOverlayOrder(overlayId, normalizedOrder);
             }
         }
 
@@ -529,6 +883,10 @@ namespace CharacterStudio.Core
             if (exists)
                 return;
 
+            int overlayOrder = GetOverlayKind(normalized) == LayeredOverlayKind.Generic
+                ? Math.Max(3, GetOrderedOverlayIds().Count(id => GetOverlayKind(id) == LayeredOverlayKind.Generic) + 3)
+                : GetCanonicalOverlayOrder(normalized);
+
             layeredParts.Add(new LayeredFacePartConfig
             {
                 partType = LayeredFacePartType.Overlay,
@@ -536,7 +894,7 @@ namespace CharacterStudio.Core
                 texPath = string.Empty,
                 enabled = false,
                 overlayId = normalized,
-                overlayOrder = GetOrderedOverlayIds().Count
+                overlayOrder = overlayOrder
             });
         }
 
@@ -619,35 +977,90 @@ namespace CharacterStudio.Core
                 return;
             }
 
+            SetLayeredPart(partType, expression, texPath, LayeredFacePartSide.None);
+        }
+
+        public void SetLayeredPart(LayeredFacePartType partType, ExpressionType expression, string texPath, LayeredFacePartSide side)
+        {
+            SetLayeredPartDirectional(partType, expression, texPath, string.Empty, string.Empty, side);
+        }
+
+        public void SetLayeredPartDirectional(
+            LayeredFacePartType partType,
+            ExpressionType expression,
+            string texPathSouth,
+            string texPathEast,
+            string texPathNorth,
+            LayeredFacePartSide side)
+        {
+            if (IsOverlayPart(partType))
+            {
+                SetLayeredPart(partType, expression, texPathSouth);
+                return;
+            }
+
             layeredParts ??= new List<LayeredFacePartConfig>();
-            var existing = layeredParts.FirstOrDefault(p => p.partType == partType && p.expression == expression);
+            LayeredFacePartSide normalizedSide = NormalizePartSide(partType, side);
+            var existing = layeredParts.FirstOrDefault(p =>
+                p.partType == partType
+                && p.expression == expression
+                && MatchesPartSide(p, partType, normalizedSide));
+
             if (existing != null)
             {
-                existing.texPath = texPath ?? string.Empty;
-                existing.enabled = !string.IsNullOrWhiteSpace(texPath);
+                existing.texPathSouth = texPathSouth ?? string.Empty;
+                existing.texPathEast = texPathEast ?? string.Empty;
+                existing.texPathNorth = texPathNorth ?? string.Empty;
+                existing.texPath = existing.texPathSouth;
+                existing.enabled = !string.IsNullOrWhiteSpace(existing.texPath)
+                    || !string.IsNullOrWhiteSpace(existing.texPathEast)
+                    || !string.IsNullOrWhiteSpace(existing.texPathNorth);
+                existing.side = normalizedSide;
+                existing.SyncDirectionalTexPathsFromLegacy();
             }
             else
             {
-                layeredParts.Add(new LayeredFacePartConfig
+                LayeredFacePartConfig created = new LayeredFacePartConfig
                 {
                     partType = partType,
                     expression = expression,
-                    texPath = texPath ?? string.Empty,
-                    enabled = !string.IsNullOrWhiteSpace(texPath)
-                });
+                    texPath = texPathSouth ?? string.Empty,
+                    texPathSouth = texPathSouth ?? string.Empty,
+                    texPathEast = texPathEast ?? string.Empty,
+                    texPathNorth = texPathNorth ?? string.Empty,
+                    enabled = !string.IsNullOrWhiteSpace(texPathSouth)
+                        || !string.IsNullOrWhiteSpace(texPathEast)
+                        || !string.IsNullOrWhiteSpace(texPathNorth),
+                    side = normalizedSide
+                };
+                created.SyncDirectionalTexPathsFromLegacy();
+                layeredParts.Add(created);
             }
         }
 
         public void SetLayeredPart(LayeredFacePartType partType, ExpressionType expression, string texPath, string overlayId, int overlayOrder = 0)
         {
+            SetLayeredPartDirectional(partType, expression, texPath, string.Empty, string.Empty, overlayId, overlayOrder);
+        }
+
+        public void SetLayeredPartDirectional(
+            LayeredFacePartType partType,
+            ExpressionType expression,
+            string texPathSouth,
+            string texPathEast,
+            string texPathNorth,
+            string overlayId,
+            int overlayOrder = 0)
+        {
             if (!IsOverlayPart(partType))
             {
-                SetLayeredPart(partType, expression, texPath);
+                SetLayeredPartDirectional(partType, expression, texPathSouth, texPathEast, texPathNorth, LayeredFacePartSide.None);
                 return;
             }
 
             layeredParts ??= new List<LayeredFacePartConfig>();
             string normalizedOverlayId = NormalizeOverlayId(overlayId);
+            int resolvedOverlayOrder = Math.Max(GetCanonicalOverlayOrder(normalizedOverlayId), overlayOrder);
 
             var existing = layeredParts.FirstOrDefault(p =>
                 p.partType == partType
@@ -656,22 +1069,35 @@ namespace CharacterStudio.Core
 
             if (existing != null)
             {
-                existing.texPath = texPath ?? string.Empty;
-                existing.enabled = !string.IsNullOrWhiteSpace(texPath);
+                existing.texPathSouth = texPathSouth ?? string.Empty;
+                existing.texPathEast = texPathEast ?? string.Empty;
+                existing.texPathNorth = texPathNorth ?? string.Empty;
+                existing.texPath = existing.texPathSouth;
+                existing.enabled = !string.IsNullOrWhiteSpace(existing.texPath)
+                    || !string.IsNullOrWhiteSpace(existing.texPathEast)
+                    || !string.IsNullOrWhiteSpace(existing.texPathNorth);
                 existing.overlayId = normalizedOverlayId;
-                existing.overlayOrder = overlayOrder;
+                existing.overlayOrder = resolvedOverlayOrder;
+                existing.SyncDirectionalTexPathsFromLegacy();
             }
             else
             {
-                layeredParts.Add(new LayeredFacePartConfig
+                LayeredFacePartConfig created = new LayeredFacePartConfig
                 {
                     partType = partType,
                     expression = expression,
-                    texPath = texPath ?? string.Empty,
-                    enabled = !string.IsNullOrWhiteSpace(texPath),
+                    texPath = texPathSouth ?? string.Empty,
+                    texPathSouth = texPathSouth ?? string.Empty,
+                    texPathEast = texPathEast ?? string.Empty,
+                    texPathNorth = texPathNorth ?? string.Empty,
+                    enabled = !string.IsNullOrWhiteSpace(texPathSouth)
+                        || !string.IsNullOrWhiteSpace(texPathEast)
+                        || !string.IsNullOrWhiteSpace(texPathNorth),
                     overlayId = normalizedOverlayId,
-                    overlayOrder = overlayOrder
-                });
+                    overlayOrder = resolvedOverlayOrder
+                };
+                created.SyncDirectionalTexPathsFromLegacy();
+                layeredParts.Add(created);
             }
         }
 
@@ -683,7 +1109,22 @@ namespace CharacterStudio.Core
                 return;
             }
 
-            layeredParts?.RemoveAll(p => p.partType == partType && p.expression == expression);
+            RemoveLayeredPart(partType, expression, LayeredFacePartSide.None);
+        }
+
+        public void RemoveLayeredPart(LayeredFacePartType partType, ExpressionType expression, LayeredFacePartSide side)
+        {
+            if (IsOverlayPart(partType))
+            {
+                RemoveLayeredPart(partType, expression);
+                return;
+            }
+
+            LayeredFacePartSide normalizedSide = NormalizePartSide(partType, side);
+            layeredParts?.RemoveAll(p =>
+                p.partType == partType
+                && p.expression == expression
+                && MatchesPartSide(p, partType, normalizedSide));
         }
 
         public void RemoveLayeredPart(LayeredFacePartType partType, ExpressionType expression, string overlayId)

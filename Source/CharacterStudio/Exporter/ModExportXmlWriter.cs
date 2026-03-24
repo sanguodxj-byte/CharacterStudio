@@ -97,12 +97,24 @@ namespace CharacterStudio.Exporter
                     !string.IsNullOrWhiteSpace(equipment.description) ? new XElement("description", equipment.description) : null,
                     new XElement("enabled", equipment.enabled.ToString().ToLower()),
                     !string.IsNullOrWhiteSpace(equipment.slotTag) ? new XElement("slotTag", equipment.slotTag) : null,
-                    !string.IsNullOrWhiteSpace(equipment.linkedThingDefName) ? new XElement("linkedThingDefName", equipment.linkedThingDefName) : null,
+                    !string.IsNullOrWhiteSpace(equipment.thingDefName) ? new XElement("thingDefName", equipment.thingDefName) : null,
+                    !string.IsNullOrWhiteSpace(equipment.parentThingDefName) ? new XElement("parentThingDefName", equipment.parentThingDefName) : null,
+                    !string.IsNullOrWhiteSpace(equipment.worldTexPath) ? new XElement("worldTexPath", equipment.worldTexPath) : null,
+                    !string.IsNullOrWhiteSpace(equipment.wornTexPath) ? new XElement("wornTexPath", equipment.wornTexPath) : null,
+                    !string.IsNullOrWhiteSpace(equipment.maskTexPath) ? new XElement("maskTexPath", equipment.maskTexPath) : null,
+                    !string.IsNullOrWhiteSpace(equipment.shaderDefName) ? new XElement("shaderDefName", equipment.shaderDefName) : null,
+                    equipment.useWornGraphicMask ? new XElement("useWornGraphicMask", equipment.useWornGraphicMask.ToString().ToLower()) : null,
                     !string.IsNullOrWhiteSpace(equipment.previewTexPath) ? new XElement("previewTexPath", equipment.previewTexPath) : null,
                     !string.IsNullOrWhiteSpace(equipment.sourceNote) ? new XElement("sourceNote", equipment.sourceNote) : null,
                     GenerateStringListXml("tags", equipment.tags),
                     GenerateStringListXml("abilityDefNames", equipment.abilityDefNames),
-                    GenerateEquipmentVisualXml(equipment.visual)
+                    GenerateStringListXml("thingCategories", equipment.thingCategories),
+                    GenerateStringListXml("bodyPartGroups", equipment.bodyPartGroups),
+                    GenerateStringListXml("apparelLayers", equipment.apparelLayers),
+                    GenerateStringListXml("apparelTags", equipment.apparelTags),
+                    GenerateEquipmentStatEntriesXml("statBases", equipment.statBases),
+                    GenerateEquipmentStatEntriesXml("equippedStatOffsets", equipment.equippedStatOffsets),
+                    GenerateEquipmentRenderDataXml(equipment.renderData)
                 );
 
                 element.Add(equipmentEl);
@@ -111,14 +123,61 @@ namespace CharacterStudio.Exporter
             return element.HasElements ? element : null;
         }
 
-        private static XElement? GenerateEquipmentVisualXml(PawnLayerConfig? layer)
+        private static XElement? GenerateEquipmentStatEntriesXml(string tagName, List<CharacterEquipmentStatEntry>? entries)
         {
-            if (layer == null)
+            if (entries == null || entries.Count == 0)
             {
                 return null;
             }
 
-            return new XElement("visual", GeneratePawnLayerXmlContent(layer));
+            var root = new XElement(tagName);
+            foreach (var entry in entries)
+            {
+                if (entry == null || string.IsNullOrWhiteSpace(entry.statDefName))
+                {
+                    continue;
+                }
+
+                root.Add(new XElement("li",
+                    new XElement("statDefName", entry.statDefName),
+                    new XElement("value", entry.value.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                ));
+            }
+
+            return root.HasElements ? root : null;
+        }
+
+        private static XElement? GenerateEquipmentRenderDataXml(CharacterEquipmentRenderData? renderData)
+        {
+            if (renderData == null)
+            {
+                return null;
+            }
+
+            return new XElement("renderData",
+                !string.IsNullOrWhiteSpace(renderData.layerName) ? new XElement("layerName", renderData.layerName) : null,
+                !string.IsNullOrWhiteSpace(renderData.texPath) ? new XElement("texPath", renderData.texPath) : null,
+                !string.IsNullOrWhiteSpace(renderData.anchorTag) ? new XElement("anchorTag", renderData.anchorTag) : null,
+                !string.IsNullOrWhiteSpace(renderData.anchorPath) ? new XElement("anchorPath", renderData.anchorPath) : null,
+                !string.IsNullOrWhiteSpace(renderData.maskTexPath) ? new XElement("maskTexPath", renderData.maskTexPath) : null,
+                !string.IsNullOrWhiteSpace(renderData.shaderDefName) ? new XElement("shaderDefName", renderData.shaderDefName) : null,
+                new XElement("offset", FormatVector3(renderData.offset)),
+                renderData.offsetEast != Vector3.zero ? new XElement("offsetEast", FormatVector3(renderData.offsetEast)) : null,
+                renderData.offsetNorth != Vector3.zero ? new XElement("offsetNorth", FormatVector3(renderData.offsetNorth)) : null,
+                new XElement("scale", FormatVector2(renderData.scale)),
+                renderData.scaleEastMultiplier != Vector2.one ? new XElement("scaleEastMultiplier", FormatVector2(renderData.scaleEastMultiplier)) : null,
+                renderData.scaleNorthMultiplier != Vector2.one ? new XElement("scaleNorthMultiplier", FormatVector2(renderData.scaleNorthMultiplier)) : null,
+                new XElement("rotation", renderData.rotation),
+                renderData.rotationEastOffset != 0f ? new XElement("rotationEastOffset", renderData.rotationEastOffset) : null,
+                renderData.rotationNorthOffset != 0f ? new XElement("rotationNorthOffset", renderData.rotationNorthOffset) : null,
+                new XElement("drawOrder", renderData.drawOrder),
+                new XElement("flipHorizontal", renderData.flipHorizontal.ToString().ToLower()),
+                new XElement("visible", renderData.visible.ToString().ToLower()),
+                new XElement("colorSource", renderData.colorSource.ToString()),
+                renderData.colorSource == LayerColorSource.Fixed ? new XElement("customColor", FormatColor(renderData.customColor)) : null,
+                new XElement("colorTwoSource", renderData.colorTwoSource.ToString()),
+                renderData.colorTwoSource == LayerColorSource.Fixed ? new XElement("customColorTwo", FormatColor(renderData.customColorTwo)) : null
+            );
         }
 
         private static IEnumerable<object?> GeneratePawnLayerXmlContent(PawnLayerConfig layer)
@@ -212,6 +271,8 @@ namespace CharacterStudio.Exporter
                 yield return new XElement("animPhaseOffset", layer.animPhaseOffset);
                 yield return new XElement("animAffectsOffset", layer.animAffectsOffset.ToString().ToLower());
                 yield return new XElement("animOffsetAmplitude", layer.animOffsetAmplitude);
+                if (layer.animationType == LayerAnimationType.Spin && layer.animPivotOffset != Vector2.zero)
+                    yield return new XElement("animPivotOffset", $"({layer.animPivotOffset.x:F3}, {layer.animPivotOffset.y:F3})");
             }
         }
 
@@ -335,7 +396,11 @@ namespace CharacterStudio.Exporter
             }
 
             // 序列化眼睛方向配置（嵌套在 faceConfig 内）
-            if (config.eyeDirectionConfig != null && config.eyeDirectionConfig.HasAnyTex())
+            if (config.eyeDirectionConfig != null
+                && (config.eyeDirectionConfig.HasAnyTex()
+                    || config.eyeDirectionConfig.pupilMoveRange != 0f
+                    || config.eyeDirectionConfig.upperLidMoveDown != 0.0044f
+                    || config.eyeDirectionConfig.enabled))
             {
                 var eyeEl = GenerateEyeDirectionConfigXml(config.eyeDirectionConfig);
                 if (eyeEl != null) element.Add(eyeEl);
@@ -455,6 +520,15 @@ namespace CharacterStudio.Exporter
                     new XElement("jumpDistance", component.jumpDistance),
                     new XElement("findCellRadius", component.findCellRadius),
                     new XElement("triggerAbilityEffectsAfterJump", component.triggerAbilityEffectsAfterJump.ToString().ToLower()),
+                    new XElement("useMouseTargetCell", component.useMouseTargetCell.ToString().ToLower()),
+                    new XElement("smartCastOffsetCells", component.smartCastOffsetCells),
+                    new XElement("smartCastClampToMaxDistance", component.smartCastClampToMaxDistance.ToString().ToLower()),
+                    new XElement("smartCastAllowFallbackForward", component.smartCastAllowFallbackForward.ToString().ToLower()),
+                    new XElement("overrideHotkeySlot", component.overrideHotkeySlot.ToString()),
+                    new XElement("overrideAbilityDefName", component.overrideAbilityDefName ?? string.Empty),
+                    new XElement("overrideDurationTicks", component.overrideDurationTicks),
+                    new XElement("followupCooldownHotkeySlot", component.followupCooldownHotkeySlot.ToString()),
+                    new XElement("followupCooldownTicks", component.followupCooldownTicks),
                     new XElement("requiredStacks", component.requiredStacks),
                     new XElement("delayTicks", component.delayTicks),
                     new XElement("wave1Radius", component.wave1Radius),
@@ -463,7 +537,52 @@ namespace CharacterStudio.Exporter
                     new XElement("wave2Damage", component.wave2Damage),
                     new XElement("wave3Radius", component.wave3Radius),
                     new XElement("wave3Damage", component.wave3Damage),
-                    component.waveDamageDef != null ? new XElement("waveDamageDef", component.waveDamageDef.defName) : null
+                    component.waveDamageDef != null ? new XElement("waveDamageDef", component.waveDamageDef.defName) : null,
+                    new XElement("pulseIntervalTicks", component.pulseIntervalTicks),
+                    new XElement("pulseTotalTicks", component.pulseTotalTicks),
+                    new XElement("pulseStartsImmediately", component.pulseStartsImmediately.ToString().ToLower()),
+                    new XElement("killRefreshHotkeySlot", component.killRefreshHotkeySlot.ToString()),
+                    new XElement("killRefreshCooldownPercent", component.killRefreshCooldownPercent),
+                    new XElement("shieldMaxDamage", component.shieldMaxDamage),
+                    new XElement("shieldDurationTicks", component.shieldDurationTicks),
+                    new XElement("shieldHealRatio", component.shieldHealRatio),
+                    new XElement("shieldBonusDamageRatio", component.shieldBonusDamageRatio),
+                    new XElement("maxBounceCount", component.maxBounceCount),
+                    new XElement("bounceRange", component.bounceRange),
+                    new XElement("bounceDamageFalloff", component.bounceDamageFalloff),
+                    new XElement("executeThresholdPercent", component.executeThresholdPercent),
+                    new XElement("executeBonusDamageScale", component.executeBonusDamageScale),
+                    new XElement("missingHealthBonusPerTenPercent", component.missingHealthBonusPerTenPercent),
+                    new XElement("missingHealthBonusMaxScale", component.missingHealthBonusMaxScale),
+                    new XElement("fullHealthThresholdPercent", component.fullHealthThresholdPercent),
+                    new XElement("fullHealthBonusDamageScale", component.fullHealthBonusDamageScale),
+                    new XElement("nearbyEnemyBonusMaxTargets", component.nearbyEnemyBonusMaxTargets),
+                    new XElement("nearbyEnemyBonusPerTarget", component.nearbyEnemyBonusPerTarget),
+                    new XElement("nearbyEnemyBonusRadius", component.nearbyEnemyBonusRadius),
+                    new XElement("isolatedTargetRadius", component.isolatedTargetRadius),
+                    new XElement("isolatedTargetBonusDamageScale", component.isolatedTargetBonusDamageScale),
+                    new XElement("markDurationTicks", component.markDurationTicks),
+                    new XElement("markMaxStacks", component.markMaxStacks),
+                    new XElement("markDetonationDamage", component.markDetonationDamage),
+                    component.markDamageDef != null ? new XElement("markDamageDef", component.markDamageDef.defName) : null,
+                    new XElement("comboStackWindowTicks", component.comboStackWindowTicks),
+                    new XElement("comboStackMax", component.comboStackMax),
+                    new XElement("comboStackBonusDamagePerStack", component.comboStackBonusDamagePerStack),
+                    new XElement("slowFieldDurationTicks", component.slowFieldDurationTicks),
+                    new XElement("slowFieldRadius", component.slowFieldRadius),
+                    new XElement("slowFieldHediffDefName", component.slowFieldHediffDefName ?? string.Empty),
+                    new XElement("pierceMaxTargets", component.pierceMaxTargets),
+                    new XElement("pierceBonusDamagePerTarget", component.pierceBonusDamagePerTarget),
+                    new XElement("pierceSearchRange", component.pierceSearchRange),
+                    new XElement("dashEmpowerDurationTicks", component.dashEmpowerDurationTicks),
+                    new XElement("dashEmpowerBonusDamageScale", component.dashEmpowerBonusDamageScale),
+                    new XElement("hitHealAmount", component.hitHealAmount),
+                    new XElement("hitHealRatio", component.hitHealRatio),
+                    new XElement("refundHotkeySlot", component.refundHotkeySlot.ToString()),
+                    new XElement("hitCooldownRefundPercent", component.hitCooldownRefundPercent),
+                    new XElement("splitProjectileCount", component.splitProjectileCount),
+                    new XElement("splitDamageScale", component.splitDamageScale),
+                    new XElement("splitSearchRange", component.splitSearchRange)
                 );
 
                 root.Add(compEl);
@@ -629,12 +748,157 @@ namespace CharacterStudio.Exporter
                         GenerateTargetRacesXml(skin.targetRaces),
                         skin.applyAsDefaultForTargetRaces ? new XElement("applyAsDefaultForTargetRaces", "true") : null,
                         skin.defaultRacePriority != 0 ? new XElement("defaultRacePriority", skin.defaultRacePriority) : null,
-                        skin.faceConfig != null && (skin.faceConfig.enabled || skin.faceConfig.HasAnyExpression() || skin.faceConfig.HasAnyLayeredPart() || skin.faceConfig.eyeDirectionConfig?.HasAnyTex() == true) ? GenerateFaceConfigXml(skin.faceConfig) : null,
+                        skin.faceConfig != null && (skin.faceConfig.enabled || skin.faceConfig.HasAnyExpression() || skin.faceConfig.HasAnyLayeredPart() || skin.faceConfig.eyeDirectionConfig?.HasAnyTex() == true || skin.faceConfig.eyeDirectionConfig?.pupilMoveRange != 0f || skin.faceConfig.eyeDirectionConfig?.upperLidMoveDown != 0.0044f || skin.faceConfig.eyeDirectionConfig?.enabled == true) ? GenerateFaceConfigXml(skin.faceConfig) : null,
                         skin.weaponRenderConfig != null && skin.weaponRenderConfig.enabled ? GenerateWeaponRenderConfigXml(skin.weaponRenderConfig) : null,
-                        GenerateEquipmentsXml(skin.equipments),
                         GenerateSkinAbilitiesXml(skin.abilities),
                         GenerateAbilityHotkeysXml(skin.abilityHotkeys)
                     )
+                )
+            );
+        }
+
+        public static XDocument CreateEquipmentThingDefsDocument(List<CharacterEquipmentDef>? equipments)
+        {
+            var defsRoot = new XElement("Defs");
+
+            if (equipments != null)
+            {
+                foreach (var equipment in equipments)
+                {
+                    var equipmentEl = GenerateEquipmentThingDefXml(equipment);
+                    if (equipmentEl != null)
+                    {
+                        defsRoot.Add(equipmentEl);
+                    }
+                }
+            }
+
+            return new XDocument(
+                new XDeclaration("1.0", "utf-8", null),
+                defsRoot
+            );
+        }
+
+        public static XElement? GenerateEquipmentThingDefXml(CharacterEquipmentDef? equipment)
+        {
+            if (equipment == null)
+            {
+                return null;
+            }
+
+            equipment.EnsureDefaults();
+
+            string resolvedThingDefName = equipment.GetResolvedThingDefName();
+            if (string.IsNullOrWhiteSpace(resolvedThingDefName))
+            {
+                return null;
+            }
+
+            var thingDef = new XElement("ThingDef",
+                new XAttribute("ParentName", string.IsNullOrWhiteSpace(equipment.parentThingDefName) ? "ApparelMakeableBase" : equipment.parentThingDefName),
+                new XElement("defName", resolvedThingDefName),
+                new XElement("label", equipment.GetDisplayLabel()),
+                !string.IsNullOrWhiteSpace(equipment.description) ? new XElement("description", equipment.description) : null,
+                GenerateEquipmentGraphicDataXml(equipment),
+                GenerateEquipmentThingCategoriesXml(equipment.thingCategories),
+                GenerateEquipmentStatEntryContainerXml("statBases", equipment.statBases),
+                GenerateEquipmentStatEntryContainerXml("equippedStatOffsets", equipment.equippedStatOffsets),
+                GenerateEquipmentApparelXml(equipment),
+                GenerateEquipmentModExtensionsXml(equipment)
+            );
+
+            return thingDef;
+        }
+
+        private static XElement? GenerateEquipmentGraphicDataXml(CharacterEquipmentDef equipment)
+        {
+            string texPath = string.IsNullOrWhiteSpace(equipment.worldTexPath)
+                ? equipment.renderData?.GetResolvedTexPath() ?? string.Empty
+                : equipment.worldTexPath;
+
+            if (string.IsNullOrWhiteSpace(texPath))
+            {
+                return null;
+            }
+
+            return new XElement("graphicData",
+                new XElement("texPath", texPath),
+                !string.IsNullOrWhiteSpace(equipment.shaderDefName) ? new XElement("shaderType", equipment.shaderDefName) : null,
+                new XElement("graphicClass", "Graphic_Single")
+            );
+        }
+
+        private static XElement? GenerateEquipmentThingCategoriesXml(List<string>? categories)
+        {
+            return GenerateStringListXml("thingCategories", categories);
+        }
+
+        private static XElement GenerateEquipmentApparelXml(CharacterEquipmentDef equipment)
+        {
+            return new XElement("apparel",
+                !string.IsNullOrWhiteSpace(equipment.wornTexPath) ? new XElement("wornGraphicPath", equipment.wornTexPath) : null,
+                equipment.useWornGraphicMask ? new XElement("useWornGraphicMask", equipment.useWornGraphicMask.ToString().ToLower()) : null,
+                GenerateStringListXml("bodyPartGroups", equipment.bodyPartGroups),
+                GenerateStringListXml("layers", equipment.apparelLayers),
+                GenerateStringListXml("tags", equipment.apparelTags)
+            );
+        }
+
+        private static XElement? GenerateEquipmentStatEntryContainerXml(string tagName, List<CharacterEquipmentStatEntry>? entries)
+        {
+            if (entries == null || entries.Count == 0)
+            {
+                return null;
+            }
+
+            var element = new XElement(tagName);
+            foreach (var entry in entries)
+            {
+                if (entry == null || string.IsNullOrWhiteSpace(entry.statDefName))
+                {
+                    continue;
+                }
+
+                element.Add(new XElement(entry.statDefName, entry.value.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            }
+
+            return element.HasElements ? element : null;
+        }
+
+        private static XElement GenerateEquipmentModExtensionsXml(CharacterEquipmentDef equipment)
+        {
+            var renderExtension = DefModExtension_EquipmentRender.FromEquipment(equipment);
+            renderExtension.EnsureDefaults();
+
+            return new XElement("modExtensions",
+                new XElement("li",
+                    new XAttribute("Class", "CharacterStudio.Core.DefModExtension_EquipmentRender"),
+                    new XElement("equipmentDefName", renderExtension.equipmentDefName),
+                    !string.IsNullOrWhiteSpace(renderExtension.label) ? new XElement("label", renderExtension.label) : null,
+                    !string.IsNullOrWhiteSpace(renderExtension.slotTag) ? new XElement("slotTag", renderExtension.slotTag) : null,
+                    new XElement("enabled", renderExtension.enabled.ToString().ToLower()),
+                    new XElement("texPath", renderExtension.texPath ?? string.Empty),
+                    !string.IsNullOrWhiteSpace(renderExtension.maskTexPath) ? new XElement("maskTexPath", renderExtension.maskTexPath) : null,
+                    new XElement("anchorTag", string.IsNullOrWhiteSpace(renderExtension.anchorTag) ? "Apparel" : renderExtension.anchorTag),
+                    !string.IsNullOrWhiteSpace(renderExtension.anchorPath) ? new XElement("anchorPath", renderExtension.anchorPath) : null,
+                    !string.IsNullOrWhiteSpace(renderExtension.shaderDefName) ? new XElement("shaderDefName", renderExtension.shaderDefName) : null,
+                    new XElement("offset", FormatVector3(renderExtension.offset)),
+                    renderExtension.offsetEast != Vector3.zero ? new XElement("offsetEast", FormatVector3(renderExtension.offsetEast)) : null,
+                    renderExtension.offsetNorth != Vector3.zero ? new XElement("offsetNorth", FormatVector3(renderExtension.offsetNorth)) : null,
+                    new XElement("scale", FormatVector2(renderExtension.scale)),
+                    renderExtension.scaleEastMultiplier != Vector2.one ? new XElement("scaleEastMultiplier", FormatVector2(renderExtension.scaleEastMultiplier)) : null,
+                    renderExtension.scaleNorthMultiplier != Vector2.one ? new XElement("scaleNorthMultiplier", FormatVector2(renderExtension.scaleNorthMultiplier)) : null,
+                    new XElement("rotation", renderExtension.rotation),
+                    renderExtension.rotationEastOffset != 0f ? new XElement("rotationEastOffset", renderExtension.rotationEastOffset) : null,
+                    renderExtension.rotationNorthOffset != 0f ? new XElement("rotationNorthOffset", renderExtension.rotationNorthOffset) : null,
+                    new XElement("drawOrder", renderExtension.drawOrder),
+                    new XElement("flipHorizontal", renderExtension.flipHorizontal.ToString().ToLower()),
+                    new XElement("visible", renderExtension.visible.ToString().ToLower()),
+                    new XElement("colorSource", renderExtension.colorSource.ToString()),
+                    renderExtension.colorSource == LayerColorSource.Fixed ? new XElement("customColor", FormatColor(renderExtension.customColor)) : null,
+                    new XElement("colorTwoSource", renderExtension.colorTwoSource.ToString()),
+                    renderExtension.colorTwoSource == LayerColorSource.Fixed ? new XElement("customColorTwo", FormatColor(renderExtension.customColorTwo)) : null,
+                    GenerateStringListXml("abilityDefNames", renderExtension.abilityDefNames)
                 )
             );
         }
@@ -787,20 +1051,71 @@ namespace CharacterStudio.Exporter
 
             foreach (var ability in abilities)
             {
+                AbilityCarrierType normalizedCarrier = ModularAbilityDefExtensions.NormalizeCarrierType(ability.carrierType);
+                AbilityTargetType normalizedTarget = ModularAbilityDefExtensions.NormalizeTargetType(ability);
+
+                var targetParams = normalizedTarget switch
+                {
+                    AbilityTargetType.Cell => new XElement("targetParams",
+                        new XElement("canTargetPawns", "false"),
+                        new XElement("canTargetBuildings", "false"),
+                        new XElement("canTargetLocations", "true"),
+                        new XElement("canTargetSelf", "false")
+                    ),
+                    AbilityTargetType.Entity => new XElement("targetParams",
+                        new XElement("canTargetPawns", "true"),
+                        new XElement("canTargetBuildings", "true"),
+                        new XElement("canTargetLocations", "false"),
+                        new XElement("canTargetSelf", "false")
+                    ),
+                    _ => new XElement("targetParams",
+                        new XElement("canTargetPawns", "false"),
+                        new XElement("canTargetBuildings", "false"),
+                        new XElement("canTargetLocations", "false"),
+                        new XElement("canTargetSelf", "true")
+                    )
+                };
+
+                float exportedRange = normalizedCarrier == AbilityCarrierType.Self
+                    ? 0f
+                    : Mathf.Max(ability.range, 1f);
+
+                var verbProps = new XElement("verbProperties",
+                    new XElement("warmupTime", ability.warmupTicks / 60f),
+                    new XElement("range", exportedRange),
+                    targetParams
+                );
+
+                switch (normalizedCarrier)
+                {
+                    case AbilityCarrierType.Self:
+                        verbProps.Add(new XElement("verbClass", "Verb_CastAbility"));
+                        verbProps.Add(new XElement("targetable", "false"));
+                        break;
+                    case AbilityCarrierType.Projectile:
+                        verbProps.Add(new XElement("verbClass", "Verb_LaunchProjectile"));
+                        if (ability.projectileDef != null)
+                        {
+                            verbProps.Add(new XElement("defaultProjectile", ability.projectileDef.defName));
+                        }
+                        break;
+                    default:
+                        verbProps.Add(new XElement("verbClass", "Verb_CastAbility"));
+                        break;
+                }
+
+                if (ability.useRadius && ability.radius > 0f)
+                {
+                    verbProps.Add(new XElement("radius", ability.radius));
+                }
+
                 var abilityDef = new XElement("AbilityDef",
                     new XElement("defName", ability.defName),
                     new XElement("label", ability.label),
                     new XElement("description", ability.description),
                     new XElement("iconPath", ability.iconPath),
                     new XElement("cooldownTicksRange", ability.cooldownTicks),
-                    new XElement("verbProperties",
-                        new XElement("warmupTime", ability.warmupTicks / 60f),
-                        new XElement("range", ability.range),
-                        new XElement("targetParams",
-                            new XElement("canTargetPawns", "true"),
-                            new XElement("canTargetLocations", "true")
-                        )
-                    ),
+                    verbProps,
                     new XElement("comps",
                         new XElement("li", new XAttribute("Class", "CharacterStudio.Abilities.CompProperties_AbilityModular"),
                             GenerateAbilityEffectsXml(ability.effects),
@@ -809,29 +1124,6 @@ namespace CharacterStudio.Exporter
                         )
                     )
                 );
-
-                var verbProps = abilityDef.Element("verbProperties");
-                switch (ability.carrierType)
-                {
-                    case AbilityCarrierType.Self:
-                        verbProps.Add(new XElement("verbClass", "Verb_CastAbility"));
-                        verbProps.Add(new XElement("targetable", "false"));
-                        break;
-                    case AbilityCarrierType.Touch:
-                        verbProps.Add(new XElement("verbClass", "Verb_CastAbilityTouch"));
-                        verbProps.Add(new XElement("range", "-1"));
-                        break;
-                    case AbilityCarrierType.Target:
-                        verbProps.Add(new XElement("verbClass", "Verb_CastAbility"));
-                        break;
-                    case AbilityCarrierType.Projectile:
-                        verbProps.Add(new XElement("verbClass", "Verb_CastAbility"));
-                        break;
-                    case AbilityCarrierType.Area:
-                        verbProps.Add(new XElement("verbClass", "Verb_CastAbility"));
-                        verbProps.Add(new XElement("radius", ability.radius));
-                        break;
-                }
 
                 element.Add(abilityDef);
             }
@@ -859,19 +1151,6 @@ namespace CharacterStudio.Exporter
                         new XElement("CopyTextures", config.CopyTextures.ToString().ToLower()),
                         new XElement("ExportAsGene", config.ExportAsGene.ToString().ToLower()),
                         new XElement("OverlayMode", config.OverlayMode.ToString().ToLower())
-                    ),
-                    new XElement("AssetSources",
-                        from source in config.AssetSources
-                        select new XElement("Asset",
-                            new XAttribute("type", source.SourceType.ToString()),
-                            new XElement("OriginalPath", source.OriginalPath),
-                            new XElement("ResolvedPath", source.ResolvedPath),
-                            source.SourceModPackageId != null ? new XElement("SourceMod", source.SourceModPackageId) : null
-                        )
-                    ),
-                    new XElement("Dependencies",
-                        from dep in config.DetectedDependencies
-                        select new XElement("Dependency", dep)
                     )
                 )
             );
@@ -891,6 +1170,8 @@ namespace CharacterStudio.Exporter
             if (!string.IsNullOrEmpty(eyeCfg.texUp))     el.Add(new XElement("texUp",     eyeCfg.texUp));
             if (!string.IsNullOrEmpty(eyeCfg.texDown))   el.Add(new XElement("texDown",   eyeCfg.texDown));
             if (eyeCfg.pupilMoveRange != 0f)             el.Add(new XElement("pupilMoveRange", eyeCfg.pupilMoveRange.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)));
+            if (!Mathf.Approximately(eyeCfg.upperLidMoveDown, 0.0044f))
+                el.Add(new XElement("upperLidMoveDown", eyeCfg.upperLidMoveDown.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)));
 
             return el;
         }

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <CS_LLM_AbilityPrompt>技能自然语言描述</CS_LLM_AbilityPrompt>
+    <CS_LLM_CharacterPrompt>角色自然语言描述</CS_LLM_CharacterPrompt>
+    <CS_LLM_CharacterPrompt_Empty>请先输入角色描述</CS_LLM_CharacterPrompt_Empty>
+    <CS_LLM_CharacterSection>角色设计生成</CS_LLM_CharacterSection>
+    <CS_LLM_GenerateAbilitiesAppended>已追加 {0} 个技能（原有 {1} 个，当前共 {2} 个）</CS_LLM_GenerateAbilitiesAppended>
+    <CS_LLM_GenerateCharacter>生成角色设计</CS_LLM_GenerateCharacter>
+    <CS_LLM_GenerateCharacterSuccess>角色设计已生成并应用</CS_LLM_GenerateCharacterSuccess>
+    <CS_LLM_GenerateFailed>LLM 生成失败：{0}</CS_LLM_GenerateFailed>
+    <CS_LLM_OpenSettings>打开 LLM 设置</CS_LLM_OpenSettings>
+    <CS_LLM_Settings_AbilityEditorPrompt>技能编辑工具提示词</CS_LLM_Settings_AbilityEditorPrompt>
+    <CS_LLM_Settings_ApiKey>API Key</CS_LLM_Settings_ApiKey>
+    <CS_LLM_Settings_ApiKeyPreview>密钥预览</CS_LLM_Settings_ApiKeyPreview>
+    <CS_LLM_Settings_BaseUrl>Base URL</CS_LLM_Settings_BaseUrl>
+    <CS_LLM_Settings_Enabled>启用 LLM 生成功能</CS_LLM_Settings_Enabled>
+    <CS_LLM_Settings_EndpointPreview>请求地址预览</CS_LLM_Settings_EndpointPreview>
+    <CS_LLM_Settings_MaxTokens>Max Tokens</CS_LLM_Settings_MaxTokens>
+    <CS_LLM_Settings_Model>Model</CS_LLM_Settings_Model>
+    <CS_LLM_Settings_PromptsReset>已恢复内置提示词模板</CS_LLM_Settings_PromptsReset>
+    <CS_LLM_Settings_SaveFailed>LLM 设置保存失败：{0}</CS_LLM_Settings_SaveFailed>
+    <CS_LLM_Settings_Section_Connection>连接设置</CS_LLM_Settings_Section_Connection>
+    <CS_LLM_Settings_Section_Request>请求参数</CS_LLM_Settings_Section_Request>
+    <CS_LLM_Settings_Temperature>Temperature</CS_LLM_Settings_Temperature>
+    <CS_LLM_Settings_Title>LLM 设置</CS_LLM_Settings_Title>
+</LanguageData>

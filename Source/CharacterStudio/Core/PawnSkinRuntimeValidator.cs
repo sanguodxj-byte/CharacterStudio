@@ -4,6 +4,8 @@ using UnityEngine;
 using Verse;
 using CharacterStudio.Abilities;
 using CharacterStudio.AI;
+using CharacterStudio.Attributes;
+using CharacterStudio.Rendering;
 
 namespace CharacterStudio.Core
 {
@@ -15,6 +17,8 @@ namespace CharacterStudio.Core
     /// </summary>
     public static class PawnSkinRuntimeValidator
     {
+        private static readonly object missingTextureWarningLock = new object();
+        private static readonly HashSet<string> missingTextureWarnings = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         public static PawnSkinDef PrepareForRuntime(PawnSkinDef? skin)
         {
             if (skin == null)
@@ -32,6 +36,7 @@ namespace CharacterStudio.Core
             prepared.abilities ??= new List<ModularAbilityDef>();
             prepared.abilityHotkeys ??= new SkinAbilityHotkeyConfig();
             prepared.attributes ??= new CharacterAttributeProfile();
+            prepared.statModifiers ??= new CharacterStatModifierProfile();
             prepared.weaponRenderConfig ??= new WeaponRenderConfig();
             prepared.faceConfig ??= new PawnFaceConfig();
             prepared.baseAppearance ??= new BaseAppearanceConfig();
@@ -57,12 +62,57 @@ namespace CharacterStudio.Core
                 prepared.version = "1.0.0";
             }
 
-            prepared.previewTexPath = prepared.previewTexPath?.Trim() ?? string.Empty;
+            string sanitizedPreviewTexPath = prepared.previewTexPath?.Trim() ?? string.Empty;
+            TryClearMissingExternalTexturePath(ref sanitizedPreviewTexPath, out _);
+            prepared.previewTexPath = sanitizedPreviewTexPath;
             prepared.xenotypeDefName = prepared.xenotypeDefName?.Trim() ?? string.Empty;
             prepared.raceDisplayName = prepared.raceDisplayName?.Trim() ?? string.Empty;
             prepared.author = prepared.author?.Trim() ?? string.Empty;
 
             return prepared;
+        }
+
+        public static List<string> CollectMissingExternalTexturePaths(PawnSkinDef? skin)
+        {
+            var missingPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (skin == null)
+            {
+                return new List<string>();
+            }
+
+            AddMissingExternalPath(skin.previewTexPath, missingPaths);
+
+            if (skin.baseAppearance?.slots != null)
+            {
+                foreach (var slot in skin.baseAppearance.slots)
+                {
+                    if (slot == null)
+                    {
+                        continue;
+                    }
+
+                    AddMissingExternalPath(slot.texPath, missingPaths);
+                    AddMissingExternalPath(slot.maskTexPath, missingPaths);
+                }
+            }
+
+            if (skin.layers != null)
+            {
+                foreach (var layer in skin.layers)
+                {
+                    if (layer == null)
+                    {
+                        continue;
+                    }
+
+                    AddMissingExternalPath(layer.texPath, missingPaths);
+                    AddMissingExternalPath(layer.maskTexPath, missingPaths);
+                }
+            }
+
+            var orderedPaths = new List<string>(missingPaths);
+            orderedPaths.Sort(StringComparer.OrdinalIgnoreCase);
+            return orderedPaths;
         }
 
         private static void NormalizeLayers(List<PawnLayerConfig>? layers)
@@ -87,6 +137,12 @@ namespace CharacterStudio.Core
                 layer.anchorPath = layer.anchorPath?.Trim() ?? string.Empty;
                 layer.maskTexPath = layer.maskTexPath?.Trim() ?? string.Empty;
                 layer.shaderDefName = string.IsNullOrWhiteSpace(layer.shaderDefName) ? "Cutout" : layer.shaderDefName.Trim();
+
+                TryClearMissingExternalTexturePath(ref layer.maskTexPath, out _);
+                if (TryClearMissingExternalTexturePath(ref layer.texPath, out _))
+                {
+                    layer.visible = false;
+                }
 
                 if (!IsFinite(layer.offset))
                 {
@@ -185,6 +241,12 @@ namespace CharacterStudio.Core
                 slot.maskTexPath = slot.maskTexPath?.Trim() ?? string.Empty;
                 slot.shaderDefName = string.IsNullOrWhiteSpace(slot.shaderDefName) ? "Cutout" : slot.shaderDefName.Trim();
 
+                TryClearMissingExternalTexturePath(ref slot.maskTexPath, out _);
+                if (TryClearMissingExternalTexturePath(ref slot.texPath, out _))
+                {
+                    slot.enabled = false;
+                }
+
                 if (!IsFinite(slot.offset))
                 {
                     slot.offset = Vector3.zero;
@@ -230,6 +292,70 @@ namespace CharacterStudio.Core
                     slot.enabled = false;
                 }
             }
+        }
+
+        private static void AddMissingExternalPath(string? texturePath, HashSet<string> missingPaths)
+        {
+            if (TryGetMissingExternalTexturePath(texturePath, out string missingPath))
+            {
+                missingPaths.Add(missingPath);
+            }
+        }
+
+        private static bool TryGetMissingExternalTexturePath(string? texturePath, out string missingPath)
+        {
+            missingPath = string.Empty;
+            string trimmedPath = texturePath?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(trimmedPath))
+            {
+                return false;
+            }
+
+            if (!RuntimeAssetLoader.LooksLikeExternalTexturePath(trimmedPath))
+            {
+                return false;
+            }
+
+            if (RuntimeAssetLoader.ExternalTextureExists(trimmedPath, out _))
+            {
+                return false;
+            }
+
+            missingPath = trimmedPath;
+            return true;
+        }
+
+        private static bool TryClearMissingExternalTexturePath(ref string texturePath, out string missingPath)
+        {
+            texturePath = texturePath?.Trim() ?? string.Empty;
+            missingPath = string.Empty;
+            if (!TryGetMissingExternalTexturePath(texturePath, out string resolvedMissingPath))
+            {
+                return false;
+            }
+
+            missingPath = resolvedMissingPath;
+            texturePath = string.Empty;
+            WarnMissingTextureOnce(resolvedMissingPath, $"[CharacterStudio] 运行时检测到缺失的外部纹理，已安全跳过: {resolvedMissingPath}");
+            return true;
+        }
+
+        private static void WarnMissingTextureOnce(string warningKey, string message)
+        {
+            if (string.IsNullOrWhiteSpace(warningKey))
+            {
+                return;
+            }
+
+            lock (missingTextureWarningLock)
+            {
+                if (!missingTextureWarnings.Add(warningKey))
+                {
+                    return;
+                }
+            }
+
+            Log.Warning(message);
         }
 
         private static bool IsFinite(float value)

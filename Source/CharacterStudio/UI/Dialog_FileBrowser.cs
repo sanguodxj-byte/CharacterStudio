@@ -73,9 +73,10 @@ namespace CharacterStudio.UI
             Text.Font = GameFont.Small;
 
             float y = 40;
-
+ 
             // 路径栏和上级按钮
-            if (Widgets.ButtonText(new Rect(0, y, 60, 24), "CS_Studio_Browser_Up".Translate()))
+            Rect upButtonRect = new Rect(0, y, 60, 24);
+            if (Widgets.ButtonText(upButtonRect, "CS_Studio_Browser_Up".Translate()))
             {
                 DirectoryInfo parent = Directory.GetParent(currentPath);
                 if (parent != null)
@@ -84,10 +85,20 @@ namespace CharacterStudio.UI
                     RefreshFileList();
                 }
             }
-
-            Widgets.Label(new Rect(70, y, inRect.width - 70, 24), currentPath);
-            y += 30;
-
+ 
+            Rect pathRect = new Rect(70, y, inRect.width - 70, 42f);
+            Widgets.DrawBoxSolid(pathRect, new Color(1f, 1f, 1f, 0.04f));
+            GUI.color = new Color(1f, 1f, 1f, 0.18f);
+            Widgets.DrawBox(pathRect, 1);
+            GUI.color = Color.white;
+ 
+            GameFont oldFont = Text.Font;
+            Text.Font = GameFont.Tiny;
+            Widgets.Label(pathRect.ContractedBy(6f), currentPath);
+            Text.Font = oldFont;
+            TooltipHandler.TipRegion(pathRect, currentPath);
+            y += 48f;
+ 
             // 搜索栏
             searchText = Widgets.TextEntryLabeled(new Rect(0, y, inRect.width, 24), "CS_Studio_Browser_Search".Translate(), searchText);
             y += 30;

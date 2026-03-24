@@ -52,6 +52,9 @@ namespace CharacterStudio.UI
             Pawn? resolvedTargetPawn = ResolvePreferredTargetPawnForSkin(workingSkin, previewRace);
             FinalizeImportState(resolvedTargetPawn);
             ShowImportCompletionStatus(workingSkin.label ?? workingSkin.defName, workingSkin.layers.Count, resolvedTargetPawn, true);
+            ShowImportMissingTextureWarning(
+                workingSkin.label ?? workingSkin.defName,
+                CollectMissingExternalTexturesForImport(skinDef));
         }
 
         private void DoImportFromPawn(
@@ -189,6 +192,7 @@ namespace CharacterStudio.UI
                 workingSkin.hideVanillaBody = false;
                 workingSkin.hideVanillaHead = false;
                 workingSkin.hideVanillaHair = false;
+                workingSkin.hideVanillaApparel = false;
                 workingSkin.baseAppearance = importedBaseAppearance.Clone();
 
                 if (replaceTargetRaces)
@@ -253,6 +257,9 @@ namespace CharacterStudio.UI
             ApplySelectionAfterImport(layers.Count, replaceExisting, importedBaseAppearance);
             FinalizeImportState(resolvedTargetPawn);
             ShowImportCompletionStatus(sourceLabel, layers.Count, resolvedTargetPawn, replaceExisting);
+            ShowImportMissingTextureWarning(
+                sourceLabel,
+                CollectMissingExternalTexturesForImport(layers, importedBaseAppearance));
         }
 
         private ThingDef? ResolvePreferredPreviewRace(PawnSkinDef skinDef)
@@ -310,6 +317,13 @@ namespace CharacterStudio.UI
                 workingDocument.preferredTargetRaceDefName = boundPawn?.def?.defName ?? preferredRaceDefName;
             }
 
+            ThingDef? preferredRace = boundPawn?.def;
+            if (preferredRace == null && !string.IsNullOrWhiteSpace(preferredRaceDefName))
+            {
+                preferredRace = DefDatabase<ThingDef>.GetNamedSilentFail(preferredRaceDefName);
+            }
+
+            ForceResetPreviewMannequin(preferredRace, boundPawn);
             isDirty = true;
             RefreshPreview();
             RefreshRenderTree();
@@ -357,6 +371,52 @@ namespace CharacterStudio.UI
             ShowStatus(replaceExisting
                 ? "CS_Studio_Msg_ImportedNoBoundPawn".Translate(sourceLabel, layerCount)
                 : "CS_Studio_Msg_AppendedNoBoundPawn".Translate(sourceLabel, layerCount));
+        }
+
+        private void ShowImportMissingTextureWarning(string sourceLabel, List<string> missingPaths)
+        {
+            if (missingPaths == null || missingPaths.Count == 0)
+            {
+                return;
+            }
+
+            string missingPathList = string.Join(Environment.NewLine, missingPaths.Select(path => $"• {path}"));
+            ShowStatus("CS_Studio_Warn_ImportMissingTexturesStatus".Translate(missingPaths.Count));
+            Messages.Message(
+                "CS_Studio_Warn_ImportMissingTexturesDetail".Translate(sourceLabel, missingPaths.Count, missingPathList),
+                MessageTypeDefOf.RejectInput,
+                false);
+        }
+
+        private static List<string> CollectMissingExternalTexturesForImport(PawnSkinDef? importedSkin)
+        {
+            return PawnSkinRuntimeValidator.CollectMissingExternalTexturePaths(importedSkin);
+        }
+
+        private static List<string> CollectMissingExternalTexturesForImport(
+            List<PawnLayerConfig> layers,
+            BaseAppearanceConfig importedBaseAppearance)
+        {
+            var importedSkin = new PawnSkinDef
+            {
+                baseAppearance = importedBaseAppearance?.Clone() ?? new BaseAppearanceConfig()
+            };
+
+            importedSkin.layers ??= new List<PawnLayerConfig>();
+            if (layers != null)
+            {
+                foreach (var layer in layers)
+                {
+                    if (layer == null)
+                    {
+                        continue;
+                    }
+
+                    importedSkin.layers.Add(layer.Clone());
+                }
+            }
+
+            return PawnSkinRuntimeValidator.CollectMissingExternalTexturePaths(importedSkin);
         }
 
         private static void MergeBaseAppearanceSlots(BaseAppearanceConfig target, BaseAppearanceConfig source)

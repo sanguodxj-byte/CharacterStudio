@@ -1,5 +1,6 @@
 using System;
 using CharacterStudio.Core;
+using RimWorld;
 using Verse;
 
 namespace CharacterStudio.UI
@@ -38,6 +39,30 @@ namespace CharacterStudio.UI
             {
                 mannequin.CopyAppearanceFrom(sourcePawn);
                 Log.Message($"[CharacterStudio] 已将人偶种族同步为 {previewRace.defName} 并复制外观");
+            }
+        }
+
+        private ThingDef ResolvePreviewRaceForReset(ThingDef? preferredRace = null)
+        {
+            return preferredRace
+                ?? targetPawn?.def
+                ?? mannequin?.CurrentPawn?.def
+                ?? DefDatabase<ThingDef>.GetNamed("Human");
+        }
+
+        private void ForceResetPreviewMannequin(ThingDef? preferredRace = null, Pawn? sourcePawn = null)
+        {
+            if (!EnsureMannequinReady())
+            {
+                return;
+            }
+
+            ThingDef previewRace = ResolvePreviewRaceForReset(preferredRace);
+            mannequin!.ForceReset(previewRace);
+            if (sourcePawn != null)
+            {
+                mannequin.CopyAppearanceFrom(sourcePawn);
+                Log.Message($"[CharacterStudio] 已强制重置人偶并复制外观: {previewRace.defName}");
             }
         }
 
@@ -100,6 +125,8 @@ namespace CharacterStudio.UI
                 Log.Warning("[CharacterStudio] 预览刷新后未取得人偶 Pawn，已跳过预览覆盖状态同步");
                 return;
             }
+
+            CharacterStudio.Rendering.Patch_PawnRenderTree.ForceRebuildRenderTree(previewPawn);
 
             var skinComp = previewPawn.GetComp<CompPawnSkin>();
             if (skinComp == null)

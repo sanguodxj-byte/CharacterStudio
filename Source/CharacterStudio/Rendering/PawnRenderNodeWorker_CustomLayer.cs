@@ -16,6 +16,11 @@ namespace CharacterStudio.Rendering
     {
         // 避免在每帧重复打印同一节点的缩放回退日志
         private static readonly System.Collections.Generic.HashSet<int> _loggedScaleFallbackNodes = new System.Collections.Generic.HashSet<int>();
+        private static readonly Dictionary<string, bool> textureExistsCache = new Dictionary<string, bool>(StringComparer.Ordinal);
+        private static readonly Dictionary<string, int> frameSequenceCountCache = new Dictionary<string, int>(StringComparer.Ordinal);
+        private const float ProgrammaticFaceFadeInStep = 0.12f;
+        private const float ProgrammaticFaceFadeOutStep = 0.08f;
+        private const float ProgrammaticFaceAlphaSnapThreshold = 0.01f;
         /// <summary>
         /// 判断是否可以绘制
         /// </summary>
@@ -28,6 +33,9 @@ namespace CharacterStudio.Rendering
             if (node is PawnRenderNode_Custom customNode && customNode.config != null)
             {
                 if (!customNode.config.visible)
+                    return false;
+
+                if (!IsTriggeredEquipmentLayerVisible(customNode, parms.pawn))
                     return false;
 
                 if (!IsExpressionVisibleForLayer(customNode.config, parms.pawn))
@@ -43,6 +51,13 @@ namespace CharacterStudio.Rendering
 
                     if (currentTrack == FaceRenderTrack.World
                         && customNode.layeredFacePartType.Value != LayeredFacePartType.Base)
+                    {
+                        return false;
+                    }
+
+                    EnsureProgrammaticFaceStateUpdated(customNode, parms.pawn);
+                    if (customNode.targetProgrammaticAlpha <= ProgrammaticFaceAlphaSnapThreshold
+                        && customNode.currentProgrammaticAlpha <= ProgrammaticFaceAlphaSnapThreshold)
                     {
                         return false;
                     }
@@ -68,15 +83,10 @@ namespace CharacterStudio.Rendering
                 // 不再重复应用 config.offset
                 
                 // 应用动画位移偏移
-                if (customNode.config.animAffectsOffset && customNode.config.animationType != LayerAnimationType.None)
+                if ((customNode.config.animAffectsOffset && customNode.config.animationType != LayerAnimationType.None)
+                    || customNode.config.useTriggeredEquipmentAnimation)
                 {
                     baseOffset += customNode.currentAnimOffset;
-                }
-
-                Vector2 layeredAnchorCorrection = GetLayeredFacePartAnchorCorrection(customNode, parms.pawn);
-                if (layeredAnchorCorrection != Vector2.zero)
-                {
-                    baseOffset += new Vector3(layeredAnchorCorrection.x, 0f, layeredAnchorCorrection.y);
                 }
 
                 EnsureProgrammaticFaceStateUpdated(customNode, parms.pawn);
@@ -85,6 +95,12 @@ namespace CharacterStudio.Rendering
 
             // 根据朝向应用额外的方向特定偏移
             Rot4 facing = parms.facing;
+
+            CompPawnSkin? skinComp = parms.pawn?.TryGetComp<CompPawnSkin>();
+            if (skinComp != null && skinComp.IsFlightStateActive())
+            {
+                baseOffset.y += skinComp.flightStateHeightFactor;
+            }
             
             // 侧面朝向（East或West）应用 offsetEast
             if (facing == Rot4.East || facing == Rot4.West)
@@ -245,6 +261,12 @@ namespace CharacterStudio.Rendering
                     }
                 }
 
+                ApplyTriggeredEquipmentAnimation(customNode, parms.pawn);
+                if (customNode.config.useTriggeredEquipmentAnimation && Mathf.Abs(customNode.currentAnimAngle) > 0.01f)
+                {
+                    baseRot *= Quaternion.Euler(0f, customNode.currentAnimAngle, 0f);
+                }
+
                 EnsureProgrammaticFaceStateUpdated(customNode, parms.pawn);
                 if (Mathf.Abs(customNode.currentProgrammaticAngle) > 0.01f)
                 {
@@ -258,9 +280,6 @@ namespace CharacterStudio.Rendering
         private static Vector2 GetConfiguredScale(PawnLayerConfig config, Rot4 facing)
         {
             Vector2 scale = config.scale;
-            if (facing == Rot4.North)
-                return new Vector2(scale.x * config.scaleNorthMultiplier.x, scale.y * config.scaleNorthMultiplier.y);
-
             if (facing == Rot4.East || facing == Rot4.West)
                 return new Vector2(scale.x * config.scaleEastMultiplier.x, scale.y * config.scaleEastMultiplier.y);
 
@@ -317,6 +336,10 @@ namespace CharacterStudio.Rendering
 
                 case LayerAnimationType.Breathe:
                     CalculateBreatheAnimation(customNode, config, timeSec, phaseOffset);
+                    break;
+
+                case LayerAnimationType.Spin:
+                    CalculateSpinAnimation(customNode, config, currentTick);
                     break;
             }
         }
@@ -444,6 +467,53 @@ namespace CharacterStudio.Rendering
         /// 计算呼吸动画（缩放起伏）
         /// 适用于胸部等需要呼吸效果的部位
         /// </summary>
+        /// <summary>
+        /// 计算持续旋转动画（Spin）
+        /// 图层以枢轴点为中心匀速旋转，适用于旋翼/飞行器等。
+        /// animFrequency 控制转速（转/秒），animAmplitude 无效（360° 全旋）。
+        /// config.animPivotOffset 指定枢轴点相对于锚点的偏移量（X/Z）。
+        /// </summary>
+        private void CalculateSpinAnimation(PawnRenderNode_Custom customNode, PawnLayerConfig config, int currentTick)
+        {
+            if (customNode.lastSpinTick < 0)
+            {
+                customNode.lastSpinTick = currentTick;
+                customNode.currentSpinAngle = 0f;
+            }
+
+            int deltaTicks = currentTick - customNode.lastSpinTick;
+            customNode.lastSpinTick = currentTick;
+
+            // 每 tick 旋转角度：animFrequency 转/秒，每秒 60 tick
+            float degreesPerTick = config.animFrequency * 360f / 60f * config.animSpeed;
+            customNode.currentSpinAngle = (customNode.currentSpinAngle + degreesPerTick * deltaTicks) % 360f;
+
+            // 通用路径通过 currentAnimAngle 传递旋转值
+            customNode.currentAnimAngle = customNode.currentSpinAngle;
+            customNode.currentAnimOffset = Vector3.zero;
+            customNode.currentAnimScale = 1f;
+
+            // 枢轴偏移：将图层在旋转前先平移到枢轴点，旋转后再平移回去
+            // 这里将枢轴偏移存入 currentAnimOffset 以供 OffsetFor 叠加
+            // 枢轴旋转公式：offset = pivot - R(pivot, angle)
+            // 其中 pivot = animPivotOffset, R 为绕 Y 轴旋转矩阵
+            Vector2 pivot = config.animPivotOffset;
+            if (pivot != Vector2.zero)
+            {
+                float rad = customNode.currentSpinAngle * Mathf.Deg2Rad;
+                float cos = Mathf.Cos(rad);
+                float sin = Mathf.Sin(rad);
+                // 世界平面：X=东西, Z=南北
+                float rotX = cos * pivot.x - sin * pivot.y;
+                float rotZ = sin * pivot.x + cos * pivot.y;
+                // 偏移 = 原始枢轴 - 旋转后枢轴位置
+                customNode.currentAnimOffset = new Vector3(
+                    pivot.x - rotX,
+                    0f,
+                    pivot.y - rotZ);
+            }
+        }
+
         private void CalculateBreatheAnimation(PawnRenderNode_Custom customNode, PawnLayerConfig config, float timeSec, float phaseOffset)
         {
             float freq = config.animFrequency * 0.5f; // 呼吸频率较慢
@@ -494,20 +564,44 @@ namespace CharacterStudio.Rendering
             customNode.currentProgrammaticAngle = 0f;
             customNode.currentProgrammaticOffset = Vector3.zero;
             customNode.currentProgrammaticScale = Vector3.one;
+            customNode.targetProgrammaticAlpha = 1f;
         }
 
         private void HideProgrammaticFacePart(PawnRenderNode_Custom customNode)
         {
             customNode.currentProgrammaticAngle = 0f;
             customNode.currentProgrammaticOffset = Vector3.zero;
-            customNode.currentProgrammaticScale = new Vector3(0.001f, 1f, 0.001f);
+            customNode.currentProgrammaticScale = Vector3.one;
+            customNode.targetProgrammaticAlpha = 0f;
         }
 
-        private void SetProgrammaticFaceTransform(PawnRenderNode_Custom customNode, float angle, Vector3 offset, Vector3 scale)
+        private void SetProgrammaticFaceTransform(PawnRenderNode_Custom customNode, float angle, Vector3 offset, Vector3 scale, float targetAlpha = 1f)
         {
             customNode.currentProgrammaticAngle = angle;
             customNode.currentProgrammaticOffset = offset;
             customNode.currentProgrammaticScale = scale;
+            customNode.targetProgrammaticAlpha = Mathf.Clamp01(targetAlpha);
+        }
+
+        private void UpdateProgrammaticFaceAlpha(PawnRenderNode_Custom customNode)
+        {
+            float targetAlpha = Mathf.Clamp01(customNode.targetProgrammaticAlpha);
+            if (!customNode.hasProgrammaticAlphaInitialized)
+            {
+                customNode.currentProgrammaticAlpha = targetAlpha;
+                customNode.hasProgrammaticAlphaInitialized = true;
+                return;
+            }
+
+            float step = customNode.currentProgrammaticAlpha < targetAlpha
+                ? ProgrammaticFaceFadeInStep
+                : ProgrammaticFaceFadeOutStep;
+
+            customNode.currentProgrammaticAlpha = Mathf.MoveTowards(customNode.currentProgrammaticAlpha, targetAlpha, step);
+            if (Mathf.Abs(customNode.currentProgrammaticAlpha - targetAlpha) <= ProgrammaticFaceAlphaSnapThreshold)
+            {
+                customNode.currentProgrammaticAlpha = targetAlpha;
+            }
         }
 
         private void CalculateProgrammaticFaceTransform(PawnRenderNode_Custom customNode, Pawn pawn, int currentTick)
@@ -520,6 +614,20 @@ namespace CharacterStudio.Rendering
             CompPawnSkin? skinComp = pawn.TryGetComp<CompPawnSkin>();
             if (skinComp == null)
                 return;
+
+            if (ShouldHideLayeredEyePartForReplacement(customNode, pawn, skinComp))
+            {
+                HideProgrammaticFacePart(customNode);
+                UpdateProgrammaticFaceAlpha(customNode);
+                return;
+            }
+
+            if (ShouldHideUpperLidAtBlinkEndpoint(customNode, skinComp))
+            {
+                HideProgrammaticFacePart(customNode);
+                UpdateProgrammaticFaceAlpha(customNode);
+                return;
+            }
 
             float phase = customNode.basePhase;
             if (Mathf.Approximately(phase, 0f))
@@ -540,6 +648,25 @@ namespace CharacterStudio.Rendering
                     break;
 
                 case LayeredFacePartType.Eye:
+                    ApplyProgrammaticEyeTransform(
+                        customNode,
+                        skinComp.GetEffectiveLidState(),
+                        skinComp.CurEyeDirection,
+                        expression,
+                        primaryWave,
+                        slowWave);
+                    break;
+
+                case LayeredFacePartType.Pupil:
+                    ApplyProgrammaticPupilTransform(
+                        customNode,
+                        skinComp.GetEffectiveLidState(),
+                        skinComp.CurEyeDirection,
+                        expression,
+                        primaryWave,
+                        slowWave);
+                    break;
+
                 case LayeredFacePartType.UpperLid:
                 case LayeredFacePartType.LowerLid:
                     ApplyProgrammaticLidTransform(
@@ -567,6 +694,14 @@ namespace CharacterStudio.Rendering
                         slowWave);
                     break;
             }
+
+            customNode.currentProgrammaticOffset = ApplyLayeredFacePartMotionAmplitude(
+                customNode,
+                customNode.currentProgrammaticOffset,
+                primaryWave,
+                slowWave);
+
+            UpdateProgrammaticFaceAlpha(customNode);
         }
 
         private void ApplyProgrammaticBrowTransform(PawnRenderNode_Custom customNode, BrowState state, float primaryWave, float slowWave)
@@ -607,6 +742,243 @@ namespace CharacterStudio.Rendering
             }
         }
 
+        private static float GetLayeredFaceSideSign(PawnRenderNode_Custom customNode)
+        {
+            switch (customNode.layeredFacePartSide)
+            {
+                case LayeredFacePartSide.Left:
+                    return -1f;
+                case LayeredFacePartSide.Right:
+                    return 1f;
+                default:
+                    return 0f;
+            }
+        }
+
+        private static float GetLayeredFaceSideBias(PawnRenderNode_Custom customNode, float magnitude)
+        {
+            return GetLayeredFaceSideSign(customNode) * magnitude;
+        }
+
+        private void ApplyProgrammaticEyeTransform(
+            PawnRenderNode_Custom customNode,
+            LidState lidState,
+            EyeDirection eyeDirection,
+            ExpressionType expression,
+            float primaryWave,
+            float slowWave)
+        {
+            if (lidState == LidState.Blink || lidState == LidState.Close)
+            {
+                HideProgrammaticFacePart(customNode);
+                return;
+            }
+
+            Pawn? pawn = customNode.tree?.pawn;
+            CompPawnSkin? skinComp = pawn?.TryGetComp<CompPawnSkin>();
+            EyeAnimationVariant eyeVariant = skinComp?.GetEffectiveEyeAnimationVariant() ?? EyeAnimationVariant.NeutralOpen;
+
+            float sideSign = GetLayeredFaceSideSign(customNode);
+            float offsetX = GetLayeredFaceSideBias(customNode, 0.0002f);
+            float offsetZ = 0.0004f * primaryWave;
+            switch (eyeDirection)
+            {
+                case EyeDirection.Left:
+                    offsetX = -0.0012f;
+                    break;
+                case EyeDirection.Right:
+                    offsetX = 0.0012f;
+                    break;
+                case EyeDirection.Up:
+                    offsetZ -= 0.0010f;
+                    break;
+                case EyeDirection.Down:
+                    offsetZ += 0.0012f;
+                    break;
+            }
+
+            switch (eyeVariant)
+            {
+                case EyeAnimationVariant.NeutralSoft:
+                    offsetZ += 0.0005f;
+                    break;
+                case EyeAnimationVariant.NeutralLookDown:
+                    offsetZ += 0.0010f;
+                    break;
+                case EyeAnimationVariant.NeutralGlance:
+                    offsetX += (primaryWave > 0f ? 0.0008f : -0.0008f) + sideSign * 0.00035f;
+                    break;
+                case EyeAnimationVariant.WorkFocusDown:
+                    offsetZ += 0.0016f;
+                    break;
+                case EyeAnimationVariant.WorkFocusUp:
+                    offsetZ -= 0.0012f;
+                    break;
+                case EyeAnimationVariant.HappySoft:
+                    offsetZ -= 0.0006f;
+                    break;
+                case EyeAnimationVariant.ShockWide:
+                    offsetZ -= 0.0018f;
+                    break;
+                case EyeAnimationVariant.ScaredWide:
+                    offsetZ -= 0.0012f;
+                    offsetX += primaryWave * 0.0006f + sideSign * 0.0003f;
+                    break;
+                case EyeAnimationVariant.ScaredFlinch:
+                    offsetZ += 0.0008f;
+                    offsetX += slowWave * 0.0007f + sideSign * 0.00045f;
+                    break;
+                case EyeAnimationVariant.HappyClosedPeak:
+                    HideProgrammaticFacePart(customNode);
+                    return;
+            }
+
+            float scaleZ = lidState == LidState.Half ? 0.92f : 1f;
+            if (expression == ExpressionType.Shock || expression == ExpressionType.Scared)
+                scaleZ = Mathf.Max(scaleZ, 1.06f + Mathf.Abs(primaryWave) * 0.02f);
+            else if (expression == ExpressionType.Sleeping)
+                scaleZ = Mathf.Min(scaleZ, 0.88f);
+            else if (eyeVariant == EyeAnimationVariant.HappySoft)
+                scaleZ = Mathf.Min(scaleZ, 0.90f);
+
+            if (eyeVariant == EyeAnimationVariant.NeutralSoft)
+                scaleZ = Mathf.Min(scaleZ, 0.95f);
+            else if (eyeVariant == EyeAnimationVariant.NeutralLookDown)
+                scaleZ = Mathf.Min(scaleZ, 0.93f);
+            else if (eyeVariant == EyeAnimationVariant.ShockWide)
+                scaleZ = Mathf.Max(scaleZ, 1.12f + Mathf.Abs(primaryWave) * 0.03f);
+            else if (eyeVariant == EyeAnimationVariant.ScaredWide)
+                scaleZ = Mathf.Max(scaleZ, 1.08f + Mathf.Abs(slowWave) * 0.02f);
+            else if (eyeVariant == EyeAnimationVariant.ScaredFlinch)
+                scaleZ = Mathf.Min(scaleZ, 0.94f);
+
+            SetProgrammaticFaceTransform(
+                customNode,
+                primaryWave * 0.15f,
+                new Vector3(offsetX, 0f, offsetZ + slowWave * 0.0004f),
+                new Vector3(1.01f + Mathf.Abs(slowWave) * 0.01f, 1f, scaleZ));
+        }
+
+        private void ApplyProgrammaticPupilTransform(
+            PawnRenderNode_Custom customNode,
+            LidState lidState,
+            EyeDirection eyeDirection,
+            ExpressionType expression,
+            float primaryWave,
+            float slowWave)
+        {
+            if (lidState == LidState.Blink || lidState == LidState.Close)
+            {
+                HideProgrammaticFacePart(customNode);
+                return;
+            }
+
+            Pawn? pawn = customNode.tree?.pawn;
+            CompPawnSkin? skinComp = pawn?.TryGetComp<CompPawnSkin>();
+            EyeAnimationVariant eyeVariant = skinComp?.GetEffectiveEyeAnimationVariant() ?? EyeAnimationVariant.NeutralOpen;
+            PupilScaleVariant pupilVariant = skinComp?.GetEffectivePupilScaleVariant() ?? PupilScaleVariant.Neutral;
+
+            float sideSign = GetLayeredFaceSideSign(customNode);
+            float offsetX = GetLayeredFaceSideBias(customNode, 0.00028f);
+            float offsetZ = slowWave * 0.0005f;
+            switch (eyeDirection)
+            {
+                case EyeDirection.Left:
+                    offsetX = -0.0018f;
+                    break;
+                case EyeDirection.Right:
+                    offsetX = 0.0018f;
+                    break;
+                case EyeDirection.Up:
+                    offsetZ -= 0.0014f;
+                    break;
+                case EyeDirection.Down:
+                    offsetZ += 0.0016f;
+                    break;
+            }
+
+            switch (eyeVariant)
+            {
+                case EyeAnimationVariant.NeutralSoft:
+                    offsetZ += 0.0004f;
+                    break;
+                case EyeAnimationVariant.NeutralLookDown:
+                    offsetZ += 0.0012f;
+                    break;
+                case EyeAnimationVariant.NeutralGlance:
+                    offsetX += (primaryWave > 0f ? 0.0010f : -0.0010f) + sideSign * 0.00045f;
+                    break;
+                case EyeAnimationVariant.WorkFocusDown:
+                    offsetZ += 0.0020f;
+                    break;
+                case EyeAnimationVariant.WorkFocusUp:
+                    offsetZ -= 0.0015f;
+                    break;
+                case EyeAnimationVariant.HappyOpen:
+                    offsetZ -= 0.0003f;
+                    break;
+                case EyeAnimationVariant.ShockWide:
+                    offsetZ -= 0.0012f;
+                    break;
+                case EyeAnimationVariant.ScaredWide:
+                    offsetZ -= 0.0008f;
+                    offsetX += primaryWave * 0.0008f + sideSign * 0.0004f;
+                    break;
+                case EyeAnimationVariant.ScaredFlinch:
+                    offsetZ += 0.0008f;
+                    offsetX += slowWave * 0.0009f + sideSign * 0.00055f;
+                    break;
+                case EyeAnimationVariant.HappyClosedPeak:
+                case EyeAnimationVariant.BlinkClosed:
+                    HideProgrammaticFacePart(customNode);
+                    return;
+            }
+
+            float scale = pupilVariant switch
+            {
+                PupilScaleVariant.Focus => 0.94f + Mathf.Abs(slowWave) * 0.01f,
+                PupilScaleVariant.SlightlyContracted => 0.88f + Mathf.Abs(slowWave) * 0.01f,
+                PupilScaleVariant.Contracted => 0.78f + Mathf.Abs(slowWave) * 0.015f,
+                PupilScaleVariant.Dilated => 1.12f + Mathf.Abs(primaryWave) * 0.02f,
+                PupilScaleVariant.DilatedMax => 1.22f + Mathf.Abs(primaryWave) * 0.03f,
+                PupilScaleVariant.ScaredPulse => 1.16f + Mathf.Abs(primaryWave) * 0.05f,
+                PupilScaleVariant.BlinkHidden => 0f,
+                _ => 1f,
+            };
+
+            if (expression == ExpressionType.Shock || expression == ExpressionType.Scared)
+                scale = Mathf.Max(scale, 1.08f + Mathf.Abs(primaryWave) * 0.03f);
+            else if (expression == ExpressionType.Happy || expression == ExpressionType.Cheerful)
+                scale = Mathf.Min(scale, 0.96f + Mathf.Abs(slowWave) * 0.01f);
+            else if (expression == ExpressionType.Sleeping)
+                scale = 0.9f;
+            else if (eyeVariant == EyeAnimationVariant.WorkFocusDown)
+                scale = Mathf.Min(scale, 0.98f);
+
+            if (eyeVariant == EyeAnimationVariant.NeutralSoft)
+                scale = Mathf.Min(scale, 0.96f);
+            else if (eyeVariant == EyeAnimationVariant.NeutralLookDown)
+                scale = Mathf.Min(scale, 0.94f);
+            else if (eyeVariant == EyeAnimationVariant.ShockWide)
+                scale = Mathf.Max(scale, 1.18f + Mathf.Abs(primaryWave) * 0.02f);
+            else if (eyeVariant == EyeAnimationVariant.ScaredWide)
+                scale = Mathf.Max(scale, 1.14f + Mathf.Abs(slowWave) * 0.03f);
+            else if (eyeVariant == EyeAnimationVariant.ScaredFlinch)
+                scale = Mathf.Max(scale, 1.04f + Mathf.Abs(primaryWave) * 0.01f);
+
+            if (pupilVariant == PupilScaleVariant.BlinkHidden)
+            {
+                HideProgrammaticFacePart(customNode);
+                return;
+            }
+
+            SetProgrammaticFaceTransform(
+                customNode,
+                primaryWave * 0.35f,
+                new Vector3(offsetX + primaryWave * 0.0004f, 0f, offsetZ),
+                new Vector3(scale, 1f, scale));
+        }
+
         private void ApplyProgrammaticLidTransform(
             PawnRenderNode_Custom customNode,
             LayeredFacePartType partType,
@@ -616,45 +988,100 @@ namespace CharacterStudio.Rendering
         {
             if (partType == LayeredFacePartType.UpperLid)
             {
+                float replacementMoveDown = GetLayeredUpperLidMoveDown(customNode);
+                float sideBiasX = GetLayeredFaceSideBias(customNode, 0.00035f);
                 switch (state)
                 {
                     case LidState.Blink:
+                    {
+                        Pawn? pawn = customNode.tree?.pawn;
+                        CompPawnSkin? blinkSkinComp = pawn?.TryGetComp<CompPawnSkin>();
+                        BlinkPhase blinkPhase = blinkSkinComp?.GetBlinkPhase() ?? BlinkPhase.None;
+                        float phaseProgress = blinkSkinComp?.GetBlinkProgress01() ?? 0f;
+                        float animatedMoveDown = blinkPhase switch
+                        {
+                            BlinkPhase.ClosingLid => Mathf.Lerp(0f, replacementMoveDown, Mathf.Clamp01(phaseProgress / 0.5f)),
+                            BlinkPhase.HideBaseEyeParts => replacementMoveDown,
+                            BlinkPhase.ShowReplacementEye => replacementMoveDown,
+                            BlinkPhase.RestoreBaseEyeParts => replacementMoveDown,
+                            BlinkPhase.OpeningLid => Mathf.Lerp(replacementMoveDown, 0f, Mathf.Clamp01((phaseProgress - 0.6f) / 0.4f)),
+                            _ => 0f,
+                        };
+
                         SetProgrammaticFaceTransform(
                             customNode,
                             0f,
-                            new Vector3(0f, 0f, 0.0052f),
+                            new Vector3(sideBiasX, 0f, animatedMoveDown),
                             new Vector3(1.01f, 1f, 0.88f));
                         break;
+                    }
 
                     case LidState.Close:
                         SetProgrammaticFaceTransform(
                             customNode,
                             0f,
-                            new Vector3(0f, 0f, 0.0044f),
+                            new Vector3(sideBiasX, 0f, replacementMoveDown),
                             new Vector3(1.01f, 1f, 0.90f));
                         break;
 
                     case LidState.Half:
+                    {
+                        Pawn? pawn = customNode.tree?.pawn;
+                        CompPawnSkin? skinComp = pawn?.TryGetComp<CompPawnSkin>();
+                        EyeAnimationVariant eyeVariant = skinComp?.GetEffectiveEyeAnimationVariant() ?? EyeAnimationVariant.NeutralSoft;
+
+                        float halfOffset = Mathf.Max(0f, replacementMoveDown - 0.0016f);
+                        float halfScale = 0.95f;
+                        if (eyeVariant == EyeAnimationVariant.NeutralSoft)
+                        {
+                            halfOffset += 0.0003f;
+                            halfScale = 0.93f;
+                        }
+                        else if (eyeVariant == EyeAnimationVariant.NeutralLookDown)
+                        {
+                            halfOffset += 0.0008f;
+                            halfScale = 0.91f;
+                        }
+                        else if (eyeVariant == EyeAnimationVariant.ScaredFlinch)
+                        {
+                            halfOffset += 0.0010f;
+                            halfScale = 0.89f;
+                        }
+
                         SetProgrammaticFaceTransform(
                             customNode,
                             0f,
-                            new Vector3(0f, 0f, 0.0028f + slowWave * 0.0004f),
-                            new Vector3(1.01f, 1f, 0.95f));
+                            new Vector3(sideBiasX, 0f, halfOffset + slowWave * 0.0004f),
+                            new Vector3(1.01f, 1f, halfScale));
                         break;
+                    }
 
                     case LidState.Happy:
+                    {
+                        Pawn? pawn = customNode.tree?.pawn;
+                        CompPawnSkin? skinComp = pawn?.TryGetComp<CompPawnSkin>();
+                        EyeAnimationVariant eyeVariant = skinComp?.GetEffectiveEyeAnimationVariant() ?? EyeAnimationVariant.HappyOpen;
+                        if (eyeVariant == EyeAnimationVariant.HappyClosedPeak)
+                        {
+                            HideProgrammaticFacePart(customNode);
+                            return;
+                        }
+
+                        float happyOffset = eyeVariant == EyeAnimationVariant.HappySoft ? -0.0014f : -0.0008f;
+                        float happyScale = eyeVariant == EyeAnimationVariant.HappySoft ? 0.90f : 0.95f;
                         SetProgrammaticFaceTransform(
                             customNode,
                             -1.2f + primaryWave * 0.2f,
-                            new Vector3(0f, 0f, -0.0008f + slowWave * 0.0004f),
-                            new Vector3(1.02f, 1f, 0.95f));
+                            new Vector3(sideBiasX, 0f, happyOffset + slowWave * 0.0004f),
+                            new Vector3(1.02f, 1f, happyScale));
                         break;
+                    }
 
                     default:
                         SetProgrammaticFaceTransform(
                             customNode,
                             0f,
-                            new Vector3(0f, 0f, slowWave * 0.0003f),
+                            new Vector3(sideBiasX, 0f, slowWave * 0.0003f),
                             Vector3.one);
                         break;
                 }
@@ -664,13 +1091,14 @@ namespace CharacterStudio.Rendering
 
             if (partType == LayeredFacePartType.LowerLid)
             {
+                float sideBiasX = GetLayeredFaceSideBias(customNode, 0.0002f);
                 switch (state)
                 {
                     case LidState.Blink:
                         SetProgrammaticFaceTransform(
                             customNode,
                             0f,
-                            new Vector3(0f, 0f, -0.0024f),
+                            new Vector3(sideBiasX, 0f, -0.0024f),
                             new Vector3(1.00f, 1f, 0.96f));
                         break;
 
@@ -678,7 +1106,7 @@ namespace CharacterStudio.Rendering
                         SetProgrammaticFaceTransform(
                             customNode,
                             0f,
-                            new Vector3(0f, 0f, -0.0018f),
+                            new Vector3(sideBiasX, 0f, -0.0018f),
                             new Vector3(1.00f, 1f, 0.97f));
                         break;
 
@@ -686,7 +1114,7 @@ namespace CharacterStudio.Rendering
                         SetProgrammaticFaceTransform(
                             customNode,
                             0f,
-                            new Vector3(0f, 0f, -0.0012f + slowWave * 0.0003f),
+                            new Vector3(sideBiasX, 0f, -0.0012f + slowWave * 0.0003f),
                             new Vector3(1.00f, 1f, 0.985f));
                         break;
 
@@ -694,7 +1122,7 @@ namespace CharacterStudio.Rendering
                         SetProgrammaticFaceTransform(
                             customNode,
                             0.85f + primaryWave * 0.15f,
-                            new Vector3(0f, 0f, -0.0008f + slowWave * 0.0003f),
+                            new Vector3(sideBiasX, 0f, -0.0008f + slowWave * 0.0003f),
                             new Vector3(1.01f, 1f, 0.98f));
                         break;
 
@@ -702,7 +1130,7 @@ namespace CharacterStudio.Rendering
                         SetProgrammaticFaceTransform(
                             customNode,
                             0f,
-                            new Vector3(0f, 0f, -slowWave * 0.0002f),
+                            new Vector3(sideBiasX, 0f, -slowWave * 0.0002f),
                             Vector3.one);
                         break;
                 }
@@ -804,6 +1232,14 @@ namespace CharacterStudio.Rendering
                             new Vector3(0f, 0f, 0.002f + Mathf.Abs(primaryWave) * 0.001f),
                             new Vector3(1.01f, 1f, 1.05f + Mathf.Abs(primaryWave) * 0.04f));
                     }
+                    else if (expression == ExpressionType.Shock || expression == ExpressionType.Scared)
+                    {
+                        SetProgrammaticFaceTransform(
+                            customNode,
+                            primaryWave * 0.75f,
+                            new Vector3(0f, 0f, 0.0032f + Mathf.Abs(primaryWave) * 0.001f),
+                            new Vector3(1.02f, 1f, 1.10f + Mathf.Abs(slowWave) * 0.03f));
+                    }
                     else
                     {
                         SetProgrammaticFaceTransform(
@@ -816,6 +1252,77 @@ namespace CharacterStudio.Rendering
             }
         }
 
+        private float GetLayeredUpperLidMoveDown(PawnRenderNode_Custom customNode)
+        {
+            Pawn? pawn = customNode.tree?.pawn;
+            CompPawnSkin? skinComp = pawn?.TryGetComp<CompPawnSkin>();
+            FaceEyeDirectionRuntimeData? eyeData = skinComp?.CurrentFaceRuntimeCompiledData?.portraitTrack?.eyeDirection;
+            if (eyeData != null)
+                return Mathf.Max(0f, eyeData.upperLidMoveDown);
+
+            return Mathf.Max(0f, skinComp?.ActiveSkin?.faceConfig?.eyeDirectionConfig?.upperLidMoveDown ?? 0.0044f);
+        }
+
+        private bool ShouldHideLayeredEyePartForReplacement(PawnRenderNode_Custom customNode, Pawn pawn, CompPawnSkin skinComp)
+        {
+            LayeredFacePartType? partType = customNode.layeredFacePartType;
+            if (!partType.HasValue)
+                return false;
+
+            switch (partType.Value)
+            {
+                case LayeredFacePartType.Eye:
+                case LayeredFacePartType.Pupil:
+                case LayeredFacePartType.LowerLid:
+                    break;
+                default:
+                    return false;
+            }
+
+            if (!HasActiveLayeredEyeReplacement(customNode, pawn, skinComp))
+                return false;
+
+            if (skinComp.IsBlinkActive())
+            {
+                BlinkPhase blinkPhase = skinComp.GetBlinkPhase();
+                return blinkPhase == BlinkPhase.HideBaseEyeParts
+                    || blinkPhase == BlinkPhase.ShowReplacementEye
+                    || blinkPhase == BlinkPhase.RestoreBaseEyeParts;
+            }
+
+            ExpressionType expression = skinComp.GetEffectiveExpression();
+            return expression == ExpressionType.Dead;
+        }
+
+        private bool ShouldHideUpperLidAtBlinkEndpoint(PawnRenderNode_Custom customNode, CompPawnSkin skinComp)
+        {
+            if (customNode.layeredFacePartType != LayeredFacePartType.UpperLid)
+                return false;
+
+            if (!skinComp.IsBlinkActive())
+                return false;
+
+            BlinkPhase blinkPhase = skinComp.GetBlinkPhase();
+            return blinkPhase == BlinkPhase.ShowReplacementEye;
+        }
+
+        private bool HasActiveLayeredEyeReplacement(PawnRenderNode_Custom customNode, Pawn pawn, CompPawnSkin skinComp)
+        {
+            if (skinComp.GetEffectiveExpression() == ExpressionType.Neutral && !skinComp.IsBlinkActive())
+                return false;
+
+            PawnFaceConfig? faceConfig = skinComp.ActiveSkin?.faceConfig;
+            if (faceConfig == null || faceConfig.workflowMode != FaceWorkflowMode.LayeredDynamic)
+                return false;
+
+            string overlayId = GetEffectiveLayeredOverlayId(customNode, pawn);
+            LayeredFacePartType replacementPartType = PawnFaceConfig.GetOverlayDisplayPartType(overlayId);
+            if (replacementPartType != LayeredFacePartType.Eye)
+                return false;
+
+            return faceConfig.CountLayeredParts(LayeredFacePartType.Overlay, overlayId) > 0;
+        }
+
         private LayeredFacePartType GetProgrammaticEmotionPartType(PawnRenderNode_Custom customNode)
         {
             LayeredFacePartType? configuredType = customNode.layeredFacePartType;
@@ -825,27 +1332,65 @@ namespace CharacterStudio.Rendering
             if (configuredType.Value != LayeredFacePartType.Overlay)
                 return configuredType.Value;
 
-            string overlayId = customNode.layeredOverlayId ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(overlayId))
-                return LayeredFacePartType.Overlay;
-
-            if (overlayId.IndexOf("blush", StringComparison.OrdinalIgnoreCase) >= 0)
-                return LayeredFacePartType.Blush;
-
-            if (overlayId.IndexOf("tear", StringComparison.OrdinalIgnoreCase) >= 0)
-                return LayeredFacePartType.Tear;
-
-            if (overlayId.IndexOf("sweat", StringComparison.OrdinalIgnoreCase) >= 0)
-                return LayeredFacePartType.Sweat;
-
-            return LayeredFacePartType.Overlay;
+            return PawnFaceConfig.GetOverlayDisplayPartType(customNode.layeredOverlayId);
         }
 
-        private string GetEffectiveLayeredOverlayId(PawnRenderNode_Custom customNode)
+        private string GetEffectiveLayeredOverlayId(PawnRenderNode_Custom customNode, Pawn? pawn = null)
         {
-            return string.IsNullOrWhiteSpace(customNode.layeredOverlayId)
-                ? "Overlay"
-                : customNode.layeredOverlayId;
+            string normalizedOverlayId = PawnFaceConfig.NormalizeOverlayId(customNode.layeredOverlayId);
+            if (pawn == null || !normalizedOverlayId.Equals("Overlay", StringComparison.OrdinalIgnoreCase))
+                return normalizedOverlayId;
+
+            CompPawnSkin? skinComp = pawn.TryGetComp<CompPawnSkin>();
+            if (skinComp == null)
+                return normalizedOverlayId;
+
+            PawnFaceConfig? faceConfig = skinComp.ActiveSkin?.faceConfig;
+            if (faceConfig == null)
+                return normalizedOverlayId;
+
+            string semanticOverlayId = ResolveSemanticOverlayId(skinComp.GetEffectiveEmotionOverlayState(), skinComp.GetEffectiveExpression());
+            if (semanticOverlayId.Equals("Overlay", StringComparison.OrdinalIgnoreCase))
+                return normalizedOverlayId;
+
+            if (faceConfig.CountLayeredParts(LayeredFacePartType.Overlay, semanticOverlayId) > 0)
+                return semanticOverlayId;
+
+            return normalizedOverlayId;
+        }
+
+        private string ResolveSemanticOverlayId(EmotionOverlayState emotionState, ExpressionType expression)
+        {
+            switch (emotionState)
+            {
+                case EmotionOverlayState.Blush:
+                case EmotionOverlayState.Lovin:
+                    return "Blush";
+                case EmotionOverlayState.Tear:
+                case EmotionOverlayState.Gloomy:
+                    return expression == ExpressionType.Gloomy ? "Overlay" : "Tear";
+                case EmotionOverlayState.Sweat:
+                    return "Sweat";
+                default:
+                    return expression switch
+                    {
+                        ExpressionType.Happy => "Blush",
+                        ExpressionType.Cheerful => "Blush",
+                        ExpressionType.SocialRelax => "Blush",
+                        ExpressionType.Lovin => "Blush",
+                        ExpressionType.Scared => "Sweat",
+                        ExpressionType.Shock => "Sweat",
+                        ExpressionType.WaitCombat => "Sweat",
+                        ExpressionType.AttackMelee => "Sweat",
+                        ExpressionType.AttackRanged => "Sweat",
+                        ExpressionType.Pain => "Tear",
+                        ExpressionType.Sad => "Tear",
+                        ExpressionType.Hopeless => "Tear",
+                        ExpressionType.Dead => "Tear",
+                        ExpressionType.Gloomy => "Overlay",
+                        _ => "Overlay"
+                    };
+            }
         }
 
         private void ApplyProgrammaticEmotionTransform(
@@ -858,6 +1403,35 @@ namespace CharacterStudio.Rendering
         {
             switch (partType)
             {
+                case LayeredFacePartType.Eye:
+                {
+                    Pawn? pawn = customNode.tree?.pawn;
+                    CompPawnSkin? skinComp = pawn?.TryGetComp<CompPawnSkin>();
+                    if (pawn == null || skinComp == null || !HasActiveLayeredEyeReplacement(customNode, pawn, skinComp))
+                    {
+                        HideProgrammaticFacePart(customNode);
+                        return;
+                    }
+
+                    if (skinComp.IsBlinkActive())
+                    {
+                        BlinkPhase blinkPhase = skinComp.GetBlinkPhase();
+                        bool visible = blinkPhase == BlinkPhase.ShowReplacementEye;
+                        if (!visible)
+                        {
+                            HideProgrammaticFacePart(customNode);
+                            return;
+                        }
+                    }
+
+                    SetProgrammaticFaceTransform(
+                        customNode,
+                        0f,
+                        Vector3.zero,
+                        Vector3.one);
+                    return;
+                }
+
                 case LayeredFacePartType.Blush:
                 {
                     bool active = emotionState == EmotionOverlayState.Lovin
@@ -1020,6 +1594,11 @@ namespace CharacterStudio.Rendering
                 var config = customNode.config;
                 var pawn = parms.pawn;
 
+                EnsureProgrammaticFaceStateUpdated(customNode, pawn);
+                float programmaticAlpha = customNode.layeredFacePartType.HasValue
+                    ? Mathf.Clamp01(customNode.currentProgrammaticAlpha)
+                    : 1f;
+
                 // 1. 获取主颜色
                 Color colorOne = GetColorFromSource(config.colorSource, pawn, config.customColor);
                 
@@ -1028,44 +1607,61 @@ namespace CharacterStudio.Rendering
 
                 if (parms.Statue)
                 {
-                    matPropBlock.SetColor(ShaderPropertyIDs.Color, parms.statueColor ?? Color.white);
+                    Color statueColor = parms.statueColor ?? Color.white;
+                    statueColor.a *= programmaticAlpha;
+                    matPropBlock.SetColor(ShaderPropertyIDs.Color, statueColor);
                 }
                 else
                 {
+                    Color finalColor = parms.tint * colorOne;
+                    finalColor.a *= programmaticAlpha;
+
+                    Color finalColorTwo = colorTwo;
+                    finalColorTwo.a *= programmaticAlpha;
+
                     // 应用主颜色与 tint 的组合
-                    matPropBlock.SetColor(ShaderPropertyIDs.Color, parms.tint * colorOne);
+                    matPropBlock.SetColor(ShaderPropertyIDs.Color, finalColor);
                     
                     // 应用第二颜色（仅当使用支持 Mask 的 Shader 时有效）
                     // 始终设置 _ColorTwo，因为如果 Shader 不支持，设置属性也不会有负面影响
                     int colorTwoID = Shader.PropertyToID("_ColorTwo");
-                    matPropBlock.SetColor(colorTwoID, colorTwo);
+                    matPropBlock.SetColor(colorTwoID, finalColorTwo);
                 }
 
-                if (config.eyeRenderMode == EyeRenderMode.UvOffset && config.eyeUvMoveRange > 0f)
+                int stID = Shader.PropertyToID("_MainTex_ST");
+                matPropBlock.SetVector(stID, new Vector4(1f, 1f, 0f, 0f));
+
+                if (config.eyeRenderMode == EyeRenderMode.UvOffset)
                 {
-                    EyeDirection eyeDirection = pawn?.TryGetComp<CompPawnSkin>()?.CurEyeDirection ?? EyeDirection.Center;
-                    float offsetX = 0f;
-                    float offsetY = 0f;
-                    float range = config.eyeUvMoveRange;
+                    CompPawnSkin? skinComp = pawn?.TryGetComp<CompPawnSkin>();
+                    float range = config.eyeUvMoveRange > 0f
+                        ? config.eyeUvMoveRange
+                        : skinComp?.ActiveSkin?.faceConfig?.eyeDirectionConfig?.pupilMoveRange ?? 0f;
 
-                    switch (eyeDirection)
+                    if (range > 0f)
                     {
-                        case EyeDirection.Left:
-                            offsetX = +range;
-                            break;
-                        case EyeDirection.Right:
-                            offsetX = -range;
-                            break;
-                        case EyeDirection.Up:
-                            offsetY = -range;
-                            break;
-                        case EyeDirection.Down:
-                            offsetY = +range;
-                            break;
-                    }
+                        EyeDirection eyeDirection = skinComp?.CurEyeDirection ?? EyeDirection.Center;
+                        float offsetX = 0f;
+                        float offsetY = 0f;
 
-                    int stID = Shader.PropertyToID("_MainTex_ST");
-                    matPropBlock.SetVector(stID, new Vector4(1f, 1f, offsetX, offsetY));
+                        switch (eyeDirection)
+                        {
+                            case EyeDirection.Left:
+                                offsetX = +range;
+                                break;
+                            case EyeDirection.Right:
+                                offsetX = -range;
+                                break;
+                            case EyeDirection.Up:
+                                offsetY = +range;
+                                break;
+                            case EyeDirection.Down:
+                                offsetY = -range;
+                                break;
+                        }
+
+                        matPropBlock.SetVector(stID, new Vector4(1f, 1f, offsetX, offsetY));
+                    }
                 }
             }
             else
@@ -1123,13 +1719,14 @@ namespace CharacterStudio.Rendering
                 resolvedTexPath = ResolveExpressionVariant(directionalTexPath, parms.pawn);
             }
 
-            bool isExternal = resolvedTexPath.Contains(":") ||
-                              resolvedTexPath.StartsWith("/") ||
-                              System.IO.File.Exists(resolvedTexPath);
+            bool looksLikeExternal = resolvedTexPath.Contains(":")
+                || resolvedTexPath.StartsWith("/")
+                || System.IO.Path.IsPathRooted(resolvedTexPath);
 
-            if (isExternal)
+            if (looksLikeExternal)
             {
-                if (!System.IO.File.Exists(resolvedTexPath))
+                bool externalExists = RuntimeAssetLoader.ExternalTextureExists(resolvedTexPath, out string resolvedExternalPath);
+                if (!externalExists)
                 {
                     Log.Error($"[CharacterStudio] 外部纹理文件不存在: {resolvedTexPath}");
                 }
@@ -1144,7 +1741,7 @@ namespace CharacterStudio.Rendering
 
                 var req = new GraphicRequest(
                     typeof(Graphic_Runtime),
-                    resolvedTexPath,
+                    externalExists ? resolvedExternalPath : resolvedTexPath,
                     shader,
                     Vector2.one,
                     props?.color ?? Color.white,
@@ -1170,7 +1767,11 @@ namespace CharacterStudio.Rendering
                 {
                     if (graphicType == null || (graphicType != typeof(Graphic_Multi) && graphicType != typeof(Graphic_Single)))
                     {
-                        if (ContentFinder<Texture2D>.Get(resolvedTexPath + "_north", false) != null)
+                        if (!RuntimeAssetLoader.IsMainThread())
+                        {
+                            graphicType = typeof(Graphic_Multi);
+                        }
+                        else if (ContentFinder<Texture2D>.Get(resolvedTexPath + "_north", false) != null)
                         {
                             graphicType = typeof(Graphic_Multi);
                         }
@@ -1486,18 +2087,32 @@ namespace CharacterStudio.Rendering
         private bool TryResolveFrameSequencePath(string prefix, Pawn pawn, out string resolvedPath)
         {
             resolvedPath = prefix;
-            string firstFramePath = AppendVariantToken(prefix, "f0");
-            if (!TextureExists(firstFramePath))
+            if (string.IsNullOrEmpty(prefix))
                 return false;
 
-            int frameCount = 1;
-            for (int i = 1; i < 16; i++)
+            if (!frameSequenceCountCache.TryGetValue(prefix, out int frameCount))
             {
-                if (TextureExists(AppendVariantToken(prefix, $"f{i}")))
-                    frameCount++;
-                else
-                    break;
+                string firstFramePath = AppendVariantToken(prefix, "f0");
+                if (!TextureExists(firstFramePath))
+                {
+                    frameSequenceCountCache[prefix] = 0;
+                    return false;
+                }
+
+                frameCount = 1;
+                for (int i = 1; i < 16; i++)
+                {
+                    if (TextureExists(AppendVariantToken(prefix, $"f{i}")))
+                        frameCount++;
+                    else
+                        break;
+                }
+
+                frameSequenceCountCache[prefix] = frameCount;
             }
+
+            if (frameCount <= 0)
+                return false;
 
             int animTick = pawn.TryGetComp<CompPawnSkin>()?.GetExpressionAnimTick() ?? (Find.TickManager?.TicksGame ?? 0);
             int frameIndex = Mathf.Abs(animTick) % frameCount;
@@ -1632,22 +2247,27 @@ namespace CharacterStudio.Rendering
                 return null;
 
             LayeredFacePartType partType = customNode.layeredFacePartType.Value;
+            LayeredFacePartSide side = PawnFaceConfig.NormalizePartSide(partType, customNode.layeredFacePartSide);
             ExpressionType expression = GetCurrentExpressionForPawn(pawn);
             bool isOverlay = partType == LayeredFacePartType.Overlay;
-            string overlayId = GetEffectiveLayeredOverlayId(customNode);
+            string overlayId = GetEffectiveLayeredOverlayId(customNode, pawn);
+
+            Rot4 facing = pawn.Rotation;
 
             string? compiledPath = ResolveCompiledLayeredFacePartPath(
                 compiledData,
                 currentTrack,
                 partType,
                 expression,
-                overlayId);
+                overlayId,
+                side,
+                facing);
             if (!string.IsNullOrWhiteSpace(compiledPath))
                 return compiledPath;
 
             string neutralPath = isOverlay
-                ? faceConfig.GetLayeredPartPath(partType, ExpressionType.Neutral, overlayId)
-                : faceConfig.GetLayeredPartPath(partType, ExpressionType.Neutral);
+                ? faceConfig.GetLayeredDirectionalPartPath(partType, ExpressionType.Neutral, overlayId, facing)
+                : faceConfig.GetLayeredDirectionalPartPath(partType, ExpressionType.Neutral, side, facing);
 
             if ((partType == LayeredFacePartType.Eye
                     || partType == LayeredFacePartType.Pupil
@@ -1659,9 +2279,10 @@ namespace CharacterStudio.Rendering
             {
                 LayeredFacePartConfig? closedStatePart = isOverlay
                     ? faceConfig.GetLayeredPartConfig(partType, expression, overlayId)
-                    : faceConfig.GetLayeredPartConfig(partType, expression);
+                    : faceConfig.GetLayeredPartConfig(partType, expression, side);
 
-                return closedStatePart?.texPath;
+                if (closedStatePart != null)
+                    return closedStatePart.GetDirectionalTexPath(facing);
             }
 
             string? channelVariantPath = TryResolveLayeredChannelVariantPath(customNode, pawn, neutralPath);
@@ -1669,8 +2290,8 @@ namespace CharacterStudio.Rendering
                 return channelVariantPath;
 
             string resolvedPath = isOverlay
-                ? faceConfig.GetLayeredPartPath(partType, expression, overlayId)
-                : faceConfig.GetLayeredPartPath(partType, expression);
+                ? faceConfig.GetLayeredDirectionalPartPath(partType, expression, overlayId, facing)
+                : faceConfig.GetLayeredDirectionalPartPath(partType, expression, side, facing);
             if (!string.IsNullOrWhiteSpace(resolvedPath))
                 return resolvedPath;
 
@@ -1679,16 +2300,63 @@ namespace CharacterStudio.Rendering
 
             if (partType == LayeredFacePartType.Base)
             {
-                string anyPath = faceConfig.GetAnyLayeredPartPath(partType);
+                string anyPath = faceConfig.GetAnyDirectionalLayeredPartPath(partType, facing);
                 if (!string.IsNullOrWhiteSpace(anyPath))
                     return anyPath;
             }
 
             if (isOverlay)
             {
-                string anyOverlayPath = faceConfig.GetAnyLayeredPartPath(partType, overlayId);
+                string anyOverlayPath = faceConfig.GetLayeredDirectionalPartPath(partType, ExpressionType.Neutral, overlayId, facing);
+                if (string.IsNullOrWhiteSpace(anyOverlayPath))
+                    anyOverlayPath = faceConfig.GetAnyLayeredPartPath(partType, overlayId);
                 if (!string.IsNullOrWhiteSpace(anyOverlayPath))
                     return anyOverlayPath;
+            }
+
+            return null;
+        }
+
+        private string? TryResolveLayeredPairedPartVariantPath(
+            PawnRenderNode_Custom customNode,
+            Pawn pawn,
+            string? neutralPath,
+            ExpressionType expression)
+        {
+            if (string.IsNullOrWhiteSpace(neutralPath))
+                return null;
+
+            LayeredFacePartType? partType = customNode.layeredFacePartType;
+            if (!partType.HasValue || !IsPairedLayeredFacePart(partType.Value))
+                return null;
+
+            CompPawnSkin? skinComp = pawn.TryGetComp<CompPawnSkin>();
+            if (skinComp == null)
+                return null;
+
+            List<string> sideTokens = GetPairedPartSideTokens(partType.Value, customNode.config, skinComp);
+            if (sideTokens.Count == 0)
+                return null;
+
+            List<string> expressionTokens = GetPairedPartExpressionTokens(expression, customNode.config, skinComp);
+
+            string resolvedNeutralPath = neutralPath!;
+            foreach (string sideToken in sideTokens)
+            {
+                foreach (string expressionToken in expressionTokens)
+                {
+                    string sideThenExpressionPath = AppendVariantToken(AppendVariantToken(resolvedNeutralPath, sideToken), expressionToken);
+                    if (TextureExists(sideThenExpressionPath))
+                        return sideThenExpressionPath;
+
+                    string expressionThenSidePath = AppendVariantToken(AppendVariantToken(resolvedNeutralPath, expressionToken), sideToken);
+                    if (TextureExists(expressionThenSidePath))
+                        return expressionThenSidePath;
+                }
+
+                string sideOnlyPath = AppendVariantToken(resolvedNeutralPath, sideToken);
+                if (TextureExists(sideOnlyPath))
+                    return sideOnlyPath;
             }
 
             return null;
@@ -1731,6 +2399,98 @@ namespace CharacterStudio.Rendering
                 return variantPath;
 
             return null;
+        }
+
+        private static bool IsPairedLayeredFacePart(LayeredFacePartType partType)
+        {
+            switch (partType)
+            {
+                case LayeredFacePartType.Brow:
+                case LayeredFacePartType.Eye:
+                case LayeredFacePartType.Pupil:
+                case LayeredFacePartType.UpperLid:
+                case LayeredFacePartType.LowerLid:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private List<string> GetPairedPartSideTokens(
+            LayeredFacePartType partType,
+            PawnLayerConfig? config,
+            CompPawnSkin skinComp)
+        {
+            var results = new List<string>();
+
+            if (partType == LayeredFacePartType.Pupil
+                && config != null
+                && config.eyeRenderMode == EyeRenderMode.UvOffset
+                && config.eyeUvMoveRange > 0f)
+            {
+                return results;
+            }
+
+            EyeDirection eyeDirection = skinComp.CurEyeDirection;
+            switch (eyeDirection)
+            {
+                case EyeDirection.Left:
+                    AddUnique(results, "East");
+                    AddUnique(results, "east");
+                    AddUnique(results, "Left");
+                    AddUnique(results, "left");
+                    break;
+                case EyeDirection.Right:
+                    AddUnique(results, "West");
+                    AddUnique(results, "west");
+                    AddUnique(results, "Right");
+                    AddUnique(results, "right");
+                    break;
+                case EyeDirection.Up:
+                    AddUnique(results, "Up");
+                    AddUnique(results, "up");
+                    break;
+                case EyeDirection.Down:
+                    AddUnique(results, "Down");
+                    AddUnique(results, "down");
+                    break;
+                default:
+                    AddUnique(results, "Center");
+                    AddUnique(results, "center");
+                    AddUnique(results, "Left");
+                    AddUnique(results, "left");
+                    AddUnique(results, "Right");
+                    AddUnique(results, "right");
+                    break;
+            }
+
+            return results;
+        }
+
+        private List<string> GetPairedPartExpressionTokens(
+            ExpressionType expression,
+            PawnLayerConfig? config,
+            CompPawnSkin skinComp)
+        {
+            var results = new List<string>();
+
+            LayerRole role = config?.role ?? LayerRole.Decoration;
+            string? channelState = skinComp.GetChannelStateSuffix(role);
+            AddUnique(results, channelState);
+
+            switch (expression)
+            {
+                case ExpressionType.Blink:
+                    AddUnique(results, "Blink");
+                    break;
+                case ExpressionType.Sleeping:
+                case ExpressionType.Dead:
+                    AddUnique(results, "Close");
+                    AddUnique(results, "Sleep");
+                    break;
+            }
+
+            return results;
         }
 
         private bool ShouldUseChannelVariantForPart(LayeredFacePartType partType)
@@ -1788,8 +2548,9 @@ namespace CharacterStudio.Rendering
             List<LayeredFacePartConfig>? layeredParts = faceConfig?.layeredParts;
 
             LayeredFacePartType partType = customNode.layeredFacePartType.Value;
+            LayeredFacePartSide side = PawnFaceConfig.NormalizePartSide(partType, customNode.layeredFacePartSide);
             ExpressionType expression = GetCurrentExpressionForPawn(pawn);
-            Vector2 compiledCorrection = ResolveCompiledAnchorCorrection(compiledData, partType, expression);
+            Vector2 compiledCorrection = ResolveCompiledAnchorCorrection(compiledData, partType, expression, side);
             if (compiledCorrection != Vector2.zero)
                 return compiledCorrection;
 
@@ -1798,20 +2559,36 @@ namespace CharacterStudio.Rendering
 
             PawnFaceConfig resolvedFaceConfig = faceConfig;
             bool isOverlay = partType == LayeredFacePartType.Overlay;
-            string overlayId = GetEffectiveLayeredOverlayId(customNode);
+            string overlayId = GetEffectiveLayeredOverlayId(customNode, pawn);
 
             LayeredFacePartConfig? exact = isOverlay
                 ? resolvedFaceConfig.GetLayeredPartConfig(partType, expression, overlayId)
-                : resolvedFaceConfig.GetLayeredPartConfig(partType, expression);
+                : resolvedFaceConfig.GetLayeredPartConfig(partType, expression, side);
 
             if (exact != null)
                 return exact.anchorCorrection;
 
             LayeredFacePartConfig? neutral = isOverlay
                 ? resolvedFaceConfig.GetLayeredPartConfig(partType, ExpressionType.Neutral, overlayId)
-                : resolvedFaceConfig.GetLayeredPartConfig(partType, ExpressionType.Neutral);
+                : resolvedFaceConfig.GetLayeredPartConfig(partType, ExpressionType.Neutral, side);
 
             return neutral?.anchorCorrection ?? Vector2.zero;
+        }
+
+        private Vector3 ApplyLayeredFacePartMotionAmplitude(
+            PawnRenderNode_Custom customNode,
+            Vector3 baseOffset,
+            float primaryWave,
+            float slowWave)
+        {
+            Vector2 motionAmplitude = GetLayeredFacePartAnchorCorrection(customNode, customNode.tree?.pawn);
+            if (motionAmplitude == Vector2.zero)
+                return baseOffset;
+
+            return new Vector3(
+                baseOffset.x + motionAmplitude.x * primaryWave,
+                baseOffset.y,
+                baseOffset.z + motionAmplitude.y * slowWave);
         }
 
         private string? ResolveCompiledLayeredFacePartPath(
@@ -1819,7 +2596,9 @@ namespace CharacterStudio.Rendering
             FaceRenderTrack currentTrack,
             LayeredFacePartType partType,
             ExpressionType expression,
-            string overlayId)
+            string overlayId,
+            LayeredFacePartSide side,
+            Rot4 facing)
         {
             if (compiledData == null)
                 return null;
@@ -1849,19 +2628,23 @@ namespace CharacterStudio.Rendering
             {
                 if (partType == LayeredFacePartType.Overlay)
                 {
-                    if (portraitCache.portraitOverlayPaths != null
-                        && portraitCache.portraitOverlayPaths.TryGetValue(overlayId, out string overlayPath)
+                    if (portraitCache.TryGetPortraitOverlayPath(overlayId, out string overlayPath)
                         && !string.IsNullOrWhiteSpace(overlayPath))
                     {
+                        if (TryResolveDirectionalCompiledPath(overlayPath, facing, portraitCache.TryGetPortraitOverlayDirectionAvailability(overlayId, out FaceDirectionAvailability? overlayAvailability) ? overlayAvailability : null, out string resolvedOverlayPath))
+                            return resolvedOverlayPath;
+
                         return overlayPath;
                     }
                 }
                 else
                 {
-                    if (portraitCache.portraitPartPaths != null
-                        && portraitCache.portraitPartPaths.TryGetValue(partType, out string partPath)
+                    if (portraitCache.TryGetPortraitPartPath(partType, side, out string partPath)
                         && !string.IsNullOrWhiteSpace(partPath))
                     {
+                        if (TryResolveDirectionalCompiledPath(partPath, facing, portraitCache.TryGetPortraitPartDirectionAvailability(partType, side, out FaceDirectionAvailability? partAvailability) ? partAvailability : null, out string resolvedPartPath))
+                            return resolvedPartPath;
+
                         return partPath;
                     }
                 }
@@ -1871,33 +2654,58 @@ namespace CharacterStudio.Rendering
                 && portraitTrack != null
                 && !string.IsNullOrWhiteSpace(portraitTrack.basePath))
             {
+                FaceDirectionAvailability? baseAvailability = portraitTrack.GetDirectionAvailability(LayeredFacePartType.Base);
+                if (TryResolveDirectionalCompiledPath(portraitTrack.basePath, facing, baseAvailability, out string resolvedBasePath))
+                    return resolvedBasePath;
+
                 return portraitTrack.basePath;
             }
 
             return null;
         }
 
+        private bool TryResolveDirectionalCompiledPath(
+            string basePath,
+            Rot4 facing,
+            FaceDirectionAvailability? availability,
+            out string resolvedPath)
+        {
+            resolvedPath = basePath;
+            if (string.IsNullOrWhiteSpace(basePath))
+                return false;
+
+            if (facing == Rot4.North)
+            {
+                if (availability?.north == true)
+                {
+                    resolvedPath = ResolveDirectionalVariant(basePath, facing);
+                    return true;
+                }
+
+                return false;
+            }
+
+            if (facing == Rot4.East || facing == Rot4.West)
+            {
+                if (availability?.east == true)
+                {
+                    resolvedPath = ResolveDirectionalVariant(basePath, facing);
+                    return true;
+                }
+
+                return false;
+            }
+
+            return false;
+        }
+
         private Vector2 ResolveCompiledAnchorCorrection(
             FaceRuntimeCompiledData? compiledData,
             LayeredFacePartType partType,
-            ExpressionType expression)
+            ExpressionType expression,
+            LayeredFacePartSide side)
         {
-            if (compiledData?.portraitTrack?.anchorCorrections == null)
-                return Vector2.zero;
-
-            if (!compiledData.portraitTrack.anchorCorrections.TryGetValue(partType, out Dictionary<ExpressionType, Vector2>? byExpression)
-                || byExpression == null)
-            {
-                return Vector2.zero;
-            }
-
-            if (byExpression.TryGetValue(expression, out Vector2 exact))
-                return exact;
-
-            if (byExpression.TryGetValue(ExpressionType.Neutral, out Vector2 neutral))
-                return neutral;
-
-            return Vector2.zero;
+            return compiledData?.portraitTrack?.GetAnchorCorrection(partType, expression, side) ?? Vector2.zero;
         }
 
         private ExpressionType GetCurrentExpressionForPawn(Pawn? pawn)
@@ -1917,18 +2725,118 @@ namespace CharacterStudio.Rendering
             if (string.IsNullOrEmpty(path))
                 return false;
 
+            if (textureExistsCache.TryGetValue(path, out bool cachedExists))
+                return cachedExists;
+
+            bool exists;
             if (System.IO.Path.IsPathRooted(path) || path.StartsWith("/"))
             {
-                return System.IO.File.Exists(path);
+                exists = RuntimeAssetLoader.ExternalTextureExists(path, out _);
+            }
+            else if (!RuntimeAssetLoader.IsMainThread())
+            {
+                exists = true;
+            }
+            else if (ContentFinder<Texture2D>.Get(path, false) != null)
+            {
+                exists = true;
+            }
+            else
+            {
+                exists = ContentFinder<Texture2D>.Get(path + "_north", false) != null;
             }
 
-            if (ContentFinder<Texture2D>.Get(path, false) != null)
+            textureExistsCache[path] = exists;
+            return exists;
+        }
+
+        private bool IsTriggeredEquipmentLayerVisible(PawnRenderNode_Custom customNode, Pawn? pawn)
+        {
+            PawnLayerConfig? config = customNode.config;
+            if (config == null || !config.useTriggeredEquipmentAnimation)
                 return true;
 
-            if (ContentFinder<Texture2D>.Get(path + "_north", false) != null)
-                return true;
+            CompPawnSkin? skinComp = pawn?.TryGetComp<CompPawnSkin>();
+            if (skinComp == null || !skinComp.IsTriggeredEquipmentAnimationActive(config.triggerAbilityDefName))
+                return config.triggeredVisibleOutsideCycle;
 
-            return false;
+            int now = Find.TickManager?.TicksGame ?? 0;
+            int localTick = Mathf.Max(0, now - skinComp.triggeredEquipmentAnimationStartTick);
+            int deployTicks = Mathf.Max(1, config.triggeredDeployTicks);
+            int holdTicks = Mathf.Max(0, config.triggeredHoldTicks);
+
+            if (localTick < deployTicks)
+                return config.triggeredAnimationRole == EquipmentTriggeredAnimationRole.EffectLayer
+                    ? (config.triggeredUseVfxVisibility && config.triggeredVisibleDuringDeploy)
+                    : config.triggeredVisibleDuringDeploy;
+
+            if (localTick < deployTicks + holdTicks)
+                return config.triggeredAnimationRole == EquipmentTriggeredAnimationRole.EffectLayer
+                    ? (config.triggeredUseVfxVisibility && config.triggeredVisibleDuringHold)
+                    : config.triggeredVisibleDuringHold;
+
+            return config.triggeredAnimationRole == EquipmentTriggeredAnimationRole.EffectLayer
+                ? (config.triggeredUseVfxVisibility && config.triggeredVisibleDuringReturn)
+                : config.triggeredVisibleDuringReturn;
+        }
+
+        private void ApplyTriggeredEquipmentAnimation(PawnRenderNode_Custom customNode, Pawn? pawn)
+        {
+            PawnLayerConfig? config = customNode.config;
+            if (config == null || !config.useTriggeredEquipmentAnimation)
+                return;
+
+            CompPawnSkin? skinComp = pawn?.TryGetComp<CompPawnSkin>();
+            if (skinComp == null || !skinComp.IsTriggeredEquipmentAnimationActive(config.triggerAbilityDefName))
+            {
+                customNode.currentAnimAngle = 0f;
+                customNode.currentAnimOffset = Vector3.zero;
+                return;
+            }
+
+            int now = Find.TickManager?.TicksGame ?? 0;
+            int localTick = Mathf.Max(0, now - skinComp.triggeredEquipmentAnimationStartTick);
+            int deployTicks = Mathf.Max(1, config.triggeredDeployTicks);
+            int holdTicks = Mathf.Max(0, config.triggeredHoldTicks);
+            int returnTicks = Mathf.Max(1, config.triggeredReturnTicks);
+
+            float angle;
+            if (localTick < deployTicks)
+            {
+                float t = Mathf.Clamp01(localTick / (float)deployTicks);
+                angle = Mathf.Lerp(config.triggeredReturnAngle, config.triggeredDeployAngle, t);
+            }
+            else if (localTick < deployTicks + holdTicks)
+            {
+                angle = config.triggeredDeployAngle;
+            }
+            else
+            {
+                float t = Mathf.Clamp01((localTick - deployTicks - holdTicks) / (float)returnTicks);
+                angle = Mathf.Lerp(config.triggeredDeployAngle, config.triggeredReturnAngle, t);
+            }
+
+            customNode.currentAnimAngle = angle;
+
+            Vector2 pivot = config.animPivotOffset;
+            if (pivot == Vector2.zero)
+            {
+                customNode.currentAnimOffset = Vector3.zero;
+                return;
+            }
+
+            float rad = angle * Mathf.Deg2Rad;
+            float cos = Mathf.Cos(rad);
+            float sin = Mathf.Sin(rad);
+            float rotX = cos * pivot.x - sin * pivot.y;
+            float rotZ = sin * pivot.x + cos * pivot.y;
+            customNode.currentAnimOffset = new Vector3(pivot.x - rotX, 0f, pivot.y - rotZ);
+        }
+
+        public static void ClearCache()
+        {
+            textureExistsCache.Clear();
+            frameSequenceCountCache.Clear();
         }
     }
 }

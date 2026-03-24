@@ -31,16 +31,17 @@ namespace CharacterStudio.UI
                 { "Brow", LayeredFacePartType.Brow },
                 { "Brows", LayeredFacePartType.Brow },
                 { "Eye", LayeredFacePartType.Eye },
+                { "Eyes", LayeredFacePartType.Eye },
                 { "Sclera", LayeredFacePartType.Eye },
                 { "Pupil", LayeredFacePartType.Pupil },
+                { "Pupils", LayeredFacePartType.Pupil },
                 { "UpperLid", LayeredFacePartType.UpperLid },
                 { "LidUpper", LayeredFacePartType.UpperLid },
+                { "UpperLids", LayeredFacePartType.UpperLid },
                 { "LowerLid", LayeredFacePartType.LowerLid },
                 { "LidLower", LayeredFacePartType.LowerLid },
+                { "LowerLids", LayeredFacePartType.LowerLid },
                 { "Mouth", LayeredFacePartType.Mouth },
-                { "Blush", LayeredFacePartType.Overlay },
-                { "Tear", LayeredFacePartType.Overlay },
-                { "Sweat", LayeredFacePartType.Overlay },
             };
 
         private static readonly HashSet<string> DirectionalVariantTokens =
@@ -52,6 +53,18 @@ namespace CharacterStudio.UI
                 "west",
                 "left",
                 "right",
+                "up",
+                "down",
+                "center",
+            };
+
+        private static readonly HashSet<string> ViewDirectionalVariantTokens =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "north",
+                "south",
+                "east",
+                "west",
                 "up",
                 "down",
                 "center",
@@ -141,23 +154,25 @@ namespace CharacterStudio.UI
 
                 matchedExpressionPaths[ExpressionType.Neutral] = selectedBasePath;
 
-                fc.enabled = true;
-                fc.workflowMode = FaceWorkflowMode.FullFaceSwap;
-                fc.expressions.Clear();
-                fc.layeredParts?.Clear();
-                fc.layeredSourceRoot = string.Empty;
-                layeredPartPathBuffer.Clear();
+                PawnFaceConfig importedFaceConfig = fc.Clone();
+                importedFaceConfig.enabled = true;
+                importedFaceConfig.workflowMode = FaceWorkflowMode.FullFaceSwap;
+                importedFaceConfig.expressions.Clear();
+                importedFaceConfig.layeredParts.Clear();
+                importedFaceConfig.layeredSourceRoot = string.Empty;
+                importedFaceConfig.eyeDirectionConfig = null;
 
                 foreach (var pair in matchedExpressionPaths.OrderBy(pair => (int)pair.Key))
                 {
-                    fc.SetTexPath(pair.Key, pair.Value);
+                    importedFaceConfig.SetTexPath(pair.Key, pair.Value);
                 }
 
-                exprPathBuffer.Clear();
-                foreach (ExpressionType expression in Enum.GetValues(typeof(ExpressionType)))
-                {
-                    exprPathBuffer[expression] = fc.GetTexPath(expression);
-                }
+                ApplyImportedFaceConfig(fc, importedFaceConfig);
+                RebuildFaceImportBuffers(fc);
+                SyncLayeredFacePartsToEditableLayers(fc);
+                workingSkin.hideVanillaHead = false;
+                ForceResetPreviewMannequin();
+                RefreshRenderTree();
 
                 ShowFullFaceAutoImportSummary(directoryPath, selectedBasePath, matchedExpressionPaths, ignoredFiles);
             }
@@ -257,17 +272,18 @@ namespace CharacterStudio.UI
 
         private void AutoPopulateLayeredFacePartsFromDirectory(PawnFaceConfig fc, string directoryPath, bool switchedFromFullFaceMode = false)
         {
+            Dictionary<string, string> originalLayeredPartPathBuffer = new Dictionary<string, string>(layeredPartPathBuffer, StringComparer.OrdinalIgnoreCase);
+            Dictionary<ExpressionType, string> originalExprPathBuffer = new Dictionary<ExpressionType, string>(exprPathBuffer);
+
             try
             {
-                fc.layeredParts ??= new List<LayeredFacePartConfig>();
-                fc.layeredParts.Clear();
-                fc.expressions.Clear();
-                layeredPartPathBuffer.Clear();
-                exprPathBuffer.Clear();
-
-                fc.enabled = true;
-                fc.workflowMode = FaceWorkflowMode.LayeredDynamic;
-                fc.layeredSourceRoot = directoryPath;
+                PawnFaceConfig importedFaceConfig = fc.Clone();
+                importedFaceConfig.layeredParts.Clear();
+                importedFaceConfig.expressions.Clear();
+                importedFaceConfig.enabled = true;
+                importedFaceConfig.workflowMode = FaceWorkflowMode.LayeredDynamic;
+                importedFaceConfig.layeredSourceRoot = directoryPath;
+                importedFaceConfig.eyeDirectionConfig = null;
 
                 List<string> files = Directory.EnumerateFiles(directoryPath)
                     .Where(IsSupportedLayeredFaceTextureFile)
@@ -293,10 +309,15 @@ namespace CharacterStudio.UI
 
                 int GetOverlayOrder(string? overlayId)
                 {
-                    string normalizedOverlayId = string.IsNullOrWhiteSpace(overlayId) ? "Overlay" : overlayId!;
+                    string normalizedOverlayId = PawnFaceConfig.NormalizeOverlayId(overlayId);
                     if (!overlayOrderById.TryGetValue(normalizedOverlayId, out int overlayOrder))
                     {
-                        overlayOrder = overlayOrderById.Count;
+                        overlayOrder = PawnFaceConfig.GetCanonicalOverlayOrder(normalizedOverlayId);
+                        if (overlayOrderById.Values.Contains(overlayOrder))
+                        {
+                            overlayOrder = overlayOrderById.Values.DefaultIfEmpty(2).Max() + 1;
+                        }
+
                         overlayOrderById[normalizedOverlayId] = overlayOrder;
                     }
 
@@ -325,13 +346,59 @@ namespace CharacterStudio.UI
                     ExpressionType expression,
                     string texturePath,
                     string sourceStem,
-                    string? overlayId = null)
+                    string? overlayId = null,
+                    LayeredFacePartSide side = LayeredFacePartSide.None,
+                    Rot4 facing = default)
                 {
+                    ResolveAutoImportDirectionalPaths(
+                        detectedFilePathMap,
+                        texturePath,
+                        sourceStem,
+                        facing,
+                        out string texPathSouth,
+                        out string texPathEast,
+                        out string texPathNorth,
+                        out List<string> recognizedDirectionalStems);
+
                     int overlayOrder = partType == LayeredFacePartType.Overlay ? GetOverlayOrder(overlayId) : 0;
-                    ApplyAutoScannedLayeredPart(fc, partType, expression, texturePath, overlayId, overlayOrder);
+                    ApplyAutoScannedLayeredPart(
+                        importedFaceConfig,
+                        partType,
+                        expression,
+                        texPathSouth,
+                        texPathEast,
+                        texPathNorth,
+                        overlayId,
+                        overlayOrder,
+                        side);
+
+                    foreach (string recognizedStem in recognizedDirectionalStems)
+                    {
+                        recognizedFileNames.Add(recognizedStem);
+                    }
 
                     recognizedFileNames.Add(sourceStem);
-                    matchedLines.Add($"• {FormatLayeredAutoImportMatchLabel(partType, expression, overlayId)} ← {Path.GetFileName(texturePath)}");
+
+                    List<string> directionalFiles = new List<string>();
+                    if (!string.IsNullOrWhiteSpace(texPathSouth))
+                    {
+                        directionalFiles.Add($"S:{Path.GetFileName(texPathSouth)}");
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(texPathEast))
+                    {
+                        directionalFiles.Add($"E/W:{Path.GetFileName(texPathEast)}");
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(texPathNorth))
+                    {
+                        directionalFiles.Add($"N:{Path.GetFileName(texPathNorth)}");
+                    }
+
+                    string importDetail = directionalFiles.Count > 0
+                        ? string.Join(", ", directionalFiles)
+                        : Path.GetFileName(texturePath);
+                    matchedLines.Add($"• {FormatLayeredAutoImportMatchLabel(partType, expression, overlayId, side)} ← {importDetail}");
                     return true;
                 }
 
@@ -339,21 +406,23 @@ namespace CharacterStudio.UI
                     LayeredFacePartType partType,
                     ExpressionType expression,
                     IEnumerable<string> stemCandidates,
-                    string? overlayId = null)
+                    string? overlayId = null,
+                    LayeredFacePartSide side = LayeredFacePartSide.None)
                 {
                     if (!TryGetFirstExistingPath(stemCandidates, out string resolvedPath, out string matchedStem))
                     {
                         return false;
                     }
 
-                    return ApplyRecognized(partType, expression, resolvedPath, matchedStem, overlayId);
+                    return ApplyRecognized(partType, expression, resolvedPath, matchedStem, overlayId, side);
                 }
 
                 bool TryApplyExpressionGroup(
                     LayeredFacePartType partType,
                     IEnumerable<ExpressionType> expressions,
                     IEnumerable<string> stemCandidates,
-                    string? overlayId = null)
+                    string? overlayId = null,
+                    LayeredFacePartSide side = LayeredFacePartSide.None)
                 {
                     if (!TryGetFirstExistingPath(stemCandidates, out string resolvedPath, out string matchedStem))
                     {
@@ -363,69 +432,65 @@ namespace CharacterStudio.UI
                     bool applied = false;
                     foreach (ExpressionType expression in expressions)
                     {
-                        ApplyRecognized(partType, expression, resolvedPath, matchedStem, overlayId);
+                        ApplyRecognized(partType, expression, resolvedPath, matchedStem, overlayId, side);
                         applied = true;
                     }
 
                     return applied;
                 }
 
-                bool TryApplyVirtualNeutral(
+                bool TryApplyPairedNeutralParts(
                     LayeredFacePartType partType,
-                    string virtualStem,
-                    IEnumerable<string> sampleStemCandidates,
-                    string? overlayId = null)
+                    IEnumerable<string> leftStemCandidates,
+                    IEnumerable<string> rightStemCandidates)
                 {
-                    string existingPath = partType == LayeredFacePartType.Overlay
-                        ? fc.GetLayeredPartPath(partType, ExpressionType.Neutral, string.IsNullOrWhiteSpace(overlayId) ? "Overlay" : overlayId!)
-                        : fc.GetLayeredPartPath(partType, ExpressionType.Neutral);
-
-                    if (!string.IsNullOrWhiteSpace(existingPath))
-                    {
-                        return false;
-                    }
-
-                    if (!TryGetFirstExistingPath(sampleStemCandidates, out string samplePath, out string matchedStem))
-                    {
-                        return false;
-                    }
-
-                    int overlayOrder = partType == LayeredFacePartType.Overlay ? GetOverlayOrder(overlayId) : 0;
-                    string virtualPath = BuildVirtualVariantBasePath(samplePath, virtualStem);
-
-                    ApplyAutoScannedLayeredPart(fc, partType, ExpressionType.Neutral, virtualPath, overlayId, overlayOrder);
-                    recognizedFileNames.Add(matchedStem);
-                    synthesizedLines.Add($"• {FormatLayeredAutoImportMatchLabel(partType, ExpressionType.Neutral, overlayId)} ← {Path.GetFileName(samplePath)}（合成基础路径：{Path.GetFileName(virtualPath)}）");
-                    return true;
+                    bool applied = false;
+                    applied |= TryApplyFirstAvailableStem(
+                        partType,
+                        ExpressionType.Neutral,
+                        leftStemCandidates,
+                        side: LayeredFacePartSide.Left);
+                    applied |= TryApplyFirstAvailableStem(
+                        partType,
+                        ExpressionType.Neutral,
+                        rightStemCandidates,
+                        side: LayeredFacePartSide.Right);
+                    return applied;
                 }
 
-                TryApplyFirstAvailableStem(LayeredFacePartType.Base, ExpressionType.Neutral, new[] { "Base" });
+                bool hasLayeredFaceBase = TryApplyFirstAvailableStem(LayeredFacePartType.Base, ExpressionType.Neutral, new[] { "Base" });
+
                 TryApplyFirstAvailableStem(LayeredFacePartType.Brow, ExpressionType.Neutral, new[] { "Brows", "Brow" });
+                TryApplyPairedNeutralParts(
+                    LayeredFacePartType.Brow,
+                    new[] { "Brow_Left", "Brows_Left" },
+                    new[] { "Brow_Right", "Brows_Right" });
+
                 TryApplyFirstAvailableStem(LayeredFacePartType.Eye, ExpressionType.Neutral, new[] { "Sclera", "Eye" });
+                TryApplyPairedNeutralParts(
+                    LayeredFacePartType.Eye,
+                    new[] { "Eye_Left", "Sclera_Left" },
+                    new[] { "Eye_Right", "Sclera_Right" });
+
                 TryApplyFirstAvailableStem(LayeredFacePartType.UpperLid, ExpressionType.Neutral, new[] { "LidUpper", "UpperLid" });
+                TryApplyPairedNeutralParts(
+                    LayeredFacePartType.UpperLid,
+                    new[] { "UpperLid_Left", "LidUpper_Left" },
+                    new[] { "UpperLid_Right", "LidUpper_Right" });
+
                 TryApplyFirstAvailableStem(LayeredFacePartType.LowerLid, ExpressionType.Neutral, new[] { "LidLower", "LowerLid" });
+                TryApplyPairedNeutralParts(
+                    LayeredFacePartType.LowerLid,
+                    new[] { "LowerLid_Left", "LidLower_Left" },
+                    new[] { "LowerLid_Right", "LidLower_Right" });
+
                 TryApplyFirstAvailableStem(LayeredFacePartType.Mouth, ExpressionType.Neutral, new[] { "Mouth" });
 
-                bool hasConcretePupilBase = TryApplyFirstAvailableStem(LayeredFacePartType.Pupil, ExpressionType.Neutral, new[] { "Pupil" });
-                if (!hasConcretePupilBase)
-                {
-                    hasConcretePupilBase = TryApplyVirtualNeutral(LayeredFacePartType.Pupil, "Pupil", new[] { "Pupil_Center" });
-                }
-
-                if (!hasConcretePupilBase)
-                {
-                    TryApplyFirstAvailableStem(
-                        LayeredFacePartType.Pupil,
-                        ExpressionType.Neutral,
-                        new[]
-                        {
-                            "Pupil_Left",
-                            "Pupil_Right",
-                            "Pupil_Up",
-                            "Pupil_Down",
-                            "Pupil_east",
-                        });
-                }
+                TryApplyFirstAvailableStem(LayeredFacePartType.Pupil, ExpressionType.Neutral, new[] { "Pupil", "Pupil_Center" });
+                TryApplyPairedNeutralParts(
+                    LayeredFacePartType.Pupil,
+                    new[] { "Pupil_Left" },
+                    new[] { "Pupil_Right" });
 
                 TryApplyFirstAvailableStem(LayeredFacePartType.Eye, ExpressionType.Blink, new[] { "Eye_blink" });
 
@@ -487,24 +552,30 @@ namespace CharacterStudio.UI
                         continue;
                     }
 
-                    if (!TryParseLayeredFaceFileName(filePath, out LayeredFacePartType scannedPartType, out string? overlayId, out string? suffix))
+                    if (!TryParseLayeredFaceFileName(
+                            filePath,
+                            out LayeredFacePartType scannedPartType,
+                            out LayeredFacePartSide scannedSide,
+                            out string? overlayId,
+                            out string? suffix,
+                            out Rot4 scannedFacing))
                     {
                         continue;
                     }
 
                     if (string.IsNullOrWhiteSpace(suffix))
                     {
-                        ApplyRecognized(scannedPartType, ExpressionType.Neutral, filePath, fileStem, overlayId);
+                        ApplyRecognized(scannedPartType, ExpressionType.Neutral, filePath, fileStem, overlayId, scannedSide, scannedFacing);
                         continue;
                     }
 
                     if (Enum.TryParse(suffix, true, out ExpressionType scannedExpression))
                     {
-                        ApplyRecognized(scannedPartType, scannedExpression, filePath, fileStem, overlayId);
+                        ApplyRecognized(scannedPartType, scannedExpression, filePath, fileStem, overlayId, scannedSide, scannedFacing);
                     }
                 }
 
-                AutoConfigureProgrammaticLayeredFaceLogic(fc, detectedFileNames, detectedFilePathMap);
+                AutoConfigureProgrammaticLayeredFaceLogic(importedFaceConfig, detectedFileNames, detectedFilePathMap);
 
                 List<string> runtimeVariantFiles = files
                     .Where(file =>
@@ -526,6 +597,17 @@ namespace CharacterStudio.UI
                     .OrderBy(line => line, StringComparer.OrdinalIgnoreCase)
                     .ToList();
 
+                ApplyImportedFaceConfig(fc, importedFaceConfig);
+                SyncImportedLayeredFaceBaseToHeadSlot(fc, hasLayeredFaceBase);
+                RebuildFaceImportBuffers(fc);
+                SyncLayeredFacePartsToEditableLayers(fc);
+                workingSkin.hideVanillaHead = hasLayeredFaceBase;
+
+                ForceResetPreviewMannequin();
+                isDirty = true;
+                RefreshPreview();
+                RefreshRenderTree();
+
                 ShowLayeredFaceAutoImportSummary(
                     directoryPath,
                     fc,
@@ -537,6 +619,7 @@ namespace CharacterStudio.UI
             }
             catch (Exception ex)
             {
+                RestoreFaceImportBuffers(originalLayeredPartPathBuffer, originalExprPathBuffer);
                 Log.Warning($"[CharacterStudio] 自动扫描分层表情目录失败: {ex.Message}");
                 Find.WindowStack.Add(new Dialog_MessageBox($"自动扫描分层表情目录失败：\n{ex.Message}"));
             }
@@ -546,36 +629,615 @@ namespace CharacterStudio.UI
             PawnFaceConfig fc,
             LayeredFacePartType partType,
             ExpressionType expression,
-            string texturePath,
+            string texPathSouth,
+            string texPathEast,
+            string texPathNorth,
             string? overlayId = null,
-            int overlayOrder = 0)
+            int overlayOrder = 0,
+            LayeredFacePartSide side = LayeredFacePartSide.None)
         {
+            string primaryTexturePath = !string.IsNullOrWhiteSpace(texPathSouth)
+                ? texPathSouth
+                : !string.IsNullOrWhiteSpace(texPathEast)
+                    ? texPathEast
+                    : texPathNorth;
+
             if (partType == LayeredFacePartType.Overlay)
             {
-                string resolvedOverlayId = string.IsNullOrWhiteSpace(overlayId) ? "Overlay" : overlayId!;
-                fc.SetLayeredPart(partType, expression, texturePath, resolvedOverlayId, overlayOrder);
+                string resolvedOverlayId = PawnFaceConfig.NormalizeOverlayId(overlayId);
+                fc.SetLayeredPartDirectional(partType, expression, texPathSouth, texPathEast, texPathNorth, resolvedOverlayId, overlayOrder);
 
                 LayeredFacePartConfig? overlayConfig = fc.GetLayeredPartConfig(partType, expression, resolvedOverlayId);
                 if (overlayConfig != null)
                 {
-                    overlayConfig.enabled = true;
+                    overlayConfig.enabled = !string.IsNullOrWhiteSpace(texPathSouth)
+                        || !string.IsNullOrWhiteSpace(texPathEast)
+                        || !string.IsNullOrWhiteSpace(texPathNorth);
                     overlayConfig.overlayId = resolvedOverlayId;
                     overlayConfig.overlayOrder = overlayOrder;
                 }
 
-                layeredPartPathBuffer[GetLayeredPartBufferKey(partType, expression, resolvedOverlayId)] = texturePath;
+                layeredPartPathBuffer[GetLayeredPartBufferKey(partType, expression, resolvedOverlayId)] = primaryTexturePath ?? string.Empty;
                 return;
             }
 
-            fc.SetLayeredPart(partType, expression, texturePath);
+            LayeredFacePartSide normalizedSide = PawnFaceConfig.NormalizePartSide(partType, side);
+            fc.SetLayeredPartDirectional(partType, expression, texPathSouth, texPathEast, texPathNorth, normalizedSide);
 
-            LayeredFacePartConfig? partConfig = fc.GetLayeredPartConfig(partType, expression);
+            LayeredFacePartConfig? partConfig = fc.GetLayeredPartConfig(partType, expression, normalizedSide);
             if (partConfig != null)
             {
-                partConfig.enabled = true;
+                partConfig.enabled = !string.IsNullOrWhiteSpace(texPathSouth)
+                    || !string.IsNullOrWhiteSpace(texPathEast)
+                    || !string.IsNullOrWhiteSpace(texPathNorth);
+                partConfig.side = normalizedSide;
             }
 
-            layeredPartPathBuffer[GetLayeredPartBufferKey(partType, expression)] = texturePath;
+            layeredPartPathBuffer[GetLayeredPartBufferKey(partType, expression, side: normalizedSide)] = primaryTexturePath ?? string.Empty;
+        }
+
+        private void ApplyImportedFaceConfig(PawnFaceConfig target, PawnFaceConfig source)
+        {
+            target.enabled = source.enabled;
+            target.workflowMode = source.workflowMode;
+            target.layeredSourceRoot = source.layeredSourceRoot ?? string.Empty;
+
+            target.expressions.Clear();
+            foreach (ExpressionTexPath exp in source.expressions)
+            {
+                var clonedExp = new ExpressionTexPath
+                {
+                    expression = exp.expression,
+                    texPath = exp.texPath
+                };
+
+                if (exp.frames != null)
+                {
+                    foreach (ExpressionFrame frame in exp.frames)
+                    {
+                        clonedExp.frames.Add(new ExpressionFrame
+                        {
+                            texPath = frame.texPath,
+                            durationTicks = frame.durationTicks
+                        });
+                    }
+                }
+
+                target.expressions.Add(clonedExp);
+            }
+
+            target.layeredParts ??= new List<LayeredFacePartConfig>();
+            target.layeredParts.Clear();
+            if (source.layeredParts != null)
+            {
+                foreach (LayeredFacePartConfig part in source.layeredParts)
+                {
+                    if (part != null)
+                    {
+                        target.layeredParts.Add(part.Clone());
+                    }
+                }
+            }
+
+            target.eyeDirectionConfig = source.eyeDirectionConfig?.Clone();
+        }
+
+        private void RebuildFaceImportBuffers(PawnFaceConfig fc)
+        {
+            layeredPartPathBuffer.Clear();
+            exprPathBuffer.Clear();
+
+            foreach (ExpressionType expression in Enum.GetValues(typeof(ExpressionType)))
+            {
+                exprPathBuffer[expression] = fc.GetTexPath(expression);
+            }
+
+            if (fc?.layeredParts == null)
+            {
+                return;
+            }
+
+            foreach (LayeredFacePartConfig part in fc.layeredParts)
+            {
+                if (part == null)
+                {
+                    continue;
+                }
+
+                string bufferKey = part.partType == LayeredFacePartType.Overlay
+                    ? GetLayeredPartBufferKey(part.partType, part.expression, PawnFaceConfig.NormalizeOverlayId(part.overlayId))
+                    : GetLayeredPartBufferKey(part.partType, part.expression, side: part.side);
+
+                layeredPartPathBuffer[bufferKey] = part.texPath ?? string.Empty;
+            }
+        }
+
+        private void RestoreFaceImportBuffers(
+            Dictionary<string, string> layeredBufferSnapshot,
+            Dictionary<ExpressionType, string> expressionBufferSnapshot)
+        {
+            layeredPartPathBuffer.Clear();
+            foreach (var pair in layeredBufferSnapshot)
+            {
+                layeredPartPathBuffer[pair.Key] = pair.Value;
+            }
+
+            exprPathBuffer.Clear();
+            foreach (var pair in expressionBufferSnapshot)
+            {
+                exprPathBuffer[pair.Key] = pair.Value;
+            }
+        }
+
+        private void SyncImportedLayeredFaceBaseToHeadSlot(PawnFaceConfig fc, bool hasLayeredFaceBase)
+        {
+            workingSkin.baseAppearance ??= new BaseAppearanceConfig();
+            workingSkin.baseAppearance.EnsureAllSlotsExist();
+
+            BaseAppearanceSlotConfig headSlot = workingSkin.baseAppearance.GetSlot(BaseAppearanceSlotType.Head);
+            if (!hasLayeredFaceBase)
+            {
+                if (headSlot != null
+                    && headSlot.enabled
+                    && string.IsNullOrWhiteSpace(headSlot.texPath))
+                {
+                    headSlot.enabled = false;
+                }
+
+                return;
+            }
+
+            string layeredBasePath = fc.GetAnyDirectionalLayeredPartPath(LayeredFacePartType.Base, Rot4.South);
+            if (string.IsNullOrWhiteSpace(layeredBasePath))
+            {
+                layeredBasePath = fc.GetAnyLayeredPartPath(LayeredFacePartType.Base);
+            }
+
+            if (string.IsNullOrWhiteSpace(layeredBasePath))
+            {
+                return;
+            }
+
+            headSlot.enabled = true;
+            headSlot.slotType = BaseAppearanceSlotType.Head;
+            headSlot.texPath = layeredBasePath;
+            if (string.IsNullOrWhiteSpace(headSlot.shaderDefName))
+            {
+                headSlot.shaderDefName = "Cutout";
+            }
+        }
+
+        private void SyncLayeredFacePartsToEditableLayers(PawnFaceConfig fc)
+        {
+            workingSkin.layers ??= new List<PawnLayerConfig>();
+
+            int insertIndex = workingSkin.layers.FindIndex(layer => IsEditableFaceLayer(layer));
+            if (insertIndex < 0)
+            {
+                insertIndex = workingSkin.layers.Count;
+            }
+
+            Dictionary<string, PawnLayerConfig> existingFaceLayers = workingSkin.layers
+                .Where(layer => IsEditableFaceLayer(layer))
+                .GroupBy(layer => layer.layerName ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(group => group.Key, group => group.First().Clone(), StringComparer.OrdinalIgnoreCase);
+
+            workingSkin.layers.RemoveAll(layer => IsEditableFaceLayer(layer));
+
+            if (fc?.layeredParts == null || fc.layeredParts.Count == 0)
+            {
+                return;
+            }
+
+            float pupilMoveRange = fc.eyeDirectionConfig?.pupilMoveRange ?? 0f;
+
+            var logicalLayers = fc.layeredParts
+                .Where(part => part != null
+                    && part.partType != LayeredFacePartType.Base
+                    && part.enabled
+                    && (!string.IsNullOrWhiteSpace(part.texPath)
+                        || !string.IsNullOrWhiteSpace(part.texPathSouth)
+                        || !string.IsNullOrWhiteSpace(part.texPathEast)
+                        || !string.IsNullOrWhiteSpace(part.texPathNorth)))
+                .Select(part =>
+                {
+                    LayeredFacePartType displayPartType = part.partType == LayeredFacePartType.Overlay
+                        ? PawnFaceConfig.GetOverlayDisplayPartType(part.overlayId)
+                        : part.partType;
+                    string normalizedOverlayId = PawnFaceConfig.NormalizeOverlayId(part.overlayId);
+                    LayeredFacePartSide normalizedSide = part.partType == LayeredFacePartType.Overlay
+                        ? LayeredFacePartSide.None
+                        : PawnFaceConfig.NormalizePartSide(part.partType, part.side);
+                    string preferredTexturePath = !string.IsNullOrWhiteSpace(part.texPathSouth)
+                        ? part.texPathSouth
+                        : !string.IsNullOrWhiteSpace(part.texPath)
+                            ? part.texPath
+                            : !string.IsNullOrWhiteSpace(part.texPathEast)
+                                ? part.texPathEast
+                                : part.texPathNorth;
+
+                    return new
+                    {
+                        Part = part,
+                        DisplayPartType = displayPartType,
+                        NormalizedOverlayId = normalizedOverlayId,
+                        Side = normalizedSide,
+                        PreferredTexturePath = preferredTexturePath,
+                        LayerName = GetLayeredFaceEditableLayerName(displayPartType, normalizedOverlayId, normalizedSide)
+                    };
+                })
+                .GroupBy(entry => entry.LayerName, StringComparer.OrdinalIgnoreCase)
+                .Select(group =>
+                {
+                    var preferred = group
+                        .OrderBy(entry => entry.Part.expression != ExpressionType.Neutral)
+                        .ThenBy(entry => entry.Part.overlayOrder)
+                        .ThenBy(entry => entry.Part.expression)
+                        .First();
+
+                    return new
+                    {
+                        preferred.LayerName,
+                        preferred.DisplayPartType,
+                        preferred.NormalizedOverlayId,
+                        preferred.Side,
+                        OverlayOrder = group.Min(entry => entry.Part.overlayOrder),
+                        TexturePath = preferred.PreferredTexturePath
+                    };
+                })
+                .OrderBy(entry => GetLayeredFaceDefaultDrawOrder(entry.DisplayPartType, entry.OverlayOrder, entry.NormalizedOverlayId))
+                .ThenBy(entry => entry.Side)
+                .ThenBy(entry => entry.LayerName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            List<PawnLayerConfig> syncedFaceLayers = logicalLayers
+                .Select(entry =>
+                {
+                    existingFaceLayers.TryGetValue(entry.LayerName, out PawnLayerConfig? existingLayer);
+                    return BuildSyncedLayeredFaceEditableLayer(
+                        existingLayer,
+                        entry.DisplayPartType,
+                        entry.NormalizedOverlayId,
+                        entry.TexturePath,
+                        entry.OverlayOrder,
+                        pupilMoveRange,
+                        entry.Side);
+                })
+                .ToList();
+
+            workingSkin.layers.InsertRange(insertIndex, syncedFaceLayers);
+        }
+
+        private static bool IsEditableFaceLayer(PawnLayerConfig? layer)
+        {
+            return layer != null
+                && !string.IsNullOrWhiteSpace(layer.layerName)
+                && layer.layerName.StartsWith("[Face] ", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsEditableFaceOverlayDisplayPart(LayeredFacePartType partType)
+        {
+            return partType == LayeredFacePartType.Blush
+                || partType == LayeredFacePartType.Tear
+                || partType == LayeredFacePartType.Sweat
+                || partType == LayeredFacePartType.Overlay;
+        }
+
+        private static string ResolveEditableFaceOverlayId(LayeredFacePartType displayPartType, string overlayId)
+        {
+            if (!string.IsNullOrWhiteSpace(overlayId))
+            {
+                return PawnFaceConfig.NormalizeOverlayId(overlayId);
+            }
+
+            switch (displayPartType)
+            {
+                case LayeredFacePartType.Blush:
+                    return PawnFaceConfig.NormalizeOverlayId("Blush");
+                case LayeredFacePartType.Tear:
+                    return PawnFaceConfig.NormalizeOverlayId("Tear");
+                case LayeredFacePartType.Sweat:
+                    return PawnFaceConfig.NormalizeOverlayId("Sweat");
+                default:
+                    return PawnFaceConfig.NormalizeOverlayId("Overlay");
+            }
+        }
+
+        private bool TrySyncEditableFaceLayerTextureToFaceConfig(PawnLayerConfig? layer)
+        {
+            if (!TryResolveEditableFaceLayerTarget(layer, out PawnFaceConfig? fc, out LayeredFacePartType partType, out string overlayId, out LayeredFacePartSide side))
+                return false;
+
+            PawnFaceConfig resolvedFaceConfig = fc!;
+            string texPath = layer?.texPath ?? string.Empty;
+
+            foreach (ExpressionType expression in Enum.GetValues(typeof(ExpressionType)))
+            {
+                if (partType == LayeredFacePartType.Overlay)
+                {
+                    LayeredFacePartConfig? existing = resolvedFaceConfig.GetLayeredPartConfig(LayeredFacePartType.Overlay, expression, overlayId);
+                    if (existing != null)
+                    {
+                        resolvedFaceConfig.SetLayeredPart(
+                            LayeredFacePartType.Overlay,
+                            expression,
+                            texPath,
+                            overlayId,
+                            resolvedFaceConfig.GetOverlayOrder(overlayId));
+                    }
+                }
+                else
+                {
+                    LayeredFacePartConfig? existing = resolvedFaceConfig.GetLayeredPartConfig(partType, expression, side);
+                    if (existing != null)
+                    {
+                        resolvedFaceConfig.SetLayeredPart(partType, expression, texPath, side);
+                    }
+                }
+            }
+
+            RebuildFaceImportBuffers(resolvedFaceConfig);
+            return true;
+        }
+
+        private bool TryRemoveEditableFaceLayerFromFaceConfig(PawnLayerConfig? layer)
+        {
+            if (!TryResolveEditableFaceLayerTarget(layer, out PawnFaceConfig? fc, out LayeredFacePartType partType, out string overlayId, out LayeredFacePartSide side))
+                return false;
+
+            PawnFaceConfig resolvedFaceConfig = fc!;
+            foreach (ExpressionType expression in Enum.GetValues(typeof(ExpressionType)))
+            {
+                if (partType == LayeredFacePartType.Overlay)
+                {
+                    LayeredFacePartConfig? existing = resolvedFaceConfig.GetLayeredPartConfig(LayeredFacePartType.Overlay, expression, overlayId);
+                    if (existing != null)
+                    {
+                        resolvedFaceConfig.RemoveLayeredPart(LayeredFacePartType.Overlay, expression, overlayId);
+                    }
+                }
+                else
+                {
+                    LayeredFacePartConfig? existing = resolvedFaceConfig.GetLayeredPartConfig(partType, expression, side);
+                    if (existing != null)
+                    {
+                        resolvedFaceConfig.RemoveLayeredPart(partType, expression, side);
+                    }
+                }
+            }
+
+            RebuildFaceImportBuffers(resolvedFaceConfig);
+            return true;
+        }
+
+        private bool TryResolveEditableFaceLayerTarget(
+            PawnLayerConfig? layer,
+            out PawnFaceConfig? fc,
+            out LayeredFacePartType partType,
+            out string overlayId,
+            out LayeredFacePartSide side)
+        {
+            fc = workingSkin?.faceConfig;
+            partType = LayeredFacePartType.Base;
+            overlayId = string.Empty;
+            side = LayeredFacePartSide.None;
+
+            if (fc == null || !IsEditableFaceLayer(layer))
+                return false;
+
+            string layerName = layer!.layerName ?? string.Empty;
+            string nameBody = layerName.Substring("[Face] ".Length);
+            if (string.IsNullOrWhiteSpace(nameBody))
+                return false;
+
+            int bracketIndex = nameBody.IndexOf('[');
+            string partToken = (bracketIndex >= 0
+                ? nameBody.Substring(0, bracketIndex)
+                : nameBody).Trim();
+
+            if (!Enum.TryParse(partToken, true, out LayeredFacePartType parsedDisplayPartType))
+                return false;
+
+            bool isOverlayDisplayPart = IsEditableFaceOverlayDisplayPart(parsedDisplayPartType);
+            partType = isOverlayDisplayPart
+                ? LayeredFacePartType.Overlay
+                : parsedDisplayPartType;
+
+            int scanIndex = bracketIndex;
+            while (scanIndex >= 0 && scanIndex < nameBody.Length)
+            {
+                int closeIndex = nameBody.IndexOf(']', scanIndex + 1);
+                if (closeIndex <= scanIndex)
+                    break;
+
+                string token = nameBody.Substring(scanIndex + 1, closeIndex - scanIndex - 1);
+                if (!isOverlayDisplayPart
+                    && Enum.TryParse(token, true, out LayeredFacePartSide parsedSide))
+                {
+                    side = PawnFaceConfig.NormalizePartSide(partType, parsedSide);
+                }
+                else if (isOverlayDisplayPart && !string.IsNullOrWhiteSpace(token))
+                {
+                    overlayId = PawnFaceConfig.NormalizeOverlayId(token);
+                }
+
+                scanIndex = nameBody.IndexOf('[', closeIndex + 1);
+            }
+
+            if (isOverlayDisplayPart)
+            {
+                overlayId = ResolveEditableFaceOverlayId(parsedDisplayPartType, overlayId);
+                side = LayeredFacePartSide.None;
+            }
+
+            return true;
+        }
+
+        private PawnLayerConfig BuildSyncedLayeredFaceEditableLayer(
+            PawnLayerConfig? existingLayer,
+            LayeredFacePartType displayPartType,
+            string normalizedOverlayId,
+            string texturePath,
+            int overlayOrder,
+            float pupilMoveRange,
+            LayeredFacePartSide side = LayeredFacePartSide.None)
+        {
+            EyeRenderMode eyeRenderMode = displayPartType == LayeredFacePartType.Pupil && pupilMoveRange > 0f
+                ? EyeRenderMode.UvOffset
+                : EyeRenderMode.TextureSwap;
+
+            PawnLayerConfig layer = existingLayer?.Clone() ?? new PawnLayerConfig
+            {
+                anchorTag = "Head",
+                anchorPath = string.Empty,
+                offset = Vector3.zero,
+                offsetEast = Vector3.zero,
+                offsetNorth = Vector3.zero,
+                scale = Vector2.one,
+                rotation = 0f,
+                drawOrder = GetLayeredFaceDefaultDrawOrder(displayPartType, overlayOrder, normalizedOverlayId),
+                workerClass = typeof(CharacterStudio.Rendering.PawnRenderNodeWorker_CustomLayer),
+                shaderDefName = "Cutout",
+                colorSource = LayerColorSource.White,
+                customColor = Color.white,
+                colorTwoSource = LayerColorSource.White,
+                customColorTwo = Color.white,
+                visible = true
+            };
+
+            layer.layerName = GetLayeredFaceEditableLayerName(displayPartType, normalizedOverlayId, side);
+            layer.texPath = texturePath;
+            layer.workerClass = typeof(CharacterStudio.Rendering.PawnRenderNodeWorker_CustomLayer);
+            layer.role = GetLayeredFaceDefaultRole(displayPartType);
+            layer.variantLogic = GetLayeredFaceDefaultVariantLogic(displayPartType, eyeRenderMode);
+            layer.useDirectionalSuffix = true;
+            layer.useExpressionSuffix = false;
+            layer.useEyeDirectionSuffix = false;
+            layer.useBlinkSuffix = false;
+            layer.useFrameSequence = false;
+            layer.hideWhenMissingVariant = false;
+            layer.eyeRenderMode = eyeRenderMode;
+            layer.eyeUvMoveRange = displayPartType == LayeredFacePartType.Pupil && eyeRenderMode == EyeRenderMode.UvOffset
+                ? pupilMoveRange
+                : 0f;
+
+            if (existingLayer == null)
+            {
+                layer.anchorTag = "Head";
+                layer.anchorPath = string.Empty;
+                layer.drawOrder = GetLayeredFaceDefaultDrawOrder(displayPartType, overlayOrder, normalizedOverlayId);
+            }
+
+            return layer;
+        }
+
+        private static string GetLayeredFaceEditableLayerName(
+            LayeredFacePartType displayPartType,
+            string normalizedOverlayId,
+            LayeredFacePartSide side = LayeredFacePartSide.None)
+        {
+            bool isOverlayDisplayPart = displayPartType == LayeredFacePartType.Blush
+                || displayPartType == LayeredFacePartType.Tear
+                || displayPartType == LayeredFacePartType.Sweat
+                || displayPartType == LayeredFacePartType.Overlay;
+            string overlayLabel = isOverlayDisplayPart && !string.IsNullOrWhiteSpace(normalizedOverlayId)
+                ? $"[{normalizedOverlayId}]"
+                : string.Empty;
+            LayeredFacePartSide normalizedSide = PawnFaceConfig.NormalizePartSide(displayPartType, side);
+            string sideLabel = normalizedSide == LayeredFacePartSide.None
+                ? string.Empty
+                : $"[{normalizedSide}]";
+            return $"[Face] {displayPartType}{overlayLabel}{sideLabel}";
+        }
+
+        private static LayerVariantLogic GetLayeredFaceDefaultVariantLogic(LayeredFacePartType partType, EyeRenderMode eyeRenderMode)
+        {
+            switch (partType)
+            {
+                case LayeredFacePartType.Brow:
+                case LayeredFacePartType.Eye:
+                case LayeredFacePartType.UpperLid:
+                case LayeredFacePartType.LowerLid:
+                case LayeredFacePartType.Mouth:
+                case LayeredFacePartType.Blush:
+                case LayeredFacePartType.Sweat:
+                case LayeredFacePartType.Tear:
+                case LayeredFacePartType.Overlay:
+                    return LayerVariantLogic.ChannelState;
+                case LayeredFacePartType.Pupil:
+                    return eyeRenderMode == EyeRenderMode.UvOffset
+                        ? LayerVariantLogic.None
+                        : LayerVariantLogic.EyeDirectionOnly;
+                default:
+                    return LayerVariantLogic.None;
+            }
+        }
+
+        private static LayerRole GetLayeredFaceDefaultRole(LayeredFacePartType partType)
+        {
+            switch (partType)
+            {
+                case LayeredFacePartType.Base:
+                    return LayerRole.Head;
+                case LayeredFacePartType.Brow:
+                    return LayerRole.Brow;
+                case LayeredFacePartType.Eye:
+                case LayeredFacePartType.UpperLid:
+                case LayeredFacePartType.LowerLid:
+                    return LayerRole.Lid;
+                case LayeredFacePartType.Pupil:
+                    return LayerRole.Eye;
+                case LayeredFacePartType.Mouth:
+                    return LayerRole.Mouth;
+                case LayeredFacePartType.Blush:
+                case LayeredFacePartType.Sweat:
+                case LayeredFacePartType.Tear:
+                case LayeredFacePartType.Overlay:
+                    return LayerRole.Emotion;
+                default:
+                    return LayerRole.Decoration;
+            }
+        }
+
+        private static float GetLayeredFaceDefaultDrawOrder(LayeredFacePartType partType, int overlayOrder = 0, string overlayId = "")
+        {
+            switch (partType)
+            {
+                case LayeredFacePartType.Base:
+                    return 50.05f;
+                case LayeredFacePartType.Eye:
+                    return 50.12f;
+                case LayeredFacePartType.Pupil:
+                    return 50.14f;
+                case LayeredFacePartType.UpperLid:
+                    return 50.145f;
+                case LayeredFacePartType.LowerLid:
+                    return 50.147f;
+                case LayeredFacePartType.Brow:
+                    return 50.16f;
+                case LayeredFacePartType.Mouth:
+                    return 50.18f;
+                case LayeredFacePartType.Blush:
+                    return 50.22f;
+                case LayeredFacePartType.Tear:
+                    return 50.24f;
+                case LayeredFacePartType.Sweat:
+                    return 50.26f;
+                case LayeredFacePartType.Overlay:
+                    switch (PawnFaceConfig.GetOverlayKind(overlayId))
+                    {
+                        case LayeredOverlayKind.Blush:
+                            return 50.22f;
+                        case LayeredOverlayKind.Tear:
+                            return 50.24f;
+                        case LayeredOverlayKind.Sweat:
+                            return 50.26f;
+                        default:
+                            return 50.30f + Math.Max(0, overlayOrder - PawnFaceConfig.GetCanonicalOverlayOrder("Overlay")) * 0.002f;
+                    }
+                default:
+                    return 50.20f;
+            }
         }
 
         private void AutoConfigureProgrammaticLayeredFaceLogic(
@@ -583,80 +1245,23 @@ namespace CharacterStudio.UI
             HashSet<string> detectedFileNames,
             Dictionary<string, string> detectedFilePathMap)
         {
-            bool hasPupilBase = !string.IsNullOrWhiteSpace(fc.GetLayeredPartPath(LayeredFacePartType.Pupil, ExpressionType.Neutral));
-            bool hasDirectionalPupilTextures =
-                detectedFileNames.Contains("Pupil_Left")
-                || detectedFileNames.Contains("Pupil_Right")
-                || detectedFileNames.Contains("Pupil_Up")
-                || detectedFileNames.Contains("Pupil_Down")
-                || detectedFileNames.Contains("Pupil_Center");
-
-            bool hasConcreteCenteredPupilTexture =
-                detectedFileNames.Contains("Pupil")
-                || detectedFileNames.Contains("Pupil_Center");
-
-            if (hasDirectionalPupilTextures && hasConcreteCenteredPupilTexture)
+            bool hasPupilBase = !string.IsNullOrWhiteSpace(fc.GetAnyLayeredPartPath(LayeredFacePartType.Pupil));
+            if (!hasPupilBase)
             {
-                fc.eyeDirectionConfig ??= new PawnEyeDirectionConfig();
-                fc.eyeDirectionConfig.enabled = true;
-                fc.eyeDirectionConfig.pupilMoveRange = 0f;
-
-                if (detectedFilePathMap.TryGetValue("Pupil_Center", out string centerPath))
-                {
-                    fc.eyeDirectionConfig.texCenter = centerPath;
-                }
-
-                if (detectedFilePathMap.TryGetValue("Pupil_Left", out string leftPath))
-                {
-                    fc.eyeDirectionConfig.texLeft = leftPath;
-                }
-
-                if (detectedFilePathMap.TryGetValue("Pupil_Right", out string rightPath))
-                {
-                    fc.eyeDirectionConfig.texRight = rightPath;
-                }
-
-                if (detectedFilePathMap.TryGetValue("Pupil_Up", out string upPath))
-                {
-                    fc.eyeDirectionConfig.texUp = upPath;
-                }
-
-                if (detectedFilePathMap.TryGetValue("Pupil_Down", out string downPath))
-                {
-                    fc.eyeDirectionConfig.texDown = downPath;
-                }
-
-                if (string.IsNullOrWhiteSpace(fc.eyeDirectionConfig.texCenter)
-                    && detectedFilePathMap.TryGetValue("Pupil", out string fallbackCenterPath))
-                {
-                    fc.eyeDirectionConfig.texCenter = fallbackCenterPath;
-                }
-
                 return;
             }
 
-            if (hasPupilBase)
+            fc.eyeDirectionConfig ??= new PawnEyeDirectionConfig();
+            fc.eyeDirectionConfig.enabled = true;
+            fc.eyeDirectionConfig.texCenter = string.Empty;
+            fc.eyeDirectionConfig.texLeft = string.Empty;
+            fc.eyeDirectionConfig.texRight = string.Empty;
+            fc.eyeDirectionConfig.texUp = string.Empty;
+            fc.eyeDirectionConfig.texDown = string.Empty;
+
+            if (fc.eyeDirectionConfig.pupilMoveRange <= 0f)
             {
-                fc.eyeDirectionConfig ??= new PawnEyeDirectionConfig();
-                fc.eyeDirectionConfig.enabled = true;
-                fc.eyeDirectionConfig.texLeft = string.Empty;
-                fc.eyeDirectionConfig.texRight = string.Empty;
-                fc.eyeDirectionConfig.texUp = string.Empty;
-                fc.eyeDirectionConfig.texDown = string.Empty;
-
-                if (string.IsNullOrWhiteSpace(fc.eyeDirectionConfig.texCenter))
-                {
-                    string basePupilPath = fc.GetLayeredPartPath(LayeredFacePartType.Pupil, ExpressionType.Neutral);
-                    if (!string.IsNullOrWhiteSpace(basePupilPath))
-                    {
-                        fc.eyeDirectionConfig.texCenter = basePupilPath;
-                    }
-                }
-
-                if (fc.eyeDirectionConfig.pupilMoveRange <= 0f)
-                {
-                    fc.eyeDirectionConfig.pupilMoveRange = 0.035f;
-                }
+                fc.eyeDirectionConfig.pupilMoveRange = 0.035f;
             }
         }
 
@@ -674,12 +1279,16 @@ namespace CharacterStudio.UI
         private bool TryParseLayeredFaceFileName(
             string filePath,
             out LayeredFacePartType partType,
+            out LayeredFacePartSide side,
             out string? overlayId,
-            out string? suffix)
+            out string? suffix,
+            out Rot4 facing)
         {
             partType = LayeredFacePartType.Base;
+            side = LayeredFacePartSide.None;
             overlayId = null;
             suffix = null;
+            facing = Rot4.South;
 
             string fileName = Path.GetFileNameWithoutExtension(filePath) ?? string.Empty;
             if (string.IsNullOrWhiteSpace(fileName))
@@ -694,31 +1303,26 @@ namespace CharacterStudio.UI
             }
 
             List<string> tailSegments = segments.Skip(1).ToList();
-            while (tailSegments.Count > 0 && DirectionalVariantTokens.Contains(tailSegments[tailSegments.Count - 1]))
-            {
-                tailSegments.RemoveAt(tailSegments.Count - 1);
-            }
 
-            bool hadOnlyDirectionalTail = segments.Length > 1 && tailSegments.Count == 0;
-
-            if (segments[0].Equals("Overlay", StringComparison.OrdinalIgnoreCase))
+            if (segments[0].Equals("Overlay", StringComparison.OrdinalIgnoreCase)
+                || segments[0].Equals("Overlays", StringComparison.OrdinalIgnoreCase))
             {
                 partType = LayeredFacePartType.Overlay;
 
-                if (segments.Length == 1)
+                while (tailSegments.Count > 0 && DirectionalVariantTokens.Contains(tailSegments[tailSegments.Count - 1]))
                 {
-                    overlayId = "Overlay";
-                    return true;
+                    TryParseViewFacingToken(tailSegments[tailSegments.Count - 1], ref facing);
+                    tailSegments.RemoveAt(tailSegments.Count - 1);
                 }
 
-                if (hadOnlyDirectionalTail)
+                if (segments.Length > 1 && tailSegments.Count == 0)
                 {
                     return false;
                 }
 
                 if (tailSegments.Count == 0)
                 {
-                    overlayId = "Overlay";
+                    overlayId = PawnFaceConfig.NormalizeOverlayId("Overlay");
                     return true;
                 }
 
@@ -726,12 +1330,12 @@ namespace CharacterStudio.UI
                 {
                     if (Enum.TryParse(tailSegments[0], true, out ExpressionType overlayExpression))
                     {
-                        overlayId = "Overlay";
+                        overlayId = PawnFaceConfig.NormalizeOverlayId("Overlay");
                         suffix = overlayExpression.ToString();
                     }
                     else
                     {
-                        overlayId = tailSegments[0];
+                        overlayId = PawnFaceConfig.NormalizeOverlayId(tailSegments[0]);
                     }
 
                     return true;
@@ -740,17 +1344,19 @@ namespace CharacterStudio.UI
                 string lastSegment = tailSegments[tailSegments.Count - 1];
                 if (Enum.TryParse(lastSegment, true, out ExpressionType parsedExpression))
                 {
-                    overlayId = string.Join("_", tailSegments.Take(tailSegments.Count - 1));
+                    overlayId = PawnFaceConfig.NormalizeOverlayId(string.Join("_", tailSegments.Take(tailSegments.Count - 1)));
                     suffix = parsedExpression.ToString();
                 }
                 else
                 {
-                    overlayId = string.Join("_", tailSegments);
+                    overlayId = PawnFaceConfig.NormalizeOverlayId(string.Join("_", tailSegments));
                 }
 
-                if (string.IsNullOrWhiteSpace(overlayId))
+                if (string.Equals(overlayId, "Overlay", StringComparison.OrdinalIgnoreCase)
+                    && tailSegments.Count >= 2
+                    && tailSegments.All(segment => segment.Equals("overlay", StringComparison.OrdinalIgnoreCase)))
                 {
-                    overlayId = "Overlay";
+                    overlayId = PawnFaceConfig.NormalizeOverlayId("Overlay2");
                 }
 
                 return true;
@@ -760,17 +1366,23 @@ namespace CharacterStudio.UI
                 || segments[0].Equals(nameof(LayeredFacePartType.Tear), StringComparison.OrdinalIgnoreCase)
                 || segments[0].Equals(nameof(LayeredFacePartType.Sweat), StringComparison.OrdinalIgnoreCase))
             {
-                if (hadOnlyDirectionalTail)
+                while (tailSegments.Count > 0 && DirectionalVariantTokens.Contains(tailSegments[tailSegments.Count - 1]))
+                {
+                    TryParseViewFacingToken(tailSegments[tailSegments.Count - 1], ref facing);
+                    tailSegments.RemoveAt(tailSegments.Count - 1);
+                }
+
+                if (segments.Length > 1 && tailSegments.Count == 0)
                 {
                     return false;
                 }
 
                 partType = LayeredFacePartType.Overlay;
-                overlayId = segments[0];
-
-                if (tailSegments.Count > 0)
+                overlayId = PawnFaceConfig.NormalizeOverlayId(segments[0]);
+                suffix = tailSegments.Count == 0 ? null : string.Join("_", tailSegments);
+                if (!string.IsNullOrWhiteSpace(suffix) && Enum.TryParse(suffix, true, out ExpressionType overlayExpression))
                 {
-                    suffix = string.Join("_", tailSegments);
+                    suffix = overlayExpression.ToString();
                 }
 
                 return true;
@@ -781,17 +1393,226 @@ namespace CharacterStudio.UI
                 return false;
             }
 
-            if (hadOnlyDirectionalTail)
+            string? parsedExpressionSuffix = null;
+            if (tailSegments.Count > 0 && Enum.TryParse(tailSegments[tailSegments.Count - 1], true, out ExpressionType parsedPartExpression))
+            {
+                parsedExpressionSuffix = parsedPartExpression.ToString();
+                tailSegments.RemoveAt(tailSegments.Count - 1);
+            }
+
+            for (int i = tailSegments.Count - 1; i >= 0; i--)
+            {
+                if (TryParseLayeredFacePartSideToken(partType, tailSegments[i], out LayeredFacePartSide parsedSide))
+                {
+                    side = parsedSide;
+                    tailSegments.RemoveAt(i);
+                    break;
+                }
+            }
+
+            bool removedViewDirectionalTokens = false;
+            while (tailSegments.Count > 0 && ViewDirectionalVariantTokens.Contains(tailSegments[tailSegments.Count - 1]))
+            {
+                TryParseViewFacingToken(tailSegments[tailSegments.Count - 1], ref facing);
+                tailSegments.RemoveAt(tailSegments.Count - 1);
+                removedViewDirectionalTokens = true;
+            }
+
+            if (tailSegments.Count == 0)
+            {
+                suffix = parsedExpressionSuffix;
+                return removedViewDirectionalTokens
+                    || side != LayeredFacePartSide.None
+                    || !string.IsNullOrWhiteSpace(parsedExpressionSuffix)
+                    || segments.Length == 1;
+            }
+
+            if (!string.IsNullOrWhiteSpace(parsedExpressionSuffix)
+                && tailSegments.All(segment => ViewDirectionalVariantTokens.Contains(segment)))
+            {
+                suffix = parsedExpressionSuffix;
+                return true;
+            }
+
+            suffix = string.Join("_", tailSegments);
+            return !string.IsNullOrWhiteSpace(suffix);
+        }
+
+        private static bool IsPairedLayeredFacePart(LayeredFacePartType partType)
+        {
+            switch (partType)
+            {
+                case LayeredFacePartType.Brow:
+                case LayeredFacePartType.Eye:
+                case LayeredFacePartType.Pupil:
+                case LayeredFacePartType.UpperLid:
+                case LayeredFacePartType.LowerLid:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private static bool TryParseLayeredFacePartSideToken(
+            LayeredFacePartType partType,
+            string token,
+            out LayeredFacePartSide side)
+        {
+            side = LayeredFacePartSide.None;
+
+            if (!IsPairedLayeredFacePart(partType) || string.IsNullOrWhiteSpace(token))
             {
                 return false;
             }
 
-            if (tailSegments.Count > 0)
+            if (token.Equals("Left", StringComparison.OrdinalIgnoreCase))
             {
-                suffix = string.Join("_", tailSegments);
+                side = LayeredFacePartSide.Left;
+                return true;
             }
 
-            return true;
+            if (token.Equals("Right", StringComparison.OrdinalIgnoreCase))
+            {
+                side = LayeredFacePartSide.Right;
+                return true;
+            }
+
+            return false;
+        }
+
+        private static void ResolveAutoImportDirectionalPaths(
+            Dictionary<string, string> detectedFilePathMap,
+            string texturePath,
+            string sourceStem,
+            Rot4 facing,
+            out string texPathSouth,
+            out string texPathEast,
+            out string texPathNorth,
+            out List<string> recognizedStems)
+        {
+            texPathSouth = string.Empty;
+            texPathEast = string.Empty;
+            texPathNorth = string.Empty;
+            recognizedStems = new List<string>();
+
+            string directionalStem = StripViewDirectionalSuffix(sourceStem);
+            bool sourceHasDirection = !directionalStem.Equals(sourceStem, StringComparison.OrdinalIgnoreCase);
+            string baseStem = sourceHasDirection ? directionalStem : sourceStem;
+
+            List<KeyValuePair<string, DirectionAssignment>> candidates = new List<KeyValuePair<string, DirectionAssignment>>
+            {
+                new KeyValuePair<string, DirectionAssignment>(baseStem, DirectionAssignment.South),
+                new KeyValuePair<string, DirectionAssignment>(baseStem + "_south", DirectionAssignment.South),
+                new KeyValuePair<string, DirectionAssignment>(baseStem + "_front", DirectionAssignment.South),
+                new KeyValuePair<string, DirectionAssignment>(baseStem + "_east", DirectionAssignment.East),
+                new KeyValuePair<string, DirectionAssignment>(baseStem + "_west", DirectionAssignment.East),
+                new KeyValuePair<string, DirectionAssignment>(baseStem + "_side", DirectionAssignment.East),
+                new KeyValuePair<string, DirectionAssignment>(baseStem + "_north", DirectionAssignment.North),
+                new KeyValuePair<string, DirectionAssignment>(baseStem + "_back", DirectionAssignment.North)
+            };
+
+            foreach (KeyValuePair<string, DirectionAssignment> candidate in candidates)
+            {
+                string stem = candidate.Key;
+                if (string.IsNullOrWhiteSpace(stem) || !detectedFilePathMap.TryGetValue(stem, out string resolvedPath))
+                    continue;
+
+                switch (candidate.Value)
+                {
+                    case DirectionAssignment.South:
+                        texPathSouth = resolvedPath;
+                        break;
+                    case DirectionAssignment.East:
+                        texPathEast = resolvedPath;
+                        break;
+                    case DirectionAssignment.North:
+                        texPathNorth = resolvedPath;
+                        break;
+                }
+
+                bool alreadyRecorded = false;
+                foreach (string existing in recognizedStems)
+                {
+                    if (existing.Equals(stem, StringComparison.OrdinalIgnoreCase))
+                    {
+                        alreadyRecorded = true;
+                        break;
+                    }
+                }
+
+                if (!alreadyRecorded)
+                    recognizedStems.Add(stem);
+            }
+
+            if (string.IsNullOrWhiteSpace(texPathSouth) && !string.IsNullOrWhiteSpace(texturePath))
+            {
+                if (facing == Rot4.North)
+                {
+                    texPathNorth = texturePath;
+                }
+                else if (facing == Rot4.East || facing == Rot4.West)
+                {
+                    texPathEast = texturePath;
+                }
+                else
+                {
+                    texPathSouth = texturePath;
+                }
+            }
+        }
+
+        private enum DirectionAssignment
+        {
+            South,
+            East,
+            North
+        }
+
+        private static string StripViewDirectionalSuffix(string stem)
+        {
+            if (string.IsNullOrWhiteSpace(stem))
+            {
+                return string.Empty;
+            }
+
+            string[] segments = stem.Split(new[] { '_' }, StringSplitOptions.RemoveEmptyEntries);
+            List<string> result = segments.ToList();
+            while (result.Count > 1 && ViewDirectionalVariantTokens.Contains(result[result.Count - 1]))
+            {
+                result.RemoveAt(result.Count - 1);
+            }
+
+            return result.Count > 0 ? string.Join("_", result) : stem;
+        }
+
+        private static void TryParseViewFacingToken(string token, ref Rot4 facing)
+        {
+            if (token.Equals("north", StringComparison.OrdinalIgnoreCase)
+                || token.Equals("back", StringComparison.OrdinalIgnoreCase))
+            {
+                facing = Rot4.North;
+                return;
+            }
+
+            if (token.Equals("east", StringComparison.OrdinalIgnoreCase)
+                || token.Equals("west", StringComparison.OrdinalIgnoreCase)
+                || token.Equals("side", StringComparison.OrdinalIgnoreCase))
+            {
+                facing = Rot4.East;
+                return;
+            }
+
+            if (token.Equals("south", StringComparison.OrdinalIgnoreCase)
+                || token.Equals("front", StringComparison.OrdinalIgnoreCase))
+            {
+                facing = Rot4.South;
+                return;
+            }
+
+            if (token.Equals("south", StringComparison.OrdinalIgnoreCase))
+            {
+                facing = Rot4.South;
+            }
         }
 
         private bool LooksLikeLayeredFaceDirectory(IEnumerable<string> files)
@@ -839,26 +1660,51 @@ namespace CharacterStudio.UI
         {
             string directory = Path.GetDirectoryName(sampleFilePath) ?? string.Empty;
             string extension = Path.GetExtension(sampleFilePath);
-            return Path.Combine(directory, virtualStem + extension);
+            string sampleStem = Path.GetFileNameWithoutExtension(sampleFilePath) ?? string.Empty;
+
+            string[] segments = sampleStem.Split(new[] { '_' }, StringSplitOptions.RemoveEmptyEntries);
+            List<string> stemSegments = segments.ToList();
+            while (stemSegments.Count > 1
+                && DirectionalVariantTokens.Contains(stemSegments[stemSegments.Count - 1]))
+            {
+                stemSegments.RemoveAt(stemSegments.Count - 1);
+            }
+
+            string resolvedStem = stemSegments.Count > 0
+                ? string.Join("_", stemSegments)
+                : virtualStem;
+
+            if (string.IsNullOrWhiteSpace(resolvedStem))
+            {
+                resolvedStem = virtualStem;
+            }
+
+            return Path.Combine(directory, resolvedStem + extension);
         }
 
         private string FormatLayeredAutoImportMatchLabel(
             LayeredFacePartType partType,
             ExpressionType expression,
-            string? overlayId = null)
+            string? overlayId = null,
+            LayeredFacePartSide side = LayeredFacePartSide.None)
         {
             string partLabel = GetLayeredFacePartTypeLabel(partType);
             if (partType == LayeredFacePartType.Overlay)
             {
-                string resolvedOverlayId = string.IsNullOrWhiteSpace(overlayId) ? "Overlay" : overlayId!;
+                string resolvedOverlayId = PawnFaceConfig.NormalizeOverlayId(overlayId);
                 return expression == ExpressionType.Neutral
                     ? $"{partLabel} [{resolvedOverlayId}]"
                     : $"{partLabel} [{resolvedOverlayId}] / {GetExpressionTypeLabel(expression)}";
             }
 
+            LayeredFacePartSide normalizedSide = PawnFaceConfig.NormalizePartSide(partType, side);
+            string sideLabel = normalizedSide == LayeredFacePartSide.None
+                ? string.Empty
+                : $" [{normalizedSide}]";
+
             return expression == ExpressionType.Neutral
-                ? partLabel
-                : $"{partLabel} / {GetExpressionTypeLabel(expression)}";
+                ? $"{partLabel}{sideLabel}"
+                : $"{partLabel}{sideLabel} / {GetExpressionTypeLabel(expression)}";
         }
 
         private void ShowLayeredFaceAutoImportSummary(
@@ -892,13 +1738,14 @@ namespace CharacterStudio.UI
                 + (configuredParts.Count > 0 ? string.Join("\n", configuredParts) : "（无）")
                 + "\n\n已写入配置：\n"
                 + (matchedLines.Count > 0 ? string.Join("\n", matchedLines) : "（无）")
-                + "\n\n合成基础路径：\n"
+                + "\n\n自动合成基础路径（已停用）：\n"
                 + (synthesizedLines.Count > 0 ? string.Join("\n", synthesizedLines) : "（无）")
-                + "\n\n保留为运行时自动变体：\n"
+                + "\n\n未直接写入的派生文件：\n"
                 + (runtimeVariantFiles.Count > 0 ? string.Join("\n", runtimeVariantFiles) : "（无）")
                 + "\n\n未识别文件：\n"
                 + (ignoredFiles.Count > 0 ? string.Join("\n", ignoredFiles) : "（无）")
-                + "\n\n说明：像 east / left / right 这类方向后缀，以及 mouth / eye / overlay 的状态变体，会在运行时继续按命名规则自动匹配，无需逐条手工配置。";
+                + "\n\n说明：paired 部件的 left / right 会作为左右独立层导入；_east / _west 会写入侧视资源，_north 会写入后视资源，Base 或 _south 会写入正视资源；仍未直接映射的命名才会保留在派生文件列表中。"
+                + "\n分层面部条目会同步写入图层编辑器中的 [Face] 图层，左右独立部件会拆分为独立图层，后续可直接调整层级、位置与显示。";
 
             Find.WindowStack.Add(new Dialog_MessageBox(summary));
         }

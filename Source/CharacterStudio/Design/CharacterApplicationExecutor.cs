@@ -36,7 +36,12 @@ namespace CharacterStudio.Design
                 ? "CS_Studio_Msg_PreviewApplied"
                 : "CS_Studio_Msg_AppliedToPawn";
 
-            if (!PawnSkinRuntimeUtility.ApplySkinToPawn(plan.targetPawn, plan.runtimeSkin))
+            if (!PawnSkinRuntimeUtility.ApplySkinToPawn(
+                plan.targetPawn,
+                plan.runtimeSkin,
+                fromDefaultRaceBinding: false,
+                previewMode: plan.isPreview,
+                applicationSource: plan.source ?? string.Empty))
             {
                 plan.isValid = false;
                 plan.statusMessage = "CS_Studio_Err_ApplyNoSkinComp";

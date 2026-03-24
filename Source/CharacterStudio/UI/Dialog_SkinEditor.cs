@@ -50,7 +50,7 @@ namespace CharacterStudio.UI
         /// <summary>表情贴图路径内联编辑缓冲，每帧实时同步到 faceConfig</summary>
         private readonly Dictionary<ExpressionType, string> exprPathBuffer = new Dictionary<ExpressionType, string>();
         /// <summary>分层模式部件路径缓冲，key = "PartType|Expression"</summary>
-        private readonly Dictionary<string, string> layeredPartPathBuffer = new Dictionary<string, string>();
+        private readonly Dictionary<string, string> layeredPartPathBuffer = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private WeaponCarryVisualState previewWeaponCarryState = WeaponCarryVisualState.Undrafted;
  
         private enum EditorTab { BaseAppearance, Layers, Face, Attributes, Weapon, Equipment }
@@ -78,11 +78,48 @@ namespace CharacterStudio.UI
         };
 
         // 预览管理
+        private readonly struct PreviewFlowStep
+        {
+            public readonly string Label;
+            public readonly ExpressionType RuntimeExpression;
+            public readonly float DurationSeconds;
+            public readonly bool OverrideEyeDirection;
+            public readonly EyeDirection EyeDirection;
+            public readonly MouthState? MouthState;
+            public readonly LidState? LidState;
+            public readonly BrowState? BrowState;
+            public readonly EmotionOverlayState? EmotionState;
+
+            public PreviewFlowStep(
+                string label,
+                ExpressionType runtimeExpression,
+                float durationSeconds,
+                bool overrideEyeDirection = false,
+                EyeDirection eyeDirection = EyeDirection.Center,
+                MouthState? mouthState = null,
+                LidState? lidState = null,
+                BrowState? browState = null,
+                EmotionOverlayState? emotionState = null)
+            {
+                Label = label;
+                RuntimeExpression = runtimeExpression;
+                DurationSeconds = durationSeconds;
+                OverrideEyeDirection = overrideEyeDirection;
+                EyeDirection = eyeDirection;
+                MouthState = mouthState;
+                LidState = lidState;
+                BrowState = browState;
+                EmotionState = emotionState;
+            }
+        }
+
         private MannequinManager? mannequin;
         private Rot4 previewRotation = Rot4.South;
         private float previewZoom = 1f;
         private bool previewExpressionOverrideEnabled = false;
         private ExpressionType previewExpression = ExpressionType.Neutral;
+        private bool previewRuntimeExpressionOverrideEnabled = false;
+        private ExpressionType previewRuntimeExpression = ExpressionType.Neutral;
         private bool previewMouthStateOverrideEnabled = false;
         private MouthState previewMouthState = MouthState.Normal;
         private bool previewLidStateOverrideEnabled = false;
@@ -97,23 +134,17 @@ namespace CharacterStudio.UI
         private float previewAutoPlayIntervalSeconds = 0.75f;
         private float previewAutoPlayNextStepTime = 0f;
         private int previewAutoPlayStepIndex = 0;
-        private static readonly ExpressionType[] PreviewAutoPlayExpressions =
+        private static readonly PreviewFlowStep[] PreviewAutoPlayFlowSteps =
         {
-            ExpressionType.Neutral,
-            ExpressionType.Happy,
-            ExpressionType.Neutral,
-            ExpressionType.Angry,
-            ExpressionType.Neutral,
-            ExpressionType.Blink,
-            ExpressionType.Sad,
-            ExpressionType.Neutral,
-        };
-        private static readonly EyeDirection[] PreviewAutoPlayEyeDirections =
-        {
-            EyeDirection.Center,
-            EyeDirection.Left,
-            EyeDirection.Center,
-            EyeDirection.Right,
+            new PreviewFlowStep("SleepLoop", ExpressionType.Sleeping, 1.8f, true, EyeDirection.Center, MouthState.Sleep, LidState.Close),
+            new PreviewFlowStep("WorkFocusDown", ExpressionType.Working, 1.05f, true, EyeDirection.Down),
+            new PreviewFlowStep("WorkFocusUp", ExpressionType.Working, 0.9f, true, EyeDirection.Up),
+            new PreviewFlowStep("ReadScan", ExpressionType.Reading, 1.1f, true, EyeDirection.Down),
+            new PreviewFlowStep("HappySoft", ExpressionType.Happy, 1.0f, false, EyeDirection.Center, MouthState.Smile, LidState.Happy, BrowState.Happy, EmotionOverlayState.Blush),
+            new PreviewFlowStep("HappyPeak", ExpressionType.Happy, 0.85f, true, EyeDirection.Center, MouthState.Smile, LidState.Happy, BrowState.Happy, EmotionOverlayState.Blush),
+            new PreviewFlowStep("ScaredWide", ExpressionType.Scared, 0.7f, true, EyeDirection.Left, MouthState.Open, emotionState: EmotionOverlayState.Sweat),
+            new PreviewFlowStep("ScaredScan", ExpressionType.Scared, 0.55f, true, EyeDirection.Right, MouthState.Open, emotionState: EmotionOverlayState.Sweat),
+            new PreviewFlowStep("NeutralReset", ExpressionType.Neutral, 1.15f)
         };
         private bool editLayerOffsetPerFacing = false;
         private const KeyCode ReferenceGhostHotkey = KeyCode.F;
@@ -305,19 +336,32 @@ namespace CharacterStudio.UI
             document.nodeRules = rebuiltRules;
         }
 
-        private PawnSkinDef BuildRuntimeSkinForExecution()
+        private void SyncWorkingDocumentFromWorkingSkin(bool syncAbilities = true)
         {
-            SyncAbilitiesToSkin();
+            if (workingDocument == null)
+            {
+                workingDocument = CreateDocumentFromSkin(workingSkin);
+            }
+
+            if (syncAbilities)
+            {
+                SyncAbilitiesToSkin();
+            }
+
             workingDocument.runtimeSkin = workingSkin;
             workingDocument.SyncMetadataFromRuntimeSkin();
+            RebuildNodeRulesFromRuntimeSkin(workingDocument);
+        }
+
+        private PawnSkinDef BuildRuntimeSkinForExecution()
+        {
+            SyncWorkingDocumentFromWorkingSkin();
             return CharacterDesignCompiler.CompileRuntimeSkin(workingDocument);
         }
 
         private CharacterApplicationPlan BuildApplicationPlan(Pawn? planTargetPawn, bool isPreview, string source)
         {
-            SyncAbilitiesToSkin();
-            workingDocument.runtimeSkin = workingSkin;
-            workingDocument.SyncMetadataFromRuntimeSkin();
+            SyncWorkingDocumentFromWorkingSkin();
             return CharacterApplicationPlanBuilder.Build(workingDocument, planTargetPawn, isPreview, source);
         }
 

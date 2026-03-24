@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <CS_Studio_BaseSlot_DrawOrderOffset>层级偏移</CS_Studio_BaseSlot_DrawOrderOffset>
+    <CS_Studio_BaseSlot_Enable>启用</CS_Studio_BaseSlot_Enable>
+    <CS_Studio_BaseSlot_MaskTexture>Mask 贴图</CS_Studio_BaseSlot_MaskTexture>
+    <CS_Studio_BaseSlot_Rotation>旋转</CS_Studio_BaseSlot_Rotation>
+    <CS_Studio_BaseSlot_SecondaryColor>第二颜色</CS_Studio_BaseSlot_SecondaryColor>
+    <CS_Studio_BaseSlot_SecondaryColorSource>第二颜色来源</CS_Studio_BaseSlot_SecondaryColorSource>
+    <CS_Studio_BaseSlot_Section>基础槽位 - {0}</CS_Studio_BaseSlot_Section>
+    <CS_Studio_BaseSlot_Shader>Shader</CS_Studio_BaseSlot_Shader>
+    <CS_Studio_BaseSlot_Unset>(未设置)</CS_Studio_BaseSlot_Unset>
+    <CS_Studio_Btn_AddHidden>+ 添加隐藏节点</CS_Studio_Btn_AddHidden>
+    <CS_Studio_ColorType_Hair>头发颜色</CS_Studio_ColorType_Hair>
+    <CS_Studio_ColorType_Skin>皮肤颜色</CS_Studio_ColorType_Skin>
+    <CS_Studio_ColorType_White>白色</CS_Studio_ColorType_White>
+    <CS_Studio_Hide_HiddenPaths>隐藏路径 (hiddenPaths):</CS_Studio_Hide_HiddenPaths>
+    <CS_Studio_Hide_HiddenTagsCompat>隐藏标签（兼容）:</CS_Studio_Hide_HiddenTagsCompat>
+    <CS_Studio_Hide_NoHiddenPaths>  无 hiddenPaths</CS_Studio_Hide_NoHiddenPaths>
+    <CS_Studio_Info_Path>路径:</CS_Studio_Info_Path>
+    <CS_Studio_Info_Worker>工作器：</CS_Studio_Info_Worker>
+    <CS_Studio_Layer_CustomSection>── 自定义图层 ──</CS_Studio_Layer_CustomSection>
+    <CS_Studio_Layer_DefaultName>图层 {0}</CS_Studio_Layer_DefaultName>
+    <CS_Studio_Layer_NoTree>(无渲染树，请刷新)</CS_Studio_Layer_NoTree>
+    <CS_Studio_Msg_SelectLayer>请选择一个节点或图层</CS_Studio_Msg_SelectLayer>
+    <CS_Studio_Node_NoRuntimeData>（无运行时数据）</CS_Studio_Node_NoRuntimeData>
+    <CS_Studio_Node_RuntimeNote>（黄色 = 非默认值）</CS_Studio_Node_RuntimeNote>
+    <CS_Studio_Node_Tooltip>路径: {0}\n类型: {1}\n贴图: {2}</CS_Studio_Node_Tooltip>
+    <CS_Studio_Offset_EX>偏移E.X</CS_Studio_Offset_EX>
+    <CS_Studio_Offset_EY>偏移E.Y</CS_Studio_Offset_EY>
+    <CS_Studio_Offset_EZ>偏移E.Z</CS_Studio_Offset_EZ>
+    <CS_Studio_Offset_NX>偏移N.X</CS_Studio_Offset_NX>
+    <CS_Studio_Offset_NY>偏移N.Y</CS_Studio_Offset_NY>
+    <CS_Studio_Offset_NZ>偏移N.Z</CS_Studio_Offset_NZ>
+    <CS_Studio_Panel_AddLayer>添加图层</CS_Studio_Panel_AddLayer>
+    <CS_Studio_Panel_CollapseAll>折叠全部</CS_Studio_Panel_CollapseAll>
+    <CS_Studio_Panel_Duplicate>复制</CS_Studio_Panel_Duplicate>
+    <CS_Studio_Panel_ExpandAll>展开全部</CS_Studio_Panel_ExpandAll>
+    <CS_Studio_Panel_MoveDown>下移</CS_Studio_Panel_MoveDown>
+    <CS_Studio_Panel_MoveUp>上移</CS_Studio_Panel_MoveUp>
+    <CS_Studio_Panel_Preview>预览</CS_Studio_Panel_Preview>
+    <CS_Studio_Panel_RemoveLayer>移除图层</CS_Studio_Panel_RemoveLayer>
+    <CS_Studio_Preview_Channel_Brow>眉</CS_Studio_Preview_Channel_Brow>
+    <CS_Studio_Preview_Channel_Emotion>情绪</CS_Studio_Preview_Channel_Emotion>
+    <CS_Studio_Preview_Channel_Eye>眼</CS_Studio_Preview_Channel_Eye>
+    <CS_Studio_Preview_Channel_Lid>睑</CS_Studio_Preview_Channel_Lid>
+    <CS_Studio_Preview_Channel_Mouth>嘴</CS_Studio_Preview_Channel_Mouth>
+    <CS_Studio_Preview_Exp>表情</CS_Studio_Preview_Exp>
+    <CS_Studio_Preview_Flow>AUTO</CS_Studio_Preview_Flow>
+    <CS_Studio_Preview_FlowSpeedTooltip>播放速度基准。</CS_Studio_Preview_FlowSpeedTooltip>
+    <CS_Studio_Preview_FlowStep_Empty>空流程</CS_Studio_Preview_FlowStep_Empty>
+    <CS_Studio_Preview_FlowStep_HappyPeak>快乐峰值</CS_Studio_Preview_FlowStep_HappyPeak>
+    <CS_Studio_Preview_FlowStep_HappySoft>快乐缓和</CS_Studio_Preview_FlowStep_HappySoft>
+    <CS_Studio_Preview_FlowStep_NeutralReset>回归平静</CS_Studio_Preview_FlowStep_NeutralReset>
+    <CS_Studio_Preview_FlowStep_ReadScan>阅读扫视</CS_Studio_Preview_FlowStep_ReadScan>
+    <CS_Studio_Preview_FlowStep_ScaredScan>惊慌扫视</CS_Studio_Preview_FlowStep_ScaredScan>
+    <CS_Studio_Preview_FlowStep_ScaredWide>惊慌瞪视</CS_Studio_Preview_FlowStep_ScaredWide>
+    <CS_Studio_Preview_FlowStep_SleepLoop>睡眠循环</CS_Studio_Preview_FlowStep_SleepLoop>
+    <CS_Studio_Preview_FlowStep_WorkFocusDown>工作低视</CS_Studio_Preview_FlowStep_WorkFocusDown>
+    <CS_Studio_Preview_FlowStep_WorkFocusUp>工作抬视</CS_Studio_Preview_FlowStep_WorkFocusUp>
+    <CS_Studio_Preview_FlowTooltip>自动播放当前“表情”按钮所选表情的程序控制动画：{0}。不会再切换到其他表情，只驱动程序控制通道。</CS_Studio_Preview_FlowTooltip>
+    <CS_Studio_Preview_Hint_Boost>Shift=加速</CS_Studio_Preview_Hint_Boost>
+    <CS_Studio_Preview_Hint_Drag>拖拽=移动</CS_Studio_Preview_Hint_Drag>
+    <CS_Studio_Preview_Hint_Nudge>方向键=微调</CS_Studio_Preview_Hint_Nudge>
+    <CS_Studio_Preview_Hint_ReferenceGhost>F=参考虚影</CS_Studio_Preview_Hint_ReferenceGhost>
+    <CS_Studio_Preview_Hint_Zoom>滚轮=缩放</CS_Studio_Preview_Hint_Zoom>
+    <CS_Studio_Preview_Playlist>流程表</CS_Studio_Preview_Playlist>
+    <CS_Studio_Preview_Preset_Auto>自动</CS_Studio_Preview_Preset_Auto>
+    <CS_Studio_Preview_Preset_Combat>战斗</CS_Studio_Preview_Preset_Combat>
+    <CS_Studio_Preview_Preset_Dead>死亡</CS_Studio_Preview_Preset_Dead>
+    <CS_Studio_Preview_Preset_Depressed>消沉</CS_Studio_Preview_Preset_Depressed>
+    <CS_Studio_Preview_Preset_Downed>倒地</CS_Studio_Preview_Preset_Downed>
+    <CS_Studio_Preview_Preset_Panic>惊慌</CS_Studio_Preview_Preset_Panic>
+    <CS_Studio_Preview_Preset_Romance>亲密</CS_Studio_Preview_Preset_Romance>
+    <CS_Studio_Preview_Preset_Tired>疲惫</CS_Studio_Preview_Preset_Tired>
+    <CS_Studio_Preview_ResetView>重置视图</CS_Studio_Preview_ResetView>
+    <CS_Studio_Preview_RotateLeft>向左旋转</CS_Studio_Preview_RotateLeft>
+    <CS_Studio_Preview_RotateRight>向右旋转</CS_Studio_Preview_RotateRight>
+    <CS_Studio_Preview_SelectRace>选择种族</CS_Studio_Preview_SelectRace>
+    <CS_Studio_Preview_Var>变体</CS_Studio_Preview_Var>
+    <CS_Studio_Preview_ZoomIn>放大</CS_Studio_Preview_ZoomIn>
+    <CS_Studio_Preview_ZoomOut>缩小</CS_Studio_Preview_ZoomOut>
+    <CS_Studio_Prop_Actions>操作</CS_Studio_Prop_Actions>
+    <CS_Studio_Prop_AnchorPoint>锚点</CS_Studio_Prop_AnchorPoint>
+    <CS_Studio_Prop_ColorType>颜色类型</CS_Studio_Prop_ColorType>
+    <CS_Studio_Prop_DrawOrder>绘制顺序</CS_Studio_Prop_DrawOrder>
+    <CS_Studio_Prop_FaceComponent>面部组件</CS_Studio_Prop_FaceComponent>
+    <CS_Studio_Prop_FlipHorizontal>水平翻转</CS_Studio_Prop_FlipHorizontal>
+    <CS_Studio_Prop_LayerName>图层名称</CS_Studio_Prop_LayerName>
+    <CS_Studio_Prop_NodeChildren>子节点数</CS_Studio_Prop_NodeChildren>
+    <CS_Studio_Prop_NodeInfo>节点信息</CS_Studio_Prop_NodeInfo>
+    <CS_Studio_Prop_NodePath>节点路径</CS_Studio_Prop_NodePath>
+    <CS_Studio_Prop_NodeTag>标签</CS_Studio_Prop_NodeTag>
+    <CS_Studio_Prop_NodeTexture>贴图</CS_Studio_Prop_NodeTexture>
+    <CS_Studio_Prop_Offset>偏移</CS_Studio_Prop_Offset>
+    <CS_Studio_Prop_OffsetX>X 偏移</CS_Studio_Prop_OffsetX>
+    <CS_Studio_Prop_OffsetY>Y 偏移</CS_Studio_Prop_OffsetY>
+    <CS_Studio_Prop_OffsetYHeight>Y 偏移(高度)</CS_Studio_Prop_OffsetYHeight>
+    <CS_Studio_Prop_OffsetZ>Z 偏移</CS_Studio_Prop_OffsetZ>
+    <CS_Studio_Prop_Scale>缩放</CS_Studio_Prop_Scale>
+    <CS_Studio_Transform_BaseRotation>基础旋转</CS_Studio_Transform_BaseRotation>
+    <CS_Studio_Transform_EastRotation>东西向旋转</CS_Studio_Transform_EastRotation>
+    <CS_Studio_Transform_EastRotationHint>东西向保留独立旋转偏移；缩放现已统一为全向全局缩放。</CS_Studio_Transform_EastRotationHint>
+    <CS_Studio_Transform_FinalDrawOrder>最终绘制顺序</CS_Studio_Transform_FinalDrawOrder>
+    <CS_Studio_Transform_GlobalHint>缩放现已统一为全向基础值；东西向仅保留旋转偏移，Preview 行显示当前预览朝向的最终结果。</CS_Studio_Transform_GlobalHint>
+    <CS_Studio_Transform_GlobalScaleX>全向缩放 X</CS_Studio_Transform_GlobalScaleX>
+    <CS_Studio_Transform_GlobalScaleY>全向缩放 Y</CS_Studio_Transform_GlobalScaleY>
+    <CS_Studio_Transform_PreviewRotation>预览旋转</CS_Studio_Transform_PreviewRotation>
+    <CS_Studio_Transform_PreviewScaleX>预览缩放 X</CS_Studio_Transform_PreviewScaleX>
+    <CS_Studio_Transform_PreviewScaleY>预览缩放 Y</CS_Studio_Transform_PreviewScaleY>
+    <CS_Studio_Transform_RotationOffset>旋转偏移</CS_Studio_Transform_RotationOffset>
+    <CS_Studio_Prop_TexturePath>纹理路径</CS_Studio_Prop_TexturePath>
+    <CS_Studio_Prop_Visible>可见</CS_Studio_Prop_Visible>
+    <CS_Studio_Runtime_ColorValue>R:{0} G:{1} B:{2} A:{3}</CS_Studio_Runtime_ColorValue>
+    <CS_Studio_Runtime_RotationValue>{0}°</CS_Studio_Runtime_RotationValue>
+    <CS_Studio_Status_Developing>功能开发中...</CS_Studio_Status_Developing>
+    <CS_Studio_Status_EditorSummary>基础槽位: {0} | 图层: {1} | 缩放: {2}x | 方向: {3}</CS_Studio_Status_EditorSummary>
+    <CS_Studio_Status_Loading>预览加载中...</CS_Studio_Status_Loading>
+    <CS_Studio_Status_Ready>就绪</CS_Studio_Status_Ready>
+    <CS_Studio_Tab_BaseAppearance>基础槽位</CS_Studio_Tab_BaseAppearance>
+    <CS_Studio_Tab_Equipment>装备</CS_Studio_Tab_Equipment>
+    <CS_Studio_Tab_Face>表情</CS_Studio_Tab_Face>
+    <CS_Studio_Tab_Layers>图层</CS_Studio_Tab_Layers>
+    <CS_Studio_Tab_Weapon>武器</CS_Studio_Tab_Weapon>
+    <CS_Studio_Variant_BaseName>变体基础名称</CS_Studio_Variant_BaseName>
+    <CS_Studio_Variant_EyeRenderMode>眼睛渲染模式</CS_Studio_Variant_EyeRenderMode>
+    <CS_Studio_Variant_EyeUvMoveRange>眼睛 UV 移动范围</CS_Studio_Variant_EyeUvMoveRange>
+    <CS_Studio_Variant_HiddenExpressions>隐藏表情</CS_Studio_Variant_HiddenExpressions>
+    <CS_Studio_Variant_LayerRole>图层角色</CS_Studio_Variant_LayerRole>
+    <CS_Studio_Variant_Logic>变体逻辑</CS_Studio_Variant_Logic>
+    <CS_Studio_Variant_UseBlinkSuffix>使用眨眼后缀</CS_Studio_Variant_UseBlinkSuffix>
+    <CS_Studio_Variant_UseDirectionalSuffix>使用朝向后缀</CS_Studio_Variant_UseDirectionalSuffix>
+    <CS_Studio_Variant_UseExpressionSuffix>使用表情后缀</CS_Studio_Variant_UseExpressionSuffix>
+    <CS_Studio_Variant_UseEyeDirectionSuffix>使用视线方向后缀</CS_Studio_Variant_UseEyeDirectionSuffix>
+    <CS_Studio_Variant_VisibleExpressions>可见表情</CS_Studio_Variant_VisibleExpressions>
+    <CS_Studio_Workflow_CompositeBaseLayerName>主体底图</CS_Studio_Workflow_CompositeBaseLayerName>
+    <CS_Studio_Workflow_MechanoidStandardLayers>机械体分层工作流</CS_Studio_Workflow_MechanoidStandardLayers>
+</LanguageData>

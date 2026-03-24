@@ -1,0 +1,429 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <CS_Ability_AreaCenter_Self>Centered On Self</CS_Ability_AreaCenter_Self>
+    <CS_Ability_AreaCenter_Target>Centered On Target</CS_Ability_AreaCenter_Target>
+    <CS_Ability_BoundPawn>Bound Pawn</CS_Ability_BoundPawn>
+    <CS_Ability_Carrier>Carrier Type</CS_Ability_Carrier>
+    <CS_Ability_CarrierType_Area>Area</CS_Ability_CarrierType_Area>
+    <CS_Ability_CarrierType_Projectile>Projectile</CS_Ability_CarrierType_Projectile>
+    <CS_Ability_CarrierType_Self>Self</CS_Ability_CarrierType_Self>
+    <CS_Ability_CarrierType_Target>Target</CS_Ability_CarrierType_Target>
+    <CS_Ability_CarrierType_Touch>Touch</CS_Ability_CarrierType_Touch>
+    <CS_Ability_ClearBinding>Clear Binding</CS_Ability_ClearBinding>
+    <CS_Ability_EffectType_Buff>Buff</CS_Ability_EffectType_Buff>
+    <CS_Ability_EffectType_Control>Control</CS_Ability_EffectType_Control>
+    <CS_Ability_EffectType_Damage>Damage</CS_Ability_EffectType_Damage>
+    <CS_Ability_EffectType_Debuff>Debuff</CS_Ability_EffectType_Debuff>
+    <CS_Ability_EffectType_Heal>Heal</CS_Ability_EffectType_Heal>
+    <CS_Ability_EffectType_Summon>Summon</CS_Ability_EffectType_Summon>
+    <CS_Ability_EffectType_Teleport>Teleport</CS_Ability_EffectType_Teleport>
+    <CS_Ability_EffectType_Terraform>Terraform</CS_Ability_EffectType_Terraform>
+    <CS_Ability_Grant>Grant Now</CS_Ability_Grant>
+    <CS_Ability_GrantSuccess>Granted {0} abilities to {1}</CS_Ability_GrantSuccess>
+    <CS_Ability_Hotkey_AbilityMissing>Ability definition not found: {0}</CS_Ability_Hotkey_AbilityMissing>
+    <CS_Ability_Hotkey_CastSuccess>Casted via {0}: {1}</CS_Ability_Hotkey_CastSuccess>
+    <CS_Ability_Hotkey_ECooldown>E is on cooldown: {0}s remaining</CS_Ability_Hotkey_ECooldown>
+    <CS_Ability_Hotkey_QMode>Q mode switched to phase {0}</CS_Ability_Hotkey_QMode>
+    <CS_Ability_Hotkey_SlotCooldown>{0} ability on cooldown, {1}s remaining</CS_Ability_Hotkey_SlotCooldown>
+    <CS_Ability_NoPawnBound>(No pawn bound)</CS_Ability_NoPawnBound>
+    <CS_Ability_NotReady>Ability {0} is not ready</CS_Ability_NotReady>
+    <CS_Ability_OnCooldown>{0} on cooldown ({1} remaining)</CS_Ability_OnCooldown>
+    <CS_Ability_R_Ready>R stage 2 ready: press R to choose target</CS_Ability_R_Ready>
+    <CS_Ability_R_SecondStageArmed>R stage 2 armed, triggering in {0}s</CS_Ability_R_SecondStageArmed>
+    <CS_Ability_R_SecondStageCast>R stage 2 cast: blink and triple shockwaves</CS_Ability_R_SecondStageCast>
+    <CS_Ability_R_StackGain>R stacks: {0}/{1}</CS_Ability_R_StackGain>
+    <CS_Ability_R_StackingOff>R stage 1 disabled</CS_Ability_R_StackingOff>
+    <CS_Ability_R_StackingOn>R stage 1 enabled: attacks now build stacks</CS_Ability_R_StackingOn>
+    <CS_Ability_R_TargetInvalid>Invalid target for R stage 2</CS_Ability_R_TargetInvalid>
+    <CS_Ability_Revoke>Revoke Abilities</CS_Ability_Revoke>
+    <CS_Ability_RevokeSuccess>Revoked all CS abilities from {0}</CS_Ability_RevokeSuccess>
+    <CS_Ability_RuntimeComponentType_ChainBounce>Chain Bounce</CS_Ability_RuntimeComponentType_ChainBounce>
+    <CS_Ability_RuntimeComponentType_ComboStacks>Combo Stacks</CS_Ability_RuntimeComponentType_ComboStacks>
+    <CS_Ability_RuntimeComponentType_DashEmpoweredStrike>Dash Empower</CS_Ability_RuntimeComponentType_DashEmpoweredStrike>
+    <CS_Ability_RuntimeComponentType_EShortJump>Displacement</CS_Ability_RuntimeComponentType_EShortJump>
+    <CS_Ability_RuntimeComponentType_ExecuteBonusDamage>Execute Bonus</CS_Ability_RuntimeComponentType_ExecuteBonusDamage>
+    <CS_Ability_RuntimeComponentType_FollowupCooldownGate>Follow-up Gate</CS_Ability_RuntimeComponentType_FollowupCooldownGate>
+    <CS_Ability_RuntimeComponentType_HitCooldownRefund>Hit Refund</CS_Ability_RuntimeComponentType_HitCooldownRefund>
+    <CS_Ability_RuntimeComponentType_HitHeal>Hit Heal</CS_Ability_RuntimeComponentType_HitHeal>
+    <CS_Ability_RuntimeComponentType_HitSlowField>Hit Slow Field</CS_Ability_RuntimeComponentType_HitSlowField>
+    <CS_Ability_RuntimeComponentType_HotkeyOverride>Hotkey Override</CS_Ability_RuntimeComponentType_HotkeyOverride>
+    <CS_Ability_RuntimeComponentType_KillRefresh>Kill Refresh</CS_Ability_RuntimeComponentType_KillRefresh>
+    <CS_Ability_RuntimeComponentType_MarkDetonation>Mark Detonation</CS_Ability_RuntimeComponentType_MarkDetonation>
+    <CS_Ability_RuntimeComponentType_MissingHealthBonusDamage>Missing Health Bonus</CS_Ability_RuntimeComponentType_MissingHealthBonusDamage>
+    <CS_Ability_RuntimeComponentType_FullHealthBonusDamage>Full Health Bonus</CS_Ability_RuntimeComponentType_FullHealthBonusDamage>
+    <CS_Ability_RuntimeComponentType_NearbyEnemyBonusDamage>Nearby Enemy Bonus</CS_Ability_RuntimeComponentType_NearbyEnemyBonusDamage>
+    <CS_Ability_RuntimeComponentType_IsolatedTargetBonusDamage>Isolated Target Bonus</CS_Ability_RuntimeComponentType_IsolatedTargetBonusDamage>
+    <CS_Ability_RuntimeComponentType_PeriodicPulse>Periodic Pulse</CS_Ability_RuntimeComponentType_PeriodicPulse>
+    <CS_Ability_RuntimeComponentType_PierceBonusDamage>Pierce Bonus</CS_Ability_RuntimeComponentType_PierceBonusDamage>
+    <CS_Ability_RuntimeComponentType_ProjectileSplit>Projectile Split</CS_Ability_RuntimeComponentType_ProjectileSplit>
+    <CS_Ability_RuntimeComponentType_FlightState>Flight Stance</CS_Ability_RuntimeComponentType_FlightState>
+    <CS_Ability_RuntimeComponentType_QComboWindow>Combo Window</CS_Ability_RuntimeComponentType_QComboWindow>
+    <CS_Ability_RuntimeComponentType_RStackDetonation>Stack Detonation</CS_Ability_RuntimeComponentType_RStackDetonation>
+    <CS_Ability_RuntimeComponentType_ShieldAbsorb>Shield Absorb</CS_Ability_RuntimeComponentType_ShieldAbsorb>
+    <CS_Ability_RuntimeComponentType_SmartJump>Smart Jump</CS_Ability_RuntimeComponentType_SmartJump>
+    <CS_Ability_SelectPawn>Select Pawn</CS_Ability_SelectPawn>
+    <CS_Ability_TargetType_Cell>Cell</CS_Ability_TargetType_Cell>
+    <CS_Ability_TargetType_Entity>Entity</CS_Ability_TargetType_Entity>
+    <CS_Ability_TargetType_Self>Self</CS_Ability_TargetType_Self>
+    <CS_Ability_Validate_CarrierNeedsRange>Carrier type {0} usually requires a range</CS_Ability_Validate_CarrierNeedsRange>
+    <CS_Ability_Validate_ChargesNonPositive>Ability charges are 0 or negative</CS_Ability_Validate_ChargesNonPositive>
+    <CS_Ability_Validate_ControlDuration>Control effect duration cannot be negative</CS_Ability_Validate_ControlDuration>
+    <CS_Ability_Validate_ControlMoveDistance>Control move distance must be greater than 0</CS_Ability_Validate_ControlMoveDistance>
+    <CS_Ability_Validate_CooldownNegative>Cooldown cannot be negative</CS_Ability_Validate_CooldownNegative>
+    <CS_Ability_Validate_DamageAmount>Damage effect amount must be greater than 0</CS_Ability_Validate_DamageAmount>
+    <CS_Ability_Validate_DefNameEmpty>defName cannot be empty</CS_Ability_Validate_DefNameEmpty>
+    <CS_Ability_Validate_DefNameInvalid>defName may only contain letters, numbers, and underscores</CS_Ability_Validate_DefNameInvalid>
+    <CS_Ability_Validate_EffectChanceRange>Trigger chance must be between 0 and 1, current value: {0}</CS_Ability_Validate_EffectChanceRange>
+    <CS_Ability_Validate_EffectIndexError>Effect #{0}: {1}</CS_Ability_Validate_EffectIndexError>
+    <CS_Ability_Validate_EffectIndexWarning>Effect #{0}: {1}</CS_Ability_Validate_EffectIndexWarning>
+    <CS_Ability_Validate_EffectNegativeAmount>Effect amount is negative and may cause unexpected behavior</CS_Ability_Validate_EffectNegativeAmount>
+    <CS_Ability_Validate_EShortJumpCooldown>Displacement cooldown cannot be negative</CS_Ability_Validate_EShortJumpCooldown>
+    <CS_Ability_Validate_EShortJumpDistance>Displacement distance must be greater than 0</CS_Ability_Validate_EShortJumpDistance>
+    <CS_Ability_Validate_EShortJumpFindCellRadius>Displacement search radius cannot be negative</CS_Ability_Validate_EShortJumpFindCellRadius>
+    <CS_Ability_Validate_Failed>Validation failed:</CS_Ability_Validate_Failed>
+    <CS_Ability_Validate_HediffRequired>{0} effect must specify a HediffDef</CS_Ability_Validate_HediffRequired>
+    <CS_Ability_Validate_LabelEmpty>label is empty; defName will be used as the display name</CS_Ability_Validate_LabelEmpty>
+    <CS_Ability_Validate_NoEffects>Ability defines no effects</CS_Ability_Validate_NoEffects>
+    <CS_Ability_Validate_ProjectileDefMissing>Projectile carrier has no projectileDef; a default projectile may be used</CS_Ability_Validate_ProjectileDefMissing>
+    <CS_Ability_Validate_QComboWindowTicks>Combo window must be greater than 0 ticks</CS_Ability_Validate_QComboWindowTicks>
+    <CS_Ability_Validate_FlightDurationTicks>Flight duration must be greater than 0 ticks</CS_Ability_Validate_FlightDurationTicks>
+    <CS_Ability_Validate_FlightHeightFactor>Flight height factor cannot be negative</CS_Ability_Validate_FlightHeightFactor>
+    <CS_Ability_Validate_RadiusNegative>Radius cannot be negative</CS_Ability_Validate_RadiusNegative>
+    <CS_Ability_Validate_RangeNegative>Range cannot be negative</CS_Ability_Validate_RangeNegative>
+    <CS_Ability_Validate_RDelayTicks>Delay cannot be negative</CS_Ability_Validate_RDelayTicks>
+    <CS_Ability_Validate_RRequiredStacks>Required stacks must be greater than 0</CS_Ability_Validate_RRequiredStacks>
+    <CS_Ability_Validate_RuntimeComponentError>Runtime component #{0}: {1}</CS_Ability_Validate_RuntimeComponentError>
+    <CS_Ability_Validate_RuntimeComponentNull>Runtime component #{0} is null</CS_Ability_Validate_RuntimeComponentNull>
+    <CS_Ability_Validate_RuntimeComponentWarning>Runtime component #{0}: {1}</CS_Ability_Validate_RuntimeComponentWarning>
+    <CS_Ability_Validate_FullHealthThreshold>Full-health threshold must be between 0 and 1</CS_Ability_Validate_FullHealthThreshold>
+    <CS_Ability_Validate_FullHealthBonusScale>Full-health bonus damage scale cannot be negative</CS_Ability_Validate_FullHealthBonusScale>
+    <CS_Ability_Validate_NearbyEnemyBonusMaxTargets>Nearby-enemy max targets must be greater than 0</CS_Ability_Validate_NearbyEnemyBonusMaxTargets>
+    <CS_Ability_Validate_NearbyEnemyBonusPerTarget>Nearby-enemy bonus per target cannot be negative</CS_Ability_Validate_NearbyEnemyBonusPerTarget>
+    <CS_Ability_Validate_NearbyEnemyBonusRadius>Nearby-enemy search radius must be greater than 0</CS_Ability_Validate_NearbyEnemyBonusRadius>
+    <CS_Ability_Validate_IsolatedTargetRadius>Isolated-target radius must be greater than 0</CS_Ability_Validate_IsolatedTargetRadius>
+    <CS_Ability_Validate_IsolatedTargetBonusScale>Isolated-target bonus damage scale cannot be negative</CS_Ability_Validate_IsolatedTargetBonusScale>
+    <CS_Ability_Validate_RWaveDamage>All wave damage values must be greater than 0</CS_Ability_Validate_RWaveDamage>
+    <CS_Ability_Validate_RWaveRadius>All wave radii must be greater than 0</CS_Ability_Validate_RWaveRadius>
+    <CS_Ability_Validate_SummonCount>Summon count must be greater than 0</CS_Ability_Validate_SummonCount>
+    <CS_Ability_Validate_SummonKindRequired>Summon effect must specify a PawnKindDef</CS_Ability_Validate_SummonKindRequired>
+    <CS_Ability_Validate_TerraformSpawnCount>Spawn count must be greater than 0</CS_Ability_Validate_TerraformSpawnCount>
+    <CS_Ability_Validate_TerraformTerrainRequired>Replace Terrain mode requires a TerrainDef</CS_Ability_Validate_TerraformTerrainRequired>
+    <CS_Ability_Validate_TerraformThingRequired>Spawn Thing mode requires a ThingDef</CS_Ability_Validate_TerraformThingRequired>
+    <CS_Ability_Validate_WarmupNegative>Warmup cannot be negative</CS_Ability_Validate_WarmupNegative>
+    <CS_Ability_Validate_Warnings>Warnings:</CS_Ability_Validate_Warnings>
+    <CS_Studio_Ability_AddEffect>Add Effect</CS_Studio_Ability_AddEffect>
+    <CS_Studio_Ability_AreaCenter>Area Center</CS_Studio_Ability_AreaCenter>
+    <CS_Studio_Ability_AreaShape>Area Shape</CS_Studio_Ability_AreaShape>
+    <CS_Studio_Ability_AreaShape_Circle>Circle</CS_Studio_Ability_AreaShape_Circle>
+    <CS_Studio_Ability_AreaShape_Cone>Cone</CS_Studio_Ability_AreaShape_Cone>
+    <CS_Studio_Ability_AreaShape_Cross>Cross</CS_Studio_Ability_AreaShape_Cross>
+    <CS_Studio_Ability_AreaShape_Irregular>Irregular</CS_Studio_Ability_AreaShape_Irregular>
+    <CS_Studio_Ability_AreaShape_Line>Line</CS_Studio_Ability_AreaShape_Line>
+    <CS_Studio_Ability_AreaShape_Square>Square</CS_Studio_Ability_AreaShape_Square>
+    <CS_Studio_Ability_Charges>Charges</CS_Studio_Ability_Charges>
+    <CS_Studio_Ability_Cooldown>Cooldown (Ticks)</CS_Studio_Ability_Cooldown>
+    <CS_Studio_Ability_CooldownShort>CD</CS_Studio_Ability_CooldownShort>
+    <CS_Studio_Ability_CopyLabel>{0} Copy</CS_Studio_Ability_CopyLabel>
+    <CS_Studio_Ability_CountSummary>Showing {0} / {1} abilities</CS_Studio_Ability_CountSummary>
+    <CS_Studio_Ability_DefaultName>New Ability</CS_Studio_Ability_DefaultName>
+    <CS_Studio_Ability_DefName>DefName</CS_Studio_Ability_DefName>
+    <CS_Studio_Ability_DefSummary>Def: {0}</CS_Studio_Ability_DefSummary>
+    <CS_Studio_Ability_EditorTitle>Ability Editor</CS_Studio_Ability_EditorTitle>
+    <CS_Studio_Ability_EffectsSummary>Effects: {0} / Runtime Components: {1}</CS_Studio_Ability_EffectsSummary>
+    <CS_Studio_Ability_ExamplesLoaded>Example abilities loaded</CS_Studio_Ability_ExamplesLoaded>
+    <CS_Studio_Ability_Hotkey_E>E Ability</CS_Studio_Ability_Hotkey_E>
+    <CS_Studio_Ability_Hotkey_Enable>Enable QWER ability hotkeys</CS_Studio_Ability_Hotkey_Enable>
+    <CS_Studio_Ability_Hotkey_None>(Unbound)</CS_Studio_Ability_Hotkey_None>
+    <CS_Studio_Ability_Hotkey_Q>Q Ability</CS_Studio_Ability_Hotkey_Q>
+    <CS_Studio_Ability_Hotkey_R>R Ability</CS_Studio_Ability_Hotkey_R>
+    <CS_Studio_Ability_Hotkey_W>W Ability</CS_Studio_Ability_Hotkey_W>
+    <CS_Studio_Ability_Hotkey_WCombo>W Combo Ability (within 0.2s after Q)</CS_Studio_Ability_Hotkey_WCombo>
+    <CS_Studio_Ability_HotkeySettings>Ability Hotkey Settings</CS_Studio_Ability_HotkeySettings>
+    <CS_Studio_Ability_HotkeySlot_E>E</CS_Studio_Ability_HotkeySlot_E>
+    <CS_Studio_Ability_HotkeySlot_Q>Q</CS_Studio_Ability_HotkeySlot_Q>
+    <CS_Studio_Ability_HotkeySlot_R>R</CS_Studio_Ability_HotkeySlot_R>
+    <CS_Studio_Ability_HotkeySlot_W>W</CS_Studio_Ability_HotkeySlot_W>
+    <CS_Studio_Ability_HotkeySlot_WCombo>W Combo</CS_Studio_Ability_HotkeySlot_WCombo>
+    <CS_Studio_Ability_HotkeySlotSummary>{0}: {1}</CS_Studio_Ability_HotkeySlotSummary>
+    <CS_Studio_Ability_HotkeySummary>Hotkey Mapping: {0}</CS_Studio_Ability_HotkeySummary>
+    <CS_Studio_Ability_IconPath>Icon Path</CS_Studio_Ability_IconPath>
+    <CS_Studio_Ability_ImportAppend>Append Import</CS_Studio_Ability_ImportAppend>
+    <CS_Studio_Ability_ImportAppended>Appended {0} abilities from {1} (was {2}, now {3})</CS_Studio_Ability_ImportAppended>
+    <CS_Studio_Ability_ImportFailed>Ability XML import failed: {0}</CS_Studio_Ability_ImportFailed>
+    <CS_Studio_Ability_ImportNoAbilities>No importable abilities were found in this XML</CS_Studio_Ability_ImportNoAbilities>
+    <CS_Studio_Ability_ImportReplace>Clear and Import</CS_Studio_Ability_ImportReplace>
+    <CS_Studio_Ability_ImportReplaced>Imported {0} abilities from {1} and replaced the current list</CS_Studio_Ability_ImportReplaced>
+    <CS_Studio_Ability_ImportXml>Import XML</CS_Studio_Ability_ImportXml>
+    <CS_Studio_Ability_ImportXmlHint>Enter the path to an existing XML file. Supports direct ModularAbilityDef XML, PawnSkinDef embedded abilities, or standard AbilityDef XML, and converts them into the editor's editable ability format.</CS_Studio_Ability_ImportXmlHint>
+    <CS_Studio_Ability_ImportXmlPath>XML Path</CS_Studio_Ability_ImportXmlPath>
+    <CS_Studio_Ability_ImportXmlTitle>Import Ability XML</CS_Studio_Ability_ImportXmlTitle>
+    <CS_Studio_Ability_Invalid>Invalid</CS_Studio_Ability_Invalid>
+    <CS_Studio_Ability_IrregularPattern>Irregular Pattern</CS_Studio_Ability_IrregularPattern>
+    <CS_Studio_Ability_IrregularPatternHint>Use 0/1, spaces, commas, or line breaks to describe the irregular area pattern.</CS_Studio_Ability_IrregularPatternHint>
+    <CS_Studio_Ability_LeftPanelTitle>Ability List</CS_Studio_Ability_LeftPanelTitle>
+    <CS_Studio_Ability_ListTitle>Ability List</CS_Studio_Ability_ListTitle>
+    <CS_Studio_Ability_LoadExamples>Load Examples</CS_Studio_Ability_LoadExamples>
+    <CS_Studio_Ability_LoadQwerExamples>Load QWER Example Abilities</CS_Studio_Ability_LoadQwerExamples>
+    <CS_Studio_Ability_Name>Name</CS_Studio_Ability_Name>
+    <CS_Studio_Ability_NoResults>No abilities match the current filter</CS_Studio_Ability_NoResults>
+    <CS_Studio_Ability_PreviewCaster>Caster</CS_Studio_Ability_PreviewCaster>
+    <CS_Studio_Ability_PreviewCastReleaseDetail>Ability Released</CS_Studio_Ability_PreviewCastReleaseDetail>
+    <CS_Studio_Ability_PreviewEffectBuff>Buff: {0}</CS_Studio_Ability_PreviewEffectBuff>
+    <CS_Studio_Ability_PreviewEffectControl>Control: {0} · {1}s</CS_Studio_Ability_PreviewEffectControl>
+    <CS_Studio_Ability_PreviewEffectDamage>Damage: {0} ({1})</CS_Studio_Ability_PreviewEffectDamage>
+    <CS_Studio_Ability_PreviewEffectDebuff>Debuff: {0}</CS_Studio_Ability_PreviewEffectDebuff>
+    <CS_Studio_Ability_PreviewEffectHeal>Heal: {0}</CS_Studio_Ability_PreviewEffectHeal>
+    <CS_Studio_Ability_PreviewEffectSummon>Summon: {0} × {1}</CS_Studio_Ability_PreviewEffectSummon>
+    <CS_Studio_Ability_PreviewEffectTeleport>Teleport</CS_Studio_Ability_PreviewEffectTeleport>
+    <CS_Studio_Ability_PreviewEffectTerraform>Terraform: {0}</CS_Studio_Ability_PreviewEffectTerraform>
+    <CS_Studio_Ability_PreviewEmptyHint>Select or create an ability first.</CS_Studio_Ability_PreviewEmptyHint>
+    <CS_Studio_Ability_PreviewEmptyTitle>No Ability Selected</CS_Studio_Ability_PreviewEmptyTitle>
+    <CS_Studio_Ability_PreviewEventCasterOrigin>Caster Origin</CS_Studio_Ability_PreviewEventCasterOrigin>
+    <CS_Studio_Ability_PreviewEventCastFinish>Cast Finish</CS_Studio_Ability_PreviewEventCastFinish>
+    <CS_Studio_Ability_PreviewEventCastStart>Cast Start</CS_Studio_Ability_PreviewEventCastStart>
+    <CS_Studio_Ability_PreviewEventEffect>Effect</CS_Studio_Ability_PreviewEventEffect>
+    <CS_Studio_Ability_PreviewEventProjectile>Projectile</CS_Studio_Ability_PreviewEventProjectile>
+    <CS_Studio_Ability_PreviewEventRuntime>Runtime Component</CS_Studio_Ability_PreviewEventRuntime>
+    <CS_Studio_Ability_PreviewEventSummary>Summary</CS_Studio_Ability_PreviewEventSummary>
+    <CS_Studio_Ability_PreviewEventVfx>Visual Effect</CS_Studio_Ability_PreviewEventVfx>
+    <CS_Studio_Ability_PreviewEventWarmup>Warmup</CS_Studio_Ability_PreviewEventWarmup>
+    <CS_Studio_Ability_PreviewGrid>Grid</CS_Studio_Ability_PreviewGrid>
+    <CS_Studio_Ability_PreviewHintLine>Drag preview anchors to adjust caster and target positions.</CS_Studio_Ability_PreviewHintLine>
+    <CS_Studio_Ability_PreviewLog>Event Log</CS_Studio_Ability_PreviewLog>
+    <CS_Studio_Ability_PreviewLoop>Loop</CS_Studio_Ability_PreviewLoop>
+    <CS_Studio_Ability_PreviewLoopOn>Looping</CS_Studio_Ability_PreviewLoopOn>
+    <CS_Studio_Ability_PreviewNoEffects>No Effects</CS_Studio_Ability_PreviewNoEffects>
+    <CS_Studio_Ability_PreviewNoPayloadNote>No payload</CS_Studio_Ability_PreviewNoPayloadNote>
+    <CS_Studio_Ability_PreviewNoRadiusNote>No radius</CS_Studio_Ability_PreviewNoRadiusNote>
+    <CS_Studio_Ability_PreviewPayload>Payload</CS_Studio_Ability_PreviewPayload>
+    <CS_Studio_Ability_PreviewPlayOnce>Play Once</CS_Studio_Ability_PreviewPlayOnce>
+    <CS_Studio_Ability_PreviewProjectileGeneric>Generic Projectile</CS_Studio_Ability_PreviewProjectileGeneric>
+    <CS_Studio_Ability_PreviewRepeatIndex>Repeat {0}</CS_Studio_Ability_PreviewRepeatIndex>
+    <CS_Studio_Ability_PreviewRuntimeComboStacks>Combo Stacks · {0} stacks · {1} each</CS_Studio_Ability_PreviewRuntimeComboStacks>
+    <CS_Studio_Ability_PreviewRuntimeDashEmpoweredStrike>Dash Empower · {0}t · Bonus {1}</CS_Studio_Ability_PreviewRuntimeDashEmpoweredStrike>
+    <CS_Studio_Ability_PreviewRuntimeEShortJump>Short Jump · Distance {0} · Cooldown {1}t</CS_Studio_Ability_PreviewRuntimeEShortJump>
+    <CS_Studio_Ability_PreviewRuntimeExecuteBonusDamage>Execute Bonus · Threshold {0} · Bonus {1}</CS_Studio_Ability_PreviewRuntimeExecuteBonusDamage>
+    <CS_Studio_Ability_PreviewRuntimeFollowupCooldownGate>Follow-up Gate · {0} · {1}t</CS_Studio_Ability_PreviewRuntimeFollowupCooldownGate>
+    <CS_Studio_Ability_PreviewRuntimeHitCooldownRefund>Cooldown Refund · {0} · {1}</CS_Studio_Ability_PreviewRuntimeHitCooldownRefund>
+    <CS_Studio_Ability_PreviewRuntimeHitHeal>Hit Heal · Flat {0} · Ratio {1}</CS_Studio_Ability_PreviewRuntimeHitHeal>
+    <CS_Studio_Ability_PreviewRuntimeHitSlowField>Slow Field · {0}t · Radius {1} · {2}</CS_Studio_Ability_PreviewRuntimeHitSlowField>
+    <CS_Studio_Ability_PreviewRuntimeHotkeyOverride>Hotkey Override · {0} → {1} · {2}t</CS_Studio_Ability_PreviewRuntimeHotkeyOverride>
+    <CS_Studio_Ability_PreviewRuntimeMarkDetonation>Mark Detonation · {0} stacks · {1}t · {2} damage</CS_Studio_Ability_PreviewRuntimeMarkDetonation>
+    <CS_Studio_Ability_PreviewRuntimeMissingHealthBonusDamage>Missing Health Bonus · Per 10% {0} · Cap {1}</CS_Studio_Ability_PreviewRuntimeMissingHealthBonusDamage>
+    <CS_Studio_Ability_PreviewRuntimeFullHealthBonusDamage>Full Health Bonus · Threshold {0} · Bonus {1}</CS_Studio_Ability_PreviewRuntimeFullHealthBonusDamage>
+    <CS_Studio_Ability_PreviewRuntimeNearbyEnemyBonusDamage>Nearby Enemy Bonus · Max {0} · Per Target {1} · Radius {2}</CS_Studio_Ability_PreviewRuntimeNearbyEnemyBonusDamage>
+    <CS_Studio_Ability_PreviewRuntimeIsolatedTargetBonusDamage>Isolated Target Bonus · Radius {0} · Bonus {1}</CS_Studio_Ability_PreviewRuntimeIsolatedTargetBonusDamage>
+    <CS_Studio_Ability_PreviewRuntimePierceBonusDamage>Pierce Bonus · Max {0} · Per Target {1} · Radius {2}</CS_Studio_Ability_PreviewRuntimePierceBonusDamage>
+    <CS_Studio_Ability_PreviewRuntimeProjectileSplit>Projectile Split · {0} projectiles · Scale {1} · Radius {2}</CS_Studio_Ability_PreviewRuntimeProjectileSplit>
+    <CS_Studio_Ability_PreviewRuntimeFlightState>Flight Stance · {0}t · Height {1}</CS_Studio_Ability_PreviewRuntimeFlightState>
+    <CS_Studio_Ability_PreviewRuntimeQCombo>Combo Window · {0}t</CS_Studio_Ability_PreviewRuntimeQCombo>
+    <CS_Studio_Ability_PreviewRuntimeRStack>Stack Detonation · {0} stacks · Delay {1}t</CS_Studio_Ability_PreviewRuntimeRStack>
+    <CS_Studio_Ability_PreviewRuntimeSmartJump>Smart Jump · Offset {0} · Distance {1} · Cooldown {2}t</CS_Studio_Ability_PreviewRuntimeSmartJump>
+    <CS_Studio_Ability_PreviewSummaryLine>{0} → {1}</CS_Studio_Ability_PreviewSummaryLine>
+    <CS_Studio_Ability_PreviewTab>Preview</CS_Studio_Ability_PreviewTab>
+    <CS_Studio_Ability_PreviewTarget>Target</CS_Studio_Ability_PreviewTarget>
+    <CS_Studio_Ability_PreviewTimeline>Timeline</CS_Studio_Ability_PreviewTimeline>
+    <CS_Studio_Ability_PreviewTimelineHint>Current {0}t / Total {1}t</CS_Studio_Ability_PreviewTimelineHint>
+    <CS_Studio_Ability_PreviewVfxBody>{0} · {1} · {2}</CS_Studio_Ability_PreviewVfxBody>
+    <CS_Studio_Ability_PreviewWarmupDetail>Warmup {0}t</CS_Studio_Ability_PreviewWarmupDetail>
+    <CS_Studio_Ability_Projectile>Projectile</CS_Studio_Ability_Projectile>
+    <CS_Studio_Ability_PropertiesTitle>Ability Properties</CS_Studio_Ability_PropertiesTitle>
+    <CS_Studio_Ability_QwerExamplesLoaded>Loaded QWER example abilities and bound hotkeys</CS_Studio_Ability_QwerExamplesLoaded>
+    <CS_Studio_Ability_Radius>Explosion Radius</CS_Studio_Ability_Radius>
+    <CS_Studio_Ability_Range>Range</CS_Studio_Ability_Range>
+    <CS_Studio_Ability_Save>Save Abilities</CS_Studio_Ability_Save>
+    <CS_Studio_Ability_SaveSuccess>Ability editor state saved</CS_Studio_Ability_SaveSuccess>
+    <CS_Studio_Ability_Search>Search Abilities</CS_Studio_Ability_Search>
+    <CS_Studio_Ability_SelectedSummary>Selected: {0}</CS_Studio_Ability_SelectedSummary>
+    <CS_Studio_Ability_SelectHint>Select an ability first.</CS_Studio_Ability_SelectHint>
+    <CS_Studio_Ability_SelectOrCreate>Please select or create an ability</CS_Studio_Ability_SelectOrCreate>
+    <CS_Studio_Ability_TargetType>Target Type</CS_Studio_Ability_TargetType>
+    <CS_Studio_Ability_Type>Type</CS_Studio_Ability_Type>
+    <CS_Studio_Ability_Unassigned>Unassigned</CS_Studio_Ability_Unassigned>
+    <CS_Studio_Ability_UseRadius>Use Radius</CS_Studio_Ability_UseRadius>
+    <CS_Studio_Ability_Valid>Valid</CS_Studio_Ability_Valid>
+    <CS_Studio_Ability_Validate>Validate</CS_Studio_Ability_Validate>
+    <CS_Studio_Ability_ValidationSummary>Validation: {0}</CS_Studio_Ability_ValidationSummary>
+    <CS_Studio_Ability_ValidWithWarnings>Valid with warnings</CS_Studio_Ability_ValidWithWarnings>
+    <CS_Studio_Ability_Warmup>Warmup (Ticks)</CS_Studio_Ability_Warmup>
+    <CS_Studio_Btn_Delete>Delete</CS_Studio_Btn_Delete>
+    <CS_Studio_Effect_Add>Add Effect</CS_Studio_Effect_Add>
+    <CS_Studio_Effect_Amount>Amount</CS_Studio_Effect_Amount>
+    <CS_Studio_Effect_CanHurtSelf>Can Hurt Self</CS_Studio_Effect_CanHurtSelf>
+    <CS_Studio_Effect_Chance>Chance</CS_Studio_Effect_Chance>
+    <CS_Studio_Effect_ControlMode>Control Mode</CS_Studio_Effect_ControlMode>
+    <CS_Studio_Effect_ControlMode_Knockback>Knockback</CS_Studio_Effect_ControlMode_Knockback>
+    <CS_Studio_Effect_ControlMode_Pull>Pull</CS_Studio_Effect_ControlMode_Pull>
+    <CS_Studio_Effect_ControlMode_Stun>Stun</CS_Studio_Effect_ControlMode_Stun>
+    <CS_Studio_Effect_ControlMoveDistance>Move Distance</CS_Studio_Effect_ControlMoveDistance>
+    <CS_Studio_Effect_DamageDef>Damage Type</CS_Studio_Effect_DamageDef>
+    <CS_Studio_Effect_Duration>Duration (sec)</CS_Studio_Effect_Duration>
+    <CS_Studio_Effect_Hediff>Hediff</CS_Studio_Effect_Hediff>
+    <CS_Studio_Effect_NoExtraParams>No extra parameters for this effect</CS_Studio_Effect_NoExtraParams>
+    <CS_Studio_Effect_PawnKind>PawnKind</CS_Studio_Effect_PawnKind>
+    <CS_Studio_Effect_SummonCount>Count</CS_Studio_Effect_SummonCount>
+    <CS_Studio_Effect_SummonFaction>Summon Faction</CS_Studio_Effect_SummonFaction>
+    <CS_Studio_Effect_SummonKind>Summon PawnKind</CS_Studio_Effect_SummonKind>
+    <CS_Studio_Effect_TerraformCleanFilthHint>This will remove filth from the target cell</CS_Studio_Effect_TerraformCleanFilthHint>
+    <CS_Studio_Effect_TerraformMode>Terraform Mode</CS_Studio_Effect_TerraformMode>
+    <CS_Studio_Effect_TerraformMode_CleanFilth>Clean Filth</CS_Studio_Effect_TerraformMode_CleanFilth>
+    <CS_Studio_Effect_TerraformMode_ReplaceTerrain>Replace Terrain</CS_Studio_Effect_TerraformMode_ReplaceTerrain>
+    <CS_Studio_Effect_TerraformMode_SpawnThing>Spawn Thing</CS_Studio_Effect_TerraformMode_SpawnThing>
+    <CS_Studio_Effect_TerraformSpawnCount>Spawn Count</CS_Studio_Effect_TerraformSpawnCount>
+    <CS_Studio_Effect_TerraformTerrain>Terrain</CS_Studio_Effect_TerraformTerrain>
+    <CS_Studio_Effect_TerraformThing>Thing To Spawn</CS_Studio_Effect_TerraformThing>
+    <CS_Studio_Effect_Title>Effects</CS_Studio_Effect_Title>
+    <CS_Studio_Runtime_AddComponent>+ Add Component</CS_Studio_Runtime_AddComponent>
+    <CS_Studio_Runtime_ChainBounceCount>Bounce Count</CS_Studio_Runtime_ChainBounceCount>
+    <CS_Studio_Runtime_ChainBounceFalloff>Damage Falloff Per Bounce</CS_Studio_Runtime_ChainBounceFalloff>
+    <CS_Studio_Runtime_ChainBounceRange>Bounce Range</CS_Studio_Runtime_ChainBounceRange>
+    <CS_Studio_Runtime_ComboStackBonusDamagePerStack>Bonus Damage Per Combo Stack</CS_Studio_Runtime_ComboStackBonusDamagePerStack>
+    <CS_Studio_Runtime_ComboStackMax>Max Combo Stacks</CS_Studio_Runtime_ComboStackMax>
+    <CS_Studio_Runtime_ComboStackWindowTicks>Combo Stack Window (ticks)</CS_Studio_Runtime_ComboStackWindowTicks>
+    <CS_Studio_Runtime_DashEmpowerBonusDamageScale>Dash Empower Bonus Damage Scale</CS_Studio_Runtime_DashEmpowerBonusDamageScale>
+    <CS_Studio_Runtime_DashEmpowerDurationTicks>Dash Empower Duration (ticks)</CS_Studio_Runtime_DashEmpowerDurationTicks>
+    <CS_Studio_Runtime_Desc_ChainBounce>Bounce to nearby targets after a hit.</CS_Studio_Runtime_Desc_ChainBounce>
+    <CS_Studio_Runtime_Desc_ComboStacks>Build stacks on consecutive hits to improve follow-up payoff.</CS_Studio_Runtime_Desc_ComboStacks>
+    <CS_Studio_Runtime_Desc_DashEmpoweredStrike>Empower the next strike after a dash.</CS_Studio_Runtime_Desc_DashEmpoweredStrike>
+    <CS_Studio_Runtime_Desc_EShortJump>Quickly jump to a point near the target.</CS_Studio_Runtime_Desc_EShortJump>
+    <CS_Studio_Runtime_Desc_ExecuteBonusDamage>Deal bonus damage to low-health targets.</CS_Studio_Runtime_Desc_ExecuteBonusDamage>
+    <CS_Studio_Runtime_Desc_FollowupCooldownGate>Temporarily gate a follow-up hotkey to control combo order.</CS_Studio_Runtime_Desc_FollowupCooldownGate>
+    <CS_Studio_Runtime_Desc_HitCooldownRefund>Refund cooldown for a chosen slot on hit.</CS_Studio_Runtime_Desc_HitCooldownRefund>
+    <CS_Studio_Runtime_Desc_HitHeal>Restore health when the hit lands.</CS_Studio_Runtime_Desc_HitHeal>
+    <CS_Studio_Runtime_Desc_FlightState>Enter a sustained flight stance for a configurable duration.</CS_Studio_Runtime_Desc_FlightState>
+    <CS_Studio_Runtime_Desc_HitSlowField>Create a slow field at the hit location.</CS_Studio_Runtime_Desc_HitSlowField>
+    <CS_Studio_Runtime_Desc_HotkeyOverride>Temporarily replace a hotkey with another ability.</CS_Studio_Runtime_Desc_HotkeyOverride>
+    <CS_Studio_Runtime_Desc_KillRefresh>Refund cooldown after killing a target.</CS_Studio_Runtime_Desc_KillRefresh>
+    <CS_Studio_Runtime_Desc_MarkDetonation>Stack marks and detonate once the threshold is reached.</CS_Studio_Runtime_Desc_MarkDetonation>
+    <CS_Studio_Runtime_Desc_MissingHealthBonusDamage>Deal more bonus damage to more injured targets.</CS_Studio_Runtime_Desc_MissingHealthBonusDamage>
+    <CS_Studio_Runtime_Desc_FullHealthBonusDamage>Deal bonus damage against high-health targets.</CS_Studio_Runtime_Desc_FullHealthBonusDamage>
+    <CS_Studio_Runtime_Desc_NearbyEnemyBonusDamage>Gain bonus damage based on other enemies near the target.</CS_Studio_Runtime_Desc_NearbyEnemyBonusDamage>
+    <CS_Studio_Runtime_Desc_IsolatedTargetBonusDamage>Gain bonus damage when the target has no nearby allies.</CS_Studio_Runtime_Desc_IsolatedTargetBonusDamage>
+    <CS_Studio_Runtime_Desc_PeriodicPulse>Trigger periodically over a duration.</CS_Studio_Runtime_Desc_PeriodicPulse>
+    <CS_Studio_Runtime_Desc_PierceBonusDamage>Gain bonus damage for each extra pierced target.</CS_Studio_Runtime_Desc_PierceBonusDamage>
+    <CS_Studio_Runtime_Desc_ProjectileSplit>Split into extra projectiles after impact.</CS_Studio_Runtime_Desc_ProjectileSplit>
+    <CS_Studio_Runtime_Desc_QComboWindow>Open a short combo window after casting.</CS_Studio_Runtime_Desc_QComboWindow>
+    <CS_Studio_Runtime_Desc_RStackDetonation>Build stacks first, then detonate with a delay.</CS_Studio_Runtime_Desc_RStackDetonation>
+    <CS_Studio_Runtime_Desc_ShieldAbsorb>Create a shield that can convert absorbed damage into healing or bonus damage.</CS_Studio_Runtime_Desc_ShieldAbsorb>
+    <CS_Studio_Runtime_Desc_SmartJump>Choose a smart landing cell and reposition safely.</CS_Studio_Runtime_Desc_SmartJump>
+    <CS_Studio_Runtime_ECooldownTicks>Displacement Cooldown (ticks)</CS_Studio_Runtime_ECooldownTicks>
+    <CS_Studio_Runtime_EFindRadius>Landing Search Radius</CS_Studio_Runtime_EFindRadius>
+    <CS_Studio_Runtime_EJumpDistance>Displacement Distance</CS_Studio_Runtime_EJumpDistance>
+    <CS_Studio_Runtime_Empty>(No runtime components)</CS_Studio_Runtime_Empty>
+    <CS_Studio_Runtime_ETriggerEffects>Trigger ability effects after displacement</CS_Studio_Runtime_ETriggerEffects>
+    <CS_Studio_Runtime_ExecuteBonusDamageScale>Execute Bonus Damage Scale</CS_Studio_Runtime_ExecuteBonusDamageScale>
+    <CS_Studio_Runtime_ExecuteThresholdPercent>Execute Health Threshold</CS_Studio_Runtime_ExecuteThresholdPercent>
+    <CS_Studio_Runtime_FollowupCooldownSlot>Follow-up Gate Slot</CS_Studio_Runtime_FollowupCooldownSlot>
+    <CS_Studio_Runtime_FollowupCooldownTicks>Follow-up Gate Duration (ticks)</CS_Studio_Runtime_FollowupCooldownTicks>
+    <CS_Studio_Runtime_FlightDurationTicks>Flight Duration (ticks)</CS_Studio_Runtime_FlightDurationTicks>
+    <CS_Studio_Runtime_FlightHeightFactor>Flight Height Factor</CS_Studio_Runtime_FlightHeightFactor>
+    <CS_Studio_Runtime_HitCooldownRefundPercent>Cooldown Refund Ratio On Hit</CS_Studio_Runtime_HitCooldownRefundPercent>
+    <CS_Studio_Runtime_HitHealAmount>Flat Heal On Hit</CS_Studio_Runtime_HitHealAmount>
+    <CS_Studio_Runtime_HitHealRatio>Heal Ratio From Damage</CS_Studio_Runtime_HitHealRatio>
+    <CS_Studio_Runtime_HotkeyOverrideAbility>Override Ability</CS_Studio_Runtime_HotkeyOverrideAbility>
+    <CS_Studio_Runtime_HotkeyOverrideAbilityDefName>Override Ability DefName</CS_Studio_Runtime_HotkeyOverrideAbilityDefName>
+    <CS_Studio_Runtime_HotkeyOverrideDuration>Override Duration (ticks)</CS_Studio_Runtime_HotkeyOverrideDuration>
+    <CS_Studio_Runtime_HotkeyOverrideSlot>Override Slot</CS_Studio_Runtime_HotkeyOverrideSlot>
+    <CS_Studio_Runtime_KillRefreshHotkeySlot>Kill Refresh Slot</CS_Studio_Runtime_KillRefreshHotkeySlot>
+    <CS_Studio_Runtime_KillRefreshPercent>Cooldown Refund Ratio On Kill</CS_Studio_Runtime_KillRefreshPercent>
+    <CS_Studio_Runtime_MarkDetonationDamage>Detonation Damage</CS_Studio_Runtime_MarkDetonationDamage>
+    <CS_Studio_Runtime_MarkDurationTicks>Mark Duration (ticks)</CS_Studio_Runtime_MarkDurationTicks>
+    <CS_Studio_Runtime_MarkMaxStacks>Max Mark Stacks</CS_Studio_Runtime_MarkMaxStacks>
+    <CS_Studio_Runtime_MissingHealthBonusMaxScale>Missing Health Bonus Cap</CS_Studio_Runtime_MissingHealthBonusMaxScale>
+    <CS_Studio_Runtime_MissingHealthBonusPerTenPercent>Bonus Per 10% Missing Health</CS_Studio_Runtime_MissingHealthBonusPerTenPercent>
+    <CS_Studio_Runtime_FullHealthThresholdPercent>Full Health Threshold</CS_Studio_Runtime_FullHealthThresholdPercent>
+    <CS_Studio_Runtime_FullHealthBonusDamageScale>Full Health Bonus Damage Scale</CS_Studio_Runtime_FullHealthBonusDamageScale>
+    <CS_Studio_Runtime_NearbyEnemyBonusMaxTargets>Nearby Enemy Max Targets</CS_Studio_Runtime_NearbyEnemyBonusMaxTargets>
+    <CS_Studio_Runtime_NearbyEnemyBonusPerTarget>Nearby Enemy Bonus Per Target</CS_Studio_Runtime_NearbyEnemyBonusPerTarget>
+    <CS_Studio_Runtime_NearbyEnemyBonusRadius>Nearby Enemy Radius</CS_Studio_Runtime_NearbyEnemyBonusRadius>
+    <CS_Studio_Runtime_IsolatedTargetRadius>Isolated Target Radius</CS_Studio_Runtime_IsolatedTargetRadius>
+    <CS_Studio_Runtime_IsolatedTargetBonusDamageScale>Isolated Target Bonus Damage Scale</CS_Studio_Runtime_IsolatedTargetBonusDamageScale>
+    <CS_Studio_Runtime_PierceBonusDamagePerTarget>Bonus Damage Per Target</CS_Studio_Runtime_PierceBonusDamagePerTarget>
+    <CS_Studio_Runtime_PierceMaxTargets>Max Targets Counted For Bonus</CS_Studio_Runtime_PierceMaxTargets>
+    <CS_Studio_Runtime_PierceSearchRange>Bonus Search Radius</CS_Studio_Runtime_PierceSearchRange>
+    <CS_Studio_Runtime_PulseDuration>Total Pulse Duration (ticks)</CS_Studio_Runtime_PulseDuration>
+    <CS_Studio_Runtime_PulseImmediate>Trigger First Pulse Immediately</CS_Studio_Runtime_PulseImmediate>
+    <CS_Studio_Runtime_PulseInterval>Pulse Interval (ticks)</CS_Studio_Runtime_PulseInterval>
+    <CS_Studio_Runtime_QWindowTicks>Combo Window (ticks)</CS_Studio_Runtime_QWindowTicks>
+    <CS_Studio_Runtime_RDamageDef>Damage Type</CS_Studio_Runtime_RDamageDef>
+    <CS_Studio_Runtime_RDelayTicks>Delay (ticks)</CS_Studio_Runtime_RDelayTicks>
+    <CS_Studio_Runtime_RefundHotkeySlot>Cooldown Refund Slot</CS_Studio_Runtime_RefundHotkeySlot>
+    <CS_Studio_Runtime_RRequiredStacks>Required Stacks</CS_Studio_Runtime_RRequiredStacks>
+    <CS_Studio_Runtime_RWave1>Wave 1 (radius/damage)</CS_Studio_Runtime_RWave1>
+    <CS_Studio_Runtime_RWave2>Wave 2 (radius/damage)</CS_Studio_Runtime_RWave2>
+    <CS_Studio_Runtime_RWave3>Wave 3 (radius/damage)</CS_Studio_Runtime_RWave3>
+    <CS_Studio_Runtime_ShieldBonusDamageRatio>Shield Bonus Damage Ratio</CS_Studio_Runtime_ShieldBonusDamageRatio>
+    <CS_Studio_Runtime_ShieldDuration>Shield Duration (ticks)</CS_Studio_Runtime_ShieldDuration>
+    <CS_Studio_Runtime_ShieldHealRatio>Shield End Heal Ratio</CS_Studio_Runtime_ShieldHealRatio>
+    <CS_Studio_Runtime_ShieldMaxDamage>Shield Damage Capacity</CS_Studio_Runtime_ShieldMaxDamage>
+    <CS_Studio_Runtime_SlowFieldDurationTicks>Slow Field Duration (ticks)</CS_Studio_Runtime_SlowFieldDurationTicks>
+    <CS_Studio_Runtime_SlowFieldHediff>Slow Hediff</CS_Studio_Runtime_SlowFieldHediff>
+    <CS_Studio_Runtime_SlowFieldHediffDefName>Slow Hediff DefName</CS_Studio_Runtime_SlowFieldHediffDefName>
+    <CS_Studio_Runtime_SlowFieldRadius>Slow Field Radius</CS_Studio_Runtime_SlowFieldRadius>
+    <CS_Studio_Runtime_SmartJumpClamp>Clamp To Max Distance</CS_Studio_Runtime_SmartJumpClamp>
+    <CS_Studio_Runtime_SmartJumpFallback>Allow Forward Fallback</CS_Studio_Runtime_SmartJumpFallback>
+    <CS_Studio_Runtime_SmartJumpOffset>Forward Offset Cells</CS_Studio_Runtime_SmartJumpOffset>
+    <CS_Studio_Runtime_SmartJumpUseMouse>Use Mouse Target Cell</CS_Studio_Runtime_SmartJumpUseMouse>
+    <CS_Studio_Runtime_SplitDamageScale>Split Damage Scale</CS_Studio_Runtime_SplitDamageScale>
+    <CS_Studio_Runtime_SplitProjectileCount>Split Projectile Count</CS_Studio_Runtime_SplitProjectileCount>
+    <CS_Studio_Runtime_SplitSearchRange>Split Search Radius</CS_Studio_Runtime_SplitSearchRange>
+    <CS_Studio_Section_AbilityBase>Ability Basics</CS_Studio_Section_AbilityBase>
+    <CS_Studio_Section_AbilityHotkeys>Ability Hotkey Mapping</CS_Studio_Section_AbilityHotkeys>
+    <CS_Studio_Section_Carrier>Carrier Settings</CS_Studio_Section_Carrier>
+    <CS_Studio_Section_Effects>Effects</CS_Studio_Section_Effects>
+    <CS_Studio_Section_RuntimeComponents>Runtime Components</CS_Studio_Section_RuntimeComponents>
+    <CS_Studio_VFX_Add>+ Add</CS_Studio_VFX_Add>
+    <CS_Studio_VFX_Delay>Delay (ticks)</CS_Studio_VFX_Delay>
+    <CS_Studio_VFX_DelayShort>Delay</CS_Studio_VFX_DelayShort>
+    <CS_Studio_VFX_DrawSizeShort>Size</CS_Studio_VFX_DrawSizeShort>
+    <CS_Studio_VFX_EmptyHint>No visual effects. Click "+ Add" to configure particle/glow effects played on ability cast.</CS_Studio_VFX_EmptyHint>
+    <CS_Studio_VFX_Enabled>Enabled</CS_Studio_VFX_Enabled>
+    <CS_Studio_VFX_HeightShort>Height</CS_Studio_VFX_HeightShort>
+    <CS_Studio_VFX_PlaySound>Play Sound</CS_Studio_VFX_PlaySound>
+    <CS_Studio_VFX_PresetShort>Preset</CS_Studio_VFX_PresetShort>
+    <CS_Studio_VFX_RepeatCountShort>Repeats</CS_Studio_VFX_RepeatCountShort>
+    <CS_Studio_VFX_RepeatIntervalShort>Interval</CS_Studio_VFX_RepeatIntervalShort>
+    <CS_Studio_VFX_RotationShort>Rotation</CS_Studio_VFX_RotationShort>
+    <CS_Studio_VFX_Scale>Scale</CS_Studio_VFX_Scale>
+    <CS_Studio_VFX_ScaleShort>Scale</CS_Studio_VFX_ScaleShort>
+    <CS_Studio_VFX_ScaleXShort>Scale X</CS_Studio_VFX_ScaleXShort>
+    <CS_Studio_VFX_ScaleYShort>Scale Y</CS_Studio_VFX_ScaleYShort>
+    <CS_Studio_VFX_SoundDefName>Sound DefName</CS_Studio_VFX_SoundDefName>
+    <CS_Studio_VFX_SoundDelay>Sound Delay</CS_Studio_VFX_SoundDelay>
+    <CS_Studio_VFX_SoundItem>Sound Item {0} · {1}</CS_Studio_VFX_SoundItem>
+    <CS_Studio_VFX_SoundPitch>Pitch</CS_Studio_VFX_SoundPitch>
+    <CS_Studio_VFX_SoundSection>Audio</CS_Studio_VFX_SoundSection>
+    <CS_Studio_VFX_SoundSectionEmpty>No current VFX exposes configurable sound settings.</CS_Studio_VFX_SoundSectionEmpty>
+    <CS_Studio_VFX_SoundVolume>Volume</CS_Studio_VFX_SoundVolume>
+    <CS_Studio_VFX_SourceMode_BuiltIn>Built-in</CS_Studio_VFX_SourceMode_BuiltIn>
+    <CS_Studio_VFX_SourceMode_CustomTexture>Custom Texture</CS_Studio_VFX_SourceMode_CustomTexture>
+    <CS_Studio_VFX_SourceMode_Preset>Preset</CS_Studio_VFX_SourceMode_Preset>
+    <CS_Studio_VFX_SourceModeShort>Source</CS_Studio_VFX_SourceModeShort>
+    <CS_Studio_VFX_Target>Target</CS_Studio_VFX_Target>
+    <CS_Studio_VFX_Target_Both>Both</CS_Studio_VFX_Target_Both>
+    <CS_Studio_VFX_Target_Caster>Caster</CS_Studio_VFX_Target_Caster>
+    <CS_Studio_VFX_Target_Target>Hit Target</CS_Studio_VFX_Target_Target>
+    <CS_Studio_VFX_TargetShort>Target</CS_Studio_VFX_TargetShort>
+    <CS_Studio_VFX_TextureShort>Texture</CS_Studio_VFX_TextureShort>
+    <CS_Studio_VFX_TextureSource_LocalPath>Local Path</CS_Studio_VFX_TextureSource_LocalPath>
+    <CS_Studio_VFX_TextureSource_Vanilla>Vanilla Path</CS_Studio_VFX_TextureSource_Vanilla>
+    <CS_Studio_VFX_Title>Visual Effects</CS_Studio_VFX_Title>
+    <CS_Studio_VFX_Trigger_OnCastFinish>Cast Finish</CS_Studio_VFX_Trigger_OnCastFinish>
+    <CS_Studio_VFX_Trigger_OnCastStart>Cast Start</CS_Studio_VFX_Trigger_OnCastStart>
+    <CS_Studio_VFX_Trigger_OnDurationTick>Duration Tick</CS_Studio_VFX_Trigger_OnDurationTick>
+    <CS_Studio_VFX_Trigger_OnExpire>On Expire</CS_Studio_VFX_Trigger_OnExpire>
+    <CS_Studio_VFX_Trigger_OnTargetApply>On Apply</CS_Studio_VFX_Trigger_OnTargetApply>
+    <CS_Studio_VFX_Trigger_OnWarmup>Warmup</CS_Studio_VFX_Trigger_OnWarmup>
+    <CS_Studio_VFX_TriggerShort>Trigger</CS_Studio_VFX_TriggerShort>
+    <CS_Studio_VFX_Type>Effect Type</CS_Studio_VFX_Type>
+    <CS_Studio_VFX_Type_CustomTexture>Custom Texture Effect</CS_Studio_VFX_Type_CustomTexture>
+    <CS_Studio_VFX_Type_DustPuff>Dust Puff</CS_Studio_VFX_Type_DustPuff>
+    <CS_Studio_VFX_Type_ExplosionEffect>Explosion Flash</CS_Studio_VFX_Type_ExplosionEffect>
+    <CS_Studio_VFX_Type_FireGlow>Fire Glow</CS_Studio_VFX_Type_FireGlow>
+    <CS_Studio_VFX_Type_LightningGlow>Lightning Glow</CS_Studio_VFX_Type_LightningGlow>
+    <CS_Studio_VFX_Type_MicroSparks>Micro Sparks</CS_Studio_VFX_Type_MicroSparks>
+    <CS_Studio_VFX_Type_Preset>Preset Effect</CS_Studio_VFX_Type_Preset>
+    <CS_Studio_VFX_Type_Smoke>Smoke</CS_Studio_VFX_Type_Smoke>
+    <CS_Studio_VFX_TypeShort>Type</CS_Studio_VFX_TypeShort>
+    <CS_Studio_VFX_UseCasterFacing>Use Caster Facing</CS_Studio_VFX_UseCasterFacing>
+</LanguageData>

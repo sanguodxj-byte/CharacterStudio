@@ -83,7 +83,8 @@ namespace CharacterStudio.Exporter
                 layer.animationType != LayerAnimationType.None ? new XElement("animSpeed", layer.animSpeed) : null,
                 layer.animationType != LayerAnimationType.None ? new XElement("animPhaseOffset", layer.animPhaseOffset) : null,
                 layer.animationType != LayerAnimationType.None ? new XElement("animAffectsOffset", layer.animAffectsOffset.ToString().ToLowerInvariant()) : null,
-                layer.animationType != LayerAnimationType.None ? new XElement("animOffsetAmplitude", layer.animOffsetAmplitude) : null
+                layer.animationType != LayerAnimationType.None ? new XElement("animOffsetAmplitude", layer.animOffsetAmplitude) : null,
+                layer.animationType == LayerAnimationType.Spin && layer.animPivotOffset != Vector2.zero ? new XElement("animPivotOffset", ToVec2(layer.animPivotOffset)) : null
             );
         }
 
