@@ -142,6 +142,24 @@ namespace CharacterStudio.UI
             skinComp.SetPreviewEmotionOverlayState(previewEmotionStateOverrideEnabled ? previewEmotionState : null);
             skinComp.SetPreviewEyeDirection(previewEyeDirectionOverrideEnabled ? previewEyeDirection : null);
             skinComp.EnsureFaceRuntimeStateReadyForPreview();
+
+            string currentTriggerKey = GetSelectedEquipmentAnimationTriggerKey();
+            if (!previewEquipmentAnimationPlaying || string.IsNullOrWhiteSpace(currentTriggerKey))
+            {
+                skinComp.ClearEquipmentAnimationState();
+                previewEquipmentAnimationTriggerKey = string.Empty;
+            }
+            else
+            {
+                previewEquipmentAnimationTriggerKey = currentTriggerKey;
+                int durationTicks = GetSelectedEquipmentAnimationDurationTicks();
+                if (durationTicks > 0)
+                {
+                    int now = Find.TickManager?.TicksGame ?? 0;
+                    skinComp.TriggerEquipmentAnimationState(currentTriggerKey, now, durationTicks);
+                }
+            }
+
             skinComp.RequestRenderRefresh();
         }
 

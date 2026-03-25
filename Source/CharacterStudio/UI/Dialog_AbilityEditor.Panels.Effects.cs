@@ -64,6 +64,16 @@ namespace CharacterStudio.UI
                     break;
             }
 
+            if (effect.type == AbilityEffectType.Damage)
+            {
+                height += 28f;
+            }
+
+            if (effect.type == AbilityEffectType.Control && effect.controlMode != ControlEffectMode.Stun)
+            {
+                height += 28f;
+            }
+
             if (effect.type == AbilityEffectType.Terraform && effect.terraformMode == TerraformEffectMode.SpawnThing)
             {
                 height += 28f;
@@ -105,7 +115,7 @@ namespace CharacterStudio.UI
             {
                 Widgets.Label(new Rect(x, rowY, labelW, 24f), label);
                 float before = value;
-                Widgets.TextFieldNumeric(new Rect(x + labelW, rowY, fieldW, 24f), ref value, ref buffer, min, max);
+                UIHelper.TextFieldNumeric(new Rect(x + labelW, rowY, fieldW, 24f), ref value, ref buffer, min, max);
                 if (!Mathf.Approximately(value, before))
                 {
                     NotifyAbilityPreviewDirty(true);
@@ -116,7 +126,7 @@ namespace CharacterStudio.UI
             {
                 Widgets.Label(new Rect(x, rowY, labelW, 24f), label);
                 int before = value;
-                Widgets.TextFieldNumeric(new Rect(x + labelW, rowY, fieldW, 24f), ref value, ref buffer, min, max);
+                UIHelper.TextFieldNumeric(new Rect(x + labelW, rowY, fieldW, 24f), ref value, ref buffer, min, max);
                 if (value != before)
                 {
                     NotifyAbilityPreviewDirty(true);
@@ -143,6 +153,15 @@ namespace CharacterStudio.UI
             {
                 case AbilityEffectType.Damage:
                     DrawSelectRow(y, inner.x, "CS_Studio_Effect_DamageDef".Translate(), effect.damageDef?.label ?? "CS_Studio_None".Translate(), () => ShowDamageDefSelector(effect), overrideLabelWidth: labelW, overrideFieldWidth: inner.width - labelW);
+                    y += 26f;
+                    Widgets.Label(new Rect(inner.x, y, labelW, 24f), "CS_Studio_Effect_CanHurtSelf".Translate());
+                    bool canHurtSelf = effect.canHurtSelf;
+                    Widgets.Checkbox(new Vector2(inner.x + labelW, y + 2f), ref canHurtSelf, 24f, false);
+                    if (effect.canHurtSelf != canHurtSelf)
+                    {
+                        effect.canHurtSelf = canHurtSelf;
+                        NotifyAbilityPreviewDirty(true);
+                    }
                     break;
                 case AbilityEffectType.Buff:
                 case AbilityEffectType.Debuff:
@@ -163,6 +182,12 @@ namespace CharacterStudio.UI
                     DrawSelectRow(y, inner.x, "CS_Studio_Effect_ControlMode".Translate(), GetControlModeLabel(effect.controlMode), () => ShowControlModeSelector(effect));
                     string controlDurStr = effect.duration.ToString();
                     DrawNumericRow(y, rightX, "CS_Studio_Effect_Duration".Translate(), ref effect.duration, ref controlDurStr, 0f, 999f);
+                    if (effect.controlMode != ControlEffectMode.Stun)
+                    {
+                        y += 26f;
+                        string controlMoveDistanceStr = effect.controlMoveDistance.ToString();
+                        DrawNumericRowInt(y, inner.x, "CS_Studio_Effect_ControlMoveDistance".Translate(), ref effect.controlMoveDistance, ref controlMoveDistanceStr, 1, 99);
+                    }
                     break;
                 case AbilityEffectType.Terraform:
                     DrawSelectRow(y, inner.x, "CS_Studio_Effect_TerraformMode".Translate(), GetTerraformModeLabel(effect.terraformMode), () => ShowTerraformModeSelector(effect));
@@ -180,7 +205,7 @@ namespace CharacterStudio.UI
                             string spawnCountStr = effect.terraformSpawnCount.ToString();
                             Widgets.Label(new Rect(inner.x, y, wideLabelW, 24f), "CS_Studio_Effect_TerraformSpawnCount".Translate());
                             int spawnCountBefore = effect.terraformSpawnCount;
-                            Widgets.TextFieldNumeric(new Rect(inner.x + wideLabelW, y, wideFieldW, 24f), ref effect.terraformSpawnCount, ref spawnCountStr, 1, 999);
+                            UIHelper.TextFieldNumeric(new Rect(inner.x + wideLabelW, y, wideFieldW, 24f), ref effect.terraformSpawnCount, ref spawnCountStr, 1, 999);
                             if (effect.terraformSpawnCount != spawnCountBefore)
                             {
                                 NotifyAbilityPreviewDirty(true);

@@ -410,9 +410,9 @@ namespace CharacterStudio.Core
         /// <summary>Overlay 顺序缓存。</summary>
         public Dictionary<string, int> overlayOrders = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
-        /// <summary>anchor correction 缓存（partType+side -> expression -> correction）。</summary>
-        public Dictionary<LayeredFacePartRuntimeKey, Dictionary<ExpressionType, Vector2>> anchorCorrections
-            = new Dictionary<LayeredFacePartRuntimeKey, Dictionary<ExpressionType, Vector2>>();
+        /// <summary>程序动画位移幅度缓存（partType+side -> expression -> amplitude）。</summary>
+        public Dictionary<LayeredFacePartRuntimeKey, Dictionary<ExpressionType, float>> motionAmplitudes
+            = new Dictionary<LayeredFacePartRuntimeKey, Dictionary<ExpressionType, float>>();
 
         /// <summary>肖像轨是否允许使用程序化表情补偿。</summary>
         public bool supportsProgrammaticAdjustments = true;
@@ -447,50 +447,50 @@ namespace CharacterStudio.Core
             return null;
         }
 
-        public void SetAnchorCorrection(
+        public void SetMotionAmplitude(
             LayeredFacePartType partType,
             ExpressionType expression,
-            Vector2 correction,
+            float amplitude,
             LayeredFacePartSide side = LayeredFacePartSide.None)
         {
             LayeredFacePartRuntimeKey key = new LayeredFacePartRuntimeKey(partType, side);
-            if (!anchorCorrections.TryGetValue(key, out Dictionary<ExpressionType, Vector2>? byExpression)
+            if (!motionAmplitudes.TryGetValue(key, out Dictionary<ExpressionType, float>? byExpression)
                 || byExpression == null)
             {
-                byExpression = new Dictionary<ExpressionType, Vector2>();
-                anchorCorrections[key] = byExpression;
+                byExpression = new Dictionary<ExpressionType, float>();
+                motionAmplitudes[key] = byExpression;
             }
 
-            byExpression[expression] = correction;
+            byExpression[expression] = Mathf.Max(0f, amplitude);
         }
 
-        public Vector2 GetAnchorCorrection(
+        public float GetMotionAmplitude(
             LayeredFacePartType partType,
             ExpressionType expression,
             LayeredFacePartSide side = LayeredFacePartSide.None)
         {
-            if (anchorCorrections == null || anchorCorrections.Count == 0)
-                return Vector2.zero;
+            if (motionAmplitudes == null || motionAmplitudes.Count == 0)
+                return 0f;
 
             foreach (LayeredFacePartRuntimeKey key in LayeredFacePartRuntimeKey.EnumerateLookupKeys(partType, side))
             {
-                if (!anchorCorrections.TryGetValue(key, out Dictionary<ExpressionType, Vector2>? byExpression)
+                if (!motionAmplitudes.TryGetValue(key, out Dictionary<ExpressionType, float>? byExpression)
                     || byExpression == null)
                 {
                     continue;
                 }
 
-                if (byExpression.TryGetValue(expression, out Vector2 exact))
+                if (byExpression.TryGetValue(expression, out float exact))
                     return exact;
 
                 if (expression != ExpressionType.Neutral
-                    && byExpression.TryGetValue(ExpressionType.Neutral, out Vector2 neutral))
+                    && byExpression.TryGetValue(ExpressionType.Neutral, out float neutral))
                 {
                     return neutral;
                 }
             }
 
-            return Vector2.zero;
+            return 0f;
         }
 
         public FacePortraitTrackData Clone()
@@ -513,13 +513,13 @@ namespace CharacterStudio.Core
             foreach (var pair in overlayOrders)
                 clone.overlayOrders[pair.Key] = pair.Value;
 
-            foreach (var partPair in anchorCorrections)
+            foreach (var partPair in motionAmplitudes)
             {
-                var inner = new Dictionary<ExpressionType, Vector2>();
+                var inner = new Dictionary<ExpressionType, float>();
                 foreach (var expPair in partPair.Value)
                     inner[expPair.Key] = expPair.Value;
 
-                clone.anchorCorrections[partPair.Key] = inner;
+                clone.motionAmplitudes[partPair.Key] = inner;
             }
 
             return clone;

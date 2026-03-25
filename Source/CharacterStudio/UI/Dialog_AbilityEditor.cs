@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using CharacterStudio.Abilities;
 using CharacterStudio.AI;
 using CharacterStudio.Core;
@@ -69,10 +70,24 @@ namespace CharacterStudio.UI
         /// <summary>右侧面板标签：0=效果 1=视觉特效 2=运行时组件 3=预览</summary>
         private int rightPanelTab = 0;
         private bool leftSidebarCollapsed;
-        private string validationSummary = string.Empty;
+        private string validationSummaryText = string.Empty;
+        private readonly List<string> validationErrors = new();
+        private readonly List<string> validationWarnings = new();
+        private bool hasExplicitValidationResult;
+        private string validationSummary
+        {
+            get => validationSummaryText;
+            set
+            {
+                validationSummaryText = value ?? string.Empty;
+                hasExplicitValidationResult = false;
+                ClearValidationResultDetails();
+            }
+        }
         private string abilitySearchText = string.Empty;
         private string llmAbilityPrompt = string.Empty;
         private readonly SkinAbilityHotkeyConfig? boundHotkeys;
+        private readonly SkinAbilityHotkeyConfig standaloneHotkeys = new();
         // LLM 生成状态（异步）— 结果字段为 TODO：异步回调完成后读取
 #pragma warning disable CS0414
         private bool llmAbilitiesGenerating = false;
@@ -99,10 +114,11 @@ namespace CharacterStudio.UI
 
             if (this.abilities.Count == 0)
             {
-                var persisted = TryLoadAbilityEditorSessionFromDisk();
+                var persisted = TryLoadAbilityEditorSessionFromDisk(out SkinAbilityHotkeyConfig? persistedHotkeys);
                 if (persisted.Count > 0)
                 {
                     this.abilities = persisted;
+                    ApplyHotkeyConfig(persistedHotkeys);
                     selectedAbility = this.abilities[0];
                 }
                 else
@@ -213,6 +229,16 @@ namespace CharacterStudio.UI
 
         private void PersistAbilityEditorState(bool notifyUser)
         {
+            if (abilities != null)
+            {
+                foreach (var ability in abilities)
+                {
+                    ability?.NormalizeForSave();
+                }
+            }
+
+            SkinAbilityHotkeyConfig activeHotkeys = GetCurrentHotkeyConfig();
+            SanitizeHotkeyConfigAgainstAbilities(activeHotkeys);
             SaveAbilityEditorSessionToDisk();
 
             if (boundSkin != null)
@@ -230,23 +256,70 @@ namespace CharacterStudio.UI
                 }
 
                 boundSkin.abilityHotkeys ??= new SkinAbilityHotkeyConfig();
+                if (!ReferenceEquals(boundSkin.abilityHotkeys, activeHotkeys))
+                {
+                    CopyHotkeyConfig(activeHotkeys, boundSkin.abilityHotkeys);
+                }
                 SanitizeHotkeyConfigAgainstAbilities(boundSkin.abilityHotkeys);
             }
 
-            if (boundHotkeys != null)
+            if (boundHotkeys != null && !ReferenceEquals(boundHotkeys, activeHotkeys))
             {
+                CopyHotkeyConfig(activeHotkeys, boundHotkeys);
                 SanitizeHotkeyConfigAgainstAbilities(boundHotkeys);
             }
 
             if (boundPawn != null)
             {
-                AbilityLoadoutRuntimeUtility.ApplyExplicitLoadout(boundPawn, abilities, boundHotkeys ?? boundSkin?.abilityHotkeys);
+                AbilityLoadoutRuntimeUtility.ApplyExplicitLoadout(boundPawn, abilities, activeHotkeys);
             }
 
             if (notifyUser)
             {
                 validationSummary = "CS_Studio_Ability_SaveSuccess".Translate();
             }
+        }
+
+        private SkinAbilityHotkeyConfig GetEditableHotkeyConfig()
+        {
+            if (boundSkin != null)
+            {
+                boundSkin.abilityHotkeys ??= boundHotkeys?.Clone() ?? new SkinAbilityHotkeyConfig();
+                return boundSkin.abilityHotkeys;
+            }
+
+            return boundHotkeys ?? standaloneHotkeys;
+        }
+
+        private SkinAbilityHotkeyConfig GetCurrentHotkeyConfig()
+        {
+            if (boundSkin?.abilityHotkeys != null)
+            {
+                return boundSkin.abilityHotkeys;
+            }
+
+            return boundHotkeys ?? standaloneHotkeys;
+        }
+
+        private void ApplyHotkeyConfig(SkinAbilityHotkeyConfig? source)
+        {
+            if (source == null)
+            {
+                return;
+            }
+
+            CopyHotkeyConfig(source, GetEditableHotkeyConfig());
+            SanitizeHotkeyConfigAgainstAbilities(GetCurrentHotkeyConfig());
+        }
+
+        private static void CopyHotkeyConfig(SkinAbilityHotkeyConfig source, SkinAbilityHotkeyConfig target)
+        {
+            target.enabled = source.enabled;
+            target.qAbilityDefName = source.qAbilityDefName ?? string.Empty;
+            target.wAbilityDefName = source.wAbilityDefName ?? string.Empty;
+            target.eAbilityDefName = source.eAbilityDefName ?? string.Empty;
+            target.rAbilityDefName = source.rAbilityDefName ?? string.Empty;
+            target.wComboAbilityDefName = source.wComboAbilityDefName ?? string.Empty;
         }
 
         private void SanitizeHotkeyConfigAgainstAbilities(SkinAbilityHotkeyConfig? hotkeyConfig)
@@ -261,25 +334,92 @@ namespace CharacterStudio.UI
             hotkeyConfig.eAbilityDefName = ResolveExistingAbilityDefName(hotkeyConfig.eAbilityDefName);
             hotkeyConfig.rAbilityDefName = ResolveExistingAbilityDefName(hotkeyConfig.rAbilityDefName);
             hotkeyConfig.wComboAbilityDefName = ResolveExistingAbilityDefName(hotkeyConfig.wComboAbilityDefName);
-            hotkeyConfig.enabled = !string.IsNullOrWhiteSpace(hotkeyConfig.qAbilityDefName)
+
+            bool hasAnyBinding = !string.IsNullOrWhiteSpace(hotkeyConfig.qAbilityDefName)
                 || !string.IsNullOrWhiteSpace(hotkeyConfig.wAbilityDefName)
                 || !string.IsNullOrWhiteSpace(hotkeyConfig.eAbilityDefName)
                 || !string.IsNullOrWhiteSpace(hotkeyConfig.rAbilityDefName)
                 || !string.IsNullOrWhiteSpace(hotkeyConfig.wComboAbilityDefName);
+
+            if (!hasAnyBinding)
+            {
+                hotkeyConfig.enabled = false;
+            }
         }
 
         private string ResolveExistingAbilityDefName(string? desiredDefName)
         {
-            if (string.IsNullOrWhiteSpace(desiredDefName))
+            if (desiredDefName is not string resolvedDefName || string.IsNullOrWhiteSpace(resolvedDefName))
             {
                 return string.Empty;
             }
 
-            return abilities.Any(a => a != null && string.Equals(a.defName, desiredDefName, StringComparison.OrdinalIgnoreCase))
-                ? desiredDefName
+            string normalizedDesiredDefName = resolvedDefName.Trim();
+            return abilities.Any(a => a != null && string.Equals(a.defName, normalizedDesiredDefName, StringComparison.OrdinalIgnoreCase))
+                ? normalizedDesiredDefName
                 : string.Empty;
         }
 
+        private void ClearValidationResultDetails()
+        {
+            validationErrors.Clear();
+            validationWarnings.Clear();
+        }
+
+        private void InvalidateExplicitValidationResult()
+        {
+            if (!hasExplicitValidationResult && validationErrors.Count == 0 && validationWarnings.Count == 0)
+            {
+                return;
+            }
+
+            validationSummaryText = string.Empty;
+            hasExplicitValidationResult = false;
+            ClearValidationResultDetails();
+        }
+
+        private void ApplyValidationResult(AbilityValidationResult result)
+        {
+            ClearValidationResultDetails();
+            validationSummaryText = result.IsValid
+                ? (result.Warnings.Count > 0
+                    ? "CS_Studio_Ability_ValidWithWarnings".Translate() + " (" + result.Warnings.Count + ")"
+                    : "CS_Studio_Ability_Valid".Translate())
+                : "CS_Studio_Ability_Invalid".Translate() + " (" + result.Errors.Count + ")";
+            hasExplicitValidationResult = true;
+            validationErrors.AddRange(result.Errors);
+            validationWarnings.AddRange(result.Warnings);
+        }
+
+        private string BuildValidationDetailsText()
+        {
+            var sb = new StringBuilder();
+            if (validationErrors.Count > 0)
+            {
+                sb.AppendLine("CS_Ability_Validate_Failed".Translate() + " (" + validationErrors.Count + ")");
+                for (int i = 0; i < validationErrors.Count; i++)
+                {
+                    sb.AppendLine("• " + validationErrors[i]);
+                }
+            }
+
+            if (validationWarnings.Count > 0)
+            {
+                if (sb.Length > 0)
+                {
+                    sb.AppendLine();
+                }
+
+                sb.AppendLine("CS_Ability_Validate_Warnings".Translate() + " (" + validationWarnings.Count + ")");
+                for (int i = 0; i < validationWarnings.Count; i++)
+                {
+                    sb.AppendLine("• " + validationWarnings[i]);
+                }
+            }
+
+            return sb.ToString().TrimEnd();
+        }
+ 
         public override void DoWindowContents(Rect inRect)
         {
             Rect titleRect = new Rect(0f, 0f, inRect.width, 28f);

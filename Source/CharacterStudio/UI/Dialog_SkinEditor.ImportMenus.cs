@@ -18,7 +18,8 @@ namespace CharacterStudio.UI
             {
                 new FloatMenuOption("CS_Studio_Import_Source_Map".Translate(), ShowMapPawnImportMenu),
                 new FloatMenuOption("CS_Studio_Import_Source_Race".Translate(), OnImportFromRaceList),
-                new FloatMenuOption("CS_Studio_Import_Source_ProjectSkin".Translate(), OnImportFromProjectSkins)
+                new FloatMenuOption("CS_Studio_Import_Source_ProjectSkin".Translate(), OnImportFromProjectSkins),
+                new FloatMenuOption("图层修改工作流", ShowLayerModificationWorkflowMenu)
             };
 
             Find.WindowStack.Add(new FloatMenu(options));
@@ -51,6 +52,45 @@ namespace CharacterStudio.UI
                     $"{p.LabelShort} ({p.kindDef.label})",
                     () => DoImportFromPawn(p, p, p.def, p.LabelShort, true)
                 ));
+            }
+
+            Find.WindowStack.Add(new FloatMenu(options));
+        }
+
+        private void ShowLayerModificationWorkflowMenu()
+        {
+            var map = Find.CurrentMap;
+            if (map == null)
+            {
+                ShowStatus("CS_Studio_Err_NoMap".Translate());
+                return;
+            }
+
+            var pawns = map.mapPawns.AllPawnsSpawned
+                .Where(p => p.Drawer?.renderer?.renderTree != null)
+                .OrderBy(p => p.def?.label ?? p.def?.defName ?? p.LabelShort)
+                .ThenBy(p => p.LabelShort)
+                .ToList();
+
+            if (pawns.Count == 0)
+            {
+                ShowStatus("CS_Studio_Err_NoPawns".Translate());
+                return;
+            }
+
+            var options = new List<FloatMenuOption>();
+            foreach (var pawn in pawns)
+            {
+                Pawn localPawn = pawn;
+                ThingDef? raceDef = localPawn.def;
+                string? raceLabel = raceDef?.label;
+                string displayRace = string.IsNullOrWhiteSpace(raceLabel)
+                    ? raceDef?.defName ?? "UnknownRace"
+                    : raceLabel ?? "UnknownRace";
+
+                options.Add(new FloatMenuOption(
+                    $"{localPawn.LabelShort} ({displayRace})",
+                    () => StartLayerModificationWorkflow(localPawn)));
             }
 
             Find.WindowStack.Add(new FloatMenu(options));

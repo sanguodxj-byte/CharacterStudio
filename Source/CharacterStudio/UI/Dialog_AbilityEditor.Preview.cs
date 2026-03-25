@@ -58,6 +58,7 @@ namespace CharacterStudio.UI
             public AbilityVisualEffectConfig? sourceVfx;
             public int sourceVfxIndex = -1;
             public int repeatIndex;
+            public VisualEffectTarget previewTargetMode = VisualEffectTarget.Target;
             public Rect lastTextureRect;
             public float lastTextureRotation;
         }
@@ -76,6 +77,7 @@ namespace CharacterStudio.UI
         {
             public int selectedVfxIndex = -1;
             public int selectedRepeatIndex = -1;
+            public VisualEffectTarget selectedPreviewTargetMode = VisualEffectTarget.Target;
             public AbilityPreviewInteractionMode mode;
             public Vector2 dragStartMouse;
             public float startForwardOffset;
@@ -106,6 +108,7 @@ namespace CharacterStudio.UI
         {
             abilityPreviewDirty = true;
             cachedAbilityPreviewPlan = null;
+            InvalidateExplicitValidationResult();
             if (resetPlayback)
             {
                 ResetAbilityPreviewPlayback(false);
@@ -140,7 +143,9 @@ namespace CharacterStudio.UI
                 return plan;
             }
 
-            plan.title = string.IsNullOrWhiteSpace(ability.label) ? ability.defName ?? "<unnamed>" : ability.label;
+            plan.title = string.IsNullOrWhiteSpace(ability.label)
+                ? ability.defName ?? "CS_Studio_Ability_PreviewUnnamed".Translate()
+                : ability.label;
             string carrier = GetCarrierTypeLabel(ModularAbilityDefExtensions.NormalizeCarrierType(ability.carrierType));
             string target = GetTargetTypeLabel(ModularAbilityDefExtensions.NormalizeTargetType(ability));
             plan.summary = "CS_Studio_Ability_PreviewSummaryLine".Translate(carrier, target);
@@ -233,6 +238,7 @@ namespace CharacterStudio.UI
 
             if (ability.visualEffects != null)
             {
+                string irregularPattern = ability.irregularAreaPattern ?? string.Empty;
                 for (int i = 0; i < ability.visualEffects.Count; i++)
                 {
                     AbilityVisualEffectConfig? vfx = ability.visualEffects[i];
@@ -244,29 +250,7 @@ namespace CharacterStudio.UI
                     for (int repeatIndex = 0; repeatIndex < repeatCount; repeatIndex++)
                     {
                         int tick = castFinishTick + Math.Max(0, vfx.delayTicks) + repeatIndex * repeatInterval;
-                        plan.events.Add(new AbilityPreviewEvent
-                        {
-                            tick = tick,
-                            type = AbilityPreviewEventType.VisualEffect,
-                            label = "CS_Studio_Ability_PreviewEventVfx".Translate(),
-                            detail = BuildVfxSummary(vfx, repeatIndex),
-                            normalizedPos = ResolveVfxPreviewPosition(vfx, impactPos),
-                            radius = GetPreviewRadiusForVfx(vfx, radius),
-                            areaShape = areaShape,
-                            irregularPattern = ability.irregularAreaPattern ?? string.Empty,
-                            areaCenteredOnCaster = areaCenteredOnCaster,
-                            color = GetVfxPreviewColor(vfx),
-                            order = 200 + i * 10 + repeatIndex,
-                            previewTexturePath = vfx.UsesCustomTextureType
-                                ? vfx.customTexturePath ?? string.Empty
-                                : string.Empty,
-                            previewTextureScale = vfx.textureScale,
-                            previewRotation = vfx.rotation,
-                            previewDrawSize = vfx.drawSize,
-                            sourceVfx = vfx,
-                            sourceVfxIndex = i,
-                            repeatIndex = repeatIndex
-                        });
+                        AddPreviewVisualEffectEvents(plan, vfx, i, tick, repeatIndex, impactPos, radius, areaShape, areaCenteredOnCaster, irregularPattern);
                     }
                 }
             }
@@ -316,6 +300,53 @@ namespace CharacterStudio.UI
             return plan;
         }
 
+        private void AddPreviewVisualEffectEvents(AbilityPreviewPlan plan, AbilityVisualEffectConfig vfx, int index, int tick, int repeatIndex, Vector2 impactPos, float defaultRadius, AbilityAreaShape areaShape, bool areaCenteredOnCaster, string irregularPattern)
+        {
+            if (vfx.target == VisualEffectTarget.Both)
+            {
+                AddPreviewVisualEffectEvent(plan, vfx, index, tick, repeatIndex, impactPos, defaultRadius, areaShape, areaCenteredOnCaster, irregularPattern, VisualEffectTarget.Caster, 0);
+                if ((impactPos - abilityPreviewContext.casterPos).sqrMagnitude > 0.0001f)
+                {
+                    AddPreviewVisualEffectEvent(plan, vfx, index, tick, repeatIndex, impactPos, defaultRadius, areaShape, areaCenteredOnCaster, irregularPattern, VisualEffectTarget.Target, 1);
+                }
+
+                return;
+            }
+
+            VisualEffectTarget previewTargetMode = vfx.target == VisualEffectTarget.Caster
+                ? VisualEffectTarget.Caster
+                : VisualEffectTarget.Target;
+            AddPreviewVisualEffectEvent(plan, vfx, index, tick, repeatIndex, impactPos, defaultRadius, areaShape, areaCenteredOnCaster, irregularPattern, previewTargetMode, 0);
+        }
+
+        private void AddPreviewVisualEffectEvent(AbilityPreviewPlan plan, AbilityVisualEffectConfig vfx, int index, int tick, int repeatIndex, Vector2 impactPos, float defaultRadius, AbilityAreaShape areaShape, bool areaCenteredOnCaster, string irregularPattern, VisualEffectTarget previewTargetMode, int anchorOrder)
+        {
+            plan.events.Add(new AbilityPreviewEvent
+            {
+                tick = tick,
+                type = AbilityPreviewEventType.VisualEffect,
+                label = "CS_Studio_Ability_PreviewEventVfx".Translate(),
+                detail = BuildVfxSummary(vfx, repeatIndex),
+                normalizedPos = ResolveVfxPreviewPosition(impactPos, previewTargetMode),
+                radius = GetPreviewRadiusForVfx(vfx, defaultRadius),
+                areaShape = areaShape,
+                irregularPattern = irregularPattern,
+                areaCenteredOnCaster = areaCenteredOnCaster,
+                color = GetVfxPreviewColor(vfx),
+                order = 200 + index * 1000 + repeatIndex * 10 + anchorOrder,
+                previewTexturePath = vfx.UsesCustomTextureType
+                    ? vfx.customTexturePath ?? string.Empty
+                    : string.Empty,
+                previewTextureScale = vfx.textureScale,
+                previewRotation = vfx.rotation,
+                previewDrawSize = vfx.drawSize,
+                sourceVfx = vfx,
+                sourceVfxIndex = index,
+                repeatIndex = repeatIndex,
+                previewTargetMode = previewTargetMode
+            });
+        }
+
         private Vector2 ResolvePreviewImpactPosition(AbilityCarrierType carrierType, AbilityTargetType targetType)
         {
             if (carrierType == AbilityCarrierType.Self || targetType == AbilityTargetType.Self)
@@ -331,9 +362,9 @@ namespace CharacterStudio.UI
             return ResolveUnifiedPreviewAnchor(targetType == AbilityTargetType.Self, impactPos);
         }
 
-        private Vector2 ResolveVfxPreviewPosition(AbilityVisualEffectConfig vfx, Vector2 impactPos)
+        private Vector2 ResolveVfxPreviewPosition(Vector2 impactPos, VisualEffectTarget previewTargetMode)
         {
-            return ResolveUnifiedPreviewAnchor(vfx.target == VisualEffectTarget.Caster, impactPos);
+            return ResolveUnifiedPreviewAnchor(previewTargetMode == VisualEffectTarget.Caster, impactPos);
         }
 
         private Vector2 ResolveUnifiedPreviewAnchor(bool useCasterAnchor, Vector2 impactPos)
@@ -349,17 +380,27 @@ namespace CharacterStudio.UI
                 return new Vector2(0f, -1f);
             }
 
-            return dir.normalized;
+            if (Mathf.Abs(dir.x) >= Mathf.Abs(dir.y))
+            {
+                return dir.x >= 0f ? new Vector2(1f, 0f) : new Vector2(-1f, 0f);
+            }
+
+            return dir.y >= 0f ? new Vector2(0f, 1f) : new Vector2(0f, -1f);
         }
 
         private Vector2 ResolvePreviewSideDirection(Vector2 forwardDir)
         {
-            return new Vector2(forwardDir.y, -forwardDir.x);
+            return new Vector2(-forwardDir.y, forwardDir.x);
         }
 
         private Rect GetPreviewGridRect(Rect drawRect)
         {
-            return drawRect;
+            float squareSize = Mathf.Min(drawRect.width, drawRect.height);
+            return new Rect(
+                drawRect.x + (drawRect.width - squareSize) * 0.5f,
+                drawRect.y + (drawRect.height - squareSize) * 0.5f,
+                squareSize,
+                squareSize);
         }
 
         private float GetPreviewCellSize(Rect drawRect)
@@ -384,21 +425,89 @@ namespace CharacterStudio.UI
             return Mathf.Min(cellStep.x, cellStep.y);
         }
 
+        private Vector2 GetPreviewTextureWorldSizeCells(AbilityPreviewEvent evt)
+        {
+            AbilityVisualEffectConfig? vfx = evt.sourceVfx;
+            float drawSize = Mathf.Max(0.1f, vfx?.drawSize ?? evt.previewDrawSize);
+            float uniformScale = Mathf.Max(0.1f, vfx?.scale ?? 1f);
+            Vector2 textureScale = vfx?.textureScale ?? evt.previewTextureScale;
+            return new Vector2(
+                drawSize * Mathf.Max(0.1f, textureScale.x) * uniformScale,
+                drawSize * Mathf.Max(0.1f, textureScale.y) * uniformScale);
+        }
+
+        private Rect ResolvePreviewTextureRect(Rect drawRect, AbilityPreviewEvent evt, Vector2 center)
+        {
+            Vector2 cellStep = GetPreviewCellStep(drawRect);
+            Vector2 worldSizeCells = GetPreviewTextureWorldSizeCells(evt);
+            float width = Mathf.Max(1f, worldSizeCells.x * cellStep.x);
+            float height = Mathf.Max(1f, worldSizeCells.y * cellStep.y);
+            return new Rect(center.x - width * 0.5f, center.y - height * 0.5f, width, height);
+        }
+
+        private string BuildPreviewTextureStatusText(AbilityPreviewEvent evt)
+        {
+            AbilityVisualEffectConfig? vfx = evt.sourceVfx;
+            if (vfx == null)
+            {
+                return $"[{evt.tick}] {evt.label}";
+            }
+
+            Vector2 worldSize = GetPreviewTextureWorldSizeCells(evt);
+            return "CS_Studio_Ability_PreviewTextureStatus".Translate(
+                evt.tick.ToString(),
+                evt.label,
+                vfx.forwardOffset.ToString("0.##"),
+                vfx.sideOffset.ToString("0.##"),
+                vfx.heightOffset.ToString("0.##"),
+                worldSize.x.ToString("0.##"),
+                worldSize.y.ToString("0.##"));
+        }
+
+        private void DrawSelectedPreviewTextureGuides(AbilityPreviewEvent evt)
+        {
+            if (evt.lastTextureRect.width <= 0.1f || evt.lastTextureRect.height <= 0.1f)
+            {
+                return;
+            }
+
+            Rect rect = evt.lastTextureRect;
+            Color guideColor = new Color(UIHelper.AccentColor.r, UIHelper.AccentColor.g, UIHelper.AccentColor.b, 0.92f);
+            Widgets.DrawLine(new Vector2(rect.x, rect.center.y), new Vector2(rect.xMax, rect.center.y), guideColor, 1f);
+            Widgets.DrawLine(new Vector2(rect.center.x, rect.y), new Vector2(rect.center.x, rect.yMax), guideColor, 1f);
+
+            Text.Font = GameFont.Tiny;
+            GUI.color = UIHelper.AccentColor;
+            Vector2 worldSize = GetPreviewTextureWorldSizeCells(evt);
+            Rect labelRect = new Rect(rect.x, rect.y - 18f, Mathf.Max(96f, rect.width + 12f), 18f);
+            Widgets.Label(labelRect, "CS_Studio_Ability_PreviewTextureSizeLabel".Translate(worldSize.x.ToString("0.##"), worldSize.y.ToString("0.##")));
+            GUI.color = Color.white;
+            Text.Font = GameFont.Small;
+        }
+
         private Vector2 ResolvePreviewEventCanvasPosition(Rect drawRect, AbilityPreviewEvent evt)
         {
-            Vector2 pos = ToCanvasPosition(drawRect, evt.normalizedPos);
+            Vector2 pos = ToCanvasPosition(GetPreviewGridRect(drawRect), evt.normalizedPos);
             AbilityVisualEffectConfig? vfx = evt.sourceVfx;
             if (vfx == null)
             {
                 return pos;
             }
 
-            Vector2 forwardDir = ResolvePreviewCastDirection();
-            Vector2 sideDir = ResolvePreviewSideDirection(forwardDir);
             float pixelsPerUnit = GetPreviewPixelsPerOffsetUnit(drawRect);
-            Vector2 offset = forwardDir * (vfx.forwardOffset * pixelsPerUnit)
-                + sideDir * (vfx.sideOffset * pixelsPerUnit)
-                + new Vector2(0f, -vfx.heightOffset * pixelsPerUnit * PreviewHeightPixelsFactor);
+            Vector2 offset = new Vector2(
+                vfx.offset.x * pixelsPerUnit,
+                -vfx.offset.z * pixelsPerUnit);
+            offset += new Vector2(0f, -(vfx.offset.y + vfx.heightOffset) * pixelsPerUnit * PreviewHeightPixelsFactor);
+
+            if (vfx.useCasterFacing)
+            {
+                Vector2 forwardDir = ResolvePreviewCastDirection();
+                Vector2 sideDir = ResolvePreviewSideDirection(forwardDir);
+                offset += forwardDir * (vfx.forwardOffset * pixelsPerUnit)
+                    + sideDir * (vfx.sideOffset * pixelsPerUnit);
+            }
+
             return pos + offset;
         }
 
@@ -416,19 +525,22 @@ namespace CharacterStudio.UI
         {
             return evt.sourceVfxIndex >= 0
                 && evt.sourceVfxIndex == abilityPreviewInteraction.selectedVfxIndex
-                && evt.repeatIndex == abilityPreviewInteraction.selectedRepeatIndex;
+                && evt.repeatIndex == abilityPreviewInteraction.selectedRepeatIndex
+                && evt.previewTargetMode == abilityPreviewInteraction.selectedPreviewTargetMode;
         }
 
         private void SelectPreviewEvent(AbilityPreviewEvent evt)
         {
             abilityPreviewInteraction.selectedVfxIndex = evt.sourceVfxIndex;
             abilityPreviewInteraction.selectedRepeatIndex = evt.repeatIndex;
+            abilityPreviewInteraction.selectedPreviewTargetMode = evt.previewTargetMode;
         }
 
         private void ClearPreviewEventSelection()
         {
             abilityPreviewInteraction.selectedVfxIndex = -1;
             abilityPreviewInteraction.selectedRepeatIndex = -1;
+            abilityPreviewInteraction.selectedPreviewTargetMode = VisualEffectTarget.Target;
         }
 
         private AbilityPreviewEvent? GetSelectedPreviewEvent(AbilityPreviewPlan plan)
@@ -441,7 +553,7 @@ namespace CharacterStudio.UI
             for (int i = plan.events.Count - 1; i >= 0; i--)
             {
                 AbilityPreviewEvent evt = plan.events[i];
-                if (evt.sourceVfx == null || string.IsNullOrWhiteSpace(evt.previewTexturePath))
+                if (evt.sourceVfx == null || !HasPreviewVisualSurface(evt))
                 {
                     continue;
                 }
@@ -484,6 +596,13 @@ namespace CharacterStudio.UI
                 return;
             }
 
+            bool facingChanged = false;
+            if (!vfx.useCasterFacing)
+            {
+                vfx.useCasterFacing = true;
+                facingChanged = true;
+            }
+
             Vector2 delta = currentMousePos - abilityPreviewInteraction.dragStartMouse;
             Vector2 forwardDir = ResolvePreviewCastDirection();
             Vector2 sideDir = ResolvePreviewSideDirection(forwardDir);
@@ -492,7 +611,7 @@ namespace CharacterStudio.UI
             float sideDelta = Vector2.Dot(delta, sideDir) / pixelsPerUnit;
             float newForward = Mathf.Clamp(abilityPreviewInteraction.startForwardOffset + forwardDelta, -20f, 20f);
             float newSide = Mathf.Clamp(abilityPreviewInteraction.startSideOffset + sideDelta, -20f, 20f);
-            if (!Mathf.Approximately(newForward, vfx.forwardOffset) || !Mathf.Approximately(newSide, vfx.sideOffset))
+            if (facingChanged || !Mathf.Approximately(newForward, vfx.forwardOffset) || !Mathf.Approximately(newSide, vfx.sideOffset))
             {
                 vfx.forwardOffset = newForward;
                 vfx.sideOffset = newSide;
@@ -612,7 +731,9 @@ namespace CharacterStudio.UI
         {
             if (vfx.UsesCustomTextureType)
             {
-                return Mathf.Max(0.08f, vfx.drawSize * 0.12f);
+                float uniformScale = Mathf.Max(0.1f, vfx.scale);
+                float maxExtent = Mathf.Max(Mathf.Max(0.1f, vfx.textureScale.x), Mathf.Max(0.1f, vfx.textureScale.y));
+                return Mathf.Max(0.12f, vfx.drawSize * uniformScale * maxExtent * 0.5f);
             }
  
             return Mathf.Max(0.06f, defaultRadius * 0.15f, vfx.scale * 0.08f);
@@ -738,7 +859,19 @@ namespace CharacterStudio.UI
                 case AbilityRuntimeComponentType.ProjectileSplit:
                     return "CS_Studio_Ability_PreviewRuntimeProjectileSplit".Translate(component.splitProjectileCount.ToString(), component.splitDamageScale, component.splitSearchRange.ToString("0.#"));
                 case AbilityRuntimeComponentType.FlightState:
-                    return "CS_Studio_Ability_PreviewRuntimeFlightState".Translate(component.flightDurationTicks.ToString(), component.flightHeightFactor.ToString("0.##"));
+                    return "CS_Studio_Ability_PreviewRuntimeFlightState".Translate(
+                        component.flightDurationTicks.ToString(),
+                        component.flightHeightFactor.ToString("0.##"),
+                        (component.suppressCombatActionsDuringFlightState ? "CS_Studio_UI_On" : "CS_Studio_UI_Off").Translate());
+                case AbilityRuntimeComponentType.VanillaPawnFlyer:
+                    return $"{GetRuntimeComponentTypeLabel(component.type)} · {component.flyerThingDefName} · {component.flightOnlyWindowTicks}t";
+                case AbilityRuntimeComponentType.FlightOnlyFollowup:
+                    string followupModeLabel = component.onlyUseDuringFlightWindow
+                        ? "CS_Studio_Ability_PreviewRuntimeFlightOnlyStateWindow".Translate()
+                        : "CS_Studio_Ability_PreviewRuntimeFlightOnlyStateAlways".Translate();
+                    return $"{GetRuntimeComponentTypeLabel(component.type)} · {(string.IsNullOrWhiteSpace(component.requiredFlightSourceAbilityDefName) ? "-" : component.requiredFlightSourceAbilityDefName)} · {followupModeLabel}";
+                case AbilityRuntimeComponentType.FlightLandingBurst:
+                    return $"{GetRuntimeComponentTypeLabel(component.type)} · R{component.landingBurstRadius:0.#} · D{component.landingBurstDamage:0.#}";
                 default:
                     return GetRuntimeComponentTypeLabel(component.type);
             }
@@ -800,37 +933,32 @@ namespace CharacterStudio.UI
             AbilityPreviewPlan plan = BuildAbilityPreviewPlan();
             UpdateAbilityPreviewPlayback(plan);
 
-            Rect toolbarRect = new Rect(rect.x, rect.y, rect.width, 24f);
-            float buttonW = 74f;
-            float smallW = 64f;
-            float x = toolbarRect.x;
+            const float rowHeight = 24f;
+            const float rowGap = 4f;
+            const float toolbarGap = 6f;
 
-            DrawPanelButton(new Rect(x, toolbarRect.y, buttonW, toolbarRect.height), "CS_Studio_Ability_PreviewPlayOnce".Translate(), () =>
+            Rect toolbarRow1 = new Rect(rect.x, rect.y, rect.width, rowHeight);
+            float x = toolbarRow1.x;
+            DrawPanelButton(new Rect(x, toolbarRow1.y, 68f, rowHeight), "CS_Studio_Ability_PreviewPlayOnce".Translate(), () =>
             {
                 abilityPreviewPlaying = true;
                 abilityPreviewLoop = false;
                 abilityPreviewTimeTicks = 0f;
                 abilityPreviewLastRealtime = Time.realtimeSinceStartup;
             }, true);
-            x += buttonW + 6f;
+            x += 68f + toolbarGap;
 
-            DrawPanelButton(new Rect(x, toolbarRect.y, buttonW, toolbarRect.height), abilityPreviewLoop ? "CS_Studio_Ability_PreviewLoopOn".Translate() : "CS_Studio_Ability_PreviewLoop".Translate(), () =>
+            DrawPanelButton(new Rect(x, toolbarRow1.y, 68f, rowHeight), abilityPreviewLoop ? "CS_Studio_Ability_PreviewLoopOn".Translate() : "CS_Studio_Ability_PreviewLoop".Translate(), () =>
             {
                 abilityPreviewLoop = !abilityPreviewLoop;
                 abilityPreviewPlaying = abilityPreviewLoop || abilityPreviewPlaying;
                 abilityPreviewLastRealtime = Time.realtimeSinceStartup;
             }, abilityPreviewLoop);
-            x += buttonW + 6f;
+            x += 68f + toolbarGap;
 
-            DrawPanelButton(new Rect(x, toolbarRect.y, smallW, toolbarRect.height), "CS_Studio_Btn_Reset".Translate(), () => ResetAbilityPreviewPlayback(false));
-            x += smallW + 10f;
+            DrawPanelButton(new Rect(x, toolbarRow1.y, 56f, rowHeight), "CS_Studio_Btn_Reset".Translate(), () => ResetAbilityPreviewPlayback(false));
 
-            DrawPanelButton(new Rect(x, toolbarRect.y, 56f, toolbarRect.height), "CS_Studio_Ability_PreviewGrid".Translate(), () => abilityPreviewContext.showGrid = !abilityPreviewContext.showGrid, abilityPreviewContext.showGrid);
-            x += 62f;
-
-            DrawPanelButton(new Rect(x, toolbarRect.y, 72f, toolbarRect.height), "CS_Studio_Ability_PreviewTimeline".Translate(), () => abilityPreviewContext.showTimeline = !abilityPreviewContext.showTimeline, abilityPreviewContext.showTimeline);
-
-            Rect speedRect = new Rect(rect.xMax - 68f, toolbarRect.y, 68f, toolbarRect.height);
+            Rect speedRect = new Rect(toolbarRow1.xMax - 54f, toolbarRow1.y, 54f, rowHeight);
             DrawPanelButton(speedRect, $"{abilityPreviewContext.playbackSpeed:0.0}x", () =>
             {
                 abilityPreviewContext.playbackSpeed = Mathf.Approximately(abilityPreviewContext.playbackSpeed, 1f)
@@ -840,18 +968,43 @@ namespace CharacterStudio.UI
                         : 1f;
             });
 
-            Rect bannerRect = new Rect(rect.x, toolbarRect.yMax + 6f, rect.width, 26f);
-            DrawAbilityInfoBanner(bannerRect, "CS_Studio_Ability_PreviewHintLine".Translate(plan.title, Mathf.RoundToInt(abilityPreviewTimeTicks).ToString(), plan.totalTicks.ToString()), true);
+            Rect toolbarRow2 = new Rect(rect.x, toolbarRow1.yMax + rowGap, rect.width, rowHeight);
+            x = toolbarRow2.x;
+            DrawPanelButton(new Rect(x, toolbarRow2.y, 54f, rowHeight), "CS_Studio_Ability_PreviewGrid".Translate(), () => abilityPreviewContext.showGrid = !abilityPreviewContext.showGrid, abilityPreviewContext.showGrid);
+            x += 54f + toolbarGap;
+            DrawPanelButton(new Rect(x, toolbarRow2.y, 64f, rowHeight), "CS_Studio_Ability_PreviewTimeline".Translate(), () => abilityPreviewContext.showTimeline = !abilityPreviewContext.showTimeline, abilityPreviewContext.showTimeline);
+            x += 64f + toolbarGap;
 
-            float canvasY = bannerRect.yMax + 6f;
-            float footerHeight = 34f;
-            float canvasHeight = Mathf.Max(150f, rect.height * 0.44f);
-            Rect canvasRect = new Rect(rect.x, canvasY, rect.width, canvasHeight);
+            Text.Font = GameFont.Tiny;
+            GUI.color = UIHelper.SubtleColor;
+            Rect hintRect = new Rect(x, toolbarRow2.y + 4f, Mathf.Max(40f, rect.xMax - x), rowHeight - 8f);
+            string hintText = "CS_Studio_Ability_PreviewHintLine".Translate();
+            Widgets.Label(hintRect, hintText);
+            TooltipHandler.TipRegion(hintRect, hintText);
+            GUI.color = Color.white;
+            Text.Font = GameFont.Small;
+
+            Rect bannerRect = new Rect(rect.x, toolbarRow2.yMax + 6f, rect.width, 26f);
+            string bannerText = $"{plan.title} · {plan.summary} · {Mathf.RoundToInt(abilityPreviewTimeTicks)}t/{plan.totalTicks}t";
+            DrawAbilityInfoBanner(bannerRect, bannerText, true);
+            TooltipHandler.TipRegion(bannerRect, bannerText);
+
+            float nextY = bannerRect.yMax + 6f;
+            float footerHeight = 38f;
+            float canvasHeight = Mathf.Max(180f, rect.height * 0.46f);
+            float minLowerHeight = 112f;
+            float reservedBelow = (abilityPreviewContext.showTimeline ? 66f : 0f) + minLowerHeight;
+            if (nextY + canvasHeight + 8f + reservedBelow > rect.yMax)
+            {
+                canvasHeight = Mathf.Max(150f, rect.yMax - nextY - 8f - reservedBelow);
+            }
+
+            Rect canvasRect = new Rect(rect.x, nextY, rect.width, canvasHeight);
             Rect canvasDrawRect = new Rect(canvasRect.x, canvasRect.y, canvasRect.width, Mathf.Max(96f, canvasRect.height - footerHeight - 4f));
             Rect canvasInfoRect = new Rect(canvasRect.x, canvasDrawRect.yMax + 4f, canvasRect.width, footerHeight);
             DrawAbilityPreviewCanvas(canvasRect, canvasDrawRect, canvasInfoRect, plan);
 
-            float nextY = canvasRect.yMax + 8f;
+            nextY = canvasRect.yMax + 8f;
             if (abilityPreviewContext.showTimeline)
             {
                 Rect timelineRect = new Rect(rect.x, nextY, rect.width, 58f);
@@ -859,7 +1012,7 @@ namespace CharacterStudio.UI
                 nextY = timelineRect.yMax + 8f;
             }
 
-            float lowerHeight = rect.yMax - nextY;
+            float lowerHeight = Mathf.Max(112f, rect.yMax - nextY);
             float leftW = rect.width * 0.48f;
             Rect summaryRect = new Rect(rect.x, nextY, leftW, lowerHeight);
             Rect logRect = new Rect(summaryRect.xMax + 8f, nextY, rect.width - leftW - 8f, lowerHeight);
@@ -907,20 +1060,7 @@ namespace CharacterStudio.UI
             GUI.color = Color.white;
             Widgets.DrawBoxSolid(new Rect(rect.x, rect.yMax - 2f, rect.width, 2f), UIHelper.AccentSoftColor);
 
-            Rect headerRect = new Rect(rect.x + 1f, rect.y + 1f, rect.width - 2f, 34f);
-            Widgets.DrawBoxSolid(headerRect, new Color(1f, 1f, 1f, 0.03f));
-            Text.Font = GameFont.Tiny;
-            GUI.color = UIHelper.SubtleColor;
-            bool oldWrap = Text.WordWrap;
-            Text.WordWrap = true;
-            Rect headerLabelRect = new Rect(headerRect.x + 8f, headerRect.y + 4f, headerRect.width - 16f, headerRect.height - 8f);
-            Widgets.Label(headerLabelRect, plan.summary);
-            TooltipHandler.TipRegion(headerLabelRect, plan.summary);
-            Text.WordWrap = oldWrap;
-            GUI.color = Color.white;
-            Text.Font = GameFont.Small;
-
-            Rect drawRect = new Rect(canvasDrawRect.x + 8f, headerRect.yMax + 6f, canvasDrawRect.width - 16f, Mathf.Max(80f, canvasDrawRect.yMax - headerRect.yMax - 12f));
+            Rect drawRect = new Rect(canvasDrawRect.x + 6f, canvasDrawRect.y + 6f, canvasDrawRect.width - 12f, Mathf.Max(80f, canvasDrawRect.height - 10f));
             Widgets.DrawBoxSolid(drawRect, UIHelper.PanelFillColor);
             GUI.color = new Color(1f, 1f, 1f, 0.08f);
             Widgets.DrawBox(drawRect, 1);
@@ -936,20 +1076,29 @@ namespace CharacterStudio.UI
 
             if (abilityPreviewContext.showGrid)
             {
+                Color gridLineColor = new Color(1f, 1f, 1f, 0.08f);
                 for (int i = 1; i < PreviewGridCellsPerAxis; i++)
                 {
                     float tx = gridRect.x + cellStep.x * i;
-                    Widgets.DrawLineVertical(tx, gridRect.y, gridRect.height);
+                    Widgets.DrawLine(new Vector2(tx, gridRect.y), new Vector2(tx, gridRect.yMax), gridLineColor, 1f);
                     float ty = gridRect.y + cellStep.y * i;
-                    Widgets.DrawLineHorizontal(gridRect.x, ty, gridRect.width);
+                    Widgets.DrawLine(new Vector2(gridRect.x, ty), new Vector2(gridRect.xMax, ty), gridLineColor, 1f);
                 }
             }
+
+            Text.Font = GameFont.Tiny;
+            GUI.color = UIHelper.SubtleColor;
+            Rect scaleLabelRect = new Rect(gridRect.x + 6f, gridRect.y + 4f, 120f, 18f);
+            Widgets.Label(scaleLabelRect, "CS_Studio_Ability_PreviewGridScaleReference".Translate());
+            GUI.color = Color.white;
+            Text.Font = GameFont.Small;
 
             Vector2 caster = ToCanvasPosition(gridRect, abilityPreviewContext.casterPos);
             Vector2 target = ToCanvasPosition(gridRect, abilityPreviewContext.targetPos);
             Widgets.DrawLine(caster, target, new Color(0.45f, 0.75f, 1f), 2f);
 
             float currentTick = abilityPreviewTimeTicks;
+            AbilityPreviewEvent? activeEvent = GetCurrentPreviewEvent(plan, currentTick);
             foreach (AbilityPreviewEvent evt in plan.events)
             {
                 evt.lastTextureRect = Rect.zero;
@@ -960,7 +1109,7 @@ namespace CharacterStudio.UI
                 Vector2 pos = ResolvePreviewEventCanvasPosition(drawRect, evt);
                 if (evt.radius > 0f)
                 {
-                    DrawPreviewAreaOverlay(gridRect, evt, pos, cellSize, evt.color, evt == GetCurrentPreviewEvent(plan, currentTick));
+                    DrawPreviewAreaOverlay(gridRect, evt, pos, cellSize, evt.color, evt == activeEvent);
                 }
             }
 
@@ -981,20 +1130,24 @@ namespace CharacterStudio.UI
 
             HandleAbilityPreviewCanvasInteraction(drawRect, plan);
 
-            AbilityPreviewEvent? activeEvent = GetCurrentPreviewEvent(plan, currentTick);
             AbilityPreviewEvent? selectedEvent = GetSelectedPreviewEvent(plan);
+            if (selectedEvent != null)
+            {
+                DrawSelectedPreviewTextureGuides(selectedEvent);
+            }
+
             Widgets.DrawBoxSolid(canvasInfoRect, new Color(0f, 0f, 0f, 0.18f));
             GUI.color = (selectedEvent?.color ?? activeEvent?.color) ?? UIHelper.BorderColor;
             Widgets.DrawBox(canvasInfoRect, 1);
             GUI.color = Color.white;
             Text.Font = GameFont.Tiny;
-            oldWrap = Text.WordWrap;
+            bool oldWrap = Text.WordWrap;
             Text.WordWrap = false;
             Rect infoLabelRect = new Rect(canvasInfoRect.x + 8f, canvasInfoRect.y + 6f, canvasInfoRect.width - 16f, canvasInfoRect.height - 12f);
-            string activeText = activeEvent == null
-                ? "等待播放事件…"
-                : selectedEvent != null
-                    ? $"[{selectedEvent.tick}] {selectedEvent.label} · 拖动移动 / 滚轮缩放 / 右键拖动旋转"
+            string activeText = selectedEvent != null
+                ? BuildPreviewTextureStatusText(selectedEvent)
+                : activeEvent == null
+                    ? "CS_Studio_Ability_PreviewWaitingEvent".Translate()
                     : $"[{activeEvent.tick}] {activeEvent.label} · {activeEvent.detail}";
             Widgets.Label(infoLabelRect, activeText);
             TooltipHandler.TipRegion(infoLabelRect, activeText);
@@ -1309,54 +1462,109 @@ namespace CharacterStudio.UI
             Text.Font = GameFont.Small;
         }
 
-        private void DrawPreviewEventTexture(Rect drawRect, AbilityPreviewEvent evt, Vector2 center, float pulse)
+        private static bool HasPreviewVisualSurface(AbilityPreviewEvent evt)
         {
-            if (string.IsNullOrWhiteSpace(evt.previewTexturePath))
+            return evt.sourceVfx != null;
+        }
+
+        private Texture2D? LoadPreviewEventTextureAsset(AbilityPreviewEvent evt)
+        {
+            if (!string.IsNullOrWhiteSpace(evt.previewTexturePath))
             {
-                return;
+                AbilityVisualEffectTextureSource textureSource = evt.sourceVfx?.textureSource ?? AbilityVisualEffectTextureSource.Vanilla;
+                if (textureSource == AbilityVisualEffectTextureSource.LocalPath
+                    || RuntimeAssetLoader.LooksLikeExternalTexturePath(evt.previewTexturePath))
+                {
+                    return RuntimeAssetLoader.LoadTextureRaw(evt.previewTexturePath, true);
+                }
+
+                Texture2D? vanillaTexture = ContentFinder<Texture2D>.Get(evt.previewTexturePath, false);
+                if (vanillaTexture != null)
+                {
+                    return vanillaTexture;
+                }
+
+                return RuntimeAssetLoader.LoadTextureRaw(evt.previewTexturePath, true);
             }
 
-            Texture2D? texture = RuntimeAssetLoader.LoadTextureRaw(evt.previewTexturePath, true);
+            return evt.sourceVfx != null ? BaseContent.WhiteTex : null;
+        }
+
+        private static string GetPreviewTextureDisplayPath(AbilityPreviewEvent evt)
+        {
+            if (!string.IsNullOrWhiteSpace(evt.previewTexturePath))
+            {
+                return evt.previewTexturePath;
+            }
+
+            AbilityVisualEffectConfig? vfx = evt.sourceVfx;
+            if (vfx == null)
+            {
+                return string.Empty;
+            }
+
+            if (vfx.UsesPresetType)
+            {
+                return string.IsNullOrWhiteSpace(vfx.presetDefName)
+                    ? $"Preset:{vfx.type}"
+                    : $"Preset:{vfx.presetDefName}";
+            }
+
+            return vfx.type.ToString();
+        }
+
+        private static bool ShouldTintPreviewTextureAsFallback(AbilityPreviewEvent evt)
+        {
+            return string.IsNullOrWhiteSpace(evt.previewTexturePath);
+        }
+
+        private void DrawPreviewEventTexture(Rect drawRect, AbilityPreviewEvent evt, Vector2 center, float pulse)
+        {
+            Texture2D? texture = LoadPreviewEventTextureAsset(evt);
             if (texture == null)
             {
                 return;
             }
-
-            Vector2 textureScale = evt.sourceVfx?.textureScale ?? evt.previewTextureScale;
-            float drawSize = evt.sourceVfx?.drawSize ?? evt.previewDrawSize;
+ 
+            Rect texRect = ResolvePreviewTextureRect(drawRect, evt, center);
             float rotation = evt.sourceVfx?.rotation ?? evt.previewRotation;
-            float aspect = texture.height > 0 ? texture.width / (float)texture.height : 1f;
-            float textureScaleX = Mathf.Max(0.25f, textureScale.x);
-            float textureScaleY = Mathf.Max(0.25f, textureScale.y);
-            float baseSize = Mathf.Clamp(26f * Mathf.Max(0.25f, drawSize) * pulse, 24f, Mathf.Min(drawRect.width, drawRect.height) * 0.28f);
-            float width = Mathf.Clamp(baseSize * textureScaleX * Mathf.Max(0.35f, aspect), 24f, drawRect.width * 0.34f);
-            float height = Mathf.Clamp(baseSize * textureScaleY / Mathf.Max(0.35f, aspect), 24f, drawRect.height * 0.34f);
-            Rect texRect = new Rect(center.x - width * 0.5f, center.y - height * 0.5f, width, height);
-            float maxOverflowX = Mathf.Max(6f, width * 0.18f);
-            float maxOverflowY = Mathf.Max(6f, height * 0.18f);
+            float maxOverflowX = Mathf.Max(6f, texRect.width * 0.12f);
+            float maxOverflowY = Mathf.Max(6f, texRect.height * 0.12f);
             texRect.x = Mathf.Clamp(texRect.x, drawRect.x - maxOverflowX, drawRect.xMax - texRect.width + maxOverflowX);
             texRect.y = Mathf.Clamp(texRect.y, drawRect.y - maxOverflowY, drawRect.yMax - texRect.height + maxOverflowY);
             evt.lastTextureRect = texRect;
             evt.lastTextureRotation = rotation;
-
+ 
             Widgets.DrawBoxSolid(texRect.ExpandedBy(1f), new Color(0f, 0f, 0f, 0.18f));
             Matrix4x4 oldMatrix = GUI.matrix;
             GUIUtility.RotateAroundPivot(rotation, texRect.center);
-            GUI.color = new Color(1f, 1f, 1f, 0.96f);
-            Widgets.DrawTextureFitted(texRect, texture, 1f);
+            Color drawColor = ShouldTintPreviewTextureAsFallback(evt)
+                ? new Color(evt.color.r, evt.color.g, evt.color.b, Mathf.Clamp(0.60f + (pulse - 1f) * 0.25f, 0.45f, 0.9f))
+                : new Color(1f, 1f, 1f, Mathf.Clamp(0.88f + (pulse - 1f) * 0.3f, 0.82f, 1f));
+            GUI.color = drawColor;
+            GUI.DrawTexture(texRect, texture, ScaleMode.StretchToFill, true);
             GUI.color = IsPreviewEventSelected(evt) ? UIHelper.AccentColor : evt.color;
             Widgets.DrawBox(texRect, IsPreviewEventSelected(evt) ? 2 : 1);
             GUI.matrix = oldMatrix;
             GUI.color = Color.white;
-
+ 
             if (IsPreviewEventSelected(evt))
             {
                 Rect handleRect = new Rect(texRect.xMax - 8f, texRect.y - 8f, 16f, 16f);
                 Widgets.DrawBoxSolid(handleRect, UIHelper.AccentColor);
                 Widgets.DrawBox(handleRect, 1);
             }
-
-            string tip = $"{evt.previewTexturePath}\n缩放: {(evt.sourceVfx?.textureScale ?? evt.previewTextureScale).x:F2}, {(evt.sourceVfx?.textureScale ?? evt.previewTextureScale).y:F2}\n旋转: {(evt.sourceVfx?.rotation ?? evt.previewRotation):F1}°";
+ 
+            Vector2 worldSize = GetPreviewTextureWorldSizeCells(evt);
+            AbilityVisualEffectConfig? vfx = evt.sourceVfx;
+            string tip = "CS_Studio_Ability_PreviewTextureTooltip".Translate(
+                GetPreviewTextureDisplayPath(evt),
+                worldSize.x.ToString("F2"),
+                worldSize.y.ToString("F2"),
+                (vfx?.forwardOffset ?? 0f).ToString("F2"),
+                (vfx?.sideOffset ?? 0f).ToString("F2"),
+                (vfx?.heightOffset ?? 0f).ToString("F2"),
+                rotation.ToString("F1"));
             TooltipHandler.TipRegion(texRect.ExpandedBy(4f), tip);
         }
 

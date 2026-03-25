@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using CharacterStudio.Core;
 using UnityEngine;
@@ -26,7 +27,7 @@ namespace CharacterStudio.UI
             float propsY = GetPropertiesContentTop(rect);
             float propsHeight = rect.height - propsY + rect.y - Margin;
             Rect propsRect = new Rect(rect.x + Margin, propsY, rect.width - Margin * 2, propsHeight);
-            Rect viewRect = new Rect(0, 0, propsRect.width - 16, 700);
+            Rect viewRect = new Rect(0, 0, propsRect.width - 16, 820);
 
             Widgets.BeginScrollView(propsRect, ref propsScrollPos, viewRect);
 
@@ -95,43 +96,86 @@ namespace CharacterStudio.UI
                 y += 30;
             }
 
+            if (layerModificationWorkflowActive && DrawCollapsibleSection(ref y, propsRect.width - 20, "图层修改补丁".Translate(), "NodePatch"))
+            {
+                bool isHidden = IsNodeHiddenInCurrentMode(node);
+                if (Widgets.ButtonText(new Rect(0, y, propsRect.width - 20, 28), isHidden ? "从补丁中显示节点" : "加入补丁隐藏节点"))
+                {
+                    ToggleNodeVisibilityInCurrentMode(node);
+                }
+                y += 32;
+
+                float patchOffset = GetNodePatchDrawOrderOffset(node.uniqueNodePath);
+                Widgets.Label(new Rect(0, y, labelWidth, 24), "DrawOrder Offset");
+                string patchOffsetBuffer = patchOffset.ToString("F2");
+                string newOffsetText = Widgets.TextField(new Rect(labelWidth, y, fieldWidth, 24), patchOffsetBuffer);
+                if (float.TryParse(newOffsetText, out float parsedOffset) && Math.Abs(parsedOffset - patchOffset) > 0.0001f)
+                {
+                    SetNodePatchDrawOrderOffset(node.uniqueNodePath, parsedOffset);
+                    ShowStatus($"已设置节点补丁层级偏移：{node.uniqueNodePath} => {parsedOffset:F2}");
+                    RefreshPreview();
+                    RefreshRenderTree();
+                }
+                y += 30;
+
+                float buttonWidth = (propsRect.width - 32f) / 4f;
+                if (Widgets.ButtonText(new Rect(0f, y, buttonWidth, 26f), "+1"))
+                {
+                    SetNodePatchDrawOrderOffset(node.uniqueNodePath, patchOffset + 1f);
+                    RefreshPreview();
+                    RefreshRenderTree();
+                }
+                if (Widgets.ButtonText(new Rect(buttonWidth + 4f, y, buttonWidth, 26f), "-1"))
+                {
+                    SetNodePatchDrawOrderOffset(node.uniqueNodePath, patchOffset - 1f);
+                    RefreshPreview();
+                    RefreshRenderTree();
+                }
+                if (Widgets.ButtonText(new Rect((buttonWidth + 4f) * 2f, y, buttonWidth, 26f), "+5"))
+                {
+                    SetNodePatchDrawOrderOffset(node.uniqueNodePath, patchOffset + 5f);
+                    RefreshPreview();
+                    RefreshRenderTree();
+                }
+                if (Widgets.ButtonText(new Rect((buttonWidth + 4f) * 3f, y, buttonWidth, 26f), "清除"))
+                {
+                    SetNodePatchDrawOrderOffset(node.uniqueNodePath, 0f);
+                    RefreshPreview();
+                    RefreshRenderTree();
+                }
+                y += 34;
+            }
+
             if (DrawCollapsibleSection(ref y, propsRect.width - 20, "CS_Studio_Prop_Actions".Translate(), "NodeActions"))
             {
-#pragma warning disable CS0618
-                string? nodeTag = node.tagDefName;
-                bool isHiddenByLegacyTag = false;
-                if (!string.IsNullOrEmpty(nodeTag))
-                {
-                    string legacyHiddenTag = nodeTag!;
-                    isHiddenByLegacyTag = workingSkin.hiddenTags.Contains(legacyHiddenTag);
-                }
-
-                bool isHidden = workingSkin.hiddenPaths.Contains(node.uniqueNodePath) || isHiddenByLegacyTag;
-#pragma warning restore CS0618
+                bool isHidden = IsNodeHiddenInCurrentMode(node);
 
                 if (Widgets.ButtonText(new Rect(0, y, propsRect.width - 20, 28), isHidden ? "CS_Studio_Prop_ShowNode".Translate() : "CS_Studio_Prop_HideNode".Translate()))
                 {
-                    ToggleNodeVisibility(node);
+                    ToggleNodeVisibilityInCurrentMode(node);
                 }
                 y += 32;
 
-                if (Widgets.ButtonText(new Rect(0, y, propsRect.width - 20, 28), "CS_Studio_Prop_MountLayer".Translate()))
+                if (!layerModificationWorkflowActive)
                 {
-                    var newLayer = new PawnLayerConfig
+                    if (Widgets.ButtonText(new Rect(0, y, propsRect.width - 20, 28), "CS_Studio_Prop_MountLayer".Translate()))
                     {
-                        layerName = GetMountedLayerLabel(node),
-                        anchorPath = node.uniqueNodePath,
-                        anchorTag = node.tagDefName ?? "Body"
-                    };
-                    workingSkin.layers.Add(newLayer);
-                    AppendAttachNodeRule(node, newLayer);
-                    selectedLayerIndex = workingSkin.layers.Count - 1;
-                    selectedNodePath = "";
-                    isDirty = true;
-                    RefreshPreview();
-                    ShowStatus("CS_Studio_Msg_Appended".Translate(node.uniqueNodePath, "1"));
+                        var newLayer = new PawnLayerConfig
+                        {
+                            layerName = GetMountedLayerLabel(node),
+                            anchorPath = node.uniqueNodePath,
+                            anchorTag = node.tagDefName ?? "Body"
+                        };
+                        workingSkin.layers.Add(newLayer);
+                        AppendAttachNodeRule(node, newLayer);
+                        selectedLayerIndex = workingSkin.layers.Count - 1;
+                        selectedNodePath = "";
+                        isDirty = true;
+                        RefreshPreview();
+                        ShowStatus("CS_Studio_Msg_Appended".Translate(node.uniqueNodePath, "1"));
+                    }
+                    y += 32;
                 }
-                y += 32;
             }
 
             if (DrawCollapsibleSection(ref y, propsRect.width - 20, "CS_Studio_Node_RuntimeData".Translate(), "NodeRuntime"))

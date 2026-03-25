@@ -43,15 +43,20 @@
     <CS_Studio_Face_EyeDir_Right>向右</CS_Studio_Face_EyeDir_Right>
     <CS_Studio_Face_EyeDir_Title>眼睛方向配置</CS_Studio_Face_EyeDir_Title>
     <CS_Studio_Face_EyeDir_Up>向上</CS_Studio_Face_EyeDir_Up>
+    <CS_Studio_Face_Layered_MotionAmplitude>动画位移幅度</CS_Studio_Face_Layered_MotionAmplitude>
     <CS_Studio_Face_Layered_Title>分层面部部件</CS_Studio_Face_Layered_Title>
-    <CS_Studio_Face_Layered_MotionAmplitudeX>X</CS_Studio_Face_Layered_MotionAmplitudeX>
-    <CS_Studio_Face_Layered_MotionAmplitudeY>Y</CS_Studio_Face_Layered_MotionAmplitudeY>
     <CS_Studio_Face_LayeredPart_Base>基础脸层</CS_Studio_Face_LayeredPart_Base>
     <CS_Studio_Face_LayeredPart_LowerLid>下眼睑层</CS_Studio_Face_LayeredPart_LowerLid>
     <CS_Studio_Face_LayeredPart_UpperLid>上眼睑层</CS_Studio_Face_LayeredPart_UpperLid>
     <CS_Studio_Face_MinSetProgress>最小集 {0}/{1} 已完成（★ 标记为推荐优先配置）</CS_Studio_Face_MinSetProgress>
     <CS_Studio_Face_PreviewActive>预览表情</CS_Studio_Face_PreviewActive>
     <CS_Studio_Face_PreviewAuto>自动</CS_Studio_Face_PreviewAuto>
+    <CS_Studio_Face_PreviewHint>预览模式</CS_Studio_Face_PreviewHint>
+    <CS_Studio_Face_PreviewHintValue>可在预览面板切换自动/指定表情，并即时预览当前配置</CS_Studio_Face_PreviewHintValue>
+    <CS_Studio_Face_PreviewModeButton>切换预览</CS_Studio_Face_PreviewModeButton>
+    <CS_Studio_Face_Title>表情配置</CS_Studio_Face_Title>
+    <CS_Studio_Face_Type>{0} 表情</CS_Studio_Face_Type>
+    <CS_Studio_Face_Workflow_FullFaceSwap>整脸切换</CS_Studio_Face_Workflow_FullFaceSwap>
     <CS_Studio_Preview_BrowState_Angry>愤怒</CS_Studio_Preview_BrowState_Angry>
     <CS_Studio_Preview_BrowState_Happy>开心</CS_Studio_Preview_BrowState_Happy>
     <CS_Studio_Preview_BrowState_Normal>自然</CS_Studio_Preview_BrowState_Normal>
@@ -72,10 +77,4 @@
     <CS_Studio_Preview_MouthState_Open>张嘴</CS_Studio_Preview_MouthState_Open>
     <CS_Studio_Preview_MouthState_Sleep>睡眠</CS_Studio_Preview_MouthState_Sleep>
     <CS_Studio_Preview_MouthState_Smile>微笑</CS_Studio_Preview_MouthState_Smile>
-    <CS_Studio_Face_PreviewHint>预览模式</CS_Studio_Face_PreviewHint>
-    <CS_Studio_Face_PreviewHintValue>可在预览面板切换自动/指定表情，并即时预览当前配置</CS_Studio_Face_PreviewHintValue>
-    <CS_Studio_Face_PreviewModeButton>切换预览</CS_Studio_Face_PreviewModeButton>
-    <CS_Studio_Face_Title>表情配置</CS_Studio_Face_Title>
-    <CS_Studio_Face_Type>{0} 表情</CS_Studio_Face_Type>
-    <CS_Studio_Face_Workflow_FullFaceSwap>整脸切换</CS_Studio_Face_Workflow_FullFaceSwap>
 </LanguageData>

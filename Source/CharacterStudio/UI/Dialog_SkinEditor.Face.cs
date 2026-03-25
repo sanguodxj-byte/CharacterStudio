@@ -10,6 +10,20 @@ namespace CharacterStudio.UI
 {
     public partial class Dialog_SkinEditor
     {
+        private readonly struct ScannedOverlayCandidate
+        {
+            public readonly string FilePath;
+            public readonly string FileName;
+            public readonly string SuggestedOverlayId;
+
+            public ScannedOverlayCandidate(string filePath, string fileName, string suggestedOverlayId)
+            {
+                FilePath = filePath;
+                FileName = fileName;
+                SuggestedOverlayId = suggestedOverlayId;
+            }
+        }
+
         /// <summary>
         /// 绘制表情配置面板
         /// </summary>
@@ -41,7 +55,7 @@ namespace CharacterStudio.UI
         {
             if (partType == LayeredFacePartType.Overlay)
             {
-                string resolvedOverlayId = string.IsNullOrWhiteSpace(overlayId) ? "Overlay" : overlayId!;
+                string resolvedOverlayId = PawnFaceConfig.NormalizeOverlayId(overlayId);
                 return $"{partType}|{resolvedOverlayId}|{expression}";
             }
 
@@ -202,11 +216,8 @@ namespace CharacterStudio.UI
                 DrawLayeredDynamicSection(fc, ref y, width, exprCount);
             }
 
-            if (fc.workflowMode == FaceWorkflowMode.FullFaceSwap)
-            {
-                y += 8f;
-                DrawEyeDirectionSection(fc, ref y, width);
-            }
+            y += 8f;
+            DrawEyeDirectionSection(fc, ref y, width);
 
             viewRect.height = Mathf.Max(y + 10f, contentRect.height - 4f);
             Widgets.EndScrollView();
@@ -325,12 +336,192 @@ namespace CharacterStudio.UI
             }
 
             y += 30f;
+            DrawScannedOverlayMappingSection(fc, ref y, width);
             DrawLayeredPartConfigSection(fc, ref y, width);
+        }
+
+        private void DrawScannedOverlayMappingSection(PawnFaceConfig fc, ref float y, float width)
+        {
+            EnsureScannedOverlayCandidates(fc);
+
+            UIHelper.DrawSectionTitle(ref y, width, "Overlay 映射");
+            DrawPropertyHint(ref y, width, "扫描 overlay 纹理并手动指定语义通道；偏移与缩放建议在外部工具中处理。");
+
+            if (!string.IsNullOrWhiteSpace(scannedOverlayCacheError))
+            {
+                DrawPropertyHint(ref y, width, scannedOverlayCacheError);
+                return;
+            }
+
+            if (scannedOverlayCandidates.Count == 0)
+            {
+                DrawPropertyHint(ref y, width, "当前目录未扫描到可识别的 overlay 纹理。命名需符合 Overlay_xxx 或显式语义前缀。");
+                return;
+            }
+
+            foreach (ScannedOverlayCandidate candidate in scannedOverlayCandidates)
+            {
+                DrawCompactOverlayMappingRow(fc, ref y, width, candidate);
+            }
+
+            y += 2f;
+        }
+
+        private void DrawCompactOverlayMappingRow(PawnFaceConfig fc, ref float y, float width, ScannedOverlayCandidate candidate)
+        {
+            string mappedOverlayId = GetMappedOverlayIdForPath(fc, candidate.FilePath);
+            string displayLabel = string.IsNullOrWhiteSpace(mappedOverlayId)
+                ? (string.IsNullOrWhiteSpace(candidate.SuggestedOverlayId) ? "未映射" : $"建议 {candidate.SuggestedOverlayId}")
+                : mappedOverlayId;
+
+            Rect rowRect = new Rect(0f, y, width, 22f);
+            Widgets.DrawBoxSolid(rowRect, UIHelper.AlternatingRowColor);
+            GUI.color = UIHelper.BorderColor;
+            Widgets.DrawBox(rowRect, 1);
+            GUI.color = Color.white;
+
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.MiddleLeft;
+            Widgets.Label(new Rect(6f, y, Mathf.Max(60f, width - 92f), 22f), candidate.FileName);
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = GameFont.Small;
+
+            Rect buttonRect = new Rect(width - 84f, y + 1f, 84f, 20f);
+            if (UIHelper.DrawSelectionButton(buttonRect, displayLabel))
+            {
+                OpenScannedOverlayMappingMenu(fc, candidate);
+            }
+
+            y += 24f;
+        }
+
+        private void EnsureScannedOverlayCandidates(PawnFaceConfig fc)
+        {
+            string sourceRoot = fc.layeredSourceRoot ?? string.Empty;
+            if (ArePathStringsEquivalent(scannedOverlayCacheSourceRoot, sourceRoot)
+                && (scannedOverlayCandidates.Count > 0 || !string.IsNullOrWhiteSpace(scannedOverlayCacheError)))
+            {
+                return;
+            }
+
+            scannedOverlayCacheSourceRoot = sourceRoot;
+            scannedOverlayCandidates.Clear();
+            scannedOverlayCacheError = string.Empty;
+
+            if (string.IsNullOrWhiteSpace(sourceRoot))
+            {
+                scannedOverlayCacheError = "请先设置 layered source root。";
+                return;
+            }
+
+            if (!Directory.Exists(sourceRoot))
+            {
+                scannedOverlayCacheError = $"目录不存在：{sourceRoot}";
+                return;
+            }
+
+            try
+            {
+                foreach (string filePath in Directory.EnumerateFiles(sourceRoot)
+                    .Where(IsSupportedLayeredFaceTextureFile)
+                    .OrderBy(Path.GetFileNameWithoutExtension, StringComparer.OrdinalIgnoreCase))
+                {
+                    if (!TryParseLayeredFaceFileName(filePath, out LayeredFacePartType partType, out _, out string? overlayId, out _, out _)
+                        || partType != LayeredFacePartType.Overlay)
+                    {
+                        continue;
+                    }
+
+                    string fileName = Path.GetFileName(filePath) ?? filePath;
+                    string normalizedOverlayId = PawnFaceConfig.NormalizeOverlayId(overlayId);
+                    scannedOverlayCandidates.Add(new ScannedOverlayCandidate(filePath, fileName, normalizedOverlayId));
+                }
+            }
+            catch (Exception ex)
+            {
+                scannedOverlayCandidates.Clear();
+                scannedOverlayCacheError = $"扫描 overlay 纹理失败：{ex.Message}";
+            }
+        }
+
+        private static readonly string[] ManualOverlayIds =
+        {
+            "Blush",
+            "Tear",
+            "Sweat",
+            "Sleep",
+            "Gloomy"
+        };
+
+        private string GetMappedOverlayIdForPath(PawnFaceConfig fc, string filePath)
+        {
+            foreach (string overlayId in fc.GetOrderedOverlayIds())
+            {
+                LayeredFacePartConfig? overlayPart = fc.GetLayeredPartConfig(LayeredFacePartType.Overlay, ExpressionType.Neutral, overlayId);
+                if (overlayPart != null && ArePathStringsEquivalent(overlayPart.texPath, filePath))
+                {
+                    return overlayId;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private void ClearOverlayAssignmentsForPath(PawnFaceConfig fc, string filePath)
+        {
+            foreach (string overlayId in fc.GetOrderedOverlayIds().ToList())
+            {
+                LayeredFacePartConfig? overlayPart = fc.GetLayeredPartConfig(LayeredFacePartType.Overlay, ExpressionType.Neutral, overlayId);
+                if (overlayPart != null && ArePathStringsEquivalent(overlayPart.texPath, filePath))
+                {
+                    fc.RemoveLayeredPart(LayeredFacePartType.Overlay, ExpressionType.Neutral, overlayId);
+                }
+            }
+        }
+
+        private void OpenScannedOverlayMappingMenu(PawnFaceConfig fc, ScannedOverlayCandidate candidate)
+        {
+            var options = new List<FloatMenuOption>
+            {
+                new FloatMenuOption("未映射", () =>
+                {
+                    ClearOverlayAssignmentsForPath(fc, candidate.FilePath);
+                    layeredPartPathBuffer.Clear();
+                    isDirty = true;
+                    RefreshPreview();
+                })
+            };
+
+            IEnumerable<string> overlayIds = ManualOverlayIds
+                .Concat(fc.GetOrderedOverlayIds())
+                .Concat(string.IsNullOrWhiteSpace(candidate.SuggestedOverlayId)
+                    ? Enumerable.Empty<string>()
+                    : new[] { candidate.SuggestedOverlayId })
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(id => PawnFaceConfig.GetCanonicalOverlayOrder(id))
+                .ThenBy(id => id, StringComparer.OrdinalIgnoreCase);
+
+            foreach (string overlayId in overlayIds)
+            {
+                string localOverlayId = overlayId;
+                options.Add(new FloatMenuOption(localOverlayId, () =>
+                {
+                    ClearOverlayAssignmentsForPath(fc, candidate.FilePath);
+                    fc.SetLayeredPart(LayeredFacePartType.Overlay, ExpressionType.Neutral, candidate.FilePath, localOverlayId, fc.GetOverlayOrder(localOverlayId));
+                    layeredPartPathBuffer.Clear();
+                    isDirty = true;
+                    RefreshPreview();
+                }));
+            }
+
+            Find.WindowStack.Add(new FloatMenu(options));
         }
 
         private void DrawLayeredPartConfigSection(PawnFaceConfig fc, ref float y, float width)
         {
             UIHelper.DrawSectionTitle(ref y, width, "通用表情与部件调整");
+            DrawPropertyHint(ref y, width, "MotionAmplitude 会直接驱动程序动画偏移；可在中间预览面板开启预览流实时观察。");
 
             UIHelper.DrawPropertyFieldWithButton(
                 ref y,
@@ -338,7 +529,7 @@ namespace CharacterStudio.UI
                 "表情",
                 GetPreviewOverrideLabel(previewExpressionOverrideEnabled, GetExpressionTypeLabel(previewExpression)),
                 OpenPreviewExpressionMenu);
-            y += 4f;
+            y += 2f;
 
             UIHelper.DrawPropertyFieldWithButton(
                 ref y,
@@ -346,7 +537,7 @@ namespace CharacterStudio.UI
                 "眼球朝向",
                 GetPreviewOverrideLabel(previewEyeDirectionOverrideEnabled, previewEyeDirection.ToString()),
                 OpenPreviewEyeDirectionMenu);
-            y += 8f;
+            y += 4f;
 
             foreach (LayeredFacePartType partType in EnumerateLayeredPartEditorTypes())
             {
@@ -354,15 +545,13 @@ namespace CharacterStudio.UI
             }
 
             List<string> overlayIds = fc.GetOrderedOverlayIds();
-            if (!overlayIds.Any())
+            if (overlayIds.Any())
             {
-                overlayIds.Add("Overlay");
-            }
-
-            UIHelper.DrawSectionTitle(ref y, width, "Overlay 图层");
-            foreach (string overlayId in overlayIds)
-            {
-                DrawLayeredPartRow(fc, ref y, width, LayeredFacePartType.Overlay, previewExpression, overlayId: overlayId);
+                UIHelper.DrawSectionTitle(ref y, width, "Overlay 图层");
+                foreach (string overlayId in overlayIds)
+                {
+                    DrawLayeredPartRow(fc, ref y, width, LayeredFacePartType.Overlay, previewExpression, overlayId: overlayId);
+                }
             }
         }
 
@@ -391,13 +580,13 @@ namespace CharacterStudio.UI
                 {
                     DrawLayeredPartRow(fc, ref y, width, partType, previewExpression, side: LayeredFacePartSide.Left);
                     DrawLayeredPartRow(fc, ref y, width, partType, previewExpression, side: LayeredFacePartSide.Right);
-                    y += 4f;
+                    y += 2f;
                     return;
                 }
             }
 
             DrawLayeredPartRow(fc, ref y, width, partType, previewExpression);
-            y += 4f;
+            y += 2f;
         }
 
         private static string GetLayeredPartEditorLabel(LayeredFacePartType partType, LayeredFacePartSide side)
@@ -423,7 +612,10 @@ namespace CharacterStudio.UI
             LayeredFacePartSide side = LayeredFacePartSide.None)
         {
             bool isOverlay = partType == LayeredFacePartType.Overlay;
-            string resolvedOverlayId = string.IsNullOrWhiteSpace(overlayId) ? "Overlay" : overlayId!;
+            string resolvedOverlayId = PawnFaceConfig.NormalizeOverlayId(overlayId);
+            if (isOverlay && string.IsNullOrWhiteSpace(resolvedOverlayId))
+                return;
+
             LayeredFacePartSide normalizedSide = PawnFaceConfig.NormalizePartSide(partType, side);
             string bufferKey = GetLayeredPartBufferKey(partType, expression, resolvedOverlayId, normalizedSide);
 
@@ -595,24 +787,16 @@ namespace CharacterStudio.UI
             if (editablePart == null)
                 return;
 
-            float correctionX = editablePart.anchorCorrection.x;
-            UIHelper.DrawPropertySlider(ref y, width,
-                "CS_Studio_Face_Layered_MotionAmplitudeX".Translate(),
-                ref correctionX, -0.01f, 0.01f, "F4", 20f);
-            if (!Mathf.Approximately(correctionX, editablePart.anchorCorrection.x))
-            {
-                editablePart.anchorCorrection.x = correctionX;
-                isDirty = true;
-                RefreshPreview();
-            }
+            editablePart.SyncLegacyMotionAmplitude();
 
-            float correctionY = editablePart.anchorCorrection.y;
+            float motionAmplitude = editablePart.motionAmplitude;
             UIHelper.DrawPropertySlider(ref y, width,
-                "CS_Studio_Face_Layered_MotionAmplitudeY".Translate(),
-                ref correctionY, -0.01f, 0.01f, "F4", 20f);
-            if (!Mathf.Approximately(correctionY, editablePart.anchorCorrection.y))
+                "CS_Studio_Face_Layered_MotionAmplitude".Translate(),
+                ref motionAmplitude, 0f, 0.01f, "F4", 20f);
+            if (!Mathf.Approximately(motionAmplitude, editablePart.motionAmplitude))
             {
-                editablePart.anchorCorrection.y = correctionY;
+                editablePart.motionAmplitude = motionAmplitude;
+                editablePart.anchorCorrection = Vector2.zero;
                 isDirty = true;
                 RefreshPreview();
             }

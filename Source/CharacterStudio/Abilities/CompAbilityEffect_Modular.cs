@@ -19,6 +19,7 @@ namespace CharacterStudio.Abilities
         public new CompProperties_AbilityModular Props => (CompProperties_AbilityModular)props;
 
         private static readonly Dictionary<string, ThingDef> customTextureMoteDefCache = new Dictionary<string, ThingDef>();
+        private static readonly HashSet<string> runtimeVfxWarnings = new HashSet<string>();
 
         private static bool CanApplyDamageToTarget(Pawn? caster, LocalTargetInfo target, AbilityEffectConfig? damageEffect = null)
         {
@@ -35,6 +36,31 @@ namespace CharacterStudio.Abilities
             return Props.effects != null && Props.effects.Any(effect => effect != null
                 && effect.type == AbilityEffectType.Damage
                 && effect.canHurtSelf);
+        }
+
+        private static bool IsPulseSelfEffect(Pawn caster, AbilityEffectConfig? effect)
+        {
+            if (effect == null)
+            {
+                return false;
+            }
+
+            return effect.type == AbilityEffectType.Heal
+                || effect.type == AbilityEffectType.Buff
+                || effect.type == AbilityEffectType.Debuff
+                || (effect.type == AbilityEffectType.Damage && CanApplyDamageToTarget(caster, new LocalTargetInfo(caster), effect));
+        }
+
+        private static bool ShouldApplyPulseEffectToPrimaryTarget(AbilityEffectConfig? effect)
+        {
+            if (effect == null)
+            {
+                return false;
+            }
+
+            return effect.type != AbilityEffectType.Heal
+                && effect.type != AbilityEffectType.Buff
+                && effect.type != AbilityEffectType.Debuff;
         }
 
         private bool CanApplyRuntimeBonusDamageToTarget(Pawn? caster, LocalTargetInfo target)
@@ -315,8 +341,31 @@ namespace CharacterStudio.Abilities
                         }
                         break;
                     case AbilityRuntimeComponentType.FlightState:
+                        skinComp.flightStateStartTick = nowTick;
                         skinComp.flightStateExpireTick = nowTick + Mathf.Max(1, component.flightDurationTicks);
                         skinComp.flightStateHeightFactor = Mathf.Max(0f, component.flightHeightFactor);
+                        skinComp.suppressCombatActionsDuringFlightState = component.suppressCombatActionsDuringFlightState;
+                        skinComp.TriggerEquipmentAnimationState("FlightState", nowTick, component.flightDurationTicks);
+                        break;
+                    case AbilityRuntimeComponentType.VanillaPawnFlyer:
+                        if (!AbilityVanillaFlightUtility.TryLaunchPawnFlyer(
+                            caster,
+                            target,
+                            component,
+                            parent?.def?.defName ?? string.Empty,
+                            out string failureReason))
+                        {
+                            Log.Warning($"[CharacterStudio] VanillaPawnFlyer launch failed: {failureReason}");
+                        }
+                        break;
+                    case AbilityRuntimeComponentType.FlightOnlyFollowup:
+                        if (skinComp.isInVanillaFlight && component.consumeFlightStateOnCast)
+                        {
+                            AbilityVanillaFlightUtility.ClearVanillaFlightState(caster);
+                        }
+                        break;
+                    case AbilityRuntimeComponentType.FlightLandingBurst:
+                        skinComp.vanillaFlightPendingLandingBurst = true;
                         break;
                 }
             }
@@ -372,7 +421,15 @@ namespace CharacterStudio.Abilities
                     continue;
                 }
 
-                if (!ShouldHandleTriggerAtApply(vfx.trigger))
+                AbilityVisualEffectTrigger runtimeTrigger = NormalizeRuntimeTrigger(vfx.trigger);
+                if (runtimeTrigger != vfx.trigger)
+                {
+                    LogRuntimeVfxWarningOnce(
+                        $"TriggerFallback:{vfx.trigger}",
+                        $"[CharacterStudio] VFX trigger '{vfx.trigger}' 当前未接入完整生命周期，运行时将回退为 '{runtimeTrigger}' 播放。");
+                }
+
+                if (!ShouldHandleTriggerAtApply(runtimeTrigger))
                 {
                     continue;
                 }
@@ -522,15 +579,13 @@ namespace CharacterStudio.Abilities
                 return;
             }
 
-            bool hasSelfAffectingPulseEffect = Props.effects.Any(effect => effect != null
-                && (effect.type == AbilityEffectType.Heal
-                    || effect.type == AbilityEffectType.Buff
-                    || effect.type == AbilityEffectType.Debuff
-                    || (effect.type == AbilityEffectType.Damage && CanApplyDamageToTarget(caster, new LocalTargetInfo(caster), effect))));
+            bool hasSelfAffectingPulseEffect = Props.effects.Any(effect => IsPulseSelfEffect(caster, effect));
             if (hasSelfAffectingPulseEffect)
             {
-                ApplyConfiguredEffectsToTarget(new LocalTargetInfo(caster), caster);
-                return;
+                ApplyConfiguredEffectsToTarget(
+                    new LocalTargetInfo(caster),
+                    caster,
+                    effectFilter: effect => IsPulseSelfEffect(caster, effect));
             }
 
             LocalTargetInfo pulseTarget = new LocalTargetInfo(caster.Position);
@@ -543,7 +598,10 @@ namespace CharacterStudio.Abilities
                 }
             }
 
-            ApplyConfiguredEffectsToTarget(pulseTarget, caster);
+            ApplyConfiguredEffectsToTarget(
+                pulseTarget,
+                caster,
+                effectFilter: effect => ShouldApplyPulseEffectToPrimaryTarget(effect));
         }
 
         private void ArmShieldAbsorb(AbilityRuntimeComponentConfig component, CompPawnSkin skinComp, int nowTick)
@@ -584,11 +642,19 @@ namespace CharacterStudio.Abilities
                 return;
             }
 
-            for (int i = hediffs.Count - 1; i >= 0; i--)
+            float remainingHeal = amount;
+            for (int i = hediffs.Count - 1; i >= 0 && remainingHeal > 0.001f; i--)
             {
                 if (hediffs[i] is Hediff_Injury injury)
                 {
-                    injury.Heal(amount);
+                    float healAmount = Mathf.Min(remainingHeal, injury.Severity);
+                    if (healAmount <= 0f)
+                    {
+                        continue;
+                    }
+
+                    injury.Heal(healAmount);
+                    remainingHeal -= healAmount;
                 }
             }
         }
@@ -1014,7 +1080,7 @@ namespace CharacterStudio.Abilities
             return bestPawn;
         }
 
-        private void ApplyConfiguredEffectsToTarget(LocalTargetInfo target, Pawn caster, float damageScale = 1f, float flatBonusDamage = 0f, bool consumeDashEmpower = false, bool includeEntityEffects = true, bool includePrimaryCellEffects = true, bool includeAreaCellEffects = true)
+        private void ApplyConfiguredEffectsToTarget(LocalTargetInfo target, Pawn caster, float damageScale = 1f, float flatBonusDamage = 0f, bool consumeDashEmpower = false, bool includeEntityEffects = true, bool includePrimaryCellEffects = true, bool includeAreaCellEffects = true, Func<AbilityEffectConfig, bool>? effectFilter = null)
         {
             if (Props.effects == null)
             {
@@ -1030,7 +1096,17 @@ namespace CharacterStudio.Abilities
 
             foreach (var effectConfig in Props.effects)
             {
-                if (effectConfig == null || Rand.Value > effectConfig.chance)
+                if (effectConfig == null)
+                {
+                    continue;
+                }
+
+                if (effectFilter != null && !effectFilter(effectConfig))
+                {
+                    continue;
+                }
+
+                if (Rand.Value > effectConfig.chance)
                 {
                     continue;
                 }
@@ -1110,18 +1186,50 @@ namespace CharacterStudio.Abilities
 
         private static bool ShouldHandleTriggerAtApply(AbilityVisualEffectTrigger trigger)
         {
-            switch (trigger)
+            return trigger == AbilityVisualEffectTrigger.OnTargetApply
+                || trigger == AbilityVisualEffectTrigger.OnCastFinish;
+        }
+
+        private static AbilityVisualEffectTrigger NormalizeRuntimeTrigger(AbilityVisualEffectTrigger trigger)
+        {
+            return trigger switch
             {
-                case AbilityVisualEffectTrigger.OnTargetApply:
-                case AbilityVisualEffectTrigger.OnCastFinish:
-                    return true;
-                case AbilityVisualEffectTrigger.OnCastStart:
-                case AbilityVisualEffectTrigger.OnWarmup:
-                case AbilityVisualEffectTrigger.OnDurationTick:
-                case AbilityVisualEffectTrigger.OnExpire:
-                default:
-                    return true;
+                AbilityVisualEffectTrigger.OnCastStart => AbilityVisualEffectTrigger.OnTargetApply,
+                AbilityVisualEffectTrigger.OnWarmup => AbilityVisualEffectTrigger.OnTargetApply,
+                AbilityVisualEffectTrigger.OnDurationTick => AbilityVisualEffectTrigger.OnTargetApply,
+                AbilityVisualEffectTrigger.OnExpire => AbilityVisualEffectTrigger.OnTargetApply,
+                _ => trigger
+            };
+        }
+
+        private static void LogRuntimeVfxWarningOnce(string key, string message)
+        {
+            if (runtimeVfxWarnings.Add(key))
+            {
+                Log.Warning(message);
             }
+        }
+
+        private static bool TryResolveRuntimeVfxType(AbilityVisualEffectConfig vfx, out AbilityVisualEffectType resolvedType)
+        {
+            resolvedType = vfx.type;
+            if (!vfx.UsesPresetType)
+            {
+                return true;
+            }
+
+            if (VisualEffectWorkerFactory.TryResolvePresetType(vfx.presetDefName, out resolvedType))
+            {
+                return true;
+            }
+
+            string presetName = string.IsNullOrWhiteSpace(vfx.presetDefName)
+                ? "<empty>"
+                : vfx.presetDefName.Trim();
+            LogRuntimeVfxWarningOnce(
+                $"PresetMissing:{presetName}",
+                $"[CharacterStudio] 视觉特效预设 '{presetName}' 未注册到运行时 Worker，已跳过播放。");
+            return false;
         }
 
         private void PlayVfx(AbilityVisualEffectConfig vfx, LocalTargetInfo target)
@@ -1158,16 +1266,12 @@ namespace CharacterStudio.Abilities
                     return;
                 }
 
-                if (vfx.UsesPresetType)
+                if (!TryResolveRuntimeVfxType(vfx, out AbilityVisualEffectType runtimeVfxType))
                 {
-                    if (!string.IsNullOrWhiteSpace(vfx.presetDefName))
-                    {
-                        Log.Warning($"[CharacterStudio] 视觉特效预设 '{vfx.presetDefName}' 当前阶段尚未接入运行时，已跳过播放。");
-                    }
                     return;
                 }
 
-                var worker = VisualEffectWorkerFactory.GetWorker(vfx.type);
+                VisualEffectWorker worker = VisualEffectWorkerFactory.GetWorker(runtimeVfxType);
                 worker.Play(vfx, target, caster);
             }
             catch (Exception ex)
@@ -1193,9 +1297,13 @@ namespace CharacterStudio.Abilities
                     return;
                 }
 
-                Vector3 soundPos = ResolveVfxPosition(vfx, target, caster);
-                SoundInfo soundInfo = SoundInfo.InMap(new TargetInfo(soundPos.ToIntVec3(), caster.Map, false), MaintenanceType.None);
-                soundDef.PlayOneShot(soundInfo);
+                foreach (Vector3 soundPos in ResolveVfxPositions(vfx, target, caster))
+                {
+                    SoundInfo soundInfo = SoundInfo.InMap(new TargetInfo(soundPos.ToIntVec3(), caster.Map, false), MaintenanceType.None);
+                    soundInfo.volumeFactor = Mathf.Max(0f, vfx.soundVolume);
+                    soundInfo.pitchFactor = Mathf.Max(0.01f, vfx.soundPitch);
+                    soundDef.PlayOneShot(soundInfo);
+                }
             }
             catch (Exception ex)
             {
@@ -1210,35 +1318,68 @@ namespace CharacterStudio.Abilities
                 return false;
             }
 
-            Vector3 spawnPos = ResolveVfxPosition(vfx, target, caster);
             ThingDef moteDef = GetOrCreateCustomTextureMoteDef(
                 vfx.customTexturePath,
                 Mathf.Max(0.1f, vfx.drawSize),
                 Mathf.Max(1, vfx.displayDurationTicks));
-            MoteThrown? mote = ThingMaker.MakeThing(moteDef) as MoteThrown;
-            if (mote == null)
-            {
-                return false;
-            }
 
             float uniformScale = Mathf.Max(0.1f, vfx.scale);
             float scaleX = Mathf.Max(0.1f, vfx.textureScale.x) * uniformScale;
             float scaleZ = Mathf.Max(0.1f, vfx.textureScale.y) * uniformScale;
+            bool playedAny = false;
 
-            mote.exactPosition = spawnPos;
-            mote.exactRotation = vfx.rotation;
-            mote.rotationRate = 0f;
-            mote.instanceColor = Color.white;
-            mote.linearScale = new Vector3(scaleX, 1f, scaleZ);
-            mote.SetVelocity(0f, 0f);
-            GenSpawn.Spawn(mote, spawnPos.ToIntVec3(), caster.Map, WipeMode.Vanish);
-            return true;
+            foreach (Vector3 spawnPos in ResolveVfxPositions(vfx, target, caster))
+            {
+                MoteThrown? mote = ThingMaker.MakeThing(moteDef) as MoteThrown;
+                if (mote == null)
+                {
+                    continue;
+                }
+
+                mote.exactPosition = spawnPos;
+                mote.exactRotation = vfx.rotation;
+                mote.rotationRate = 0f;
+                mote.instanceColor = Color.white;
+                mote.linearScale = new Vector3(scaleX, 1f, scaleZ);
+                mote.SetVelocity(0f, 0f);
+                GenSpawn.Spawn(mote, spawnPos.ToIntVec3(), caster.Map, WipeMode.Vanish);
+                playedAny = true;
+            }
+
+            return playedAny;
+        }
+
+        private static IEnumerable<Vector3> ResolveVfxPositions(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster)
+        {
+            if (vfx.target == VisualEffectTarget.Both)
+            {
+                Vector3 casterPos = ResolveVfxPosition(vfx, target, caster, VisualEffectTarget.Caster);
+                yield return casterPos;
+
+                Vector3 targetPos = ResolveVfxPosition(vfx, target, caster, VisualEffectTarget.Target);
+                if ((targetPos - casterPos).sqrMagnitude > 0.0001f)
+                {
+                    yield return targetPos;
+                }
+
+                yield break;
+            }
+
+            yield return ResolveVfxPosition(vfx, target, caster, vfx.target);
         }
 
         private static Vector3 ResolveVfxPosition(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster)
         {
+            VisualEffectTarget resolvedTarget = vfx.target == VisualEffectTarget.Both
+                ? VisualEffectTarget.Caster
+                : vfx.target;
+            return ResolveVfxPosition(vfx, target, caster, resolvedTarget);
+        }
+
+        private static Vector3 ResolveVfxPosition(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster, VisualEffectTarget targetMode)
+        {
             Vector3 pos;
-            switch (vfx.target)
+            switch (targetMode)
             {
                 case VisualEffectTarget.Caster:
                     pos = caster.DrawPos;

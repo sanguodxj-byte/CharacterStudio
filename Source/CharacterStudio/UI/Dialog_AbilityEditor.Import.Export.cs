@@ -38,15 +38,15 @@ namespace CharacterStudio.UI
                 string exportDir = GetAbilityExportDir();
                 Directory.CreateDirectory(exportDir);
                 string exportPath = GetDefaultAbilityExportFilePath();
-                var doc = CreateAbilitiesDocument(abilities);
+                var doc = CreateAbilitiesDocument(abilities, GetCurrentHotkeyConfig());
                 doc.Save(exportPath);
                 lastExportedAbilityXmlPath = exportPath;
-                validationSummary = "导出成功: " + exportPath;
+                validationSummary = "CS_Studio_Ability_ExportSuccess".Translate(exportPath);
             }
             catch (Exception ex)
             {
                 Log.Error($"[CharacterStudio] 技能 XML 导出失败: {ex}");
-                validationSummary = "导出失败: " + ex.Message;
+                validationSummary = "CS_Studio_Ability_ExportFailed".Translate(ex.Message);
             }
         }
 
@@ -57,7 +57,7 @@ namespace CharacterStudio.UI
                 string exportDir = GetAbilityExportDir();
                 Directory.CreateDirectory(exportDir);
                 string sessionPath = Path.Combine(exportDir, "AbilityEditor_LastSession.xml");
-                CreateAbilitiesDocument(abilities).Save(sessionPath);
+                CreateAbilitiesDocument(abilities, GetCurrentHotkeyConfig()).Save(sessionPath);
             }
             catch (Exception ex)
             {
@@ -67,21 +67,30 @@ namespace CharacterStudio.UI
 
         private static List<ModularAbilityDef> TryLoadAbilityEditorSessionFromDisk()
         {
+            return TryLoadAbilityEditorSessionFromDisk(out _);
+        }
+
+        private static List<ModularAbilityDef> TryLoadAbilityEditorSessionFromDisk(out SkinAbilityHotkeyConfig? hotkeys)
+        {
             try
             {
                 string sessionPath = Path.Combine(GetAbilityExportDir(), "AbilityEditor_LastSession.xml");
                 if (!File.Exists(sessionPath))
+                {
+                    hotkeys = null;
                     return new List<ModularAbilityDef>();
+                }
 
-                return LoadAbilitiesFromXmlFile(sessionPath);
+                return LoadAbilitiesFromXmlFile(sessionPath, out hotkeys);
             }
             catch
             {
+                hotkeys = null;
                 return new List<ModularAbilityDef>();
             }
         }
 
-        private static System.Xml.Linq.XDocument CreateAbilitiesDocument(List<ModularAbilityDef> abilityList)
+        private static System.Xml.Linq.XDocument CreateAbilitiesDocument(List<ModularAbilityDef> abilityList, SkinAbilityHotkeyConfig? hotkeys = null)
         {
             var defs = new System.Xml.Linq.XElement("Defs");
             var skinRoot = new System.Xml.Linq.XElement(nameof(PawnSkinDef));
@@ -122,6 +131,7 @@ namespace CharacterStudio.UI
             }
 
             skinRoot.Add(abilitiesEl);
+            skinRoot.Add(GenerateAbilityHotkeysXml(hotkeys));
             defs.Add(skinRoot);
             return new System.Xml.Linq.XDocument(defs);
         }
@@ -142,7 +152,15 @@ namespace CharacterStudio.UI
                     effect.damageDef != null ? new System.Xml.Linq.XElement("damageDef", effect.damageDef.defName) : null,
                     effect.hediffDef != null ? new System.Xml.Linq.XElement("hediffDef", effect.hediffDef.defName) : null,
                     effect.summonKind != null ? new System.Xml.Linq.XElement("summonKind", effect.summonKind.defName) : null,
-                    new System.Xml.Linq.XElement("summonCount", effect.summonCount)
+                    effect.summonFactionDef != null ? new System.Xml.Linq.XElement("summonFactionDef", effect.summonFactionDef.defName) : null,
+                    new System.Xml.Linq.XElement("summonCount", effect.summonCount),
+                    new System.Xml.Linq.XElement("controlMode", effect.controlMode.ToString()),
+                    new System.Xml.Linq.XElement("controlMoveDistance", effect.controlMoveDistance),
+                    new System.Xml.Linq.XElement("terraformMode", effect.terraformMode.ToString()),
+                    effect.terraformThingDef != null ? new System.Xml.Linq.XElement("terraformThingDef", effect.terraformThingDef.defName) : null,
+                    effect.terraformTerrainDef != null ? new System.Xml.Linq.XElement("terraformTerrainDef", effect.terraformTerrainDef.defName) : null,
+                    new System.Xml.Linq.XElement("terraformSpawnCount", effect.terraformSpawnCount),
+                    new System.Xml.Linq.XElement("canHurtSelf", effect.canHurtSelf.ToString().ToLowerInvariant())
                 ));
             }
             return effectsEl;
@@ -271,10 +289,50 @@ namespace CharacterStudio.UI
                     new System.Xml.Linq.XElement("hitCooldownRefundPercent", component.hitCooldownRefundPercent),
                     new System.Xml.Linq.XElement("splitProjectileCount", component.splitProjectileCount),
                     new System.Xml.Linq.XElement("splitDamageScale", component.splitDamageScale),
-                    new System.Xml.Linq.XElement("splitSearchRange", component.splitSearchRange)
+                    new System.Xml.Linq.XElement("splitSearchRange", component.splitSearchRange),
+                    new System.Xml.Linq.XElement("flightDurationTicks", component.flightDurationTicks),
+                    new System.Xml.Linq.XElement("flightHeightFactor", component.flightHeightFactor),
+                    new System.Xml.Linq.XElement("suppressCombatActionsDuringFlightState", component.suppressCombatActionsDuringFlightState.ToString().ToLower()),
+                    new System.Xml.Linq.XElement("flyerThingDefName", component.flyerThingDefName ?? string.Empty),
+                    new System.Xml.Linq.XElement("flyerWarmupTicks", component.flyerWarmupTicks),
+                    new System.Xml.Linq.XElement("launchFromCasterPosition", component.launchFromCasterPosition.ToString().ToLower()),
+                    new System.Xml.Linq.XElement("requireValidTargetCell", component.requireValidTargetCell.ToString().ToLower()),
+                    new System.Xml.Linq.XElement("storeTargetForFollowup", component.storeTargetForFollowup.ToString().ToLower()),
+                    new System.Xml.Linq.XElement("enableFlightOnlyWindow", component.enableFlightOnlyWindow.ToString().ToLower()),
+                    new System.Xml.Linq.XElement("flightOnlyWindowTicks", component.flightOnlyWindowTicks),
+                    new System.Xml.Linq.XElement("flightOnlyAbilityDefName", component.flightOnlyAbilityDefName ?? string.Empty),
+                    new System.Xml.Linq.XElement("hideCasterDuringTakeoff", component.hideCasterDuringTakeoff.ToString().ToLower()),
+                    new System.Xml.Linq.XElement("autoExpireFlightMarkerOnLanding", component.autoExpireFlightMarkerOnLanding.ToString().ToLower()),
+                    new System.Xml.Linq.XElement("requiredFlightSourceAbilityDefName", component.requiredFlightSourceAbilityDefName ?? string.Empty),
+                    new System.Xml.Linq.XElement("requireReservedTargetCell", component.requireReservedTargetCell.ToString().ToLower()),
+                    new System.Xml.Linq.XElement("consumeFlightStateOnCast", component.consumeFlightStateOnCast.ToString().ToLower()),
+                    new System.Xml.Linq.XElement("onlyUseDuringFlightWindow", component.onlyUseDuringFlightWindow.ToString().ToLower()),
+                    new System.Xml.Linq.XElement("landingBurstRadius", component.landingBurstRadius),
+                    new System.Xml.Linq.XElement("landingBurstDamage", component.landingBurstDamage),
+                    component.landingBurstDamageDef != null ? new System.Xml.Linq.XElement("landingBurstDamageDef", component.landingBurstDamageDef.defName) : null,
+                    new System.Xml.Linq.XElement("landingEffecterDefName", component.landingEffecterDefName ?? string.Empty),
+                    new System.Xml.Linq.XElement("landingSoundDefName", component.landingSoundDefName ?? string.Empty),
+                    new System.Xml.Linq.XElement("affectBuildings", component.affectBuildings.ToString().ToLower()),
+                    new System.Xml.Linq.XElement("affectCells", component.affectCells.ToString().ToLower()),
+                    new System.Xml.Linq.XElement("knockbackTargets", component.knockbackTargets.ToString().ToLower()),
+                    new System.Xml.Linq.XElement("knockbackDistance", component.knockbackDistance)
                 ));
             }
             return root;
+        }
+
+        private static System.Xml.Linq.XElement? GenerateAbilityHotkeysXml(SkinAbilityHotkeyConfig? hotkeys)
+        {
+            if (hotkeys == null) return null;
+
+            return new System.Xml.Linq.XElement("abilityHotkeys",
+                new System.Xml.Linq.XElement("enabled", hotkeys.enabled.ToString().ToLower()),
+                !string.IsNullOrEmpty(hotkeys.qAbilityDefName) ? new System.Xml.Linq.XElement("qAbilityDefName", hotkeys.qAbilityDefName) : null,
+                !string.IsNullOrEmpty(hotkeys.wAbilityDefName) ? new System.Xml.Linq.XElement("wAbilityDefName", hotkeys.wAbilityDefName) : null,
+                !string.IsNullOrEmpty(hotkeys.eAbilityDefName) ? new System.Xml.Linq.XElement("eAbilityDefName", hotkeys.eAbilityDefName) : null,
+                !string.IsNullOrEmpty(hotkeys.rAbilityDefName) ? new System.Xml.Linq.XElement("rAbilityDefName", hotkeys.rAbilityDefName) : null,
+                !string.IsNullOrEmpty(hotkeys.wComboAbilityDefName) ? new System.Xml.Linq.XElement("wComboAbilityDefName", hotkeys.wComboAbilityDefName) : null
+            );
         }
     }
 }

@@ -139,14 +139,10 @@ namespace CharacterStudio.Rendering
                                        BaseAppearanceUtility.BuildSyntheticLayers(skinDef).Count();
             if (configuredLayerCount == 0) return;
 
-            bool hasCustomNodes = false;
-            CheckForCustomNodes(tree.rootNode, ref hasCustomNodes);
-            if (!hasCustomNodes)
-            {
-                var injected = InjectCustomLayers(tree, pawn, skinDef);
-                if (injected)
-                    Log.Message($"[CharacterStudio] 注入了 {configuredLayerCount} 个自定义图层");
-            }
+            RemoveAllCustomNodes(tree);
+            var injected = InjectCustomLayers(tree, pawn, skinDef);
+            if (injected)
+                Log.Message($"[CharacterStudio] 注入了 {configuredLayerCount} 个自定义图层");
         }
 
         /// <summary>注入自定义图层，anchorPath 优先于 anchorTag</summary>
@@ -912,8 +908,10 @@ namespace CharacterStudio.Rendering
                             return 50.24f;
                         case LayeredOverlayKind.Sweat:
                             return 50.26f;
+                        case LayeredOverlayKind.Sleep:
+                            return 50.28f;
                         default:
-                            return 50.30f + Math.Max(0, overlayOrder - PawnFaceConfig.GetCanonicalOverlayOrder("Overlay")) * 0.002f;
+                            return 50.30f + Math.Max(0, overlayOrder - 4) * 0.002f;
                     }
                 }
                 default:

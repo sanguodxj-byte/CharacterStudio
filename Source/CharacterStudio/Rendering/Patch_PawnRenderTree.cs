@@ -310,30 +310,38 @@ namespace CharacterStudio.Rendering
                     }
                 }
 
-                if (skinDef == null) return;
+                if (skinDef == null && !RenderFixPatchRegistry.GetApplicablePatches(pawn).Any()) return;
 
                 // 已注入则跳过（防止重复注入）
                 bool hasCustomNodes = false;
                 CheckForCustomNodes(__instance.rootNode, ref hasCustomNodes);
                 if (hasCustomNodes) return;
 
-                bool expectsInjectedOverrides = HasPotentialInjectedOverrides(pawn, skinDef);
+                bool expectsInjectedOverrides = skinDef != null && HasPotentialInjectedOverrides(pawn, skinDef);
 
-                if (!overlayMode)
+                if (skinDef != null && !overlayMode)
                     ProcessVanillaHiding(__instance, skinDef, hideVanillaHead, hideVanillaHair, out _);
+                else
+                    ProcessRenderFixOnlyHiding(__instance, pawn);
 
-                bool anyNodesInjected = InjectCustomLayers(__instance, pawn, skinDef);
-                bool anyLayeredFaceInjected = InjectLayeredFaceLayers(__instance, pawn, skinDef);
+                bool anyNodesInjected = false;
+                bool anyLayeredFaceInjected = false;
 
-                // 注入眼睛方向覆盖层（与 RefreshHiddenNodes 保持一致）
-                InjectEyeDirectionLayer(__instance, pawn, skinDef);
+                if (skinDef != null)
+                {
+                    anyNodesInjected = InjectCustomLayers(__instance, pawn, skinDef);
+                    anyLayeredFaceInjected = InjectLayeredFaceLayers(__instance, pawn, skinDef);
+
+                    // 注入眼睛方向覆盖层（与 RefreshHiddenNodes 保持一致）
+                    InjectEyeDirectionLayer(__instance, pawn, skinDef);
+                }
 
                 if (expectsInjectedOverrides && !anyNodesInjected && !anyLayeredFaceInjected)
                 {
                     RestoreAndRemoveHiddenForTree(__instance);
                     Log.Warning($"[CharacterStudio] 图层注入失败，已恢复原始渲染节点以避免角色部件被隐藏: {pawn.LabelShortCap}");
                 }
-                else if (!overlayMode && (anyNodesInjected || anyLayeredFaceInjected))
+                else if (skinDef != null && !overlayMode && (anyNodesInjected || anyLayeredFaceInjected))
                 {
                     try
                     {
@@ -516,6 +524,20 @@ namespace CharacterStudio.Rendering
                 }
             }
 
+            foreach (string nodePath in CollectRenderFixHiddenPaths(tree?.pawn))
+            {
+                if (tree == null || string.IsNullOrWhiteSpace(nodePath))
+                {
+                    continue;
+                }
+
+                PawnRenderNode? targetNode = FindNodeByPath(tree, nodePath, warnOnFail: false);
+                if (targetNode != null)
+                {
+                    HideNode(targetNode);
+                }
+            }
+
             // hiddenTags（向后兼容）+ 路径失配回退
 #pragma warning disable CS0618
             if (canUseTag)
@@ -537,6 +559,23 @@ namespace CharacterStudio.Rendering
                     HideNodeByTagName(nodesByTag!, t);
             }
 #pragma warning restore CS0618
+        }
+
+        private static void ProcessRenderFixOnlyHiding(PawnRenderTree tree, Pawn pawn)
+        {
+            foreach (string nodePath in CollectRenderFixHiddenPaths(pawn))
+            {
+                if (string.IsNullOrWhiteSpace(nodePath))
+                {
+                    continue;
+                }
+
+                PawnRenderNode? targetNode = FindNodeByPath(tree, nodePath, warnOnFail: false);
+                if (targetNode != null)
+                {
+                    HideNode(targetNode);
+                }
+            }
         }
     }
 }

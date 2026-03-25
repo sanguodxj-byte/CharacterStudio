@@ -154,7 +154,7 @@ namespace CharacterStudio.UI
         {
             previewAutoPlayEnabled = keepEnabled;
             previewAutoPlayStepIndex = 0;
-            previewAutoPlayNextStepTime = Time.realtimeSinceStartup + previewAutoPlayIntervalSeconds;
+            previewAutoPlayNextStepTime = Time.realtimeSinceStartup;
         }
 
         private void ApplyPreviewAutoPlayStep()
@@ -164,8 +164,46 @@ namespace CharacterStudio.UI
                 return;
             }
 
+            PreviewFlowStep step = GetCurrentPreviewFlowStep();
+            float durationSeconds = step.DurationSeconds > 0f
+                ? step.DurationSeconds
+                : previewAutoPlayIntervalSeconds;
+
             previewRuntimeExpressionOverrideEnabled = true;
-            previewRuntimeExpression = previewExpression;
+            previewRuntimeExpression = step.RuntimeExpression;
+
+            previewEyeDirectionOverrideEnabled = step.OverrideEyeDirection;
+            if (step.OverrideEyeDirection)
+            {
+                previewEyeDirection = step.EyeDirection;
+            }
+
+            previewMouthStateOverrideEnabled = step.MouthState.HasValue;
+            if (step.MouthState.HasValue)
+            {
+                previewMouthState = step.MouthState.Value;
+            }
+
+            previewLidStateOverrideEnabled = step.LidState.HasValue;
+            if (step.LidState.HasValue)
+            {
+                previewLidState = step.LidState.Value;
+            }
+
+            previewBrowStateOverrideEnabled = step.BrowState.HasValue;
+            if (step.BrowState.HasValue)
+            {
+                previewBrowState = step.BrowState.Value;
+            }
+
+            previewEmotionStateOverrideEnabled = step.EmotionState.HasValue;
+            if (step.EmotionState.HasValue)
+            {
+                previewEmotionState = step.EmotionState.Value;
+            }
+
+            previewAutoPlayNextStepTime = Time.realtimeSinceStartup + durationSeconds;
+
             SyncPreviewOverridesToSkinComp();
             RefreshPreview();
         }
@@ -182,10 +220,22 @@ namespace CharacterStudio.UI
                 return;
             }
 
-            if (!previewRuntimeExpressionOverrideEnabled || previewRuntimeExpression != previewExpression)
+            PreviewFlowStep currentStep = GetCurrentPreviewFlowStep();
+            bool needsApplyStep =
+                !previewRuntimeExpressionOverrideEnabled
+                || previewRuntimeExpression != currentStep.RuntimeExpression;
+
+            if (!needsApplyStep && previewAutoPlayNextStepTime > 0f && Time.realtimeSinceStartup < previewAutoPlayNextStepTime)
             {
-                ApplyPreviewAutoPlayStep();
+                return;
             }
+
+            if (!needsApplyStep && PreviewAutoPlayFlowSteps.Length > 0)
+            {
+                previewAutoPlayStepIndex = (previewAutoPlayStepIndex + 1) % PreviewAutoPlayFlowSteps.Length;
+            }
+
+            ApplyPreviewAutoPlayStep();
         }
         
 
@@ -402,6 +452,181 @@ namespace CharacterStudio.UI
             }
         }
 
+        private string GetSelectedEquipmentAnimationTriggerKey()
+        {
+            if (currentTab != EditorTab.Equipment)
+            {
+                return string.Empty;
+            }
+
+            workingSkin.equipments ??= new List<CharacterEquipmentDef>();
+            SanitizeEquipmentSelection();
+            if (selectedEquipmentIndex < 0 || selectedEquipmentIndex >= workingSkin.equipments.Count)
+            {
+                return string.Empty;
+            }
+
+            CharacterEquipmentDef? equipment = workingSkin.equipments[selectedEquipmentIndex];
+            CharacterEquipmentRenderData? renderData = equipment?.renderData;
+            if (renderData == null || !renderData.useTriggeredLocalAnimation)
+            {
+                return string.Empty;
+            }
+
+            return string.IsNullOrWhiteSpace(renderData.triggerAbilityDefName)
+                ? (renderData.animationGroupKey ?? string.Empty)
+                : renderData.triggerAbilityDefName;
+        }
+
+        private int GetSelectedEquipmentAnimationDurationTicks()
+        {
+            if (currentTab != EditorTab.Equipment)
+            {
+                return 0;
+            }
+
+            workingSkin.equipments ??= new List<CharacterEquipmentDef>();
+            SanitizeEquipmentSelection();
+            if (selectedEquipmentIndex < 0 || selectedEquipmentIndex >= workingSkin.equipments.Count)
+            {
+                return 0;
+            }
+
+            CharacterEquipmentDef? equipment = workingSkin.equipments[selectedEquipmentIndex];
+            CharacterEquipmentRenderData? renderData = equipment?.renderData;
+            if (renderData == null || !renderData.useTriggeredLocalAnimation)
+            {
+                return 0;
+            }
+
+            return Mathf.Max(1, renderData.triggeredDeployTicks)
+                + Mathf.Max(0, renderData.triggeredHoldTicks)
+                + Mathf.Max(1, renderData.triggeredReturnTicks);
+        }
+
+        private void StopPreviewEquipmentAnimation(bool refreshPreview = true)
+        {
+            previewEquipmentAnimationPlaying = false;
+            previewEquipmentAnimationLastRealtime = -1f;
+
+            var previewPawn = mannequin?.CurrentPawn;
+            var skinComp = previewPawn?.GetComp<CompPawnSkin>();
+            if (skinComp != null)
+            {
+                skinComp.ClearEquipmentAnimationState();
+            }
+
+            previewEquipmentAnimationTriggerKey = string.Empty;
+            if (refreshPreview)
+            {
+                RefreshPreview();
+            }
+        }
+
+        private void StartPreviewEquipmentAnimation(bool loop)
+        {
+            string triggerKey = GetSelectedEquipmentAnimationTriggerKey();
+            int durationTicks = GetSelectedEquipmentAnimationDurationTicks();
+            if (string.IsNullOrWhiteSpace(triggerKey) || durationTicks <= 0)
+            {
+                StopPreviewEquipmentAnimation(refreshPreview: false);
+                return;
+            }
+
+            previewEquipmentAnimationLoop = loop;
+            previewEquipmentAnimationPlaying = true;
+            previewEquipmentAnimationLastRealtime = Time.realtimeSinceStartup;
+            previewEquipmentAnimationTriggerKey = triggerKey;
+
+            var previewPawn = mannequin?.CurrentPawn;
+            var skinComp = previewPawn?.GetComp<CompPawnSkin>();
+            if (skinComp != null)
+            {
+                int now = Find.TickManager?.TicksGame ?? 0;
+                skinComp.TriggerEquipmentAnimationState(triggerKey, now, durationTicks);
+            }
+        }
+
+        private void TogglePreviewEquipmentAnimation(bool loop)
+        {
+            string triggerKey = GetSelectedEquipmentAnimationTriggerKey();
+            if (string.IsNullOrWhiteSpace(triggerKey))
+            {
+                StopPreviewEquipmentAnimation();
+                return;
+            }
+
+            if (previewEquipmentAnimationPlaying
+                && string.Equals(previewEquipmentAnimationTriggerKey, triggerKey, StringComparison.OrdinalIgnoreCase)
+                && previewEquipmentAnimationLoop == loop)
+            {
+                StopPreviewEquipmentAnimation();
+                return;
+            }
+
+            StartPreviewEquipmentAnimation(loop);
+            RefreshPreview();
+        }
+
+        private void UpdatePreviewEquipmentAnimation()
+        {
+            if (!previewEquipmentAnimationPlaying)
+            {
+                return;
+            }
+
+            string triggerKey = GetSelectedEquipmentAnimationTriggerKey();
+            int durationTicks = GetSelectedEquipmentAnimationDurationTicks();
+            if (string.IsNullOrWhiteSpace(triggerKey) || durationTicks <= 0)
+            {
+                StopPreviewEquipmentAnimation();
+                return;
+            }
+
+            if (!string.Equals(previewEquipmentAnimationTriggerKey, triggerKey, StringComparison.OrdinalIgnoreCase))
+            {
+                StartPreviewEquipmentAnimation(previewEquipmentAnimationLoop);
+                return;
+            }
+
+            float nowRealtime = Time.realtimeSinceStartup;
+            if (previewEquipmentAnimationLastRealtime < 0f)
+            {
+                previewEquipmentAnimationLastRealtime = nowRealtime;
+                return;
+            }
+
+            float deltaRealtime = nowRealtime - previewEquipmentAnimationLastRealtime;
+            if (deltaRealtime <= 0f)
+            {
+                return;
+            }
+
+            previewEquipmentAnimationLastRealtime = nowRealtime;
+
+            var previewPawn = mannequin?.CurrentPawn;
+            var skinComp = previewPawn?.GetComp<CompPawnSkin>();
+            if (skinComp == null)
+            {
+                return;
+            }
+
+            int nowTick = Find.TickManager?.TicksGame ?? 0;
+            if (skinComp.IsTriggeredEquipmentAnimationActive(triggerKey))
+            {
+                return;
+            }
+
+            if (previewEquipmentAnimationLoop)
+            {
+                skinComp.TriggerEquipmentAnimationState(triggerKey, nowTick, durationTicks);
+                return;
+            }
+
+            StopPreviewEquipmentAnimation(refreshPreview: false);
+            skinComp.RequestRenderRefresh();
+        }
+
         private void SyncPreviewOverridesToSkinComp()
         {
             var previewPawn = mannequin?.CurrentPawn;
@@ -411,13 +636,34 @@ namespace CharacterStudio.UI
                 return;
             }
 
-            skinComp.SetPreviewExpressionOverride(previewExpressionOverrideEnabled ? previewExpression : null);
+            skinComp.SetPreviewExpressionOverride(
+                previewAutoPlayEnabled
+                    ? (ExpressionType?)null
+                    : (previewExpressionOverrideEnabled ? previewExpression : (ExpressionType?)null));
             skinComp.SetPreviewRuntimeExpression(previewRuntimeExpressionOverrideEnabled ? previewRuntimeExpression : null);
             skinComp.SetPreviewEyeDirection(previewEyeDirectionOverrideEnabled ? previewEyeDirection : null);
             skinComp.SetPreviewMouthState(previewMouthStateOverrideEnabled ? previewMouthState : null);
             skinComp.SetPreviewLidState(previewLidStateOverrideEnabled ? previewLidState : null);
             skinComp.SetPreviewBrowState(previewBrowStateOverrideEnabled ? previewBrowState : null);
             skinComp.SetPreviewEmotionOverlayState(previewEmotionStateOverrideEnabled ? previewEmotionState : null);
+
+            string currentTriggerKey = GetSelectedEquipmentAnimationTriggerKey();
+            if (!previewEquipmentAnimationPlaying || string.IsNullOrWhiteSpace(currentTriggerKey))
+            {
+                skinComp.ClearEquipmentAnimationState();
+                previewEquipmentAnimationTriggerKey = string.Empty;
+            }
+            else
+            {
+                previewEquipmentAnimationTriggerKey = currentTriggerKey;
+                int durationTicks = GetSelectedEquipmentAnimationDurationTicks();
+                if (!skinComp.IsTriggeredEquipmentAnimationActive(currentTriggerKey) && durationTicks > 0)
+                {
+                    int now = Find.TickManager?.TicksGame ?? 0;
+                    skinComp.TriggerEquipmentAnimationState(currentTriggerKey, now, durationTicks);
+                }
+            }
+
             skinComp.RequestRenderRefresh();
         }
 
@@ -551,22 +797,39 @@ namespace CharacterStudio.UI
                 previewAutoPlayEnabled = !previewAutoPlayEnabled;
                 if (previewAutoPlayEnabled)
                 {
-                    if (!previewExpressionOverrideEnabled)
-                    {
-                        previewExpressionOverrideEnabled = true;
-                    }
-
                     ResetPreviewAutoPlayState(keepEnabled: true);
                     ApplyPreviewAutoPlayStep();
                 }
                 else
                 {
                     previewRuntimeExpressionOverrideEnabled = false;
+                    previewAutoPlayStepIndex = 0;
+                    previewAutoPlayNextStepTime = 0f;
                     SyncPreviewOverridesToSkinComp();
                     RefreshPreview();
                 }
             }, previewAutoPlayEnabled);
             TooltipHandler.TipRegion(autoPlayRect, "CS_Studio_Preview_FlowTooltip".Translate(GetExpressionTypeLabel(previewExpression)));
+
+            float equipmentPreviewBtnWidth = 76f;
+            Rect equipmentLoopRect = new Rect(autoPlayRect.x - Margin - equipmentPreviewBtnWidth, btnY, equipmentPreviewBtnWidth, btnHeight);
+            bool canPreviewEquipmentAnimation = !string.IsNullOrWhiteSpace(GetSelectedEquipmentAnimationTriggerKey());
+            DrawPreviewToolbarButton(equipmentLoopRect,
+                (previewEquipmentAnimationPlaying && previewEquipmentAnimationLoop ? "▶ " : string.Empty) + "CS_Studio_Equip_PreviewLoop".Translate(),
+                () => TogglePreviewEquipmentAnimation(loop: true),
+                previewEquipmentAnimationPlaying && previewEquipmentAnimationLoop);
+            TooltipHandler.TipRegion(equipmentLoopRect, canPreviewEquipmentAnimation
+                ? "CS_Studio_Equip_PreviewLoop_Hint".Translate()
+                : "CS_Studio_Equip_PreviewUnavailable_Hint".Translate());
+
+            Rect equipmentPlayRect = new Rect(equipmentLoopRect.x - Margin - equipmentPreviewBtnWidth, btnY, equipmentPreviewBtnWidth, btnHeight);
+            DrawPreviewToolbarButton(equipmentPlayRect,
+                (previewEquipmentAnimationPlaying && !previewEquipmentAnimationLoop ? "▶ " : string.Empty) + "CS_Studio_Equip_PreviewPlay".Translate(),
+                () => TogglePreviewEquipmentAnimation(loop: false),
+                previewEquipmentAnimationPlaying && !previewEquipmentAnimationLoop);
+            TooltipHandler.TipRegion(equipmentPlayRect, canPreviewEquipmentAnimation
+                ? "CS_Studio_Equip_PreviewPlay_Hint".Translate()
+                : "CS_Studio_Equip_PreviewUnavailable_Hint".Translate());
 
             float presetY = btnY + ButtonHeight + Margin;
             float presetButtonWidth = 64f;
@@ -718,6 +981,7 @@ namespace CharacterStudio.UI
             }
 
             DrawPreviewHintsOverlay(previewRect);
+            DrawSelectedEquipmentPivotOverlay(previewRect);
 
             // 处理交互输入
             HandlePreviewInput(previewRect);
@@ -913,8 +1177,166 @@ namespace CharacterStudio.UI
             GUI.color = Color.white;
         }
 
+        private void DrawSelectedEquipmentPivotOverlay(Rect previewRect)
+        {
+            if (currentTab != EditorTab.Equipment)
+            {
+                return;
+            }
+
+            workingSkin.equipments ??= new List<CharacterEquipmentDef>();
+            SanitizeEquipmentSelection();
+            if (selectedEquipmentIndex < 0 || selectedEquipmentIndex >= workingSkin.equipments.Count)
+            {
+                return;
+            }
+
+            CharacterEquipmentDef? equipment = workingSkin.equipments[selectedEquipmentIndex];
+            CharacterEquipmentRenderData? renderData = equipment?.renderData;
+            if (renderData == null || !renderData.useTriggeredLocalAnimation)
+            {
+                return;
+            }
+
+            float pixelsPerUnit = GetPreviewPixelsPerUnit(previewRect);
+            Vector2 pivotScreenPos = GetSelectedEquipmentPivotScreenPosition(previewRect, renderData, pixelsPerUnit);
+            float ringRadius = equipmentPivotEditMode ? 11f : 9f;
+            Color pivotColor = equipmentPivotEditMode
+                ? new Color(0.3f, 1f, 0.92f, 0.95f)
+                : new Color(1f, 0.84f, 0.22f, 0.9f);
+
+            Widgets.DrawLine(new Vector2(pivotScreenPos.x - ringRadius, pivotScreenPos.y), new Vector2(pivotScreenPos.x + ringRadius, pivotScreenPos.y), pivotColor, 2f);
+            Widgets.DrawLine(new Vector2(pivotScreenPos.x, pivotScreenPos.y - ringRadius), new Vector2(pivotScreenPos.x, pivotScreenPos.y + ringRadius), pivotColor, 2f);
+            Widgets.DrawBoxSolid(new Rect(pivotScreenPos.x - 3f, pivotScreenPos.y - 3f, 6f, 6f), pivotColor);
+
+            Rect hintRect = new Rect(pivotScreenPos.x + 10f, pivotScreenPos.y - 10f, 180f, 20f);
+            Text.Anchor = TextAnchor.MiddleLeft;
+            Text.Font = GameFont.Tiny;
+            GUI.color = pivotColor;
+            Widgets.Label(hintRect, equipmentPivotEditMode ? "枢轴编辑中：拖拽十字光标" : "触发动画枢轴预览");
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = GameFont.Small;
+        }
+
+        private Vector2 GetSelectedEquipmentPivotScreenPosition(Rect previewRect, CharacterEquipmentRenderData renderData, float pixelsPerUnit)
+        {
+            Vector3 layerOffset = GetDisplayedLayerOffsetForPreview(renderData);
+            Vector2 pivot = renderData.triggeredPivotOffset;
+            Vector3 worldPivotOffset = new Vector3(layerOffset.x + pivot.x, layerOffset.y, layerOffset.z + pivot.y);
+            return previewRect.center + new Vector2(worldPivotOffset.x, -worldPivotOffset.z) * pixelsPerUnit;
+        }
+
+        private bool TryGetSelectedEquipmentPivotData(Rect previewRect, out CharacterEquipmentRenderData? renderData, out Vector2 pivotScreenPos)
+        {
+            renderData = null;
+            pivotScreenPos = Vector2.zero;
+
+            if (currentTab != EditorTab.Equipment)
+            {
+                return false;
+            }
+
+            workingSkin.equipments ??= new List<CharacterEquipmentDef>();
+            SanitizeEquipmentSelection();
+            if (selectedEquipmentIndex < 0 || selectedEquipmentIndex >= workingSkin.equipments.Count)
+            {
+                return false;
+            }
+
+            CharacterEquipmentDef? equipment = workingSkin.equipments[selectedEquipmentIndex];
+            renderData = equipment?.renderData;
+            if (renderData == null || !renderData.useTriggeredLocalAnimation)
+            {
+                renderData = null;
+                return false;
+            }
+
+            float pixelsPerUnit = GetPreviewPixelsPerUnit(previewRect);
+            pivotScreenPos = GetSelectedEquipmentPivotScreenPosition(previewRect, renderData, pixelsPerUnit);
+            return true;
+        }
+
+        private bool IsMouseOverSelectedEquipmentPivotHandle(Rect previewRect, Vector2 mousePos)
+        {
+            if (!TryGetSelectedEquipmentPivotData(previewRect, out _, out Vector2 pivotScreenPos))
+            {
+                return false;
+            }
+
+            float hitRadius = equipmentPivotEditMode ? 16f : 12f;
+            return Vector2.Distance(mousePos, pivotScreenPos) <= hitRadius;
+        }
+
+        private void UpdateEquipmentPivotDragState(Rect previewRect)
+        {
+            Event evt = Event.current;
+            if (!equipmentPivotEditMode || currentTab != EditorTab.Equipment)
+            {
+                isDraggingEquipmentPivot = false;
+                return;
+            }
+
+            if (evt.type == EventType.MouseDown && evt.button == 0 && Mouse.IsOver(previewRect))
+            {
+                isDraggingEquipmentPivot = IsMouseOverSelectedEquipmentPivotHandle(previewRect, evt.mousePosition);
+                if (isDraggingEquipmentPivot)
+                {
+                    evt.Use();
+                }
+            }
+            else if ((evt.type == EventType.MouseUp && evt.button == 0) || evt.rawType == EventType.MouseUp)
+            {
+                isDraggingEquipmentPivot = false;
+            }
+        }
+
+        private bool TryApplyDragToSelectedEquipmentPivot(Rect previewRect)
+        {
+            if (!equipmentPivotEditMode || currentTab != EditorTab.Equipment || !isDraggingEquipmentPivot)
+            {
+                return false;
+            }
+
+            if (!TryGetSelectedEquipmentPivotData(previewRect, out CharacterEquipmentRenderData? renderData, out _)
+                || renderData == null)
+            {
+                isDraggingEquipmentPivot = false;
+                return false;
+            }
+
+            Event evt = Event.current;
+            if (evt.type != EventType.MouseDrag || evt.button != 0 || !Mouse.IsOver(previewRect))
+            {
+                return false;
+            }
+
+            float sensitivity = 0.0025f / Mathf.Max(0.25f, previewZoom);
+            if (evt.shift)
+            {
+                sensitivity *= 4f;
+            }
+            if (evt.control)
+            {
+                sensitivity *= 0.35f;
+            }
+
+            Vector2 delta = evt.delta;
+            Vector2 pivot = renderData.triggeredPivotOffset;
+            pivot.x += delta.x * sensitivity;
+            pivot.y += -delta.y * sensitivity;
+            renderData.triggeredPivotOffset = pivot;
+            isDirty = true;
+            RefreshPreview();
+            evt.Use();
+            return true;
+        }
+
         private void HandlePreviewInput(Rect rect)
         {
+            UpdatePreviewEquipmentAnimation();
+            UpdateEquipmentPivotDragState(rect);
+
             if (Mouse.IsOver(rect))
             {
                 // 滚轮缩放
@@ -939,6 +1361,11 @@ namespace CharacterStudio.UI
                 // 鼠标拖拽调整偏移（支持多选同步；基础槽位与图层保持一致；Shift 加速，Ctrl 精调）
                 if (Event.current.type == EventType.MouseDrag && Event.current.button == 0)
                 {
+                    if (TryApplyDragToSelectedEquipmentPivot(rect))
+                    {
+                        return;
+                    }
+
                     Vector2 delta = Event.current.delta;
 
                     float sensitivity = 0.0025f / Mathf.Max(0.25f, previewZoom);

@@ -50,18 +50,18 @@ namespace CharacterStudio.UI
             float bindW = inner.width * 0.28f;
             DrawBindToPawnSection(new Rect(bindX, inner.y, bindW, inner.height));
 
-            if (boundSkin != null)
+            float hotkeyBtnWidth = Mathf.Min(96f, bindW);
+            Rect hotkeyRect = new Rect(bindX + bindW - hotkeyBtnWidth, inner.y, hotkeyBtnWidth, 20f);
+            if (DrawToolbarButton(hotkeyRect, "CS_Studio_Ability_HotkeySettings".Translate(), () =>
             {
-                float hotkeyBtnWidth = Mathf.Min(96f, bindW);
-                Rect hotkeyRect = new Rect(bindX + bindW - hotkeyBtnWidth, inner.y, hotkeyBtnWidth, 20f);
-                if (DrawToolbarButton(hotkeyRect, "CS_Studio_Ability_HotkeySettings".Translate(), () =>
+                var hotkeyConfig = GetEditableHotkeyConfig();
+                Find.WindowStack.Add(new Dialog_AbilityHotkeySettings(hotkeyConfig, abilities, () =>
                 {
-                    var hotkeyConfig = boundSkin.abilityHotkeys ?? new SkinAbilityHotkeyConfig();
-                    boundSkin.abilityHotkeys = hotkeyConfig;
-                    Find.WindowStack.Add(new Dialog_AbilityHotkeySettings(hotkeyConfig, abilities, () => validationSummary = "CS_Studio_Section_AbilityHotkeys".Translate()));
-                }))
-                {
-                }
+                    SanitizeHotkeyConfigAgainstAbilities(GetCurrentHotkeyConfig());
+                    validationSummary = "CS_Studio_Section_AbilityHotkeys".Translate();
+                }));
+            }))
+            {
             }
         }
 
@@ -161,7 +161,7 @@ namespace CharacterStudio.UI
                 return;
             }
 
-            AbilityLoadoutRuntimeUtility.ApplyExplicitLoadout(boundPawn, abilities, boundHotkeys);
+            AbilityLoadoutRuntimeUtility.ApplyExplicitLoadout(boundPawn, abilities, GetCurrentHotkeyConfig());
 
             Messages.Message(
                 "CS_Ability_GrantSuccess".Translate(abilities.Count, boundPawn.LabelShort),
@@ -219,34 +219,36 @@ namespace CharacterStudio.UI
 
         private string GetHotkeySummary()
         {
-            if (boundHotkeys == null || !boundHotkeys.enabled)
+            SkinAbilityHotkeyConfig hotkeys = GetCurrentHotkeyConfig();
+            if (!hotkeys.enabled)
             {
                 return "CS_Studio_Ability_Hotkey_None".Translate();
             }
 
             return string.Join(" / ", new[]
             {
-                FormatHotkeySlotSummary("CS_Studio_Ability_HotkeySlot_Q".Translate(), boundHotkeys.qAbilityDefName),
-                FormatHotkeySlotSummary("CS_Studio_Ability_HotkeySlot_W".Translate(), boundHotkeys.wAbilityDefName),
-                FormatHotkeySlotSummary("CS_Studio_Ability_HotkeySlot_E".Translate(), boundHotkeys.eAbilityDefName),
-                FormatHotkeySlotSummary("CS_Studio_Ability_HotkeySlot_R".Translate(), boundHotkeys.rAbilityDefName),
-                FormatHotkeySlotSummary("CS_Studio_Ability_HotkeySlot_WCombo".Translate(), boundHotkeys.wComboAbilityDefName)
+                FormatHotkeySlotSummary("CS_Studio_Ability_HotkeySlot_Q".Translate(), hotkeys.qAbilityDefName),
+                FormatHotkeySlotSummary("CS_Studio_Ability_HotkeySlot_W".Translate(), hotkeys.wAbilityDefName),
+                FormatHotkeySlotSummary("CS_Studio_Ability_HotkeySlot_E".Translate(), hotkeys.eAbilityDefName),
+                FormatHotkeySlotSummary("CS_Studio_Ability_HotkeySlot_R".Translate(), hotkeys.rAbilityDefName),
+                FormatHotkeySlotSummary("CS_Studio_Ability_HotkeySlot_WCombo".Translate(), hotkeys.wComboAbilityDefName)
             });
         }
 
         private string GetHotkeySummaryForSelected()
         {
-            if (selectedAbility == null || boundHotkeys == null || !boundHotkeys.enabled)
+            SkinAbilityHotkeyConfig hotkeys = GetCurrentHotkeyConfig();
+            if (selectedAbility == null || !hotkeys.enabled)
             {
                 return "CS_Studio_Ability_Hotkey_None".Translate();
             }
 
             var slots = new List<string>();
-            if (string.Equals(boundHotkeys.qAbilityDefName, selectedAbility.defName, StringComparison.OrdinalIgnoreCase)) slots.Add("CS_Studio_Ability_HotkeySlot_Q".Translate());
-            if (string.Equals(boundHotkeys.wAbilityDefName, selectedAbility.defName, StringComparison.OrdinalIgnoreCase)) slots.Add("CS_Studio_Ability_HotkeySlot_W".Translate());
-            if (string.Equals(boundHotkeys.eAbilityDefName, selectedAbility.defName, StringComparison.OrdinalIgnoreCase)) slots.Add("CS_Studio_Ability_HotkeySlot_E".Translate());
-            if (string.Equals(boundHotkeys.rAbilityDefName, selectedAbility.defName, StringComparison.OrdinalIgnoreCase)) slots.Add("CS_Studio_Ability_HotkeySlot_R".Translate());
-            if (string.Equals(boundHotkeys.wComboAbilityDefName, selectedAbility.defName, StringComparison.OrdinalIgnoreCase)) slots.Add("CS_Studio_Ability_HotkeySlot_WCombo".Translate());
+            if (string.Equals(hotkeys.qAbilityDefName, selectedAbility.defName, StringComparison.OrdinalIgnoreCase)) slots.Add("CS_Studio_Ability_HotkeySlot_Q".Translate());
+            if (string.Equals(hotkeys.wAbilityDefName, selectedAbility.defName, StringComparison.OrdinalIgnoreCase)) slots.Add("CS_Studio_Ability_HotkeySlot_W".Translate());
+            if (string.Equals(hotkeys.eAbilityDefName, selectedAbility.defName, StringComparison.OrdinalIgnoreCase)) slots.Add("CS_Studio_Ability_HotkeySlot_E".Translate());
+            if (string.Equals(hotkeys.rAbilityDefName, selectedAbility.defName, StringComparison.OrdinalIgnoreCase)) slots.Add("CS_Studio_Ability_HotkeySlot_R".Translate());
+            if (string.Equals(hotkeys.wComboAbilityDefName, selectedAbility.defName, StringComparison.OrdinalIgnoreCase)) slots.Add("CS_Studio_Ability_HotkeySlot_WCombo".Translate());
             return slots.Count > 0 ? string.Join(", ", slots) : "CS_Studio_Ability_Hotkey_None".Translate();
         }
 

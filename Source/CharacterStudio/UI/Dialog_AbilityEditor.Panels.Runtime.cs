@@ -33,7 +33,10 @@ namespace CharacterStudio.UI
             AbilityRuntimeComponentType.HitHeal,
             AbilityRuntimeComponentType.HitCooldownRefund,
             AbilityRuntimeComponentType.ProjectileSplit,
-            AbilityRuntimeComponentType.FlightState
+            AbilityRuntimeComponentType.FlightState,
+            AbilityRuntimeComponentType.VanillaPawnFlyer,
+            AbilityRuntimeComponentType.FlightOnlyFollowup,
+            AbilityRuntimeComponentType.FlightLandingBurst
         };
 
         private static IEnumerable<AbilityRuntimeComponentType> GetRuntimeComponentLibraryTypes()
@@ -49,8 +52,44 @@ namespace CharacterStudio.UI
             }
 
             selectedAbility.runtimeComponents ??= new List<AbilityRuntimeComponentConfig>();
+            if (WouldDuplicateSingletonRuntimeComponent(selectedAbility.runtimeComponents, type))
+            {
+                Messages.Message(
+                    "CS_Studio_Runtime_DuplicateSingletonBlocked".Translate(("CS_Ability_RuntimeComponentType_" + type).Translate()),
+                    MessageTypeDefOf.CautionInput,
+                    false);
+                return;
+            }
+
             selectedAbility.runtimeComponents.Add(CreateDefaultRuntimeComponent(type));
             NotifyAbilityPreviewDirty(true);
+        }
+
+        private static bool WouldDuplicateSingletonRuntimeComponent(List<AbilityRuntimeComponentConfig> runtimeComponents, AbilityRuntimeComponentType type)
+        {
+            if (!IsSingletonLikeRuntimeComponent(type))
+            {
+                return false;
+            }
+
+            return runtimeComponents.Exists(c => c != null && c.type == type);
+        }
+
+        private static bool IsSingletonLikeRuntimeComponent(AbilityRuntimeComponentType type)
+        {
+            return type == AbilityRuntimeComponentType.QComboWindow
+                || type == AbilityRuntimeComponentType.HotkeyOverride
+                || type == AbilityRuntimeComponentType.FollowupCooldownGate
+                || type == AbilityRuntimeComponentType.KillRefresh
+                || type == AbilityRuntimeComponentType.PeriodicPulse
+                || type == AbilityRuntimeComponentType.ShieldAbsorb
+                || type == AbilityRuntimeComponentType.MarkDetonation
+                || type == AbilityRuntimeComponentType.ComboStacks
+                || type == AbilityRuntimeComponentType.DashEmpoweredStrike
+                || type == AbilityRuntimeComponentType.FlightState
+                || type == AbilityRuntimeComponentType.VanillaPawnFlyer
+                || type == AbilityRuntimeComponentType.FlightOnlyFollowup
+                || type == AbilityRuntimeComponentType.FlightLandingBurst;
         }
 
         private static string GetRuntimeComponentTypeDescription(AbilityRuntimeComponentType type)
@@ -80,6 +119,9 @@ namespace CharacterStudio.UI
                 AbilityRuntimeComponentType.HitHeal => "CS_Studio_Runtime_Desc_HitHeal".Translate(),
                 AbilityRuntimeComponentType.HitCooldownRefund => "CS_Studio_Runtime_Desc_HitCooldownRefund".Translate(),
                 AbilityRuntimeComponentType.FlightState => "CS_Studio_Runtime_Desc_FlightState".Translate(),
+                AbilityRuntimeComponentType.VanillaPawnFlyer => "CS_Studio_Runtime_Desc_VanillaPawnFlyer".Translate(),
+                AbilityRuntimeComponentType.FlightOnlyFollowup => "CS_Studio_Runtime_Desc_FlightOnlyFollowup".Translate(),
+                AbilityRuntimeComponentType.FlightLandingBurst => "CS_Studio_Runtime_Desc_FlightLandingBurst".Translate(),
                 AbilityRuntimeComponentType.ProjectileSplit => "CS_Studio_Runtime_Desc_ProjectileSplit".Translate(),
                 _ => type.ToString()
             };
@@ -209,6 +251,36 @@ namespace CharacterStudio.UI
                 case AbilityRuntimeComponentType.FlightState:
                     config.flightDurationTicks = 180;
                     config.flightHeightFactor = 0.35f;
+                    config.suppressCombatActionsDuringFlightState = true;
+                    break;
+                case AbilityRuntimeComponentType.VanillaPawnFlyer:
+                    config.flyerThingDefName = "CS_PawnJumper_Default";
+                    config.flyerWarmupTicks = 0;
+                    config.launchFromCasterPosition = true;
+                    config.requireValidTargetCell = true;
+                    config.storeTargetForFollowup = true;
+                    config.enableFlightOnlyWindow = false;
+                    config.flightOnlyWindowTicks = 180;
+                    config.flightOnlyAbilityDefName = string.Empty;
+                    config.hideCasterDuringTakeoff = true;
+                    config.autoExpireFlightMarkerOnLanding = true;
+                    break;
+                case AbilityRuntimeComponentType.FlightOnlyFollowup:
+                    config.requiredFlightSourceAbilityDefName = string.Empty;
+                    config.requireReservedTargetCell = false;
+                    config.consumeFlightStateOnCast = false;
+                    config.onlyUseDuringFlightWindow = true;
+                    break;
+                case AbilityRuntimeComponentType.FlightLandingBurst:
+                    config.landingBurstRadius = 3f;
+                    config.landingBurstDamage = 30f;
+                    config.landingBurstDamageDef = DamageDefOf.Bomb;
+                    config.landingEffecterDefName = string.Empty;
+                    config.landingSoundDefName = string.Empty;
+                    config.affectBuildings = false;
+                    config.affectCells = true;
+                    config.knockbackTargets = false;
+                    config.knockbackDistance = 1.5f;
                     break;
             }
 
@@ -222,6 +294,8 @@ namespace CharacterStudio.UI
                 new FloatMenuOption("CS_Studio_None".Translate(), () =>
                 {
                     component.waveDamageDef = null;
+                    component.markDamageDef = null;
+                    component.landingBurstDamageDef = null;
                     NotifyAbilityPreviewDirty(true);
                 })
             };
@@ -236,7 +310,18 @@ namespace CharacterStudio.UI
                 string label = localDef.label ?? localDef.defName;
                 options.Add(new FloatMenuOption(label, () =>
                 {
-                    component.waveDamageDef = localDef;
+                    switch (component.type)
+                    {
+                        case AbilityRuntimeComponentType.MarkDetonation:
+                            component.markDamageDef = localDef;
+                            break;
+                        case AbilityRuntimeComponentType.FlightLandingBurst:
+                            component.landingBurstDamageDef = localDef;
+                            break;
+                        default:
+                            component.waveDamageDef = localDef;
+                            break;
+                    }
                     NotifyAbilityPreviewDirty(true);
                 }));
             }
@@ -250,22 +335,60 @@ namespace CharacterStudio.UI
             {
                 new FloatMenuOption("CS_Studio_None".Translate(), () =>
                 {
-                    component.overrideAbilityDefName = string.Empty;
+                    if (component.type == AbilityRuntimeComponentType.FlightOnlyFollowup)
+                    {
+                        component.requiredFlightSourceAbilityDefName = string.Empty;
+                    }
+                    else
+                    {
+                        component.overrideAbilityDefName = string.Empty;
+                        component.flightOnlyAbilityDefName = string.Empty;
+                    }
                     NotifyAbilityPreviewDirty(true);
                 })
             };
 
-            var defs = DefDatabase<AbilityDef>.AllDefsListForReading;
-            var sorted = new List<AbilityDef>(defs);
-            sorted.Sort((a, b) => string.Compare(a.label ?? a.defName, b.label ?? b.defName, StringComparison.OrdinalIgnoreCase));
-
-            foreach (var abilityDef in sorted)
+            var sorted = new List<ModularAbilityDef>();
+            var seenDefNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (abilities != null)
             {
-                var localDef = abilityDef;
-                string label = (localDef.label ?? localDef.defName) + $" ({localDef.defName})";
+                foreach (var ability in abilities)
+                {
+                    if (ability == null || string.IsNullOrWhiteSpace(ability.defName) || !seenDefNames.Add(ability.defName))
+                    {
+                        continue;
+                    }
+
+                    sorted.Add(ability);
+                }
+            }
+
+            sorted.Sort((a, b) =>
+            {
+                string aLabel = string.IsNullOrWhiteSpace(a.label) ? a.defName : a.label;
+                string bLabel = string.IsNullOrWhiteSpace(b.label) ? b.defName : b.label;
+                return string.Compare(aLabel, bLabel, StringComparison.OrdinalIgnoreCase);
+            });
+
+            foreach (var ability in sorted)
+            {
+                var localAbility = ability;
+                string displayName = string.IsNullOrWhiteSpace(localAbility.label) ? localAbility.defName : localAbility.label;
+                string label = $"{displayName} ({localAbility.defName})";
                 options.Add(new FloatMenuOption(label, () =>
                 {
-                    component.overrideAbilityDefName = localDef.defName;
+                    switch (component.type)
+                    {
+                        case AbilityRuntimeComponentType.FlightOnlyFollowup:
+                            component.requiredFlightSourceAbilityDefName = localAbility.defName;
+                            break;
+                        case AbilityRuntimeComponentType.VanillaPawnFlyer:
+                            component.flightOnlyAbilityDefName = localAbility.defName;
+                            break;
+                        default:
+                            component.overrideAbilityDefName = localAbility.defName;
+                            break;
+                    }
                     NotifyAbilityPreviewDirty(true);
                 }));
             }

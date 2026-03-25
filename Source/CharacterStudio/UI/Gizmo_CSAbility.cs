@@ -119,6 +119,11 @@ namespace CharacterStudio.UI
                 return;
             }
 
+            if (AbilityVanillaFlightUtility.TryNotifyFlightFollowupFailure(pawn, modAbility))
+            {
+                return;
+            }
+
             if (runtimeDef == null)
             {
                 Messages.Message(
@@ -167,10 +172,25 @@ namespace CharacterStudio.UI
         {
             AbilityCarrierType normalizedCarrier = ModularAbilityDefExtensions.NormalizeCarrierType(modAbility.carrierType);
             AbilityTargetType normalizedTarget = ModularAbilityDefExtensions.NormalizeTargetType(modAbility);
+            LocalTargetInfo forcedTarget = AbilityVanillaFlightUtility.ResolveFollowupTarget(pawn, modAbility, LocalTargetInfo.Invalid);
 
             if (normalizedCarrier == AbilityCarrierType.Self || normalizedTarget == AbilityTargetType.Self)
             {
-                runtimeAbility.QueueCastingJob(pawn, LocalTargetInfo.Invalid);
+
+                LocalTargetInfo selfTarget = new LocalTargetInfo(pawn);
+                LocalTargetInfo selfDest = normalizedCarrier == AbilityCarrierType.Projectile && normalizedTarget == AbilityTargetType.Cell
+                    ? new LocalTargetInfo(pawn.Position)
+                    : LocalTargetInfo.Invalid;
+                runtimeAbility.QueueCastingJob(selfTarget, selfDest);
+                return true;
+            }
+
+            if (forcedTarget.IsValid)
+            {
+                LocalTargetInfo forcedDest = normalizedCarrier == AbilityCarrierType.Projectile && normalizedTarget == AbilityTargetType.Cell
+                    ? forcedTarget
+                    : LocalTargetInfo.Invalid;
+                runtimeAbility.QueueCastingJob(forcedTarget, forcedDest);
                 return true;
             }
 
@@ -186,10 +206,11 @@ namespace CharacterStudio.UI
                 {
                     try
                     {
+                        LocalTargetInfo resolvedTarget = AbilityVanillaFlightUtility.ResolveFollowupTarget(pawn, modAbility, target);
                         LocalTargetInfo dest = normalizedCarrier == AbilityCarrierType.Projectile && normalizedTarget == AbilityTargetType.Cell
-                            ? target
+                            ? resolvedTarget
                             : LocalTargetInfo.Invalid;
-                        runtimeAbility.QueueCastingJob(target, dest);
+                        runtimeAbility.QueueCastingJob(resolvedTarget, dest);
                     }
                     catch (System.Exception ex)
                     {
@@ -205,7 +226,9 @@ namespace CharacterStudio.UI
 
         private static TargetingParameters BuildTargetingParameters(ModularAbilityDef ability)
         {
+            AbilityCarrierType normalizedCarrier = ModularAbilityDefExtensions.NormalizeCarrierType(ability.carrierType);
             AbilityTargetType normalizedTarget = ModularAbilityDefExtensions.NormalizeTargetType(ability);
+
             return normalizedTarget switch
             {
                 AbilityTargetType.Cell => new TargetingParameters
@@ -222,7 +245,13 @@ namespace CharacterStudio.UI
                     canTargetLocations = false,
                     canTargetSelf = false
                 },
-                _ => new TargetingParameters { canTargetSelf = true }
+                _ => new TargetingParameters
+                {
+                    canTargetSelf = true,
+                    canTargetPawns = false,
+                    canTargetBuildings = false,
+                    canTargetLocations = false
+                }
             };
         }
 
@@ -284,6 +313,7 @@ namespace CharacterStudio.UI
             if (pawn.Dead || pawn.Downed || pawn.InMentalState) return false;
             if (!pawn.Drafted) return false;
             if (runtimeDef == null) return false;
+            if (!AbilityVanillaFlightUtility.CanUseFlightFollowup(pawn, modAbility, out _, out _)) return false;
             return pawn.abilities?.GetAbility(runtimeDef) != null;
         }
 

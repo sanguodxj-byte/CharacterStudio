@@ -124,6 +124,17 @@ namespace CharacterStudio.UI
                 return;
             }
 
+            OnApplySkinToTargetPawn();
+        }
+
+        private void OnApplySkinToTargetPawn()
+        {
+            if (targetPawn == null)
+            {
+                ShowStatus("CS_Studio_Msg_TargetPawnRequired".Translate());
+                return;
+            }
+
             if (workingSkin == null)
             {
                 Log.Error("[CharacterStudio] 应用失败：workingSkin 为空");

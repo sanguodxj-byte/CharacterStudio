@@ -323,12 +323,7 @@ namespace CharacterStudio.UI
             y += 10f;
             if (DrawToolbarButton(new Rect(0f, y, width, 28f), "CS_Studio_Ability_Validate".Translate(), () =>
             {
-                var result = ability.Validate();
-                validationSummary = result.IsValid
-                    ? (result.Warnings.Count > 0
-                        ? "CS_Studio_Ability_ValidWithWarnings".Translate() + " (" + result.Warnings.Count + ")"
-                        : "CS_Studio_Ability_Valid".Translate())
-                    : "CS_Studio_Ability_Invalid".Translate() + " (" + result.Errors.Count + ")";
+                ApplyValidationResult(ability.Validate());
             }, true))
             {
             }
@@ -338,6 +333,29 @@ namespace CharacterStudio.UI
                 y += 34f;
                 Widgets.Label(new Rect(0f, y, width, 30f), validationSummary);
                 y += 34f;
+
+                string detailsText = BuildValidationDetailsText();
+                if (!string.IsNullOrWhiteSpace(detailsText))
+                {
+                    Text.Font = GameFont.Tiny;
+                    bool oldWrap = Text.WordWrap;
+                    Text.WordWrap = true;
+
+                    float detailHeight = Mathf.Max(72f, Text.CalcHeight(detailsText, Mathf.Max(80f, width - 20f)) + 16f);
+                    Rect detailRect = new Rect(0f, y, width, detailHeight);
+                    Widgets.DrawBoxSolid(detailRect, UIHelper.PanelFillSoftColor);
+                    GUI.color = UIHelper.BorderColor;
+                    Widgets.DrawBox(detailRect, 1);
+                    GUI.color = Color.white;
+
+                    Rect innerRect = detailRect.ContractedBy(8f);
+                    Widgets.Label(innerRect, detailsText);
+                    TooltipHandler.TipRegion(detailRect, detailsText);
+
+                    Text.WordWrap = oldWrap;
+                    Text.Font = GameFont.Small;
+                    y += detailHeight + 8f;
+                }
             }
             else
             {

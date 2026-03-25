@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -134,6 +135,63 @@ namespace CharacterStudio.Abilities
     }
 
     /// <summary>
+    /// 飞行喷射蓝光特效（机械推进尾焰）
+    /// </summary>
+    public class VisualEffectWorker_FlightJetBlue : VisualEffectWorker
+    {
+        public override void Play(AbilityVisualEffectConfig config, LocalTargetInfo target, Pawn caster)
+        {
+            var map = caster.Map;
+            if (map == null) return;
+
+            Vector3 basePos = caster.DrawPos;
+            Vector3 backward = -caster.Rotation.FacingCell.ToVector3();
+            if (backward == Vector3.zero)
+            {
+                backward = new Vector3(0f, 0f, -1f);
+            }
+
+            float jetScale = Mathf.Max(0.8f, config.scale);
+            Vector3 leftPos = basePos + backward * 0.28f + new Vector3(-0.18f, 0f, 0f);
+            Vector3 rightPos = basePos + backward * 0.28f + new Vector3(0.18f, 0f, 0f);
+
+            FleckMaker.ThrowLightningGlow(leftPos, map, jetScale * 0.75f);
+            FleckMaker.ThrowLightningGlow(rightPos, map, jetScale * 0.75f);
+            FleckMaker.ThrowMicroSparks(leftPos + backward * 0.12f, map);
+            FleckMaker.ThrowMicroSparks(rightPos + backward * 0.12f, map);
+            FleckMaker.ThrowDustPuff(leftPos + backward * 0.18f, map, jetScale * 0.45f);
+            FleckMaker.ThrowDustPuff(rightPos + backward * 0.18f, map, jetScale * 0.45f);
+        }
+    }
+
+    /// <summary>
+    /// 飞行喷射尾流特效（轻烟+火花）
+    /// </summary>
+    public class VisualEffectWorker_FlightJetTrail : VisualEffectWorker
+    {
+        public override void Play(AbilityVisualEffectConfig config, LocalTargetInfo target, Pawn caster)
+        {
+            var map = caster.Map;
+            if (map == null) return;
+
+            Vector3 basePos = caster.DrawPos;
+            Vector3 backward = -caster.Rotation.FacingCell.ToVector3();
+            if (backward == Vector3.zero)
+            {
+                backward = new Vector3(0f, 0f, -1f);
+            }
+
+            float trailScale = Mathf.Max(0.6f, config.scale);
+            for (int i = 0; i < 3; i++)
+            {
+                float factor = 0.18f + 0.14f * i;
+                Vector3 center = basePos + backward * factor;
+                FleckMaker.ThrowSmoke(center, map, trailScale * (0.55f + 0.1f * i));
+            }
+        }
+    }
+
+    /// <summary>
     /// 工厂：根据特效类型创建对应 Worker
     /// </summary>
     public static class VisualEffectWorkerFactory
@@ -147,7 +205,54 @@ namespace CharacterStudio.Abilities
             { AbilityVisualEffectType.FireGlow,        typeof(VisualEffectWorker_FireGlow) },
             { AbilityVisualEffectType.Smoke,           typeof(VisualEffectWorker_Smoke) },
             { AbilityVisualEffectType.ExplosionEffect, typeof(VisualEffectWorker_ExplosionEffect) },
+            { (AbilityVisualEffectType)1001, typeof(VisualEffectWorker_FlightJetBlue) },
+            { (AbilityVisualEffectType)1002, typeof(VisualEffectWorker_FlightJetTrail) },
         };
+
+        private static readonly Dictionary<string, AbilityVisualEffectType> presetTypes
+            = new Dictionary<string, AbilityVisualEffectType>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "DustPuff", AbilityVisualEffectType.DustPuff },
+            { "MicroSparks", AbilityVisualEffectType.MicroSparks },
+            { "LightningGlow", AbilityVisualEffectType.LightningGlow },
+            { "FireGlow", AbilityVisualEffectType.FireGlow },
+            { "Smoke", AbilityVisualEffectType.Smoke },
+            { "Explosion", AbilityVisualEffectType.ExplosionEffect },
+            { "ExplosionEffect", AbilityVisualEffectType.ExplosionEffect },
+            { "FlightJetBlue", (AbilityVisualEffectType)1001 },
+            { "FlightJetTrail", (AbilityVisualEffectType)1002 },
+        };
+
+        public static IReadOnlyList<string> GetRegisteredPresetNames()
+        {
+            return presetTypes.Keys
+                .OrderBy(static name => name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        public static bool TryResolvePresetType(string? presetDefName, out AbilityVisualEffectType resolvedType)
+        {
+            resolvedType = AbilityVisualEffectType.DustPuff;
+            if (presetDefName is not string presetName || string.IsNullOrWhiteSpace(presetName))
+            {
+                return false;
+            }
+
+            string trimmedPresetName = presetName.Trim();
+            if (presetTypes.TryGetValue(trimmedPresetName, out resolvedType))
+            {
+                return true;
+            }
+
+            if (Enum.TryParse(trimmedPresetName, true, out AbilityVisualEffectType parsedType)
+                && workerTypes.ContainsKey(parsedType))
+            {
+                resolvedType = parsedType;
+                return true;
+            }
+
+            return false;
+        }
 
         public static VisualEffectWorker GetWorker(AbilityVisualEffectType type)
         {

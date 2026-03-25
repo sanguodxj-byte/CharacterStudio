@@ -247,6 +247,12 @@ namespace CharacterStudio.Core
             set => abilityRuntimeState.dashEmpowerExpireTick = value;
         }
 
+        public int flightStateStartTick
+        {
+            get => abilityRuntimeState.flightStateStartTick;
+            set => abilityRuntimeState.flightStateStartTick = value;
+        }
+
         public int flightStateExpireTick
         {
             get => abilityRuntimeState.flightStateExpireTick;
@@ -277,10 +283,90 @@ namespace CharacterStudio.Core
             set => abilityRuntimeState.triggeredEquipmentAnimationStartTick = value;
         }
 
+        public float GetFlightLiftFactor01()
+        {
+            int now = Find.TickManager?.TicksGame ?? 0;
+            if (!IsFlightStateActive() || flightStateStartTick < 0 || flightStateExpireTick < flightStateStartTick)
+                return 0f;
+
+            const int easeTicks = 18;
+            float fadeIn = Mathf.Clamp01((now - flightStateStartTick) / (float)easeTicks);
+            float fadeOut = Mathf.Clamp01((flightStateExpireTick - now) / (float)easeTicks);
+            return Mathf.SmoothStep(0f, 1f, Mathf.Min(fadeIn, fadeOut));
+        }
+
+        public float GetFlightHoverOffset()
+        {
+            int now = Find.TickManager?.TicksGame ?? 0;
+            if (!IsFlightStateActive()) return 0f;
+            float amplitude = Mathf.Max(0.015f, flightStateHeightFactor * 0.18f) * GetFlightLiftFactor01();
+            return Mathf.Sin((now + (Pawn?.thingIDNumber ?? 0)) * 0.14f) * amplitude;
+        }
+
         public int triggeredEquipmentAnimationEndTick
         {
             get => abilityRuntimeState.triggeredEquipmentAnimationEndTick;
             set => abilityRuntimeState.triggeredEquipmentAnimationEndTick = value;
+        }
+
+        public bool suppressCombatActionsDuringFlightState
+        {
+            get => abilityRuntimeState.suppressCombatActionsDuringFlightState;
+            set => abilityRuntimeState.suppressCombatActionsDuringFlightState = value;
+        }
+
+        public bool isInVanillaFlight
+        {
+            get => abilityRuntimeState.isInVanillaFlight;
+            set => abilityRuntimeState.isInVanillaFlight = value;
+        }
+
+        public int vanillaFlightStartTick
+        {
+            get => abilityRuntimeState.vanillaFlightStartTick;
+            set => abilityRuntimeState.vanillaFlightStartTick = value;
+        }
+
+        public int vanillaFlightExpireTick
+        {
+            get => abilityRuntimeState.vanillaFlightExpireTick;
+            set => abilityRuntimeState.vanillaFlightExpireTick = value;
+        }
+
+        public string vanillaFlightSourceAbilityDefName
+        {
+            get => abilityRuntimeState.vanillaFlightSourceAbilityDefName;
+            set => abilityRuntimeState.vanillaFlightSourceAbilityDefName = value ?? string.Empty;
+        }
+
+        public string vanillaFlightFollowupAbilityDefName
+        {
+            get => abilityRuntimeState.vanillaFlightFollowupAbilityDefName;
+            set => abilityRuntimeState.vanillaFlightFollowupAbilityDefName = value ?? string.Empty;
+        }
+
+        public IntVec3 vanillaFlightReservedTargetCell
+        {
+            get => abilityRuntimeState.vanillaFlightReservedTargetCell;
+            set => abilityRuntimeState.vanillaFlightReservedTargetCell = value;
+        }
+
+        public bool vanillaFlightHasReservedTargetCell
+        {
+            get => abilityRuntimeState.vanillaFlightHasReservedTargetCell;
+            set => abilityRuntimeState.vanillaFlightHasReservedTargetCell = value;
+        }
+
+        public int vanillaFlightFollowupWindowEndTick
+        {
+            get => abilityRuntimeState.vanillaFlightFollowupWindowEndTick;
+            set => abilityRuntimeState.vanillaFlightFollowupWindowEndTick = value;
+        }
+
+        public bool vanillaFlightPendingLandingBurst
+        {
+            get => abilityRuntimeState.vanillaFlightPendingLandingBurst;
+            set => abilityRuntimeState.vanillaFlightPendingLandingBurst = value;
         }
 
         public bool IsTriggeredEquipmentAnimationActive(string? abilityDefName)
@@ -290,6 +376,33 @@ namespace CharacterStudio.Core
                 && !string.IsNullOrWhiteSpace(triggeredEquipmentAnimationAbilityDefName)
                 && (string.IsNullOrWhiteSpace(abilityDefName)
                     || string.Equals(triggeredEquipmentAnimationAbilityDefName, abilityDefName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public void TriggerEquipmentAnimationState(string triggerKey, int startTick, int durationTicks)
+        {
+            if (string.IsNullOrWhiteSpace(triggerKey))
+            {
+                return;
+            }
+
+            triggeredEquipmentAnimationAbilityDefName = triggerKey;
+            triggeredEquipmentAnimationStartTick = startTick;
+            triggeredEquipmentAnimationEndTick = startTick + Math.Max(1, durationTicks);
+            RequestRenderRefresh();
+        }
+
+        public void ClearEquipmentAnimationState(string? triggerKey = null)
+        {
+            if (!string.IsNullOrWhiteSpace(triggerKey)
+                && !string.Equals(triggeredEquipmentAnimationAbilityDefName, triggerKey, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            triggeredEquipmentAnimationAbilityDefName = string.Empty;
+            triggeredEquipmentAnimationStartTick = -1;
+            triggeredEquipmentAnimationEndTick = -1;
+            RequestRenderRefresh();
         }
 
         public int abilityExpressionOverrideExpireTick
@@ -1573,8 +1686,19 @@ namespace CharacterStudio.Core
             public int offensiveComboExpireTick = -1;
             public int offensiveComboStacks = 0;
             public int dashEmpowerExpireTick = -1;
+            public int flightStateStartTick = -1;
             public int flightStateExpireTick = -1;
             public float flightStateHeightFactor = 0.35f;
+            public bool suppressCombatActionsDuringFlightState = true;
+            public bool isInVanillaFlight = false;
+            public int vanillaFlightStartTick = -1;
+            public int vanillaFlightExpireTick = -1;
+            public string vanillaFlightSourceAbilityDefName = string.Empty;
+            public string vanillaFlightFollowupAbilityDefName = string.Empty;
+            public IntVec3 vanillaFlightReservedTargetCell = IntVec3.Invalid;
+            public bool vanillaFlightHasReservedTargetCell = false;
+            public int vanillaFlightFollowupWindowEndTick = -1;
+            public bool vanillaFlightPendingLandingBurst = false;
             public string triggeredEquipmentAnimationAbilityDefName = string.Empty;
             public int triggeredEquipmentAnimationStartTick = -1;
             public int triggeredEquipmentAnimationEndTick = -1;
@@ -1608,6 +1732,16 @@ namespace CharacterStudio.Core
                 Scribe_Values.Look(ref weaponCarryCastingUntilTick, "weaponCarryCastingUntilTick", -1);
                 Scribe_Values.Look(ref periodicPulseNextTick, "periodicPulseNextTick", -1);
                 Scribe_Values.Look(ref periodicPulseEndTick, "periodicPulseEndTick", -1);
+                Scribe_Values.Look(ref isInVanillaFlight, "isInVanillaFlight", false);
+                Scribe_Values.Look(ref vanillaFlightStartTick, "vanillaFlightStartTick", -1);
+                Scribe_Values.Look(ref vanillaFlightExpireTick, "vanillaFlightExpireTick", -1);
+                Scribe_Values.Look(ref vanillaFlightSourceAbilityDefName, "vanillaFlightSourceAbilityDefName", string.Empty);
+                Scribe_Values.Look(ref vanillaFlightFollowupAbilityDefName, "vanillaFlightFollowupAbilityDefName", string.Empty);
+                Scribe_Values.Look(ref vanillaFlightReservedTargetCell, "vanillaFlightReservedTargetCell", IntVec3.Invalid);
+                Scribe_Values.Look(ref vanillaFlightHasReservedTargetCell, "vanillaFlightHasReservedTargetCell", false);
+                Scribe_Values.Look(ref vanillaFlightFollowupWindowEndTick, "vanillaFlightFollowupWindowEndTick", -1);
+                Scribe_Values.Look(ref vanillaFlightPendingLandingBurst, "vanillaFlightPendingLandingBurst", false);
+
                 Scribe_Values.Look(ref shieldRemainingDamage, "shieldRemainingDamage", 0f);
                 Scribe_Values.Look(ref shieldExpireTick, "shieldExpireTick", -1);
                 Scribe_Values.Look(ref shieldStoredHeal, "shieldStoredHeal", 0f);
@@ -1617,8 +1751,10 @@ namespace CharacterStudio.Core
                 Scribe_Values.Look(ref offensiveComboExpireTick, "offensiveComboExpireTick", -1);
                 Scribe_Values.Look(ref offensiveComboStacks, "offensiveComboStacks", 0);
                 Scribe_Values.Look(ref dashEmpowerExpireTick, "dashEmpowerExpireTick", -1);
+                Scribe_Values.Look(ref flightStateStartTick, "flightStateStartTick", -1);
                 Scribe_Values.Look(ref flightStateExpireTick, "flightStateExpireTick", -1);
                 Scribe_Values.Look(ref flightStateHeightFactor, "flightStateHeightFactor", 0.35f);
+                Scribe_Values.Look(ref suppressCombatActionsDuringFlightState, "suppressCombatActionsDuringFlightState", true);
                 Scribe_Values.Look(ref triggeredEquipmentAnimationAbilityDefName, "triggeredEquipmentAnimationAbilityDefName", string.Empty);
                 Scribe_Values.Look(ref triggeredEquipmentAnimationStartTick, "triggeredEquipmentAnimationStartTick", -1);
                 Scribe_Values.Look(ref triggeredEquipmentAnimationEndTick, "triggeredEquipmentAnimationEndTick", -1);
@@ -1677,6 +1813,10 @@ namespace CharacterStudio.Core
                 if (flightStateExpireTick < -1)
                 {
                     flightStateExpireTick = -1;
+                }
+                if (flightStateStartTick < -1)
+                {
+                    flightStateStartTick = -1;
                 }
                 if (flightStateHeightFactor < 0f)
                 {
@@ -2362,6 +2502,9 @@ namespace CharacterStudio.Core
 
             pawn.Drawer.renderer.SetAllGraphicsDirty();
             PortraitsCache.SetDirty(pawn);
+            // RequestRenderRefresh 只做当前 pawn 的轻量图形 dirty；
+            // 不在这里触发 RefreshHiddenNodes / ForceRebuildRenderTree，
+            // 避免普通状态变化经由全局渲染树链路误伤其他 pawn 的服装显示。
         }
 
         public void EnsureFaceRuntimeStateReadyForPreview()

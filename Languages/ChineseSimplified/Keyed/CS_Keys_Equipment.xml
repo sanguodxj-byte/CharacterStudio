@@ -1,11 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
     <CS_Studio_Equip_Added>已添加装备：{0}</CS_Studio_Equip_Added>
+    <CS_Studio_Equip_AircraftPreset>创建飞行翼动画预设</CS_Studio_Equip_AircraftPreset>
     <CS_Studio_Equip_AnchorPath>视觉锚点路径</CS_Studio_Equip_AnchorPath>
+    <CS_Studio_Equip_AnchorPath_Hint>可选的精确渲染树路径。设置后将优先于锚点标签。</CS_Studio_Equip_AnchorPath_Hint>
     <CS_Studio_Equip_AnchorTag>视觉锚点标签</CS_Studio_Equip_AnchorTag>
+    <CS_Studio_Equip_AnchorTag_Hint>在未提供明确锚点路径时，选择要使用的渲染锚点标签。</CS_Studio_Equip_AnchorTag_Hint>
+    <CS_Studio_Equip_ApparelLayers>服装层级</CS_Studio_Equip_ApparelLayers>
+    <CS_Studio_Equip_ApparelMask>服装遮罩</CS_Studio_Equip_ApparelMask>
+    <CS_Studio_Equip_ApparelTags>服装标签</CS_Studio_Equip_ApparelTags>
+    <CS_Studio_Equip_BodyPartGroups>身体部位组</CS_Studio_Equip_BodyPartGroups>
+    <CS_Studio_Equip_BoundAbilities>已绑定技能</CS_Studio_Equip_BoundAbilities>
+    <CS_Studio_Equip_Btn_Abilities>技能</CS_Studio_Equip_Btn_Abilities>
+    <CS_Studio_Equip_Btn_DisablePivotEdit>关闭枢轴编辑</CS_Studio_Equip_Btn_DisablePivotEdit>
+    <CS_Studio_Equip_Btn_EnablePivotEdit>编辑枢轴</CS_Studio_Equip_Btn_EnablePivotEdit>
     <CS_Studio_Equip_Btn_ExportXml>导出 XML</CS_Studio_Equip_Btn_ExportXml>
     <CS_Studio_Equip_Btn_New>新建</CS_Studio_Equip_Btn_New>
+    <CS_Studio_Equip_DefaultCopyDefName>Equipment_Copy</CS_Studio_Equip_DefaultCopyDefName>
+    <CS_Studio_Equip_DefaultPresetDefName>Aircraft_Preset</CS_Studio_Equip_DefaultPresetDefName>
     <CS_Studio_Equip_DefName>装备 DefName</CS_Studio_Equip_DefName>
+    <CS_Studio_Equip_DefName_Hint>仅可使用字母、数字和下划线。导出时该值会作为 XML 的 DefName。</CS_Studio_Equip_DefName_Hint>
+    <CS_Studio_Equip_DefName_Invalid>DefName 只能包含字母、数字和下划线。</CS_Studio_Equip_DefName_Invalid>
     <CS_Studio_Equip_DefaultLabel>装备 {0}</CS_Studio_Equip_DefaultLabel>
     <CS_Studio_Equip_Deleted>已删除装备：{0}</CS_Studio_Equip_Deleted>
     <CS_Studio_Equip_Duplicated>已复制装备：{0}</CS_Studio_Equip_Duplicated>
@@ -14,26 +29,82 @@
     <CS_Studio_Equip_EastOffsetZ>侧视偏移 Z</CS_Studio_Equip_EastOffsetZ>
     <CS_Studio_Equip_Exported>装备已导出：{0}</CS_Studio_Equip_Exported>
     <CS_Studio_Equip_ExportFailed>装备导出失败：{0}</CS_Studio_Equip_ExportFailed>
+    <CS_Studio_Equip_ImportAppendAction>追加</CS_Studio_Equip_ImportAppendAction>
+    <CS_Studio_Equip_ImportAppended>已从 {1} 追加导入 {0} 个装备。</CS_Studio_Equip_ImportAppended>
     <CS_Studio_Equip_ImportFailed>装备 XML 导入失败：{0}</CS_Studio_Equip_ImportFailed>
+    <CS_Studio_Equip_ImportNoResults>XML 中未找到装备数据。</CS_Studio_Equip_ImportNoResults>
+    <CS_Studio_Equip_ImportReplaceAction>替换</CS_Studio_Equip_ImportReplaceAction>
+    <CS_Studio_Equip_ImportReplaced>已从 {1} 导入 {0} 个装备。</CS_Studio_Equip_ImportReplaced>
+    <CS_Studio_Equip_ImportXmlHint>请输入装备 XML 路径。替换会清空当前装备，追加会保留现有装备。</CS_Studio_Equip_ImportXmlHint>
+    <CS_Studio_Equip_ImportXmlPath>XML 路径</CS_Studio_Equip_ImportXmlPath>
     <CS_Studio_Equip_ImportXmlTitle>导入装备 XML</CS_Studio_Equip_ImportXmlTitle>
+    <CS_Studio_Equip_InvalidSelection>所选装备无效。</CS_Studio_Equip_InvalidSelection>
     <CS_Studio_Equip_Label_Copy>{0}（复制）</CS_Studio_Equip_Label_Copy>
     <CS_Studio_Equip_LinkedThingDef>关联 ThingDef</CS_Studio_Equip_LinkedThingDef>
+    <CS_Studio_Equip_LinkedThingDef_Hint>可选择将该装备条目绑定到游戏内 ThingDef，用于集成或自动匹配。</CS_Studio_Equip_LinkedThingDef_Hint>
+    <CS_Studio_Equip_NoAbilities>无技能</CS_Studio_Equip_NoAbilities>
+    <CS_Studio_Equip_NoAbilityPool>当前没有可用的共享技能，请先创建或导入技能。</CS_Studio_Equip_NoAbilityPool>
     <CS_Studio_Equip_NorthOffsetX>北向偏移 X</CS_Studio_Equip_NorthOffsetX>
     <CS_Studio_Equip_NorthOffsetY>北向偏移 Y</CS_Studio_Equip_NorthOffsetY>
     <CS_Studio_Equip_NorthOffsetZ>北向偏移 Z</CS_Studio_Equip_NorthOffsetZ>
+    <CS_Studio_Equip_NoSelection>未选择装备。</CS_Studio_Equip_NoSelection>
     <CS_Studio_Equip_OpenAbilityEditor>打开共享技能编辑器</CS_Studio_Equip_OpenAbilityEditor>
+    <CS_Studio_Equip_ParentThingDefName>父级 ThingDef</CS_Studio_Equip_ParentThingDefName>
+    <CS_Studio_Equip_Preset_LeftWing>左翼</CS_Studio_Equip_Preset_LeftWing>
+    <CS_Studio_Equip_Preset_LeftWingVfx>左翼 VFX</CS_Studio_Equip_Preset_LeftWingVfx>
+    <CS_Studio_Equip_Preset_RightWing>右翼</CS_Studio_Equip_Preset_RightWing>
+    <CS_Studio_Equip_Preset_RightWingVfx>右翼 VFX</CS_Studio_Equip_Preset_RightWingVfx>
+    <CS_Studio_Equip_Preset_TailVfx>尾喷 VFX</CS_Studio_Equip_Preset_TailVfx>
+    <CS_Studio_Equip_PresetAdded>已添加飞行翼动画预设（左右翼与三个 VFX）。</CS_Studio_Equip_PresetAdded>
     <CS_Studio_Equip_PreviewTexture>预览贴图</CS_Studio_Equip_PreviewTexture>
+    <CS_Studio_Equip_PreviewPlay>单次预览</CS_Studio_Equip_PreviewPlay>
+    <CS_Studio_Equip_PreviewPlay_Hint>播放一次当前装备的触发动画预览。</CS_Studio_Equip_PreviewPlay_Hint>
+    <CS_Studio_Equip_PreviewLoop>循环预览</CS_Studio_Equip_PreviewLoop>
+    <CS_Studio_Equip_PreviewLoop_Hint>循环播放当前装备的触发动画预览。</CS_Studio_Equip_PreviewLoop_Hint>
+    <CS_Studio_Equip_PreviewUnavailable_Hint>当前选中装备未配置可预览的触发动画。</CS_Studio_Equip_PreviewUnavailable_Hint>
     <CS_Studio_Equip_RotationEastOffset>侧视旋转偏移</CS_Studio_Equip_RotationEastOffset>
     <CS_Studio_Equip_RotationNorthOffset>北向旋转偏移</CS_Studio_Equip_RotationNorthOffset>
     <CS_Studio_Equip_ScaleX>缩放 X</CS_Studio_Equip_ScaleX>
     <CS_Studio_Equip_ScaleY>缩放 Y</CS_Studio_Equip_ScaleY>
+    <CS_Studio_Equip_Section_Abilities>装备 / 绑定技能</CS_Studio_Equip_Section_Abilities>
     <CS_Studio_Equip_Section_Base>装备 / 基础信息</CS_Studio_Equip_Section_Base>
+    <CS_Studio_Equip_Section_Definition>ThingDef / 服装</CS_Studio_Equip_Section_Definition>
     <CS_Studio_Equip_Section_VisualAnimation>装备 / 视觉动画</CS_Studio_Equip_Section_VisualAnimation>
     <CS_Studio_Equip_Section_VisualBase>装备 / 视觉基础</CS_Studio_Equip_Section_VisualBase>
     <CS_Studio_Equip_Section_VisualTransform>装备 / 视觉变换</CS_Studio_Equip_Section_VisualTransform>
     <CS_Studio_Equip_Section_VisualVariants>装备 / 视觉变体</CS_Studio_Equip_Section_VisualVariants>
+    <CS_Studio_Equip_SelectEntry>请选择一个装备条目进行编辑。</CS_Studio_Equip_SelectEntry>
+    <CS_Studio_Equip_SelectHint>请选择一个装备条目，以便在右侧面板编辑完整属性。</CS_Studio_Equip_SelectHint>
+    <CS_Studio_Equip_Shader_Cutout>Cutout</CS_Studio_Equip_Shader_Cutout>
+    <CS_Studio_Equip_Shader_CutoutComplex>Cutout Complex</CS_Studio_Equip_Shader_CutoutComplex>
+    <CS_Studio_Equip_Shader_MetaOverlay>Meta Overlay</CS_Studio_Equip_Shader_MetaOverlay>
+    <CS_Studio_Equip_Shader_Transparent>Transparent</CS_Studio_Equip_Shader_Transparent>
+    <CS_Studio_Equip_Shader_TransparentPostLight>Transparent Post Light</CS_Studio_Equip_Shader_TransparentPostLight>
     <CS_Studio_Equip_ShaderDef>视觉 Shader Def</CS_Studio_Equip_ShaderDef>
+    <CS_Studio_Equip_ShaderDef_Hint>选择该装备视觉层所使用的着色器。</CS_Studio_Equip_ShaderDef_Hint>
     <CS_Studio_Equip_SlotTag>槽位标签</CS_Studio_Equip_SlotTag>
+    <CS_Studio_Equip_SlotTag_Hint>该装备条目的逻辑槽位标识，例如 WeaponBack、Hairpin 或 Cape。</CS_Studio_Equip_SlotTag_Hint>
     <CS_Studio_Equip_SourceNote>来源备注</CS_Studio_Equip_SourceNote>
+    <CS_Studio_Equip_ThingCategories>物品分类</CS_Studio_Equip_ThingCategories>
+    <CS_Studio_Equip_TriggeredAbilityDefName>触发技能 DefName</CS_Studio_Equip_TriggeredAbilityDefName>
+    <CS_Studio_Equip_TriggeredAbilityDefName_Hint>可填写具体技能的 defName；留空时将优先使用下方的状态/分组键。</CS_Studio_Equip_TriggeredAbilityDefName_Hint>
+    <CS_Studio_Equip_TriggeredAbilityDefName_Raw>触发技能 DefName（原始值）</CS_Studio_Equip_TriggeredAbilityDefName_Raw>
+    <CS_Studio_Equip_TriggeredAnimationGroupKey>触发状态/分组键</CS_Studio_Equip_TriggeredAnimationGroupKey>
+    <CS_Studio_Equip_TriggeredAnimationGroupKey_Hint>可填写状态键，例如 FlightState。若未填写触发技能 DefName，则装备会响应这个通用键。</CS_Studio_Equip_TriggeredAnimationGroupKey_Hint>
+    <CS_Studio_Equip_Section_TriggeredAnimation>触发动画</CS_Studio_Equip_Section_TriggeredAnimation>
+    <CS_Studio_Equip_TriggeredAnimation_Enable>启用触发动画</CS_Studio_Equip_TriggeredAnimation_Enable>
+    <CS_Studio_Equip_TriggeredAnimation_Role>触发动画角色</CS_Studio_Equip_TriggeredAnimation_Role>
+    <CS_Studio_Equip_TriggeredAnimation_DeployAngle>展开角度</CS_Studio_Equip_TriggeredAnimation_DeployAngle>
+    <CS_Studio_Equip_TriggeredAnimation_ReturnAngle>收回角度</CS_Studio_Equip_TriggeredAnimation_ReturnAngle>
+    <CS_Studio_Equip_TriggeredAnimation_DeployTicks>展开时长（Tick）</CS_Studio_Equip_TriggeredAnimation_DeployTicks>
+    <CS_Studio_Equip_TriggeredAnimation_HoldTicks>保持时长（Tick）</CS_Studio_Equip_TriggeredAnimation_HoldTicks>
+    <CS_Studio_Equip_TriggeredAnimation_ReturnTicks>收回时长（Tick）</CS_Studio_Equip_TriggeredAnimation_ReturnTicks>
+    <CS_Studio_Equip_TriggeredAnimation_PivotX>旋转枢轴 X</CS_Studio_Equip_TriggeredAnimation_PivotX>
+    <CS_Studio_Equip_TriggeredAnimation_PivotY>旋转枢轴 Y</CS_Studio_Equip_TriggeredAnimation_PivotY>
+    <CS_Studio_Equip_TriggeredAnimation_UseVfxVisibility>按周期控制特效层可见性</CS_Studio_Equip_TriggeredAnimation_UseVfxVisibility>
+    <CS_Studio_Equip_UseWornGraphicMask>使用穿戴图形遮罩</CS_Studio_Equip_UseWornGraphicMask>
     <CS_Studio_Equip_VisualLayerName>视觉图层名称</CS_Studio_Equip_VisualLayerName>
+    <CS_Studio_Equip_WorkingSkinNull>workingSkin 为空</CS_Studio_Equip_WorkingSkinNull>
+    <CS_Studio_Equip_WorldTexPath>世界贴图路径</CS_Studio_Equip_WorldTexPath>
+    <CS_Studio_Equip_WornTexPath>穿戴贴图路径</CS_Studio_Equip_WornTexPath>
 </LanguageData>

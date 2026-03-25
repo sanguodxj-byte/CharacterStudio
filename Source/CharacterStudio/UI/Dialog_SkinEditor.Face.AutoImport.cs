@@ -529,20 +529,20 @@ namespace CharacterStudio.UI
                 TryApplyFirstAvailableStem(LayeredFacePartType.Overlay, ExpressionType.Neutral, new[] { "Overlay_blush", "Blush" }, "Blush");
                 TryApplyFirstAvailableStem(LayeredFacePartType.Overlay, ExpressionType.Neutral, new[] { "Overlay_tear", "Tear" }, "Tear");
                 TryApplyFirstAvailableStem(LayeredFacePartType.Overlay, ExpressionType.Neutral, new[] { "Overlay_sweat", "Sweat" }, "Sweat");
+                TryApplyFirstAvailableStem(LayeredFacePartType.Overlay, ExpressionType.Neutral, new[] { "Overlay_sleep", "Sleep" }, "Sleep");
+                TryApplyFirstAvailableStem(LayeredFacePartType.Overlay, ExpressionType.Neutral, new[] { "Overlay_gloomy", "Gloomy" }, "Gloomy");
 
                 TryApplyExpressionGroup(
                     LayeredFacePartType.Overlay,
                     new[] { ExpressionType.Lovin },
                     new[] { "Overlay_love", "Overlay_lovin" },
-                    "Overlay");
+                    "Blush");
 
                 TryApplyExpressionGroup(
                     LayeredFacePartType.Overlay,
                     new[] { ExpressionType.Gloomy, ExpressionType.Sad, ExpressionType.Hopeless, ExpressionType.Pain },
                     new[] { "Overlay_black", "Overlay_Nolight", "Overlay_NoLight", "Overlay_dark" },
-                    "Overlay");
-
-                TryApplyFirstAvailableStem(LayeredFacePartType.Overlay, ExpressionType.Neutral, new[] { "Overlay" }, "Overlay");
+                    "Gloomy");
 
                 foreach (string filePath in files)
                 {
@@ -645,6 +645,9 @@ namespace CharacterStudio.UI
             if (partType == LayeredFacePartType.Overlay)
             {
                 string resolvedOverlayId = PawnFaceConfig.NormalizeOverlayId(overlayId);
+                if (string.IsNullOrWhiteSpace(resolvedOverlayId))
+                    return;
+
                 fc.SetLayeredPartDirectional(partType, expression, texPathSouth, texPathEast, texPathNorth, resolvedOverlayId, overlayOrder);
 
                 LayeredFacePartConfig? overlayConfig = fc.GetLayeredPartConfig(partType, expression, resolvedOverlayId);
@@ -938,8 +941,10 @@ namespace CharacterStudio.UI
                     return PawnFaceConfig.NormalizeOverlayId("Tear");
                 case LayeredFacePartType.Sweat:
                     return PawnFaceConfig.NormalizeOverlayId("Sweat");
+                case LayeredFacePartType.Overlay:
+                    return string.Empty;
                 default:
-                    return PawnFaceConfig.NormalizeOverlayId("Overlay");
+                    return string.Empty;
             }
         }
 
@@ -1232,8 +1237,10 @@ namespace CharacterStudio.UI
                             return 50.24f;
                         case LayeredOverlayKind.Sweat:
                             return 50.26f;
+                        case LayeredOverlayKind.Sleep:
+                            return 50.28f;
                         default:
-                            return 50.30f + Math.Max(0, overlayOrder - PawnFaceConfig.GetCanonicalOverlayOrder("Overlay")) * 0.002f;
+                            return 50.30f + Math.Max(0, overlayOrder - 4) * 0.002f;
                     }
                 default:
                     return 50.20f;
@@ -1322,23 +1329,18 @@ namespace CharacterStudio.UI
 
                 if (tailSegments.Count == 0)
                 {
-                    overlayId = PawnFaceConfig.NormalizeOverlayId("Overlay");
-                    return true;
+                    return false;
                 }
 
                 if (tailSegments.Count == 1)
                 {
-                    if (Enum.TryParse(tailSegments[0], true, out ExpressionType overlayExpression))
+                    if (Enum.TryParse<ExpressionType>(tailSegments[0], true, out _))
                     {
-                        overlayId = PawnFaceConfig.NormalizeOverlayId("Overlay");
-                        suffix = overlayExpression.ToString();
-                    }
-                    else
-                    {
-                        overlayId = PawnFaceConfig.NormalizeOverlayId(tailSegments[0]);
+                        return false;
                     }
 
-                    return true;
+                    overlayId = PawnFaceConfig.NormalizeOverlayId(tailSegments[0]);
+                    return !string.IsNullOrWhiteSpace(overlayId);
                 }
 
                 string lastSegment = tailSegments[tailSegments.Count - 1];
@@ -1352,14 +1354,7 @@ namespace CharacterStudio.UI
                     overlayId = PawnFaceConfig.NormalizeOverlayId(string.Join("_", tailSegments));
                 }
 
-                if (string.Equals(overlayId, "Overlay", StringComparison.OrdinalIgnoreCase)
-                    && tailSegments.Count >= 2
-                    && tailSegments.All(segment => segment.Equals("overlay", StringComparison.OrdinalIgnoreCase)))
-                {
-                    overlayId = PawnFaceConfig.NormalizeOverlayId("Overlay2");
-                }
-
-                return true;
+                return !string.IsNullOrWhiteSpace(overlayId);
             }
 
             if (segments[0].Equals(nameof(LayeredFacePartType.Blush), StringComparison.OrdinalIgnoreCase)
@@ -1400,22 +1395,31 @@ namespace CharacterStudio.UI
                 tailSegments.RemoveAt(tailSegments.Count - 1);
             }
 
-            for (int i = tailSegments.Count - 1; i >= 0; i--)
-            {
-                if (TryParseLayeredFacePartSideToken(partType, tailSegments[i], out LayeredFacePartSide parsedSide))
-                {
-                    side = parsedSide;
-                    tailSegments.RemoveAt(i);
-                    break;
-                }
-            }
-
             bool removedViewDirectionalTokens = false;
             while (tailSegments.Count > 0 && ViewDirectionalVariantTokens.Contains(tailSegments[tailSegments.Count - 1]))
             {
                 TryParseViewFacingToken(tailSegments[tailSegments.Count - 1], ref facing);
                 tailSegments.RemoveAt(tailSegments.Count - 1);
                 removedViewDirectionalTokens = true;
+            }
+
+            if (tailSegments.Count > 0
+                && TryParseLayeredFacePartSideToken(partType, tailSegments[tailSegments.Count - 1], out LayeredFacePartSide trailingSide))
+            {
+                side = trailingSide;
+                tailSegments.RemoveAt(tailSegments.Count - 1);
+            }
+            else
+            {
+                for (int i = tailSegments.Count - 1; i >= 0; i--)
+                {
+                    if (TryParseLayeredFacePartSideToken(partType, tailSegments[i], out LayeredFacePartSide parsedSide))
+                    {
+                        side = parsedSide;
+                        tailSegments.RemoveAt(i);
+                        break;
+                    }
+                }
             }
 
             if (tailSegments.Count == 0)
@@ -1544,17 +1548,23 @@ namespace CharacterStudio.UI
                     recognizedStems.Add(stem);
             }
 
-            if (string.IsNullOrWhiteSpace(texPathSouth) && !string.IsNullOrWhiteSpace(texturePath))
+            if (!string.IsNullOrWhiteSpace(texturePath))
             {
                 if (facing == Rot4.North)
                 {
-                    texPathNorth = texturePath;
+                    if (string.IsNullOrWhiteSpace(texPathNorth))
+                    {
+                        texPathNorth = texturePath;
+                    }
                 }
                 else if (facing == Rot4.East || facing == Rot4.West)
                 {
-                    texPathEast = texturePath;
+                    if (string.IsNullOrWhiteSpace(texPathEast))
+                    {
+                        texPathEast = texturePath;
+                    }
                 }
-                else
+                else if (string.IsNullOrWhiteSpace(texPathSouth))
                 {
                     texPathSouth = texturePath;
                 }

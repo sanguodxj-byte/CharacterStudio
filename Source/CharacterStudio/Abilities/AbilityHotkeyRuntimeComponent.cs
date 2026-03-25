@@ -123,6 +123,7 @@ namespace CharacterStudio.Abilities
             var skinComp = pawn.GetComp<CompPawnSkin>();
             CharacterAbilityLoadout? loadout = AbilityLoadoutRuntimeUtility.GetEffectiveLoadout(pawn);
             SkinAbilityHotkeyConfig? hotkeys = loadout?.hotkeys;
+
             if (skinComp == null || hotkeys == null || !hotkeys.enabled)
             {
                 return;
@@ -141,6 +142,10 @@ namespace CharacterStudio.Abilities
 
             string abilityDefName = ResolveAbilityDefNameBySlot(hotkeys, slot, skinComp, tick);
             ModularAbilityDef? ability = ResolveAbilityByDefName(loadout, abilityDefName);
+            if (AbilityVanillaFlightUtility.TryNotifyFlightFollowupFailure(pawn, ability))
+            {
+                return;
+            }
 
             if (ability == null && slot != AbilityHotkeySlot.R)
             {
@@ -485,7 +490,18 @@ namespace CharacterStudio.Abilities
             foreach (var pawn in allPawns)
             {
                 var comp = pawn.GetComp<CompPawnSkin>();
-                if (comp == null || !comp.rStackingEnabled || comp.rSecondStageReady)
+                if (comp == null)
+                {
+                    LastBusyStanceByPawn.Remove(pawn);
+                    continue;
+                }
+
+                if (comp.rSecondStageHasTarget && comp.rSecondStageExecuteTick >= 0)
+                {
+                    anyRStackingActive = true;
+                }
+
+                if (!comp.rStackingEnabled || comp.rSecondStageReady)
                 {
                     LastBusyStanceByPawn.Remove(pawn);
                     continue;
@@ -708,10 +724,24 @@ namespace CharacterStudio.Abilities
         {
             AbilityCarrierType normalizedCarrier = ModularAbilityDefExtensions.NormalizeCarrierType(ability.carrierType);
             AbilityTargetType normalizedTarget = ModularAbilityDefExtensions.NormalizeTargetType(ability);
+            LocalTargetInfo forcedTarget = AbilityVanillaFlightUtility.ResolveFollowupTarget(caster, ability, LocalTargetInfo.Invalid);
 
             if (normalizedCarrier == AbilityCarrierType.Self || normalizedTarget == AbilityTargetType.Self)
             {
-                runtimeAbility.QueueCastingJob(caster, LocalTargetInfo.Invalid);
+                LocalTargetInfo selfTarget = new LocalTargetInfo(caster);
+                LocalTargetInfo selfDest = normalizedCarrier == AbilityCarrierType.Projectile && normalizedTarget == AbilityTargetType.Cell
+                    ? new LocalTargetInfo(caster.Position)
+                    : LocalTargetInfo.Invalid;
+                runtimeAbility.QueueCastingJob(selfTarget, selfDest);
+                return true;
+            }
+
+            if (forcedTarget.IsValid)
+            {
+                LocalTargetInfo forcedDest = normalizedCarrier == AbilityCarrierType.Projectile && normalizedTarget == AbilityTargetType.Cell
+                    ? forcedTarget
+                    : LocalTargetInfo.Invalid;
+                runtimeAbility.QueueCastingJob(forcedTarget, forcedDest);
                 return true;
             }
 
@@ -775,10 +805,24 @@ namespace CharacterStudio.Abilities
         {
             AbilityCarrierType normalizedCarrier = ModularAbilityDefExtensions.NormalizeCarrierType(ability.carrierType);
             AbilityTargetType normalizedTarget = ModularAbilityDefExtensions.NormalizeTargetType(ability);
+            LocalTargetInfo forcedTarget = AbilityVanillaFlightUtility.ResolveFollowupTarget(caster, ability, LocalTargetInfo.Invalid);
 
             if (normalizedCarrier == AbilityCarrierType.Self || normalizedTarget == AbilityTargetType.Self)
             {
-                runtimeAbility.QueueCastingJob(caster, LocalTargetInfo.Invalid);
+                LocalTargetInfo selfTarget = new LocalTargetInfo(caster);
+                LocalTargetInfo selfDest = normalizedCarrier == AbilityCarrierType.Projectile && normalizedTarget == AbilityTargetType.Cell
+                    ? new LocalTargetInfo(caster.Position)
+                    : LocalTargetInfo.Invalid;
+                runtimeAbility.QueueCastingJob(selfTarget, selfDest);
+                return true;
+            }
+
+            if (forcedTarget.IsValid)
+            {
+                LocalTargetInfo forcedDest = normalizedCarrier == AbilityCarrierType.Projectile && normalizedTarget == AbilityTargetType.Cell
+                    ? forcedTarget
+                    : LocalTargetInfo.Invalid;
+                runtimeAbility.QueueCastingJob(forcedTarget, forcedDest);
                 return true;
             }
 
@@ -792,10 +836,11 @@ namespace CharacterStudio.Abilities
                 {
                     try
                     {
+                        LocalTargetInfo resolvedTarget = AbilityVanillaFlightUtility.ResolveFollowupTarget(caster, ability, target);
                         LocalTargetInfo dest = normalizedCarrier == AbilityCarrierType.Projectile && normalizedTarget == AbilityTargetType.Cell
-                            ? target
+                            ? resolvedTarget
                             : LocalTargetInfo.Invalid;
-                        runtimeAbility.QueueCastingJob(target, dest);
+                        runtimeAbility.QueueCastingJob(resolvedTarget, dest);
                     }
                     catch (System.Exception ex)
                     {
@@ -811,7 +856,9 @@ namespace CharacterStudio.Abilities
 
         private static TargetingParameters BuildTargetingParameters(ModularAbilityDef ability)
         {
+            AbilityCarrierType normalizedCarrier = ModularAbilityDefExtensions.NormalizeCarrierType(ability.carrierType);
             AbilityTargetType normalizedTarget = ModularAbilityDefExtensions.NormalizeTargetType(ability);
+
             return normalizedTarget switch
             {
                 AbilityTargetType.Cell => new TargetingParameters
@@ -828,7 +875,13 @@ namespace CharacterStudio.Abilities
                     canTargetLocations = false,
                     canTargetSelf = false
                 },
-                _ => new TargetingParameters { canTargetSelf = true }
+                _ => new TargetingParameters
+                {
+                    canTargetSelf = true,
+                    canTargetPawns = false,
+                    canTargetBuildings = false,
+                    canTargetLocations = false
+                }
             };
         }
 
@@ -1188,7 +1241,7 @@ namespace CharacterStudio.Abilities
             bool clampToMaxDistance = jumpComp.smartCastClampToMaxDistance || slot == AbilityHotkeySlot.E;
             bool allowFallbackForward = jumpComp.smartCastAllowFallbackForward;
 
-            IntVec3 desired = ResolveDesiredSmartJumpCell(origin, mouseCell, jumpComp, maxDistance, clampToMaxDistance);
+            IntVec3 desired = ResolveDesiredSmartJumpCell(origin, mouseCell, jumpComp, maxDistance, clampToMaxDistance, caster.Rotation.FacingCell);
             IntVec3 clamped = ClampJumpDestination(origin, desired, maxDistance);
 
             if (TryResolveStandableJumpCell(caster, clamped, fallbackRadius, allowFallbackForward, out destination))
@@ -1204,12 +1257,16 @@ namespace CharacterStudio.Abilities
             return false;
         }
 
-        private static IntVec3 ResolveDesiredSmartJumpCell(IntVec3 origin, IntVec3 mouseCell, AbilityRuntimeComponentConfig jumpComp, int maxDistance, bool clampToMaxDistance)
+        private static IntVec3 ResolveDesiredSmartJumpCell(IntVec3 origin, IntVec3 mouseCell, AbilityRuntimeComponentConfig jumpComp, int maxDistance, bool clampToMaxDistance, IntVec3 fallbackForward)
         {
             int offsetCells = jumpComp.smartCastOffsetCells > 0 ? jumpComp.smartCastOffsetCells : 1;
             if (!jumpComp.useMouseTargetCell)
             {
-                IntVec3 fallbackForward = GetFacingDirection(origin, origin + IntVec3.North, IntVec3.North);
+                if (fallbackForward == IntVec3.Zero)
+                {
+                    fallbackForward = IntVec3.North;
+                }
+
                 return origin + fallbackForward * offsetCells;
             }
 

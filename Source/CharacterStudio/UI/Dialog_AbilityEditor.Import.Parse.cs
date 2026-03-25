@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml;
 using CharacterStudio.Abilities;
@@ -34,7 +35,10 @@ namespace CharacterStudio.UI
                     return;
                 }
 
-                List<ModularAbilityDef> importedAbilities = LoadAbilitiesFromXmlFile(normalizedPath);
+                List<ModularAbilityDef> importedAbilities = LoadAbilitiesFromXmlFile(normalizedPath, out SkinAbilityHotkeyConfig? importedHotkeys);
+                Dictionary<ModularAbilityDef, string> originalImportedDefNames = importedAbilities
+                    .Where(ability => ability != null && !string.IsNullOrWhiteSpace(ability.defName))
+                    .ToDictionary(ability => ability, ability => ability.defName!);
                 if (importedAbilities.Count == 0)
                 {
                     validationSummary = "CS_Studio_Ability_ImportNoAbilities".Translate();
@@ -48,9 +52,17 @@ namespace CharacterStudio.UI
                 }
 
                 NormalizeImportedAbilityDefNames(importedAbilities, replaceExisting ? null : abilities);
+                if (importedHotkeys != null)
+                {
+                    RemapImportedHotkeyConfig(importedHotkeys, originalImportedDefNames);
+                }
 
                 abilities.AddRange(importedAbilities);
                 selectedAbility = importedAbilities[0];
+                if (importedHotkeys != null)
+                {
+                    ApplyHotkeyConfig(importedHotkeys);
+                }
                 lastImportedAbilityXmlPath = normalizedPath;
                 NotifyAbilityPreviewDirty(true);
 
@@ -68,21 +80,27 @@ namespace CharacterStudio.UI
 
         private static List<ModularAbilityDef> LoadAbilitiesFromXmlFile(string path)
         {
+            return LoadAbilitiesFromXmlFile(path, out _);
+        }
+
+        private static List<ModularAbilityDef> LoadAbilitiesFromXmlFile(string path, out SkinAbilityHotkeyConfig? hotkeys)
+        {
             var xml = new XmlDocument();
             xml.Load(path);
 
             var result = new List<ModularAbilityDef>();
+            hotkeys = null;
             XmlNode? root = xml.DocumentElement;
             if (root == null)
             {
                 return result;
             }
 
-            CollectAbilitiesFromNode(root, result);
+            CollectAbilitiesFromNode(root, result, ref hotkeys);
             return result;
         }
 
-        private static void CollectAbilitiesFromNode(XmlNode node, List<ModularAbilityDef> result)
+        private static void CollectAbilitiesFromNode(XmlNode node, List<ModularAbilityDef> result, ref SkinAbilityHotkeyConfig? hotkeys)
         {
             if (node.NodeType != XmlNodeType.Element)
             {
@@ -93,7 +111,7 @@ namespace CharacterStudio.UI
             {
                 foreach (XmlNode child in node.ChildNodes)
                 {
-                    CollectAbilitiesFromNode(child, result);
+                    CollectAbilitiesFromNode(child, result, ref hotkeys);
                 }
                 return;
             }
@@ -110,7 +128,7 @@ namespace CharacterStudio.UI
 
             if (IsPawnSkinDefNode(node.Name))
             {
-                CollectAbilitiesFromPawnSkinNode(node, result);
+                CollectAbilitiesFromPawnSkinNode(node, result, ref hotkeys);
                 return;
             }
 
@@ -124,30 +142,30 @@ namespace CharacterStudio.UI
             }
         }
 
-        private static void CollectAbilitiesFromPawnSkinNode(XmlNode pawnSkinNode, List<ModularAbilityDef> result)
+        private static void CollectAbilitiesFromPawnSkinNode(XmlNode pawnSkinNode, List<ModularAbilityDef> result, ref SkinAbilityHotkeyConfig? hotkeys)
         {
             XmlNode? abilitiesNode = FindChildNode(pawnSkinNode, "abilities");
-            if (abilitiesNode == null)
+            if (abilitiesNode != null)
             {
-                return;
-            }
-
-            foreach (XmlNode child in abilitiesNode.ChildNodes)
-            {
-                if (child.NodeType != XmlNodeType.Element)
+                foreach (XmlNode child in abilitiesNode.ChildNodes)
                 {
-                    continue;
-                }
-
-                if (child.Name == "li" || IsModularAbilityNode(child.Name))
-                {
-                    ModularAbilityDef? ability = ParseModularAbilityNode(child);
-                    if (ability != null)
+                    if (child.NodeType != XmlNodeType.Element)
                     {
-                        result.Add(ability);
+                        continue;
+                    }
+
+                    if (child.Name == "li" || IsModularAbilityNode(child.Name))
+                    {
+                        ModularAbilityDef? ability = ParseModularAbilityNode(child);
+                        if (ability != null)
+                        {
+                            result.Add(ability);
+                        }
                     }
                 }
             }
+
+            hotkeys ??= ParseAbilityHotkeysNode(FindChildNode(pawnSkinNode, "abilityHotkeys"));
         }
 
         private static ModularAbilityDef? ParseModularAbilityNode(XmlNode node)
@@ -366,6 +384,52 @@ namespace CharacterStudio.UI
             }
 
             return CreateEditableAbilityCopy(imported);
+        }
+
+        private static SkinAbilityHotkeyConfig? ParseAbilityHotkeysNode(XmlNode? node)
+        {
+            if (node == null)
+            {
+                return null;
+            }
+
+            return new SkinAbilityHotkeyConfig
+            {
+                enabled = ParseBool(GetChildText(node, "enabled"), false),
+                qAbilityDefName = GetChildText(node, "qAbilityDefName"),
+                wAbilityDefName = GetChildText(node, "wAbilityDefName"),
+                eAbilityDefName = GetChildText(node, "eAbilityDefName"),
+                rAbilityDefName = GetChildText(node, "rAbilityDefName"),
+                wComboAbilityDefName = GetChildText(node, "wComboAbilityDefName")
+            };
+        }
+
+        private static void RemapImportedHotkeyConfig(SkinAbilityHotkeyConfig hotkeys, Dictionary<ModularAbilityDef, string> originalDefNames)
+        {
+            hotkeys.qAbilityDefName = RemapImportedHotkeyDefName(hotkeys.qAbilityDefName, originalDefNames);
+            hotkeys.wAbilityDefName = RemapImportedHotkeyDefName(hotkeys.wAbilityDefName, originalDefNames);
+            hotkeys.eAbilityDefName = RemapImportedHotkeyDefName(hotkeys.eAbilityDefName, originalDefNames);
+            hotkeys.rAbilityDefName = RemapImportedHotkeyDefName(hotkeys.rAbilityDefName, originalDefNames);
+            hotkeys.wComboAbilityDefName = RemapImportedHotkeyDefName(hotkeys.wComboAbilityDefName, originalDefNames);
+        }
+
+        private static string RemapImportedHotkeyDefName(string? defName, Dictionary<ModularAbilityDef, string> originalDefNames)
+        {
+            if (string.IsNullOrWhiteSpace(defName))
+            {
+                return string.Empty;
+            }
+
+            string normalizedDefName = defName!.Trim();
+            foreach ((ModularAbilityDef ability, string originalDefName) in originalDefNames)
+            {
+                if (string.Equals(originalDefName, normalizedDefName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return ability.defName ?? string.Empty;
+                }
+            }
+
+            return normalizedDefName;
         }
 
         private static AbilityCarrierType ResolveCarrierType(string verbClass, bool targetable, float radius, string projectileDefName)

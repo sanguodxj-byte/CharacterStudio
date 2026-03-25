@@ -69,25 +69,24 @@
     <CS_Studio_Anim_None>None</CS_Studio_Anim_None>
     <CS_Studio_Anim_OffsetAmplitude>Offset Amplitude</CS_Studio_Anim_OffsetAmplitude>
     <CS_Studio_Anim_PhaseOffset>Phase Offset</CS_Studio_Anim_PhaseOffset>
+    <CS_Studio_Anim_PivotX>Rotation Pivot X</CS_Studio_Anim_PivotX>
+    <CS_Studio_Anim_PivotY>Rotation Pivot Y</CS_Studio_Anim_PivotY>
     <CS_Studio_Anim_Speed>Speed</CS_Studio_Anim_Speed>
+    <CS_Studio_Anim_Spin>Continuous Spin</CS_Studio_Anim_Spin>
     <CS_Studio_Anim_Swing>Periodic Swing</CS_Studio_Anim_Swing>
     <CS_Studio_Anim_Twitch>Random Twitch</CS_Studio_Anim_Twitch>
     <CS_Studio_Anim_Type>Type</CS_Studio_Anim_Type>
-    <CS_Studio_Anim_Spin>Continuous Spin</CS_Studio_Anim_Spin>
-    <CS_Studio_Anim_PivotX>Rotation Pivot X</CS_Studio_Anim_PivotX>
-    <CS_Studio_Anim_PivotY>Rotation Pivot Y</CS_Studio_Anim_PivotY>
     <CS_Studio_Author>Author</CS_Studio_Author>
     <CS_Studio_Btn_Apply>Apply</CS_Studio_Btn_Apply>
     <CS_Studio_Btn_Cancel>Cancel</CS_Studio_Btn_Cancel>
     <CS_Studio_Btn_ClearShort>Clear</CS_Studio_Btn_ClearShort>
     <CS_Studio_Btn_ContinueExport>Export Anyway</CS_Studio_Btn_ContinueExport>
-    <CS_Studio_Clear>Clear</CS_Studio_Clear>
-    <CS_Studio_Delete>Delete</CS_Studio_Delete>
     <CS_Studio_Btn_Edit>Edit</CS_Studio_Btn_Edit>
     <CS_Studio_Btn_OK>OK</CS_Studio_Btn_OK>
     <CS_Studio_Btn_Pick>Pick</CS_Studio_Btn_Pick>
     <CS_Studio_Btn_Reset>Reset Params</CS_Studio_Btn_Reset>
     <CS_Studio_Btn_SelectFile>Select File</CS_Studio_Btn_SelectFile>
+    <CS_Studio_Clear>Clear</CS_Studio_Clear>
     <CS_Studio_Ctx_AppendImport>Append Import</CS_Studio_Ctx_AppendImport>
     <CS_Studio_Ctx_ClearAndImport>Clear and Import</CS_Studio_Ctx_ClearAndImport>
     <CS_Studio_Ctx_CollapseChildren>Collapse Children</CS_Studio_Ctx_CollapseChildren>
@@ -98,6 +97,7 @@
     <CS_Studio_Ctx_ExpandChildren>Expand Children</CS_Studio_Ctx_ExpandChildren>
     <CS_Studio_Ctx_FromRenderTree>── Select from Render Tree ──</CS_Studio_Ctx_FromRenderTree>
     <CS_Studio_DefaultSkinLabel>New Skin</CS_Studio_DefaultSkinLabel>
+    <CS_Studio_Delete>Delete</CS_Studio_Delete>
     <CS_Studio_Description>Description</CS_Studio_Description>
     <CS_Studio_EditorSubtitle>WYSIWYG Character Appearance Editor</CS_Studio_EditorSubtitle>
     <CS_Studio_EditorTitle>Character Skin Editor</CS_Studio_EditorTitle>
@@ -182,13 +182,16 @@
     <CS_Studio_OpenEditor>Open Skin Editor</CS_Studio_OpenEditor>
     <CS_Studio_OpenPerformanceStats>Open Performance Stats</CS_Studio_OpenPerformanceStats>
     <CS_Studio_RaceDisplayName>Race Display Name</CS_Studio_RaceDisplayName>
+    <CS_Studio_Section_Advanced>Advanced</CS_Studio_Section_Advanced>
     <CS_Studio_Section_Animation>Animation Settings</CS_Studio_Section_Animation>
     <CS_Studio_Section_Base>Base</CS_Studio_Section_Base>
+    <CS_Studio_Section_Context>Context</CS_Studio_Section_Context>
     <CS_Studio_Section_EastOffset>East Offset</CS_Studio_Section_EastOffset>
     <CS_Studio_Section_HideVanilla>Hide Vanilla</CS_Studio_Section_HideVanilla>
     <CS_Studio_Section_Misc>Misc</CS_Studio_Section_Misc>
     <CS_Studio_Section_NorthOffset>North Offset</CS_Studio_Section_NorthOffset>
     <CS_Studio_Section_RaceIdentity>Race Identity</CS_Studio_Section_RaceIdentity>
+    <CS_Studio_Section_Tools>Tools</CS_Studio_Section_Tools>
     <CS_Studio_Section_Transform>Transform</CS_Studio_Section_Transform>
     <CS_Studio_Section_VariantsExpression>Variants / Expression</CS_Studio_Section_VariantsExpression>
     <CS_Studio_Section_WeaponCarryVisual>State Weapon Visual</CS_Studio_Section_WeaponCarryVisual>
@@ -212,6 +215,9 @@
     <CS_Studio_Tip_RemoveLayer>Remove the selected layer</CS_Studio_Tip_RemoveLayer>
     <CS_Studio_Tip_SelectTexture>Click to select a texture file</CS_Studio_Tip_SelectTexture>
     <CS_Studio_Tip_ShowNode>Click to show this node</CS_Studio_Tip_ShowNode>
+    <CS_Studio_UI_ColorValueRGB>R:{0} G:{1} B:{2}</CS_Studio_UI_ColorValueRGB>
+    <CS_Studio_UI_Off>Off</CS_Studio_UI_Off>
+    <CS_Studio_UI_On>On</CS_Studio_UI_On>
     <CS_Studio_Version>Version</CS_Studio_Version>
     <CS_Studio_Warn_ImportMissingTexturesDetail>Imported from {0}, but {1} external textures were missing and have been skipped safely:\n{2}</CS_Studio_Warn_ImportMissingTexturesDetail>
     <CS_Studio_Warn_ImportMissingTexturesStatus>Import completed with {0} missing external textures</CS_Studio_Warn_ImportMissingTexturesStatus>
@@ -257,9 +263,6 @@
     <CS_Studio_WeaponRender_Reset>Reset Weapon Config</CS_Studio_WeaponRender_Reset>
     <CS_Studio_WeaponRender_ScaleX>Scale X</CS_Studio_WeaponRender_ScaleX>
     <CS_Studio_WeaponRender_ScaleY>Scale Y</CS_Studio_WeaponRender_ScaleY>
-    <CS_Studio_UI_ColorValueRGB>R:{0} G:{1} B:{2}</CS_Studio_UI_ColorValueRGB>
-    <CS_Studio_UI_Off>Off</CS_Studio_UI_Off>
-    <CS_Studio_UI_On>On</CS_Studio_UI_On>
     <CS_Studio_Worker_Default>Default</CS_Studio_Worker_Default>
     <CS_Studio_Worker_FaceComponent>Face Component</CS_Studio_Worker_FaceComponent>
     <CS_Studio_XenotypeDefName>Bind Xenotype</CS_Studio_XenotypeDefName>

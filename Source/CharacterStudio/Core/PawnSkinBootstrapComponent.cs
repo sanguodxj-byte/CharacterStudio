@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using HarmonyLib;
 using CharacterStudio.Abilities;
 using CharacterStudio.Performance;
+using RimWorld;
 using Verse;
 
 namespace CharacterStudio.Core
@@ -149,12 +150,49 @@ namespace CharacterStudio.Core
             if (comp.HasActiveSkin)
                 return false;
 
+            if (!ShouldAutoApplyDefaultSkinDuringBootstrap(pawn, comp))
+                return false;
+
             PawnSkinDef? skin = PawnSkinDefRegistry.GetDefaultSkinForRace(pawn.def);
             if (skin == null)
                 return false;
 
             comp.ActiveSkin = skin.Clone();
             return true;
+        }
+
+        private static bool ShouldAutoApplyDefaultSkinDuringBootstrap(Pawn pawn, CompPawnSkin comp)
+        {
+            if (pawn == null || comp == null)
+                return false;
+
+            if (!pawn.RaceProps.Humanlike)
+                return false;
+
+            if (comp.HasActiveSkin)
+                return false;
+
+            if (!string.IsNullOrWhiteSpace(comp.ActiveSkinApplicationSource))
+                return false;
+
+            if (comp.ActiveSkinFromDefaultRaceBinding)
+                return true;
+
+            bool hasExplicitAppearanceState = !string.IsNullOrWhiteSpace(comp.ActiveSkinApplicationSource)
+                || !string.IsNullOrWhiteSpace(GetSerializedActiveSkinDefName(comp));
+            if (hasExplicitAppearanceState)
+                return false;
+
+            return pawn.Faction == Faction.OfPlayer
+                || pawn.IsColonist
+                || pawn.IsPrisonerOfColony
+                || pawn.IsSlaveOfColony;
+        }
+
+        private static string? GetSerializedActiveSkinDefName(CompPawnSkin comp)
+        {
+            var field = AccessTools.Field(typeof(CompPawnSkin), "activeSkinDefName");
+            return field?.GetValue(comp) as string;
         }
 
         private bool TryGrantLoadoutOnce(Pawn pawn, CompPawnSkin? comp)
@@ -164,8 +202,16 @@ namespace CharacterStudio.Core
                 return false;
 
             loadoutGrantedPawnIds.Add(pawnId);
-            if (comp?.ActiveSkin != null) AbilityGrantUtility.GrantSkinAbilitiesToPawn(pawn, comp.ActiveSkin);
-            return true;
+            if (comp == null)
+                return false;
+
+            CharacterAbilityLoadout? loadout = AbilityLoadoutRuntimeUtility.GetEffectiveLoadout(pawn);
+            bool hasEffectiveAbilities = loadout?.abilities != null && loadout.abilities.Count > 0;
+
+            // 读档恢复时必须同步“当前生效装配”，而不是仅同步皮肤模板技能。
+            // 否则显式 loadout 会在存档恢复后被皮肤技能覆盖，导致热键、Gizmo 与运行时 Ability 链路失配。
+            AbilityLoadoutRuntimeUtility.GrantEffectiveLoadoutToPawn(pawn);
+            return hasEffectiveAbilities;
         }
 
         private static bool AddCompToPawn(Pawn pawn)
@@ -211,6 +257,10 @@ namespace CharacterStudio.Core
                 foreach (Pawn pawn in map.mapPawns.AllPawnsSpawned)
                 {
                     if (pawn == null || !pawn.RaceProps.Humanlike)
+                        continue;
+
+                    CompPawnSkin? comp = pawn.GetComp<CompPawnSkin>();
+                    if (comp == null || !ShouldAutoApplyDefaultSkinDuringBootstrap(pawn, comp))
                         continue;
 
                     PawnSkinDef? defaultSkin = PawnSkinDefRegistry.GetDefaultSkinForRace(pawn.def);

@@ -97,17 +97,6 @@
     <CS_Studio_Prop_OffsetYHeight>Y 偏移(高度)</CS_Studio_Prop_OffsetYHeight>
     <CS_Studio_Prop_OffsetZ>Z 偏移</CS_Studio_Prop_OffsetZ>
     <CS_Studio_Prop_Scale>缩放</CS_Studio_Prop_Scale>
-    <CS_Studio_Transform_BaseRotation>基础旋转</CS_Studio_Transform_BaseRotation>
-    <CS_Studio_Transform_EastRotation>东西向旋转</CS_Studio_Transform_EastRotation>
-    <CS_Studio_Transform_EastRotationHint>东西向保留独立旋转偏移；缩放现已统一为全向全局缩放。</CS_Studio_Transform_EastRotationHint>
-    <CS_Studio_Transform_FinalDrawOrder>最终绘制顺序</CS_Studio_Transform_FinalDrawOrder>
-    <CS_Studio_Transform_GlobalHint>缩放现已统一为全向基础值；东西向仅保留旋转偏移，Preview 行显示当前预览朝向的最终结果。</CS_Studio_Transform_GlobalHint>
-    <CS_Studio_Transform_GlobalScaleX>全向缩放 X</CS_Studio_Transform_GlobalScaleX>
-    <CS_Studio_Transform_GlobalScaleY>全向缩放 Y</CS_Studio_Transform_GlobalScaleY>
-    <CS_Studio_Transform_PreviewRotation>预览旋转</CS_Studio_Transform_PreviewRotation>
-    <CS_Studio_Transform_PreviewScaleX>预览缩放 X</CS_Studio_Transform_PreviewScaleX>
-    <CS_Studio_Transform_PreviewScaleY>预览缩放 Y</CS_Studio_Transform_PreviewScaleY>
-    <CS_Studio_Transform_RotationOffset>旋转偏移</CS_Studio_Transform_RotationOffset>
     <CS_Studio_Prop_TexturePath>纹理路径</CS_Studio_Prop_TexturePath>
     <CS_Studio_Prop_Visible>可见</CS_Studio_Prop_Visible>
     <CS_Studio_Runtime_ColorValue>R:{0} G:{1} B:{2} A:{3}</CS_Studio_Runtime_ColorValue>
@@ -121,6 +110,17 @@
     <CS_Studio_Tab_Face>表情</CS_Studio_Tab_Face>
     <CS_Studio_Tab_Layers>图层</CS_Studio_Tab_Layers>
     <CS_Studio_Tab_Weapon>武器</CS_Studio_Tab_Weapon>
+    <CS_Studio_Transform_BaseRotation>基础旋转</CS_Studio_Transform_BaseRotation>
+    <CS_Studio_Transform_EastRotation>东西向旋转</CS_Studio_Transform_EastRotation>
+    <CS_Studio_Transform_EastRotationHint>东西向保留独立旋转偏移；缩放现已统一为全向全局缩放。</CS_Studio_Transform_EastRotationHint>
+    <CS_Studio_Transform_FinalDrawOrder>最终绘制顺序</CS_Studio_Transform_FinalDrawOrder>
+    <CS_Studio_Transform_GlobalHint>缩放现已统一为全向基础值；东西向仅保留旋转偏移，Preview 行显示当前预览朝向的最终结果。</CS_Studio_Transform_GlobalHint>
+    <CS_Studio_Transform_GlobalScaleX>全向缩放 X</CS_Studio_Transform_GlobalScaleX>
+    <CS_Studio_Transform_GlobalScaleY>全向缩放 Y</CS_Studio_Transform_GlobalScaleY>
+    <CS_Studio_Transform_PreviewRotation>预览旋转</CS_Studio_Transform_PreviewRotation>
+    <CS_Studio_Transform_PreviewScaleX>预览缩放 X</CS_Studio_Transform_PreviewScaleX>
+    <CS_Studio_Transform_PreviewScaleY>预览缩放 Y</CS_Studio_Transform_PreviewScaleY>
+    <CS_Studio_Transform_RotationOffset>旋转偏移</CS_Studio_Transform_RotationOffset>
     <CS_Studio_Variant_BaseName>变体基础名称</CS_Studio_Variant_BaseName>
     <CS_Studio_Variant_EyeRenderMode>眼睛渲染模式</CS_Studio_Variant_EyeRenderMode>
     <CS_Studio_Variant_EyeUvMoveRange>眼睛 UV 移动范围</CS_Studio_Variant_EyeUvMoveRange>

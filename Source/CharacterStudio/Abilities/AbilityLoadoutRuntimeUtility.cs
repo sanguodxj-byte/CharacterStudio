@@ -10,12 +10,14 @@ namespace CharacterStudio.Abilities
     {
         public List<ModularAbilityDef> abilities = new List<ModularAbilityDef>();
         public SkinAbilityHotkeyConfig hotkeys = new SkinAbilityHotkeyConfig();
+        private List<string> serializedAbilityDefNames = new List<string>();
 
         public CharacterAbilityLoadout Clone()
         {
             var clone = new CharacterAbilityLoadout
             {
-                hotkeys = hotkeys?.Clone() ?? new SkinAbilityHotkeyConfig()
+                hotkeys = hotkeys?.Clone() ?? new SkinAbilityHotkeyConfig(),
+                serializedAbilityDefNames = GetAbilityDefNamesSnapshot()
             };
 
             if (abilities != null)
@@ -29,17 +31,107 @@ namespace CharacterStudio.Abilities
                 }
             }
 
+            if (clone.abilities.Count > 0)
+            {
+                clone.SyncSerializedAbilityDefNamesFromAbilities();
+            }
+
             return clone;
         }
 
         public void ExposeData()
         {
-            Scribe_Collections.Look(ref abilities, "abilities", LookMode.Def);
+            if (Scribe.mode != LoadSaveMode.LoadingVars)
+            {
+                SyncSerializedAbilityDefNamesFromAbilities();
+            }
+
+            Scribe_Collections.Look(ref serializedAbilityDefNames, "abilityDefNames", LookMode.Value);
             Scribe_Deep.Look(ref hotkeys, "hotkeys");
 
+            serializedAbilityDefNames ??= new List<string>();
+            serializedAbilityDefNames = serializedAbilityDefNames
+                .Where(static defName => !string.IsNullOrWhiteSpace(defName))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
             abilities ??= new List<ModularAbilityDef>();
-            abilities.RemoveAll(static ability => ability == null || string.IsNullOrWhiteSpace(ability.defName));
+            if (Scribe.mode == LoadSaveMode.LoadingVars)
+            {
+                abilities.Clear();
+            }
+            else
+            {
+                abilities.RemoveAll(static ability => ability == null || string.IsNullOrWhiteSpace(ability.defName));
+                SyncSerializedAbilityDefNamesFromAbilities();
+            }
+
             hotkeys ??= new SkinAbilityHotkeyConfig();
+        }
+
+        public void RehydrateAbilities(IEnumerable<ModularAbilityDef>? preferredAbilities = null)
+        {
+            List<ModularAbilityDef> resolvedAbilities = new List<ModularAbilityDef>();
+            List<ModularAbilityDef> preferredAbilityList = preferredAbilities?
+                .Where(static ability => ability != null && !string.IsNullOrWhiteSpace(ability.defName))
+                .ToList() ?? new List<ModularAbilityDef>();
+
+            foreach (string defName in GetAbilityDefNamesSnapshot())
+            {
+                ModularAbilityDef? source = preferredAbilityList
+                    .FirstOrDefault(ability => string.Equals(ability.defName, defName, StringComparison.OrdinalIgnoreCase))
+                    ?? DefDatabase<ModularAbilityDef>.GetNamedSilentFail(defName);
+
+                if (source != null)
+                {
+                    resolvedAbilities.Add(source.Clone());
+                }
+            }
+
+            abilities = resolvedAbilities;
+            SyncSerializedAbilityDefNamesFromAbilities();
+        }
+
+        public void EnsureAbilitiesRehydrated(IEnumerable<ModularAbilityDef>? preferredAbilities = null)
+        {
+            bool hasResolvedAbilities = abilities != null
+                && abilities.Any(static ability => ability != null && !string.IsNullOrWhiteSpace(ability.defName));
+            if (hasResolvedAbilities)
+            {
+                SyncSerializedAbilityDefNamesFromAbilities();
+                return;
+            }
+
+            bool hasSerializedAbilities = serializedAbilityDefNames != null
+                && serializedAbilityDefNames.Any(static defName => !string.IsNullOrWhiteSpace(defName));
+            if (hasSerializedAbilities)
+            {
+                RehydrateAbilities(preferredAbilities);
+            }
+        }
+
+        private List<string> GetAbilityDefNamesSnapshot()
+        {
+            if (serializedAbilityDefNames == null || serializedAbilityDefNames.Count == 0)
+            {
+                SyncSerializedAbilityDefNamesFromAbilities();
+            }
+
+            return serializedAbilityDefNames?
+                .Where(static defName => !string.IsNullOrWhiteSpace(defName))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList()
+                ?? new List<string>();
+        }
+
+        private void SyncSerializedAbilityDefNamesFromAbilities()
+        {
+            serializedAbilityDefNames = abilities?
+                .Where(static ability => ability != null && !string.IsNullOrWhiteSpace(ability.defName))
+                .Select(static ability => ability.defName)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList()
+                ?? new List<string>();
         }
     }
 
@@ -102,6 +194,8 @@ namespace CharacterStudio.Abilities
             CharacterAbilityLoadout? explicitLoadout = comp?.ActiveAbilityLoadout;
 
             PawnSkinDef? skin = comp?.ActiveSkin;
+            explicitLoadout?.EnsureAbilitiesRehydrated(skin?.abilities);
+
             CharacterAbilityLoadout? skinLoadout = skin == null
                 ? null
                 : CreateLoadout(skin.abilities, skin.abilityHotkeys);

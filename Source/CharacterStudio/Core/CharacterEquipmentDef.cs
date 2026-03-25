@@ -11,6 +11,10 @@ namespace CharacterStudio.Core
     /// </summary>
     public class CharacterEquipmentDef
     {
+        public const string DefaultSlotTag = "Apparel";
+        public const string DefaultAnchorTag = "Apparel";
+        public const string DefaultShaderDefName = "Cutout";
+        public const string DefaultParentThingDefName = "ApparelMakeableBase";
         /// <summary>唯一标识名，建议使用 DefName 风格。</summary>
         public string defName = "";
 
@@ -27,7 +31,7 @@ namespace CharacterStudio.Core
         /// 编辑器内语义槽位。
         /// 例如：Apparel / Headgear / Accessory / Utility。
         /// </summary>
-        public string slotTag = "Apparel";
+        public string slotTag = DefaultSlotTag;
 
         /// <summary>
         /// 导出后的独立装备物品 ThingDef 名称。
@@ -39,7 +43,7 @@ namespace CharacterStudio.Core
         /// 可选抽象 ParentName。
         /// 默认导出到 ApparelMakeableBase。
         /// </summary>
-        public string parentThingDefName = "ApparelMakeableBase";
+        public string parentThingDefName = DefaultParentThingDefName;
 
         /// <summary>可选预览图路径。</summary>
         public string previewTexPath = "";
@@ -66,7 +70,7 @@ namespace CharacterStudio.Core
         public string maskTexPath = "";
 
         /// <summary>可选 shader 类型名称。</summary>
-        public string shaderDefName = "Cutout";
+        public string shaderDefName = DefaultShaderDefName;
 
         /// <summary>物品类别标签（ThingCategories）。</summary>
         public List<string> thingCategories = new List<string>();
@@ -459,7 +463,8 @@ namespace CharacterStudio.Core
     public enum EquipmentTriggeredAnimationRole
     {
         MovablePart,
-        EffectLayer
+        EffectLayer,
+        Vfx = EffectLayer
     }
 
     public class CharacterEquipmentStatEntry

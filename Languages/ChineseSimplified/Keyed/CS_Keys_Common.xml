@@ -85,13 +85,13 @@
     <CS_Studio_Anim_None>无动画</CS_Studio_Anim_None>
     <CS_Studio_Anim_OffsetAmplitude>位移幅度</CS_Studio_Anim_OffsetAmplitude>
     <CS_Studio_Anim_PhaseOffset>相位偏移</CS_Studio_Anim_PhaseOffset>
+    <CS_Studio_Anim_PivotX>旋转枢轴 X</CS_Studio_Anim_PivotX>
+    <CS_Studio_Anim_PivotY>旋转枢轴 Y</CS_Studio_Anim_PivotY>
     <CS_Studio_Anim_Speed>速度</CS_Studio_Anim_Speed>
+    <CS_Studio_Anim_Spin>持续旋转</CS_Studio_Anim_Spin>
     <CS_Studio_Anim_Swing>周期摆动</CS_Studio_Anim_Swing>
     <CS_Studio_Anim_Twitch>随机抽动</CS_Studio_Anim_Twitch>
     <CS_Studio_Anim_Type>动画类型</CS_Studio_Anim_Type>
-    <CS_Studio_Anim_Spin>持续旋转</CS_Studio_Anim_Spin>
-    <CS_Studio_Anim_PivotX>旋转枢轴 X</CS_Studio_Anim_PivotX>
-    <CS_Studio_Anim_PivotY>旋转枢轴 Y</CS_Studio_Anim_PivotY>
     <CS_Studio_Author>作者</CS_Studio_Author>
     <CS_Studio_BaseSlot_PrimaryColor>主颜色</CS_Studio_BaseSlot_PrimaryColor>
     <CS_Studio_BaseSlot_PrimaryColorSource>主颜色来源</CS_Studio_BaseSlot_PrimaryColorSource>
@@ -101,13 +101,12 @@
     <CS_Studio_Btn_ClearShort>清空</CS_Studio_Btn_ClearShort>
     <CS_Studio_Btn_ContinueExport>继续导出</CS_Studio_Btn_ContinueExport>
     <CS_Studio_Btn_Delete>删除</CS_Studio_Btn_Delete>
-    <CS_Studio_Clear>清空</CS_Studio_Clear>
-    <CS_Studio_Delete>删除</CS_Studio_Delete>
     <CS_Studio_Btn_Edit>编辑</CS_Studio_Btn_Edit>
     <CS_Studio_Btn_OK>确定</CS_Studio_Btn_OK>
     <CS_Studio_Btn_Pick>选</CS_Studio_Btn_Pick>
     <CS_Studio_Btn_Reset>重置参数</CS_Studio_Btn_Reset>
     <CS_Studio_Btn_SelectFile>选择文件</CS_Studio_Btn_SelectFile>
+    <CS_Studio_Clear>清空</CS_Studio_Clear>
     <CS_Studio_ColorType_Custom>自定义</CS_Studio_ColorType_Custom>
     <CS_Studio_Ctx_AppendImport>追加导入</CS_Studio_Ctx_AppendImport>
     <CS_Studio_Ctx_ClearAndImport>清空并导入</CS_Studio_Ctx_ClearAndImport>
@@ -119,29 +118,10 @@
     <CS_Studio_Ctx_ExpandChildren>展开子节点</CS_Studio_Ctx_ExpandChildren>
     <CS_Studio_Ctx_FromRenderTree>── 从渲染树选择 ──</CS_Studio_Ctx_FromRenderTree>
     <CS_Studio_DefaultSkinLabel>新皮肤</CS_Studio_DefaultSkinLabel>
+    <CS_Studio_Delete>删除</CS_Studio_Delete>
     <CS_Studio_Description>描述</CS_Studio_Description>
     <CS_Studio_EditorSubtitle>所见即所得的角色外观编辑</CS_Studio_EditorSubtitle>
     <CS_Studio_EditorTitle>角色皮肤编辑器</CS_Studio_EditorTitle>
-    <CS_Studio_Equip_AnchorPath_Hint>可选的精确渲染树路径。填写后会优先于锚点标签。</CS_Studio_Equip_AnchorPath_Hint>
-    <CS_Studio_Equip_AnchorTag_Hint>当未填写明确锚点路径时，使用此渲染锚点标签进行挂载。</CS_Studio_Equip_AnchorTag_Hint>
-    <CS_Studio_Equip_BoundAbilities>已绑定技能</CS_Studio_Equip_BoundAbilities>
-    <CS_Studio_Equip_Btn_Abilities>技能</CS_Studio_Equip_Btn_Abilities>
-    <CS_Studio_Equip_DefName_Hint>仅允许字母、数字和下划线。导出时该值会作为 XML DefName 使用。</CS_Studio_Equip_DefName_Hint>
-    <CS_Studio_Equip_DefName_Invalid>DefName 只能包含字母、数字和下划线。</CS_Studio_Equip_DefName_Invalid>
-    <CS_Studio_Equip_ImportAppended>已从 {1} 追加导入 {0} 个装备。</CS_Studio_Equip_ImportAppended>
-    <CS_Studio_Equip_ImportNoResults>XML 中未找到可导入的装备。</CS_Studio_Equip_ImportNoResults>
-    <CS_Studio_Equip_ImportReplaced>已从 {1} 导入 {0} 个装备，并替换当前列表。</CS_Studio_Equip_ImportReplaced>
-    <CS_Studio_Equip_ImportXmlHint>填写装备 XML 路径。替换会清空当前装备列表，追加会保留现有装备。</CS_Studio_Equip_ImportXmlHint>
-    <CS_Studio_Equip_InvalidSelection>当前所选装备无效。</CS_Studio_Equip_InvalidSelection>
-    <CS_Studio_Equip_LinkedThingDef_Hint>可选地将此装备条目绑定到游戏内 ThingDef，用于联动或自动匹配。</CS_Studio_Equip_LinkedThingDef_Hint>
-    <CS_Studio_Equip_NoAbilities>未绑定技能</CS_Studio_Equip_NoAbilities>
-    <CS_Studio_Equip_NoAbilityPool>当前没有可用的共享技能，请先创建或导入技能。</CS_Studio_Equip_NoAbilityPool>
-    <CS_Studio_Equip_NoSelection>未选择装备。</CS_Studio_Equip_NoSelection>
-    <CS_Studio_Equip_Section_Abilities>装备 / 绑定技能</CS_Studio_Equip_Section_Abilities>
-    <CS_Studio_Equip_SelectEntry>请选择一个装备条目进行编辑。</CS_Studio_Equip_SelectEntry>
-    <CS_Studio_Equip_SelectHint>选择一个装备条目后，可在右侧面板编辑其完整属性。</CS_Studio_Equip_SelectHint>
-    <CS_Studio_Equip_ShaderDef_Hint>选择该装备视觉图层使用的渲染 Shader。</CS_Studio_Equip_ShaderDef_Hint>
-    <CS_Studio_Equip_SlotTag_Hint>该装备条目的逻辑槽位标识，例如 WeaponBack、Hairpin、Cape。</CS_Studio_Equip_SlotTag_Hint>
     <CS_Studio_Err_ApplyFailedCheckLog>应用失败，请查看日志</CS_Studio_Err_ApplyFailedCheckLog>
     <CS_Studio_Err_ApplyNoSkinComp>应用失败：目标角色缺少皮肤组件</CS_Studio_Err_ApplyNoSkinComp>
     <CS_Studio_Err_DefNameEmpty>错误: DefName 不能为空</CS_Studio_Err_DefNameEmpty>
@@ -264,15 +244,19 @@
     <CS_Studio_Prop_ShowNode>显示此节点</CS_Studio_Prop_ShowNode>
     <CS_Studio_Prop_Worker>渲染工作器</CS_Studio_Prop_Worker>
     <CS_Studio_RaceDisplayName>种族显示名</CS_Studio_RaceDisplayName>
+    <CS_Studio_Section_Advanced>高级设置</CS_Studio_Section_Advanced>
     <CS_Studio_Section_Animation>动画设置</CS_Studio_Section_Animation>
     <CS_Studio_Section_Base>基本设置</CS_Studio_Section_Base>
+    <CS_Studio_Section_Context>上下文摘要</CS_Studio_Section_Context>
     <CS_Studio_Section_EastOffset>侧视图偏移 (East/West)</CS_Studio_Section_EastOffset>
+    <CS_Studio_Section_Effects>效果列表 (Y轴)</CS_Studio_Section_Effects>
     <CS_Studio_Section_HideVanilla>隐藏原版节点</CS_Studio_Section_HideVanilla>
     <CS_Studio_Section_Misc>其他设置</CS_Studio_Section_Misc>
     <CS_Studio_Section_NorthOffset>北向偏移 (North)</CS_Studio_Section_NorthOffset>
     <CS_Studio_Section_RaceIdentity>种族身份</CS_Studio_Section_RaceIdentity>
     <CS_Studio_Section_SkinBase>皮肤基本信息</CS_Studio_Section_SkinBase>
     <CS_Studio_Section_Targets>目标限制</CS_Studio_Section_Targets>
+    <CS_Studio_Section_Tools>工具</CS_Studio_Section_Tools>
     <CS_Studio_Section_Transform>变换设置</CS_Studio_Section_Transform>
     <CS_Studio_Section_VariantsExpression>变体 / 表情</CS_Studio_Section_VariantsExpression>
     <CS_Studio_Section_WeaponCarryVisual>状态武器视觉</CS_Studio_Section_WeaponCarryVisual>
@@ -299,6 +283,9 @@
     <CS_Studio_Tip_RemoveLayer>删除选中的图层</CS_Studio_Tip_RemoveLayer>
     <CS_Studio_Tip_SelectTexture>点击选择纹理文件</CS_Studio_Tip_SelectTexture>
     <CS_Studio_Tip_ShowNode>点击显示此节点</CS_Studio_Tip_ShowNode>
+    <CS_Studio_UI_ColorValueRGB>R:{0} G:{1} B:{2}</CS_Studio_UI_ColorValueRGB>
+    <CS_Studio_UI_Off>关闭</CS_Studio_UI_Off>
+    <CS_Studio_UI_On>开启</CS_Studio_UI_On>
     <CS_Studio_Variant_HideWhenMissing>缺失变体时隐藏</CS_Studio_Variant_HideWhenMissing>
     <CS_Studio_Variant_UseFrameSequence>使用帧序列</CS_Studio_Variant_UseFrameSequence>
     <CS_Studio_Version>版本</CS_Studio_Version>
@@ -352,9 +339,6 @@
     <CS_Studio_Workflow_CompositeBase>主体底图工作流</CS_Studio_Workflow_CompositeBase>
     <CS_Studio_Workflow_CompositeBase_Hint>一张主体底图包含 body/head/hair，不含服装头饰表情；服装头饰由原版装备覆盖，表情建议使用 Head 透明覆盖层。</CS_Studio_Workflow_CompositeBase_Hint>
     <CS_Studio_Workflow_StandardLayers>标准分层工作流</CS_Studio_Workflow_StandardLayers>
-    <CS_Studio_UI_ColorValueRGB>R:{0} G:{1} B:{2}</CS_Studio_UI_ColorValueRGB>
-    <CS_Studio_UI_Off>关闭</CS_Studio_UI_Off>
-    <CS_Studio_UI_On>开启</CS_Studio_UI_On>
     <CS_Studio_XenotypeDefName>绑定 Xenotype</CS_Studio_XenotypeDefName>
     <CS_Summon_Success>成功召唤：{0}</CS_Summon_Success>
     <CS_Summon_Use>召唤 {0}</CS_Summon_Use>

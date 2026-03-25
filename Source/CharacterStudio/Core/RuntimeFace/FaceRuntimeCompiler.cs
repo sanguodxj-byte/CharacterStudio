@@ -175,7 +175,8 @@ namespace CharacterStudio.Core
                             if (partConfig != null)
                             {
                                 cache.SetPortraitPartDirectionAvailability(partType, BuildDirectionAvailability(path, partConfig), side);
-                                AddAnchorCorrection(portraitTrack, partType, expression, partConfig.anchorCorrection, side);
+                                partConfig.SyncLegacyMotionAmplitude();
+                                AddMotionAmplitude(portraitTrack, partType, expression, partConfig.motionAmplitude, side);
                             }
                         }
                     }
@@ -229,14 +230,14 @@ namespace CharacterStudio.Core
                 : unsidedOnly;
         }
 
-        private static void AddAnchorCorrection(
+        private static void AddMotionAmplitude(
             FacePortraitTrackData portraitTrack,
             LayeredFacePartType partType,
             ExpressionType expression,
-            Vector2 correction,
+            float amplitude,
             LayeredFacePartSide side)
         {
-            portraitTrack.SetAnchorCorrection(partType, expression, correction, side);
+            portraitTrack.SetMotionAmplitude(partType, expression, amplitude, side);
         }
 
         private static void CompileEyeDirection(PawnFaceConfig faceConfig, FacePortraitTrackData portraitTrack)
@@ -326,8 +327,11 @@ namespace CharacterStudio.Core
 
         private static FaceDirectionAvailability BuildDirectionAvailability(string basePath, LayeredFacePartConfig? partConfig)
         {
-            bool hasSouth = !string.IsNullOrWhiteSpace(partConfig?.texPathSouth)
-                || !string.IsNullOrWhiteSpace(basePath);
+            partConfig?.SyncDirectionalTexPathsFromLegacy();
+
+            bool hasSouth = partConfig != null
+                ? !string.IsNullOrWhiteSpace(partConfig.texPathSouth)
+                : !string.IsNullOrWhiteSpace(basePath);
             bool hasEast = !string.IsNullOrWhiteSpace(partConfig?.texPathEast)
                 || (!string.IsNullOrWhiteSpace(basePath) && TextureExists(AppendDirectionalSuffix(basePath, "_east")));
             bool hasNorth = !string.IsNullOrWhiteSpace(partConfig?.texPathNorth)
@@ -417,12 +421,17 @@ namespace CharacterStudio.Core
                         hash = CombineHash(hash, (int)part.partType);
                         hash = CombineHash(hash, (int)part.expression);
                         hash = CombineHash(hash, part.texPath);
+                        hash = CombineHash(hash, part.texPathSouth);
+                        hash = CombineHash(hash, part.texPathEast);
+                        hash = CombineHash(hash, part.texPathNorth);
                         hash = CombineHash(hash, part.enabled);
                         hash = CombineHash(hash, (int)part.side);
                         hash = CombineHash(hash, part.overlayId);
                         hash = CombineHash(hash, part.overlayOrder);
-                        hash = CombineHash(hash, part.anchorCorrection.x);
-                        hash = CombineHash(hash, part.anchorCorrection.y);
+                        float resolvedMotionAmplitude = part.motionAmplitude > 0f
+                            ? part.motionAmplitude
+                            : Mathf.Max(Mathf.Abs(part.anchorCorrection.x), Mathf.Abs(part.anchorCorrection.y));
+                        hash = CombineHash(hash, resolvedMotionAmplitude);
                     }
                 }
 

@@ -62,9 +62,8 @@ namespace CharacterStudio.Core
                 prepared.version = "1.0.0";
             }
 
-            string sanitizedPreviewTexPath = prepared.previewTexPath?.Trim() ?? string.Empty;
-            TryClearMissingExternalTexturePath(ref sanitizedPreviewTexPath, out _);
-            prepared.previewTexPath = sanitizedPreviewTexPath;
+            prepared.previewTexPath = prepared.previewTexPath?.Trim() ?? string.Empty;
+            WarnIfMissingExternalTexturePath(prepared.previewTexPath);
             prepared.xenotypeDefName = prepared.xenotypeDefName?.Trim() ?? string.Empty;
             prepared.raceDisplayName = prepared.raceDisplayName?.Trim() ?? string.Empty;
             prepared.author = prepared.author?.Trim() ?? string.Empty;
@@ -138,8 +137,8 @@ namespace CharacterStudio.Core
                 layer.maskTexPath = layer.maskTexPath?.Trim() ?? string.Empty;
                 layer.shaderDefName = string.IsNullOrWhiteSpace(layer.shaderDefName) ? "Cutout" : layer.shaderDefName.Trim();
 
-                TryClearMissingExternalTexturePath(ref layer.maskTexPath, out _);
-                if (TryClearMissingExternalTexturePath(ref layer.texPath, out _))
+                WarnIfMissingExternalTexturePath(layer.maskTexPath);
+                if (WarnIfMissingExternalTexturePath(layer.texPath))
                 {
                     layer.visible = false;
                 }
@@ -241,8 +240,8 @@ namespace CharacterStudio.Core
                 slot.maskTexPath = slot.maskTexPath?.Trim() ?? string.Empty;
                 slot.shaderDefName = string.IsNullOrWhiteSpace(slot.shaderDefName) ? "Cutout" : slot.shaderDefName.Trim();
 
-                TryClearMissingExternalTexturePath(ref slot.maskTexPath, out _);
-                if (TryClearMissingExternalTexturePath(ref slot.texPath, out _))
+                WarnIfMissingExternalTexturePath(slot.maskTexPath);
+                if (WarnIfMissingExternalTexturePath(slot.texPath))
                 {
                     slot.enabled = false;
                 }
@@ -325,18 +324,14 @@ namespace CharacterStudio.Core
             return true;
         }
 
-        private static bool TryClearMissingExternalTexturePath(ref string texturePath, out string missingPath)
+        private static bool WarnIfMissingExternalTexturePath(string? texturePath)
         {
-            texturePath = texturePath?.Trim() ?? string.Empty;
-            missingPath = string.Empty;
-            if (!TryGetMissingExternalTexturePath(texturePath, out string resolvedMissingPath))
+            if (!TryGetMissingExternalTexturePath(texturePath, out string missingPath))
             {
                 return false;
             }
 
-            missingPath = resolvedMissingPath;
-            texturePath = string.Empty;
-            WarnMissingTextureOnce(resolvedMissingPath, $"[CharacterStudio] 运行时检测到缺失的外部纹理，已安全跳过: {resolvedMissingPath}");
+            WarnMissingTextureOnce(missingPath, $"[CharacterStudio] 运行时检测到缺失的外部纹理，已安全跳过: {missingPath}");
             return true;
         }
 

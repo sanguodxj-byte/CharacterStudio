@@ -41,6 +41,9 @@ namespace CharacterStudio
             // 加载运行时皮肤定义
             PawnSkinDefRegistry.LoadFromConfig();
 
+            // 预热运行时技能 Def，确保旧存档中的 CS_RT_* AbilityDef 引用在读档期即可被解析
+            Abilities.AbilityGrantUtility.WarmupAllRuntimeAbilityDefs();
+
             // 应用补丁
             ApplyPatches();
 

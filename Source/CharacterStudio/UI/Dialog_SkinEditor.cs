@@ -37,6 +37,8 @@ namespace CharacterStudio.UI
         private CharacterDesignDocument workingDocument;
         private PawnSkinDef workingSkin;
         private List<ModularAbilityDef> workingAbilities = new List<ModularAbilityDef>();
+        private CharacterRenderFixPatch? workingRenderFixPatch;
+        private bool layerModificationWorkflowActive = false;
         private int selectedLayerIndex = -1;
         private int selectedEquipmentIndex = -1;
         private HashSet<int> selectedLayerIndices = new HashSet<int>();
@@ -46,11 +48,16 @@ namespace CharacterStudio.UI
         private Vector2 faceScrollPos;
         private Vector2 baseScrollPos;
         private Vector2 equipmentScrollPos;
+        private bool equipmentPivotEditMode = false;
+        private bool isDraggingEquipmentPivot = false;
         private bool isDirty = false;
         /// <summary>表情贴图路径内联编辑缓冲，每帧实时同步到 faceConfig</summary>
         private readonly Dictionary<ExpressionType, string> exprPathBuffer = new Dictionary<ExpressionType, string>();
         /// <summary>分层模式部件路径缓冲，key = "PartType|Expression"</summary>
         private readonly Dictionary<string, string> layeredPartPathBuffer = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private string scannedOverlayCacheSourceRoot = string.Empty;
+        private readonly List<ScannedOverlayCandidate> scannedOverlayCandidates = new List<ScannedOverlayCandidate>();
+        private string scannedOverlayCacheError = string.Empty;
         private WeaponCarryVisualState previewWeaponCarryState = WeaponCarryVisualState.Undrafted;
  
         private enum EditorTab { BaseAppearance, Layers, Face, Attributes, Weapon, Equipment }
@@ -134,6 +141,10 @@ namespace CharacterStudio.UI
         private float previewAutoPlayIntervalSeconds = 0.75f;
         private float previewAutoPlayNextStepTime = 0f;
         private int previewAutoPlayStepIndex = 0;
+        private bool previewEquipmentAnimationPlaying = false;
+        private bool previewEquipmentAnimationLoop = false;
+        private float previewEquipmentAnimationLastRealtime = -1f;
+        private string previewEquipmentAnimationTriggerKey = string.Empty;
         private static readonly PreviewFlowStep[] PreviewAutoPlayFlowSteps =
         {
             new PreviewFlowStep("SleepLoop", ExpressionType.Sleeping, 1.8f, true, EyeDirection.Center, MouthState.Sleep, LidState.Close),
@@ -365,6 +376,178 @@ namespace CharacterStudio.UI
             return CharacterApplicationPlanBuilder.Build(workingDocument, planTargetPawn, isPreview, source);
         }
 
+        private void EnterLayerModificationWorkflow(Pawn pawn)
+        {
+            layerModificationWorkflowActive = true;
+            workingRenderFixPatch = RenderFixPatchRegistry.CreatePatchForRace(
+                pawn.def.defName,
+                preferredDefName: $"CS_RenderFix_{pawn.def.defName}",
+                preferredLabel: $"{pawn.def.LabelCap} Render Fix");
+        }
+
+        private bool IsNodeHiddenInCurrentMode(RenderNodeSnapshot node)
+        {
+            if (layerModificationWorkflowActive)
+            {
+                return workingRenderFixPatch?.hideNodePaths != null
+                    && workingRenderFixPatch.hideNodePaths.Contains(node.uniqueNodePath);
+            }
+
+#pragma warning disable CS0618
+            return workingSkin.hiddenPaths.Contains(node.uniqueNodePath)
+                || workingSkin.hiddenTags.Contains(node.tagDefName);
+#pragma warning restore CS0618
+        }
+
+        private void ToggleNodeVisibilityInCurrentMode(RenderNodeSnapshot node)
+        {
+            if (layerModificationWorkflowActive)
+            {
+                ToggleNodeVisibilityInPatch(node);
+                return;
+            }
+
+            ToggleNodeVisibilityInSkin(node);
+        }
+
+        private void ToggleNodeVisibilityInSkin(RenderNodeSnapshot node)
+        {
+            bool hidden;
+            if (workingSkin.hiddenPaths.Contains(node.uniqueNodePath))
+            {
+                workingSkin.hiddenPaths.Remove(node.uniqueNodePath);
+#pragma warning disable CS0618
+                if (!string.IsNullOrEmpty(node.tagDefName))
+                {
+                    workingSkin.hiddenTags.Remove(node.tagDefName);
+                }
+#pragma warning restore CS0618
+                hidden = false;
+                ShowStatus("CS_Studio_Msg_Shown".Translate(node.uniqueNodePath));
+            }
+            else
+            {
+                workingSkin.hiddenPaths.Add(node.uniqueNodePath);
+#pragma warning disable CS0618
+                if (!string.IsNullOrEmpty(node.tagDefName) && !workingSkin.hiddenTags.Contains(node.tagDefName))
+                {
+                    workingSkin.hiddenTags.Add(node.tagDefName);
+                }
+#pragma warning restore CS0618
+                hidden = true;
+                ShowStatus("CS_Studio_Msg_Hidden".Translate(node.uniqueNodePath));
+            }
+
+            UpsertHideNodeRule(node, hidden);
+            isDirty = true;
+            RefreshPreview();
+            RefreshRenderTree();
+        }
+
+        private void ToggleNodeVisibilityInPatch(RenderNodeSnapshot node)
+        {
+            if (workingRenderFixPatch == null)
+            {
+                if (targetPawn == null)
+                {
+                    return;
+                }
+
+                EnterLayerModificationWorkflow(targetPawn);
+            }
+
+            workingRenderFixPatch ??= new CharacterRenderFixPatch();
+            workingRenderFixPatch.hideNodePaths ??= new List<string>();
+
+            if (workingRenderFixPatch.hideNodePaths.Contains(node.uniqueNodePath))
+            {
+                workingRenderFixPatch.hideNodePaths.Remove(node.uniqueNodePath);
+                ShowStatus($"已从图层修改补丁中显示节点：{node.uniqueNodePath}");
+            }
+            else
+            {
+                workingRenderFixPatch.hideNodePaths.Add(node.uniqueNodePath);
+                ShowStatus($"已加入图层修改补丁隐藏节点：{node.uniqueNodePath}");
+            }
+
+            workingRenderFixPatch.Normalize();
+            RefreshPreview();
+            RefreshRenderTree();
+        }
+
+        private float GetNodePatchDrawOrderOffset(string nodePath)
+        {
+            if (!layerModificationWorkflowActive || workingRenderFixPatch?.orderOverrides == null)
+            {
+                return 0f;
+            }
+
+            RenderNodeOrderOverride? entry = workingRenderFixPatch.orderOverrides
+                .FirstOrDefault(overrideEntry => overrideEntry != null
+                    && string.Equals(overrideEntry.targetNodePath, nodePath, StringComparison.OrdinalIgnoreCase));
+            return entry?.drawOrderOffset ?? 0f;
+        }
+
+        private void SetNodePatchDrawOrderOffset(string nodePath, float offset)
+        {
+            if (!layerModificationWorkflowActive)
+            {
+                return;
+            }
+
+            if (workingRenderFixPatch == null)
+            {
+                if (targetPawn == null)
+                {
+                    return;
+                }
+
+                EnterLayerModificationWorkflow(targetPawn);
+            }
+
+            workingRenderFixPatch ??= new CharacterRenderFixPatch();
+            workingRenderFixPatch.orderOverrides ??= new List<RenderNodeOrderOverride>();
+            workingRenderFixPatch.orderOverrides.RemoveAll(overrideEntry => overrideEntry != null
+                && string.Equals(overrideEntry.targetNodePath, nodePath, StringComparison.OrdinalIgnoreCase));
+
+            if (Math.Abs(offset) > 0.0001f)
+            {
+                workingRenderFixPatch.orderOverrides.Add(new RenderNodeOrderOverride
+                {
+                    targetNodePath = nodePath,
+                    drawOrderOffset = offset
+                });
+            }
+
+            workingRenderFixPatch.Normalize();
+        }
+
+        private CharacterRenderFixPatch BuildRenderFixPatchFromCurrentState(Pawn pawn)
+        {
+            if (layerModificationWorkflowActive && workingRenderFixPatch != null)
+            {
+                CharacterRenderFixPatch patchClone = workingRenderFixPatch.Clone();
+                patchClone.targetRaceDefs = new List<string> { pawn.def.defName };
+                patchClone.Normalize();
+                return patchClone;
+            }
+
+            string raceDefName = pawn.def.defName;
+            CharacterRenderFixPatch patch = RenderFixPatchRegistry.CreatePatchForRace(
+                raceDefName,
+                preferredDefName: $"CS_RenderFix_{raceDefName}",
+                preferredLabel: $"{pawn.def.LabelCap} Render Fix");
+
+            patch.hideNodePaths = (workingSkin.hiddenPaths ?? new List<string>())
+                .Where(nodePath => !string.IsNullOrWhiteSpace(nodePath))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            patch.orderOverrides = new List<RenderNodeOrderOverride>();
+            patch.Normalize();
+            return patch;
+        }
+
         public override void PreOpen()
         {
             base.PreOpen();
@@ -373,6 +556,8 @@ namespace CharacterStudio.UI
 
         public override void PreClose()
         {
+            equipmentPivotEditMode = false;
+            isDraggingEquipmentPivot = false;
             base.PreClose();
             CleanupMannequin();
         }

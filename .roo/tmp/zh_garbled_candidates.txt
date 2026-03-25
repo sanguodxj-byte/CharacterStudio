@@ -1,0 +1,261 @@
+﻿CS_Ability_ClearBinding || 娓呴櫎缁戝畾 || Clear Binding
+CS_Ability_EffectType_Teleport || 浣嶇Щ || Teleport
+CS_Ability_GrantSuccess || 宸插皢 {0} 涓妧鑳芥巿浜?{1} || Granted {0} abilities to {1}
+CS_Ability_Hotkey_AbilityMissing || 鏈壘鍒版妧鑳藉畾涔夛細{0} || Ability definition not found: {0}
+CS_Ability_Hotkey_CastSuccess || 宸查€氳繃 {0} 閲婃斁鎶€鑳斤細{1} || Casted via {0}: {1}
+CS_Ability_Hotkey_SlotCooldown || {0} 鎶€鑳藉喎鍗翠腑锛屽墿浣?{1}s || {0} ability on cooldown, {1}s remaining
+CS_Ability_NoPawnBound || (鏈粦瀹氳鑹? || (No pawn bound)
+CS_Ability_NotReady || 鎶€鑳?{0} 灏氭湭灏辩华 || Ability {0} is not ready
+CS_Ability_R_Ready || R 浜屾宸插氨缁細鎸?R 閫夋嫨钀界偣 || R stage 2 ready: press R to choose target
+CS_Ability_R_SecondStageArmed || R 浜屾宸查攣瀹氾紝{0} 绉掑悗鎵ц || R stage 2 armed, triggering in {0}s
+CS_Ability_R_StackGain || R 灞傛暟锛歿0}/{1} || R stacks: {0}/{1}
+CS_Ability_RuntimeComponentType_EShortJump || 浣嶇Щ || Displacement
+CS_Ability_RuntimeComponentType_FollowupCooldownGate || 鍚庣画绂佺敤 || Follow-up Gate
+CS_Ability_RuntimeComponentType_ShieldAbsorb || 鎶ょ浘鍚告敹 || Shield Absorb
+CS_Ability_SelectPawn || 閫夋嫨瑙掕壊 || Select Pawn
+CS_Ability_TargetType_Entity || 瀹炰綋 || Entity
+CS_Ability_Validate_EffectChanceRange || 瑙﹀彂鍑犵巼蹇呴』鍦?0-1 涔嬮棿锛屽綋鍓嶅€? {0} || Trigger chance must be between 0 and 1, current value: {0}
+CS_Ability_Validate_EShortJumpDistance || 浣嶇Щ璺濈蹇呴』澶т簬 0 || Displacement distance must be greater than 0
+CS_Ability_Validate_LabelEmpty || label 涓虹┖锛屽皢浣跨敤 defName 浣滀负鏄剧ず鍚嶇О || label is empty; defName will be used as the display name
+CS_Ability_Validate_NoEffects || 鑳藉姏娌℃湁瀹氫箟浠讳綍鏁堟灉 || Ability defines no effects
+CS_Ability_Validate_ProjectileDefMissing || 鎶曞皠鐗╄浇浣撴湭鎸囧畾 projectileDef锛屽彲鑳戒娇鐢ㄩ粯璁ゆ姇灏勭墿 || Projectile carrier has no projectileDef; a default projectile may be used
+CS_Ability_Validate_TerraformTerrainRequired || 鏇挎崲鍦板舰妯″紡蹇呴』鎸囧畾 TerrainDef || Replace Terrain mode requires a TerrainDef
+CS_Studio_Ability_AreaShape || 鑼冨洿褰㈢姸 || Area Shape
+CS_Studio_Ability_DefSummary || Def锛歿0} || Def: {0}
+CS_Studio_Ability_EditorTitle || 鎶€鑳界紪杈戝櫒 || Ability Editor
+CS_Studio_Ability_Hotkey_None || (鏈粦瀹? || (Unbound)
+CS_Studio_Ability_Hotkey_WCombo || W 杩炴鎶€鑳斤紙Q鍚?.2绉掞級 || W Combo Ability (within 0.2s after Q)
+CS_Studio_Ability_HotkeySlotSummary || {0}锛歿1} || {0}: {1}
+CS_Studio_Ability_HotkeySummary || 鐑敭鏄犲皠锛歿0} || Hotkey Mapping: {0}
+CS_Studio_Ability_IconPath || 鍥炬爣璺緞 || Icon Path
+CS_Studio_Ability_ImportAppended || 宸蹭粠 {1} 杩藉姞瀵煎叆 {0} 涓妧鑳斤紙鍘熸湁 {2} 涓紝褰撳墠鍏?{3} 涓級 || Appended {0} abilities from {1} (was {2}, now {3})
+CS_Studio_Ability_ImportFailed || 鎶€鑳?XML 瀵煎叆澶辫触锛歿0} || Ability XML import failed: {0}
+CS_Studio_Ability_ImportXmlTitle || 瀵煎叆鎶€鑳?XML || Import Ability XML
+CS_Studio_Ability_LoadExamples || 鍔犺浇绀轰緥 || Load Examples
+CS_Studio_Ability_Name || 鍚嶇О || Name
+CS_Studio_Ability_PreviewEffectBuff || 澧炵泭锛歿0} || Buff: {0}
+CS_Studio_Ability_PreviewEffectControl || 鎺у埗锛歿0} 路 {1}s || Control: {0} 路 {1}s
+CS_Studio_Ability_PreviewEffectDebuff || 鍑忕泭锛歿0} || Debuff: {0}
+CS_Studio_Ability_PreviewEffectHeal || 娌荤枟锛歿0} || Heal: {0}
+CS_Studio_Ability_PreviewEffectSummon || 鍙敜锛歿0} 脳 {1} || Summon: {0} 脳 {1}
+CS_Studio_Ability_PreviewEffectTeleport || 浣嶇Щ || Teleport
+CS_Studio_Ability_PreviewEffectTerraform || 鍦板舰鏀归€狅細{0} || Terraform: {0}
+CS_Studio_Ability_PreviewEventCastFinish || 鏂芥硶瀹屾垚 || Cast Finish
+CS_Studio_Ability_PreviewEventVfx || 瑙嗚鐗规晥 || Visual Effect
+CS_Studio_Ability_PreviewRuntimeFollowupCooldownGate || 鍚庣画绂佺敤 路 {0} 路 {1}t || Follow-up Gate 路 {0} 路 {1}t
+CS_Studio_Ability_PreviewRuntimeHitHeal || 鍛戒腑娌荤枟 路 鍥哄畾 {0} 路 姣斾緥 {1} || Hit Heal 路 Flat {0} 路 Ratio {1}
+CS_Studio_Ability_PreviewTimelineHint || 褰撳墠 {0}t / 鎬婚暱 {1}t || Current {0}t / Total {1}t
+CS_Studio_Ability_QwerExamplesLoaded || 宸茶浇鍏?QWER 绀轰緥鎶€鑳藉苟缁戝畾鐑敭 || Loaded QWER example abilities and bound hotkeys
+CS_Studio_Ability_SaveSuccess || 鎶€鑳界紪杈戝櫒鐘舵€佸凡淇濆瓨 || Ability editor state saved
+CS_Studio_Ability_SelectedSummary || 褰撳墠閫変腑锛歿0} || Selected: {0}
+CS_Studio_Ability_UseRadius || 浣跨敤鑼冨洿 || Use Radius
+CS_Studio_Ability_Valid || 鏍￠獙閫氳繃 || Valid
+CS_Studio_Effect_NoExtraParams || 姝ゆ晥鏋滄棤棰濆鍙傛暟 || No extra parameters for this effect
+CS_Studio_Effect_TerraformMode_CleanFilth || 娓呯悊姹＄Ы || Clean Filth
+CS_Studio_Effect_TerraformMode_ReplaceTerrain || 鏇挎崲鍦板舰 || Replace Terrain
+CS_Studio_Runtime_AddComponent || + 娣诲姞缁勪欢 || + Add Component
+CS_Studio_Runtime_ECooldownTicks || 浣嶇Щ鍐峰嵈(Tick) || Displacement Cooldown (ticks)
+CS_Studio_Runtime_EJumpDistance || 浣嶇Щ璺濈 || Displacement Distance
+CS_Studio_Runtime_Empty || (鏈坊鍔犱换浣曡繍琛屾椂缁勪欢) || (No runtime components)
+CS_Studio_Runtime_FollowupCooldownSlot || 鍚庣画绂佺敤妲戒綅 || Follow-up Gate Slot
+CS_Studio_Runtime_FollowupCooldownTicks || 鍚庣画绂佺敤鏃堕暱(Tick) || Follow-up Gate Duration (ticks)
+CS_Studio_Runtime_HitHealAmount || 鍛戒腑鍥哄畾娌荤枟 || Flat Heal On Hit
+CS_Studio_Runtime_HotkeyOverrideAbilityDefName || 瑕嗙洊鎶€鑳?DefName || Override Ability DefName
+CS_Studio_Runtime_PulseDuration || 鑴夊啿鎬绘椂闀?Tick) || Total Pulse Duration (ticks)
+CS_Studio_Runtime_PulseImmediate || 绔嬪嵆瑙﹀彂棣栦釜鑴夊啿 || Trigger First Pulse Immediately
+CS_Studio_Runtime_RWave1 || 娉㈡1(鍗婂緞/浼ゅ) || Wave 1 (radius/damage)
+CS_Studio_Runtime_RWave2 || 娉㈡2(鍗婂緞/浼ゅ) || Wave 2 (radius/damage)
+CS_Studio_Runtime_RWave3 || 娉㈡3(鍗婂緞/浼ゅ) || Wave 3 (radius/damage)
+CS_Studio_Runtime_ShieldHealRatio || 鎶ょ浘缁撴潫娌荤枟姣斾緥 || Shield End Heal Ratio
+CS_Studio_Section_AbilityBase || 鎶€鑳藉熀纭€淇℃伅 || Ability Basics
+CS_Studio_VFX_Enabled || 鍚敤 || Enabled
+CS_Studio_VFX_Scale || 瑙勬ā || Scale
+CS_Studio_VFX_Target || 浣滅敤鐩爣 || Target
+CS_Studio_VFX_Trigger_OnCastFinish || 鏂芥硶瀹屾垚 || Cast Finish
+CS_Studio_VFX_Trigger_OnDurationTick || 鎸佺画瑙﹀彂 || Duration Tick
+CS_Studio_VFX_Type_FireGlow || 鐏劙鍏夋檿 || Fire Glow
+CS_Studio_VFX_Type_MicroSparks || 寰瀷鐏姳 || Micro Sparks
+CS_Attr_ChronologicalAge || 瀹為檯骞撮緞 || Chronological Age
+CS_Attr_CombatRole || 鎴樻枟瀹氫綅 || Combat Role
+CS_Attr_FactionRole || 闃佃惀瀹氫綅 || Faction Role
+CS_Attr_MoveSpeed || 绉诲姩閫熷害鍊嶇巼 || Move Speed Multiplier
+CS_Attr_Personality || 鎬ф牸 || Personality
+CS_AttrBuff_Category_Social || 缁€鍙ユ唉 || Social
+CS_AttrBuff_CurrentValue || 瑜版挸澧犻弫鍫熺亯閿涙0} || Current effect: {0}
+CS_AttrBuff_Section || 鐏炵偞鈧冾杻瀵?Buff || Attribute Buff
+CS_Appearance_Applied || 宸蹭负 {1} 搴旂敤澶栬锛歿0} || Applied appearance to {1}: {0}
+CS_Appearance_ClearSkin || 鎭㈠榛樿澶栬 || Restore Default Appearance
+CS_Appearance_NoComp || 姝よ鑹蹭笉鏀寔鏇存崲鐨偆 || This pawn does not support skin changes
+CS_Gizmo_Appearance_Desc || 鏇存崲姝よ鑹茬殑澶栬鐨偆 || Change this pawn's appearance skin
+CS_Glossary_Cat_Rendering || 娓叉煋绯荤粺 || Rendering System
+CS_Glossary_Term_AbilityType || AbilityCarrierType锛堣浇浣撶被鍨嬶級 || AbilityCarrierType
+CS_Glossary_Term_Anchor || Anchor锛堥敋鐐癸級 || Anchor
+CS_Glossary_Term_ModularAbility || ModularAbility锛堟ā鍧楁妧鑳斤級 || ModularAbility
+CS_Glossary_Term_PawnLayer || PawnLayer锛堝浘灞傦級 || PawnLayer
+CS_Glossary_Term_RenderNode || RenderNode锛堟覆鏌撹妭鐐癸級 || RenderNode
+CS_Help_Anchor_Title || 閿氱偣 (Anchor) || Anchor
+CS_Help_Animation_Title || 鍔ㄧ敾 (Animation) || Animation
+CS_Help_DrawOrder_Title || 缁樺埗椤哄簭 (Draw Order) || Draw Order
+CS_Help_Layer_Title || 鍥惧眰 (Layer) || Layer
+CS_Help_Offset_Desc || 璋冩暣鍥惧眰鐩稿浜庨敋鐐圭殑浣嶇疆銆俓nX: 宸﹀彸绉诲姩\nY: 鍓嶅悗灞傜骇寰皟\nZ: 涓婁笅绉诲姩 || Adjusts the position of the layer relative to the anchor.\nX: Left/Right\nY: Depth/Layering\nZ: Up/Down
+CS_Help_Title || 鏈璇存槑 || Glossary
+CS_Help_Worker_Title || 娓叉煋绫?(Worker) || Worker
+CS_Inspector_Inspecting || 姝ｅ湪妫€鏌? {0} || Inspecting: {0}
+CS_Studio_Anchor_Beard || 鑳￠』 || Beard
+CS_Studio_Anim_AffectsOffset || 鍚屾椂浣嶇Щ || Affects Offset
+CS_Studio_Anim_OffsetAmplitude || 浣嶇Щ骞呭害 || Offset Amplitude
+CS_Studio_Anim_Speed || 閫熷害 || Speed
+CS_Studio_Anim_Type || 鍔ㄧ敾绫诲瀷 || Type
+CS_Studio_Btn_ClearShort || 娓呯┖ || Clear
+CS_Studio_Btn_ContinueExport || 缁х画瀵煎嚭 || Export Anyway
+CS_Studio_Btn_SelectFile || 閫夋嫨鏂囦欢 || Select File
+CS_Studio_Ctx_CopyLayer || 澶嶅埗鍥惧眰 || Copy Layer
+CS_Studio_Ctx_DeleteLayer || 鍒犻櫎鍥惧眰 || Delete Layer
+CS_Studio_Ctx_FromRenderTree || 鈹€鈹€ 浠庢覆鏌撴爲閫夋嫨 鈹€鈹€ || 鈹€鈹€ Select from Render Tree 鈹€鈹€
+CS_Studio_EditorSubtitle || 鎵€瑙佸嵆鎵€寰楃殑瑙掕壊澶栬缂栬緫 || WYSIWYG Character Appearance Editor
+CS_Studio_Err_ApplyFailedCheckLog || 搴旂敤澶辫触锛岃鏌ョ湅鏃ュ織 || Apply failed, check the log
+CS_Studio_Err_DefNameEmpty || 閿欒: DefName 涓嶈兘涓虹┖ || Error: DefName cannot be empty
+CS_Studio_Err_ImportFailed || 鏈兘浠?{0} 瀵煎叆浠讳綍鍥惧眰 || Failed to import any layers from {0}
+CS_Studio_Err_NoMap || 璇峰厛杩涘叆娓告垙鍦板浘 || Please enter a game map first
+CS_Studio_Err_NoProjectSkins || 褰撳墠娌℃湁鍙鍏ョ殑 Character Studio 瑙掕壊 || No Character Studio characters available for import
+CS_Studio_Err_NoRaces || 褰撳墠娌℃湁鍙鍏ョ殑绉嶆棌 || No importable races available
+CS_Studio_Err_OpenSkinFolder || 鎵撳紑澶辫触锛岃矾寰勫凡澶嶅埗鍒板壀璐存澘锛歿0} || Failed to open folder. Path copied to clipboard: {0}
+CS_Studio_Err_SaveFailed || 淇濆瓨澶辫触锛岃鏌ョ湅鏃ュ織 || Save failed, check log for details
+CS_Studio_ExportMode_Cosmetic_Desc || 浠呭寘鍚毊鑲ゅ拰绾圭悊 || Skin and textures only
+CS_Studio_Inspector_Title || 娓叉煋鏍戞鏌ュ櫒 || Render Tree Inspector
+CS_Studio_Mannequin_PortraitError || 鑲栧儚閿欒: {0} || Portrait error: {0}
+CS_Studio_Mannequin_RenderError || 娓叉煋閿欒: {0} || Render error: {0}
+CS_Studio_Menu_Abilities || 鎶€鑳界紪杈戝櫒 || 
+CS_Studio_Menu_View || 瑙嗗浘 || View
+CS_Studio_ModName || 绗簩甯綅锛氳鑹插伐浣滃 || The Second Seat: Character Studio
+CS_Studio_Msg_AddedHiddenTag || 宸叉坊鍔犻殣钘忔爣绛? {0} || Added hidden tag: {0}
+CS_Studio_Msg_AppendedImportedBoundPawn || 宸茶拷鍔犲鍏ュ苟缁戝畾鐩爣瑙掕壊: {0} || Appended import and bound target pawn: {0}
+CS_Studio_Msg_AppendedNoBoundPawn || 宸蹭粠 {0} 杩藉姞 {1} 涓浘灞傦紝浣嗗綋鍓嶅湴鍥句腑娌℃湁鍙嚜鍔ㄧ粦瀹氱殑鐩爣瑙掕壊 || Appended {1} layers from {0}, but no suitable target pawn could be auto-bound on the current map
+CS_Studio_Msg_AppliedToPawn || 宸插簲鐢ㄥ埌 {0} || Applied to {0}
+CS_Studio_Msg_ConfirmDelete || 纭畾瑕佸垹闄ゆ鍥惧眰鍚楋紵 || Are you sure you want to delete this layer?
+CS_Studio_Msg_Copied || 宸插鍒? {0} || Copied: {0}
+CS_Studio_Msg_Hidden || 宸查殣钘? {0} || Hidden: {0}
+CS_Studio_Msg_ImportedBoundPawn || 宸插鍏ュ苟缁戝畾鐩爣瑙掕壊: {0} || Imported and bound target pawn: {0}
+CS_Studio_Msg_ImportedNoBoundPawn || 宸蹭粠 {0} 瀵煎叆 {1} 涓浘灞傦紝浣嗗綋鍓嶅湴鍥句腑娌℃湁鍙嚜鍔ㄧ粦瀹氱殑鐩爣瑙掕壊 || Imported {1} layers from {0}, but no suitable target pawn could be auto-bound on the current map
+CS_Studio_Msg_ImportedProjectSkin || 宸插畬鏁村鍏ラ」鐩鑹诧細{0} || Fully imported project character: {0}
+CS_Studio_Msg_NoMoreTags || 娓叉煋鏍戜腑娌℃湁鏇村鍙敤鏍囩 || No more available tags in render tree
+CS_Studio_Msg_NothingToRedo || 娌℃湁鍙噸鍋氱殑鏀瑰姩 || No changes to redo
+CS_Studio_Msg_OpenSkinFolder || 宸叉墦寮€鐨偆鏂囦欢澶癸細{0} || Opened skin folder: {0}
+CS_Studio_Msg_SavePath || 宸蹭繚瀛樿嚦: {0} || Saved to: {0}
+CS_Studio_Msg_SelectedLayer || 宸查€変腑: {0} || Selected: {0}
+CS_Studio_Msg_SelectionCleared || 宸叉竻闄ら€夋嫨 || Selection cleared
+CS_Studio_Msg_Shown || 宸叉樉绀? {0} || Shown: {0}
+CS_Studio_Msg_TagAdded || 宸叉坊鍔犻殣钘忔爣绛? {0} || Added hidden tag: {0}
+CS_Studio_Msg_TreeRefreshed || 娓叉煋鏍戝凡鍒锋柊 || Render tree refreshed
+CS_Studio_Msg_UndoSuccess || 宸叉挙閿€涓婃鏀瑰姩 || Undid last change
+CS_Studio_Section_Animation || 鍔ㄧ敾璁剧疆 || Animation Settings
+CS_Studio_Section_EastOffset || 渚ц鍥惧亸绉?(East/West) || East Offset
+CS_Studio_Section_WeaponRender || 姝﹀櫒娓叉煋瑕嗗啓 || Weapon Render Override
+CS_Studio_Skin_DefaultForTargetRaces || 浣滀负鐩爣绉嶆棌榛樿鐨偆 || Use as default skin for target races
+CS_Studio_Tip_AddLayer || 娣诲姞鏂扮殑绾圭悊鍥惧眰 || Add a new texture layer
+CS_Studio_Tip_SelectTexture || 鐐瑰嚮閫夋嫨绾圭悊鏂囦欢 || Click to select a texture file
+CS_Studio_Warn_ImportMissingTexturesDetail || 瀹歌弓绮?{0} 鐎电厧鍙嗛敍灞肩稻閺?{1} 娑擃亜顦婚柈銊ф睏閻炲棛宸辨径鎲嬬礉缁崵绮哄鎻掔暔閸忋劏鐑︽潻鍥风窗\n{2} || Imported from {0}, but {1} external textures were missing and have been skipped safely:\n{2}
+CS_Studio_Warn_NoTexture || 璀﹀憡锛氭病鏈夊浘灞傝缃簡绾圭悊璺緞 || Warning: No texture path set for some layers
+CS_Studio_Warn_RuntimeSkinDefNameMissing || 褰撳墠璁捐灏氭湭濉啓 DefName锛屽皢浠ヤ复鏃惰繍琛屾椂鐨偆鍙備笌棰勮/搴旂敤 || The current design has no DefName yet; preview/apply will use a temporary runtime skin.
+CS_Studio_WeaponCarry_Anchor || 鎸傝浇閿氱偣 || Anchor Tag
+CS_Studio_WeaponCarry_ScaleX || 鐘舵€佺缉鏀?X || State Scale X
+CS_Studio_WeaponCarry_ScaleY || 鐘舵€佺缉鏀?Y || State Scale Y
+CS_Studio_WeaponRender_Enable || 鍚敤姝﹀櫒瑕嗗啓 || Enable Weapon Override
+CS_Studio_WeaponRender_PreviewTexture || 棰勮姝﹀櫒璐村浘 || Preview Weapon Texture
+CS_Studio_WeaponRender_Reset || 閲嶇疆姝﹀櫒閰嶇疆 || Reset Weapon Config
+CS_Studio_Worker_Default || 榛樿 || Default
+CS_Studio_Worker_FaceComponent || 闈㈤儴缁勪欢 || Face Component
+CS_Studio_XenotypeDefName || 缁戝畾 Xenotype || Bind Xenotype
+CS_Summon_Success || 鎴愬姛鍙敜锛歿0} || Successfully summoned: {0}
+CS_Studio_Equip_Added || 宸叉坊鍔犺澶囷細{0} || Added equipment: {0}
+CS_Studio_Equip_AnchorPath || 瑙嗚閿氱偣璺緞 || Visual Anchor Path
+CS_Studio_Equip_AnchorTag || 瑙嗚閿氱偣鏍囩 || Visual Anchor Tag
+CS_Studio_Equip_Deleted || 宸插垹闄よ澶囷細{0} || Deleted equipment: {0}
+CS_Studio_Equip_Duplicated || 宸插鍒惰澶囷細{0} || Duplicated equipment: {0}
+CS_Studio_Equip_Exported || 瑁呭宸插鍑猴細{0} || Equipment exported: {0}
+CS_Studio_Equip_ExportFailed || 瑁呭瀵煎嚭澶辫触锛歿0} || Equipment export failed: {0}
+CS_Studio_Equip_ImportFailed || 瑁呭 XML 瀵煎叆澶辫触锛歿0} || Equipment import failed: {0}
+CS_Studio_Equip_OpenAbilityEditor || 鎵撳紑鍏变韩鎶€鑳界紪杈戝櫒 || Open Shared Ability Editor
+CS_Studio_Equip_Section_VisualAnimation || 瑁呭 / 瑙嗚鍔ㄧ敾 || Equipment / Visual Animation
+CS_Studio_Equip_Section_VisualBase || 瑁呭 / 瑙嗚鍩虹 || Equipment / Visual Base
+CS_Studio_Equip_Section_VisualTransform || 瑁呭 / 瑙嗚鍙樻崲 || Equipment / Visual Transform
+CS_Studio_Equip_Section_VisualVariants || 瑁呭 / 瑙嗚鍙樹綋 || Equipment / Visual Variants
+CS_Studio_Equip_ShaderDef || 瑙嗚 Shader Def || Visual Shader Def
+CS_Studio_Equip_VisualLayerName || 瑙嗚鍥惧眰鍚嶇О || Visual Layer Name
+CS_Studio_Export_AsGene_Desc || 鐢熸垚鐢熺墿绉戞妧鍩哄洜瀹氫箟锛屽彲鍦ㄥ紓绉嶇紪杈戝櫒涓€夋嫨 || Generates a Biotech gene definition, selectable in xenotype editor
+CS_Studio_Export_ConfirmRightsSecond || 閹存垹鎮婄憴锝咁嚤閸戝搫鎮楅惃鍕佺紒鍕絺鐢啳鐭楁禒鑽ゆ暠閹存垶婀版禍鐑樺閹峰拑绱濋獮鏈电窗閼奉亣顢戦弽鍛婄叀閹碘偓閺堝绁┃鎰降濠ф劒绗岄幒鍫熸綀 || I understand that I personally bear responsibility for publishing this exported mod and will verify all asset sources and permissions myself
+CS_Studio_Export_DetectedDeps || 妫€娴嬪埌 {0} 涓閮ㄦā缁勪緷璧栵細 || Detected {0} external mod dependencies:
+CS_Studio_Export_Failed || 瀵煎嚭澶辫触锛歿0} || Export failed: {0}
+CS_Studio_Export_IncludeGeneDef || 鍖呭惈鍩哄洜瀹氫箟 || Include Gene Definition
+CS_Studio_Export_IncludePawnKind || 鍖呭惈 PawnKind 瀹氫箟 || Include PawnKind Definition
+CS_Studio_Export_IncludeSkinDef || 鍖呭惈鐨偆瀹氫箟 || Include Skin Definition
+CS_Studio_Export_ModName || 妯＄粍鍚嶇О || Mod Name
+CS_Studio_Export_ModuleOptions || 妯″潡閫夐」 || Module Options
+CS_Studio_Export_PathHint || 璇锋墜鍔ㄥ皢妯＄粍瀵煎嚭璺緞澶嶅埗鍒版澶勩€俓n\n榛樿 RimWorld Mods 鐩綍:\n{0} || Please manually copy the mod export path here.\n\nDefault RimWorld Mods folder:\n{0}
+CS_Studio_Export_Status_Exporting || 姝ｅ湪瀵煎嚭... || Exporting...
+CS_Studio_Export_Success || 瀵煎嚭鎴愬姛锛佹ā缁勫凡淇濆瓨鍒帮細{0} || Export successful! Mod saved to: {0}
+CS_Studio_Export_VanillaContent || 娓告垙鍐呯疆 || Vanilla Content
+CS_Expression_Dead || 姝讳骸 || Dead
+CS_Expression_Hopeless || 缁濇湜 || Hopeless
+CS_Expression_SocialRelax || 绀句氦 || Socializing
+CS_Expression_Working || 宸ヤ綔 || Working
+CS_Studio_Face_ClearPath || 娓呯┖褰撳墠琛ㄦ儏璐村浘璺緞 || Clear the current expression texture path
+CS_Studio_Face_Enable || 鍚敤琛ㄦ儏绯荤粺 || Enable Expression System
+CS_Studio_Face_EyeDir_Center || 姝ｈ || Center
+CS_Studio_Face_EyeDir_Down || 鍚戜笅 || Down
+CS_Studio_Face_EyeDir_Enable || 鍚敤鐪肩潧鏂瑰悜 || Enable Eye Direction
+CS_Studio_Face_EyeDir_Left || 鍚戝乏 || Left
+CS_Studio_Face_EyeDir_Right || 鍚戝彸 || Right
+CS_Studio_Face_EyeDir_Up || 鍚戜笂 || Up
+CS_Studio_Face_MinSetProgress || 鏈€灏忛泦 {0}/{1} 宸插畬鎴愶紙鈽?鏍囪涓烘帹鑽愪紭鍏堥厤缃級 || Min Set {0}/{1} complete (鈽?= recommended priority)
+CS_Studio_Face_PreviewHintValue || 鍙湪棰勮闈㈡澘鍒囨崲鑷姩/鎸囧畾琛ㄦ儏锛屽苟鍗虫椂棰勮褰撳墠閰嶇疆 || Switch between auto and a forced expression in the preview panel to inspect the current face setup instantly
+CS_LLM_AbilityPrompt || 鎶€鑳借嚜鐒惰瑷€鎻忚堪 || Ability Prompt
+CS_LLM_CharacterPrompt || 瑙掕壊鑷劧璇█鎻忚堪 || Character Prompt
+CS_LLM_CharacterPrompt_Empty || 璇峰厛杈撳叆瑙掕壊鎻忚堪 || Please enter a character prompt first
+CS_LLM_CharacterSection || 瑙掕壊璁捐鐢熸垚 || Character Design Generation
+CS_LLM_GenerateAbilitiesAppended || 宸茶拷鍔?{0} 涓妧鑳斤紙鍘熸湁 {1} 涓紝褰撳墠鍏?{2} 涓級 || Appended {0} abilities (was {1}, now {2})
+CS_LLM_GenerateCharacter || 鐢熸垚瑙掕壊璁捐 || Generate Character Design
+CS_LLM_GenerateCharacterSuccess || 瑙掕壊璁捐宸茬敓鎴愬苟搴旂敤 || Character design generated and applied
+CS_LLM_GenerateFailed || LLM 鐢熸垚澶辫触锛歿0} || LLM generation failed: {0}
+CS_LLM_Settings_AbilityEditorPrompt || 鎶€鑳界紪杈戝伐鍏锋彁绀鸿瘝 || Ability Editor Tool Prompt
+CS_LLM_Settings_Enabled || 鍚敤 LLM 鐢熸垚鍔熻兘 || Enable LLM generation
+CS_LLM_Settings_EndpointPreview || 璇锋眰鍦板潃棰勮 || Endpoint Preview
+CS_LLM_Settings_PromptsReset || 宸叉仮澶嶅唴缃彁绀鸿瘝妯℃澘 || Built-in prompt templates restored
+CS_LLM_Settings_SaveFailed || LLM 璁剧疆淇濆瓨澶辫触锛歿0} || Failed to save LLM settings: {0}
+CS_LLM_Settings_Section_Request || 璇锋眰鍙傛暟 || Request
+CS_Studio_BaseSlot_Enable || 鍚敤 || Enabled
+CS_Studio_BaseSlot_SecondaryColor || 绗簩棰滆壊 || Secondary Color
+CS_Studio_BaseSlot_SecondaryColorSource || 绗簩棰滆壊鏉ユ簮 || Secondary Color Source
+CS_Studio_ColorType_White || 鐧借壊 || White
+CS_Studio_Hide_HiddenTagsCompat || 闅愯棌鏍囩锛堝吋瀹癸級: || Hidden Tags (compat):
+CS_Studio_Info_Worker || 宸ヤ綔鍣細 || Worker:
+CS_Studio_Layer_DefaultName || 鍥惧眰 {0} || Layer {0}
+CS_Studio_Layer_NoTree || (鏃犳覆鏌撴爲锛岃鍒锋柊) || (No Render Tree, please refresh)
+CS_Studio_Msg_SelectLayer || 璇烽€夋嫨涓€涓妭鐐规垨鍥惧眰 || Please select a node or layer
+CS_Studio_Node_NoRuntimeData || 锛堟棤杩愯鏃舵暟鎹級 || (No runtime data)
+CS_Studio_Node_RuntimeNote || 锛堥粍鑹?= 闈為粯璁ゅ€硷級 || (Yellow = non-default value)
+CS_Studio_Panel_AddLayer || 娣诲姞鍥惧眰 || Add Layer
+CS_Studio_Panel_RemoveLayer || 绉婚櫎鍥惧眰 || Remove Layer
+CS_Studio_Preview_ResetView || 閲嶇疆瑙嗗浘 || Reset View
+CS_Studio_Preview_RotateLeft || 鍚戝乏鏃嬭浆 || Rotate Left
+CS_Studio_Preview_RotateRight || 鍚戝彸鏃嬭浆 || Rotate Right
+CS_Studio_Preview_SelectRace || 閫夋嫨绉嶆棌 || Select Race
+CS_Studio_Preview_ZoomIn || 鏀惧ぇ || Zoom In
+CS_Studio_Prop_AnchorPoint || 閿氱偣 || Anchor Point
+CS_Studio_Prop_DrawOrder || 缁樺埗椤哄簭 || Draw Order
+CS_Studio_Prop_FaceComponent || 闈㈤儴缁勪欢 || Face Component
+CS_Studio_Prop_LayerName || 鍥惧眰鍚嶇О || Layer Name
+CS_Studio_Status_Developing || 鍔熻兘寮€鍙戜腑... || 
+CS_Studio_Status_EditorSummary || 鍩虹妲戒綅: {0} | 鍥惧眰: {1} | 缂╂斁: {2}x | 鏂瑰悜: {3} || Base Slots: {0} | Layers: {1} | Zoom: {2}x | Facing: {3}
+CS_Studio_Status_Loading || 棰勮鍔犺浇涓?.. || 
+CS_Studio_Tab_Layers || 鍥惧眰 || Layers
+CS_Studio_Tab_Weapon || 姝﹀櫒 || Weapon
+CS_Studio_Variant_BaseName || 鍙樹綋鍩虹鍚嶇О || Variant Base Name
+CS_Studio_Variant_EyeRenderMode || 鐪肩潧娓叉煋妯″紡 || Eye Render Mode
+CS_Studio_Variant_LayerRole || 鍥惧眰瑙掕壊 || Layer Role
+CS_Studio_Variant_Logic || 鍙樹綋閫昏緫 || Variant Logic
+CS_Studio_Variant_UseBlinkSuffix || 浣跨敤鐪ㄧ溂鍚庣紑 || Use Blink Suffix
+CS_Studio_Variant_UseDirectionalSuffix || 浣跨敤鏈濆悜鍚庣紑 || Use Directional Suffix
+CS_Studio_Variant_UseExpressionSuffix || 浣跨敤琛ㄦ儏鍚庣紑 || Use Expression Suffix
+CS_Studio_Variant_UseEyeDirectionSuffix || 浣跨敤瑙嗙嚎鏂瑰悜鍚庣紑 || Use Eye Direction Suffix
+CS_Studio_Workflow_MechanoidStandardLayers || 鏈烘浣撳垎灞傚伐浣滄祦 || Mechanoid Layered Workflow

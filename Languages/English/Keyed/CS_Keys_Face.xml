@@ -55,9 +55,8 @@
     <CS_Studio_Face_HeadTexHint>Assign a full head texture for each expression, or click [+F] to add multiple frames for animation.</CS_Studio_Face_HeadTexHint>
     <CS_Studio_Face_Layered_Enable>Enable this layered part entry</CS_Studio_Face_Layered_Enable>
     <CS_Studio_Face_Layered_Hint>Use this mode when your art is split into reusable facial parts. Usually you only need to name the parts and assign paths; movement and fallback are code-driven.</CS_Studio_Face_Layered_Hint>
+    <CS_Studio_Face_Layered_MotionAmplitude>Motion Amplitude</CS_Studio_Face_Layered_MotionAmplitude>
     <CS_Studio_Face_Layered_PartSummary>{0}/{1} expressions configured for this part.</CS_Studio_Face_Layered_PartSummary>
-    <CS_Studio_Face_Layered_MotionAmplitudeX>X</CS_Studio_Face_Layered_MotionAmplitudeX>
-    <CS_Studio_Face_Layered_MotionAmplitudeY>Y</CS_Studio_Face_Layered_MotionAmplitudeY>
     <CS_Studio_Face_Layered_SourceRoot>Layered Source Root</CS_Studio_Face_Layered_SourceRoot>
     <CS_Studio_Face_Layered_Stats>{0} paths assigned across {2}/{3} part groups, for {1} expressions.</CS_Studio_Face_Layered_Stats>
     <CS_Studio_Face_Layered_Title>Layered Face Parts</CS_Studio_Face_Layered_Title>
@@ -75,6 +74,17 @@
     <CS_Studio_Face_MinSetProgress>Min Set {0}/{1} complete (★ = recommended priority)</CS_Studio_Face_MinSetProgress>
     <CS_Studio_Face_PreviewActive>Preview Expression</CS_Studio_Face_PreviewActive>
     <CS_Studio_Face_PreviewAuto>Auto</CS_Studio_Face_PreviewAuto>
+    <CS_Studio_Face_PreviewHint>Preview Mode</CS_Studio_Face_PreviewHint>
+    <CS_Studio_Face_PreviewHintValue>Switch between auto and a forced expression in the preview panel to inspect the current face setup instantly</CS_Studio_Face_PreviewHintValue>
+    <CS_Studio_Face_PreviewModeButton>Preview Mode</CS_Studio_Face_PreviewModeButton>
+    <CS_Studio_Face_Title>Face Configuration</CS_Studio_Face_Title>
+    <CS_Studio_Face_Type>{0} Expression</CS_Studio_Face_Type>
+    <CS_Studio_Face_TypeSummary>{0} ({1}/{2} configured)</CS_Studio_Face_TypeSummary>
+    <CS_Studio_Face_Workflow>Face Workflow</CS_Studio_Face_Workflow>
+    <CS_Studio_Face_Workflow_FullFaceSwap>Full Face Swap</CS_Studio_Face_Workflow_FullFaceSwap>
+    <CS_Studio_Face_Workflow_FullFaceSwap_Desc>Classic workflow: assign one full-face texture per expression, optionally using frame animation.</CS_Studio_Face_Workflow_FullFaceSwap_Desc>
+    <CS_Studio_Face_Workflow_LayeredDynamic>Layered Dynamic</CS_Studio_Face_Workflow_LayeredDynamic>
+    <CS_Studio_Face_Workflow_LayeredDynamic_Desc>Layered workflow: configure named facial parts per expression. Runtime code drives positioning and fallback automatically.</CS_Studio_Face_Workflow_LayeredDynamic_Desc>
     <CS_Studio_Preview_BrowState_Angry>Angry</CS_Studio_Preview_BrowState_Angry>
     <CS_Studio_Preview_BrowState_Happy>Happy</CS_Studio_Preview_BrowState_Happy>
     <CS_Studio_Preview_BrowState_Normal>Normal</CS_Studio_Preview_BrowState_Normal>
@@ -95,15 +105,4 @@
     <CS_Studio_Preview_MouthState_Open>Open</CS_Studio_Preview_MouthState_Open>
     <CS_Studio_Preview_MouthState_Sleep>Sleep</CS_Studio_Preview_MouthState_Sleep>
     <CS_Studio_Preview_MouthState_Smile>Smile</CS_Studio_Preview_MouthState_Smile>
-    <CS_Studio_Face_PreviewHint>Preview Mode</CS_Studio_Face_PreviewHint>
-    <CS_Studio_Face_PreviewHintValue>Switch between auto and a forced expression in the preview panel to inspect the current face setup instantly</CS_Studio_Face_PreviewHintValue>
-    <CS_Studio_Face_PreviewModeButton>Preview Mode</CS_Studio_Face_PreviewModeButton>
-    <CS_Studio_Face_Title>Face Configuration</CS_Studio_Face_Title>
-    <CS_Studio_Face_Type>{0} Expression</CS_Studio_Face_Type>
-    <CS_Studio_Face_TypeSummary>{0} ({1}/{2} configured)</CS_Studio_Face_TypeSummary>
-    <CS_Studio_Face_Workflow>Face Workflow</CS_Studio_Face_Workflow>
-    <CS_Studio_Face_Workflow_FullFaceSwap>Full Face Swap</CS_Studio_Face_Workflow_FullFaceSwap>
-    <CS_Studio_Face_Workflow_FullFaceSwap_Desc>Classic workflow: assign one full-face texture per expression, optionally using frame animation.</CS_Studio_Face_Workflow_FullFaceSwap_Desc>
-    <CS_Studio_Face_Workflow_LayeredDynamic>Layered Dynamic</CS_Studio_Face_Workflow_LayeredDynamic>
-    <CS_Studio_Face_Workflow_LayeredDynamic_Desc>Layered workflow: configure named facial parts per expression. Runtime code drives positioning and fallback automatically.</CS_Studio_Face_Workflow_LayeredDynamic_Desc>
 </LanguageData>

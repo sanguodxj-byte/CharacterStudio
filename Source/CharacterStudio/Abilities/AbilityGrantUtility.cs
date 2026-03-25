@@ -45,6 +45,12 @@ namespace CharacterStudio.Abilities
 
             RevokeAllCSAbilitiesFromPawn(pawn);
 
+            // 仅授予技能不应触发任何渲染树重建或全图图形刷新。
+            // 这里显式避免通过授予链路波及皮肤/服装渲染状态；
+            // 技能栏与运行时 Ability 会由原版 AbilityTracker / Gizmo 链路自行更新。
+            if (pawn.abilities == null)
+                return;
+
             var grantedSet = GetOrCreateGrantedSet(pawn);
 
             foreach (var modAbility in abilities)
@@ -58,9 +64,9 @@ namespace CharacterStudio.Abilities
                     if (abilityDef == null) continue;
 
                     // 防止重复授予
-                    if (pawn.abilities?.GetAbility(abilityDef) != null) continue;
+                    if (pawn.abilities.GetAbility(abilityDef) != null) continue;
 
-                    pawn.abilities?.GainAbility(abilityDef);
+                    pawn.abilities.GainAbility(abilityDef);
                     grantedSet.Add(modAbility.defName);
 
                     if (Prefs.DevMode)
@@ -101,10 +107,10 @@ namespace CharacterStudio.Abilities
                 {
                     if (runtimeAbilityDefs.TryGetValue(defName, out var abilityDef))
                     {
-                        var ability = pawn.abilities?.GetAbility(abilityDef);
+                        var ability = pawn.abilities.GetAbility(abilityDef);
                         if (ability != null)
                         {
-                            pawn.abilities?.RemoveAbility(abilityDef);
+                            pawn.abilities.RemoveAbility(abilityDef);
                             if (Prefs.DevMode)
                                 Log.Message($"[CharacterStudio] 已撤销技能 {defName} 从 {pawn.LabelShort}");
                         }
@@ -151,6 +157,19 @@ namespace CharacterStudio.Abilities
             }
 
             return CopyAbilityDefForRuntimeCache(def);
+        }
+
+        public static void WarmupAllRuntimeAbilityDefs()
+        {
+            foreach (ModularAbilityDef modAbility in DefDatabase<ModularAbilityDef>.AllDefsListForReading)
+            {
+                if (modAbility == null || string.IsNullOrWhiteSpace(modAbility.defName))
+                {
+                    continue;
+                }
+
+                GetOrBuildRuntimeAbilityDef(modAbility);
+            }
         }
 
         // ─────────────────────────────────────────────
@@ -335,6 +354,8 @@ namespace CharacterStudio.Abilities
                 modAbility.targetType.ToString(),
                 modAbility.useRadius.ToString(),
                 modAbility.areaCenter.ToString(),
+                modAbility.areaShape.ToString(),
+                modAbility.irregularAreaPattern ?? string.Empty,
                 modAbility.range.ToString("F3"),
                 modAbility.radius.ToString("F3"),
                 modAbility.projectileDef?.defName ?? string.Empty
@@ -345,7 +366,7 @@ namespace CharacterStudio.Abilities
                 foreach (var effect in modAbility.effects)
                 {
                     if (effect == null) continue;
-                    parts.Add($"E:{effect.type}|{effect.amount:F3}|{effect.duration:F3}|{effect.chance:F3}|{effect.damageDef?.defName}|{effect.hediffDef?.defName}|{effect.summonKind?.defName}|{effect.summonCount}|{effect.canHurtSelf}");
+                    parts.Add($"E:{effect.type}|{effect.amount:F3}|{effect.duration:F3}|{effect.chance:F3}|{effect.damageDef?.defName}|{effect.hediffDef?.defName}|{effect.summonKind?.defName}|{effect.summonCount}|{effect.summonFactionDef?.defName}|{effect.controlMode}|{effect.controlMoveDistance}|{effect.terraformMode}|{effect.terraformThingDef?.defName}|{effect.terraformTerrainDef?.defName}|{effect.terraformSpawnCount}|{effect.canHurtSelf}");
                 }
             }
 
@@ -356,7 +377,7 @@ namespace CharacterStudio.Abilities
                     if (vfx == null) continue;
                     vfx.NormalizeLegacyData();
                     vfx.SyncLegacyFields();
-                    parts.Add($"V:{vfx.type}|{vfx.sourceMode}|{vfx.textureSource}|{vfx.presetDefName}|{vfx.customTexturePath}|{vfx.target}|{vfx.trigger}|{vfx.delayTicks}|{vfx.displayDurationTicks}|{vfx.linkedExpression}|{vfx.linkedExpressionDurationTicks}|{vfx.linkedPupilBrightnessOffset:F3}|{vfx.linkedPupilContrastOffset:F3}|{vfx.scale:F3}|{vfx.drawSize:F3}|{vfx.repeatCount}|{vfx.repeatIntervalTicks}|{vfx.offset.x:F3},{vfx.offset.y:F3},{vfx.offset.z:F3}|{vfx.attachToPawn}|{vfx.attachToTargetCell}|{vfx.enabled}");
+                    parts.Add($"V:{vfx.type}|{vfx.sourceMode}|{vfx.textureSource}|{vfx.presetDefName}|{vfx.customTexturePath}|{vfx.target}|{vfx.trigger}|{vfx.delayTicks}|{vfx.displayDurationTicks}|{vfx.linkedExpression}|{vfx.linkedExpressionDurationTicks}|{vfx.linkedPupilBrightnessOffset:F3}|{vfx.linkedPupilContrastOffset:F3}|{vfx.scale:F3}|{vfx.drawSize:F3}|{vfx.useCasterFacing}|{vfx.forwardOffset:F3}|{vfx.sideOffset:F3}|{vfx.heightOffset:F3}|{vfx.rotation:F3}|{vfx.textureScale.x:F3},{vfx.textureScale.y:F3}|{vfx.repeatCount}|{vfx.repeatIntervalTicks}|{vfx.offset.x:F3},{vfx.offset.y:F3},{vfx.offset.z:F3}|{vfx.playSound}|{vfx.soundDefName}|{vfx.soundDelayTicks}|{vfx.soundVolume:F3}|{vfx.soundPitch:F3}|{vfx.attachToPawn}|{vfx.attachToTargetCell}|{vfx.enabled}");
                 }
             }
 

@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using Verse;
 using RimWorld;
@@ -68,7 +70,255 @@ namespace CharacterStudio.UI
         public const float VerticalPadding = 4f;
         public const float LabelWidth = 100f;
 
-        private static int sliderControlId;
+        private static readonly Dictionary<string, string> NumericTextBuffers = new Dictionary<string, string>();
+        private const int MaxNumericTextBufferCount = 4096;
+
+        public static void TextFieldNumeric(Rect rect, ref float value, ref string buffer, float min = float.MinValue, float max = float.MaxValue, string? format = null, string? controlKey = null, [CallerMemberName] string callerMemberName = "")
+        {
+            string key = BuildNumericBufferKey(rect, callerMemberName, controlKey);
+            string controlName = $"CS_PermissiveNumeric_{key}";
+            bool isFocused = GUI.GetNameOfFocusedControl() == controlName;
+
+            string currentText = string.IsNullOrEmpty(buffer)
+                ? FormatFloatForDisplay(value, format, null)
+                : buffer;
+
+            if (isFocused)
+            {
+                currentText = GetOrCreateNumericTextBuffer(key, currentText);
+            }
+            else
+            {
+                NumericTextBuffers[key] = currentText;
+            }
+
+            GUI.SetNextControlName(controlName);
+            string editedText = Widgets.TextField(rect, currentText);
+            editedText = SanitizeNumericText(editedText);
+            NumericTextBuffers[key] = editedText;
+
+            buffer = editedText;
+
+            if (TryParseFloatText(editedText, out float parsedValue))
+            {
+                value = parsedValue;
+            }
+
+            if (GUI.GetNameOfFocusedControl() != controlName)
+            {
+                string syncedText = FormatFloatForDisplay(value, format, buffer);
+                buffer = syncedText;
+                NumericTextBuffers[key] = syncedText;
+            }
+
+            TrimNumericTextBufferCacheIfNeeded();
+        }
+
+        public static void TextFieldNumeric(Rect rect, ref int value, ref string buffer, int min = int.MinValue, int max = int.MaxValue, string? controlKey = null, [CallerMemberName] string callerMemberName = "")
+        {
+            string key = BuildNumericBufferKey(rect, callerMemberName, controlKey);
+            string controlName = $"CS_PermissiveNumeric_{key}";
+            bool isFocused = GUI.GetNameOfFocusedControl() == controlName;
+
+            string currentText = string.IsNullOrEmpty(buffer)
+                ? value.ToString(CultureInfo.InvariantCulture)
+                : buffer;
+
+            if (isFocused)
+            {
+                currentText = GetOrCreateNumericTextBuffer(key, currentText);
+            }
+            else
+            {
+                NumericTextBuffers[key] = currentText;
+            }
+
+            GUI.SetNextControlName(controlName);
+            string editedText = Widgets.TextField(rect, currentText);
+            editedText = SanitizeNumericText(editedText);
+            NumericTextBuffers[key] = editedText;
+
+            buffer = editedText;
+
+            if (TryParseIntText(editedText, out int parsedValue))
+            {
+                value = parsedValue;
+            }
+
+            if (GUI.GetNameOfFocusedControl() != controlName)
+            {
+                string syncedText = value.ToString(CultureInfo.InvariantCulture);
+                buffer = syncedText;
+                NumericTextBuffers[key] = syncedText;
+            }
+
+            TrimNumericTextBufferCacheIfNeeded();
+        }
+
+        public static void TextFieldNumeric(Rect rect, ref double value, ref string buffer, double min = double.MinValue, double max = double.MaxValue, string? format = null, string? controlKey = null, [CallerMemberName] string callerMemberName = "")
+        {
+            string key = BuildNumericBufferKey(rect, callerMemberName, controlKey);
+            string controlName = $"CS_PermissiveNumeric_{key}";
+            bool isFocused = GUI.GetNameOfFocusedControl() == controlName;
+
+            string currentText = string.IsNullOrEmpty(buffer)
+                ? FormatDoubleForDisplay(value, format, null)
+                : buffer;
+
+            if (isFocused)
+            {
+                currentText = GetOrCreateNumericTextBuffer(key, currentText);
+            }
+            else
+            {
+                NumericTextBuffers[key] = currentText;
+            }
+
+            GUI.SetNextControlName(controlName);
+            string editedText = Widgets.TextField(rect, currentText);
+            editedText = SanitizeNumericText(editedText);
+            NumericTextBuffers[key] = editedText;
+
+            buffer = editedText;
+
+            if (TryParseDoubleText(editedText, out double parsedValue))
+            {
+                value = parsedValue;
+            }
+
+            if (GUI.GetNameOfFocusedControl() != controlName)
+            {
+                string syncedText = FormatDoubleForDisplay(value, format, buffer);
+                buffer = syncedText;
+                NumericTextBuffers[key] = syncedText;
+            }
+
+            TrimNumericTextBufferCacheIfNeeded();
+        }
+
+        private static string BuildNumericBufferKey(Rect rect, string callerMemberName, string? controlKey)
+        {
+            string sanitizedControlKey;
+            if (string.IsNullOrWhiteSpace(controlKey))
+            {
+                sanitizedControlKey = string.Empty;
+            }
+            else
+            {
+                string nonNullControlKey = controlKey ?? string.Empty;
+                sanitizedControlKey = "_" + nonNullControlKey.Replace(' ', '_').Replace(':', '_');
+            }
+
+            return $"{callerMemberName}{sanitizedControlKey}_{Mathf.RoundToInt(rect.x)}_{Mathf.RoundToInt(rect.y)}_{Mathf.RoundToInt(rect.width)}_{Mathf.RoundToInt(rect.height)}";
+        }
+
+        private static string GetOrCreateNumericTextBuffer(string key, string fallbackValue)
+        {
+            if (!NumericTextBuffers.TryGetValue(key, out string existingValue))
+            {
+                existingValue = fallbackValue ?? string.Empty;
+                NumericTextBuffers[key] = existingValue;
+            }
+
+            return existingValue;
+        }
+
+        private static void TrimNumericTextBufferCacheIfNeeded()
+        {
+            if (NumericTextBuffers.Count > MaxNumericTextBufferCount)
+            {
+                NumericTextBuffers.Clear();
+            }
+        }
+
+        private static string SanitizeNumericText(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return string.Empty;
+            }
+
+            var builder = new System.Text.StringBuilder(value.Length);
+            foreach (char c in value)
+            {
+                if (char.IsDigit(c) || c == '-' || c == '+' || c == '.' || c == ',')
+                {
+                    builder.Append(c);
+                }
+            }
+
+            return builder.ToString();
+        }
+
+        private static string NormalizeNumericText(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            string nonNullValue = value ?? string.Empty;
+            return nonNullValue.Trim().Replace(',', '.');
+        }
+
+        private static bool TryParseFloatText(string value, out float parsedValue)
+        {
+            return float.TryParse(NormalizeNumericText(value), NumberStyles.Float, CultureInfo.InvariantCulture, out parsedValue);
+        }
+
+        private static bool TryParseDoubleText(string value, out double parsedValue)
+        {
+            return double.TryParse(NormalizeNumericText(value), NumberStyles.Float, CultureInfo.InvariantCulture, out parsedValue);
+        }
+
+        private static bool TryParseIntText(string value, out int parsedValue)
+        {
+            return int.TryParse(NormalizeNumericText(value), NumberStyles.Integer, CultureInfo.InvariantCulture, out parsedValue);
+        }
+
+        private static string FormatFloatForDisplay(float value, string? explicitFormat, string? previousBuffer)
+        {
+            if (!string.IsNullOrWhiteSpace(explicitFormat))
+            {
+                return value.ToString(explicitFormat, CultureInfo.InvariantCulture);
+            }
+
+            if (TryGetFractionDigits(previousBuffer, out int fractionDigits))
+            {
+                return value.ToString($"F{fractionDigits}", CultureInfo.InvariantCulture);
+            }
+
+            return value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        private static string FormatDoubleForDisplay(double value, string? explicitFormat, string? previousBuffer)
+        {
+            if (!string.IsNullOrWhiteSpace(explicitFormat))
+            {
+                return value.ToString(explicitFormat, CultureInfo.InvariantCulture);
+            }
+
+            if (TryGetFractionDigits(previousBuffer, out int fractionDigits))
+            {
+                return value.ToString($"F{fractionDigits}", CultureInfo.InvariantCulture);
+            }
+
+            return value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        private static bool TryGetFractionDigits(string? buffer, out int fractionDigits)
+        {
+            fractionDigits = 0;
+            string normalized = NormalizeNumericText(buffer);
+            int separatorIndex = normalized.IndexOf('.');
+            if (separatorIndex < 0 || separatorIndex == normalized.Length - 1)
+            {
+                return false;
+            }
+
+            fractionDigits = Mathf.Clamp(normalized.Length - separatorIndex - 1, 0, 6);
+            return true;
+        }
 
         // 颜色常量
         public static readonly Color HeaderColor = new Color(0.78f, 0.86f, 1f);
@@ -254,56 +504,33 @@ namespace CharacterStudio.UI
         public static void DrawPropertySlider(ref float y, float width, string label, ref float value, float min, float max, string format = "F2", float labelWidth = LabelWidth)
         {
             Rect rect = new Rect(0, y, width, RowHeight);
-            
+
             Text.Font = GameFont.Small;
             float actualLabelWidth = Mathf.Max(labelWidth, Text.CalcSize(label).x + 10f);
-            
+
             Widgets.Label(new Rect(rect.x, rect.y, actualLabelWidth, 24), label);
-            
+
             float inputWidth = 64f;
             float sliderWidth = rect.width - actualLabelWidth - inputWidth - 5f;
-            
-            float newValue = Widgets.HorizontalSlider(new Rect(rect.x + actualLabelWidth, rect.y + 4, sliderWidth, 16), value, min, max);
-            newValue = Mathf.Clamp(newValue, min, max);
 
             string numericFormat = string.IsNullOrWhiteSpace(format) ? "F2" : format;
             int decimals = GetDecimalsFromNumericFormat(numericFormat);
-            string controlName = $"CS_SliderNumeric_{sliderControlId++}_{Mathf.RoundToInt(rect.y)}_{Mathf.RoundToInt(rect.x)}";
-            string buffer = value.ToString(numericFormat);
-            Rect inputRect = new Rect(rect.x + actualLabelWidth + sliderWidth + 5, rect.y, inputWidth, 24);
 
-            GUI.SetNextControlName(controlName);
-            Widgets.TextFieldNumeric<float>(inputRect, ref newValue, ref buffer, min, max);
-
-            if (GUI.GetNameOfFocusedControl() == controlName && Event.current.type == EventType.KeyDown)
+            float sliderValueBefore = Mathf.Clamp(value, min, max);
+            float sliderValue = Widgets.HorizontalSlider(new Rect(rect.x + actualLabelWidth, rect.y + 4, sliderWidth, 16), sliderValueBefore, min, max);
+            if (Math.Abs(sliderValue - sliderValueBefore) > 0.0001f)
             {
-                float step = GetNumericStepForFormat(decimals);
-                if (Event.current.shift)
-                {
-                    step *= 10f;
-                }
-                if (Event.current.control)
-                {
-                    step *= 0.1f;
-                }
-
-                if (Event.current.keyCode == KeyCode.UpArrow)
-                {
-                    newValue = QuantizeFloat(Mathf.Clamp(newValue + step, min, max), decimals);
-                    Event.current.Use();
-                }
-                else if (Event.current.keyCode == KeyCode.DownArrow)
-                {
-                    newValue = QuantizeFloat(Mathf.Clamp(newValue - step, min, max), decimals);
-                    Event.current.Use();
-                }
+                value = QuantizeFloat(sliderValue, decimals);
             }
 
-            newValue = Mathf.Clamp(newValue, min, max);
+            string buffer = value.ToString(numericFormat, CultureInfo.InvariantCulture);
+            Rect inputRect = new Rect(rect.x + actualLabelWidth + sliderWidth + 5, rect.y, inputWidth, 24);
 
-            if (Math.Abs(newValue - value) > 0.0001f)
+            float numericValueBefore = value;
+            TextFieldNumeric(inputRect, ref value, ref buffer, min, max, numericFormat, label);
+            if (Math.Abs(value - numericValueBefore) > 0.0001f)
             {
-                value = newValue;
+                value = QuantizeFloat(value, decimals);
             }
 
             y += RowHeight;
@@ -348,16 +575,64 @@ namespace CharacterStudio.UI
         public static void DrawNumericField<T>(ref float y, float width, string label, ref T value, float min = 0, float max = 1000000, float labelWidth = LabelWidth) where T : struct
         {
             Rect rect = new Rect(0, y, width, RowHeight);
-            
+
             Text.Font = GameFont.Small;
             float actualLabelWidth = Mathf.Max(labelWidth, Text.CalcSize(label).x + 10f);
-            
+
             Widgets.Label(new Rect(rect.x, rect.y, actualLabelWidth, 24), label);
-            
-            string buffer = value.ToString();
-            Widgets.TextFieldNumeric<T>(new Rect(rect.x + actualLabelWidth, rect.y, rect.width - actualLabelWidth, 24), ref value, ref buffer, min, max);
-            
+
+            Rect inputRect = new Rect(rect.x + actualLabelWidth, rect.y, rect.width - actualLabelWidth, 24);
+            if (typeof(T) == typeof(int))
+            {
+                int intValue = (int)(object)value;
+                string buffer = intValue.ToString(CultureInfo.InvariantCulture);
+                TextFieldNumeric(inputRect, ref intValue, ref buffer, Mathf.RoundToInt(min), Mathf.RoundToInt(max), label);
+                value = (T)(object)intValue;
+            }
+            else if (typeof(T) == typeof(float))
+            {
+                float floatValue = (float)(object)value;
+                string buffer = floatValue.ToString(CultureInfo.InvariantCulture);
+                TextFieldNumeric(inputRect, ref floatValue, ref buffer, min, max, null, label);
+                value = (T)(object)floatValue;
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                double doubleValue = (double)(object)value;
+                string buffer = doubleValue.ToString(CultureInfo.InvariantCulture);
+                TextFieldNumeric(inputRect, ref doubleValue, ref buffer, min, max, null, label);
+                value = (T)(object)doubleValue;
+            }
+            else
+            {
+                string buffer = value.ToString();
+                string edited = Widgets.TextField(inputRect, buffer ?? string.Empty);
+                if (TryConvertNumericValue(edited, out T convertedValue))
+                {
+                    value = convertedValue;
+                }
+            }
+
             y += RowHeight;
+        }
+
+        private static bool TryConvertNumericValue<T>(string input, out T convertedValue) where T : struct
+        {
+            try
+            {
+                object boxedValue = Convert.ChangeType(NormalizeNumericText(input), typeof(T), CultureInfo.InvariantCulture);
+                if (boxedValue is T typedValue)
+                {
+                    convertedValue = typedValue;
+                    return true;
+                }
+            }
+            catch
+            {
+            }
+
+            convertedValue = default;
+            return false;
         }
 
         /// <summary>

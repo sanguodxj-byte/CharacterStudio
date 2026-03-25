@@ -437,7 +437,10 @@ namespace CharacterStudio.Exporter
                     new XElement("hitCooldownRefundPercent", component.hitCooldownRefundPercent),
                     new XElement("splitProjectileCount", component.splitProjectileCount),
                     new XElement("splitDamageScale", component.splitDamageScale),
-                    new XElement("splitSearchRange", component.splitSearchRange)
+                    new XElement("splitSearchRange", component.splitSearchRange),
+                    new XElement("flightDurationTicks", component.flightDurationTicks),
+                    new XElement("flightHeightFactor", component.flightHeightFactor),
+                    new XElement("suppressCombatActionsDuringFlightState", component.suppressCombatActionsDuringFlightState.ToString().ToLower())
                 );
 
                 root.Add(compEl);
@@ -721,7 +724,11 @@ namespace CharacterStudio.Exporter
                 var layeredPartsEl = new XElement("layeredParts");
                 foreach (var part in config.layeredParts)
                 {
-                    if (part == null || string.IsNullOrWhiteSpace(part.texPath)) continue;
+                    if (part == null) continue;
+
+                    part.SyncDirectionalTexPathsFromLegacy();
+                    part.SyncLegacyMotionAmplitude();
+                    if (!part.HasAnyTexture()) continue;
 
                     LayeredFacePartSide normalizedSide = PawnFaceConfig.NormalizePartSide(part.partType, part.side);
 
@@ -739,8 +746,8 @@ namespace CharacterStudio.Exporter
                         part.partType == LayeredFacePartType.Overlay
                             ? new XElement("overlayOrder", part.overlayOrder)
                             : null,
-                        part.anchorCorrection != Vector2.zero
-                            ? new XElement("anchorCorrection", $"({part.anchorCorrection.x:F3}, {part.anchorCorrection.y:F3})")
+                        part.motionAmplitude > 0f
+                            ? new XElement("motionAmplitude", part.motionAmplitude.ToString("F4", System.Globalization.CultureInfo.InvariantCulture))
                             : null
                     ));
                 }

@@ -49,6 +49,29 @@ namespace CharacterStudio.Rendering
             return (cfg != null && cfg.enabled) ? cfg : null;
         }
 
+        /// <summary>
+        /// 将 FlightState 的抬升偏移统一接入主渲染树。
+        /// 自定义图层节点会在 PawnRenderNodeWorker_CustomLayer 中单独处理，这里跳过以避免重复叠加。
+        /// </summary>
+        private static void ApplyFlightStateOffset(PawnRenderNode node, PawnDrawParms parms, ref Vector3 result)
+        {
+            if (node is PawnRenderNode_Custom)
+            {
+                return;
+            }
+
+            Pawn? pawn = parms.pawn;
+            CompPawnSkin? skinComp = pawn?.GetComp<CompPawnSkin>();
+            if (skinComp == null || !skinComp.IsFlightStateActive())
+            {
+                return;
+            }
+
+            float liftFactor = skinComp.GetFlightLiftFactor01();
+            float flightBaseHeight = skinComp.flightStateHeightFactor * liftFactor;
+            result.y += flightBaseHeight + skinComp.GetFlightHoverOffset();
+        }
+
         // ─────────────────────────────────────────────
         // Postfix: OffsetFor
         // ─────────────────────────────────────────────
@@ -61,11 +84,19 @@ namespace CharacterStudio.Rendering
         {
             try
             {
+                ApplyFlightStateOffset(__0, __1, ref __result);
+
                 if (!IsWeaponNode(__0, out bool isOffHand)) return;
                 var cfg = GetConfig(__1.pawn);
                 if (cfg == null) return;
                 if (isOffHand && !cfg.applyToOffHand) return;
-                __result += cfg.GetOffsetForRotation(__1.pawn.Rotation);
+
+                Rot4 facing = __1.facing;
+                Vector3 extraOffset = cfg.GetOffsetForRotation(facing);
+                if (facing == Rot4.West)
+                    extraOffset.x = -extraOffset.x;
+
+                __result += extraOffset;
             }
             catch (Exception ex)
             {

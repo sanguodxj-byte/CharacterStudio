@@ -181,7 +181,7 @@ namespace CharacterStudio.UI
             var exampleAbilities = LoadExampleAbilitiesFromDefs();
             if (exampleAbilities.Count == 0)
             {
-                validationSummary = "Example abilities were not found in DefDatabase.";
+                validationSummary = "CS_Studio_Ability_ExamplesNotFound".Translate();
                 Log.Warning("[CharacterStudio] 示例技能未在 DefDatabase<ModularAbilityDef> 中找到。");
                 return;
             }
@@ -200,15 +200,14 @@ namespace CharacterStudio.UI
             selectedAbility = exampleAbilities.Count > 0 ? exampleAbilities[0] : abilities.Count > 0 ? abilities[0] : null;
             NotifyAbilityPreviewDirty(true);
 
-            if (boundHotkeys != null)
-            {
-                boundHotkeys.enabled = true;
-                boundHotkeys.qAbilityDefName = "CS_Example_Q1_ModeSlash";
-                boundHotkeys.wAbilityDefName = "CS_Example_W_Pierce";
-                boundHotkeys.eAbilityDefName = "CS_Example_E_ShadowStep";
-                boundHotkeys.rAbilityDefName = "CS_Example_R_Annihilation";
-                boundHotkeys.wComboAbilityDefName = "CS_Example_W2_ComboBurst";
-            }
+            SkinAbilityHotkeyConfig hotkeyConfig = GetEditableHotkeyConfig();
+            hotkeyConfig.enabled = true;
+            hotkeyConfig.qAbilityDefName = "CS_Example_Q1_ModeSlash";
+            hotkeyConfig.wAbilityDefName = "CS_Example_W_Pierce";
+            hotkeyConfig.eAbilityDefName = "CS_Example_E_ShadowStep";
+            hotkeyConfig.rAbilityDefName = "CS_Example_R_Annihilation";
+            hotkeyConfig.wComboAbilityDefName = "CS_Example_W2_ComboBurst";
+            SanitizeHotkeyConfigAgainstAbilities(GetCurrentHotkeyConfig());
 
             validationSummary = "CS_Studio_Ability_ExamplesLoaded".Translate();
         }

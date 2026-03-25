@@ -73,6 +73,67 @@ namespace CharacterStudio.UI
             return vfx.UsesCustomTextureType;
         }
 
+        private static bool SupportsRuntimeVfxTrigger(AbilityVisualEffectTrigger trigger)
+        {
+            return trigger == AbilityVisualEffectTrigger.OnTargetApply
+                || trigger == AbilityVisualEffectTrigger.OnCastFinish;
+        }
+
+        private static AbilityVisualEffectTrigger NormalizeEditorVfxTrigger(AbilityVisualEffectTrigger trigger)
+        {
+            return SupportsRuntimeVfxTrigger(trigger)
+                ? trigger
+                : AbilityVisualEffectTrigger.OnTargetApply;
+        }
+
+        private static bool HasRegisteredPreset(string? presetDefName, IReadOnlyList<string> registeredPresetNames)
+        {
+            if (presetDefName is not string presetName || string.IsNullOrWhiteSpace(presetName))
+            {
+                return false;
+            }
+
+            string trimmedPresetName = presetName.Trim();
+            for (int i = 0; i < registeredPresetNames.Count; i++)
+            {
+                if (string.Equals(registeredPresetNames[i], trimmedPresetName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool NormalizeVfxEditorState(AbilityVisualEffectConfig vfx)
+        {
+            bool changed = false;
+
+            AbilityVisualEffectTrigger normalizedTrigger = NormalizeEditorVfxTrigger(vfx.trigger);
+            if (vfx.trigger != normalizedTrigger)
+            {
+                vfx.trigger = normalizedTrigger;
+                changed = true;
+            }
+
+            if (UsesPresetSource(vfx))
+            {
+                IReadOnlyList<string> registeredPresetNames = VisualEffectWorkerFactory.GetRegisteredPresetNames();
+                if (!HasRegisteredPreset(vfx.presetDefName, registeredPresetNames))
+                {
+                    vfx.presetDefName = registeredPresetNames.Count > 0 ? registeredPresetNames[0] : string.Empty;
+                    changed = true;
+                }
+            }
+
+            return changed;
+        }
+
+        private static string GetPresetSelectionLabel(AbilityVisualEffectConfig vfx)
+        {
+            return string.IsNullOrWhiteSpace(vfx.presetDefName) ? "..." : vfx.presetDefName.Trim();
+        }
+
         private float GetVfxItemHeight(AbilityVisualEffectConfig vfx)
         {
             float height = 34f;
@@ -116,6 +177,11 @@ namespace CharacterStudio.UI
         {
             Widgets.DrawMenuSection(rect);
             Rect inner = rect.ContractedBy(5f);
+
+            if (NormalizeVfxEditorState(vfx))
+            {
+                NotifyAbilityPreviewDirty(true);
+            }
 
             GUI.color = vfx.enabled ? Color.white : Color.gray;
             Widgets.Label(new Rect(inner.x, inner.y, inner.width - 120f, 24f), BuildVfxTitleLabel(vfx, index));
@@ -165,7 +231,7 @@ namespace CharacterStudio.UI
             {
                 Widgets.Label(new Rect(x, rowY, labelW, 24f), label);
                 float before = value;
-                Widgets.TextFieldNumeric(new Rect(x + labelW, rowY, fieldW, 24f), ref value, ref buffer, min, max);
+                UIHelper.TextFieldNumeric(new Rect(x + labelW, rowY, fieldW, 24f), ref value, ref buffer, min, max);
                 if (Math.Abs(value - before) > 0.001f)
                 {
                     NotifyAbilityPreviewDirty();
@@ -176,7 +242,7 @@ namespace CharacterStudio.UI
             {
                 Widgets.Label(new Rect(x, rowY, labelW, 24f), label);
                 int before = value;
-                Widgets.TextFieldNumeric(new Rect(x + labelW, rowY, fieldW, 24f), ref value, ref buffer, min, max);
+                UIHelper.TextFieldNumeric(new Rect(x + labelW, rowY, fieldW, 24f), ref value, ref buffer, min, max);
                 if (value != before)
                 {
                     NotifyAbilityPreviewDirty(true);
@@ -196,6 +262,14 @@ namespace CharacterStudio.UI
                         {
                             vfx.textureSource = AbilityVisualEffectTextureSource.Vanilla;
                         }
+
+                        if (vfx.UsesPresetType)
+                        {
+                            IReadOnlyList<string> registeredPresetNames = VisualEffectWorkerFactory.GetRegisteredPresetNames();
+                            vfx.presetDefName = registeredPresetNames.Count > 0 ? registeredPresetNames[0] : string.Empty;
+                        }
+
+                        vfx.trigger = NormalizeEditorVfxTrigger(vfx.trigger);
                         vfx.SyncLegacyFields();
                         NotifyAbilityPreviewDirty(true);
                     }));
@@ -240,13 +314,27 @@ namespace CharacterStudio.UI
             if (UsesPresetSource(vfx))
             {
                 float presetLabelW = 44f;
-                string presetBefore = vfx.presetDefName ?? string.Empty;
-                Widgets.Label(new Rect(inner.x, y, presetLabelW, 24f), "CS_Studio_VFX_PresetShort".Translate());
-                vfx.presetDefName = Widgets.TextField(new Rect(inner.x + presetLabelW, y, inner.width - presetLabelW, 24f), vfx.presetDefName ?? string.Empty);
-                if ((vfx.presetDefName ?? string.Empty) != presetBefore)
+                DrawVfxDropdownRow(inner.x, y, presetLabelW, inner.width - presetLabelW - 4f, "CS_Studio_VFX_PresetShort".Translate(), GetPresetSelectionLabel(vfx), () =>
                 {
-                    NotifyAbilityPreviewDirty();
-                }
+                    IReadOnlyList<string> registeredPresetNames = VisualEffectWorkerFactory.GetRegisteredPresetNames();
+                    var options = new List<FloatMenuOption>();
+                    for (int i = 0; i < registeredPresetNames.Count; i++)
+                    {
+                        string presetName = registeredPresetNames[i];
+                        options.Add(new FloatMenuOption(presetName, () =>
+                        {
+                            vfx.presetDefName = presetName;
+                            NotifyAbilityPreviewDirty(true);
+                        }));
+                    }
+
+                    if (options.Count == 0)
+                    {
+                        options.Add(new FloatMenuOption("CS_Studio_VFX_NoPresetsRegistered".Translate(), null));
+                    }
+
+                    Find.WindowStack.Add(new FloatMenu(options));
+                });
                 y += RowHeight;
             }
             else if (UsesCustomTextureSettings(vfx))
@@ -297,6 +385,11 @@ namespace CharacterStudio.UI
                 var options = new List<FloatMenuOption>();
                 foreach (AbilityVisualEffectTrigger trigger in Enum.GetValues(typeof(AbilityVisualEffectTrigger)))
                 {
+                    if (!SupportsRuntimeVfxTrigger(trigger))
+                    {
+                        continue;
+                    }
+
                     var captured = trigger;
                     options.Add(new FloatMenuOption(GetVfxTriggerLabel(captured), () =>
                     {
@@ -405,10 +498,18 @@ namespace CharacterStudio.UI
                     {
                         type = captured,
                         target = VisualEffectTarget.Target,
+                        trigger = AbilityVisualEffectTrigger.OnTargetApply,
                         delayTicks = 0,
                         scale = 1f,
                         textureSource = AbilityVisualEffectTextureSource.Vanilla
                     };
+
+                    if (vfx.UsesPresetType)
+                    {
+                        IReadOnlyList<string> registeredPresetNames = VisualEffectWorkerFactory.GetRegisteredPresetNames();
+                        vfx.presetDefName = registeredPresetNames.Count > 0 ? registeredPresetNames[0] : string.Empty;
+                    }
+
                     vfx.SyncLegacyFields();
                     selectedAbility?.visualEffects.Add(vfx);
                     NotifyAbilityPreviewDirty(true);
