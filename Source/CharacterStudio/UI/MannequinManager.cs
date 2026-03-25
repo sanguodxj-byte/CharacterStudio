@@ -200,6 +200,11 @@ namespace CharacterStudio.UI
 
             try
             {
+                // 预览始终复用同一个 mannequin Pawn。
+                // 若不先清空上一轮 runtime skin，则删除图层/清空部件后，
+                // 旧的自定义节点、overlay、装备预览节点仍可能残留在当前渲染树上。
+                PawnSkinRuntimeUtility.ClearSkinFromPawn(mannequinPawn);
+
                 plan.targetPawn = mannequinPawn;
                 if (!CharacterStudio.Design.CharacterApplicationExecutor.Execute(plan))
                 {

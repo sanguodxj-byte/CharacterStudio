@@ -602,7 +602,7 @@ namespace CharacterStudio.Core
             if (node == null) return false;
 
             string tag = node.tagDefName ?? "";
-            if (tag == "Head" || tag == "Body")
+            if (tag == "Head" || tag == "Body" || tag == "Hair" || tag == "Beard")
             {
                 // 排除服装类节点（它们可能也有 Body 相关 tag）
                 if (node.workerClass != null &&

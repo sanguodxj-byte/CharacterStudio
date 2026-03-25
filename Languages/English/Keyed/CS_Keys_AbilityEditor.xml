@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <CS_Ability_CarrierType_Self>Self</CS_Ability_CarrierType_Self>
+    <CS_Ability_CarrierType_Targeted>Targeted</CS_Ability_CarrierType_Targeted>
+    <CS_Ability_CarrierType_Beam>Beam</CS_Ability_CarrierType_Beam>
+    <CS_Ability_CarrierType_Area>Area</CS_Ability_CarrierType_Area>
+    <CS_Ability_CarrierType_Dash>Dash</CS_Ability_CarrierType_Dash>
+    <CS_Ability_CarrierType_Projectile>Projectile</CS_Ability_CarrierType_Projectile>
+    <CS_Ability_TargetType_Self>Self</CS_Ability_TargetType_Self>
+    <CS_Ability_TargetType_Entity>Entity</CS_Ability_TargetType_Entity>
+    <CS_Ability_TargetType_Cell>Cell</CS_Ability_TargetType_Cell>
+    <CS_Ability_AreaCenter_Self>Self</CS_Ability_AreaCenter_Self>
+    <CS_Ability_AreaCenter_Target>Target</CS_Ability_AreaCenter_Target>
+    <CS_Studio_Ability_AreaShape_Circle>Circle</CS_Studio_Ability_AreaShape_Circle>
+    <CS_Studio_Ability_AreaShape_Line>Line</CS_Studio_Ability_AreaShape_Line>
+    <CS_Studio_Ability_AreaShape_Cone>Cone</CS_Studio_Ability_AreaShape_Cone>
+    <CS_Studio_Ability_AreaShape_Rectangle>Rectangle</CS_Studio_Ability_AreaShape_Rectangle>
+    <CS_Studio_Ability_AreaShape_Irregular>Irregular</CS_Studio_Ability_AreaShape_Irregular>
+    <CS_Ability_EffectType_Damage>Damage</CS_Ability_EffectType_Damage>
+    <CS_Ability_EffectType_Heal>Heal</CS_Ability_EffectType_Heal>
+    <CS_Ability_EffectType_Buff>Buff</CS_Ability_EffectType_Buff>
+    <CS_Ability_EffectType_Debuff>Debuff</CS_Ability_EffectType_Debuff>
+    <CS_Ability_EffectType_Teleport>Teleport</CS_Ability_EffectType_Teleport>
+    <CS_Ability_EffectType_Summon>Summon</CS_Ability_EffectType_Summon>
+    <CS_Ability_EffectType_Control>Control</CS_Ability_EffectType_Control>
+    <CS_Ability_EffectType_Terraform>Terraform</CS_Ability_EffectType_Terraform>
+    <CS_Ability_RuntimeComponentType_QComboWindow>Q Combo Window</CS_Ability_RuntimeComponentType_QComboWindow>
+    <CS_Ability_RuntimeComponentType_HotkeyOverride>Hotkey Override</CS_Ability_RuntimeComponentType_HotkeyOverride>
+    <CS_Ability_RuntimeComponentType_FollowupCooldownGate>Followup Cooldown Gate</CS_Ability_RuntimeComponentType_FollowupCooldownGate>
+    <CS_Ability_RuntimeComponentType_SmartJump>Smart Jump</CS_Ability_RuntimeComponentType_SmartJump>
+    <CS_Ability_RuntimeComponentType_EShortJump>E Short Jump</CS_Ability_RuntimeComponentType_EShortJump>
+    <CS_Ability_RuntimeComponentType_RStackDetonation>R Stack Detonation</CS_Ability_RuntimeComponentType_RStackDetonation>
+    <CS_Ability_RuntimeComponentType_PeriodicPulse>Periodic Pulse</CS_Ability_RuntimeComponentType_PeriodicPulse>
+    <CS_Ability_RuntimeComponentType_KillRefresh>Kill Refresh</CS_Ability_RuntimeComponentType_KillRefresh>
+    <CS_Ability_RuntimeComponentType_ShieldAbsorb>Shield Absorb</CS_Ability_RuntimeComponentType_ShieldAbsorb>
+    <CS_Ability_RuntimeComponentType_ChainBounce>Chain Bounce</CS_Ability_RuntimeComponentType_ChainBounce>
+    <CS_Ability_RuntimeComponentType_ExecuteBonusDamage>Execute Bonus</CS_Ability_RuntimeComponentType_ExecuteBonusDamage>
+    <CS_Ability_RuntimeComponentType_MissingHealthBonusDamage>Missing Health Bonus</CS_Ability_RuntimeComponentType_MissingHealthBonusDamage>
+    <CS_Ability_RuntimeComponentType_FullHealthBonusDamage>Full Health Bonus</CS_Ability_RuntimeComponentType_FullHealthBonusDamage>
+    <CS_Ability_RuntimeComponentType_NearbyEnemyBonusDamage>Nearby Enemy Bonus</CS_Ability_RuntimeComponentType_NearbyEnemyBonusDamage>
+    <CS_Ability_RuntimeComponentType_IsolatedTargetBonusDamage>Isolated Target Bonus</CS_Ability_RuntimeComponentType_IsolatedTargetBonusDamage>
+    <CS_Ability_RuntimeComponentType_MarkDetonation>Mark Detonation</CS_Ability_RuntimeComponentType_MarkDetonation>
+    <CS_Ability_RuntimeComponentType_ComboStacks>Combo Stacks</CS_Ability_RuntimeComponentType_ComboStacks>
+    <CS_Ability_RuntimeComponentType_HitSlowField>Hit Slow Field</CS_Ability_RuntimeComponentType_HitSlowField>
+    <CS_Ability_RuntimeComponentType_PierceBonusDamage>Pierce Bonus</CS_Ability_RuntimeComponentType_PierceBonusDamage>
+    <CS_Ability_RuntimeComponentType_DashEmpoweredStrike>Dash Empowered Strike</CS_Ability_RuntimeComponentType_DashEmpoweredStrike>
+    <CS_Ability_RuntimeComponentType_HitHeal>Hit Heal</CS_Ability_RuntimeComponentType_HitHeal>
+    <CS_Ability_RuntimeComponentType_HitCooldownRefund>Hit Cooldown Refund</CS_Ability_RuntimeComponentType_HitCooldownRefund>
+    <CS_Ability_RuntimeComponentType_ProjectileSplit>Projectile Split</CS_Ability_RuntimeComponentType_ProjectileSplit>
+    <CS_Ability_RuntimeComponentType_FlightLandingBurst>Landing Burst</CS_Ability_RuntimeComponentType_FlightLandingBurst>
+    <CS_Ability_RuntimeComponentType_FlightOnlyFollowup>Flight-Only Followup</CS_Ability_RuntimeComponentType_FlightOnlyFollowup>
+    <CS_Ability_RuntimeComponentType_FlightOnlyFollowup_Short>Flight Followup</CS_Ability_RuntimeComponentType_FlightOnlyFollowup_Short>
+    <CS_Ability_RuntimeComponentType_FlightState>Flight Stance</CS_Ability_RuntimeComponentType_FlightState>
+    <CS_Ability_RuntimeComponentType_VanillaPawnFlyer>Real PawnFlyer</CS_Ability_RuntimeComponentType_VanillaPawnFlyer>
+    <CS_Ability_RuntimeComponentType_VanillaPawnFlyer_Short>Real Flight</CS_Ability_RuntimeComponentType_VanillaPawnFlyer_Short>
+    <CS_Ability_SelectPawn>Select Pawn</CS_Ability_SelectPawn>
+    <CS_Ability_SelectArea>Target Area</CS_Ability_SelectArea>
+    <CS_Ability_Summary_Damage>Damage: {0}</CS_Ability_Summary_Damage>
+    <CS_Ability_Summary_Heal>Heal: {0}</CS_Ability_Summary_Heal>
+    <CS_Ability_Summary_Buff>Buff: {0}</CS_Ability_Summary_Buff>
+    <CS_Ability_Summary_Debuff>Debuff: {0}</CS_Ability_Summary_Debuff>
+    <CS_Ability_Summary_Teleport>Teleport</CS_Ability_Summary_Teleport>
+    <CS_Ability_Summary_Summon>Summon: {0}</CS_Ability_Summary_Summon>
+    <CS_Ability_Summary_Control>Control: {0}</CS_Ability_Summary_Control>
+    <CS_Ability_Summary_Terraform>Terraform: {0}</CS_Ability_Summary_Terraform>
+    <CS_Ability_ClearBinding>Clear Binding</CS_Ability_ClearBinding>
+    <CS_Studio_Runtime_Desc_QComboWindow>Open a short Q combo acceptance window after casting.</CS_Studio_Runtime_Desc_QComboWindow>
+    <CS_Studio_Runtime_Desc_HotkeyOverride>Temporarily replace a hotkey ability with another specific ability.</CS_Studio_Runtime_Desc_HotkeyOverride>
+    <CS_Studio_Runtime_Desc_FollowupCooldownGate>Apply an extra cooldown gate to a chosen followup hotkey.</CS_Studio_Runtime_Desc_FollowupCooldownGate>
+    <CS_Studio_Runtime_Desc_SmartJump>Smart jump that finds a valid landing cell and can fire effects after landing.</CS_Studio_Runtime_Desc_SmartJump>
+    <CS_Studio_Runtime_Desc_EShortJump>Short jump variant, useful for quick reposition skills.</CS_Studio_Runtime_Desc_EShortJump>
+    <CS_Studio_Runtime_Desc_RStackDetonation>Track R stacks and detonate once the required stack count is reached.</CS_Studio_Runtime_Desc_RStackDetonation>
+    <CS_Studio_Runtime_Desc_PeriodicPulse>Repeatedly emit pulse effects during a short duration.</CS_Studio_Runtime_Desc_PeriodicPulse>
+    <CS_Studio_Runtime_Desc_KillRefresh>Refresh part of a hotkey cooldown when this ability kills a target.</CS_Studio_Runtime_Desc_KillRefresh>
+    <CS_Studio_Runtime_Desc_ShieldAbsorb>Absorb incoming damage, then convert stored value into heal or bonus damage.</CS_Studio_Runtime_Desc_ShieldAbsorb>
+    <CS_Studio_Runtime_Desc_ChainBounce>Make the effect bounce across nearby enemy targets.</CS_Studio_Runtime_Desc_ChainBounce>
+    <CS_Studio_Runtime_Desc_ExecuteBonusDamage>Deal extra damage to low-health targets.</CS_Studio_Runtime_Desc_ExecuteBonusDamage>
+    <CS_Studio_Runtime_Desc_MissingHealthBonusDamage>Deal scaling extra damage based on target missing health.</CS_Studio_Runtime_Desc_MissingHealthBonusDamage>
+    <CS_Studio_Runtime_Desc_FullHealthBonusDamage>Deal extra damage to nearly full-health targets.</CS_Studio_Runtime_Desc_FullHealthBonusDamage>
+    <CS_Studio_Runtime_Desc_NearbyEnemyBonusDamage>Deal extra damage when more enemies are clustered near the target.</CS_Studio_Runtime_Desc_NearbyEnemyBonusDamage>
+    <CS_Studio_Runtime_Desc_IsolatedTargetBonusDamage>Deal extra damage to isolated targets.</CS_Studio_Runtime_Desc_IsolatedTargetBonusDamage>
+    <CS_Studio_Runtime_Desc_MarkDetonation>Apply marks on hit and trigger a detonation at max stacks.</CS_Studio_Runtime_Desc_MarkDetonation>
+    <CS_Studio_Runtime_Desc_ComboStacks>Accumulate combo stacks that increase subsequent damage.</CS_Studio_Runtime_Desc_ComboStacks>
+    <CS_Studio_Runtime_Desc_HitSlowField>Create a slow field on hit around the target area.</CS_Studio_Runtime_Desc_HitSlowField>
+    <CS_Studio_Runtime_Desc_PierceBonusDamage>Gain extra damage when more enemies line up for piercing behavior.</CS_Studio_Runtime_Desc_PierceBonusDamage>
+    <CS_Studio_Runtime_Desc_DashEmpoweredStrike>Empower the next strike after a dash or jump.</CS_Studio_Runtime_Desc_DashEmpoweredStrike>
+    <CS_Studio_Runtime_Desc_HitHeal>Heal the caster when this ability successfully hits a target.</CS_Studio_Runtime_Desc_HitHeal>
+    <CS_Studio_Runtime_Desc_HitCooldownRefund>Refund part of a chosen hotkey cooldown on hit.</CS_Studio_Runtime_Desc_HitCooldownRefund>
+    <CS_Studio_Runtime_Desc_FlightState>Apply a fake flight stance state with visual flight behavior.</CS_Studio_Runtime_Desc_FlightState>
+    <CS_Studio_Runtime_Desc_FlightOnlyFollowup>Only usable while the caster is in a real PawnFlyer flight window.</CS_Studio_Runtime_Desc_FlightOnlyFollowup>
+    <CS_Studio_Runtime_Desc_VanillaPawnFlyer>Launch a real RimWorld 1.6 PawnFlyer instead of a fake flight stance.</CS_Studio_Runtime_Desc_VanillaPawnFlyer>
+    <CS_Studio_Runtime_Desc_FlightLandingBurst>Trigger a landing burst when the real flight ends.</CS_Studio_Runtime_Desc_FlightLandingBurst>
+    <CS_Studio_Runtime_Desc_ProjectileSplit>Split into additional follow-up hits against nearby targets.</CS_Studio_Runtime_Desc_ProjectileSplit>
+    <CS_Studio_Runtime_DuplicateSingletonBlocked>{0} already exists; duplicate singleton-like runtime components are blocked.</CS_Studio_Runtime_DuplicateSingletonBlocked>
+</LanguageData>

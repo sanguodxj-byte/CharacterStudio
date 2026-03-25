@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <CS_Ability_CarrierType_Self>自身</CS_Ability_CarrierType_Self>
+    <CS_Ability_CarrierType_Targeted>指向</CS_Ability_CarrierType_Targeted>
+    <CS_Ability_CarrierType_Beam>光束</CS_Ability_CarrierType_Beam>
+    <CS_Ability_CarrierType_Area>区域</CS_Ability_CarrierType_Area>
+    <CS_Ability_CarrierType_Dash>位移</CS_Ability_CarrierType_Dash>
+    <CS_Ability_CarrierType_Projectile>投射物</CS_Ability_CarrierType_Projectile>
+    <CS_Ability_TargetType_Self>自身</CS_Ability_TargetType_Self>
+    <CS_Ability_TargetType_Entity>实体</CS_Ability_TargetType_Entity>
+    <CS_Ability_TargetType_Cell>地格</CS_Ability_TargetType_Cell>
+    <CS_Ability_AreaCenter_Self>自身</CS_Ability_AreaCenter_Self>
+    <CS_Ability_AreaCenter_Target>目标</CS_Ability_AreaCenter_Target>
+    <CS_Studio_Ability_AreaShape_Circle>圆形</CS_Studio_Ability_AreaShape_Circle>
+    <CS_Studio_Ability_AreaShape_Line>直线</CS_Studio_Ability_AreaShape_Line>
+    <CS_Studio_Ability_AreaShape_Cone>扇形</CS_Studio_Ability_AreaShape_Cone>
+    <CS_Studio_Ability_AreaShape_Rectangle>矩形</CS_Studio_Ability_AreaShape_Rectangle>
+    <CS_Studio_Ability_AreaShape_Irregular>不规则</CS_Studio_Ability_AreaShape_Irregular>
+    <CS_Ability_EffectType_Damage>伤害</CS_Ability_EffectType_Damage>
+    <CS_Ability_EffectType_Heal>治疗</CS_Ability_EffectType_Heal>
+    <CS_Ability_EffectType_Buff>增益</CS_Ability_EffectType_Buff>
+    <CS_Ability_EffectType_Debuff>减益</CS_Ability_EffectType_Debuff>
+    <CS_Ability_EffectType_Teleport>传送</CS_Ability_EffectType_Teleport>
+    <CS_Ability_EffectType_Summon>召唤</CS_Ability_EffectType_Summon>
+    <CS_Ability_EffectType_Control>控制</CS_Ability_EffectType_Control>
+    <CS_Ability_EffectType_Terraform>地形改造</CS_Ability_EffectType_Terraform>
+    <CS_Ability_RuntimeComponentType_QComboWindow>Q 连段窗口</CS_Ability_RuntimeComponentType_QComboWindow>
+    <CS_Ability_RuntimeComponentType_HotkeyOverride>热键覆盖</CS_Ability_RuntimeComponentType_HotkeyOverride>
+    <CS_Ability_RuntimeComponentType_FollowupCooldownGate>后续技能冷却门</CS_Ability_RuntimeComponentType_FollowupCooldownGate>
+    <CS_Ability_RuntimeComponentType_SmartJump>智能跳跃</CS_Ability_RuntimeComponentType_SmartJump>
+    <CS_Ability_RuntimeComponentType_EShortJump>E 短跳</CS_Ability_RuntimeComponentType_EShortJump>
+    <CS_Ability_RuntimeComponentType_RStackDetonation>R 叠层引爆</CS_Ability_RuntimeComponentType_RStackDetonation>
+    <CS_Ability_RuntimeComponentType_PeriodicPulse>周期脉冲</CS_Ability_RuntimeComponentType_PeriodicPulse>
+    <CS_Ability_RuntimeComponentType_KillRefresh>击杀刷新</CS_Ability_RuntimeComponentType_KillRefresh>
+    <CS_Ability_RuntimeComponentType_ShieldAbsorb>护盾吸收</CS_Ability_RuntimeComponentType_ShieldAbsorb>
+    <CS_Ability_RuntimeComponentType_ChainBounce>连锁弹跳</CS_Ability_RuntimeComponentType_ChainBounce>
+    <CS_Ability_RuntimeComponentType_ExecuteBonusDamage>斩杀增伤</CS_Ability_RuntimeComponentType_ExecuteBonusDamage>
+    <CS_Ability_RuntimeComponentType_MissingHealthBonusDamage>损血增伤</CS_Ability_RuntimeComponentType_MissingHealthBonusDamage>
+    <CS_Ability_RuntimeComponentType_FullHealthBonusDamage>满血增伤</CS_Ability_RuntimeComponentType_FullHealthBonusDamage>
+    <CS_Ability_RuntimeComponentType_NearbyEnemyBonusDamage>周围敌人增伤</CS_Ability_RuntimeComponentType_NearbyEnemyBonusDamage>
+    <CS_Ability_RuntimeComponentType_IsolatedTargetBonusDamage>孤立目标增伤</CS_Ability_RuntimeComponentType_IsolatedTargetBonusDamage>
+    <CS_Ability_RuntimeComponentType_MarkDetonation>印记引爆</CS_Ability_RuntimeComponentType_MarkDetonation>
+    <CS_Ability_RuntimeComponentType_ComboStacks>连击层数</CS_Ability_RuntimeComponentType_ComboStacks>
+    <CS_Ability_RuntimeComponentType_HitSlowField>命中减速场</CS_Ability_RuntimeComponentType_HitSlowField>
+    <CS_Ability_RuntimeComponentType_PierceBonusDamage>穿透增伤</CS_Ability_RuntimeComponentType_PierceBonusDamage>
+    <CS_Ability_RuntimeComponentType_DashEmpoweredStrike>位移强化打击</CS_Ability_RuntimeComponentType_DashEmpoweredStrike>
+    <CS_Ability_RuntimeComponentType_HitHeal>命中治疗</CS_Ability_RuntimeComponentType_HitHeal>
+    <CS_Ability_RuntimeComponentType_HitCooldownRefund>命中返还冷却</CS_Ability_RuntimeComponentType_HitCooldownRefund>
+    <CS_Ability_RuntimeComponentType_ProjectileSplit>投射物分裂</CS_Ability_RuntimeComponentType_ProjectileSplit>
+    <CS_Ability_RuntimeComponentType_FlightLandingBurst>落地爆发</CS_Ability_RuntimeComponentType_FlightLandingBurst>
+    <CS_Ability_RuntimeComponentType_FlightOnlyFollowup>仅飞行中可用后续技能</CS_Ability_RuntimeComponentType_FlightOnlyFollowup>
+    <CS_Ability_RuntimeComponentType_FlightOnlyFollowup_Short>飞行后续</CS_Ability_RuntimeComponentType_FlightOnlyFollowup_Short>
+    <CS_Ability_RuntimeComponentType_FlightState>飞行姿态</CS_Ability_RuntimeComponentType_FlightState>
+    <CS_Ability_RuntimeComponentType_VanillaPawnFlyer>真实原版飞行</CS_Ability_RuntimeComponentType_VanillaPawnFlyer>
+    <CS_Ability_RuntimeComponentType_VanillaPawnFlyer_Short>真实飞行</CS_Ability_RuntimeComponentType_VanillaPawnFlyer_Short>
+    <CS_Ability_SelectPawn>选择角色</CS_Ability_SelectPawn>
+    <CS_Ability_SelectArea>目标区域</CS_Ability_SelectArea>
+    <CS_Ability_Summary_Damage>伤害：{0}</CS_Ability_Summary_Damage>
+    <CS_Ability_Summary_Heal>治疗：{0}</CS_Ability_Summary_Heal>
+    <CS_Ability_Summary_Buff>增益：{0}</CS_Ability_Summary_Buff>
+    <CS_Ability_Summary_Debuff>减益：{0}</CS_Ability_Summary_Debuff>
+    <CS_Ability_Summary_Teleport>传送</CS_Ability_Summary_Teleport>
+    <CS_Ability_Summary_Summon>召唤：{0}</CS_Ability_Summary_Summon>
+    <CS_Ability_Summary_Control>控制：{0}</CS_Ability_Summary_Control>
+    <CS_Ability_Summary_Terraform>地形改造：{0}</CS_Ability_Summary_Terraform>
+    <CS_Ability_ClearBinding>清除绑定</CS_Ability_ClearBinding>
+    <CS_Studio_Runtime_Desc_QComboWindow>施放后开启一个短暂的 Q 连段接受窗口。</CS_Studio_Runtime_Desc_QComboWindow>
+    <CS_Studio_Runtime_Desc_HotkeyOverride>暂时将某个热键技能替换为另一个指定技能。</CS_Studio_Runtime_Desc_HotkeyOverride>
+    <CS_Studio_Runtime_Desc_FollowupCooldownGate>对指定后续热键施加额外冷却门限制。</CS_Studio_Runtime_Desc_FollowupCooldownGate>
+    <CS_Studio_Runtime_Desc_SmartJump>智能寻找可落点的跳跃，并可在落地后触发效果。</CS_Studio_Runtime_Desc_SmartJump>
+    <CS_Studio_Runtime_Desc_EShortJump>短距离跳跃版本，适合快速位移技能。</CS_Studio_Runtime_Desc_EShortJump>
+    <CS_Studio_Runtime_Desc_RStackDetonation>记录 R 层数并在达到要求后触发引爆。</CS_Studio_Runtime_Desc_RStackDetonation>
+    <CS_Studio_Runtime_Desc_PeriodicPulse>在短时间内周期性释放脉冲效果。</CS_Studio_Runtime_Desc_PeriodicPulse>
+    <CS_Studio_Runtime_Desc_KillRefresh>击杀目标后返还部分指定热键冷却。</CS_Studio_Runtime_Desc_KillRefresh>
+    <CS_Studio_Runtime_Desc_ShieldAbsorb>吸收伤害，并把储存值转换为治疗或额外伤害。</CS_Studio_Runtime_Desc_ShieldAbsorb>
+    <CS_Studio_Runtime_Desc_ChainBounce>让效果在附近敌人之间连锁弹跳。</CS_Studio_Runtime_Desc_ChainBounce>
+    <CS_Studio_Runtime_Desc_ExecuteBonusDamage>对低血量目标造成额外伤害。</CS_Studio_Runtime_Desc_ExecuteBonusDamage>
+    <CS_Studio_Runtime_Desc_MissingHealthBonusDamage>根据目标已损失生命值比例提高伤害。</CS_Studio_Runtime_Desc_MissingHealthBonusDamage>
+    <CS_Studio_Runtime_Desc_FullHealthBonusDamage>对接近满血的目标造成额外伤害。</CS_Studio_Runtime_Desc_FullHealthBonusDamage>
+    <CS_Studio_Runtime_Desc_NearbyEnemyBonusDamage>目标附近敌人越多，额外伤害越高。</CS_Studio_Runtime_Desc_NearbyEnemyBonusDamage>
+    <CS_Studio_Runtime_Desc_IsolatedTargetBonusDamage>对孤立目标造成额外伤害。</CS_Studio_Runtime_Desc_IsolatedTargetBonusDamage>
+    <CS_Studio_Runtime_Desc_MarkDetonation>命中时叠加印记，达到上限后触发引爆。</CS_Studio_Runtime_Desc_MarkDetonation>
+    <CS_Studio_Runtime_Desc_ComboStacks>累积连击层数以提高后续伤害。</CS_Studio_Runtime_Desc_ComboStacks>
+    <CS_Studio_Runtime_Desc_HitSlowField>命中后在目标区域生成减速场。</CS_Studio_Runtime_Desc_HitSlowField>
+    <CS_Studio_Runtime_Desc_PierceBonusDamage>更多敌人处于穿透路径上时获得额外伤害。</CS_Studio_Runtime_Desc_PierceBonusDamage>
+    <CS_Studio_Runtime_Desc_DashEmpoweredStrike>位移或跳跃后强化下一次攻击。</CS_Studio_Runtime_Desc_DashEmpoweredStrike>
+    <CS_Studio_Runtime_Desc_HitHeal>技能成功命中目标时为施法者恢复生命。</CS_Studio_Runtime_Desc_HitHeal>
+    <CS_Studio_Runtime_Desc_HitCooldownRefund>命中后返还指定热键的部分冷却。</CS_Studio_Runtime_Desc_HitCooldownRefund>
+    <CS_Studio_Runtime_Desc_FlightState>施加一个伪飞行姿态状态，并提供视觉上的飞行表现。</CS_Studio_Runtime_Desc_FlightState>
+    <CS_Studio_Runtime_Desc_FlightOnlyFollowup>只有施法者处于真实 PawnFlyer 飞行窗口中时才能使用。</CS_Studio_Runtime_Desc_FlightOnlyFollowup>
+    <CS_Studio_Runtime_Desc_VanillaPawnFlyer>启动一个真实的 RimWorld 1.6 PawnFlyer，而不是伪飞行姿态。</CS_Studio_Runtime_Desc_VanillaPawnFlyer>
+    <CS_Studio_Runtime_Desc_FlightLandingBurst>真实飞行结束落地时触发一次落地爆发。</CS_Studio_Runtime_Desc_FlightLandingBurst>
+    <CS_Studio_Runtime_Desc_ProjectileSplit>分裂出额外后续命中，攻击附近目标。</CS_Studio_Runtime_Desc_ProjectileSplit>
+    <CS_Studio_Runtime_DuplicateSingletonBlocked>已存在 {0}；重复添加这类单例型运行时组件已被阻止。</CS_Studio_Runtime_DuplicateSingletonBlocked>
+</LanguageData>

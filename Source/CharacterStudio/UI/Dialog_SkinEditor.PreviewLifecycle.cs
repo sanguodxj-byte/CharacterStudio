@@ -1,5 +1,6 @@
 using System;
 using CharacterStudio.Core;
+using RimWorld;
 using Verse;
 
 namespace CharacterStudio.UI
@@ -38,6 +39,30 @@ namespace CharacterStudio.UI
             {
                 mannequin.CopyAppearanceFrom(sourcePawn);
                 Log.Message($"[CharacterStudio] 已将人偶种族同步为 {previewRace.defName} 并复制外观");
+            }
+        }
+
+        private ThingDef ResolvePreviewRaceForReset(ThingDef? preferredRace = null)
+        {
+            return preferredRace
+                ?? targetPawn?.def
+                ?? mannequin?.CurrentPawn?.def
+                ?? DefDatabase<ThingDef>.GetNamed("Human");
+        }
+
+        private void ForceResetPreviewMannequin(ThingDef? preferredRace = null, Pawn? sourcePawn = null)
+        {
+            if (!EnsureMannequinReady())
+            {
+                return;
+            }
+
+            ThingDef previewRace = ResolvePreviewRaceForReset(preferredRace);
+            mannequin!.ForceReset(previewRace);
+            if (sourcePawn != null)
+            {
+                mannequin.CopyAppearanceFrom(sourcePawn);
+                Log.Message($"[CharacterStudio] 已强制重置人偶并复制外观: {previewRace.defName}");
             }
         }
 
@@ -101,6 +126,8 @@ namespace CharacterStudio.UI
                 return;
             }
 
+            CharacterStudio.Rendering.Patch_PawnRenderTree.ForceRebuildRenderTree(previewPawn);
+
             var skinComp = previewPawn.GetComp<CompPawnSkin>();
             if (skinComp == null)
             {
@@ -115,6 +142,24 @@ namespace CharacterStudio.UI
             skinComp.SetPreviewEmotionOverlayState(previewEmotionStateOverrideEnabled ? previewEmotionState : null);
             skinComp.SetPreviewEyeDirection(previewEyeDirectionOverrideEnabled ? previewEyeDirection : null);
             skinComp.EnsureFaceRuntimeStateReadyForPreview();
+
+            string currentTriggerKey = GetSelectedEquipmentAnimationTriggerKey();
+            if (!previewEquipmentAnimationPlaying || string.IsNullOrWhiteSpace(currentTriggerKey))
+            {
+                skinComp.ClearEquipmentAnimationState();
+                previewEquipmentAnimationTriggerKey = string.Empty;
+            }
+            else
+            {
+                previewEquipmentAnimationTriggerKey = currentTriggerKey;
+                int durationTicks = GetSelectedEquipmentAnimationDurationTicks();
+                if (durationTicks > 0)
+                {
+                    int now = Find.TickManager?.TicksGame ?? 0;
+                    skinComp.TriggerEquipmentAnimationState(currentTriggerKey, now, durationTicks);
+                }
+            }
+
             skinComp.RequestRenderRefresh();
         }
 

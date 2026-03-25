@@ -79,9 +79,7 @@ namespace CharacterStudio.Exporter
         public bool IncludeAbilities { get; set; } = false;
         public bool CopyTextures { get; set; } = true;
 
-        // 资产来源检测结果
-        public List<AssetSourceInfo> AssetSources { get; set; } = new List<AssetSourceInfo>();
-        public List<string> DetectedDependencies { get; set; } = new List<string>();
+        public bool AssetRightsConfirmed { get; set; } = false;
     }
 
     /// <summary>
@@ -114,7 +112,7 @@ namespace CharacterStudio.Exporter
             string modPath = Path.Combine(config.OutputPath, safeName);
             var exportConfig = CloneExportConfig(config);
 
-            ApplyExportModeDefaults(exportConfig);
+            NormalizeModuleSelection(exportConfig);
 
             try
             {
@@ -153,14 +151,15 @@ namespace CharacterStudio.Exporter
                 IncludePawnKind = config.IncludePawnKind,
                 IncludeSummonItem = config.IncludeSummonItem,
                 IncludeAbilities = config.IncludeAbilities,
-                CopyTextures = config.CopyTextures
+                CopyTextures = config.CopyTextures,
+                AssetRightsConfirmed = config.AssetRightsConfirmed
             };
         }
 
         private void ExecuteExportPipeline(string modPath, ModExportConfig exportConfig)
         {
             CreateDirectoryStructure(modPath);
-            AnalyzeAssetSources(exportConfig);
+            ValidateAssetRights(exportConfig);
             GenerateAboutXml(modPath, exportConfig);
 
             if (exportConfig.CopyTextures)
@@ -178,6 +177,8 @@ namespace CharacterStudio.Exporter
             {
                 GenerateSkinDefXml(modPath, exportConfig);
             }
+
+            GenerateEquipmentThingDefXml(modPath, exportConfig);
 
             if (exportConfig.IncludeGeneDef && exportConfig.ExportAsGene)
             {
@@ -214,78 +215,63 @@ namespace CharacterStudio.Exporter
         }
 
         /// <summary>
-        /// 根据导出模式设置默认的模块化开关
+        /// 规范化模块勾选，保留用户选择，同时修正无效组合
         /// </summary>
-        private void ApplyExportModeDefaults(ModExportConfig config)
+        private void NormalizeModuleSelection(ModExportConfig config)
         {
+            config.IncludeGeneDef = config.ExportAsGene && config.IncludeGeneDef;
+
+            if (config.IncludeSummonItem)
+            {
+                config.IncludePawnKind = true;
+            }
+
+            if (config.IncludePawnKind || config.IncludeGeneDef)
+            {
+                config.IncludeSkinDef = true;
+            }
+
+            if (config.Abilities == null || config.Abilities.Count == 0)
+            {
+                config.IncludeAbilities = false;
+            }
+
             switch (config.Mode)
             {
                 case ExportMode.CosmeticPack:
-                    config.IncludeSkinDef = true;
-                    config.IncludeGeneDef = config.ExportAsGene;
                     config.IncludePawnKind = false;
                     config.IncludeSummonItem = false;
                     config.IncludeAbilities = false;
-                    config.CopyTextures = true;
                     break;
 
                 case ExportMode.FullUnit:
-                    config.IncludeSkinDef = true;
-                    config.IncludeGeneDef = config.ExportAsGene;
-                    config.IncludePawnKind = true;
-                    config.IncludeSummonItem = true;
-                    config.IncludeAbilities = true;
-                    config.CopyTextures = true;
+                    if (!config.IncludePawnKind && config.IncludeSummonItem)
+                    {
+                        config.IncludePawnKind = true;
+                    }
                     break;
 
                 case ExportMode.PluginOnly:
-                    config.IncludeSkinDef = true;
                     config.IncludeGeneDef = false;
                     config.IncludePawnKind = false;
                     config.IncludeSummonItem = false;
                     config.IncludeAbilities = false;
                     config.CopyTextures = false;
+                    config.IncludeSkinDef = true;
                     break;
             }
         }
 
         // ─────────────────────────────────────────────
-        // 资产来源分析
+        // 导出确认
         // ─────────────────────────────────────────────
 
-        /// <summary>
-        /// 分析所有纹理资产的来源
-        /// </summary>
-        private void AnalyzeAssetSources(ModExportConfig config)
+        private void ValidateAssetRights(ModExportConfig config)
         {
-            config.AssetSources.Clear();
-            config.DetectedDependencies.Clear();
-
-            foreach (var texPath in EnumerateTexturePaths(config))
+            if (!config.AssetRightsConfirmed)
             {
-                var sourceInfo = ExportAssetUtility.DetectAssetSource(texPath);
-                config.AssetSources.Add(sourceInfo);
-
-                string? packageId = sourceInfo.SourceModPackageId;
-                if (sourceInfo.SourceType != AssetSourceType.ExternalMod || string.IsNullOrWhiteSpace(packageId))
-                {
-                    continue;
-                }
-
-                string dependencyPackageId = packageId!;
-                if (config.DetectedDependencies.Contains(dependencyPackageId))
-                {
-                    continue;
-                }
-
-                config.DetectedDependencies.Add(dependencyPackageId);
-                Log.Message($"[CharacterStudio] 检测到外部模组依赖: {sourceInfo.SourceModName} ({dependencyPackageId})");
+                throw new InvalidOperationException("导出模组前，必须先完成资源使用权确认。\n请阅读提示、勾选两次确认，并等待倒计时结束后再导出。");
             }
-        }
-
-        private IEnumerable<string> EnumerateTexturePaths(ModExportConfig config)
-        {
-            return ExportAssetUtility.EnumerateTexturePaths(config.SkinDef, config.Abilities, config.GeneIconPath);
         }
 
         // ─────────────────────────────────────────────
@@ -297,10 +283,16 @@ namespace CharacterStudio.Exporter
             // 创建主目录
             Directory.CreateDirectory(modPath);
 
-            // 创建子目录
+            // 创建子目录（参考 SpecialCharacters 结构）
             Directory.CreateDirectory(Path.Combine(modPath, "About"));
             Directory.CreateDirectory(Path.Combine(modPath, "Defs"));
+            Directory.CreateDirectory(Path.Combine(modPath, "Defs", "AbilityDefs"));
+            Directory.CreateDirectory(Path.Combine(modPath, "Defs", "GeneDefs"));
+            Directory.CreateDirectory(Path.Combine(modPath, "Defs", "PawnKindDefs"));
+            Directory.CreateDirectory(Path.Combine(modPath, "Defs", "SkinDefs"));
+            Directory.CreateDirectory(Path.Combine(modPath, "Defs", "ThingDef"));
             Directory.CreateDirectory(Path.Combine(modPath, "Textures"));
+            Directory.CreateDirectory(Path.Combine(modPath, "Textures", "Characters"));
             Directory.CreateDirectory(Path.Combine(modPath, "1.6"));
             Directory.CreateDirectory(Path.Combine(modPath, "1.6", "Assemblies"));
             Directory.CreateDirectory(Path.Combine(modPath, "Languages"));
@@ -318,7 +310,6 @@ namespace CharacterStudio.Exporter
         {
             string packageId = $"{SanitizePackageId(config.Author)}.{SanitizePackageId(config.ModName)}";
 
-            // 构建依赖列表
             var modDependencies = new XElement("modDependencies",
                 new XElement("li",
                     new XElement("packageId", "CharacterStudio.Main"),
@@ -326,34 +317,10 @@ namespace CharacterStudio.Exporter
                 )
             );
 
-            // 添加检测到的外部模组依赖
-            foreach (var depPackageId in config.DetectedDependencies)
-            {
-                // 查找模组名称
-                string displayName = depPackageId;
-                var sourceInfo = config.AssetSources.FirstOrDefault(s => s.SourceModPackageId == depPackageId);
-                if (sourceInfo != null && !string.IsNullOrWhiteSpace(sourceInfo.SourceModName))
-                {
-                    displayName = sourceInfo.SourceModName!;
-                }
-
-                modDependencies.Add(new XElement("li",
-                    new XElement("packageId", depPackageId),
-                    new XElement("displayName", displayName)
-                ));
-            }
-
-            // 构建 loadAfter 列表
             var loadAfter = new XElement("loadAfter",
                 new XElement("li", "CharacterStudio.Main"),
                 new XElement("li", "Ludeon.RimWorld")
             );
-
-            // 添加外部模组到 loadAfter
-            foreach (var depPackageId in config.DetectedDependencies)
-            {
-                loadAfter.Add(new XElement("li", depPackageId));
-            }
 
             var doc = new XDocument(
                 new XDeclaration("1.0", "utf-8", null),
@@ -373,10 +340,7 @@ namespace CharacterStudio.Exporter
             string aboutPath = Path.Combine(modPath, "About", "About.xml");
             doc.Save(aboutPath);
 
-            if (config.DetectedDependencies.Count > 0)
-            {
-                Log.Message($"[CharacterStudio] About.xml 已生成，包含 {config.DetectedDependencies.Count} 个外部模组依赖");
-            }
+            Log.Message("[CharacterStudio] About.xml 已生成");
         }
 
         // ─────────────────────────────────────────────
@@ -387,28 +351,14 @@ namespace CharacterStudio.Exporter
         {
             if (config.SkinDef == null) return;
 
-            string texturesPath = Path.Combine(modPath, "Textures", "CS", SanitizeFileName(config.ModName));
+            string texturesPath = Path.Combine(modPath, "Textures", "Characters", SanitizeFileName(config.ModName));
             Directory.CreateDirectory(texturesPath);
 
             var remap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             int assetIndex = 0;
 
-            foreach (var texPath in EnumerateTexturePaths(config))
+            foreach (var texPath in ExportAssetUtility.EnumerateTexturePaths(config.SkinDef, config.Abilities, config.GeneIconPath))
             {
-                var sourceInfo = config.AssetSources.FirstOrDefault(s => s.OriginalPath == texPath);
-                if (sourceInfo != null)
-                {
-                    switch (sourceInfo.SourceType)
-                    {
-                        case AssetSourceType.VanillaContent:
-                            Log.Message($"[CharacterStudio] 保留游戏内置资源路径: {texPath}");
-                            continue;
-                        case AssetSourceType.ExternalMod:
-                            Log.Message($"[CharacterStudio] 保留外部模组资源路径: {texPath} (来自 {sourceInfo.SourceModName})");
-                            continue;
-                    }
-                }
-
                 string? sourceFile = FindSourceTexture(texPath, config.SourceTexturePaths);
                 if (sourceFile == null)
                 {
@@ -423,7 +373,7 @@ namespace CharacterStudio.Exporter
                 try
                 {
                     File.Copy(sourceFile, destFile, true);
-                    remap[texPath] = $"CS/{SanitizeFileName(config.ModName)}/{roleName}";
+                    remap[texPath] = $"Characters/{SanitizeFileName(config.ModName)}/{roleName}";
                     assetIndex++;
                     Log.Message($"[CharacterStudio] 已复制本地纹理: {roleName}{extension}");
                 }
@@ -498,6 +448,25 @@ namespace CharacterStudio.Exporter
                 eyeCfg.texDown   = Remap(eyeCfg.texDown);
             }
 
+            if (skin.equipments != null)
+            {
+                foreach (var equipment in skin.equipments)
+                {
+                    if (equipment == null) continue;
+
+                    equipment.worldTexPath = Remap(equipment.worldTexPath);
+                    equipment.wornTexPath = Remap(equipment.wornTexPath);
+                    equipment.maskTexPath = Remap(equipment.maskTexPath);
+                    equipment.previewTexPath = Remap(equipment.previewTexPath);
+
+                    if (equipment.renderData != null)
+                    {
+                        equipment.renderData.texPath = Remap(equipment.renderData.texPath);
+                        equipment.renderData.maskTexPath = Remap(equipment.renderData.maskTexPath);
+                    }
+                }
+            }
+
             if (!string.IsNullOrWhiteSpace(config.GeneIconPath))
             {
                 config.GeneIconPath = Remap(config.GeneIconPath);
@@ -554,8 +523,31 @@ namespace CharacterStudio.Exporter
                 config.Version,
                 SanitizeFileName);
 
-            string defsPath = Path.Combine(modPath, "Defs", "SkinDefs.xml");
+            string defsPath = Path.Combine(modPath, "Defs", "SkinDefs", $"{SanitizeFileName(config.ModName)}_SkinDefs.xml");
             doc.Save(defsPath);
+        }
+
+        private void GenerateEquipmentThingDefXml(string modPath, ModExportConfig config)
+        {
+            var equipments = config.SkinDef?.equipments;
+            if (equipments == null || equipments.Count == 0)
+            {
+                return;
+            }
+
+            bool hasEnabledEquipments = equipments.Any(equipment => equipment != null && equipment.enabled);
+            if (!hasEnabledEquipments)
+            {
+                return;
+            }
+
+            var doc = ModExportXmlWriter.CreateEquipmentThingDefsDocument(
+                equipments.Where(equipment => equipment != null && equipment.enabled).ToList());
+
+            string defsPath = Path.Combine(modPath, "Defs", "ThingDef", $"{SanitizeFileName(config.ModName)}_Apparels.xml");
+            doc.Save(defsPath);
+
+            Log.Message($"[CharacterStudio] 装备 ThingDef 已生成: {defsPath}");
         }
 
         private XElement? GenerateBaseAppearanceXml(BaseAppearanceConfig? baseAppearance)
@@ -620,7 +612,7 @@ namespace CharacterStudio.Exporter
 
             var doc = ModExportXmlWriter.CreateGeneDefDocument(config, safeName);
 
-            string geneDefsPath = Path.Combine(modPath, "Defs", "GeneDefs.xml");
+            string geneDefsPath = Path.Combine(modPath, "Defs", "GeneDefs", $"{safeName}_GeneDefs.xml");
             doc.Save(geneDefsPath);
 
             Log.Message($"[CharacterStudio] 基因定义已生成: {geneDefsPath}");
@@ -641,7 +633,7 @@ namespace CharacterStudio.Exporter
 
             var doc = ModExportXmlWriter.CreateUnitDefDocument(config, safeName);
 
-            string unitDefsPath = Path.Combine(modPath, "Defs", "UnitDefs.xml");
+            string unitDefsPath = Path.Combine(modPath, "Defs", "PawnKindDefs", $"{safeName}_PawnKinds.xml");
             doc.Save(unitDefsPath);
 
             // ── XenotypeDef 独立文件（可选）────────────────────────────────
@@ -656,7 +648,7 @@ namespace CharacterStudio.Exporter
                     xenoLabel,
                     skinDefName);
 
-                string xenoDefsPath = Path.Combine(modPath, "Defs", "XenotypeDefs.xml");
+                string xenoDefsPath = Path.Combine(modPath, "Defs", "PawnKindDefs", $"{safeName}_Xenotypes.xml");
                 xenoDoc.Save(xenoDefsPath);
 
                 Log.Message($"[CharacterStudio] XenotypeDef 已生成: {xenoDefsPath}");
@@ -680,7 +672,7 @@ namespace CharacterStudio.Exporter
         private void GenerateAbilityDefXml(string modPath, ModExportConfig config)
         {
             var doc = ModExportXmlWriter.CreateAbilityDefDocument(config.Abilities);
-            string abilityDefsPath = Path.Combine(modPath, "Defs", "AbilityDefs.xml");
+            string abilityDefsPath = Path.Combine(modPath, "Defs", "AbilityDefs", $"{SanitizeFileName(config.ModName)}_Abilities.xml");
             doc.Save(abilityDefsPath);
 
             Log.Message($"[CharacterStudio] 技能定义已生成: {abilityDefsPath}");

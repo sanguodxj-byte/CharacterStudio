@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using HarmonyLib;
+using CharacterStudio.Attributes;
 using Verse;
 using CharacterStudio.Rendering;
 using CharacterStudio.Abilities;
@@ -12,7 +13,12 @@ namespace CharacterStudio.Core
     /// </summary>
     public static class PawnSkinRuntimeUtility
     {
-        public static bool ApplySkinToPawn(Pawn? pawn, PawnSkinDef? skin, bool fromDefaultRaceBinding = false)
+        public static bool ApplySkinToPawn(
+            Pawn? pawn,
+            PawnSkinDef? skin,
+            bool fromDefaultRaceBinding = false,
+            bool previewMode = false,
+            string applicationSource = "")
         {
             if (pawn == null) return false;
 
@@ -28,11 +34,18 @@ namespace CharacterStudio.Core
             // 使用静默赋值避免 setter 在此处触发 RequestRenderRefresh，
             // 后续 RefreshHiddenNodes + ForceRebuildRenderTree 负责完整刷新，
             // 防止同一帧对同一 Pawn 产生三次冗余重绘。
-            comp.SetActiveSkinWithSource(preparedSkin, fromDefaultRaceBinding);
+            var writeResult = comp.SetActiveSkinWithSource(
+                preparedSkin,
+                fromDefaultRaceBinding,
+                previewMode,
+                applicationSource);
+            if (!writeResult.skinChanged && !writeResult.sourceChanged)
+                return true;
 
             // 皮肤切换时清除表情图形缓存，避免新皮肤使用旧贴图
             CharacterStudio.Rendering.PawnRenderNodeWorker_FaceComponent.ClearCache();
             CharacterStudio.Rendering.PawnRenderNodeWorker_EyeDirection.ClearCache();
+            CharacterStudio.Rendering.PawnRenderNodeWorker_CustomLayer.ClearCache();
 
             try
             {
@@ -46,9 +59,9 @@ namespace CharacterStudio.Core
                 comp.RequestRenderRefresh();
             }
 
-            // 同步授予皮肤中的技能给 Pawn
-            if (preparedSkin != null)
-                AbilityGrantUtility.GrantSkinAbilitiesToPawn(pawn, preparedSkin);
+            // 同步当前生效的技能装配；显式 loadout 优先，其次回退到皮肤模板。
+            AbilityLoadoutRuntimeUtility.GrantEffectiveLoadoutToPawn(pawn);
+            CharacterAttributeBuffService.SyncAttributeBuff(pawn);
 
             return true;
         }
@@ -64,8 +77,15 @@ namespace CharacterStudio.Core
                 return false;
             }
 
-            // ClearSkin 内部已直接置空字段，不走 setter，无需静默赋值
-            comp.ClearSkin();
+            // 仅在真实皮肤状态发生变化时，才继续执行运行时清理副作用。
+            var writeResult = comp.ClearSkinWithResult();
+            if (!writeResult.skinChanged)
+                return true;
+
+            // 清除皮肤时同样需要清空表情图形缓存，避免继续复用旧贴图。
+            CharacterStudio.Rendering.PawnRenderNodeWorker_FaceComponent.ClearCache();
+            CharacterStudio.Rendering.PawnRenderNodeWorker_EyeDirection.ClearCache();
+            CharacterStudio.Rendering.PawnRenderNodeWorker_CustomLayer.ClearCache();
 
             try
             {
@@ -78,8 +98,9 @@ namespace CharacterStudio.Core
                 comp.RequestRenderRefresh();
             }
 
-            // 撤销所有 CS 技能
-            AbilityGrantUtility.RevokeAllCSAbilitiesFromPawn(pawn);
+            // 重新同步当前生效的技能装配；若无显式 loadout，则会自动撤销技能。
+            AbilityLoadoutRuntimeUtility.GrantEffectiveLoadoutToPawn(pawn);
+            CharacterAttributeBuffService.SyncAttributeBuff(pawn);
 
             return true;
         }

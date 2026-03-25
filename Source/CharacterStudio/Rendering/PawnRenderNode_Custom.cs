@@ -20,6 +20,12 @@ namespace CharacterStudio.Rendering
         public LayeredFacePartType? layeredFacePartType;
 
         /// <summary>
+        /// 当该节点代表 LayeredDynamic 左右独立部件时，记录当前节点对应的 side。
+        /// None 表示旧版单节点部件或非左右分离部件。
+        /// </summary>
+        public LayeredFacePartSide layeredFacePartSide = LayeredFacePartSide.None;
+
+        /// <summary>
         /// 当该节点代表 Overlay 分组时，记录对应的 Overlay 标识。
         /// 空字符串表示默认 Overlay 组或非 Overlay 节点。
         /// </summary>
@@ -46,6 +52,12 @@ namespace CharacterStudio.Rendering
         /// <summary>当前动画产生的额外旋转角度</summary>
         public float currentAnimAngle = 0f;
 
+        /// <summary>Spin 模式下的当前累积旋转角度（度，持续增加）</summary>
+        public float currentSpinAngle = 0f;
+
+        /// <summary>Spin 模式下上一次更新的游戏 Tick</summary>
+        public int lastSpinTick = -1;
+
         /// <summary>当前动画产生的位移偏移</summary>
         public Vector3 currentAnimOffset = Vector3.zero;
 
@@ -67,9 +79,43 @@ namespace CharacterStudio.Rendering
         /// <summary>程序化表情附加缩放</summary>
         public Vector3 currentProgrammaticScale = Vector3.one;
 
+        /// <summary>程序化表情当前透明度</summary>
+        public float currentProgrammaticAlpha = 1f;
+
+        /// <summary>程序化表情目标透明度</summary>
+        public float targetProgrammaticAlpha = 1f;
+
+        /// <summary>程序化表情透明度是否已完成首次同步</summary>
+        public bool hasProgrammaticAlphaInitialized = false;
+
         public PawnRenderNode_Custom(Pawn pawn, PawnRenderNodeProperties props, PawnRenderTree tree)
             : base(pawn, props, tree)
         {
+        }
+
+        public override GraphicMeshSet MeshSetFor(Pawn pawn)
+        {
+            if (this.Props.overrideMeshSize.HasValue)
+            {
+                Vector2 meshSize = this.Props.overrideMeshSize.Value;
+                return MeshPool.GetMeshSetForSize(meshSize.x, meshSize.y);
+            }
+
+            if (pawn?.RaceProps?.Humanlike ?? false)
+                return base.MeshSetFor(pawn);
+
+            Vector2? bodyGraphicSize = pawn?.Drawer?.renderer?.BodyGraphic != null
+                ? pawn.Drawer.renderer.BodyGraphic.drawSize
+                : (Vector2?)null;
+
+            if (bodyGraphicSize.HasValue && bodyGraphicSize.Value.x > 0f && bodyGraphicSize.Value.y > 0f)
+                return MeshPool.GetMeshSetForSize(bodyGraphicSize.Value.x, bodyGraphicSize.Value.y);
+
+            Graphic? graphic = this.GraphicFor(pawn);
+            if (graphic != null && graphic.drawSize.x > 0f && graphic.drawSize.y > 0f)
+                return MeshPool.GetMeshSetForSize(graphic.drawSize.x, graphic.drawSize.y);
+
+            return base.MeshSetFor(pawn);
         }
     }
 }

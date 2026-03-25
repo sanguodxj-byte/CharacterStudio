@@ -6,7 +6,6 @@
     <url>https://github.com/CharacterStudio/CharacterStudio</url>
     <packageId>CharacterStudio.Mod</packageId>
     <supportedVersions>
-        <li>1.5</li>
         <li>1.6</li>
     </supportedVersions>
     <description>用来捏角色外观的工具。打开编辑器，挑贴图、调图层、换颜色，改完实时就能看到效果。做好了可以直接打包成独立模组，拿去分享或者给别的存档用。

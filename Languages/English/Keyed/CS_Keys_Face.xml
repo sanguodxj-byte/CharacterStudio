@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <CS_Expression_Angry>Angry</CS_Expression_Angry>
+    <CS_Expression_AttackMelee>Melee Attack</CS_Expression_AttackMelee>
+    <CS_Expression_AttackRanged>Ranged Attack</CS_Expression_AttackRanged>
+    <CS_Expression_Blink>Blink</CS_Expression_Blink>
+    <CS_Expression_Cheerful>Cheerful</CS_Expression_Cheerful>
+    <CS_Expression_Dead>Dead</CS_Expression_Dead>
+    <CS_Expression_Eating>Eating</CS_Expression_Eating>
+    <CS_Expression_Gloomy>Gloomy</CS_Expression_Gloomy>
+    <CS_Expression_Goto>Moving</CS_Expression_Goto>
+    <CS_Expression_Happy>Happy</CS_Expression_Happy>
+    <CS_Expression_Hauling>Hauling</CS_Expression_Hauling>
+    <CS_Expression_Hopeless>Hopeless</CS_Expression_Hopeless>
+    <CS_Expression_LayDown>Lying Down</CS_Expression_LayDown>
+    <CS_Expression_Lovin>Lovin'</CS_Expression_Lovin>
+    <CS_Expression_Neutral>Neutral</CS_Expression_Neutral>
+    <CS_Expression_Pain>Pain</CS_Expression_Pain>
+    <CS_Expression_Reading>Reading</CS_Expression_Reading>
+    <CS_Expression_Sad>Sad</CS_Expression_Sad>
+    <CS_Expression_Scared>Scared</CS_Expression_Scared>
+    <CS_Expression_Shock>Shock</CS_Expression_Shock>
+    <CS_Expression_Sleeping>Sleeping</CS_Expression_Sleeping>
+    <CS_Expression_SocialRelax>Socializing</CS_Expression_SocialRelax>
+    <CS_Expression_Strip>Undressing</CS_Expression_Strip>
+    <CS_Expression_Tired>Tired</CS_Expression_Tired>
+    <CS_Expression_WaitCombat>On Guard</CS_Expression_WaitCombat>
+    <CS_Expression_Working>Working</CS_Expression_Working>
+    <CS_FaceComponent_Brows>Brows</CS_FaceComponent_Brows>
+    <CS_FaceComponent_Eyes>Eyes</CS_FaceComponent_Eyes>
+    <CS_FaceComponent_Mouth>Mouth</CS_FaceComponent_Mouth>
+    <CS_Studio_Face_AddFrame>Add Frame (convert to animation)</CS_Studio_Face_AddFrame>
+    <CS_Studio_Face_Assigned>configured</CS_Studio_Face_Assigned>
+    <CS_Studio_Face_ClearPath>Clear the current expression texture path</CS_Studio_Face_ClearPath>
+    <CS_Studio_Face_Config>Face Config</CS_Studio_Face_Config>
+    <CS_Studio_Face_ConvertToStatic>Convert to Static Texture</CS_Studio_Face_ConvertToStatic>
+    <CS_Studio_Face_Create>Create Face Config</CS_Studio_Face_Create>
+    <CS_Studio_Face_Enable>Enable Expression System</CS_Studio_Face_Enable>
+    <CS_Studio_Face_ExpressionMappings>Expression Texture Mappings</CS_Studio_Face_ExpressionMappings>
+    <CS_Studio_Face_EyeDir_Auto>Auto (runtime inferred)</CS_Studio_Face_EyeDir_Auto>
+    <CS_Studio_Face_EyeDir_Center>Center</CS_Studio_Face_EyeDir_Center>
+    <CS_Studio_Face_EyeDir_Create>Create Eye Direction Config</CS_Studio_Face_EyeDir_Create>
+    <CS_Studio_Face_EyeDir_Down>Down</CS_Studio_Face_EyeDir_Down>
+    <CS_Studio_Face_EyeDir_Enable>Enable Eye Direction</CS_Studio_Face_EyeDir_Enable>
+    <CS_Studio_Face_EyeDir_Hint>Assign an overlay texture for each gaze direction. Missing directions fall back to Center automatically.</CS_Studio_Face_EyeDir_Hint>
+    <CS_Studio_Face_EyeDir_Left>Left</CS_Studio_Face_EyeDir_Left>
+    <CS_Studio_Face_EyeDir_Preview>Preview Direction</CS_Studio_Face_EyeDir_Preview>
+    <CS_Studio_Face_EyeDir_PupilMoveRange>Pupil UV Offset Range</CS_Studio_Face_EyeDir_PupilMoveRange>
+    <CS_Studio_Face_EyeDir_Remove>Remove Eye Direction Config</CS_Studio_Face_EyeDir_Remove>
+    <CS_Studio_Face_EyeDir_Right>Right</CS_Studio_Face_EyeDir_Right>
+    <CS_Studio_Face_EyeDir_Title>Eye Direction Config</CS_Studio_Face_EyeDir_Title>
+    <CS_Studio_Face_EyeDir_Up>Up</CS_Studio_Face_EyeDir_Up>
+    <CS_Studio_Face_EyeDir_UVModeHint>UV offset mode active: Left/Right/Up/Down textures not needed, direction is code-driven</CS_Studio_Face_EyeDir_UVModeHint>
+    <CS_Studio_Face_Frames>frames</CS_Studio_Face_Frames>
+    <CS_Studio_Face_HeadTexHint>Assign a full head texture for each expression, or click [+F] to add multiple frames for animation.</CS_Studio_Face_HeadTexHint>
+    <CS_Studio_Face_Layered_Enable>Enable this layered part entry</CS_Studio_Face_Layered_Enable>
+    <CS_Studio_Face_Layered_Hint>Use this mode when your art is split into reusable facial parts. Usually you only need to name the parts and assign paths; movement and fallback are code-driven.</CS_Studio_Face_Layered_Hint>
+    <CS_Studio_Face_Layered_MotionAmplitude>Motion Amplitude</CS_Studio_Face_Layered_MotionAmplitude>
+    <CS_Studio_Face_Layered_PartSummary>{0}/{1} expressions configured for this part.</CS_Studio_Face_Layered_PartSummary>
+    <CS_Studio_Face_Layered_SourceRoot>Layered Source Root</CS_Studio_Face_Layered_SourceRoot>
+    <CS_Studio_Face_Layered_Stats>{0} paths assigned across {2}/{3} part groups, for {1} expressions.</CS_Studio_Face_Layered_Stats>
+    <CS_Studio_Face_Layered_Title>Layered Face Parts</CS_Studio_Face_Layered_Title>
+    <CS_Studio_Face_LayeredPart_Base>Base Face</CS_Studio_Face_LayeredPart_Base>
+    <CS_Studio_Face_LayeredPart_Blush>Blush</CS_Studio_Face_LayeredPart_Blush>
+    <CS_Studio_Face_LayeredPart_Brow>Brow</CS_Studio_Face_LayeredPart_Brow>
+    <CS_Studio_Face_LayeredPart_Eye>Eye</CS_Studio_Face_LayeredPart_Eye>
+    <CS_Studio_Face_LayeredPart_LowerLid>Lower Lid</CS_Studio_Face_LayeredPart_LowerLid>
+    <CS_Studio_Face_LayeredPart_Mouth>Mouth</CS_Studio_Face_LayeredPart_Mouth>
+    <CS_Studio_Face_LayeredPart_Overlay>Overlay</CS_Studio_Face_LayeredPart_Overlay>
+    <CS_Studio_Face_LayeredPart_Pupil>Pupil</CS_Studio_Face_LayeredPart_Pupil>
+    <CS_Studio_Face_LayeredPart_Sweat>Sweat</CS_Studio_Face_LayeredPart_Sweat>
+    <CS_Studio_Face_LayeredPart_Tear>Tear</CS_Studio_Face_LayeredPart_Tear>
+    <CS_Studio_Face_LayeredPart_UpperLid>Upper Lid</CS_Studio_Face_LayeredPart_UpperLid>
+    <CS_Studio_Face_MinSetProgress>Min Set {0}/{1} complete (★ = recommended priority)</CS_Studio_Face_MinSetProgress>
+    <CS_Studio_Face_PreviewActive>Preview Expression</CS_Studio_Face_PreviewActive>
+    <CS_Studio_Face_PreviewAuto>Auto</CS_Studio_Face_PreviewAuto>
+    <CS_Studio_Face_PreviewHint>Preview Mode</CS_Studio_Face_PreviewHint>
+    <CS_Studio_Face_PreviewHintValue>Switch between auto and a forced expression in the preview panel to inspect the current face setup instantly</CS_Studio_Face_PreviewHintValue>
+    <CS_Studio_Face_PreviewModeButton>Preview Mode</CS_Studio_Face_PreviewModeButton>
+    <CS_Studio_Face_Title>Face Configuration</CS_Studio_Face_Title>
+    <CS_Studio_Face_Type>{0} Expression</CS_Studio_Face_Type>
+    <CS_Studio_Face_TypeSummary>{0} ({1}/{2} configured)</CS_Studio_Face_TypeSummary>
+    <CS_Studio_Face_Workflow>Face Workflow</CS_Studio_Face_Workflow>
+    <CS_Studio_Face_Workflow_FullFaceSwap>Full Face Swap</CS_Studio_Face_Workflow_FullFaceSwap>
+    <CS_Studio_Face_Workflow_FullFaceSwap_Desc>Classic workflow: assign one full-face texture per expression, optionally using frame animation.</CS_Studio_Face_Workflow_FullFaceSwap_Desc>
+    <CS_Studio_Face_Workflow_LayeredDynamic>Layered Dynamic</CS_Studio_Face_Workflow_LayeredDynamic>
+    <CS_Studio_Face_Workflow_LayeredDynamic_Desc>Layered workflow: configure named facial parts per expression. Runtime code drives positioning and fallback automatically.</CS_Studio_Face_Workflow_LayeredDynamic_Desc>
+    <CS_Studio_Preview_BrowState_Angry>Angry</CS_Studio_Preview_BrowState_Angry>
+    <CS_Studio_Preview_BrowState_Happy>Happy</CS_Studio_Preview_BrowState_Happy>
+    <CS_Studio_Preview_BrowState_Normal>Normal</CS_Studio_Preview_BrowState_Normal>
+    <CS_Studio_Preview_BrowState_Sad>Sad</CS_Studio_Preview_BrowState_Sad>
+    <CS_Studio_Preview_EmotionState_Blush>Blush</CS_Studio_Preview_EmotionState_Blush>
+    <CS_Studio_Preview_EmotionState_Gloomy>Gloomy</CS_Studio_Preview_EmotionState_Gloomy>
+    <CS_Studio_Preview_EmotionState_Lovin>Lovin'</CS_Studio_Preview_EmotionState_Lovin>
+    <CS_Studio_Preview_EmotionState_None>None</CS_Studio_Preview_EmotionState_None>
+    <CS_Studio_Preview_EmotionState_Sweat>Sweat</CS_Studio_Preview_EmotionState_Sweat>
+    <CS_Studio_Preview_EmotionState_Tear>Tear</CS_Studio_Preview_EmotionState_Tear>
+    <CS_Studio_Preview_LidState_Blink>Blink</CS_Studio_Preview_LidState_Blink>
+    <CS_Studio_Preview_LidState_Close>Closed</CS_Studio_Preview_LidState_Close>
+    <CS_Studio_Preview_LidState_Half>Half</CS_Studio_Preview_LidState_Half>
+    <CS_Studio_Preview_LidState_Happy>Happy</CS_Studio_Preview_LidState_Happy>
+    <CS_Studio_Preview_LidState_Normal>Normal</CS_Studio_Preview_LidState_Normal>
+    <CS_Studio_Preview_MouthState_Down>Downturned</CS_Studio_Preview_MouthState_Down>
+    <CS_Studio_Preview_MouthState_Normal>Normal</CS_Studio_Preview_MouthState_Normal>
+    <CS_Studio_Preview_MouthState_Open>Open</CS_Studio_Preview_MouthState_Open>
+    <CS_Studio_Preview_MouthState_Sleep>Sleep</CS_Studio_Preview_MouthState_Sleep>
+    <CS_Studio_Preview_MouthState_Smile>Smile</CS_Studio_Preview_MouthState_Smile>
+</LanguageData>

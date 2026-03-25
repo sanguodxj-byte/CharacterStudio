@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <CS_Studio_Browser_Search>Search...</CS_Studio_Browser_Search>
+    <CS_Studio_Browser_Title>File Browser</CS_Studio_Browser_Title>
+    <CS_Studio_Browser_Up>Up</CS_Studio_Browser_Up>
+    <CS_Studio_Export_AsGene>Export as Gene</CS_Studio_Export_AsGene>
+    <CS_Studio_Export_AsGene_Desc>Generates a Biotech gene definition, selectable in xenotype editor</CS_Studio_Export_AsGene_Desc>
+    <CS_Studio_Export_AssetSources>Asset Sources</CS_Studio_Export_AssetSources>
+    <CS_Studio_Export_AsTattoo>Export as Tattoo/Style</CS_Studio_Export_AsTattoo>
+    <CS_Studio_Export_Author>Author</CS_Studio_Export_Author>
+    <CS_Studio_Export_Browse>Browse...</CS_Studio_Export_Browse>
+    <CS_Studio_Export_Cancel>Cancel</CS_Studio_Export_Cancel>
+    <CS_Studio_Export_Confirm>Confirm Export</CS_Studio_Export_Confirm>
+    <CS_Studio_Export_ConfirmCountdown>Please wait {0} seconds before export is allowed.</CS_Studio_Export_ConfirmCountdown>
+    <CS_Studio_Export_ConfirmCountdownReady>The waiting period is complete. Final export confirmation is now unlocked.</CS_Studio_Export_ConfirmCountdownReady>
+    <CS_Studio_Export_ConfirmRightsSecond>I understand that I personally bear responsibility for publishing this exported mod and will verify all asset sources and permissions myself</CS_Studio_Export_ConfirmRightsSecond>
+    <CS_Studio_Export_ConfirmRightsSecond_Desc>This is the second confirmation. Even if assets come from your own import folders, you must still verify public redistribution, re-upload, and reuse rights before publishing.</CS_Studio_Export_ConfirmRightsSecond_Desc>
+    <CS_Studio_Export_CopyTextures>Copy Textures</CS_Studio_Export_CopyTextures>
+    <CS_Studio_Export_CosmeticOptions>Cosmetic Options</CS_Studio_Export_CosmeticOptions>
+    <CS_Studio_Export_Description>Description</CS_Studio_Export_Description>
+    <CS_Studio_Export_DetectedDeps>Detected {0} external mod dependencies:</CS_Studio_Export_DetectedDeps>
+    <CS_Studio_Export_Err_FillFields>Please fill in all required fields</CS_Studio_Export_Err_FillFields>
+    <CS_Studio_Export_Err_MustConfirmRights>You must check the first asset-rights confirmation box before exporting.</CS_Studio_Export_Err_MustConfirmRights>
+    <CS_Studio_Export_Err_MustConfirmRightsSecond>You must check the second publishing-responsibility confirmation box before exporting.</CS_Studio_Export_Err_MustConfirmRightsSecond>
+    <CS_Studio_Export_Err_Unknown>Export failed: Unknown error</CS_Studio_Export_Err_Unknown>
+    <CS_Studio_Export_Err_WaitCountdown>Please wait for the confirmation countdown to finish. Remaining: {0} seconds.</CS_Studio_Export_Err_WaitCountdown>
+    <CS_Studio_Export_ExternalMod>External Mods</CS_Studio_Export_ExternalMod>
+    <CS_Studio_Export_Failed>Export failed: {0}</CS_Studio_Export_Failed>
+    <CS_Studio_Export_FinalConfirmMessage>Final confirmation: if you publish this export as a standalone mod, you are solely responsible for asset provenance, permissions, redistribution, and workshop publication compliance. Continue exporting.</CS_Studio_Export_FinalConfirmMessage>
+    <CS_Studio_Export_GeneCategory>Gene Category</CS_Studio_Export_GeneCategory>
+    <CS_Studio_Export_HideAssets>Hide Asset Sources</CS_Studio_Export_HideAssets>
+    <CS_Studio_Export_IncludeAbilities>Include Abilities</CS_Studio_Export_IncludeAbilities>
+    <CS_Studio_Export_IncludeGeneDef>Include Gene Definition</CS_Studio_Export_IncludeGeneDef>
+    <CS_Studio_Export_IncludePawnKind>Include PawnKind Definition</CS_Studio_Export_IncludePawnKind>
+    <CS_Studio_Export_IncludeSkinDef>Include Skin Definition</CS_Studio_Export_IncludeSkinDef>
+    <CS_Studio_Export_IncludeSummonItem>Include Summon Item</CS_Studio_Export_IncludeSummonItem>
+    <CS_Studio_Export_LocalFiles>Local Files</CS_Studio_Export_LocalFiles>
+    <CS_Studio_Export_ModName>Mod Name</CS_Studio_Export_ModName>
+    <CS_Studio_Export_ModuleOptions>Module Options</CS_Studio_Export_ModuleOptions>
+    <CS_Studio_Export_OutputPath>Output Path</CS_Studio_Export_OutputPath>
+    <CS_Studio_Export_OutputSettings>Output Settings</CS_Studio_Export_OutputSettings>
+    <CS_Studio_Export_OverlayMode>Overlay Mode</CS_Studio_Export_OverlayMode>
+    <CS_Studio_Export_OverlayMode_Desc>Does not hide vanilla appearance, only adds layers (for accessories like glasses, scars, etc.)</CS_Studio_Export_OverlayMode_Desc>
+    <CS_Studio_Export_PathHint>Please manually copy the mod export path here.\n\nDefault RimWorld Mods folder:\n{0}</CS_Studio_Export_PathHint>
+    <CS_Studio_Export_PreviewAssets>Preview Asset Sources</CS_Studio_Export_PreviewAssets>
+    <CS_Studio_Export_Status_Exporting>Exporting...</CS_Studio_Export_Status_Exporting>
+    <CS_Studio_Export_Success>Export successful! Mod saved to: {0}</CS_Studio_Export_Success>
+    <CS_Studio_Export_Title>Export as Mod</CS_Studio_Export_Title>
+    <CS_Studio_Export_VanillaContent>Vanilla Content</CS_Studio_Export_VanillaContent>
+    <CS_Studio_Export_Version>Version</CS_Studio_Export_Version>
+    <CS_Studio_File_Export>Export as Mod</CS_Studio_File_Export>
+    <CS_Studio_File_Import>Import</CS_Studio_File_Import>
+    <CS_Studio_File_New>New</CS_Studio_File_New>
+    <CS_Studio_File_Open>Open</CS_Studio_File_Open>
+    <CS_Studio_File_OpenSkinFolder>Skin Folder</CS_Studio_File_OpenSkinFolder>
+    <CS_Studio_File_Save>Save</CS_Studio_File_Save>
+    <CS_Studio_File_SaveAs>Save As</CS_Studio_File_SaveAs>
+    <CS_Studio_Import_Source_Map>Import from Map Pawn</CS_Studio_Import_Source_Map>
+    <CS_Studio_Import_Source_ProjectSkin>Import from Project Character List</CS_Studio_Import_Source_ProjectSkin>
+    <CS_Studio_Import_Source_Race>Import from Race List</CS_Studio_Import_Source_Race>
+</LanguageData>

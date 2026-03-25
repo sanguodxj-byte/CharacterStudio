@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using CharacterStudio.Core;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -55,54 +57,32 @@ namespace CharacterStudio.Abilities
     /// </summary>
     public class ModularAbilityDef : Def
     {
-        // ─────────────────────────────────────────────
-        // 基础属性
-        // ─────────────────────────────────────────────
         public string iconPath = "";
         public float cooldownTicks = 600f;
         public float warmupTicks = 60f;
         public int charges = 1;
-        public float aiCanUse = 1f; // 0=false, 1=true
+        public float aiCanUse = 1f;
 
-        // ─────────────────────────────────────────────
-        // 载体 (Carrier) - X轴
-        // 决定技能如何触达目标
-        // ─────────────────────────────────────────────
         public AbilityCarrierType carrierType = AbilityCarrierType.Self;
         public AbilityTargetType targetType = AbilityTargetType.Self;
         public bool useRadius = false;
         public AbilityAreaCenter areaCenter = AbilityAreaCenter.Target;
+        public AbilityAreaShape areaShape = AbilityAreaShape.Circle;
+        public string irregularAreaPattern = string.Empty;
         public float range = 20f;
-        public float radius = 0f; // 范围半径（用于爆炸/光环）
-        public ThingDef? projectileDef; // 投射物定义（如果是 Projectile）
+        public float radius = 0f;
+        public ThingDef? projectileDef;
 
-        // ─────────────────────────────────────────────
-        // 效果 (Effects) - Y轴
-        // 技能产生的实际影响
-        // ─────────────────────────────────────────────
         public List<AbilityEffectConfig> effects = new List<AbilityEffectConfig>();
-
-        // ─────────────────────────────────────────────
-        // 视觉特效 (Visual Effects)
-        // 技能触发时的外观粒子/闪光效果
-        // ─────────────────────────────────────────────
         public List<AbilityVisualEffectConfig> visualEffects = new List<AbilityVisualEffectConfig>();
-
-        // ─────────────────────────────────────────────
-        // 运行时组件 (Runtime Components)
-        // 用于组合复杂技能行为，让玩家通过编辑器配置
-        // ─────────────────────────────────────────────
         public List<AbilityRuntimeComponentConfig> runtimeComponents = new List<AbilityRuntimeComponentConfig>();
 
-        // ─────────────────────────────────────────────
-        // 运行时方法
-        // ─────────────────────────────────────────────
         public ModularAbilityDef Clone()
         {
             var clone = new ModularAbilityDef
             {
-                defName = this.defName + "_Copy",
-                label = this.label + " (Copy)",
+                defName = this.defName,
+                label = this.label,
                 description = this.description,
                 iconPath = this.iconPath,
                 cooldownTicks = this.cooldownTicks,
@@ -113,6 +93,8 @@ namespace CharacterStudio.Abilities
                 targetType = this.targetType,
                 useRadius = this.useRadius,
                 areaCenter = this.areaCenter,
+                areaShape = this.areaShape,
+                irregularAreaPattern = this.irregularAreaPattern,
                 range = this.range,
                 radius = this.radius,
                 projectileDef = this.projectileDef
@@ -135,13 +117,87 @@ namespace CharacterStudio.Abilities
 
             return clone;
         }
+
+        public void NormalizeForSave()
+        {
+            iconPath = AbilityEditorNormalizationUtility.TrimOrEmpty(iconPath);
+            irregularAreaPattern = irregularAreaPattern ?? string.Empty;
+
+            cooldownTicks = AbilityEditorNormalizationUtility.ClampFloat(cooldownTicks, 0f, 100000f);
+            warmupTicks = AbilityEditorNormalizationUtility.ClampFloat(warmupTicks, 0f, 100000f);
+            charges = AbilityEditorNormalizationUtility.ClampInt(charges, 1, 999);
+            aiCanUse = AbilityEditorNormalizationUtility.ClampFloat(aiCanUse, 0f, 1f);
+
+            carrierType = ModularAbilityDefExtensions.NormalizeCarrierType(carrierType);
+            targetType = ModularAbilityDefExtensions.NormalizeTargetType(this);
+            areaCenter = ModularAbilityDefExtensions.NormalizeAreaCenter(this);
+            areaShape = ModularAbilityDefExtensions.NormalizeAreaShape(this);
+
+            range = AbilityEditorNormalizationUtility.ClampFloat(range, 0f, 100f);
+            radius = AbilityEditorNormalizationUtility.ClampFloat(radius, 0f, 20f);
+            if (useRadius && areaShape != AbilityAreaShape.Irregular && radius <= 0f)
+            {
+                radius = 0.1f;
+            }
+
+            effects ??= new List<AbilityEffectConfig>();
+            runtimeComponents ??= new List<AbilityRuntimeComponentConfig>();
+            visualEffects ??= new List<AbilityVisualEffectConfig>();
+
+            for (int i = 0; i < effects.Count; i++)
+            {
+                effects[i]?.NormalizeForSave();
+            }
+
+            for (int i = 0; i < runtimeComponents.Count; i++)
+            {
+                runtimeComponents[i]?.NormalizeForSave();
+            }
+
+            for (int i = 0; i < visualEffects.Count; i++)
+            {
+                visualEffects[i]?.NormalizeForSave();
+            }
+        }
     }
 
     public enum AbilityRuntimeComponentType
     {
-        QComboWindow,      // 施放后开启连段窗口（如 W 连段）
-        EShortJump,        // 热键触发位移到目标落点
-        RStackDetonation   // 两段：叠层-选点-延时爆发
+        QComboWindow,
+        HotkeyOverride,
+        FollowupCooldownGate,
+        SmartJump,
+        EShortJump,
+        RStackDetonation,
+        PeriodicPulse,
+        KillRefresh,
+        ShieldAbsorb,
+        ChainBounce,
+        ExecuteBonusDamage,
+        FullHealthBonusDamage,
+        MissingHealthBonusDamage,
+        NearbyEnemyBonusDamage,
+        IsolatedTargetBonusDamage,
+        MarkDetonation,
+        ComboStacks,
+        HitSlowField,
+        PierceBonusDamage,
+        DashEmpoweredStrike,
+        HitHeal,
+        HitCooldownRefund,
+        ProjectileSplit,
+        FlightState,
+        VanillaPawnFlyer,
+        FlightOnlyFollowup,
+        FlightLandingBurst
+    }
+
+    public enum AbilityRuntimeHotkeySlot
+    {
+        Q,
+        W,
+        E,
+        R
     }
 
     public class AbilityRuntimeComponentConfig
@@ -149,16 +205,21 @@ namespace CharacterStudio.Abilities
         public AbilityRuntimeComponentType type;
         public bool enabled = true;
 
-        // 连段窗口组件
         public int comboWindowTicks = 12;
-
-        // 位移组件
+        public AbilityRuntimeHotkeySlot overrideHotkeySlot = AbilityRuntimeHotkeySlot.Q;
+        public string overrideAbilityDefName = string.Empty;
+        public int overrideDurationTicks = 60;
+        public AbilityRuntimeHotkeySlot followupCooldownHotkeySlot = AbilityRuntimeHotkeySlot.Q;
+        public int followupCooldownTicks = 60;
+        public AbilityRuntimeHotkeySlot killRefreshHotkeySlot = AbilityRuntimeHotkeySlot.Q;
         public int cooldownTicks = 120;
         public int jumpDistance = 6;
         public int findCellRadius = 3;
         public bool triggerAbilityEffectsAfterJump = true;
-
-        // 叠层引爆组件
+        public bool useMouseTargetCell = true;
+        public int smartCastOffsetCells = 1;
+        public bool smartCastClampToMaxDistance = true;
+        public bool smartCastAllowFallbackForward = true;
         public int requiredStacks = 7;
         public int delayTicks = 180;
         public float wave1Radius = 3f;
@@ -168,10 +229,157 @@ namespace CharacterStudio.Abilities
         public float wave3Radius = 9f;
         public float wave3Damage = 220f;
         public DamageDef? waveDamageDef;
+        public int pulseIntervalTicks = 60;
+        public int pulseTotalTicks = 240;
+        public bool pulseStartsImmediately = true;
+        public float killRefreshCooldownPercent = 1f;
+        public float shieldMaxDamage = 120f;
+        public float shieldDurationTicks = 240f;
+        public float shieldHealRatio = 0.5f;
+        public float shieldBonusDamageRatio = 0.25f;
+        public int maxBounceCount = 4;
+        public float bounceRange = 6f;
+        public float bounceDamageFalloff = 0.2f;
+        public float executeThresholdPercent = 0.3f;
+        public float executeBonusDamageScale = 0.5f;
+        public float fullHealthThresholdPercent = 0.95f;
+        public float fullHealthBonusDamageScale = 0.35f;
+        public float missingHealthBonusPerTenPercent = 0.05f;
+        public float missingHealthBonusMaxScale = 0.5f;
+        public int nearbyEnemyBonusMaxTargets = 4;
+        public float nearbyEnemyBonusPerTarget = 0.08f;
+        public float nearbyEnemyBonusRadius = 5f;
+        public float isolatedTargetRadius = 4f;
+        public float isolatedTargetBonusDamageScale = 0.35f;
+        public int markDurationTicks = 180;
+        public int markMaxStacks = 3;
+        public float markDetonationDamage = 40f;
+        public DamageDef? markDamageDef;
+        public int comboStackWindowTicks = 180;
+        public int comboStackMax = 5;
+        public float comboStackBonusDamagePerStack = 0.06f;
+        public int slowFieldDurationTicks = 180;
+        public float slowFieldRadius = 2.5f;
+        public string slowFieldHediffDefName = string.Empty;
+        public int pierceMaxTargets = 3;
+        public float pierceBonusDamagePerTarget = 0.15f;
+        public float pierceSearchRange = 5f;
+        public int dashEmpowerDurationTicks = 180;
+        public float dashEmpowerBonusDamageScale = 0.5f;
+        public float hitHealAmount = 8f;
+        public float hitHealRatio = 0f;
+        public AbilityRuntimeHotkeySlot refundHotkeySlot = AbilityRuntimeHotkeySlot.Q;
+        public float hitCooldownRefundPercent = 0.15f;
+        public int splitProjectileCount = 2;
+        public float splitDamageScale = 0.5f;
+        public float splitSearchRange = 5f;
+        public int flightDurationTicks = 180;
+        public float flightHeightFactor = 0.35f;
+        public bool suppressCombatActionsDuringFlightState = true;
+
+        public string flyerThingDefName = string.Empty;
+        public int flyerWarmupTicks = 0;
+        public bool launchFromCasterPosition = true;
+        public bool requireValidTargetCell = true;
+        public bool storeTargetForFollowup = true;
+        public bool enableFlightOnlyWindow = false;
+        public int flightOnlyWindowTicks = 180;
+        public string flightOnlyAbilityDefName = string.Empty;
+        public bool hideCasterDuringTakeoff = true;
+        public bool autoExpireFlightMarkerOnLanding = true;
+
+        public string requiredFlightSourceAbilityDefName = string.Empty;
+        public bool requireReservedTargetCell = false;
+        public bool consumeFlightStateOnCast = false;
+        public bool onlyUseDuringFlightWindow = true;
+
+        public float landingBurstRadius = 3f;
+        public float landingBurstDamage = 30f;
+        public DamageDef? landingBurstDamageDef;
+        public string landingEffecterDefName = string.Empty;
+        public string landingSoundDefName = string.Empty;
+        public bool affectBuildings = false;
+        public bool affectCells = true;
+        public bool knockbackTargets = false;
+        public float knockbackDistance = 1.5f;
 
         public AbilityRuntimeComponentConfig Clone()
         {
             return (AbilityRuntimeComponentConfig)MemberwiseClone();
+        }
+
+        public void NormalizeForSave()
+        {
+            overrideAbilityDefName = AbilityEditorNormalizationUtility.TrimOrEmpty(overrideAbilityDefName);
+            slowFieldHediffDefName = AbilityEditorNormalizationUtility.TrimOrEmpty(slowFieldHediffDefName);
+            flyerThingDefName = AbilityEditorNormalizationUtility.TrimOrEmpty(flyerThingDefName);
+            flightOnlyAbilityDefName = AbilityEditorNormalizationUtility.TrimOrEmpty(flightOnlyAbilityDefName);
+            requiredFlightSourceAbilityDefName = AbilityEditorNormalizationUtility.TrimOrEmpty(requiredFlightSourceAbilityDefName);
+            landingEffecterDefName = AbilityEditorNormalizationUtility.TrimOrEmpty(landingEffecterDefName);
+            landingSoundDefName = AbilityEditorNormalizationUtility.TrimOrEmpty(landingSoundDefName);
+
+            comboWindowTicks = AbilityEditorNormalizationUtility.ClampInt(comboWindowTicks, 1, 9999);
+            overrideDurationTicks = AbilityEditorNormalizationUtility.ClampInt(overrideDurationTicks, 1, 99999);
+            followupCooldownTicks = AbilityEditorNormalizationUtility.ClampInt(followupCooldownTicks, 1, 99999);
+            cooldownTicks = AbilityEditorNormalizationUtility.ClampInt(cooldownTicks, 0, 99999);
+            jumpDistance = AbilityEditorNormalizationUtility.ClampInt(jumpDistance, 1, 100);
+            findCellRadius = AbilityEditorNormalizationUtility.ClampInt(findCellRadius, 0, 30);
+            smartCastOffsetCells = AbilityEditorNormalizationUtility.ClampInt(smartCastOffsetCells, 1, 100);
+            requiredStacks = AbilityEditorNormalizationUtility.ClampInt(requiredStacks, 1, 999);
+            delayTicks = AbilityEditorNormalizationUtility.ClampInt(delayTicks, 0, 99999);
+            wave1Radius = AbilityEditorNormalizationUtility.ClampFloat(wave1Radius, 0.1f, 99f);
+            wave1Damage = AbilityEditorNormalizationUtility.ClampFloat(wave1Damage, 1f, 99999f);
+            wave2Radius = AbilityEditorNormalizationUtility.ClampFloat(wave2Radius, 0.1f, 99f);
+            wave2Damage = AbilityEditorNormalizationUtility.ClampFloat(wave2Damage, 1f, 99999f);
+            wave3Radius = AbilityEditorNormalizationUtility.ClampFloat(wave3Radius, 0.1f, 99f);
+            wave3Damage = AbilityEditorNormalizationUtility.ClampFloat(wave3Damage, 1f, 99999f);
+            pulseIntervalTicks = AbilityEditorNormalizationUtility.ClampInt(pulseIntervalTicks, 1, 99999);
+            pulseTotalTicks = AbilityEditorNormalizationUtility.ClampInt(pulseTotalTicks, 1, 99999);
+            killRefreshCooldownPercent = AbilityEditorNormalizationUtility.ClampFloat(killRefreshCooldownPercent, 0.01f, 1f);
+            shieldMaxDamage = AbilityEditorNormalizationUtility.ClampFloat(shieldMaxDamage, 1f, 99999f);
+            shieldDurationTicks = AbilityEditorNormalizationUtility.ClampFloat(shieldDurationTicks, 1f, 99999f);
+            shieldHealRatio = AbilityEditorNormalizationUtility.ClampFloat(shieldHealRatio, 0f, 10f);
+            shieldBonusDamageRatio = AbilityEditorNormalizationUtility.ClampFloat(shieldBonusDamageRatio, 0f, 10f);
+            maxBounceCount = AbilityEditorNormalizationUtility.ClampInt(maxBounceCount, 1, 99);
+            bounceRange = AbilityEditorNormalizationUtility.ClampFloat(bounceRange, 0.1f, 99f);
+            bounceDamageFalloff = AbilityEditorNormalizationUtility.ClampFloat(bounceDamageFalloff, 0f, 0.95f);
+            executeThresholdPercent = AbilityEditorNormalizationUtility.ClampFloat(executeThresholdPercent, 0.01f, 0.99f);
+            executeBonusDamageScale = AbilityEditorNormalizationUtility.ClampFloat(executeBonusDamageScale, 0.01f, 10f);
+            fullHealthThresholdPercent = AbilityEditorNormalizationUtility.ClampFloat(fullHealthThresholdPercent, 0.01f, 1f);
+            fullHealthBonusDamageScale = AbilityEditorNormalizationUtility.ClampFloat(fullHealthBonusDamageScale, 0.01f, 10f);
+            missingHealthBonusPerTenPercent = AbilityEditorNormalizationUtility.ClampFloat(missingHealthBonusPerTenPercent, 0.01f, 10f);
+            missingHealthBonusMaxScale = AbilityEditorNormalizationUtility.ClampFloat(missingHealthBonusMaxScale, 0.01f, 10f);
+            nearbyEnemyBonusMaxTargets = AbilityEditorNormalizationUtility.ClampInt(nearbyEnemyBonusMaxTargets, 1, 99);
+            nearbyEnemyBonusPerTarget = AbilityEditorNormalizationUtility.ClampFloat(nearbyEnemyBonusPerTarget, 0.01f, 10f);
+            nearbyEnemyBonusRadius = AbilityEditorNormalizationUtility.ClampFloat(nearbyEnemyBonusRadius, 0.1f, 99f);
+            isolatedTargetRadius = AbilityEditorNormalizationUtility.ClampFloat(isolatedTargetRadius, 0.1f, 99f);
+            isolatedTargetBonusDamageScale = AbilityEditorNormalizationUtility.ClampFloat(isolatedTargetBonusDamageScale, 0.01f, 10f);
+            markDurationTicks = AbilityEditorNormalizationUtility.ClampInt(markDurationTicks, 1, 99999);
+            markMaxStacks = AbilityEditorNormalizationUtility.ClampInt(markMaxStacks, 1, 99);
+            markDetonationDamage = AbilityEditorNormalizationUtility.ClampFloat(markDetonationDamage, 0.01f, 99999f);
+            comboStackWindowTicks = AbilityEditorNormalizationUtility.ClampInt(comboStackWindowTicks, 1, 99999);
+            comboStackMax = AbilityEditorNormalizationUtility.ClampInt(comboStackMax, 1, 99);
+            comboStackBonusDamagePerStack = AbilityEditorNormalizationUtility.ClampFloat(comboStackBonusDamagePerStack, 0.01f, 10f);
+            slowFieldDurationTicks = AbilityEditorNormalizationUtility.ClampInt(slowFieldDurationTicks, 1, 99999);
+            slowFieldRadius = AbilityEditorNormalizationUtility.ClampFloat(slowFieldRadius, 0.1f, 99f);
+            pierceMaxTargets = AbilityEditorNormalizationUtility.ClampInt(pierceMaxTargets, 1, 99);
+            pierceBonusDamagePerTarget = AbilityEditorNormalizationUtility.ClampFloat(pierceBonusDamagePerTarget, 0.01f, 10f);
+            pierceSearchRange = AbilityEditorNormalizationUtility.ClampFloat(pierceSearchRange, 0.1f, 99f);
+            dashEmpowerDurationTicks = AbilityEditorNormalizationUtility.ClampInt(dashEmpowerDurationTicks, 1, 99999);
+            dashEmpowerBonusDamageScale = AbilityEditorNormalizationUtility.ClampFloat(dashEmpowerBonusDamageScale, 0.01f, 10f);
+            hitHealAmount = AbilityEditorNormalizationUtility.ClampFloat(hitHealAmount, 0f, 99999f);
+            hitHealRatio = AbilityEditorNormalizationUtility.ClampFloat(hitHealRatio, 0f, 10f);
+            hitCooldownRefundPercent = AbilityEditorNormalizationUtility.ClampFloat(hitCooldownRefundPercent, 0.01f, 1f);
+            splitProjectileCount = AbilityEditorNormalizationUtility.ClampInt(splitProjectileCount, 1, 99);
+            splitDamageScale = AbilityEditorNormalizationUtility.ClampFloat(splitDamageScale, 0.01f, 10f);
+            splitSearchRange = AbilityEditorNormalizationUtility.ClampFloat(splitSearchRange, 0.1f, 99f);
+            flightDurationTicks = AbilityEditorNormalizationUtility.ClampInt(flightDurationTicks, 1, 99999);
+            flightHeightFactor = AbilityEditorNormalizationUtility.ClampFloat(flightHeightFactor, 0f, 5f);
+            flyerWarmupTicks = AbilityEditorNormalizationUtility.ClampInt(flyerWarmupTicks, 0, 99999);
+            flightOnlyWindowTicks = AbilityEditorNormalizationUtility.ClampInt(flightOnlyWindowTicks, 1, 99999);
+            landingBurstRadius = AbilityEditorNormalizationUtility.ClampFloat(landingBurstRadius, 0.1f, 99f);
+            landingBurstDamage = AbilityEditorNormalizationUtility.ClampFloat(landingBurstDamage, 0.01f, 99999f);
+            knockbackDistance = AbilityEditorNormalizationUtility.ClampFloat(knockbackDistance, 0f, 99f);
         }
 
         public AbilityValidationResult Validate()
@@ -186,43 +394,180 @@ namespace CharacterStudio.Abilities
             {
                 case AbilityRuntimeComponentType.QComboWindow:
                     if (comboWindowTicks <= 0)
-                    {
                         result.AddError("CS_Ability_Validate_QComboWindowTicks".Translate());
-                    }
                     break;
-
+                case AbilityRuntimeComponentType.HotkeyOverride:
+                    if (string.IsNullOrWhiteSpace(overrideAbilityDefName))
+                        result.AddError("CS_Ability_Validate_HotkeyOverrideAbilityDefName".Translate());
+                    if (overrideDurationTicks <= 0)
+                        result.AddError("CS_Ability_Validate_HotkeyOverrideDurationTicks".Translate());
+                    break;
+                case AbilityRuntimeComponentType.FollowupCooldownGate:
+                    if (followupCooldownTicks <= 0)
+                        result.AddError("CS_Ability_Validate_FollowupCooldownTicks".Translate());
+                    break;
+                case AbilityRuntimeComponentType.SmartJump:
                 case AbilityRuntimeComponentType.EShortJump:
                     if (cooldownTicks < 0)
-                    {
                         result.AddError("CS_Ability_Validate_EShortJumpCooldown".Translate());
-                    }
                     if (jumpDistance <= 0)
-                    {
                         result.AddError("CS_Ability_Validate_EShortJumpDistance".Translate());
-                    }
                     if (findCellRadius < 0)
-                    {
                         result.AddError("CS_Ability_Validate_EShortJumpFindCellRadius".Translate());
-                    }
+                    if (type == AbilityRuntimeComponentType.SmartJump && smartCastOffsetCells <= 0)
+                        result.AddError("CS_Ability_Validate_SmartJumpOffsetCells".Translate());
                     break;
-
                 case AbilityRuntimeComponentType.RStackDetonation:
                     if (requiredStacks <= 0)
-                    {
                         result.AddError("CS_Ability_Validate_RRequiredStacks".Translate());
-                    }
                     if (delayTicks < 0)
-                    {
                         result.AddError("CS_Ability_Validate_RDelayTicks".Translate());
-                    }
                     if (wave1Radius <= 0 || wave2Radius <= 0 || wave3Radius <= 0)
-                    {
                         result.AddError("CS_Ability_Validate_RWaveRadius".Translate());
-                    }
                     if (wave1Damage <= 0 || wave2Damage <= 0 || wave3Damage <= 0)
-                    {
                         result.AddError("CS_Ability_Validate_RWaveDamage".Translate());
-                    }
+                    break;
+                case AbilityRuntimeComponentType.PeriodicPulse:
+                    if (pulseIntervalTicks <= 0)
+                        result.AddError("CS_Ability_Validate_PeriodicPulseIntervalTicks".Translate());
+                    if (pulseTotalTicks <= 0)
+                        result.AddError("CS_Ability_Validate_PeriodicPulseTotalTicks".Translate());
+                    break;
+                case AbilityRuntimeComponentType.KillRefresh:
+                    if (killRefreshCooldownPercent <= 0f || killRefreshCooldownPercent > 1f)
+                        result.AddError("CS_Ability_Validate_KillRefreshCooldownPercent".Translate());
+                    break;
+                case AbilityRuntimeComponentType.ShieldAbsorb:
+                    if (shieldMaxDamage <= 0f)
+                        result.AddError("CS_Ability_Validate_ShieldMaxDamage".Translate());
+                    if (shieldDurationTicks <= 0f)
+                        result.AddError("CS_Ability_Validate_ShieldDurationTicks".Translate());
+                    if (shieldHealRatio < 0f || shieldBonusDamageRatio < 0f)
+                        result.AddError("CS_Ability_Validate_ShieldRatios".Translate());
+                    break;
+                case AbilityRuntimeComponentType.ChainBounce:
+                    if (maxBounceCount <= 0)
+                        result.AddError("CS_Ability_Validate_ChainBounceCount".Translate());
+                    if (bounceRange <= 0f)
+                        result.AddError("CS_Ability_Validate_ChainBounceRange".Translate());
+                    if (bounceDamageFalloff < 0f || bounceDamageFalloff >= 1f)
+                        result.AddError("CS_Ability_Validate_ChainBounceFalloff".Translate());
+                    break;
+                case AbilityRuntimeComponentType.ExecuteBonusDamage:
+                    if (executeThresholdPercent <= 0f || executeThresholdPercent >= 1f)
+                        result.AddError("CS_Ability_Validate_ExecuteThreshold".Translate());
+                    if (executeBonusDamageScale <= 0f)
+                        result.AddError("CS_Ability_Validate_ExecuteBonusScale".Translate());
+                    break;
+                case AbilityRuntimeComponentType.FullHealthBonusDamage:
+                    if (fullHealthThresholdPercent <= 0f || fullHealthThresholdPercent > 1f)
+                        result.AddError("CS_Ability_Validate_FullHealthThreshold".Translate());
+                    if (fullHealthBonusDamageScale <= 0f)
+                        result.AddError("CS_Ability_Validate_FullHealthBonusScale".Translate());
+                    break;
+                case AbilityRuntimeComponentType.MissingHealthBonusDamage:
+                    if (missingHealthBonusPerTenPercent < 0f)
+                        result.AddError("CS_Ability_Validate_MissingHealthPerTen".Translate());
+                    if (missingHealthBonusMaxScale < 0f)
+                        result.AddError("CS_Ability_Validate_MissingHealthMaxScale".Translate());
+                    break;
+                case AbilityRuntimeComponentType.NearbyEnemyBonusDamage:
+                    if (nearbyEnemyBonusMaxTargets <= 0)
+                        result.AddError("CS_Ability_Validate_NearbyEnemyBonusMaxTargets".Translate());
+                    if (nearbyEnemyBonusPerTarget <= 0f)
+                        result.AddError("CS_Ability_Validate_NearbyEnemyBonusPerTarget".Translate());
+                    if (nearbyEnemyBonusRadius <= 0f)
+                        result.AddError("CS_Ability_Validate_NearbyEnemyBonusRadius".Translate());
+                    break;
+                case AbilityRuntimeComponentType.IsolatedTargetBonusDamage:
+                    if (isolatedTargetRadius <= 0f)
+                        result.AddError("CS_Ability_Validate_IsolatedTargetRadius".Translate());
+                    if (isolatedTargetBonusDamageScale <= 0f)
+                        result.AddError("CS_Ability_Validate_IsolatedTargetBonusScale".Translate());
+                    break;
+                case AbilityRuntimeComponentType.MarkDetonation:
+                    if (markDurationTicks <= 0)
+                        result.AddError("CS_Ability_Validate_MarkDurationTicks".Translate());
+                    if (markMaxStacks <= 0)
+                        result.AddError("CS_Ability_Validate_MarkMaxStacks".Translate());
+                    if (markDetonationDamage <= 0f)
+                        result.AddError("CS_Ability_Validate_MarkDetonationDamage".Translate());
+                    break;
+                case AbilityRuntimeComponentType.ComboStacks:
+                    if (comboStackWindowTicks <= 0)
+                        result.AddError("CS_Ability_Validate_ComboStackWindowTicks".Translate());
+                    if (comboStackMax <= 0)
+                        result.AddError("CS_Ability_Validate_ComboStackMax".Translate());
+                    if (comboStackBonusDamagePerStack < 0f)
+                        result.AddError("CS_Ability_Validate_ComboStackBonusPerStack".Translate());
+                    break;
+                case AbilityRuntimeComponentType.HitSlowField:
+                    if (slowFieldDurationTicks <= 0)
+                        result.AddError("CS_Ability_Validate_SlowFieldDurationTicks".Translate());
+                    if (slowFieldRadius <= 0f)
+                        result.AddError("CS_Ability_Validate_SlowFieldRadius".Translate());
+                    if (string.IsNullOrWhiteSpace(slowFieldHediffDefName))
+                        result.AddError("CS_Ability_Validate_SlowFieldHediffDefName".Translate());
+                    break;
+                case AbilityRuntimeComponentType.PierceBonusDamage:
+                    if (pierceMaxTargets <= 0)
+                        result.AddError("CS_Ability_Validate_PierceMaxTargets".Translate());
+                    if (pierceBonusDamagePerTarget < 0f)
+                        result.AddError("CS_Ability_Validate_PierceBonusPerTarget".Translate());
+                    if (pierceSearchRange <= 0f)
+                        result.AddError("CS_Ability_Validate_PierceSearchRange".Translate());
+                    break;
+                case AbilityRuntimeComponentType.DashEmpoweredStrike:
+                    if (dashEmpowerDurationTicks <= 0)
+                        result.AddError("CS_Ability_Validate_DashEmpowerDurationTicks".Translate());
+                    if (dashEmpowerBonusDamageScale <= 0f)
+                        result.AddError("CS_Ability_Validate_DashEmpowerBonusScale".Translate());
+                    break;
+                case AbilityRuntimeComponentType.HitHeal:
+                    if (hitHealAmount < 0f || hitHealRatio < 0f)
+                        result.AddError("CS_Ability_Validate_HitHealValues".Translate());
+                    if (hitHealAmount <= 0f && hitHealRatio <= 0f)
+                        result.AddError("CS_Ability_Validate_HitHealRequired".Translate());
+                    break;
+                case AbilityRuntimeComponentType.HitCooldownRefund:
+                    if (hitCooldownRefundPercent <= 0f || hitCooldownRefundPercent > 1f)
+                        result.AddError("CS_Ability_Validate_HitCooldownRefundPercent".Translate());
+                    break;
+                case AbilityRuntimeComponentType.ProjectileSplit:
+                    if (splitProjectileCount <= 0)
+                        result.AddError("CS_Ability_Validate_SplitProjectileCount".Translate());
+                    if (splitDamageScale <= 0f)
+                        result.AddError("CS_Ability_Validate_SplitDamageScale".Translate());
+                    if (splitSearchRange <= 0f)
+                        result.AddError("CS_Ability_Validate_SplitSearchRange".Translate());
+                    break;
+                case AbilityRuntimeComponentType.FlightState:
+                    if (flightDurationTicks <= 0)
+                        result.AddError("CS_Ability_Validate_FlightDurationTicks".Translate());
+                    if (flightHeightFactor < 0f)
+                        result.AddError("CS_Ability_Validate_FlightHeightFactor".Translate());
+                    if (flightHeightFactor > 5f)
+                        result.AddWarning("CS_Ability_Validate_FlightHeightFactorWarning".Translate());
+                    break;
+                case AbilityRuntimeComponentType.VanillaPawnFlyer:
+                    if (string.IsNullOrWhiteSpace(flyerThingDefName))
+                        result.AddError("CS_Ability_Validate_VanillaFlyerThingDefRequired".Translate());
+                    if (flightDurationTicks <= 0)
+                        result.AddError("CS_Ability_Validate_FlightDurationTicks".Translate());
+                    if (enableFlightOnlyWindow && flightOnlyWindowTicks <= 0)
+                        result.AddError("CS_Ability_Validate_VanillaFlightWindowTicks".Translate());
+                    break;
+                case AbilityRuntimeComponentType.FlightOnlyFollowup:
+                    if (onlyUseDuringFlightWindow && string.IsNullOrWhiteSpace(requiredFlightSourceAbilityDefName))
+                        result.AddWarning("CS_Ability_Validate_FlightOnlyFollowupSourceRecommended".Translate());
+                    if (requireReservedTargetCell && !onlyUseDuringFlightWindow)
+                        result.AddWarning("CS_Ability_Validate_FlightOnlyFollowupReservedTargetRecommended".Translate());
+                    break;
+                case AbilityRuntimeComponentType.FlightLandingBurst:
+                    if (landingBurstRadius <= 0f)
+                        result.AddError("CS_Ability_Validate_LandingBurstRadius".Translate());
+                    if (landingBurstDamage <= 0f)
+                        result.AddError("CS_Ability_Validate_LandingBurstDamage".Translate());
                     break;
             }
 
@@ -230,16 +575,11 @@ namespace CharacterStudio.Abilities
         }
     }
 
-    /// <summary>
-    /// 技能载体类型
-    /// </summary>
     public enum AbilityCarrierType
     {
-        Self,       // 自身施法
-        Target,     // 直接作用到目标
-        Projectile, // 投射物命中目标
-
-        // 兼容旧存档/旧 XML 的遗留值
+        Self,
+        Target,
+        Projectile,
         Touch,
         Area
     }
@@ -257,57 +597,60 @@ namespace CharacterStudio.Abilities
         Target
     }
 
-    /// <summary>
-    /// 技能效果类型
-    /// </summary>
+    public enum AbilityAreaShape
+    {
+        Circle,
+        Line,
+        Cone,
+        Cross,
+        Square,
+        Irregular
+    }
+
     public enum AbilityEffectType
     {
-        Damage,     // 伤害
-        Heal,       // 治疗
-        Buff,       // 强化（Hediff）
-        Debuff,     // 弱化（Hediff）
-        Summon,     // 召唤
-        Teleport,   // 位移
-        Control,    // 控制（击晕/强制移动）
-        Terraform   // 地形改变（生成掩体/清除污秽）
+        Damage,
+        Heal,
+        Buff,
+        Debuff,
+        Summon,
+        Teleport,
+        Control,
+        Terraform
     }
 
-    /// <summary>
-    /// 视觉特效类型（外观粒子/闪光）
-    /// </summary>
     public enum AbilityVisualEffectType
     {
-        DustPuff,       // 尘埃喷溅
-        MicroSparks,    // 微型火花
-        LightningGlow,  // 闪电光晕
-        FireGlow,       // 火焰光晕
-        Smoke,          // 烟雾
-        ExplosionEffect // 爆炸闪光
+        DustPuff,
+        MicroSparks,
+        LightningGlow,
+        FireGlow,
+        Smoke,
+        ExplosionEffect,
+        Preset,
+        CustomTexture
     }
 
-    /// <summary>
-    /// 视觉特效作用目标
-    /// </summary>
     public enum VisualEffectTarget
     {
-        Caster,     // 施法者
-        Target,     // 命中目标
-        Both        // 双方
+        Caster,
+        Target,
+        Both
     }
 
-    /// <summary>
-    /// 视觉特效来源模式
-    /// </summary>
+    public enum AbilityVisualEffectTextureSource
+    {
+        Vanilla,
+        LocalPath
+    }
+
     public enum AbilityVisualEffectSourceMode
     {
-        BuiltIn,    // 当前内建 Fleck / 组合效果
-        Preset      // CharacterStudio 原生特效预设（第一阶段先保留导出/配置骨架）
+        BuiltIn,
+        Preset,
+        CustomTexture
     }
 
-    /// <summary>
-    /// 视觉特效触发时机
-    /// 第一阶段运行时先完整支持 OnTargetApply / OnCastFinish，并将其余时机安全回退为当前 Apply 时机。
-    /// </summary>
     public enum AbilityVisualEffectTrigger
     {
         OnCastStart,
@@ -318,66 +661,124 @@ namespace CharacterStudio.Abilities
         OnExpire
     }
 
-    /// <summary>
-    /// 单个视觉特效配置
-    /// </summary>
     public class AbilityVisualEffectConfig
     {
-        /// <summary>
-        /// 旧内建特效类型；为兼容现有数据和运行时逻辑保留。
-        /// </summary>
         public AbilityVisualEffectType type = AbilityVisualEffectType.DustPuff;
-
-        /// <summary>
-        /// 新来源模式。默认 BuiltIn 以兼容旧数据。
-        /// </summary>
+        public AbilityVisualEffectTextureSource textureSource = AbilityVisualEffectTextureSource.Vanilla;
         public AbilityVisualEffectSourceMode sourceMode = AbilityVisualEffectSourceMode.BuiltIn;
-
-        /// <summary>
-        /// CharacterStudio 原生预设名。仅在 sourceMode=Preset 时使用。
-        /// </summary>
         public string presetDefName = string.Empty;
-
+        public string customTexturePath = string.Empty;
         public VisualEffectTarget target = VisualEffectTarget.Target;
-
-        /// <summary>
-        /// 触发时机。
-        /// </summary>
         public AbilityVisualEffectTrigger trigger = AbilityVisualEffectTrigger.OnTargetApply;
-
-        /// <summary>在效果执行后延迟多少 ticks 再播放特效（0 = 立即）</summary>
         public int delayTicks = 0;
-
-        /// <summary>特效规模缩放（1.0 = 正常）</summary>
+        public int displayDurationTicks = 27;
+        public ExpressionType? linkedExpression = null;
+        public int linkedExpressionDurationTicks = 30;
+        public float linkedPupilBrightnessOffset = 0f;
+        public float linkedPupilContrastOffset = 0f;
         public float scale = 1.0f;
-
-        /// <summary>重复次数（包含首次播放）；最小为 1。</summary>
+        public float drawSize = 1.5f;
+        public bool useCasterFacing = false;
+        public float forwardOffset = 0f;
+        public float sideOffset = 0f;
+        public float heightOffset = 0f;
+        public float rotation = 0f;
+        public Vector2 textureScale = Vector2.one;
         public int repeatCount = 1;
-
-        /// <summary>重复播放间隔 tick。</summary>
         public int repeatIntervalTicks = 0;
-
-        /// <summary>附加偏移，供后续预设/运行时扩展使用。</summary>
         public Vector3 offset = Vector3.zero;
-
-        /// <summary>是否附着到 Pawn（供后续预设播放扩展使用）。</summary>
+        public bool playSound = false;
+        public string soundDefName = string.Empty;
+        public int soundDelayTicks = 0;
+        public float soundVolume = 1f;
+        public float soundPitch = 1f;
         public bool attachToPawn = false;
-
-        /// <summary>是否附着到目标格（供后续预设播放扩展使用）。</summary>
         public bool attachToTargetCell = false;
-
-        /// <summary>是否启用此特效条目。</summary>
         public bool enabled = true;
+
+        public bool UsesBuiltInType => type != AbilityVisualEffectType.Preset && type != AbilityVisualEffectType.CustomTexture;
+        public bool UsesPresetType => type == AbilityVisualEffectType.Preset;
+        public bool UsesCustomTextureType => type == AbilityVisualEffectType.CustomTexture;
+
+        public void NormalizeLegacyData()
+        {
+            if (type == AbilityVisualEffectType.Preset || type == AbilityVisualEffectType.CustomTexture)
+            {
+                if (type == AbilityVisualEffectType.CustomTexture && string.IsNullOrWhiteSpace(customTexturePath))
+                {
+                    textureSource = AbilityVisualEffectTextureSource.LocalPath;
+                }
+                return;
+            }
+
+            switch (sourceMode)
+            {
+                case AbilityVisualEffectSourceMode.Preset:
+                    type = AbilityVisualEffectType.Preset;
+                    break;
+                case AbilityVisualEffectSourceMode.CustomTexture:
+                    type = AbilityVisualEffectType.CustomTexture;
+                    if (string.IsNullOrWhiteSpace(customTexturePath))
+                    {
+                        textureSource = AbilityVisualEffectTextureSource.LocalPath;
+                    }
+                    break;
+                default:
+                    sourceMode = AbilityVisualEffectSourceMode.BuiltIn;
+                    break;
+            }
+        }
+
+        public void SyncLegacyFields()
+        {
+            sourceMode = type switch
+            {
+                AbilityVisualEffectType.Preset => AbilityVisualEffectSourceMode.Preset,
+                AbilityVisualEffectType.CustomTexture => AbilityVisualEffectSourceMode.CustomTexture,
+                _ => AbilityVisualEffectSourceMode.BuiltIn
+            };
+        }
 
         public AbilityVisualEffectConfig Clone()
         {
-            return (AbilityVisualEffectConfig)MemberwiseClone();
+            AbilityVisualEffectConfig clone = (AbilityVisualEffectConfig)MemberwiseClone();
+            clone.SyncLegacyFields();
+            return clone;
+        }
+
+        public void NormalizeForSave()
+        {
+            presetDefName = AbilityEditorNormalizationUtility.TrimOrEmpty(presetDefName);
+            customTexturePath = AbilityEditorNormalizationUtility.TrimOrEmpty(customTexturePath);
+            soundDefName = AbilityEditorNormalizationUtility.TrimOrEmpty(soundDefName);
+            NormalizeLegacyData();
+            trigger = trigger switch
+            {
+                AbilityVisualEffectTrigger.OnCastFinish => AbilityVisualEffectTrigger.OnCastFinish,
+                AbilityVisualEffectTrigger.OnTargetApply => AbilityVisualEffectTrigger.OnTargetApply,
+                _ => AbilityVisualEffectTrigger.OnTargetApply
+            };
+            delayTicks = AbilityEditorNormalizationUtility.ClampInt(delayTicks, 0, 60000);
+            displayDurationTicks = AbilityEditorNormalizationUtility.ClampInt(displayDurationTicks, 1, 60000);
+            linkedExpressionDurationTicks = AbilityEditorNormalizationUtility.ClampInt(linkedExpressionDurationTicks, 1, 60000);
+            scale = AbilityEditorNormalizationUtility.ClampFloat(scale, 0.1f, 5f);
+            drawSize = AbilityEditorNormalizationUtility.ClampFloat(drawSize, 0.1f, 20f);
+            heightOffset = AbilityEditorNormalizationUtility.ClampFloat(heightOffset, -10f, 10f);
+            rotation = AbilityEditorNormalizationUtility.ClampFloat(rotation, -360f, 360f);
+            textureScale = new Vector2(
+                AbilityEditorNormalizationUtility.ClampFloat(textureScale.x, 0.1f, 20f),
+                AbilityEditorNormalizationUtility.ClampFloat(textureScale.y, 0.1f, 20f));
+            repeatCount = AbilityEditorNormalizationUtility.ClampInt(repeatCount, 1, 999);
+            repeatIntervalTicks = AbilityEditorNormalizationUtility.ClampInt(repeatIntervalTicks, 0, 60000);
+            linkedPupilBrightnessOffset = AbilityEditorNormalizationUtility.ClampFloat(linkedPupilBrightnessOffset, -2f, 2f);
+            linkedPupilContrastOffset = AbilityEditorNormalizationUtility.ClampFloat(linkedPupilContrastOffset, -2f, 2f);
+            soundDelayTicks = AbilityEditorNormalizationUtility.ClampInt(soundDelayTicks, 0, 60000);
+            soundVolume = AbilityEditorNormalizationUtility.ClampFloat(soundVolume, 0f, 4f);
+            soundPitch = AbilityEditorNormalizationUtility.ClampFloat(soundPitch, 0.25f, 3f);
+            SyncLegacyFields();
         }
     }
 
-    /// <summary>
-    /// 单个效果配置
-    /// </summary>
     public enum ControlEffectMode
     {
         Stun,
@@ -395,28 +796,20 @@ namespace CharacterStudio.Abilities
     public class AbilityEffectConfig
     {
         public AbilityEffectType type;
-        
-        // 数值参数
-        public float amount = 0f; // 伤害量/治疗量
-        public float duration = 0f; // 持续时间（秒）
-        public float chance = 1f; // 触发几率
-
-        // 引用参数
+        public float amount = 0f;
+        public float duration = 0f;
+        public float chance = 1f;
         public DamageDef? damageDef;
         public HediffDef? hediffDef;
         public PawnKindDef? summonKind;
         public int summonCount = 1;
         public FactionDef? summonFactionDef;
-
         public ControlEffectMode controlMode = ControlEffectMode.Stun;
         public int controlMoveDistance = 3;
-
         public TerraformEffectMode terraformMode = TerraformEffectMode.CleanFilth;
         public ThingDef? terraformThingDef;
         public TerrainDef? terraformTerrainDef;
         public int terraformSpawnCount = 1;
-
-        /// <summary>是否可以伤害施法者自身（默认 false = 不伤害自己）</summary>
         public bool canHurtSelf = false;
 
         public AbilityEffectConfig Clone()
@@ -424,82 +817,58 @@ namespace CharacterStudio.Abilities
             return (AbilityEffectConfig)MemberwiseClone();
         }
 
-        /// <summary>
-        /// 验证效果配置
-        /// </summary>
+        public void NormalizeForSave()
+        {
+            duration = AbilityEditorNormalizationUtility.ClampFloat(duration, 0f, 999f);
+            chance = AbilityEditorNormalizationUtility.ClampFloat(chance, 0.01f, 1f);
+            summonCount = AbilityEditorNormalizationUtility.ClampInt(summonCount, 1, 99);
+            controlMoveDistance = AbilityEditorNormalizationUtility.ClampInt(controlMoveDistance, 1, 99);
+            terraformSpawnCount = AbilityEditorNormalizationUtility.ClampInt(terraformSpawnCount, 1, 999);
+        }
+
         public AbilityValidationResult Validate()
         {
             var result = new AbilityValidationResult();
-
-            // 检查数值范围
             if (amount < 0)
-            {
                 result.AddWarning("CS_Ability_Validate_EffectNegativeAmount".Translate());
-            }
-
             if (chance <= 0 || chance > 1)
-            {
                 result.AddError("CS_Ability_Validate_EffectChanceRange".Translate(chance));
-            }
 
-            // 检查效果类型特定要求
             switch (type)
             {
                 case AbilityEffectType.Damage:
                     if (amount <= 0)
-                    {
                         result.AddError("CS_Ability_Validate_DamageAmount".Translate());
-                    }
                     break;
-
                 case AbilityEffectType.Buff:
                 case AbilityEffectType.Debuff:
                     if (hediffDef == null)
-                    {
                         result.AddError("CS_Ability_Validate_HediffRequired".Translate(($"CS_Ability_EffectType_{type}").Translate()));
-                    }
                     break;
-
                 case AbilityEffectType.Summon:
                     if (summonKind == null)
-                    {
                         result.AddError("CS_Ability_Validate_SummonKindRequired".Translate());
-                    }
                     if (summonCount <= 0)
-                    {
                         result.AddError("CS_Ability_Validate_SummonCount".Translate());
-                    }
                     break;
-
                 case AbilityEffectType.Control:
                     if (controlMode != ControlEffectMode.Stun && controlMoveDistance <= 0)
-                    {
                         result.AddError("CS_Ability_Validate_ControlMoveDistance".Translate());
-                    }
                     if (duration < 0f)
-                    {
                         result.AddError("CS_Ability_Validate_ControlDuration".Translate());
-                    }
                     break;
-
                 case AbilityEffectType.Terraform:
                     switch (terraformMode)
                     {
                         case TerraformEffectMode.SpawnThing:
                             if (terraformThingDef == null)
-                            {
                                 result.AddError("CS_Ability_Validate_TerraformThingRequired".Translate());
-                            }
                             if (terraformSpawnCount <= 0)
-                            {
                                 result.AddError("CS_Ability_Validate_TerraformSpawnCount".Translate());
-                            }
                             break;
                         case TerraformEffectMode.ReplaceTerrain:
                             if (terraformTerrainDef == null)
-                            {
                                 result.AddError("CS_Ability_Validate_TerraformTerrainRequired".Translate());
-                            }
                             break;
                     }
                     break;
@@ -509,78 +878,53 @@ namespace CharacterStudio.Abilities
         }
     }
 
-    /// <summary>
-    /// ModularAbilityDef 扩展方法
-    /// </summary>
+    internal static class AbilityEditorNormalizationUtility
+    {
+        public static int ClampInt(int value, int min, int max) => Mathf.Clamp(value, min, max);
+        public static float ClampFloat(float value, float min, float max) => Mathf.Clamp(value, min, max);
+        public static string TrimOrEmpty(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return string.Empty;
+            string nonNullValue = value ?? string.Empty;
+            return nonNullValue.Trim();
+        }
+    }
+
     public static class ModularAbilityDefExtensions
     {
-        /// <summary>
-        /// 验证能力定义
-        /// </summary>
         public static AbilityValidationResult Validate(this ModularAbilityDef ability)
         {
             var result = new AbilityValidationResult();
-
-            // 基础验证
             if (string.IsNullOrEmpty(ability.defName))
-            {
                 result.AddError("CS_Ability_Validate_DefNameEmpty".Translate());
-            }
             else if (!IsValidDefName(ability.defName))
-            {
                 result.AddError("CS_Ability_Validate_DefNameInvalid".Translate());
-            }
-
             if (string.IsNullOrEmpty(ability.label))
-            {
                 result.AddWarning("CS_Ability_Validate_LabelEmpty".Translate());
-            }
-
-            // 数值验证
             if (ability.cooldownTicks < 0)
-            {
                 result.AddError("CS_Ability_Validate_CooldownNegative".Translate());
-            }
-
             if (ability.warmupTicks < 0)
-            {
                 result.AddError("CS_Ability_Validate_WarmupNegative".Translate());
-            }
-
             if (ability.charges <= 0)
-            {
                 result.AddWarning("CS_Ability_Validate_ChargesNonPositive".Translate());
-            }
-
             if (ability.range < 0)
-            {
                 result.AddError("CS_Ability_Validate_RangeNegative".Translate());
-            }
-
             if (ability.radius < 0)
-            {
                 result.AddError("CS_Ability_Validate_RadiusNegative".Translate());
-            }
 
             AbilityCarrierType normalizedCarrier = NormalizeCarrierType(ability.carrierType);
             AbilityTargetType normalizedTarget = NormalizeTargetType(ability);
-
+            AbilityAreaShape normalizedShape = NormalizeAreaShape(ability);
             if (CarrierNeedsRange(normalizedCarrier, normalizedTarget) && ability.range <= 0)
-            {
                 result.AddWarning("CS_Ability_Validate_CarrierNeedsRange".Translate(GetCarrierTypeLabel(normalizedCarrier)));
-            }
-
-            if (ability.useRadius && ability.radius <= 0)
-            {
+            if (ability.useRadius && normalizedShape != AbilityAreaShape.Irregular && ability.radius <= 0)
                 result.AddError("CS_Ability_Validate_AreaRadiusPositive".Translate());
-            }
-
+            if (ability.useRadius && normalizedShape == AbilityAreaShape.Irregular && string.IsNullOrWhiteSpace(ability.irregularAreaPattern))
+                result.AddError("CS_Ability_Validate_IrregularPatternRequired".Translate());
             if (normalizedCarrier == AbilityCarrierType.Projectile && ability.projectileDef == null)
-            {
                 result.AddWarning("CS_Ability_Validate_ProjectileDefMissing".Translate());
-            }
 
-            // 效果验证
             if (ability.effects == null || ability.effects.Count == 0)
             {
                 result.AddWarning("CS_Ability_Validate_NoEffects".Translate());
@@ -593,14 +937,10 @@ namespace CharacterStudio.Abilities
                     if (!effectResult.IsValid)
                     {
                         foreach (var error in effectResult.Errors)
-                        {
                             result.AddError("CS_Ability_Validate_EffectIndexError".Translate(i + 1, error));
-                        }
                     }
                     foreach (var warning in effectResult.Warnings)
-                    {
                         result.AddWarning("CS_Ability_Validate_EffectIndexWarning".Translate(i + 1, warning));
-                    }
                 }
             }
 
@@ -614,21 +954,18 @@ namespace CharacterStudio.Abilities
                         result.AddWarning("CS_Ability_Validate_RuntimeComponentNull".Translate(i + 1));
                         continue;
                     }
-
+                    string componentLabel = GetRuntimeComponentTypeLabel(component.type);
                     var compResult = component.Validate();
                     if (!compResult.IsValid)
                     {
                         foreach (var error in compResult.Errors)
-                        {
-                            result.AddError("CS_Ability_Validate_RuntimeComponentError".Translate(i + 1, error));
-                        }
+                            result.AddError("CS_Ability_Validate_RuntimeComponentError".Translate(i + 1, componentLabel, error));
                     }
-
                     foreach (var warning in compResult.Warnings)
-                    {
-                        result.AddWarning("CS_Ability_Validate_RuntimeComponentWarning".Translate(i + 1, warning));
-                    }
+                        result.AddWarning("CS_Ability_Validate_RuntimeComponentWarning".Translate(i + 1, componentLabel, warning));
                 }
+
+                AddRuntimeComponentConflictWarnings(ability.runtimeComponents, result);
             }
 
             return result;
@@ -647,15 +984,9 @@ namespace CharacterStudio.Abilities
         public static AbilityTargetType NormalizeTargetType(ModularAbilityDef ability)
         {
             if (ability == null)
-            {
                 return AbilityTargetType.Self;
-            }
-
             if (ability.targetType != AbilityTargetType.Self || ability.useRadius || ability.projectileDef != null)
-            {
                 return ability.targetType;
-            }
-
             return ability.carrierType switch
             {
                 AbilityCarrierType.Self => AbilityTargetType.Self,
@@ -670,25 +1001,23 @@ namespace CharacterStudio.Abilities
         public static AbilityAreaCenter NormalizeAreaCenter(ModularAbilityDef ability)
         {
             if (ability == null)
-            {
                 return AbilityAreaCenter.Target;
-            }
-
             if (ability.areaCenter != AbilityAreaCenter.Target || ability.targetType != AbilityTargetType.Self)
-            {
                 return ability.areaCenter;
-            }
+            return ability.carrierType == AbilityCarrierType.Area ? AbilityAreaCenter.Target : AbilityAreaCenter.Self;
+        }
 
-            return ability.carrierType == AbilityCarrierType.Area
-                ? AbilityAreaCenter.Target
-                : AbilityAreaCenter.Self;
+        public static AbilityAreaShape NormalizeAreaShape(ModularAbilityDef ability)
+        {
+            if (ability == null || !ability.useRadius)
+                return AbilityAreaShape.Circle;
+            return ability.areaShape;
         }
 
         public static bool CarrierNeedsRange(AbilityCarrierType carrierType, AbilityTargetType targetType)
         {
             carrierType = NormalizeCarrierType(carrierType);
-            return carrierType == AbilityCarrierType.Projectile
-                || carrierType == AbilityCarrierType.Target && targetType != AbilityTargetType.Self;
+            return carrierType == AbilityCarrierType.Projectile || carrierType == AbilityCarrierType.Target && targetType != AbilityTargetType.Self;
         }
 
         private static string GetCarrierTypeLabel(AbilityCarrierType type)
@@ -696,9 +1025,9 @@ namespace CharacterStudio.Abilities
             return ($"CS_Ability_CarrierType_{NormalizeCarrierType(type)}").Translate();
         }
 
-        private static string GetEffectTypeLabel(AbilityEffectType type)
+        private static string GetRuntimeComponentTypeLabel(AbilityRuntimeComponentType type)
         {
-            return ($"CS_Ability_EffectType_{type}").Translate();
+            return ($"CS_Ability_RuntimeComponentType_{type}").Translate();
         }
 
         private static bool IsValidDefName(string defName)
@@ -707,11 +1036,105 @@ namespace CharacterStudio.Abilities
             foreach (char c in defName)
             {
                 if (!char.IsLetterOrDigit(c) && c != '_')
-                {
                     return false;
-                }
             }
             return true;
+        }
+
+        private static void AddRuntimeComponentConflictWarnings(List<AbilityRuntimeComponentConfig> runtimeComponents, AbilityValidationResult result)
+        {
+            List<(AbilityRuntimeComponentConfig component, int index)> enabledComponents = runtimeComponents
+                .Select((component, index) => new { component, index })
+                .Where(entry => entry.component != null && entry.component.enabled)
+                .Select(entry => (entry.component!, entry.index))
+                .ToList();
+            if (enabledComponents.Count == 0)
+            {
+                return;
+            }
+
+            WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.QComboWindow);
+            WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.HotkeyOverride);
+            WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.FollowupCooldownGate);
+            WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.RStackDetonation);
+            WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.KillRefresh);
+            WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.PeriodicPulse);
+            WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.ShieldAbsorb);
+            WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.MarkDetonation);
+            WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.ComboStacks);
+            WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.DashEmpoweredStrike);
+            WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.FlightState);
+            WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.VanillaPawnFlyer);
+            WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.FlightOnlyFollowup);
+            WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.FlightLandingBurst);
+
+            List<(AbilityRuntimeComponentConfig component, int index)> movementComponents = enabledComponents
+                .Where(entry => entry.component.type == AbilityRuntimeComponentType.SmartJump || entry.component.type == AbilityRuntimeComponentType.EShortJump)
+                .ToList();
+            if (movementComponents.Count > 1)
+            {
+                result.AddWarning("CS_Ability_Validate_RuntimeConflict_MovementDuplicate".Translate(FormatRuntimeComponentEntries(movementComponents)));
+            }
+
+            List<(AbilityRuntimeComponentConfig component, int index)> vanillaPawnFlyerComponents = enabledComponents
+                .Where(entry => entry.component.type == AbilityRuntimeComponentType.VanillaPawnFlyer)
+                .ToList();
+            List<(AbilityRuntimeComponentConfig component, int index)> flightStateComponents = enabledComponents
+                .Where(entry => entry.component.type == AbilityRuntimeComponentType.FlightState)
+                .ToList();
+            List<(AbilityRuntimeComponentConfig component, int index)> flightOnlyFollowupComponents = enabledComponents
+                .Where(entry => entry.component.type == AbilityRuntimeComponentType.FlightOnlyFollowup)
+                .ToList();
+            List<(AbilityRuntimeComponentConfig component, int index)> flightLandingBurstComponents = enabledComponents
+                .Where(entry => entry.component.type == AbilityRuntimeComponentType.FlightLandingBurst)
+                .ToList();
+            List<(AbilityRuntimeComponentConfig component, int index)> dashEmpoweredStrikeComponents = enabledComponents
+                .Where(entry => entry.component.type == AbilityRuntimeComponentType.DashEmpoweredStrike)
+                .ToList();
+            bool hasMovement = movementComponents.Count > 0;
+
+            if (dashEmpoweredStrikeComponents.Count > 0 && !hasMovement)
+            {
+                result.AddWarning("CS_Ability_Validate_RuntimeConflict_DashEmpowerNeedsMovement".Translate(FormatRuntimeComponentEntries(dashEmpoweredStrikeComponents)));
+            }
+
+            if (flightStateComponents.Count > 0 && vanillaPawnFlyerComponents.Count > 0)
+            {
+                result.AddWarning("CS_Ability_Validate_RuntimeConflict_FlightStateWithVanillaFlyer".Translate(
+                    FormatRuntimeComponentEntries(flightStateComponents),
+                    FormatRuntimeComponentEntries(vanillaPawnFlyerComponents)));
+            }
+
+            if (flightOnlyFollowupComponents.Count > 0 && vanillaPawnFlyerComponents.Count == 0)
+            {
+                result.AddWarning("CS_Ability_Validate_RuntimeConflict_FlightOnlyNeedsVanillaFlyer".Translate(
+                    FormatRuntimeComponentEntries(flightOnlyFollowupComponents)));
+            }
+
+            if (flightLandingBurstComponents.Count > 0 && vanillaPawnFlyerComponents.Count == 0)
+            {
+                result.AddWarning("CS_Ability_Validate_RuntimeConflict_LandingBurstNeedsVanillaFlyer".Translate(
+                    FormatRuntimeComponentEntries(flightLandingBurstComponents)));
+            }
+        }
+
+        private static string FormatRuntimeComponentEntries(IEnumerable<(AbilityRuntimeComponentConfig component, int index)> components)
+        {
+            return string.Join(", ", components.Select(entry => $"#{entry.index + 1} {GetRuntimeComponentTypeLabel(entry.component.type)}"));
+        }
+
+        private static void WarnForDuplicateSingleton(AbilityValidationResult result, IEnumerable<(AbilityRuntimeComponentConfig component, int index)> enabledComponents, AbilityRuntimeComponentType type)
+        {
+            List<(AbilityRuntimeComponentConfig component, int index)> duplicates = enabledComponents
+                .Where(entry => entry.component.type == type)
+                .ToList();
+            if (duplicates.Count > 1)
+            {
+                result.AddWarning("CS_Ability_Validate_RuntimeConflict_DuplicateSingleton".Translate(
+                    GetRuntimeComponentTypeLabel(type),
+                    duplicates.Count,
+                    FormatRuntimeComponentEntries(duplicates)));
+            }
         }
     }
 }

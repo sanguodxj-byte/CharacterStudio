@@ -24,6 +24,30 @@ namespace CharacterStudio.Rendering
             return slot != null && slot.enabled && !string.IsNullOrWhiteSpace(slot.texPath);
         }
 
+        private static bool HasEnabledEditableLayeredFaceBase(PawnSkinDef skinDef)
+        {
+            if (skinDef?.layers == null || skinDef.layers.Count == 0)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < skinDef.layers.Count; i++)
+            {
+                PawnLayerConfig? layer = skinDef.layers[i];
+                if (layer == null || !layer.visible || string.IsNullOrWhiteSpace(layer.texPath))
+                {
+                    continue;
+                }
+
+                if (string.Equals(layer.layerName, "[Face] Base", System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static void ApplyBaseAppearanceOverrides(PawnRenderTree tree, Pawn pawn, PawnSkinDef skinDef)
         {
             // 兼容保留：旧调用点已迁移到 synthetic-layer 注入。

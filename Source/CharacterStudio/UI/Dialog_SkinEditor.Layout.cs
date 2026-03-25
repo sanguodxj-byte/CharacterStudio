@@ -220,13 +220,19 @@ namespace CharacterStudio.UI
                 return clicked;
             }
 
-            DrawButton("CS_Studio_File_New".Translate(), OnNewSkin);
-            DrawButton("CS_Studio_File_Save".Translate(), OnSaveSkin, isDirty);
-            DrawButton("CS_Studio_Btn_Apply".Translate(), OnApplyToTargetPawn, true);
-            DrawButton("CS_Studio_File_OpenSkinFolder".Translate(), OnOpenSkinFolder);
-            DrawButton("CS_Studio_File_Export".Translate(), OnExportMod);
-            DrawButton("CS_Studio_File_Import".Translate(), OnImportFromMap);
-            DrawButton("CS_Studio_Btn_Reset".Translate(), OnResetParameters);
+            if (!layerModificationWorkflowActive)
+            {
+                DrawButton("CS_Studio_File_New".Translate(), OnNewSkin);
+                DrawButton("CS_Studio_File_Save".Translate(), OnSaveSkin, isDirty);
+                DrawButton("CS_Studio_Btn_Apply".Translate(), OnApplyToTargetPawn, true);
+                DrawButton("CS_Studio_File_OpenSkinFolder".Translate(), OnOpenSkinFolder);
+                DrawButton("CS_Studio_File_Export".Translate(), OnExportMod);
+            }
+            DrawButton("CS_Studio_File_Import".Translate(), OnImportFromMap, layerModificationWorkflowActive);
+            if (!layerModificationWorkflowActive)
+            {
+                DrawButton("CS_Studio_Btn_Reset".Translate(), OnResetParameters);
+            }
 
             x += 8f;
             if (x < maxButtonX)
@@ -234,13 +240,16 @@ namespace CharacterStudio.UI
                 Widgets.DrawBoxSolid(new Rect(x - 4f, rect.y + 8f, 1f, rect.height - 16f), new Color(1f, 1f, 1f, 0.08f));
             }
 
-            DrawButton("CS_Studio_Skin_Settings".Translate(), OnOpenSkinSettings);
-            DrawButton("CS_LLM_Settings_Title".Translate(), OnOpenLlmSettings);
-            DrawButton("CS_Studio_Menu_Abilities".Translate(), () =>
+            if (!layerModificationWorkflowActive)
             {
-                SyncAbilitiesFromSkin();
-                Find.WindowStack.Add(new Dialog_AbilityEditor(workingAbilities, workingSkin.abilityHotkeys, workingSkin));
-            });
+                DrawButton("CS_Studio_Skin_Settings".Translate(), OnOpenSkinSettings);
+                DrawButton("CS_LLM_Settings_Title".Translate(), OnOpenLlmSettings);
+                DrawButton("CS_Studio_Menu_Abilities".Translate(), () =>
+                {
+                    SyncAbilitiesFromSkin();
+                    Find.WindowStack.Add(new Dialog_AbilityEditor(workingAbilities, workingSkin.abilityHotkeys, workingSkin));
+                });
+            }
 
             Rect helpRect = new Rect(Mathf.Min(x, maxButtonX - 28f), buttonY, 26f, buttonHeight);
             if (helpRect.xMax <= maxButtonX)
@@ -267,7 +276,9 @@ namespace CharacterStudio.UI
             Widgets.DrawBox(skinRect, 1);
             GUI.color = Color.white;
 
-            string skinLabel = workingSkin.label ?? workingSkin.defName;
+            string skinLabel = layerModificationWorkflowActive
+                ? (workingRenderFixPatch?.label ?? "图层修改补丁")
+                : (workingSkin.label ?? workingSkin.defName);
             if (isDirty)
             {
                 skinLabel = "● " + skinLabel;
@@ -299,6 +310,12 @@ namespace CharacterStudio.UI
             if (statusMessageTime > 0 && !string.IsNullOrEmpty(statusMessage))
             {
                 status = statusMessage;
+            }
+            else if (layerModificationWorkflowActive)
+            {
+                int hiddenCount = workingRenderFixPatch?.hideNodePaths?.Count ?? 0;
+                int offsetCount = workingRenderFixPatch?.orderOverrides?.Count ?? 0;
+                status = $"图层修改工作流：隐藏节点 {hiddenCount} 个，层级修正 {offsetCount} 个。当前模式不会修改主皮肤模型。";
             }
             else if (isDirty)
             {

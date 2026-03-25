@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Defs>
+
+  <ThingDef ParentName="PawnFlyerBase">
+    <defName>CS_PawnJumper_Default</defName>
+    <label>character studio real jump</label>
+    <thingClass>CharacterStudio.Abilities.CharacterStudioPawnFlyer_Default</thingClass>
+    <drawOffscreen>true</drawOffscreen>
+    <drawerType>RealtimeOnly</drawerType>
+    <altitudeLayer>Pawn</altitudeLayer>
+    <pawnFlyer>
+      <flightDurationMin>0.35</flightDurationMin>
+      <flightSpeed>22</flightSpeed>
+      <workerClass>PawnFlyerWorker</workerClass>
+      <heightFactor>0</heightFactor>
+    </pawnFlyer>
+  </ThingDef>
+
+  <ThingDef ParentName="PawnFlyerBase">
+    <defName>CS_PawnJumper_OffscreenDive</defName>
+    <label>character studio offscreen dive</label>
+    <thingClass>CharacterStudio.Abilities.CharacterStudioPawnFlyer_OffscreenDive</thingClass>
+    <drawOffscreen>true</drawOffscreen>
+    <drawerType>RealtimeOnly</drawerType>
+    <altitudeLayer>Pawn</altitudeLayer>
+    <pawnFlyer>
+      <flightDurationMin>0.6</flightDurationMin>
+      <flightSpeed>32</flightSpeed>
+      <workerClass>PawnFlyerWorker</workerClass>
+      <heightFactor>0</heightFactor>
+    </pawnFlyer>
+  </ThingDef>
+
+</Defs>

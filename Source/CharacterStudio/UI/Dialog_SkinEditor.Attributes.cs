@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using CharacterStudio.AI;
+using CharacterStudio.Attributes;
 using CharacterStudio.Core;
+using RimWorld;
 using UnityEngine;
 using Verse;
 
@@ -11,9 +13,8 @@ namespace CharacterStudio.UI
     {
         private Vector2 attributesScrollPos;
         private string llmCharacterPrompt = string.Empty;
-        private string attributesTagsCsv = string.Empty;
-        private string attributesTraitsCsv = string.Empty;
-        private string attributesApparelCsv = string.Empty;
+        private Vector2 attributeBuffScrollPos;
+        private string attributeBuffSearchText = string.Empty;
         // LLM 生成状态（异步）
         private bool llmCharacterGenerating = false;
         private LlmGeneratedCharacterDesign? llmCharacterPendingResult = null;
@@ -44,22 +45,9 @@ namespace CharacterStudio.UI
 
             workingSkin.attributes ??= new CharacterAttributeProfile();
             CharacterAttributeProfile attributes = workingSkin.attributes;
+            CharacterStatModifierProfile statProfile = CharacterAttributeBuffService.GetOrCreateProfile(workingSkin);
 
-            Rect summaryRect = new Rect(rect.x + Margin, titleRect.yMax + 6f, rect.width - Margin * 2, 24f);
-            Widgets.DrawBoxSolid(summaryRect, UIHelper.PanelFillSoftColor);
-            GUI.color = UIHelper.BorderColor;
-            Widgets.DrawBox(summaryRect, 1);
-            GUI.color = Color.white;
-
-            Text.Font = GameFont.Tiny;
-            Text.Anchor = TextAnchor.MiddleLeft;
-            GUI.color = UIHelper.SubtleColor;
-            Widgets.Label(new Rect(summaryRect.x + 8f, summaryRect.y, summaryRect.width - 16f, summaryRect.height), $"标签 {attributes.tags?.Count ?? 0} · 特质 {attributes.keyTraits?.Count ?? 0} · 初始装备 {attributes.startingApparelDefs?.Count ?? 0}");
-            GUI.color = Color.white;
-            Text.Anchor = TextAnchor.UpperLeft;
-            Text.Font = GameFont.Small;
-
-            float contentY = summaryRect.yMax + 8f;
+            float contentY = titleRect.yMax + 8f;
             float contentHeight = rect.height - contentY + rect.y - Margin;
             Rect contentRect = new Rect(rect.x + Margin, contentY, rect.width - Margin * 2, contentHeight);
             Widgets.DrawBoxSolid(contentRect, UIHelper.PanelFillSoftColor);
@@ -67,52 +55,22 @@ namespace CharacterStudio.UI
             Widgets.DrawBox(contentRect, 1);
             GUI.color = Color.white;
 
-            Rect viewRect = new Rect(0f, 0f, contentRect.width - 20f, 980f);
+            Rect viewRect = new Rect(0f, 0f, contentRect.width - 20f, 1360f);
             Widgets.BeginScrollView(contentRect.ContractedBy(2f), ref attributesScrollPos, viewRect);
 
             float y = 0f;
             float width = viewRect.width;
 
-            UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Tab_Attributes".Translate());
-            UIHelper.DrawPropertyField(ref y, width, "CS_Attr_Title".Translate(), ref attributes.title);
-            UIHelper.DrawPropertyField(ref y, width, "CS_Attr_FactionRole".Translate(), ref attributes.factionRole);
-            UIHelper.DrawPropertyField(ref y, width, "CS_Attr_CombatRole".Translate(), ref attributes.combatRole);
-            UIHelper.DrawPropertyField(ref y, width, "CS_Attr_Personality".Translate(), ref attributes.personality);
-            UIHelper.DrawPropertyField(ref y, width, "CS_Attr_BodyType".Translate(), ref attributes.bodyTypeDefName);
-            UIHelper.DrawPropertyField(ref y, width, "CS_Attr_HeadType".Translate(), ref attributes.headTypeDefName);
-            UIHelper.DrawPropertyField(ref y, width, "CS_Attr_HairDef".Translate(), ref attributes.hairDefName);
-            UIHelper.DrawPropertyField(ref y, width, "CS_Attr_FavoriteColor".Translate(), ref attributes.favoriteColorHex);
-            UIHelper.DrawNumericField(ref y, width, "CS_Attr_BiologicalAge".Translate(), ref attributes.biologicalAge, 0f, 999f);
-            UIHelper.DrawNumericField(ref y, width, "CS_Attr_ChronologicalAge".Translate(), ref attributes.chronologicalAge, 0f, 9999f);
-            UIHelper.DrawNumericField(ref y, width, "CS_Attr_MoveSpeed".Translate(), ref attributes.moveSpeedMultiplier, 0f, 10f);
-            UIHelper.DrawNumericField(ref y, width, "CS_Attr_MeleePower".Translate(), ref attributes.meleePower, 0f, 10f);
-            UIHelper.DrawNumericField(ref y, width, "CS_Attr_ShootingAccuracy".Translate(), ref attributes.shootingAccuracy, 0f, 10f);
-            UIHelper.DrawNumericField(ref y, width, "CS_Attr_ArmorRating".Translate(), ref attributes.armorRating, 0f, 200f);
-            UIHelper.DrawNumericField(ref y, width, "CS_Attr_PsychicSensitivity".Translate(), ref attributes.psychicSensitivity, 0f, 10f);
-            UIHelper.DrawNumericField(ref y, width, "CS_Attr_MarketValue".Translate(), ref attributes.marketValue, 0f, 100000f);
+            UIHelper.DrawSectionTitle(ref y, width, "CS_Attr_Section_Basic".Translate());
+            DrawTrackedPropertyField(ref y, width, "CS_Attr_Title".Translate(), ref attributes.title);
+            DrawTrackedMultilineField(ref y, width, "CS_Attr_BackstorySummary".Translate(), ref attributes.backstorySummary, 104f);
 
-            attributes.tags ??= new List<string>();
-            attributes.keyTraits ??= new List<string>();
-            attributes.startingApparelDefs ??= new List<string>();
-            EnsureAttributeCsvBuffers(attributes);
-            DrawStringListEditor(ref y, width, "CS_Attr_Tags".Translate(), attributes.tags, ref attributesTagsCsv);
-            DrawStringListEditor(ref y, width, "CS_Attr_KeyTraits".Translate(), attributes.keyTraits, ref attributesTraitsCsv);
-            DrawStringListEditor(ref y, width, "CS_Attr_StartingApparel".Translate(), attributes.startingApparelDefs, ref attributesApparelCsv);
+            UIHelper.DrawSectionTitle(ref y, width, "CS_Attr_Section_Stats".Translate());
+            DrawTrackedNumericField(ref y, width, "CS_Attr_BiologicalAge".Translate(), ref attributes.biologicalAge, 0f, 999f);
+            DrawTrackedNumericField(ref y, width, "CS_Attr_ChronologicalAge".Translate(), ref attributes.chronologicalAge, 0f, 9999f);
 
-            UIHelper.DrawSectionTitle(ref y, width, "CS_LLM_CharacterSection".Translate());
-
-            string llmHint = "CS_LLM_EditorTool_CharacterHint".Translate();
-            Text.Font = GameFont.Tiny;
-            float llmHintHeight = Mathf.Max(40f, Text.CalcHeight(llmHint, Mathf.Max(40f, width - 16f)) + 12f);
-            Rect llmHintRect = new Rect(0f, y, width, llmHintHeight);
-            Widgets.DrawBoxSolid(llmHintRect, new Color(UIHelper.AccentColor.r, UIHelper.AccentColor.g, UIHelper.AccentColor.b, 0.10f));
-            GUI.color = UIHelper.BorderColor;
-            Widgets.DrawBox(llmHintRect, 1);
-            GUI.color = UIHelper.SubtleColor;
-            Widgets.Label(new Rect(8f, y + 4f, width - 16f, llmHintHeight - 8f), llmHint);
-            GUI.color = Color.white;
-            Text.Font = GameFont.Small;
-            y += llmHintHeight + 6f;
+            UIHelper.DrawSectionTitle(ref y, width, "CS_AttrBuff_Section".Translate());
+            DrawAttributeBuffEditor(ref y, width, statProfile);
 
             Widgets.Label(new Rect(0f, y, width, 24f), "CS_LLM_CharacterPrompt".Translate());
             Rect promptRect = new Rect(0f, y + 26f, width, 110f);
@@ -125,7 +83,6 @@ namespace CharacterStudio.UI
 
             float buttonWidth = (width - 10f) / 2f;
 
-            // 处理异步回调结果（在主线程 UI 帧中消费）
             if (llmCharacterPendingResult != null)
             {
                 ApplyGeneratedCharacter(llmCharacterPendingResult);
@@ -182,52 +139,250 @@ namespace CharacterStudio.UI
             Widgets.EndScrollView();
         }
 
-        private void DrawStringListEditor(ref float y, float width, string label, List<string> values, ref string buffer)
+        private void DrawTrackedPropertyField(ref float y, float width, string label, ref string value)
         {
-            values ??= new List<string>();
-            string display = values.Count == 0 ? "-" : string.Join(", ", values);
-            UIHelper.DrawPropertyLabel(ref y, width, label, display);
-            UIHelper.DrawPropertyField(ref y, width, label + " CSV", ref buffer);
-            ReplaceListFromCsv(values, buffer);
-        }
-
-        private void EnsureAttributeCsvBuffers(CharacterAttributeProfile attributes)
-        {
-            if (string.IsNullOrEmpty(attributesTagsCsv))
+            string before = value ?? string.Empty;
+            string current = value ?? string.Empty;
+            UIHelper.DrawPropertyField(ref y, width, label, ref current);
+            value = current;
+            if (!string.Equals(before, current, StringComparison.Ordinal))
             {
-                attributesTagsCsv = string.Join(", ", attributes.tags ?? new List<string>());
-            }
-
-            if (string.IsNullOrEmpty(attributesTraitsCsv))
-            {
-                attributesTraitsCsv = string.Join(", ", attributes.keyTraits ?? new List<string>());
-            }
-
-            if (string.IsNullOrEmpty(attributesApparelCsv))
-            {
-                attributesApparelCsv = string.Join(", ", attributes.startingApparelDefs ?? new List<string>());
+                isDirty = true;
             }
         }
 
-        private void ReplaceListFromCsv(List<string> target, string csv)
+        private void DrawTrackedMultilineField(ref float y, float width, string label, ref string value, float height)
         {
-            target.Clear();
-            if (string.IsNullOrWhiteSpace(csv))
+            Widgets.Label(new Rect(0f, y, width, 24f), label);
+            Rect textRect = new Rect(0f, y + 24f, width, height);
+            Widgets.DrawBoxSolid(textRect, UIHelper.PanelFillColor);
+            GUI.color = UIHelper.BorderColor;
+            Widgets.DrawBox(textRect, 1);
+            GUI.color = Color.white;
+
+            string before = value ?? string.Empty;
+            string after = Widgets.TextArea(textRect.ContractedBy(4f), before);
+            if (!string.Equals(before, after, StringComparison.Ordinal))
             {
+                value = after;
+                isDirty = true;
+            }
+
+            y += height + 32f;
+        }
+
+        private void DrawTrackedNumericField(ref float y, float width, string label, ref float value, float min, float max)
+        {
+            float before = value;
+            UIHelper.DrawNumericField(ref y, width, label, ref value, min, max);
+            if (Math.Abs(before - value) > 0.0001f)
+            {
+                isDirty = true;
+            }
+        }
+
+        private void DrawAttributeBuffEditor(ref float y, float width, CharacterStatModifierProfile profile)
+        {
+            profile.entries ??= new List<CharacterStatModifierEntry>();
+
+            float gap = 8f;
+            float buttonWidth = (width - gap * 2f) / 3f;
+            Rect toolbarRect = new Rect(0f, y, width, 28f);
+            if (Widgets.ButtonText(new Rect(toolbarRect.x, toolbarRect.y, buttonWidth, 24f), "CS_AttrBuff_AddCommon".Translate()))
+            {
+                ShowCommonStatSelectionMenu(profile);
+            }
+            if (Widgets.ButtonText(new Rect(toolbarRect.x + buttonWidth + gap, toolbarRect.y, buttonWidth, 24f), "CS_AttrBuff_AddAny".Translate()))
+            {
+                ShowAnyStatSelectionMenu(profile);
+            }
+            if (Widgets.ButtonText(new Rect(toolbarRect.x + (buttonWidth + gap) * 2f, toolbarRect.y, buttonWidth, 24f), "CS_AttrBuff_ClearAll".Translate()))
+            {
+                profile.entries.Clear();
+                isDirty = true;
+            }
+            y += 30f;
+
+            string newSearch = Widgets.TextEntryLabeled(new Rect(0f, y, width, 24f), "CS_AttrBuff_Search".Translate(), attributeBuffSearchText);
+            if (!string.Equals(newSearch, attributeBuffSearchText, StringComparison.Ordinal))
+            {
+                attributeBuffSearchText = newSearch;
+            }
+            y += 30f;
+
+            if (profile.entries.Count == 0)
+            {
+                GUI.color = UIHelper.SubtleColor;
+                Widgets.Label(new Rect(0f, y, width, 24f), "CS_AttrBuff_Empty".Translate());
+                GUI.color = Color.white;
+                y += 28f;
+                return;
+            }
+
+            float listHeight = Mathf.Clamp(profile.entries.Count * 66f + 6f, 120f, 360f);
+            Rect outerRect = new Rect(0f, y, width, listHeight);
+            Widgets.DrawBoxSolid(outerRect, UIHelper.PanelFillColor);
+            GUI.color = UIHelper.BorderColor;
+            Widgets.DrawBox(outerRect, 1);
+            GUI.color = Color.white;
+
+            Rect listView = new Rect(0f, 0f, outerRect.width - 16f, profile.entries.Count * 66f + 4f);
+            Widgets.BeginScrollView(outerRect.ContractedBy(2f), ref attributeBuffScrollPos, listView);
+
+            float rowY = 0f;
+            for (int i = 0; i < profile.entries.Count; i++)
+            {
+                CharacterStatModifierEntry entry = profile.entries[i];
+                if (entry == null)
+                {
+                    continue;
+                }
+
+                Rect rowRect = new Rect(0f, rowY, listView.width, 62f);
+                Widgets.DrawBoxSolid(rowRect, i % 2 == 0 ? UIHelper.PanelFillSoftColor : UIHelper.PanelFillColor);
+
+                Rect enabledRect = new Rect(4f, rowY + 4f, 22f, 22f);
+                bool previousEnabled = entry.enabled;
+                Widgets.Checkbox(enabledRect.position, ref entry.enabled);
+                if (entry.enabled != previousEnabled)
+                {
+                    isDirty = true;
+                }
+
+                StatDef selectedStat = DefDatabase<StatDef>.GetNamedSilentFail(entry.statDefName);
+                string statLabel = CharacterStatModifierCatalog.GetDisplayLabel(selectedStat);
+                if (Widgets.ButtonText(new Rect(30f, rowY + 4f, 220f, 24f), statLabel))
+                {
+                    ShowStatSelectionMenu(profile, entry, includeAllUseful: true);
+                }
+
+                if (Widgets.ButtonText(new Rect(258f, rowY + 4f, 88f, 24f), CharacterStatModifierCatalog.GetModeLabel(entry.mode)))
+                {
+                    ToggleModifierMode(entry);
+                }
+
+                float beforeValue = entry.value;
+                UIHelper.DrawNumericField(ref rowY, listView.width - 120f, "CS_AttrBuff_Value".Translate(), ref entry.value, -100f, 100f, 80f);
+                rowY -= UIHelper.RowHeight;
+                if (Math.Abs(beforeValue - entry.value) > 0.0001f)
+                {
+                    isDirty = true;
+                }
+
+                string explain = entry.mode == CharacterStatModifierMode.Offset
+                    ? "CS_AttrBuff_Mode_Offset_Desc".Translate()
+                    : "CS_AttrBuff_Mode_Factor_Desc".Translate();
+                GUI.color = UIHelper.SubtleColor;
+                Widgets.Label(new Rect(30f, rowY + 32f, 360f, 24f), explain + "  " + "CS_AttrBuff_CurrentValue".Translate(CharacterStatModifierCatalog.FormatValuePreview(entry.mode, entry.value)));
+                GUI.color = Color.white;
+
+                if (Widgets.ButtonText(new Rect(listView.width - 74f, rowY + 4f, 70f, 24f), "CS_Studio_Btn_Delete".Translate()))
+                {
+                    profile.entries.RemoveAt(i);
+                    isDirty = true;
+                    CharacterAttributeBuffService.SyncAttributeBuff(targetPawn);
+                    break;
+                }
+
+                rowY += 66f;
+            }
+
+            Widgets.EndScrollView();
+            y += listHeight + 8f;
+
+            CharacterAttributeBuffService.SyncAttributeBuff(targetPawn);
+        }
+
+        private void ToggleModifierMode(CharacterStatModifierEntry entry)
+        {
+            if (entry == null)
+            {
+                return;
+            }
+
+            entry.mode = entry.mode == CharacterStatModifierMode.Offset
+                ? CharacterStatModifierMode.Factor
+                : CharacterStatModifierMode.Offset;
+            isDirty = true;
+        }
+
+        private void ShowCommonStatSelectionMenu(CharacterStatModifierProfile profile)
+        {
+            var options = new List<FloatMenuOption>();
+            foreach (string defName in CharacterStatModifierCatalog.CommonStatDefNames)
+            {
+                StatDef stat = DefDatabase<StatDef>.GetNamedSilentFail(defName);
+                if (stat == null)
+                {
+                    continue;
+                }
+
+                StatDef captured = stat;
+                options.Add(new FloatMenuOption(CharacterStatModifierCatalog.GetMenuLabel(captured), () => AddOrUpdateStatModifier(profile, captured)));
+            }
+            Find.WindowStack.Add(new FloatMenu(options));
+        }
+
+        private void ShowAnyStatSelectionMenu(CharacterStatModifierProfile profile)
+        {
+            ShowStatSelectionMenu(profile, null!, includeAllUseful: true);
+        }
+
+        private void ShowStatSelectionMenu(CharacterStatModifierProfile profile, CharacterStatModifierEntry existingEntry, bool includeAllUseful)
+        {
+            var options = new List<FloatMenuOption>();
+            string search = (attributeBuffSearchText ?? string.Empty).Trim().ToLowerInvariant();
+            foreach (StatDef stat in CharacterStatModifierCatalog.GetAvailableStatDefs())
+            {
+                if (!string.IsNullOrEmpty(search))
+                {
+                    string haystack = (CharacterStatModifierCatalog.GetDisplayLabel(stat) + " " + stat.defName + " " + CharacterStatModifierCatalog.GetCategoryLabel(stat))
+                        .ToLowerInvariant();
+                    if (!haystack.Contains(search))
+                    {
+                        continue;
+                    }
+                }
+
+                StatDef captured = stat;
+                options.Add(new FloatMenuOption(CharacterStatModifierCatalog.GetMenuLabel(captured), () =>
+                {
+                    if (existingEntry == null)
+                    {
+                        AddOrUpdateStatModifier(profile, captured);
+                    }
+                    else
+                    {
+                        existingEntry.statDefName = captured.defName;
+                        isDirty = true;
+                    }
+                }));
+            }
+            Find.WindowStack.Add(new FloatMenu(options));
+        }
+
+        private void AddOrUpdateStatModifier(CharacterStatModifierProfile profile, StatDef stat)
+        {
+            if (profile == null || stat == null)
+            {
+                return;
+            }
+
+            CharacterStatModifierEntry existing = profile.entries.Find(e => e != null && string.Equals(e.statDefName, stat.defName, StringComparison.OrdinalIgnoreCase));
+            if (existing != null)
+            {
+                existing.enabled = true;
                 isDirty = true;
                 return;
             }
 
-            string[] parts = csv.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-            foreach (string raw in parts)
+            profile.entries.Add(new CharacterStatModifierEntry
             {
-                string value = raw.Trim();
-                if (!string.IsNullOrEmpty(value) && !target.Contains(value))
-                {
-                    target.Add(value);
-                }
-            }
-
+                statDefName = stat.defName,
+                mode = CharacterStatModifierMode.Offset,
+                value = 0f,
+                enabled = true
+            });
             isDirty = true;
         }
 
@@ -253,7 +408,6 @@ namespace CharacterStudio.UI
             llmCharacterGenerating = true;
             ShowStatus("CS_LLM_Generating".Translate());
 
-            // 捕获不可变副本，避免后台线程访问主线程数据竞争
             var skinSnapshot = workingSkin.Clone();
             var abilitiesSnapshot = new System.Collections.Generic.List<Abilities.ModularAbilityDef>(workingAbilities);
 
@@ -277,22 +431,9 @@ namespace CharacterStudio.UI
             workingSkin.defName = string.IsNullOrWhiteSpace(design.suggestedDefName) ? workingSkin.defName : design.suggestedDefName;
             workingSkin.label = string.IsNullOrWhiteSpace(design.suggestedLabel) ? workingSkin.label : design.suggestedLabel;
             workingSkin.description = string.IsNullOrWhiteSpace(design.suggestedDescription) ? workingSkin.description : design.suggestedDescription;
-            workingSkin.attributes = design.attributes?.Clone() ?? new CharacterAttributeProfile();
-            attributesTagsCsv = string.Join(", ", workingSkin.attributes.tags ?? new List<string>());
-            attributesTraitsCsv = string.Join(", ", workingSkin.attributes.keyTraits ?? new List<string>());
-            attributesApparelCsv = string.Join(", ", workingSkin.attributes.startingApparelDefs ?? new List<string>());
 
-            workingSkin.hiddenPaths.Clear();
-            if (design.hiddenNodePaths != null)
-            {
-                workingSkin.hiddenPaths.AddRange(design.hiddenNodePaths);
-            }
-
-            workingSkin.targetRaces.Clear();
-            if (design.targetRaceDefs != null)
-            {
-                workingSkin.targetRaces.AddRange(design.targetRaceDefs);
-            }
+            workingSkin.attributes ??= new CharacterAttributeProfile();
+            MergeGeneratedCharacterAttributes(workingSkin.attributes, design.attributes);
 
             workingAbilities.Clear();
             if (design.abilities != null)
@@ -307,6 +448,34 @@ namespace CharacterStudio.UI
             }
 
             SyncAbilitiesToSkin();
+        }
+
+        private void MergeGeneratedCharacterAttributes(CharacterAttributeProfile current, CharacterAttributeProfile? incoming)
+        {
+            if (current == null || incoming == null)
+            {
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(incoming.title))
+            {
+                current.title = incoming.title;
+            }
+
+            if (!string.IsNullOrWhiteSpace(incoming.backstorySummary))
+            {
+                current.backstorySummary = incoming.backstorySummary;
+            }
+
+            if (incoming.biologicalAge > 0f)
+            {
+                current.biologicalAge = incoming.biologicalAge;
+            }
+
+            if (incoming.chronologicalAge > 0f)
+            {
+                current.chronologicalAge = incoming.chronologicalAge;
+            }
         }
     }
 }

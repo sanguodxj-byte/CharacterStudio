@@ -80,17 +80,13 @@ namespace CharacterStudio.UI
 
         private void CaptureUndoSnapshot()
         {
-            SyncAbilitiesToSkin();
-            workingDocument.runtimeSkin = workingSkin;
-            workingDocument.SyncMetadataFromRuntimeSkin();
+            SyncWorkingDocumentFromWorkingSkin();
             editorHistory.PushUndo(workingDocument, selectedLayerIndex, selectedLayerIndices);
         }
 
         private void ApplyUndoSnapshot()
         {
-            SyncAbilitiesToSkin();
-            workingDocument.runtimeSkin = workingSkin;
-            workingDocument.SyncMetadataFromRuntimeSkin();
+            SyncWorkingDocumentFromWorkingSkin();
 
             if (!editorHistory.TryUndo(workingDocument, selectedLayerIndex, selectedLayerIndices, out var snapshot) || snapshot == null)
             {
@@ -113,9 +109,7 @@ namespace CharacterStudio.UI
 
         private void ApplyRedoSnapshot()
         {
-            SyncAbilitiesToSkin();
-            workingDocument.runtimeSkin = workingSkin;
-            workingDocument.SyncMetadataFromRuntimeSkin();
+            SyncWorkingDocumentFromWorkingSkin();
 
             if (!editorHistory.TryRedo(workingDocument, selectedLayerIndex, selectedLayerIndices, out var snapshot) || snapshot == null)
             {
@@ -271,6 +265,16 @@ namespace CharacterStudio.UI
             }
 
             CaptureUndoSnapshot();
+
+            List<PawnLayerConfig> removedLayers = targets
+                .Where(index => index >= 0 && index < workingSkin.layers.Count)
+                .Select(index => workingSkin.layers[index])
+                .ToList();
+
+            foreach (PawnLayerConfig removedLayer in removedLayers)
+            {
+                TryRemoveEditableFaceLayerFromFaceConfig(removedLayer);
+            }
 
             foreach (int index in targets.OrderByDescending(i => i))
             {

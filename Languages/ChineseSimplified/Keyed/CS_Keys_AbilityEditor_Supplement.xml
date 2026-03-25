@@ -1,0 +1,348 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <CS_Ability_Validate_AreaRadiusPositive>范围半径必须大于 0</CS_Ability_Validate_AreaRadiusPositive>
+    <CS_Ability_Validate_ChainBounceCount>连锁弹跳次数必须大于 0</CS_Ability_Validate_ChainBounceCount>
+    <CS_Ability_Validate_ChainBounceFalloff>连锁弹跳衰减系数不能为负数</CS_Ability_Validate_ChainBounceFalloff>
+    <CS_Ability_Validate_ChainBounceRange>连锁弹跳搜索半径必须大于 0</CS_Ability_Validate_ChainBounceRange>
+    <CS_Ability_Validate_ComboStackBonusPerStack>每层连击额外伤害不能为负数</CS_Ability_Validate_ComboStackBonusPerStack>
+    <CS_Ability_Validate_ComboStackMax>连击层数上限必须大于 0</CS_Ability_Validate_ComboStackMax>
+    <CS_Ability_Validate_ComboStackWindowTicks>连击窗口时长必须大于 0 tick</CS_Ability_Validate_ComboStackWindowTicks>
+    <CS_Ability_Validate_DashEmpowerBonusScale>冲刺强化增伤倍率不能为负数</CS_Ability_Validate_DashEmpowerBonusScale>
+    <CS_Ability_Validate_DashEmpowerDurationTicks>冲刺强化持续时间必须大于 0 tick</CS_Ability_Validate_DashEmpowerDurationTicks>
+    <CS_Ability_Validate_ExecuteBonusScale>斩杀增伤倍率不能为负数</CS_Ability_Validate_ExecuteBonusScale>
+    <CS_Ability_Validate_ExecuteThreshold>斩杀阈值必须在 0 到 1 之间</CS_Ability_Validate_ExecuteThreshold>
+    <CS_Ability_Validate_FollowupCooldownTicks>后续禁用时长必须大于 0 tick</CS_Ability_Validate_FollowupCooldownTicks>
+    <CS_Ability_Validate_HitCooldownRefundPercent>命中返还冷却比例必须在 0 到 1 之间</CS_Ability_Validate_HitCooldownRefundPercent>
+    <CS_Ability_Validate_HitHealRequired>命中治疗必须至少配置固定治疗量或比例治疗量</CS_Ability_Validate_HitHealRequired>
+    <CS_Ability_Validate_HitHealValues>命中治疗的固定值和比例都不能为负数</CS_Ability_Validate_HitHealValues>
+    <CS_Ability_Validate_HotkeyOverrideAbilityDefName>热键覆盖必须指定技能 DefName</CS_Ability_Validate_HotkeyOverrideAbilityDefName>
+    <CS_Ability_Validate_HotkeyOverrideDurationTicks>热键覆盖持续时间必须大于 0 tick</CS_Ability_Validate_HotkeyOverrideDurationTicks>
+    <CS_Ability_Validate_IrregularPatternRequired>启用不规则图案时必须提供图案数据</CS_Ability_Validate_IrregularPatternRequired>
+    <CS_Ability_Validate_KillRefreshCooldownPercent>击杀刷新冷却比例必须在 0 到 1 之间</CS_Ability_Validate_KillRefreshCooldownPercent>
+    <CS_Ability_Validate_MarkDetonationDamage>标记引爆伤害必须大于 0</CS_Ability_Validate_MarkDetonationDamage>
+    <CS_Ability_Validate_MarkDurationTicks>标记持续时间必须大于 0 tick</CS_Ability_Validate_MarkDurationTicks>
+    <CS_Ability_Validate_MarkMaxStacks>标记层数上限必须大于 0</CS_Ability_Validate_MarkMaxStacks>
+    <CS_Ability_Validate_MissingHealthMaxScale>残血增伤上限倍率不能为负数</CS_Ability_Validate_MissingHealthMaxScale>
+    <CS_Ability_Validate_MissingHealthPerTen>每损失 10% 生命的增伤倍率不能为负数</CS_Ability_Validate_MissingHealthPerTen>
+    <CS_Ability_Validate_PeriodicPulseIntervalTicks>周期脉冲间隔必须大于 0 tick</CS_Ability_Validate_PeriodicPulseIntervalTicks>
+    <CS_Ability_Validate_PeriodicPulseTotalTicks>周期脉冲总时长必须大于 0 tick</CS_Ability_Validate_PeriodicPulseTotalTicks>
+    <CS_Ability_Validate_PierceBonusPerTarget>每次穿透的额外伤害不能为负数</CS_Ability_Validate_PierceBonusPerTarget>
+    <CS_Ability_Validate_PierceMaxTargets>穿透目标上限必须大于 0</CS_Ability_Validate_PierceMaxTargets>
+    <CS_Ability_Validate_PierceSearchRange>穿透搜索半径必须大于 0</CS_Ability_Validate_PierceSearchRange>
+    <CS_Ability_Validate_ShieldDurationTicks>护盾持续时间必须大于 0 tick</CS_Ability_Validate_ShieldDurationTicks>
+    <CS_Ability_Validate_ShieldMaxDamage>护盾吸收上限必须大于 0</CS_Ability_Validate_ShieldMaxDamage>
+    <CS_Ability_Validate_ShieldRatios>护盾治疗转换和增伤转换比例不能为负数</CS_Ability_Validate_ShieldRatios>
+    <CS_Ability_Validate_SlowFieldDurationTicks>减速场持续时间必须大于 0 tick</CS_Ability_Validate_SlowFieldDurationTicks>
+    <CS_Ability_Validate_SlowFieldHediffDefName>减速场必须指定 HediffDefName</CS_Ability_Validate_SlowFieldHediffDefName>
+    <CS_Ability_Validate_SlowFieldRadius>减速场半径必须大于 0</CS_Ability_Validate_SlowFieldRadius>
+    <CS_Ability_Validate_SmartJumpOffsetCells>智能跳跃偏移格数不能为负数</CS_Ability_Validate_SmartJumpOffsetCells>
+    <CS_Ability_Validate_SplitDamageScale>分裂投射物伤害倍率不能为负数</CS_Ability_Validate_SplitDamageScale>
+    <CS_Ability_Validate_SplitProjectileCount>分裂投射物数量必须大于 0</CS_Ability_Validate_SplitProjectileCount>
+    <CS_Ability_Validate_SplitSearchRange>分裂投射物搜索半径必须大于 0</CS_Ability_Validate_SplitSearchRange>
+    <CS_LLM_AbilityPrompt_Empty>请先输入技能描述</CS_LLM_AbilityPrompt_Empty>
+    <CS_LLM_ApplyAppend>追加到现有技能</CS_LLM_ApplyAppend>
+    <CS_LLM_ApplyReplace>替换现有技能</CS_LLM_ApplyReplace>
+    <CS_LLM_GenerateAbilities>生成技能</CS_LLM_GenerateAbilities>
+    <CS_LLM_GenerateAbilitiesEmpty>LLM 未返回可用技能</CS_LLM_GenerateAbilitiesEmpty>
+    <CS_LLM_GenerateAbilitiesReplaced>已替换为 {0} 个新技能</CS_LLM_GenerateAbilitiesReplaced>
+    <CS_LLM_Generating>生成中...</CS_LLM_Generating>
+    <CS_LLM_Settings_NotConfigured>未配置</CS_LLM_Settings_NotConfigured>
+    <CS_Studio_Ability_AddEffect>添加效果</CS_Studio_Ability_AddEffect>
+    <CS_Studio_Ability_AreaCenter>范围中心</CS_Studio_Ability_AreaCenter>
+    <CS_Studio_Ability_AreaShape>范围形状</CS_Studio_Ability_AreaShape>
+    <CS_Studio_Ability_Charges>次数</CS_Studio_Ability_Charges>
+    <CS_Studio_Ability_Cooldown>冷却 (Tick)</CS_Studio_Ability_Cooldown>
+    <CS_Studio_Ability_CopyLabel>{0} 副本</CS_Studio_Ability_CopyLabel>
+    <CS_Studio_Ability_CountSummary>显示 {0} / {1} 个技能</CS_Studio_Ability_CountSummary>
+    <CS_Studio_Ability_DefaultName>新技能</CS_Studio_Ability_DefaultName>
+    <CS_Studio_Ability_DefName>DefName</CS_Studio_Ability_DefName>
+    <CS_Studio_Ability_DefSummary>Def：{0}</CS_Studio_Ability_DefSummary>
+    <CS_Studio_Ability_EditorTitle>技能编辑器</CS_Studio_Ability_EditorTitle>
+    <CS_Studio_Ability_EffectsSummary>效果 {0} 个 / 运行时组件 {1} 个</CS_Studio_Ability_EffectsSummary>
+    <CS_Studio_Ability_ExamplesLoaded>已加载示例技能</CS_Studio_Ability_ExamplesLoaded>
+    <CS_Studio_Ability_Hotkey_None>(未绑定)</CS_Studio_Ability_Hotkey_None>
+    <CS_Studio_Ability_HotkeySettings>热键设置</CS_Studio_Ability_HotkeySettings>
+    <CS_Studio_Ability_HotkeySlot_E>E</CS_Studio_Ability_HotkeySlot_E>
+    <CS_Studio_Ability_HotkeySlot_Q>Q</CS_Studio_Ability_HotkeySlot_Q>
+    <CS_Studio_Ability_HotkeySlot_R>R</CS_Studio_Ability_HotkeySlot_R>
+    <CS_Studio_Ability_HotkeySlot_W>W</CS_Studio_Ability_HotkeySlot_W>
+    <CS_Studio_Ability_HotkeySlot_WCombo>W连段</CS_Studio_Ability_HotkeySlot_WCombo>
+    <CS_Studio_Ability_HotkeySlotSummary>{0}：{1}</CS_Studio_Ability_HotkeySlotSummary>
+    <CS_Studio_Ability_HotkeySummary>热键映射：{0}</CS_Studio_Ability_HotkeySummary>
+    <CS_Studio_Ability_IconPath>图标路径</CS_Studio_Ability_IconPath>
+    <CS_Studio_Ability_ImportAppend>追加导入</CS_Studio_Ability_ImportAppend>
+    <CS_Studio_Ability_ImportAppended>已从 {1} 追加导入 {0} 个技能（原有 {2} 个，当前共 {3} 个）</CS_Studio_Ability_ImportAppended>
+    <CS_Studio_Ability_ImportFailed>技能 XML 导入失败：{0}</CS_Studio_Ability_ImportFailed>
+    <CS_Studio_Ability_ImportNoAbilities>未在该 XML 中找到可导入的技能</CS_Studio_Ability_ImportNoAbilities>
+    <CS_Studio_Ability_ImportReplace>清空并导入</CS_Studio_Ability_ImportReplace>
+    <CS_Studio_Ability_ImportReplaced>已从 {1} 导入 {0} 个技能，并替换当前列表</CS_Studio_Ability_ImportReplaced>
+    <CS_Studio_Ability_ImportXml>导入 XML</CS_Studio_Ability_ImportXml>
+    <CS_Studio_Ability_ImportXmlHint>输入一个已有 XML 文件路径。支持直接导入 ModularAbilityDef、PawnSkinDef 内嵌 abilities，或标准 AbilityDef，并转换为技能编辑器可编辑格式。</CS_Studio_Ability_ImportXmlHint>
+    <CS_Studio_Ability_ImportXmlPath>XML 路径</CS_Studio_Ability_ImportXmlPath>
+    <CS_Studio_Ability_ImportXmlTitle>导入技能 XML</CS_Studio_Ability_ImportXmlTitle>
+    <CS_Studio_Ability_Invalid>校验失败</CS_Studio_Ability_Invalid>
+    <CS_Studio_Ability_IrregularPattern>不规则图案</CS_Studio_Ability_IrregularPattern>
+    <CS_Studio_Ability_IrregularPatternHint>使用自定义格子偏移来定义不规则范围。</CS_Studio_Ability_IrregularPatternHint>
+    <CS_Studio_Ability_LeftPanelTitle>技能列表</CS_Studio_Ability_LeftPanelTitle>
+    <CS_Studio_Ability_ListTitle>技能列表</CS_Studio_Ability_ListTitle>
+    <CS_Studio_Ability_LlmBanner>AI 技能生成</CS_Studio_Ability_LlmBanner>
+    <CS_Studio_Ability_LoadExamples>加载示例</CS_Studio_Ability_LoadExamples>
+    <CS_Studio_Ability_Name>名称</CS_Studio_Ability_Name>
+    <CS_Studio_Ability_NoResults>没有匹配的技能</CS_Studio_Ability_NoResults>
+    <CS_Studio_Ability_PreviewCaster>施法者</CS_Studio_Ability_PreviewCaster>
+    <CS_Studio_Ability_PreviewCastReleaseDetail>释放阶段</CS_Studio_Ability_PreviewCastReleaseDetail>
+    <CS_Studio_Ability_PreviewEffectBuff>增益：{0}</CS_Studio_Ability_PreviewEffectBuff>
+    <CS_Studio_Ability_PreviewEffectControl>控制：{0}（{1}s）</CS_Studio_Ability_PreviewEffectControl>
+    <CS_Studio_Ability_PreviewEffectDamage>伤害：{0}（{1}）</CS_Studio_Ability_PreviewEffectDamage>
+    <CS_Studio_Ability_PreviewEffectDebuff>减益：{0}</CS_Studio_Ability_PreviewEffectDebuff>
+    <CS_Studio_Ability_PreviewEffectHeal>治疗：{0}</CS_Studio_Ability_PreviewEffectHeal>
+    <CS_Studio_Ability_PreviewEffectSummon>召唤：{0} ×{1}</CS_Studio_Ability_PreviewEffectSummon>
+    <CS_Studio_Ability_PreviewEffectTeleport>位移</CS_Studio_Ability_PreviewEffectTeleport>
+    <CS_Studio_Ability_PreviewEffectTerraform>地形改造：{0}</CS_Studio_Ability_PreviewEffectTerraform>
+    <CS_Studio_Ability_PreviewEmptyHint>选择一个技能后，可在此查看施法流程、效果负载、运行时行为与视觉效果预览。</CS_Studio_Ability_PreviewEmptyHint>
+    <CS_Studio_Ability_PreviewEmptyTitle>暂无预览内容</CS_Studio_Ability_PreviewEmptyTitle>
+    <CS_Studio_Ability_PreviewEventCasterOrigin>施法者原点</CS_Studio_Ability_PreviewEventCasterOrigin>
+    <CS_Studio_Ability_PreviewEventCastFinish>施法完成</CS_Studio_Ability_PreviewEventCastFinish>
+    <CS_Studio_Ability_PreviewEventCastStart>开始施法</CS_Studio_Ability_PreviewEventCastStart>
+    <CS_Studio_Ability_PreviewEventEffect>效果结算</CS_Studio_Ability_PreviewEventEffect>
+    <CS_Studio_Ability_PreviewEventProjectile>投射物飞行</CS_Studio_Ability_PreviewEventProjectile>
+    <CS_Studio_Ability_PreviewEventRuntime>运行时组件</CS_Studio_Ability_PreviewEventRuntime>
+    <CS_Studio_Ability_PreviewEventVfx>视觉效果</CS_Studio_Ability_PreviewEventVfx>
+    <CS_Studio_Ability_PreviewEventWarmup>热身阶段</CS_Studio_Ability_PreviewEventWarmup>
+    <CS_Studio_Ability_PreviewGrid>网格</CS_Studio_Ability_PreviewGrid>
+    <CS_Studio_Ability_PreviewGridScaleReference>网格比例参考</CS_Studio_Ability_PreviewGridScaleReference>
+    <CS_Studio_Ability_PreviewHintLine>该预览仅用于编辑器内可视化说明。</CS_Studio_Ability_PreviewHintLine>
+    <CS_Studio_Ability_PreviewLog>事件日志</CS_Studio_Ability_PreviewLog>
+    <CS_Studio_Ability_PreviewLoop>循环</CS_Studio_Ability_PreviewLoop>
+    <CS_Studio_Ability_PreviewLoopOn>循环中</CS_Studio_Ability_PreviewLoopOn>
+    <CS_Studio_Ability_PreviewNoEffects>未配置效果</CS_Studio_Ability_PreviewNoEffects>
+    <CS_Studio_Ability_PreviewNoPayloadNote>无效果负载</CS_Studio_Ability_PreviewNoPayloadNote>
+    <CS_Studio_Ability_PreviewNoRadiusNote>无范围半径</CS_Studio_Ability_PreviewNoRadiusNote>
+    <CS_Studio_Ability_PreviewPayload>效果负载</CS_Studio_Ability_PreviewPayload>
+    <CS_Studio_Ability_PreviewPlayOnce>播放一次</CS_Studio_Ability_PreviewPlayOnce>
+    <CS_Studio_Ability_PreviewProjectileGeneric>通用投射物</CS_Studio_Ability_PreviewProjectileGeneric>
+    <CS_Studio_Ability_PreviewRepeatIndex>第 {0} 次重复</CS_Studio_Ability_PreviewRepeatIndex>
+    <CS_Studio_Ability_PreviewRuntimeComboStacks>连击叠层：上限 {0}，每层 +{1}</CS_Studio_Ability_PreviewRuntimeComboStacks>
+    <CS_Studio_Ability_PreviewRuntimeDashEmpoweredStrike>冲刺强化：持续 {0}t，倍率 {1}</CS_Studio_Ability_PreviewRuntimeDashEmpoweredStrike>
+    <CS_Studio_Ability_PreviewRuntimeEShortJump>短跳：距离 {0}，冷却 {1}t</CS_Studio_Ability_PreviewRuntimeEShortJump>
+    <CS_Studio_Ability_PreviewRuntimeExecuteBonusDamage>斩杀增伤：阈值 {0}，倍率 {1}</CS_Studio_Ability_PreviewRuntimeExecuteBonusDamage>
+    <CS_Studio_Ability_PreviewRuntimeFlightState>飞行姿态：持续 {0}t，高度 {1}，限制战斗 {2}</CS_Studio_Ability_PreviewRuntimeFlightState>
+    <CS_Studio_Ability_PreviewRuntimeFollowupCooldownGate>后续禁用：{0}，持续 {1}t</CS_Studio_Ability_PreviewRuntimeFollowupCooldownGate>
+    <CS_Studio_Ability_PreviewRuntimeFullHealthBonusDamage>满血增伤：阈值 {0}，倍率 {1}</CS_Studio_Ability_PreviewRuntimeFullHealthBonusDamage>
+    <CS_Studio_Ability_PreviewRuntimeHitCooldownRefund>命中返冷：{0}，返还比例 {1}</CS_Studio_Ability_PreviewRuntimeHitCooldownRefund>
+    <CS_Studio_Ability_PreviewRuntimeHitHeal>命中治疗：固定 {0}，比例 {1}</CS_Studio_Ability_PreviewRuntimeHitHeal>
+    <CS_Studio_Ability_PreviewRuntimeHitSlowField>命中减速场：持续 {0}t，半径 {1}，Hediff {2}</CS_Studio_Ability_PreviewRuntimeHitSlowField>
+    <CS_Studio_Ability_PreviewRuntimeHotkeyOverride>热键覆盖：{0} → {1}（{2}t）</CS_Studio_Ability_PreviewRuntimeHotkeyOverride>
+    <CS_Studio_Ability_PreviewRuntimeIsolatedTargetBonusDamage>孤立目标增伤：半径 {0}，倍率 {1}</CS_Studio_Ability_PreviewRuntimeIsolatedTargetBonusDamage>
+    <CS_Studio_Ability_PreviewRuntimeMarkDetonation>标记引爆：上限 {0} 层，持续 {1}t，伤害 {2}</CS_Studio_Ability_PreviewRuntimeMarkDetonation>
+    <CS_Studio_Ability_PreviewRuntimeMissingHealthBonusDamage>残血增伤：每损失 10% +{0}，上限 {1}</CS_Studio_Ability_PreviewRuntimeMissingHealthBonusDamage>
+    <CS_Studio_Ability_PreviewRuntimeNearbyEnemyBonusDamage>邻敌增伤：最多 {0} 个，每个 +{1}，半径 {2}</CS_Studio_Ability_PreviewRuntimeNearbyEnemyBonusDamage>
+    <CS_Studio_Ability_PreviewRuntimePierceBonusDamage>穿透增伤：最多 {0} 次，每次 +{1}，半径 {2}</CS_Studio_Ability_PreviewRuntimePierceBonusDamage>
+    <CS_Studio_Ability_PreviewRuntimeProjectileSplit>投射物分裂：{0} 发，倍率 {1}，半径 {2}</CS_Studio_Ability_PreviewRuntimeProjectileSplit>
+    <CS_Studio_Ability_PreviewRuntimeQCombo>Q 连段窗口：{0}t</CS_Studio_Ability_PreviewRuntimeQCombo>
+    <CS_Studio_Ability_PreviewRuntimeRStack>叠层引爆：{0} 层，延迟 {1}t</CS_Studio_Ability_PreviewRuntimeRStack>
+    <CS_Studio_Ability_PreviewRuntimeSmartJump>智能跳跃：偏移 {0} 格，距离 {1}，冷却 {2}t</CS_Studio_Ability_PreviewRuntimeSmartJump>
+    <CS_Studio_Ability_PreviewSummaryLine>载体：{0} · 目标：{1}</CS_Studio_Ability_PreviewSummaryLine>
+    <CS_Studio_Ability_PreviewTab>预览</CS_Studio_Ability_PreviewTab>
+    <CS_Studio_Ability_PreviewTarget>目标</CS_Studio_Ability_PreviewTarget>
+    <CS_Studio_Ability_PreviewTextureSizeLabel>{0} × {1} 格</CS_Studio_Ability_PreviewTextureSizeLabel>
+    <CS_Studio_Ability_PreviewTextureStatus>[{0}] {1} · 前移 {2} · 侧移 {3} · 高度 {4} · 尺寸 {5} × {6}</CS_Studio_Ability_PreviewTextureStatus>
+    <CS_Studio_Ability_PreviewTextureTooltip>纹理：{0}&#10;尺寸：{1} × {2} 格&#10;前移：{3}&#10;侧移：{4}&#10;高度：{5}&#10;旋转：{6}°</CS_Studio_Ability_PreviewTextureTooltip>
+    <CS_Studio_Ability_PreviewTimeline>时间轴</CS_Studio_Ability_PreviewTimeline>
+    <CS_Studio_Ability_PreviewTimelineHint>时间轴：{0}t / {1}t</CS_Studio_Ability_PreviewTimelineHint>
+    <CS_Studio_Ability_PreviewUnnamed>未命名技能</CS_Studio_Ability_PreviewUnnamed>
+    <CS_Studio_Ability_PreviewVfxBody>{0} · {1} · {2}</CS_Studio_Ability_PreviewVfxBody>
+    <CS_Studio_Ability_PreviewWaitingEvent>等待触发</CS_Studio_Ability_PreviewWaitingEvent>
+    <CS_Studio_Ability_PreviewWarmupDetail>热身 {0}t</CS_Studio_Ability_PreviewWarmupDetail>
+    <CS_Studio_Ability_Projectile>投射物</CS_Studio_Ability_Projectile>
+    <CS_Studio_Ability_PropertiesTitle>技能属性</CS_Studio_Ability_PropertiesTitle>
+    <CS_Studio_Ability_Radius>爆炸半径</CS_Studio_Ability_Radius>
+    <CS_Studio_Ability_Range>射程</CS_Studio_Ability_Range>
+    <CS_Studio_Ability_Save>保存</CS_Studio_Ability_Save>
+    <CS_Studio_Ability_SaveSuccess>技能已保存</CS_Studio_Ability_SaveSuccess>
+    <CS_Studio_Ability_Search>搜索技能</CS_Studio_Ability_Search>
+    <CS_Studio_Ability_SelectedSummary>当前选中：{0}</CS_Studio_Ability_SelectedSummary>
+    <CS_Studio_Ability_SelectHint>请选择一个技能，或创建一个新技能。</CS_Studio_Ability_SelectHint>
+    <CS_Studio_Ability_SelectOrCreate>请选择或创建一个技能</CS_Studio_Ability_SelectOrCreate>
+    <CS_Studio_Ability_TargetType>目标类型</CS_Studio_Ability_TargetType>
+    <CS_Studio_Ability_Type>类型</CS_Studio_Ability_Type>
+    <CS_Studio_Ability_Unassigned>未绑定</CS_Studio_Ability_Unassigned>
+    <CS_Studio_Ability_UseRadius>使用范围</CS_Studio_Ability_UseRadius>
+    <CS_Studio_Ability_Valid>校验通过</CS_Studio_Ability_Valid>
+    <CS_Studio_Ability_Validate>校验</CS_Studio_Ability_Validate>
+    <CS_Studio_Ability_ValidationSummary>校验状态：{0}</CS_Studio_Ability_ValidationSummary>
+    <CS_Studio_Ability_ValidWithWarnings>校验通过（有警告）</CS_Studio_Ability_ValidWithWarnings>
+    <CS_Studio_Ability_Warmup>预热 (Tick)</CS_Studio_Ability_Warmup>
+    <CS_Studio_Effect_Add>添加效果</CS_Studio_Effect_Add>
+    <CS_Studio_Effect_Amount>数值</CS_Studio_Effect_Amount>
+    <CS_Studio_Effect_CanHurtSelf>可以伤害自身</CS_Studio_Effect_CanHurtSelf>
+    <CS_Studio_Effect_Chance>几率</CS_Studio_Effect_Chance>
+    <CS_Studio_Effect_ControlMode>控制效果</CS_Studio_Effect_ControlMode>
+    <CS_Studio_Effect_ControlMode_Knockback>击退</CS_Studio_Effect_ControlMode_Knockback>
+    <CS_Studio_Effect_ControlMode_Pull>拉近</CS_Studio_Effect_ControlMode_Pull>
+    <CS_Studio_Effect_ControlMode_Stun>眩晕</CS_Studio_Effect_ControlMode_Stun>
+    <CS_Studio_Effect_ControlMoveDistance>移动距离</CS_Studio_Effect_ControlMoveDistance>
+    <CS_Studio_Effect_DamageDef>伤害类型</CS_Studio_Effect_DamageDef>
+    <CS_Studio_Effect_Duration>持续时间(秒)</CS_Studio_Effect_Duration>
+    <CS_Studio_Effect_EmptyHint>当前没有效果，点击上方按钮添加一个技能效果。</CS_Studio_Effect_EmptyHint>
+    <CS_Studio_Effect_Hediff>Hediff</CS_Studio_Effect_Hediff>
+    <CS_Studio_Effect_SummonCount>数量</CS_Studio_Effect_SummonCount>
+    <CS_Studio_Effect_SummonFaction>召唤阵营</CS_Studio_Effect_SummonFaction>
+    <CS_Studio_Effect_SummonKind>召唤 PawnKind</CS_Studio_Effect_SummonKind>
+    <CS_Studio_Effect_TerraformMode>地形改造类型</CS_Studio_Effect_TerraformMode>
+    <CS_Studio_Effect_TerraformMode_CleanFilth>清理污秽</CS_Studio_Effect_TerraformMode_CleanFilth>
+    <CS_Studio_Effect_TerraformMode_ReplaceTerrain>替换地形</CS_Studio_Effect_TerraformMode_ReplaceTerrain>
+    <CS_Studio_Effect_TerraformMode_SpawnThing>生成物体</CS_Studio_Effect_TerraformMode_SpawnThing>
+    <CS_Studio_Effect_TerraformSpawnCount>生成数量</CS_Studio_Effect_TerraformSpawnCount>
+    <CS_Studio_Effect_TerraformTerrain>目标地形</CS_Studio_Effect_TerraformTerrain>
+    <CS_Studio_Effect_TerraformThing>生成对象</CS_Studio_Effect_TerraformThing>
+    <CS_Studio_Effect_Title>效果列表</CS_Studio_Effect_Title>
+    <CS_Studio_Err_NoPawns>地图上没有可导入的人形角色</CS_Studio_Err_NoPawns>
+    <CS_Studio_File_Export>导出为模组</CS_Studio_File_Export>
+    <CS_Studio_Msg_InvalidPath>无效的路径</CS_Studio_Msg_InvalidPath>
+    <CS_Studio_None>（无）</CS_Studio_None>
+    <CS_Studio_Runtime_AddComponent>+ 添加组件</CS_Studio_Runtime_AddComponent>
+    <CS_Studio_Runtime_ChainBounceCount>弹跳次数</CS_Studio_Runtime_ChainBounceCount>
+    <CS_Studio_Runtime_ChainBounceFalloff>伤害衰减</CS_Studio_Runtime_ChainBounceFalloff>
+    <CS_Studio_Runtime_ChainBounceRange>弹跳范围</CS_Studio_Runtime_ChainBounceRange>
+    <CS_Studio_Runtime_ComboStackBonusDamagePerStack>每层额外伤害</CS_Studio_Runtime_ComboStackBonusDamagePerStack>
+    <CS_Studio_Runtime_ComboStackMax>最大层数</CS_Studio_Runtime_ComboStackMax>
+    <CS_Studio_Runtime_ComboStackWindowTicks>连击窗口(Tick)</CS_Studio_Runtime_ComboStackWindowTicks>
+    <CS_Studio_Runtime_DashEmpowerBonusDamageScale>强化增伤倍率</CS_Studio_Runtime_DashEmpowerBonusDamageScale>
+    <CS_Studio_Runtime_DashEmpowerDurationTicks>强化持续时间(Tick)</CS_Studio_Runtime_DashEmpowerDurationTicks>
+    <CS_Studio_Runtime_Desc_ChainBounce>命中后在附近目标间继续弹跳。</CS_Studio_Runtime_Desc_ChainBounce>
+    <CS_Studio_Runtime_Desc_ComboStacks>在短时间内连续命中时叠加伤害层数。</CS_Studio_Runtime_Desc_ComboStacks>
+    <CS_Studio_Runtime_Desc_DashEmpoweredStrike>位移后短时间内强化下一次打击。</CS_Studio_Runtime_Desc_DashEmpoweredStrike>
+    <CS_Studio_Runtime_Desc_EShortJump>提供一个短距离位移能力。</CS_Studio_Runtime_Desc_EShortJump>
+    <CS_Studio_Runtime_Desc_ExecuteBonusDamage>对低生命目标造成额外伤害。</CS_Studio_Runtime_Desc_ExecuteBonusDamage>
+    <CS_Studio_Runtime_Desc_FlightState>进入临时飞行姿态。</CS_Studio_Runtime_Desc_FlightState>
+    <CS_Studio_Runtime_Desc_FollowupCooldownGate>在指定热键槽上施加短暂的后续禁用窗口。</CS_Studio_Runtime_Desc_FollowupCooldownGate>
+    <CS_Studio_Runtime_Desc_FullHealthBonusDamage>对满生命目标造成额外伤害。</CS_Studio_Runtime_Desc_FullHealthBonusDamage>
+    <CS_Studio_Runtime_Desc_HitCooldownRefund>命中后返还部分冷却。</CS_Studio_Runtime_Desc_HitCooldownRefund>
+    <CS_Studio_Runtime_Desc_HitHeal>命中时恢复生命。</CS_Studio_Runtime_Desc_HitHeal>
+    <CS_Studio_Runtime_Desc_HitSlowField>命中后生成减速场。</CS_Studio_Runtime_Desc_HitSlowField>
+    <CS_Studio_Runtime_Desc_HotkeyOverride>临时把某个热键映射为其他技能。</CS_Studio_Runtime_Desc_HotkeyOverride>
+    <CS_Studio_Runtime_Desc_IsolatedTargetBonusDamage>对孤立目标造成额外伤害。</CS_Studio_Runtime_Desc_IsolatedTargetBonusDamage>
+    <CS_Studio_Runtime_Desc_KillRefresh>击杀后返还部分冷却。</CS_Studio_Runtime_Desc_KillRefresh>
+    <CS_Studio_Runtime_Desc_MarkDetonation>为目标叠加标记并在满足条件时引爆。</CS_Studio_Runtime_Desc_MarkDetonation>
+    <CS_Studio_Runtime_Desc_MissingHealthBonusDamage>目标生命越低，造成的伤害越高。</CS_Studio_Runtime_Desc_MissingHealthBonusDamage>
+    <CS_Studio_Runtime_Desc_NearbyEnemyBonusDamage>周围敌人越多，额外伤害越高。</CS_Studio_Runtime_Desc_NearbyEnemyBonusDamage>
+    <CS_Studio_Runtime_Desc_PeriodicPulse>在持续时间内周期性触发脉冲效果。</CS_Studio_Runtime_Desc_PeriodicPulse>
+    <CS_Studio_Runtime_Desc_PierceBonusDamage>每穿透一个目标提升后续伤害。</CS_Studio_Runtime_Desc_PierceBonusDamage>
+    <CS_Studio_Runtime_Desc_ProjectileSplit>把投射物分裂成多个子投射物。</CS_Studio_Runtime_Desc_ProjectileSplit>
+    <CS_Studio_Runtime_Desc_QComboWindow>为连段技能提供短暂的连击窗口。</CS_Studio_Runtime_Desc_QComboWindow>
+    <CS_Studio_Runtime_Desc_RStackDetonation>达到所需层数后延迟引爆多段冲击。</CS_Studio_Runtime_Desc_RStackDetonation>
+    <CS_Studio_Runtime_Desc_ShieldAbsorb>生成可吸收伤害并转化收益的护盾。</CS_Studio_Runtime_Desc_ShieldAbsorb>
+    <CS_Studio_Runtime_Desc_SmartJump>按鼠标或偏移规则智能选择跳跃落点。</CS_Studio_Runtime_Desc_SmartJump>
+    <CS_Studio_Runtime_ECooldownTicks>位移冷却(Tick)</CS_Studio_Runtime_ECooldownTicks>
+    <CS_Studio_Runtime_EFindRadius>落点搜索半径</CS_Studio_Runtime_EFindRadius>
+    <CS_Studio_Runtime_EJumpDistance>位移距离</CS_Studio_Runtime_EJumpDistance>
+    <CS_Studio_Runtime_Empty>(未添加任何运行时组件)</CS_Studio_Runtime_Empty>
+    <CS_Studio_Runtime_ETriggerEffects>位移后触发技能效果</CS_Studio_Runtime_ETriggerEffects>
+    <CS_Studio_Runtime_ExecuteBonusDamageScale>斩杀增伤倍率</CS_Studio_Runtime_ExecuteBonusDamageScale>
+    <CS_Studio_Runtime_ExecuteThresholdPercent>斩杀阈值(%)</CS_Studio_Runtime_ExecuteThresholdPercent>
+    <CS_Studio_Runtime_FlightDurationTicks>飞行持续时间(Tick)</CS_Studio_Runtime_FlightDurationTicks>
+    <CS_Studio_Runtime_FlightHeightFactor>飞行高度系数</CS_Studio_Runtime_FlightHeightFactor>
+    <CS_Studio_Runtime_FlightSuppressCombat>飞行期间禁止普通战斗行为</CS_Studio_Runtime_FlightSuppressCombat>
+    <CS_Studio_Runtime_FollowupCooldownSlot>后续禁用槽位</CS_Studio_Runtime_FollowupCooldownSlot>
+    <CS_Studio_Runtime_FollowupCooldownTicks>后续禁用时间(Tick)</CS_Studio_Runtime_FollowupCooldownTicks>
+    <CS_Studio_Runtime_FullHealthBonusDamageScale>满血增伤倍率</CS_Studio_Runtime_FullHealthBonusDamageScale>
+    <CS_Studio_Runtime_FullHealthThresholdPercent>满血判定阈值(%)</CS_Studio_Runtime_FullHealthThresholdPercent>
+    <CS_Studio_Runtime_HitCooldownRefundPercent>返还冷却比例(%)</CS_Studio_Runtime_HitCooldownRefundPercent>
+    <CS_Studio_Runtime_HitHealAmount>固定治疗量</CS_Studio_Runtime_HitHealAmount>
+    <CS_Studio_Runtime_HitHealRatio>按伤害治疗比例</CS_Studio_Runtime_HitHealRatio>
+    <CS_Studio_Runtime_HotkeyOverrideAbility>覆盖目标技能</CS_Studio_Runtime_HotkeyOverrideAbility>
+    <CS_Studio_Runtime_HotkeyOverrideAbilityDefName>覆盖技能 DefName</CS_Studio_Runtime_HotkeyOverrideAbilityDefName>
+    <CS_Studio_Runtime_HotkeyOverrideDuration>覆盖持续时间</CS_Studio_Runtime_HotkeyOverrideDuration>
+    <CS_Studio_Runtime_HotkeyOverrideSlot>覆盖热键槽</CS_Studio_Runtime_HotkeyOverrideSlot>
+    <CS_Studio_Runtime_IsolatedTargetBonusDamageScale>孤立增伤倍率</CS_Studio_Runtime_IsolatedTargetBonusDamageScale>
+    <CS_Studio_Runtime_IsolatedTargetRadius>孤立判定半径</CS_Studio_Runtime_IsolatedTargetRadius>
+    <CS_Studio_Runtime_KillRefreshHotkeySlot>击杀刷新槽位</CS_Studio_Runtime_KillRefreshHotkeySlot>
+    <CS_Studio_Runtime_KillRefreshPercent>击杀返还比例(%)</CS_Studio_Runtime_KillRefreshPercent>
+    <CS_Studio_Runtime_MarkDetonationDamage>引爆伤害</CS_Studio_Runtime_MarkDetonationDamage>
+    <CS_Studio_Runtime_MarkDurationTicks>标记持续时间(Tick)</CS_Studio_Runtime_MarkDurationTicks>
+    <CS_Studio_Runtime_MarkMaxStacks>最大标记层数</CS_Studio_Runtime_MarkMaxStacks>
+    <CS_Studio_Runtime_MissingHealthBonusMaxScale>残血增伤上限倍率</CS_Studio_Runtime_MissingHealthBonusMaxScale>
+    <CS_Studio_Runtime_MissingHealthBonusPerTenPercent>每损失 10% 生命增伤</CS_Studio_Runtime_MissingHealthBonusPerTenPercent>
+    <CS_Studio_Runtime_NearbyEnemyBonusMaxTargets>计数上限</CS_Studio_Runtime_NearbyEnemyBonusMaxTargets>
+    <CS_Studio_Runtime_NearbyEnemyBonusPerTarget>每个邻敌增伤</CS_Studio_Runtime_NearbyEnemyBonusPerTarget>
+    <CS_Studio_Runtime_NearbyEnemyBonusRadius>邻敌搜索半径</CS_Studio_Runtime_NearbyEnemyBonusRadius>
+    <CS_Studio_Runtime_PierceBonusDamagePerTarget>每次穿透增伤</CS_Studio_Runtime_PierceBonusDamagePerTarget>
+    <CS_Studio_Runtime_PierceMaxTargets>穿透上限</CS_Studio_Runtime_PierceMaxTargets>
+    <CS_Studio_Runtime_PierceSearchRange>穿透搜索范围</CS_Studio_Runtime_PierceSearchRange>
+    <CS_Studio_Runtime_PulseDuration>总持续时间</CS_Studio_Runtime_PulseDuration>
+    <CS_Studio_Runtime_PulseImmediate>立即触发首次脉冲</CS_Studio_Runtime_PulseImmediate>
+    <CS_Studio_Runtime_PulseInterval>脉冲间隔</CS_Studio_Runtime_PulseInterval>
+    <CS_Studio_Runtime_QWindowTicks>连段窗口时长(Tick)</CS_Studio_Runtime_QWindowTicks>
+    <CS_Studio_Runtime_RDamageDef>伤害类型</CS_Studio_Runtime_RDamageDef>
+    <CS_Studio_Runtime_RDelayTicks>延迟(Tick)</CS_Studio_Runtime_RDelayTicks>
+    <CS_Studio_Runtime_RefundHotkeySlot>返冷槽位</CS_Studio_Runtime_RefundHotkeySlot>
+    <CS_Studio_Runtime_RRequiredStacks>所需层数</CS_Studio_Runtime_RRequiredStacks>
+    <CS_Studio_Runtime_RWave1>波次1(半径/伤害)</CS_Studio_Runtime_RWave1>
+    <CS_Studio_Runtime_RWave2>波次2(半径/伤害)</CS_Studio_Runtime_RWave2>
+    <CS_Studio_Runtime_RWave3>波次3(半径/伤害)</CS_Studio_Runtime_RWave3>
+    <CS_Studio_Runtime_ShieldBonusDamageRatio>护盾转增伤比例</CS_Studio_Runtime_ShieldBonusDamageRatio>
+    <CS_Studio_Runtime_ShieldDuration>护盾持续时间</CS_Studio_Runtime_ShieldDuration>
+    <CS_Studio_Runtime_ShieldHealRatio>护盾转治疗比例</CS_Studio_Runtime_ShieldHealRatio>
+    <CS_Studio_Runtime_ShieldMaxDamage>护盾最大吸收</CS_Studio_Runtime_ShieldMaxDamage>
+    <CS_Studio_Runtime_SlowFieldDurationTicks>减速场持续时间(Tick)</CS_Studio_Runtime_SlowFieldDurationTicks>
+    <CS_Studio_Runtime_SlowFieldHediff>减速 Hediff</CS_Studio_Runtime_SlowFieldHediff>
+    <CS_Studio_Runtime_SlowFieldHediffDefName>HediffDefName</CS_Studio_Runtime_SlowFieldHediffDefName>
+    <CS_Studio_Runtime_SlowFieldRadius>减速场半径</CS_Studio_Runtime_SlowFieldRadius>
+    <CS_Studio_Runtime_SmartJumpClamp>限制到可达区域</CS_Studio_Runtime_SmartJumpClamp>
+    <CS_Studio_Runtime_SmartJumpFallback>无有效目标时使用偏移落点</CS_Studio_Runtime_SmartJumpFallback>
+    <CS_Studio_Runtime_SmartJumpOffset>默认偏移格数</CS_Studio_Runtime_SmartJumpOffset>
+    <CS_Studio_Runtime_SmartJumpUseMouse>优先使用鼠标位置</CS_Studio_Runtime_SmartJumpUseMouse>
+    <CS_Studio_Runtime_SplitDamageScale>分裂伤害倍率</CS_Studio_Runtime_SplitDamageScale>
+    <CS_Studio_Runtime_SplitProjectileCount>分裂数量</CS_Studio_Runtime_SplitProjectileCount>
+    <CS_Studio_Runtime_SplitSearchRange>分裂搜索范围</CS_Studio_Runtime_SplitSearchRange>
+    <CS_Studio_Section_AbilityBase>技能基础信息</CS_Studio_Section_AbilityBase>
+    <CS_Studio_Section_AbilityHotkeys>技能热键映射</CS_Studio_Section_AbilityHotkeys>
+    <CS_Studio_Section_Carrier>载体设置 (X轴)</CS_Studio_Section_Carrier>
+    <CS_Studio_Section_RuntimeComponents>运行时组件</CS_Studio_Section_RuntimeComponents>
+    <CS_Studio_VFX_Add>+ 添加</CS_Studio_VFX_Add>
+    <CS_Studio_VFX_DelayShort>延迟</CS_Studio_VFX_DelayShort>
+    <CS_Studio_VFX_DisplayDurationShort>显示时长</CS_Studio_VFX_DisplayDurationShort>
+    <CS_Studio_VFX_DrawSizeShort>绘制尺寸</CS_Studio_VFX_DrawSizeShort>
+    <CS_Studio_VFX_EmptyHint>暂无外观特效。点击「+ 添加」可配置技能触发时播放的粒子/闪光效果。</CS_Studio_VFX_EmptyHint>
+    <CS_Studio_VFX_Enabled>启用</CS_Studio_VFX_Enabled>
+    <CS_Studio_VFX_ExpressionDurationShort>表情时长</CS_Studio_VFX_ExpressionDurationShort>
+    <CS_Studio_VFX_HeightShort>高度</CS_Studio_VFX_HeightShort>
+    <CS_Studio_VFX_LinkedExpression_None>无绑定表情</CS_Studio_VFX_LinkedExpression_None>
+    <CS_Studio_VFX_LinkedExpressionShort>绑定表情</CS_Studio_VFX_LinkedExpressionShort>
+    <CS_Studio_VFX_PlaySound>播放声音</CS_Studio_VFX_PlaySound>
+    <CS_Studio_VFX_PresetShort>预设</CS_Studio_VFX_PresetShort>
+    <CS_Studio_VFX_PupilBrightnessShort>瞳孔亮度</CS_Studio_VFX_PupilBrightnessShort>
+    <CS_Studio_VFX_PupilContrastShort>瞳孔对比度</CS_Studio_VFX_PupilContrastShort>
+    <CS_Studio_VFX_RepeatCountShort>次数</CS_Studio_VFX_RepeatCountShort>
+    <CS_Studio_VFX_RepeatIntervalShort>间隔</CS_Studio_VFX_RepeatIntervalShort>
+    <CS_Studio_VFX_RotationShort>旋转</CS_Studio_VFX_RotationShort>
+    <CS_Studio_VFX_ScaleShort>缩放</CS_Studio_VFX_ScaleShort>
+    <CS_Studio_VFX_ScaleXShort>缩放 X</CS_Studio_VFX_ScaleXShort>
+    <CS_Studio_VFX_ScaleYShort>缩放 Y</CS_Studio_VFX_ScaleYShort>
+    <CS_Studio_VFX_SoundDefName>SoundDefName</CS_Studio_VFX_SoundDefName>
+    <CS_Studio_VFX_SoundDelay>声音延迟</CS_Studio_VFX_SoundDelay>
+    <CS_Studio_VFX_SoundItem>声音项</CS_Studio_VFX_SoundItem>
+    <CS_Studio_VFX_SoundPitch>音调</CS_Studio_VFX_SoundPitch>
+    <CS_Studio_VFX_SoundSection>声音设置</CS_Studio_VFX_SoundSection>
+    <CS_Studio_VFX_SoundSectionEmpty>当前没有声音配置</CS_Studio_VFX_SoundSectionEmpty>
+    <CS_Studio_VFX_SoundVolume>音量</CS_Studio_VFX_SoundVolume>
+    <CS_Studio_VFX_SourceMode_BuiltIn>内建</CS_Studio_VFX_SourceMode_BuiltIn>
+    <CS_Studio_VFX_SourceMode_CustomTexture>自定义纹理</CS_Studio_VFX_SourceMode_CustomTexture>
+    <CS_Studio_VFX_SourceMode_Preset>预设</CS_Studio_VFX_SourceMode_Preset>
+    <CS_Studio_VFX_SourceModeShort>来源</CS_Studio_VFX_SourceModeShort>
+    <CS_Studio_VFX_TargetShort>目标</CS_Studio_VFX_TargetShort>
+    <CS_Studio_VFX_TextureShort>纹理</CS_Studio_VFX_TextureShort>
+    <CS_Studio_VFX_TextureSource_LocalPath>本地路径</CS_Studio_VFX_TextureSource_LocalPath>
+    <CS_Studio_VFX_TextureSource_Vanilla>原版路径</CS_Studio_VFX_TextureSource_Vanilla>
+    <CS_Studio_VFX_Title>外观特效</CS_Studio_VFX_Title>
+    <CS_Studio_VFX_Trigger_OnCastFinish>施法完成</CS_Studio_VFX_Trigger_OnCastFinish>
+    <CS_Studio_VFX_Trigger_OnCastStart>施法开始</CS_Studio_VFX_Trigger_OnCastStart>
+    <CS_Studio_VFX_Trigger_OnDurationTick>持续触发</CS_Studio_VFX_Trigger_OnDurationTick>
+    <CS_Studio_VFX_Trigger_OnExpire>结束时</CS_Studio_VFX_Trigger_OnExpire>
+    <CS_Studio_VFX_Trigger_OnTargetApply>命中生效</CS_Studio_VFX_Trigger_OnTargetApply>
+    <CS_Studio_VFX_Trigger_OnWarmup>前摇阶段</CS_Studio_VFX_Trigger_OnWarmup>
+    <CS_Studio_VFX_TriggerShort>时机</CS_Studio_VFX_TriggerShort>
+    <CS_Studio_VFX_TypeShort>类型</CS_Studio_VFX_TypeShort>
+    <CS_Studio_VFX_UseCasterFacing>使用施法者朝向</CS_Studio_VFX_UseCasterFacing>
+</LanguageData>

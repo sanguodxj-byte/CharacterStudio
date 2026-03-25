@@ -1,0 +1,166 @@
+﻿ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_Carrier>鏂芥斁绫诲瀷</CS_Ability_Carrier>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_ClearBinding>娓呴櫎缁戝畾</CS_Ability_ClearBinding>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_Grant>绔嬪嵆鎺堜簣</CS_Ability_Grant>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_GrantSuccess>宸插皢 {0} 涓妧鑳芥巿浜?{1}</CS_Ability_GrantSuccess>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_Hotkey_AbilityMissing>鏈壘鍒版妧鑳藉畾涔夛細{0}</CS_Ability_Hotkey_AbilityMissing>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_Hotkey_CastSuccess>宸查€氳繃 {0} 閲婃斁鎶€鑳斤細{1}</CS_Ability_Hotkey_CastSuccess>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_Hotkey_SlotCooldown>{0} 鎶€鑳藉喎鍗翠腑锛屽墿浣?{1}s</CS_Ability_Hotkey_SlotCooldown>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_NoPawnBound>(鏈粦瀹氳鑹?</CS_Ability_NoPawnBound>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_NotReady>鎶€鑳?{0} 灏氭湭灏辩华</CS_Ability_NotReady>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_R_Ready>R 浜屾宸插氨缁細鎸?R 閫夋嫨钀界偣</CS_Ability_R_Ready>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_R_SecondStageArmed>R 浜屾宸查攣瀹氾紝{0} 绉掑悗鎵ц</CS_Ability_R_SecondStageArmed>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_R_StackGain>R 灞傛暟锛歿0}/{1}</CS_Ability_R_StackGain>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_R_StackingOff>R 涓€娈靛凡鍏抽棴</CS_Ability_R_StackingOff>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_R_TargetInvalid>R 浜屾鐩爣鏃犳晥</CS_Ability_R_TargetInvalid>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_SelectPawn>閫夋嫨瑙掕壊</CS_Ability_SelectPawn>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_ControlMoveDistance>鎺у埗鏁堟灉绉诲姩璺濈蹇呴』澶т簬 0</CS_Ability_Validate_ControlMoveDistance>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_DamageAmount>浼ゅ鏁堟灉鐨勬暟鍊煎繀椤诲ぇ浜?0</CS_Ability_Validate_DamageAmount>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_DefNameEmpty>defName 涓嶈兘涓虹┖</CS_Ability_Validate_DefNameEmpty>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_EffectChanceRange>瑙﹀彂鍑犵巼蹇呴』鍦?0-1 涔嬮棿锛屽綋鍓嶅€? {0}</CS_Ability_Validate_EffectChanceRange>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_EffectIndexError>鏁堟灉 #{0}: {1}</CS_Ability_Validate_EffectIndexError>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_EffectIndexWarning>鏁堟灉 #{0}: {1}</CS_Ability_Validate_EffectIndexWarning>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_EShortJumpDistance>浣嶇Щ璺濈蹇呴』澶т簬 0</CS_Ability_Validate_EShortJumpDistance>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_Failed>楠岃瘉澶辫触:</CS_Ability_Validate_Failed>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_HediffRequired>{0} 鏁堟灉蹇呴』鎸囧畾 HediffDef</CS_Ability_Validate_HediffRequired>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_LabelEmpty>label 涓虹┖锛屽皢浣跨敤 defName 浣滀负鏄剧ず鍚嶇О</CS_Ability_Validate_LabelEmpty>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_NoEffects>鑳藉姏娌℃湁瀹氫箟浠讳綍鏁堟灉</CS_Ability_Validate_NoEffects>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_ProjectileDefMissing>鎶曞皠鐗╄浇浣撴湭鎸囧畾 projectileDef锛屽彲鑳戒娇鐢ㄩ粯璁ゆ姇灏勭墿</CS_Ability_Validate_ProjectileDefMissing>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_QComboWindowTicks>杩炴绐楀彛鏃堕暱蹇呴』澶т簬 0 tick</CS_Ability_Validate_QComboWindowTicks>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_RRequiredStacks>鎵€闇€灞傛暟蹇呴』澶т簬 0</CS_Ability_Validate_RRequiredStacks>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_RuntimeComponentError>杩愯鏃剁粍浠?#{0}: {1}</CS_Ability_Validate_RuntimeComponentError>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_RuntimeComponentNull>杩愯鏃剁粍浠?#{0} 涓虹┖</CS_Ability_Validate_RuntimeComponentNull>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_RuntimeComponentWarning>杩愯鏃剁粍浠?#{0}: {1}</CS_Ability_Validate_RuntimeComponentWarning>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_RWaveDamage>R 涓夋浼ゅ蹇呴』澶т簬 0</CS_Ability_Validate_RWaveDamage>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_RWaveRadius>R 涓夋鍗婂緞蹇呴』澶т簬 0</CS_Ability_Validate_RWaveRadius>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_SummonCount>鍙敜鏁伴噺蹇呴』澶т簬 0</CS_Ability_Validate_SummonCount>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_SummonKindRequired>鍙敜鏁堟灉蹇呴』鎸囧畾 PawnKindDef</CS_Ability_Validate_SummonKindRequired>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_TerraformSpawnCount>鐢熸垚鏁伴噺蹇呴』澶т簬 0</CS_Ability_Validate_TerraformSpawnCount>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_TerraformTerrainRequired>鏇挎崲鍦板舰妯″紡蹇呴』鎸囧畾 TerrainDef</CS_Ability_Validate_TerraformTerrainRequired>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_TerraformThingRequired>鐢熸垚鐗╀綋妯″紡蹇呴』鎸囧畾 ThingDef</CS_Ability_Validate_TerraformThingRequired>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_Warnings>璀﹀憡:</CS_Ability_Validate_Warnings>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Studio_Ability_ImportAppend>杩藉姞瀵煎叆</CS_Studio_Ability_ImportAppend>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Studio_Ability_ImportAppended>宸蹭粠 {1} 杩藉姞瀵煎叆 {0} 涓妧鑳斤紙鍘熸湁 {2} 涓紝褰撳墠鍏?{3} 涓級</CS_Studio_Ability_ImportAppended>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Studio_Ability_ImportFailed>鎶€鑳?XML 瀵煎叆澶辫触锛歿0}</CS_Studio_Ability_ImportFailed>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Studio_Ability_ImportXml>瀵煎叆 XML</CS_Studio_Ability_ImportXml>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Studio_Ability_ImportXmlPath>XML 璺緞</CS_Studio_Ability_ImportXmlPath>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Studio_Ability_ImportXmlTitle>瀵煎叆鎶€鑳?XML</CS_Studio_Ability_ImportXmlTitle>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Studio_Effect_Title>鏁堟灉鍒楄〃</CS_Studio_Effect_Title>
+ZH|CS_Keys_ExportImport.xml|<CS_Studio_Export_AssetSources>璧勪骇鏉ユ簮</CS_Studio_Export_AssetSources>
+ZH|CS_Keys_ExportImport.xml|<CS_Studio_Export_DetectedDeps>妫€娴嬪埌 {0} 涓閮ㄦā缁勪緷璧栵細</CS_Studio_Export_DetectedDeps>
+ZH|CS_Keys_ExportImport.xml|<CS_Studio_Export_ExternalMod>澶栭儴妯＄粍</CS_Studio_Export_ExternalMod>
+ZH|CS_Keys_ExportImport.xml|<CS_Studio_Export_HideAssets>闅愯棌璧勪骇鏉ユ簮</CS_Studio_Export_HideAssets>
+ZH|CS_Keys_ExportImport.xml|<CS_Studio_Export_LocalFiles>鏈湴鏂囦欢</CS_Studio_Export_LocalFiles>
+ZH|CS_Keys_ExportImport.xml|<CS_Studio_Export_PreviewAssets>棰勮璧勪骇鏉ユ簮</CS_Studio_Export_PreviewAssets>
+ZH|CS_Keys_ExportImport.xml|<CS_Studio_Export_VanillaContent>娓告垙鍐呯疆</CS_Studio_Export_VanillaContent>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_Add>+ 娣诲姞</CS_Studio_VFX_Add>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_Delay>寤惰繜(ticks)</CS_Studio_VFX_Delay>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_DelayShort>寤惰繜</CS_Studio_VFX_DelayShort>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_Enabled>鍚敤</CS_Studio_VFX_Enabled>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_PresetShort>棰勮</CS_Studio_VFX_PresetShort>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_RepeatCountShort>娆℃暟</CS_Studio_VFX_RepeatCountShort>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_RepeatIntervalShort>闂撮殧</CS_Studio_VFX_RepeatIntervalShort>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_Scale>瑙勬ā</CS_Studio_VFX_Scale>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_ScaleShort>缂╂斁</CS_Studio_VFX_ScaleShort>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_SourceModeShort>鏉ユ簮</CS_Studio_VFX_SourceModeShort>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_Target>浣滅敤鐩爣</CS_Studio_VFX_Target>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_TargetShort>鐩爣</CS_Studio_VFX_TargetShort>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_Title>澶栬鐗规晥</CS_Studio_VFX_Title>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_TriggerShort>鏃舵満</CS_Studio_VFX_TriggerShort>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_Type>鐗规晥绫诲瀷</CS_Studio_VFX_Type>
+ZH|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_TypeShort>绫诲瀷</CS_Studio_VFX_TypeShort>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_BoundPawn>Bound Pawn</CS_Ability_BoundPawn>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Carrier>Carrier Type</CS_Ability_Carrier>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_ClearBinding>Clear Binding</CS_Ability_ClearBinding>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Grant>Grant Now</CS_Ability_Grant>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_GrantSuccess>Granted {0} abilities to {1}</CS_Ability_GrantSuccess>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Hotkey_AbilityMissing>Ability definition not found: {0}</CS_Ability_Hotkey_AbilityMissing>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Hotkey_CastSuccess>Casted via {0}: {1}</CS_Ability_Hotkey_CastSuccess>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Hotkey_ECooldown>E is on cooldown: {0}s remaining</CS_Ability_Hotkey_ECooldown>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Hotkey_QMode>Q mode switched to phase {0}</CS_Ability_Hotkey_QMode>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Hotkey_SlotCooldown>{0} ability on cooldown, {1}s remaining</CS_Ability_Hotkey_SlotCooldown>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_NoPawnBound>(No pawn bound)</CS_Ability_NoPawnBound>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_NotReady>Ability {0} is not ready</CS_Ability_NotReady>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_OnCooldown>{0} on cooldown ({1} remaining)</CS_Ability_OnCooldown>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_R_Ready>R stage 2 ready: press R to choose target</CS_Ability_R_Ready>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_R_SecondStageArmed>R stage 2 armed, triggering in {0}s</CS_Ability_R_SecondStageArmed>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_R_SecondStageCast>R stage 2 cast: blink and triple shockwaves</CS_Ability_R_SecondStageCast>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_R_StackGain>R stacks: {0}/{1}</CS_Ability_R_StackGain>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_R_StackingOff>R stage 1 disabled</CS_Ability_R_StackingOff>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_R_StackingOn>R stage 1 enabled: attacks now build stacks</CS_Ability_R_StackingOn>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_R_TargetInvalid>Invalid target for R stage 2</CS_Ability_R_TargetInvalid>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Revoke>Revoke Abilities</CS_Ability_Revoke>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_RevokeSuccess>Revoked all CS abilities from {0}</CS_Ability_RevokeSuccess>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_SelectPawn>Select Pawn</CS_Ability_SelectPawn>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_CarrierNeedsRange>Carrier type {0} usually requires a range</CS_Ability_Validate_CarrierNeedsRange>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_ChargesNonPositive>Ability charges are 0 or negative</CS_Ability_Validate_ChargesNonPositive>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_ControlDuration>Control effect duration cannot be negative</CS_Ability_Validate_ControlDuration>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_ControlMoveDistance>Control move distance must be greater than 0</CS_Ability_Validate_ControlMoveDistance>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_CooldownNegative>Cooldown cannot be negative</CS_Ability_Validate_CooldownNegative>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_DamageAmount>Damage effect amount must be greater than 0</CS_Ability_Validate_DamageAmount>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_DefNameEmpty>defName cannot be empty</CS_Ability_Validate_DefNameEmpty>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_DefNameInvalid>defName may only contain letters, numbers, and underscores</CS_Ability_Validate_DefNameInvalid>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_EffectChanceRange>Trigger chance must be between 0 and 1, current value: {0}</CS_Ability_Validate_EffectChanceRange>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_EffectIndexError>Effect #{0}: {1}</CS_Ability_Validate_EffectIndexError>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_EffectIndexWarning>Effect #{0}: {1}</CS_Ability_Validate_EffectIndexWarning>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_EffectNegativeAmount>Effect amount is negative and may cause unexpected behavior</CS_Ability_Validate_EffectNegativeAmount>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_EShortJumpCooldown>Displacement cooldown cannot be negative</CS_Ability_Validate_EShortJumpCooldown>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_EShortJumpDistance>Displacement distance must be greater than 0</CS_Ability_Validate_EShortJumpDistance>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_EShortJumpFindCellRadius>Displacement search radius cannot be negative</CS_Ability_Validate_EShortJumpFindCellRadius>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_Failed>Validation failed:</CS_Ability_Validate_Failed>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_HediffRequired>{0} effect must specify a HediffDef</CS_Ability_Validate_HediffRequired>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_LabelEmpty>label is empty; defName will be used as the display name</CS_Ability_Validate_LabelEmpty>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_NoEffects>Ability defines no effects</CS_Ability_Validate_NoEffects>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_ProjectileDefMissing>Projectile carrier has no projectileDef; a default projectile may be used</CS_Ability_Validate_ProjectileDefMissing>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_QComboWindowTicks>Combo window must be greater than 0 ticks</CS_Ability_Validate_QComboWindowTicks>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_RadiusNegative>Radius cannot be negative</CS_Ability_Validate_RadiusNegative>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_RangeNegative>Range cannot be negative</CS_Ability_Validate_RangeNegative>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_RDelayTicks>Delay cannot be negative</CS_Ability_Validate_RDelayTicks>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_RRequiredStacks>Required stacks must be greater than 0</CS_Ability_Validate_RRequiredStacks>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_RuntimeComponentError>Runtime component #{0}: {1}</CS_Ability_Validate_RuntimeComponentError>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_RuntimeComponentNull>Runtime component #{0} is null</CS_Ability_Validate_RuntimeComponentNull>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_RuntimeComponentWarning>Runtime component #{0}: {1}</CS_Ability_Validate_RuntimeComponentWarning>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_RWaveDamage>All wave damage values must be greater than 0</CS_Ability_Validate_RWaveDamage>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_RWaveRadius>All wave radii must be greater than 0</CS_Ability_Validate_RWaveRadius>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_SummonCount>Summon count must be greater than 0</CS_Ability_Validate_SummonCount>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_SummonKindRequired>Summon effect must specify a PawnKindDef</CS_Ability_Validate_SummonKindRequired>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_TerraformSpawnCount>Spawn count must be greater than 0</CS_Ability_Validate_TerraformSpawnCount>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_TerraformTerrainRequired>Replace Terrain mode requires a TerrainDef</CS_Ability_Validate_TerraformTerrainRequired>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_TerraformThingRequired>Spawn Thing mode requires a ThingDef</CS_Ability_Validate_TerraformThingRequired>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_WarmupNegative>Warmup cannot be negative</CS_Ability_Validate_WarmupNegative>
+EN|CS_Keys_AbilityEditor.xml|<CS_Ability_Validate_Warnings>Warnings:</CS_Ability_Validate_Warnings>
+EN|CS_Keys_AbilityEditor.xml|<CS_Studio_Ability_ImportAppend>Append Import</CS_Studio_Ability_ImportAppend>
+EN|CS_Keys_AbilityEditor.xml|<CS_Studio_Ability_ImportAppended>Appended {0} abilities from {1} (was {2}, now {3})</CS_Studio_Ability_ImportAppended>
+EN|CS_Keys_AbilityEditor.xml|<CS_Studio_Ability_ImportFailed>Ability XML import failed: {0}</CS_Studio_Ability_ImportFailed>
+EN|CS_Keys_AbilityEditor.xml|<CS_Studio_Ability_ImportNoAbilities>No importable abilities were found in this XML</CS_Studio_Ability_ImportNoAbilities>
+EN|CS_Keys_AbilityEditor.xml|<CS_Studio_Ability_ImportReplace>Clear and Import</CS_Studio_Ability_ImportReplace>
+EN|CS_Keys_AbilityEditor.xml|<CS_Studio_Ability_ImportReplaced>Imported {0} abilities from {1} and replaced the current list</CS_Studio_Ability_ImportReplaced>
+EN|CS_Keys_AbilityEditor.xml|<CS_Studio_Ability_ImportXml>Import XML</CS_Studio_Ability_ImportXml>
+EN|CS_Keys_AbilityEditor.xml|<CS_Studio_Ability_ImportXmlHint>Enter the path to an existing XML file. Supports direct ModularAbilityDef XML, PawnSkinDef embedded abilities, or standard AbilityDef XML, and converts them into the editor's editable ability format.</CS_Studio_Ability_ImportXmlHint>
+EN|CS_Keys_AbilityEditor.xml|<CS_Studio_Ability_ImportXmlPath>XML Path</CS_Studio_Ability_ImportXmlPath>
+EN|CS_Keys_AbilityEditor.xml|<CS_Studio_Ability_ImportXmlTitle>Import Ability XML</CS_Studio_Ability_ImportXmlTitle>
+EN|CS_Keys_AbilityEditor.xml|<CS_Studio_Ability_SelectOrCreate>Please select or create an ability</CS_Studio_Ability_SelectOrCreate>
+EN|CS_Keys_AbilityEditor.xml|<CS_Studio_Effect_Title>Effects</CS_Studio_Effect_Title>
+EN|CS_Keys_ExportImport.xml|<CS_Studio_Export_AssetSources>Asset Sources</CS_Studio_Export_AssetSources>
+EN|CS_Keys_ExportImport.xml|<CS_Studio_Export_DetectedDeps>Detected {0} external mod dependencies:</CS_Studio_Export_DetectedDeps>
+EN|CS_Keys_ExportImport.xml|<CS_Studio_Export_ExternalMod>External Mods</CS_Studio_Export_ExternalMod>
+EN|CS_Keys_ExportImport.xml|<CS_Studio_Export_HideAssets>Hide Asset Sources</CS_Studio_Export_HideAssets>
+EN|CS_Keys_ExportImport.xml|<CS_Studio_Export_LocalFiles>Local Files</CS_Studio_Export_LocalFiles>
+EN|CS_Keys_ExportImport.xml|<CS_Studio_Export_PreviewAssets>Preview Asset Sources</CS_Studio_Export_PreviewAssets>
+EN|CS_Keys_ExportImport.xml|<CS_Studio_Export_VanillaContent>Vanilla Content</CS_Studio_Export_VanillaContent>
+EN|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_Add>+ Add</CS_Studio_VFX_Add>
+EN|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_Delay>Delay (ticks)</CS_Studio_VFX_Delay>
+EN|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_DelayShort>Delay</CS_Studio_VFX_DelayShort>
+EN|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_EmptyHint>No visual effects. Click "+ Add" to configure particle/glow effects played on ability cast.</CS_Studio_VFX_EmptyHint>
+EN|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_Enabled>Enabled</CS_Studio_VFX_Enabled>
+EN|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_PresetShort>Preset</CS_Studio_VFX_PresetShort>
+EN|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_RepeatCountShort>Repeats</CS_Studio_VFX_RepeatCountShort>
+EN|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_RepeatIntervalShort>Interval</CS_Studio_VFX_RepeatIntervalShort>
+EN|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_Scale>Scale</CS_Studio_VFX_Scale>
+EN|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_ScaleShort>Scale</CS_Studio_VFX_ScaleShort>
+EN|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_SourceModeShort>Source</CS_Studio_VFX_SourceModeShort>
+EN|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_Target>Target</CS_Studio_VFX_Target>
+EN|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_TargetShort>Target</CS_Studio_VFX_TargetShort>
+EN|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_Title>Visual Effects</CS_Studio_VFX_Title>
+EN|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_TriggerShort>Trigger</CS_Studio_VFX_TriggerShort>
+EN|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_Type>Effect Type</CS_Studio_VFX_Type>
+EN|CS_Keys_AbilityEditor.xml|<CS_Studio_VFX_TypeShort>Type</CS_Studio_VFX_TypeShort>

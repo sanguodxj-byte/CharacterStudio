@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CharacterStudio.Core;
+using CharacterStudio.Introspection;
 using RimWorld;
 using Verse;
 
@@ -36,6 +37,82 @@ namespace CharacterStudio.UI
             DoImportFromPawn(previewPawn, null, raceDef, raceDef.label ?? raceDef.defName, true);
         }
 
+        private void StartLayerModificationWorkflow(Pawn pawn)
+        {
+            if (pawn == null)
+            {
+                return;
+            }
+
+            targetPawn = pawn;
+            EnterLayerModificationWorkflow(pawn);
+            cachedRootSnapshot = RenderTreeParser.Capture(pawn);
+            selectedNodePath = string.Empty;
+            selectedBaseSlotType = null;
+            selectedLayerIndex = -1;
+            selectedLayerIndices.Clear();
+
+            if (!EnsureMannequinReady())
+            {
+                return;
+            }
+
+            ThingDef previewRace = pawn.def;
+            mannequin!.SetRace(previewRace);
+            SyncPreviewRace(previewRace, pawn);
+            ForceResetPreviewMannequin(previewRace, pawn);
+            RefreshPreview();
+            RefreshRenderTree();
+
+            string sourceLabel = pawn.LabelShortCap;
+            var workflowOptions = new List<FloatMenuOption>
+            {
+                new FloatMenuOption("保存并应用为种族补丁", () => SaveAndApplyLayerModificationPatch(pawn, false)),
+                new FloatMenuOption("保存并应用为 Pawn 补丁", () => SaveAndApplyLayerModificationPatch(pawn, true))
+            };
+
+            Find.WindowStack.Add(new FloatMenu(workflowOptions));
+            ShowStatus($"已进入图层修改工作流：{sourceLabel}");
+        }
+
+        private void SaveAndApplyLayerModificationPatch(Pawn pawn, bool exportAsPawnPatch)
+        {
+            try
+            {
+                CharacterRenderFixPatch patch = BuildRenderFixPatchFromCurrentState(pawn);
+                if (exportAsPawnPatch)
+                {
+                    patch.defName = $"{patch.defName}_{pawn.thingIDNumber}";
+                    patch.label = $"{patch.label} [{pawn.LabelShortCap}]";
+                }
+
+                patch.Normalize();
+                if (patch.hideNodePaths.Count == 0 && patch.orderOverrides.Count == 0)
+                {
+                    ShowStatus("当前没有可保存的图层修改补丁");
+                    return;
+                }
+
+                RenderFixPatchRegistry.SavePatch(patch);
+                CharacterStudio.Rendering.Patch_PawnRenderTree.RefreshHiddenNodes(pawn);
+                CharacterStudio.Rendering.Patch_PawnRenderTree.ForceRebuildRenderTree(pawn);
+                RefreshPreview();
+                RefreshRenderTree();
+
+                string scopeLabel = exportAsPawnPatch ? "Pawn" : "种族";
+                ShowStatus($"已保存并应用{scopeLabel}图层修改补丁：{patch.label}");
+                Messages.Message(
+                    $"已保存并应用{scopeLabel}图层修改补丁：{patch.label}",
+                    MessageTypeDefOf.PositiveEvent,
+                    false);
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"[CharacterStudio] 保存并应用图层修改补丁失败: {ex}");
+                ShowStatus("保存并应用图层修改补丁失败，请检查日志");
+            }
+        }
+
         private void DoImportFromProjectSkin(PawnSkinDef skinDef)
         {
             if (skinDef == null)
@@ -52,6 +129,9 @@ namespace CharacterStudio.UI
             Pawn? resolvedTargetPawn = ResolvePreferredTargetPawnForSkin(workingSkin, previewRace);
             FinalizeImportState(resolvedTargetPawn);
             ShowImportCompletionStatus(workingSkin.label ?? workingSkin.defName, workingSkin.layers.Count, resolvedTargetPawn, true);
+            ShowImportMissingTextureWarning(
+                workingSkin.label ?? workingSkin.defName,
+                CollectMissingExternalTexturesForImport(skinDef));
         }
 
         private void DoImportFromPawn(
@@ -167,6 +247,8 @@ namespace CharacterStudio.UI
                 return;
             }
 
+            layerModificationWorkflowActive = false;
+            workingRenderFixPatch = null;
             workingSkin.layers ??= new List<PawnLayerConfig>();
             workingSkin.hiddenPaths ??= new List<string>();
 #pragma warning disable CS0618
@@ -189,6 +271,7 @@ namespace CharacterStudio.UI
                 workingSkin.hideVanillaBody = false;
                 workingSkin.hideVanillaHead = false;
                 workingSkin.hideVanillaHair = false;
+                workingSkin.hideVanillaApparel = false;
                 workingSkin.baseAppearance = importedBaseAppearance.Clone();
 
                 if (replaceTargetRaces)
@@ -253,6 +336,9 @@ namespace CharacterStudio.UI
             ApplySelectionAfterImport(layers.Count, replaceExisting, importedBaseAppearance);
             FinalizeImportState(resolvedTargetPawn);
             ShowImportCompletionStatus(sourceLabel, layers.Count, resolvedTargetPawn, replaceExisting);
+            ShowImportMissingTextureWarning(
+                sourceLabel,
+                CollectMissingExternalTexturesForImport(layers, importedBaseAppearance));
         }
 
         private ThingDef? ResolvePreferredPreviewRace(PawnSkinDef skinDef)
@@ -310,6 +396,13 @@ namespace CharacterStudio.UI
                 workingDocument.preferredTargetRaceDefName = boundPawn?.def?.defName ?? preferredRaceDefName;
             }
 
+            ThingDef? preferredRace = boundPawn?.def;
+            if (preferredRace == null && !string.IsNullOrWhiteSpace(preferredRaceDefName))
+            {
+                preferredRace = DefDatabase<ThingDef>.GetNamedSilentFail(preferredRaceDefName);
+            }
+
+            ForceResetPreviewMannequin(preferredRace, boundPawn);
             isDirty = true;
             RefreshPreview();
             RefreshRenderTree();
@@ -357,6 +450,52 @@ namespace CharacterStudio.UI
             ShowStatus(replaceExisting
                 ? "CS_Studio_Msg_ImportedNoBoundPawn".Translate(sourceLabel, layerCount)
                 : "CS_Studio_Msg_AppendedNoBoundPawn".Translate(sourceLabel, layerCount));
+        }
+
+        private void ShowImportMissingTextureWarning(string sourceLabel, List<string> missingPaths)
+        {
+            if (missingPaths == null || missingPaths.Count == 0)
+            {
+                return;
+            }
+
+            string missingPathList = string.Join(Environment.NewLine, missingPaths.Select(path => $"• {path}"));
+            ShowStatus("CS_Studio_Warn_ImportMissingTexturesStatus".Translate(missingPaths.Count));
+            Messages.Message(
+                "CS_Studio_Warn_ImportMissingTexturesDetail".Translate(sourceLabel, missingPaths.Count, missingPathList),
+                MessageTypeDefOf.RejectInput,
+                false);
+        }
+
+        private static List<string> CollectMissingExternalTexturesForImport(PawnSkinDef? importedSkin)
+        {
+            return PawnSkinRuntimeValidator.CollectMissingExternalTexturePaths(importedSkin);
+        }
+
+        private static List<string> CollectMissingExternalTexturesForImport(
+            List<PawnLayerConfig> layers,
+            BaseAppearanceConfig importedBaseAppearance)
+        {
+            var importedSkin = new PawnSkinDef
+            {
+                baseAppearance = importedBaseAppearance?.Clone() ?? new BaseAppearanceConfig()
+            };
+
+            importedSkin.layers ??= new List<PawnLayerConfig>();
+            if (layers != null)
+            {
+                foreach (var layer in layers)
+                {
+                    if (layer == null)
+                    {
+                        continue;
+                    }
+
+                    importedSkin.layers.Add(layer.Clone());
+                }
+            }
+
+            return PawnSkinRuntimeValidator.CollectMissingExternalTexturePaths(importedSkin);
         }
 
         private static void MergeBaseAppearanceSlots(BaseAppearanceConfig target, BaseAppearanceConfig source)

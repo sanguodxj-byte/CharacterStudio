@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <CS_Studio_Browser_Search>搜索...</CS_Studio_Browser_Search>
+    <CS_Studio_Browser_Title>文件浏览</CS_Studio_Browser_Title>
+    <CS_Studio_Browser_Up>上级</CS_Studio_Browser_Up>
+    <CS_Studio_Export_AsGene>导出为基因</CS_Studio_Export_AsGene>
+    <CS_Studio_Export_AsGene_Desc>生成生物科技基因定义，可在异种编辑器中选择</CS_Studio_Export_AsGene_Desc>
+    <CS_Studio_Export_AssetSources>资产来源</CS_Studio_Export_AssetSources>
+    <CS_Studio_Export_AsTattoo>导出为纹身/样式</CS_Studio_Export_AsTattoo>
+    <CS_Studio_Export_Author>作者</CS_Studio_Export_Author>
+    <CS_Studio_Export_Browse>浏览...</CS_Studio_Export_Browse>
+    <CS_Studio_Export_Cancel>取消</CS_Studio_Export_Cancel>
+    <CS_Studio_Export_Confirm>确认导出</CS_Studio_Export_Confirm>
+    <CS_Studio_Export_ConfirmCountdown>导出前请等待 {0} 秒。</CS_Studio_Export_ConfirmCountdown>
+    <CS_Studio_Export_ConfirmCountdownReady>等待时间已结束，现已解锁最终导出确认。</CS_Studio_Export_ConfirmCountdownReady>
+    <CS_Studio_Export_ConfirmRightsSecond>我理解导出后的模组发布责任由我本人承担，并会自行核查所有资产来源与授权</CS_Studio_Export_ConfirmRightsSecond>
+    <CS_Studio_Export_ConfirmRightsSecond_Desc>这是第二次确认。即使素材来自你自己的导入文件夹，在发布前仍必须确认其公开再分发、再上传与复用权限。</CS_Studio_Export_ConfirmRightsSecond_Desc>
+    <CS_Studio_Export_CopyTextures>复制纹理文件</CS_Studio_Export_CopyTextures>
+    <CS_Studio_Export_CosmeticOptions>化妆品选项</CS_Studio_Export_CosmeticOptions>
+    <CS_Studio_Export_Description>描述</CS_Studio_Export_Description>
+    <CS_Studio_Export_DetectedDeps>检测到 {0} 个外部模组依赖：</CS_Studio_Export_DetectedDeps>
+    <CS_Studio_Export_Err_FillFields>请填写所有必填字段</CS_Studio_Export_Err_FillFields>
+    <CS_Studio_Export_Err_MustConfirmRights>导出前必须勾选第一项资产授权确认。</CS_Studio_Export_Err_MustConfirmRights>
+    <CS_Studio_Export_Err_MustConfirmRightsSecond>导出前必须勾选第二项发布责任确认。</CS_Studio_Export_Err_MustConfirmRightsSecond>
+    <CS_Studio_Export_Err_Unknown>导出失败：未知错误</CS_Studio_Export_Err_Unknown>
+    <CS_Studio_Export_Err_WaitCountdown>请等待确认倒计时结束。剩余：{0} 秒。</CS_Studio_Export_Err_WaitCountdown>
+    <CS_Studio_Export_ExternalMod>外部模组</CS_Studio_Export_ExternalMod>
+    <CS_Studio_Export_Failed>导出失败：{0}</CS_Studio_Export_Failed>
+    <CS_Studio_Export_FinalConfirmMessage>最终确认：若你将此次导出作为独立模组发布，则素材来源、授权、再分发及创意工坊发布合规性均由你独自负责。继续导出。</CS_Studio_Export_FinalConfirmMessage>
+    <CS_Studio_Export_GeneCategory>基因分类</CS_Studio_Export_GeneCategory>
+    <CS_Studio_Export_HideAssets>隐藏资产来源</CS_Studio_Export_HideAssets>
+    <CS_Studio_Export_IncludeAbilities>包含技能</CS_Studio_Export_IncludeAbilities>
+    <CS_Studio_Export_IncludeGeneDef>包含基因定义</CS_Studio_Export_IncludeGeneDef>
+    <CS_Studio_Export_IncludePawnKind>包含 PawnKind 定义</CS_Studio_Export_IncludePawnKind>
+    <CS_Studio_Export_IncludeSkinDef>包含皮肤定义</CS_Studio_Export_IncludeSkinDef>
+    <CS_Studio_Export_IncludeSummonItem>包含召唤物品</CS_Studio_Export_IncludeSummonItem>
+    <CS_Studio_Export_LocalFiles>本地文件</CS_Studio_Export_LocalFiles>
+    <CS_Studio_Export_ModName>模组名称</CS_Studio_Export_ModName>
+    <CS_Studio_Export_ModuleOptions>模块选项</CS_Studio_Export_ModuleOptions>
+    <CS_Studio_Export_OutputPath>输出路径</CS_Studio_Export_OutputPath>
+    <CS_Studio_Export_OutputSettings>输出设置</CS_Studio_Export_OutputSettings>
+    <CS_Studio_Export_OverlayMode>叠加模式</CS_Studio_Export_OverlayMode>
+    <CS_Studio_Export_OverlayMode_Desc>不隐藏原版外观，只添加图层（适合眼镜、伤疤等配饰）</CS_Studio_Export_OverlayMode_Desc>
+    <CS_Studio_Export_PathHint>请手动将模组导出路径复制到此处。\n\n默认 RimWorld Mods 目录:\n{0}</CS_Studio_Export_PathHint>
+    <CS_Studio_Export_PreviewAssets>预览资产来源</CS_Studio_Export_PreviewAssets>
+    <CS_Studio_Export_Status_Exporting>正在导出...</CS_Studio_Export_Status_Exporting>
+    <CS_Studio_Export_Success>导出成功！模组已保存到：{0}</CS_Studio_Export_Success>
+    <CS_Studio_Export_Title>导出为模组</CS_Studio_Export_Title>
+    <CS_Studio_Export_VanillaContent>游戏内置</CS_Studio_Export_VanillaContent>
+    <CS_Studio_Export_Version>版本</CS_Studio_Export_Version>
+    <CS_Studio_File_Import>导入</CS_Studio_File_Import>
+    <CS_Studio_File_New>新建</CS_Studio_File_New>
+    <CS_Studio_File_Open>打开</CS_Studio_File_Open>
+    <CS_Studio_File_OpenSkinFolder>皮肤文件夹</CS_Studio_File_OpenSkinFolder>
+    <CS_Studio_File_Save>保存</CS_Studio_File_Save>
+    <CS_Studio_File_SaveAs>另存为</CS_Studio_File_SaveAs>
+    <CS_Studio_Import_Source_Map>从地图角色导入</CS_Studio_Import_Source_Map>
+    <CS_Studio_Import_Source_ProjectSkin>从项目角色列表导入</CS_Studio_Import_Source_ProjectSkin>
+    <CS_Studio_Import_Source_Race>从种族列表导入</CS_Studio_Import_Source_Race>
+</LanguageData>

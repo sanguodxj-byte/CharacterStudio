@@ -60,17 +60,14 @@ namespace CharacterStudio.UI
                 GUI.color = Color.white;
             }
 
-#pragma warning disable CS0618
-            bool isHidden = workingSkin.hiddenPaths.Contains(node.uniqueNodePath) ||
-                           workingSkin.hiddenTags.Contains(node.tagDefName);
-#pragma warning restore CS0618
+            bool isHidden = IsNodeHiddenInCurrentMode(node);
 
             Rect eyeRect = new Rect(indentOffset + 20, y + 2, 18, 18);
             string eyeIcon = isHidden ? "◯" : "◉";
             GUI.color = isHidden ? Color.gray : Color.white;
             if (Widgets.ButtonText(eyeRect, eyeIcon, false))
             {
-                ToggleNodeVisibility(node);
+                ToggleNodeVisibilityInCurrentMode(node);
             }
             GUI.color = Color.white;
             TooltipHandler.TipRegion(eyeRect, isHidden ? "CS_Studio_Tip_ShowNode".Translate() : "CS_Studio_Tip_HideNode".Translate());
@@ -129,36 +126,7 @@ namespace CharacterStudio.UI
         /// </summary>
         private void ToggleNodeVisibility(RenderNodeSnapshot node)
         {
-            bool hidden;
-            if (workingSkin.hiddenPaths.Contains(node.uniqueNodePath))
-            {
-                workingSkin.hiddenPaths.Remove(node.uniqueNodePath);
-#pragma warning disable CS0618
-                if (!string.IsNullOrEmpty(node.tagDefName))
-                {
-                    workingSkin.hiddenTags.Remove(node.tagDefName);
-                }
-#pragma warning restore CS0618
-                hidden = false;
-                ShowStatus("CS_Studio_Msg_Shown".Translate(node.uniqueNodePath));
-            }
-            else
-            {
-                workingSkin.hiddenPaths.Add(node.uniqueNodePath);
-#pragma warning disable CS0618
-                if (!string.IsNullOrEmpty(node.tagDefName) && !workingSkin.hiddenTags.Contains(node.tagDefName))
-                {
-                    workingSkin.hiddenTags.Add(node.tagDefName);
-                }
-#pragma warning restore CS0618
-                hidden = true;
-                ShowStatus("CS_Studio_Msg_Hidden".Translate(node.uniqueNodePath));
-            }
-
-            UpsertHideNodeRule(node, hidden);
-            isDirty = true;
-            RefreshPreview();
-            RefreshRenderTree();
+            ToggleNodeVisibilityInCurrentMode(node);
         }
 
         /// <summary>
@@ -183,31 +151,31 @@ namespace CharacterStudio.UI
                 }));
             }
 
-            options.Add(new FloatMenuOption("CS_Studio_Prop_MountLayer".Translate(), () =>
+            if (!layerModificationWorkflowActive)
             {
-                var newLayer = new PawnLayerConfig
+                options.Add(new FloatMenuOption("CS_Studio_Prop_MountLayer".Translate(), () =>
                 {
-                    layerName = GetMountedLayerLabel(node),
-                    anchorPath = node.uniqueNodePath,
-                    anchorTag = node.tagDefName ?? "Body"
-                };
-                workingSkin.layers.Add(newLayer);
-                AppendAttachNodeRule(node, newLayer);
-                selectedLayerIndex = workingSkin.layers.Count - 1;
-                selectedNodePath = "";
-                isDirty = true;
-                RefreshPreview();
-                ShowStatus("CS_Studio_Msg_Appended".Translate(node.uniqueNodePath, "1"));
-            }));
+                    var newLayer = new PawnLayerConfig
+                    {
+                        layerName = GetMountedLayerLabel(node),
+                        anchorPath = node.uniqueNodePath,
+                        anchorTag = node.tagDefName ?? "Body"
+                    };
+                    workingSkin.layers.Add(newLayer);
+                    AppendAttachNodeRule(node, newLayer);
+                    selectedLayerIndex = workingSkin.layers.Count - 1;
+                    selectedNodePath = "";
+                    isDirty = true;
+                    RefreshPreview();
+                    ShowStatus("CS_Studio_Msg_Appended".Translate(node.uniqueNodePath, "1"));
+                }));
+            }
 
-#pragma warning disable CS0618
-            bool isHidden = workingSkin.hiddenPaths.Contains(node.uniqueNodePath) ||
-                           workingSkin.hiddenTags.Contains(node.tagDefName);
-#pragma warning restore CS0618
+            bool isHidden = IsNodeHiddenInCurrentMode(node);
 
             options.Add(new FloatMenuOption(isHidden ? "CS_Studio_Prop_ShowNode".Translate() : "CS_Studio_Prop_HideNode".Translate(), () =>
             {
-                ToggleNodeVisibility(node);
+                ToggleNodeVisibilityInCurrentMode(node);
             }));
 
             if (node.children.Count > 0)

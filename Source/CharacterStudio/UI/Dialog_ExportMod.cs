@@ -28,12 +28,12 @@ namespace CharacterStudio.UI
 
         // 导出模式
         private ExportMode exportMode = ExportMode.CosmeticPack;
-        
+
         // 化妆品选项
         private bool exportAsGene = true;
         private bool overlayMode = false;
         private string geneCategory = "Cosmetic";
-        
+
         // 模块化开关
         private bool includeSkinDef = true;
         private bool includeGeneDef = true;
@@ -41,14 +41,12 @@ namespace CharacterStudio.UI
         private bool includeSummonItem = false;
         private bool includeAbilities = false;
         private bool copyTextures = true;
-        
-        // 资产来源预览
-        private List<AssetSourceInfo> assetSources = new List<AssetSourceInfo>();
-        private List<string> detectedDependencies = new List<string>();
-        private bool showAssetPreview = false;
-        
+        private bool assetRightsConfirmed = false;
+        private bool exportWarningAcknowledged = false;
+        private float assetRightsConfirmStartTime = -1f;
+        private const float ExportRightsConfirmWaitSeconds = 10f;
+
         private Vector2 scrollPos;
-        private Vector2 assetScrollPos;
 
         public override Vector2 InitialSize => new Vector2(580f, 680f);
 
@@ -84,7 +82,7 @@ namespace CharacterStudio.UI
 
             // 滚动区域
             Rect scrollRect = new Rect(0, y, inRect.width, inRect.height - y - 80);
-            Rect viewRect = new Rect(0, 0, scrollRect.width - 16, showAssetPreview ? 700 : 550);
+            Rect viewRect = new Rect(0, 0, scrollRect.width - 16, 720);
 
             Widgets.BeginScrollView(scrollRect, ref scrollPos, viewRect);
 
@@ -106,20 +104,29 @@ namespace CharacterStudio.UI
             UIHelper.DrawSectionTitle(ref vy, width, "CS_Studio_ExportMode".Translate());
             Rect radioRect1 = new Rect(0, vy, width / 2 - 5, 24);
             if (Widgets.RadioButtonLabeled(radioRect1, "CS_Studio_ExportMode_Cosmetic".Translate(), exportMode == ExportMode.CosmeticPack))
+            {
                 exportMode = ExportMode.CosmeticPack;
-            
+                ApplyModePreset();
+            }
+
             Rect radioRect2 = new Rect(width / 2 + 5, vy, width / 2 - 5, 24);
             if (Widgets.RadioButtonLabeled(radioRect2, "CS_Studio_ExportMode_FullUnit".Translate(), exportMode == ExportMode.FullUnit))
+            {
                 exportMode = ExportMode.FullUnit;
+                ApplyModePreset();
+            }
             vy += UIHelper.RowHeight;
+
+            Widgets.Label(new Rect(0, vy, width, 42f), "CS_Studio_Export_ModuleSummary".Translate());
+            vy += 46f;
 
             // 模块化开关
             UIHelper.DrawSectionTitle(ref vy, width, "CS_Studio_Export_ModuleOptions".Translate());
-            
+            UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Export_IncludeSkinDef".Translate(), ref includeSkinDef);
+
             if (exportMode == ExportMode.CosmeticPack)
             {
-                UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Export_IncludeSkinDef".Translate(), ref includeSkinDef);
-                UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Export_AsGene".Translate(), ref exportAsGene);
+                UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Export_AsGene".Translate(), ref exportAsGene, "CS_Studio_Export_ModuleGeneHint".Translate());
                 if (exportAsGene)
                 {
                     UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Export_IncludeGeneDef".Translate(), ref includeGeneDef);
@@ -129,33 +136,50 @@ namespace CharacterStudio.UI
                         cat => cat,
                         val => geneCategory = val);
                 }
-                UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Export_CopyTextures".Translate(), ref copyTextures);
             }
             else if (exportMode == ExportMode.FullUnit)
             {
-                UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Export_IncludeSkinDef".Translate(), ref includeSkinDef);
-                UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Export_IncludePawnKind".Translate(), ref includePawnKind);
-                UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Export_IncludeSummonItem".Translate(), ref includeSummonItem);
-                UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Export_IncludeAbilities".Translate(), ref includeAbilities);
-                UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Export_CopyTextures".Translate(), ref copyTextures);
+                bool canExportAbilities = abilities.Count > 0;
+                UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Export_IncludePawnKind".Translate(), ref includePawnKind, "CS_Studio_Export_ModulePawnKindHint".Translate());
+                UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Export_IncludeSummonItem".Translate(), ref includeSummonItem, "CS_Studio_Export_ModuleSummonHint".Translate());
+                UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Export_IncludeAbilities".Translate(), ref includeAbilities,
+                    canExportAbilities
+                        ? "CS_Studio_Export_ModuleAbilitiesHint".Translate()
+                        : "CS_Studio_Export_ModuleAbilitiesEmptyHint".Translate());
             }
-            
-            // 资产来源预览
-            vy += 10;
-            if (Widgets.ButtonText(new Rect(0, vy, 200, 24), showAssetPreview ? "CS_Studio_Export_HideAssets".Translate() : "CS_Studio_Export_PreviewAssets".Translate()))
+
+            UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Export_CopyTextures".Translate(), ref copyTextures);
+            NormalizeModuleSelectionForUi();
+
+            // 导出前确认
+            UIHelper.DrawSectionTitle(ref vy, width, "CS_Studio_Export_ConfirmationSection".Translate());
+
+            bool previousAssetRightsConfirmed = assetRightsConfirmed;
+            UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Export_ConfirmRights".Translate(), ref assetRightsConfirmed, "CS_Studio_Export_ConfirmRights_Desc".Translate());
+            if (assetRightsConfirmed && !previousAssetRightsConfirmed)
             {
-                showAssetPreview = !showAssetPreview;
-                if (showAssetPreview)
-                {
-                    AnalyzeAssets();
-                }
+                assetRightsConfirmStartTime = Time.realtimeSinceStartup;
             }
-            vy += 30;
-            
-            if (showAssetPreview)
+            else if (!assetRightsConfirmed)
             {
-                DrawAssetPreview(ref vy, width);
+                assetRightsConfirmStartTime = -1f;
+                exportWarningAcknowledged = false;
             }
+
+            UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Export_ConfirmRightsSecond".Translate(), ref exportWarningAcknowledged, "CS_Studio_Export_ConfirmRightsSecond_Desc".Translate());
+            if (!assetRightsConfirmed && exportWarningAcknowledged)
+            {
+                exportWarningAcknowledged = false;
+            }
+
+            float remainingSeconds = GetRemainingConfirmationSeconds();
+            Color previousColor = GUI.color;
+            GUI.color = remainingSeconds > 0f ? new Color(1f, 0.85f, 0.3f) : Color.green;
+            Widgets.Label(new Rect(0, vy, width, 36f), remainingSeconds > 0f
+                ? "CS_Studio_Export_ConfirmCountdown".Translate(Mathf.CeilToInt(remainingSeconds))
+                : "CS_Studio_Export_ConfirmCountdownReady".Translate());
+            GUI.color = previousColor;
+            vy += 40f;
 
             // 输出设置
             UIHelper.DrawSectionTitle(ref vy, width, "CS_Studio_Export_OutputSettings".Translate());
@@ -176,7 +200,7 @@ namespace CharacterStudio.UI
             float btnWidth = 120f;
             float btnY = inRect.height - 40;
 
-            GUI.enabled = !isExporting && IsValidInput();
+            GUI.enabled = !isExporting && IsValidInput() && CanExportNow();
             if (Widgets.ButtonText(new Rect(inRect.width / 2 - btnWidth - 10, btnY, btnWidth, 30), "CS_Studio_Export_Confirm".Translate()))
             {
                 OnExport();
@@ -223,113 +247,87 @@ namespace CharacterStudio.UI
             ));
         }
 
-        /// <summary>
-        /// 分析资产来源
-        /// </summary>
-        private void AnalyzeAssets()
-        {
-            assetSources.Clear();
-            detectedDependencies.Clear();
-
-            foreach (var texPath in EnumerateReferencedTexturePaths())
-            {
-                var sourceInfo = ExportAssetUtility.DetectAssetSource(texPath);
-                assetSources.Add(sourceInfo);
-
-                string? packageId = sourceInfo.SourceModPackageId;
-                if (sourceInfo.SourceType != AssetSourceType.ExternalMod || string.IsNullOrWhiteSpace(packageId))
-                {
-                    continue;
-                }
-
-                string dependencyPackageId = packageId!;
-                if (detectedDependencies.Contains(dependencyPackageId))
-                {
-                    continue;
-                }
-
-                detectedDependencies.Add(dependencyPackageId);
-            }
-        }
-
-        private IEnumerable<string> EnumerateReferencedTexturePaths()
-        {
-            return ExportAssetUtility.EnumerateTexturePaths(skinDef, abilities);
-        }
-
         private List<string> BuildSourceTextureSearchPaths()
         {
             return ExportAssetUtility.BuildSourceTextureSearchPaths(skinDef, abilities);
         }
 
-        /// <summary>
-        /// 绘制资产预览区域
-        /// </summary>
-        private void DrawAssetPreview(ref float y, float width)
+        private float GetRemainingConfirmationSeconds()
         {
-            UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Export_AssetSources".Translate());
-
-            // 统计信息
-            int localCount = assetSources.Count(s => s.SourceType == AssetSourceType.LocalFile);
-            int vanillaCount = assetSources.Count(s => s.SourceType == AssetSourceType.VanillaContent);
-            int externalCount = assetSources.Count(s => s.SourceType == AssetSourceType.ExternalMod);
-
-            Widgets.Label(new Rect(0, y, width, 20),
-                $"{"CS_Studio_Export_LocalFiles".Translate()}: {localCount}  |  " +
-                $"{"CS_Studio_Export_VanillaContent".Translate()}: {vanillaCount}  |  " +
-                $"{"CS_Studio_Export_ExternalMod".Translate()}: {externalCount}");
-            y += 24;
-
-            // 依赖列表
-            if (detectedDependencies.Count > 0)
+            if (!assetRightsConfirmed || assetRightsConfirmStartTime < 0f)
             {
-                GUI.color = new Color(1f, 0.8f, 0.3f);
-                Widgets.Label(new Rect(0, y, width, 20), "CS_Studio_Export_DetectedDeps".Translate(detectedDependencies.Count));
-                GUI.color = Color.white;
-                y += 22;
+                return ExportRightsConfirmWaitSeconds;
+            }
 
-                foreach (var dep in detectedDependencies)
+            return Mathf.Max(0f, ExportRightsConfirmWaitSeconds - (Time.realtimeSinceStartup - assetRightsConfirmStartTime));
+        }
+
+        private bool CanExportNow()
+        {
+            return assetRightsConfirmed
+                && exportWarningAcknowledged
+                && GetRemainingConfirmationSeconds() <= 0f;
+        }
+
+        private void ApplyModePreset()
+        {
+            switch (exportMode)
+            {
+                case ExportMode.CosmeticPack:
+                    includeSkinDef = true;
+                    exportAsGene = true;
+                    includeGeneDef = true;
+                    includePawnKind = false;
+                    includeSummonItem = false;
+                    includeAbilities = false;
+                    copyTextures = true;
+                    break;
+                case ExportMode.FullUnit:
+                    includeSkinDef = true;
+                    includePawnKind = true;
+                    includeSummonItem = true;
+                    includeAbilities = abilities.Count > 0;
+                    copyTextures = true;
+                    break;
+                case ExportMode.PluginOnly:
+                    includeSkinDef = true;
+                    exportAsGene = false;
+                    includeGeneDef = false;
+                    includePawnKind = false;
+                    includeSummonItem = false;
+                    includeAbilities = false;
+                    copyTextures = false;
+                    break;
+            }
+
+            NormalizeModuleSelectionForUi();
+        }
+
+        private void NormalizeModuleSelectionForUi()
+        {
+            if (exportMode == ExportMode.CosmeticPack)
+            {
+                includePawnKind = false;
+                includeSummonItem = false;
+                includeAbilities = false;
+                includeGeneDef = exportAsGene && includeGeneDef;
+                if (includeGeneDef)
                 {
-                    var sourceInfo = assetSources.FirstOrDefault(s => s.SourceModPackageId == dep);
-                    string displayName = sourceInfo?.SourceModName ?? dep;
-                    Widgets.Label(new Rect(20, y, width - 20, 18), $"• {displayName}");
-                    y += 20;
+                    includeSkinDef = true;
                 }
             }
-
-            // 资产列表滚动区域
-            y += 5;
-            Rect assetListRect = new Rect(0, y, width, 100);
-            Rect assetViewRect = new Rect(0, 0, width - 16, assetSources.Count * 20);
-            
-            Widgets.BeginScrollView(assetListRect, ref assetScrollPos, assetViewRect);
-            float ay = 0;
-            foreach (var source in assetSources)
+            else if (exportMode == ExportMode.FullUnit)
             {
-                Color color = source.SourceType switch
+                if (includeSummonItem)
                 {
-                    AssetSourceType.LocalFile => Color.white,
-                    AssetSourceType.VanillaContent => Color.green,
-                    AssetSourceType.ExternalMod => new Color(1f, 0.8f, 0.3f),
-                    _ => Color.gray
-                };
-                GUI.color = color;
-                
-                string typeLabel = source.SourceType switch
+                    includePawnKind = true;
+                }
+
+                if (abilities.Count == 0)
                 {
-                    AssetSourceType.LocalFile => "[Local]",
-                    AssetSourceType.VanillaContent => "[Vanilla]",
-                    AssetSourceType.ExternalMod => $"[{source.SourceModName ?? "Mod"}]",
-                    _ => "[?]"
-                };
-                
-                Widgets.Label(new Rect(0, ay, width - 16, 18), $"{typeLabel} {source.OriginalPath}");
-                GUI.color = Color.white;
-                ay += 20;
+                    includeAbilities = false;
+                }
             }
-            Widgets.EndScrollView();
-            
-            y += 105;
         }
 
         private void OnExport()
@@ -340,49 +338,76 @@ namespace CharacterStudio.UI
                 return;
             }
 
+            if (!assetRightsConfirmed)
+            {
+                statusMessage = "CS_Studio_Export_Err_MustConfirmRights".Translate();
+                return;
+            }
+
+            if (!exportWarningAcknowledged)
+            {
+                statusMessage = "CS_Studio_Export_Err_MustConfirmRightsSecond".Translate();
+                return;
+            }
+
+            if (GetRemainingConfirmationSeconds() > 0f)
+            {
+                statusMessage = "CS_Studio_Export_Err_WaitCountdown".Translate(Mathf.CeilToInt(GetRemainingConfirmationSeconds()));
+                return;
+            }
+
+            NormalizeModuleSelectionForUi();
+
             isExporting = true;
             statusMessage = "CS_Studio_Export_Status_Exporting".Translate();
 
-            try
-            {
-                // 创建导出配置
-                var config = new ModExportConfig
+            Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation(
+                "CS_Studio_Export_FinalConfirmMessage".Translate(),
+                () =>
                 {
-                    ModName = modName,
-                    Author = author,
-                    Version = version,
-                    Description = description,
-                    OutputPath = outputPath,
-                    SkinDef = skinDef,
-                    Abilities = abilities,
-                    SourceTexturePaths = BuildSourceTextureSearchPaths(),
-                    Mode = exportMode,
-                    ExportAsGene = exportAsGene,
-                    GeneCategory = geneCategory,
-                    OverlayMode = overlayMode,
-                    // 模块化开关
-                    IncludeSkinDef = includeSkinDef,
-                    IncludeGeneDef = includeGeneDef,
-                    IncludePawnKind = includePawnKind,
-                    IncludeSummonItem = includeSummonItem,
-                    IncludeAbilities = includeAbilities,
-                    CopyTextures = copyTextures
-                };
+                    isExporting = true;
+                    statusMessage = "CS_Studio_Export_Status_Exporting".Translate();
 
-                // 调用导出逻辑
-                string exportedModPath = new ModBuilder().Export(config);
+                    try
+                    {
+                        var config = new ModExportConfig
+                        {
+                            ModName = modName,
+                            Author = author,
+                            Version = version,
+                            Description = description,
+                            OutputPath = outputPath,
+                            SkinDef = skinDef,
+                            Abilities = abilities,
+                            SourceTexturePaths = BuildSourceTextureSearchPaths(),
+                            Mode = exportMode,
+                            ExportAsGene = exportAsGene,
+                            GeneCategory = geneCategory,
+                            OverlayMode = overlayMode,
+                            IncludeSkinDef = includeSkinDef,
+                            IncludeGeneDef = includeGeneDef,
+                            IncludePawnKind = includePawnKind,
+                            IncludeSummonItem = includeSummonItem,
+                            IncludeAbilities = includeAbilities,
+                            CopyTextures = copyTextures,
+                            AssetRightsConfirmed = assetRightsConfirmed
+                        };
 
-                statusMessage = "CS_Studio_Export_Success".Translate(exportedModPath);
-                Messages.Message("CS_Studio_Export_Success".Translate(exportedModPath), MessageTypeDefOf.PositiveEvent);
-                isExporting = false;
-                Close();
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"[CharacterStudio] Export failed: {ex}");
-                statusMessage = "CS_Studio_Export_Failed".Translate(ex.Message);
-                isExporting = false;
-            }
+                        string exportedModPath = new ModBuilder().Export(config);
+
+                        statusMessage = "CS_Studio_Export_Success".Translate(exportedModPath);
+                        Messages.Message("CS_Studio_Export_Success".Translate(exportedModPath), MessageTypeDefOf.PositiveEvent);
+                        isExporting = false;
+                        Close();
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error($"[CharacterStudio] Export failed: {ex}");
+                        statusMessage = "CS_Studio_Export_Failed".Translate(ex.Message);
+                        isExporting = false;
+                    }
+                },
+                true));
         }
     }
 }

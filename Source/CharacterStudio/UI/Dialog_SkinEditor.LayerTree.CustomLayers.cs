@@ -50,16 +50,17 @@ namespace CharacterStudio.UI
             }
             GUI.color = Color.white;
 
-            Rect nameRect = new Rect(46, y, width - 70, TreeNodeHeight);
+            Rect deleteRect = new Rect(width - 28f, y, 24f, 22f);
+            Rect nameRect = new Rect(46, y, width - 78f, TreeNodeHeight);
             string displayName = string.IsNullOrEmpty(layer.layerName) ? GetDefaultLayerLabel(index) : layer.layerName;
 
             Text.Anchor = TextAnchor.MiddleLeft;
             Widgets.Label(nameRect, displayName);
             Text.Anchor = TextAnchor.UpperLeft;
 
-            if (Widgets.ButtonText(new Rect(width - 22, y + 1, 20, 20), "×"))
+            if (UIHelper.DrawDangerButton(deleteRect, tooltip: "CS_Studio_Delete".Translate(), onClick: () => DeleteSelectedLayers(index)))
             {
-                DeleteSelectedLayers(index);
+                return y + TreeNodeHeight;
             }
 
             if (Mouse.IsOver(rowRect) && Event.current.type == EventType.MouseDown && Event.current.button == 0)
@@ -122,11 +123,7 @@ namespace CharacterStudio.UI
 
             options.Add(new FloatMenuOption("CS_Studio_Ctx_DeleteLayer".Translate(), () =>
             {
-                CaptureUndoSnapshot();
-                workingSkin.layers.RemoveAt(index);
-                RemapSelectionAfterRemoveIndex(index);
-                isDirty = true;
-                RefreshPreview();
+                DeleteSelectedLayers(index);
             }));
 
             Find.WindowStack.Add(new FloatMenu(options));

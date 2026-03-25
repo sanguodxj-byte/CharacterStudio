@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <CS_Studio_Equip_Added>Added equipment: {0}</CS_Studio_Equip_Added>
+    <CS_Studio_Equip_AircraftPreset>Create aircraft wing animation preset</CS_Studio_Equip_AircraftPreset>
+    <CS_Studio_Equip_AnchorPath>Visual Anchor Path</CS_Studio_Equip_AnchorPath>
+    <CS_Studio_Equip_AnchorPath_Hint>Optional exact render-tree path. When set, it takes priority over the anchor tag.</CS_Studio_Equip_AnchorPath_Hint>
+    <CS_Studio_Equip_AnchorTag>Visual Anchor Tag</CS_Studio_Equip_AnchorTag>
+    <CS_Studio_Equip_AnchorTag_Hint>Select the render anchor tag used when no explicit anchor path is provided.</CS_Studio_Equip_AnchorTag_Hint>
+    <CS_Studio_Equip_ApparelLayers>Apparel Layers</CS_Studio_Equip_ApparelLayers>
+    <CS_Studio_Equip_ApparelMask>Apparel Mask</CS_Studio_Equip_ApparelMask>
+    <CS_Studio_Equip_ApparelTags>Apparel Tags</CS_Studio_Equip_ApparelTags>
+    <CS_Studio_Equip_BodyPartGroups>Body Part Groups</CS_Studio_Equip_BodyPartGroups>
+    <CS_Studio_Equip_BoundAbilities>Bound abilities</CS_Studio_Equip_BoundAbilities>
+    <CS_Studio_Equip_Btn_Abilities>Abilities</CS_Studio_Equip_Btn_Abilities>
+    <CS_Studio_Equip_Btn_DisablePivotEdit>Disable Pivot Editing</CS_Studio_Equip_Btn_DisablePivotEdit>
+    <CS_Studio_Equip_Btn_EnablePivotEdit>Edit Pivot</CS_Studio_Equip_Btn_EnablePivotEdit>
+    <CS_Studio_Equip_Btn_ExportXml>Export XML</CS_Studio_Equip_Btn_ExportXml>
+    <CS_Studio_Equip_Btn_New>New</CS_Studio_Equip_Btn_New>
+    <CS_Studio_Equip_DefaultCopyDefName>Equipment_Copy</CS_Studio_Equip_DefaultCopyDefName>
+    <CS_Studio_Equip_DefaultPresetDefName>Aircraft_Preset</CS_Studio_Equip_DefaultPresetDefName>
+    <CS_Studio_Equip_DefName>Equipment DefName</CS_Studio_Equip_DefName>
+    <CS_Studio_Equip_DefName_Hint>Use only letters, numbers, and underscores. This value is used as the XML DefName when exporting.</CS_Studio_Equip_DefName_Hint>
+    <CS_Studio_Equip_DefName_Invalid>DefName may only contain letters, numbers, and underscores.</CS_Studio_Equip_DefName_Invalid>
+    <CS_Studio_Equip_DefaultLabel>Equipment {0}</CS_Studio_Equip_DefaultLabel>
+    <CS_Studio_Equip_Deleted>Deleted equipment: {0}</CS_Studio_Equip_Deleted>
+    <CS_Studio_Equip_Duplicated>Duplicated equipment: {0}</CS_Studio_Equip_Duplicated>
+    <CS_Studio_Equip_EastOffsetX>East Offset X</CS_Studio_Equip_EastOffsetX>
+    <CS_Studio_Equip_EastOffsetY>East Offset Y</CS_Studio_Equip_EastOffsetY>
+    <CS_Studio_Equip_EastOffsetZ>East Offset Z</CS_Studio_Equip_EastOffsetZ>
+    <CS_Studio_Equip_Exported>Equipment exported: {0}</CS_Studio_Equip_Exported>
+    <CS_Studio_Equip_ExportFailed>Equipment export failed: {0}</CS_Studio_Equip_ExportFailed>
+    <CS_Studio_Equip_ImportAppendAction>Append</CS_Studio_Equip_ImportAppendAction>
+    <CS_Studio_Equip_ImportAppended>Appended {0} equipments from {1}.</CS_Studio_Equip_ImportAppended>
+    <CS_Studio_Equip_ImportFailed>Equipment import failed: {0}</CS_Studio_Equip_ImportFailed>
+    <CS_Studio_Equip_ImportNoResults>No equipments found in XML.</CS_Studio_Equip_ImportNoResults>
+    <CS_Studio_Equip_ImportReplaceAction>Replace</CS_Studio_Equip_ImportReplaceAction>
+    <CS_Studio_Equip_ImportReplaced>Imported {0} equipments from {1}.</CS_Studio_Equip_ImportReplaced>
+    <CS_Studio_Equip_ImportXmlHint>Provide an equipment XML path. Replace clears current equipments, Append keeps them.</CS_Studio_Equip_ImportXmlHint>
+    <CS_Studio_Equip_ImportXmlPath>XML Path</CS_Studio_Equip_ImportXmlPath>
+    <CS_Studio_Equip_ImportXmlTitle>Import Equipment XML</CS_Studio_Equip_ImportXmlTitle>
+    <CS_Studio_Equip_InvalidSelection>Selected equipment is invalid.</CS_Studio_Equip_InvalidSelection>
+    <CS_Studio_Equip_Label_Copy>{0} Copy</CS_Studio_Equip_Label_Copy>
+    <CS_Studio_Equip_LinkedThingDef>Linked ThingDef</CS_Studio_Equip_LinkedThingDef>
+    <CS_Studio_Equip_LinkedThingDef_Hint>Optionally bind this equipment entry to an in-game ThingDef for integration or auto-matching.</CS_Studio_Equip_LinkedThingDef_Hint>
+    <CS_Studio_Equip_NoAbilities>No abilities</CS_Studio_Equip_NoAbilities>
+    <CS_Studio_Equip_NoAbilityPool>No shared abilities available. Create or import abilities first.</CS_Studio_Equip_NoAbilityPool>
+    <CS_Studio_Equip_NorthOffsetX>North Offset X</CS_Studio_Equip_NorthOffsetX>
+    <CS_Studio_Equip_NorthOffsetY>North Offset Y</CS_Studio_Equip_NorthOffsetY>
+    <CS_Studio_Equip_NorthOffsetZ>North Offset Z</CS_Studio_Equip_NorthOffsetZ>
+    <CS_Studio_Equip_NoSelection>No equipment selected.</CS_Studio_Equip_NoSelection>
+    <CS_Studio_Equip_OpenAbilityEditor>Open Shared Ability Editor</CS_Studio_Equip_OpenAbilityEditor>
+    <CS_Studio_Equip_ParentThingDefName>Parent ThingDef</CS_Studio_Equip_ParentThingDefName>
+    <CS_Studio_Equip_Preset_LeftWing>Left Wing</CS_Studio_Equip_Preset_LeftWing>
+    <CS_Studio_Equip_Preset_LeftWingVfx>Left Wing VFX</CS_Studio_Equip_Preset_LeftWingVfx>
+    <CS_Studio_Equip_Preset_RightWing>Right Wing</CS_Studio_Equip_Preset_RightWing>
+    <CS_Studio_Equip_Preset_RightWingVfx>Right Wing VFX</CS_Studio_Equip_Preset_RightWingVfx>
+    <CS_Studio_Equip_Preset_TailVfx>Tail VFX</CS_Studio_Equip_Preset_TailVfx>
+    <CS_Studio_Equip_PresetAdded>Aircraft wing animation preset added (left wing, right wing, and three VFX).</CS_Studio_Equip_PresetAdded>
+    <CS_Studio_Equip_PreviewTexture>Preview Texture</CS_Studio_Equip_PreviewTexture>
+    <CS_Studio_Equip_PreviewPlay>Preview Once</CS_Studio_Equip_PreviewPlay>
+    <CS_Studio_Equip_PreviewPlay_Hint>Play the selected equipment's triggered animation once.</CS_Studio_Equip_PreviewPlay_Hint>
+    <CS_Studio_Equip_PreviewLoop>Loop Preview</CS_Studio_Equip_PreviewLoop>
+    <CS_Studio_Equip_PreviewLoop_Hint>Loop the selected equipment's triggered animation preview.</CS_Studio_Equip_PreviewLoop_Hint>
+    <CS_Studio_Equip_PreviewUnavailable_Hint>The selected equipment does not have a previewable triggered animation configured.</CS_Studio_Equip_PreviewUnavailable_Hint>
+    <CS_Studio_Equip_RotationEastOffset>Rotation East Offset</CS_Studio_Equip_RotationEastOffset>
+    <CS_Studio_Equip_RotationNorthOffset>Rotation North Offset</CS_Studio_Equip_RotationNorthOffset>
+    <CS_Studio_Equip_ScaleX>Scale X</CS_Studio_Equip_ScaleX>
+    <CS_Studio_Equip_ScaleY>Scale Y</CS_Studio_Equip_ScaleY>
+    <CS_Studio_Equip_Section_Abilities>Equipment / Bound Abilities</CS_Studio_Equip_Section_Abilities>
+    <CS_Studio_Equip_Section_Base>Equipment / Basic</CS_Studio_Equip_Section_Base>
+    <CS_Studio_Equip_Section_Definition>ThingDef / Apparel</CS_Studio_Equip_Section_Definition>
+    <CS_Studio_Equip_Section_VisualAnimation>Equipment / Visual Animation</CS_Studio_Equip_Section_VisualAnimation>
+    <CS_Studio_Equip_Section_VisualBase>Equipment / Visual Base</CS_Studio_Equip_Section_VisualBase>
+    <CS_Studio_Equip_Section_VisualTransform>Equipment / Visual Transform</CS_Studio_Equip_Section_VisualTransform>
+    <CS_Studio_Equip_Section_VisualVariants>Equipment / Visual Variants</CS_Studio_Equip_Section_VisualVariants>
+    <CS_Studio_Equip_SelectEntry>Select an equipment entry to edit.</CS_Studio_Equip_SelectEntry>
+    <CS_Studio_Equip_SelectHint>Select an equipment entry to edit full properties in the right panel.</CS_Studio_Equip_SelectHint>
+    <CS_Studio_Equip_Shader_Cutout>Cutout</CS_Studio_Equip_Shader_Cutout>
+    <CS_Studio_Equip_Shader_CutoutComplex>Cutout Complex</CS_Studio_Equip_Shader_CutoutComplex>
+    <CS_Studio_Equip_Shader_MetaOverlay>Meta Overlay</CS_Studio_Equip_Shader_MetaOverlay>
+    <CS_Studio_Equip_Shader_Transparent>Transparent</CS_Studio_Equip_Shader_Transparent>
+    <CS_Studio_Equip_Shader_TransparentPostLight>Transparent Post Light</CS_Studio_Equip_Shader_TransparentPostLight>
+    <CS_Studio_Equip_ShaderDef>Visual Shader Def</CS_Studio_Equip_ShaderDef>
+    <CS_Studio_Equip_ShaderDef_Hint>Choose the shader used to render this equipment visual layer.</CS_Studio_Equip_ShaderDef_Hint>
+    <CS_Studio_Equip_SlotTag>Slot Tag</CS_Studio_Equip_SlotTag>
+    <CS_Studio_Equip_SlotTag_Hint>Logical slot identifier for this equipment entry, such as WeaponBack, Hairpin, or Cape.</CS_Studio_Equip_SlotTag_Hint>
+    <CS_Studio_Equip_SourceNote>Source Note</CS_Studio_Equip_SourceNote>
+    <CS_Studio_Equip_ThingCategories>Thing Categories</CS_Studio_Equip_ThingCategories>
+    <CS_Studio_Equip_TriggeredAbilityDefName>Triggered Ability DefName</CS_Studio_Equip_TriggeredAbilityDefName>
+    <CS_Studio_Equip_TriggeredAbilityDefName_Hint>Enter a specific ability defName here. If left empty, the equipment will use the state/group key below.</CS_Studio_Equip_TriggeredAbilityDefName_Hint>
+    <CS_Studio_Equip_TriggeredAbilityDefName_Raw>Triggered Ability DefName (Raw)</CS_Studio_Equip_TriggeredAbilityDefName_Raw>
+    <CS_Studio_Equip_TriggeredAnimationGroupKey>Triggered State / Group Key</CS_Studio_Equip_TriggeredAnimationGroupKey>
+    <CS_Studio_Equip_TriggeredAnimationGroupKey_Hint>Enter a state key such as FlightState. When no triggered ability defName is provided, the equipment listens to this generic key.</CS_Studio_Equip_TriggeredAnimationGroupKey_Hint>
+    <CS_Studio_Equip_Section_TriggeredAnimation>Triggered Animation</CS_Studio_Equip_Section_TriggeredAnimation>
+    <CS_Studio_Equip_TriggeredAnimation_Enable>Enable Triggered Animation</CS_Studio_Equip_TriggeredAnimation_Enable>
+    <CS_Studio_Equip_TriggeredAnimation_Role>Triggered Animation Role</CS_Studio_Equip_TriggeredAnimation_Role>
+    <CS_Studio_Equip_TriggeredAnimation_DeployAngle>Deploy Angle</CS_Studio_Equip_TriggeredAnimation_DeployAngle>
+    <CS_Studio_Equip_TriggeredAnimation_ReturnAngle>Return Angle</CS_Studio_Equip_TriggeredAnimation_ReturnAngle>
+    <CS_Studio_Equip_TriggeredAnimation_DeployTicks>Deploy Duration (ticks)</CS_Studio_Equip_TriggeredAnimation_DeployTicks>
+    <CS_Studio_Equip_TriggeredAnimation_HoldTicks>Hold Duration (ticks)</CS_Studio_Equip_TriggeredAnimation_HoldTicks>
+    <CS_Studio_Equip_TriggeredAnimation_ReturnTicks>Return Duration (ticks)</CS_Studio_Equip_TriggeredAnimation_ReturnTicks>
+    <CS_Studio_Equip_TriggeredAnimation_PivotX>Pivot X</CS_Studio_Equip_TriggeredAnimation_PivotX>
+    <CS_Studio_Equip_TriggeredAnimation_PivotY>Pivot Y</CS_Studio_Equip_TriggeredAnimation_PivotY>
+    <CS_Studio_Equip_TriggeredAnimation_UseVfxVisibility>Control Effect Layer Visibility By Cycle</CS_Studio_Equip_TriggeredAnimation_UseVfxVisibility>
+    <CS_Studio_Equip_UseWornGraphicMask>Use Worn Graphic Mask</CS_Studio_Equip_UseWornGraphicMask>
+    <CS_Studio_Equip_VisualLayerName>Visual Layer Name</CS_Studio_Equip_VisualLayerName>
+    <CS_Studio_Equip_WorkingSkinNull>workingSkin is null</CS_Studio_Equip_WorkingSkinNull>
+    <CS_Studio_Equip_WorldTexPath>World Texture Path</CS_Studio_Equip_WorldTexPath>
+    <CS_Studio_Equip_WornTexPath>Worn Texture Path</CS_Studio_Equip_WornTexPath>
+</LanguageData>

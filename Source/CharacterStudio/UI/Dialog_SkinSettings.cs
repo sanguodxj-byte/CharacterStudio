@@ -322,4 +322,4 @@ namespace CharacterStudio.UI
             Find.WindowStack.Add(new FloatMenu(options));
         }
     }
-}
+}

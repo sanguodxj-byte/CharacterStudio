@@ -65,7 +65,7 @@ namespace CharacterStudio.UI
             }
             else
             {
-                Widgets.Label(new Rect(5, 5, treeRect.width, 24), "No render tree data available.");
+                Widgets.Label(new Rect(5, 5, treeRect.width, 24), "CS_Studio_Inspector_NoDataAvailable".Translate());
             }
 
             Widgets.EndScrollView();
@@ -78,7 +78,7 @@ namespace CharacterStudio.UI
             }
             else
             {
-                Widgets.Label(detailRect.ContractedBy(10), "Select a node to view details.");
+                Widgets.Label(detailRect.ContractedBy(10), "CS_Studio_Inspector_SelectNodePrompt".Translate());
             }
         }
 
@@ -118,7 +118,7 @@ namespace CharacterStudio.UI
 
             // 绘制节点信息
             float indentPixels = indent * 15f;
-            string label = node.debugLabel ?? "Unknown Node";
+            string label = node.debugLabel ?? "CS_Studio_Inspector_UnknownNode".Translate();
             Widgets.Label(new Rect(indentPixels + 5, curY, width - indentPixels - 5, 24f), label);
 
             curY += 24f;
@@ -142,14 +142,14 @@ namespace CharacterStudio.UI
             Text.Font = GameFont.Small;
             y += 35;
 
-            UIHelper.DrawPropertyLabel(ref y, width, "Type", node.workerClass);
-            UIHelper.DrawPropertyLabel(ref y, width, "Graphic", node.texPath ?? "None");
-            UIHelper.DrawPropertyLabel(ref y, width, "Color", node.color.ToString());
-            UIHelper.DrawPropertyLabel(ref y, width, "Visible", node.isVisible.ToString());
+            UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Inspector_Field_Type".Translate(), node.workerClass);
+            UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Inspector_Field_Graphic".Translate(), node.texPath ?? "CS_Studio_None".Translate());
+            UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Inspector_Field_Color".Translate(), node.color.ToString());
+            UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Inspector_Field_Visible".Translate(), node.isVisible ? "CS_Studio_UI_On".Translate() : "CS_Studio_UI_Off".Translate());
             
             // 注意：RenderNodeSnapshot 没有 Tags 属性，可能是 tagDefName
             // 原代码可能想显示 TagDef
-            UIHelper.DrawPropertyLabel(ref y, width, "Tag", node.tagDefName);
+            UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Inspector_Field_Tag".Translate(), string.IsNullOrWhiteSpace(node.tagDefName) ? "CS_Studio_None".Translate() : node.tagDefName);
         }
     }
 }

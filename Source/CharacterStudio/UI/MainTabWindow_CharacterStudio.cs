@@ -12,6 +12,7 @@ namespace CharacterStudio.UI
     {
         private const float ButtonWidth = 260f;
         private const float ButtonHeight = 40f;
+        private const float ButtonGap = 16f;
 
         public override Vector2 RequestedTabSize => new Vector2(700f, 260f);
 
@@ -31,15 +32,30 @@ namespace CharacterStudio.UI
             var descRect = new Rect(inRect.x, inRect.y + 48f, inRect.width, 60f);
             Widgets.Label(descRect, "CS_Studio_EditorSubtitle".Translate());
 
-            var btnRect = new Rect(
-                inRect.center.x - ButtonWidth * 0.5f,
-                inRect.yMax - ButtonHeight - 16f,
+            float totalButtonWidth = ButtonWidth * 2f + ButtonGap;
+            float buttonStartX = inRect.center.x - totalButtonWidth * 0.5f;
+            float buttonY = inRect.yMax - ButtonHeight - 16f;
+
+            var editorBtnRect = new Rect(
+                buttonStartX,
+                buttonY,
                 ButtonWidth,
                 ButtonHeight);
 
-            if (Widgets.ButtonText(btnRect, "CS_Studio_OpenEditor".Translate()))
+            var statsBtnRect = new Rect(
+                editorBtnRect.xMax + ButtonGap,
+                buttonY,
+                ButtonWidth,
+                ButtonHeight);
+
+            if (Widgets.ButtonText(editorBtnRect, "CS_Studio_OpenEditor".Translate()))
             {
                 Find.WindowStack.Add(new Dialog_SkinEditor());
+            }
+
+            if (Widgets.ButtonText(statsBtnRect, "CS_Studio_OpenPerformanceStats".Translate()))
+            {
+                Find.WindowStack.Add(new Dialog_PerformanceStats());
             }
         }
     }

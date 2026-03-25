@@ -21,6 +21,7 @@ namespace CharacterStudio.Abilities
         public override void Apply(AbilityEffectConfig config, LocalTargetInfo target, Pawn caster)
         {
             if (!target.HasThing) return;
+            if (target.Thing == caster && !config.canHurtSelf) return;
 
             float amount = config.amount;
             DamageDef def = config.damageDef ?? DamageDefOf.Blunt;
@@ -256,7 +257,7 @@ namespace CharacterStudio.Abilities
 
         private static void SpawnThing(AbilityEffectConfig config, IntVec3 cell, Map map)
         {
-            ThingDef thingDef = config.terraformThingDef;
+            ThingDef? thingDef = config.terraformThingDef;
             if (thingDef == null)
             {
                 return;
@@ -277,7 +278,7 @@ namespace CharacterStudio.Abilities
 
         private static void ReplaceTerrain(AbilityEffectConfig config, IntVec3 cell, Map map)
         {
-            TerrainDef terrainDef = config.terraformTerrainDef;
+            TerrainDef? terrainDef = config.terraformTerrainDef;
             if (terrainDef == null)
             {
                 return;

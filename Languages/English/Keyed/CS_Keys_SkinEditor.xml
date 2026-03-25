@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <CS_Studio_BaseSlot_DrawOrderOffset>Draw Order Offset</CS_Studio_BaseSlot_DrawOrderOffset>
+    <CS_Studio_BaseSlot_Enable>Enabled</CS_Studio_BaseSlot_Enable>
+    <CS_Studio_BaseSlot_MaskTexture>Mask Texture</CS_Studio_BaseSlot_MaskTexture>
+    <CS_Studio_BaseSlot_PrimaryColor>Primary Color</CS_Studio_BaseSlot_PrimaryColor>
+    <CS_Studio_BaseSlot_PrimaryColorSource>Primary Color Source</CS_Studio_BaseSlot_PrimaryColorSource>
+    <CS_Studio_BaseSlot_Rotation>Rotation</CS_Studio_BaseSlot_Rotation>
+    <CS_Studio_BaseSlot_SecondaryColor>Secondary Color</CS_Studio_BaseSlot_SecondaryColor>
+    <CS_Studio_BaseSlot_SecondaryColorSource>Secondary Color Source</CS_Studio_BaseSlot_SecondaryColorSource>
+    <CS_Studio_BaseSlot_SecondColorMask>Second Color (Mask)</CS_Studio_BaseSlot_SecondColorMask>
+    <CS_Studio_BaseSlot_Section>Base Slot - {0}</CS_Studio_BaseSlot_Section>
+    <CS_Studio_BaseSlot_Shader>Shader</CS_Studio_BaseSlot_Shader>
+    <CS_Studio_BaseSlot_Unset>(Unset)</CS_Studio_BaseSlot_Unset>
+    <CS_Studio_Btn_AddHidden>+ Add Hidden Node</CS_Studio_Btn_AddHidden>
+    <CS_Studio_ColorType_Custom>Custom</CS_Studio_ColorType_Custom>
+    <CS_Studio_ColorType_Hair>Hair Color</CS_Studio_ColorType_Hair>
+    <CS_Studio_ColorType_Skin>Skin Color</CS_Studio_ColorType_Skin>
+    <CS_Studio_ColorType_White>White</CS_Studio_ColorType_White>
+    <CS_Studio_Hide_HiddenPaths>Hidden Paths (hiddenPaths):</CS_Studio_Hide_HiddenPaths>
+    <CS_Studio_Hide_HiddenTagsCompat>Hidden Tags (compat):</CS_Studio_Hide_HiddenTagsCompat>
+    <CS_Studio_Hide_NoHiddenPaths>  No hiddenPaths</CS_Studio_Hide_NoHiddenPaths>
+    <CS_Studio_Info_Path>Path:</CS_Studio_Info_Path>
+    <CS_Studio_Info_Worker>Worker:</CS_Studio_Info_Worker>
+    <CS_Studio_Layer_AddCustom>Add Custom Layer</CS_Studio_Layer_AddCustom>
+    <CS_Studio_Layer_CustomSection>── Custom Layers ──</CS_Studio_Layer_CustomSection>
+    <CS_Studio_Layer_DefaultName>Layer {0}</CS_Studio_Layer_DefaultName>
+    <CS_Studio_Layer_MountedOn>Layer on {0}</CS_Studio_Layer_MountedOn>
+    <CS_Studio_Layer_NoTree>(No Render Tree, please refresh)</CS_Studio_Layer_NoTree>
+    <CS_Studio_Msg_SelectLayer>Please select a node or layer</CS_Studio_Msg_SelectLayer>
+    <CS_Studio_Node_NoRuntimeData>(No runtime data)</CS_Studio_Node_NoRuntimeData>
+    <CS_Studio_Node_RuntimeData>Runtime Data (Read-only)</CS_Studio_Node_RuntimeData>
+    <CS_Studio_Node_RuntimeNote>(Yellow = non-default value)</CS_Studio_Node_RuntimeNote>
+    <CS_Studio_Node_Tooltip>Path: {0}\nType: {1}\nTexture: {2}</CS_Studio_Node_Tooltip>
+    <CS_Studio_Offset_EX>Offset E.X</CS_Studio_Offset_EX>
+    <CS_Studio_Offset_EY>Offset E.Y</CS_Studio_Offset_EY>
+    <CS_Studio_Offset_EZ>Offset E.Z</CS_Studio_Offset_EZ>
+    <CS_Studio_Offset_NX>Offset N.X</CS_Studio_Offset_NX>
+    <CS_Studio_Offset_NY>Offset N.Y</CS_Studio_Offset_NY>
+    <CS_Studio_Offset_NZ>Offset N.Z</CS_Studio_Offset_NZ>
+    <CS_Studio_Panel_AddLayer>Add Layer</CS_Studio_Panel_AddLayer>
+    <CS_Studio_Panel_Duplicate>Duplicate</CS_Studio_Panel_Duplicate>
+    <CS_Studio_Panel_Layers>Layers</CS_Studio_Panel_Layers>
+    <CS_Studio_Panel_MoveDown>Move Down</CS_Studio_Panel_MoveDown>
+    <CS_Studio_Panel_MoveUp>Move Up</CS_Studio_Panel_MoveUp>
+    <CS_Studio_Panel_Preview>Preview</CS_Studio_Panel_Preview>
+    <CS_Studio_Panel_Properties>Properties</CS_Studio_Panel_Properties>
+    <CS_Studio_Panel_RemoveLayer>Remove Layer</CS_Studio_Panel_RemoveLayer>
+    <CS_Studio_Preview_Channel_Brow>Brow</CS_Studio_Preview_Channel_Brow>
+    <CS_Studio_Preview_Channel_Emotion>Emotion</CS_Studio_Preview_Channel_Emotion>
+    <CS_Studio_Preview_Channel_Eye>Eye</CS_Studio_Preview_Channel_Eye>
+    <CS_Studio_Preview_Channel_Lid>Lid</CS_Studio_Preview_Channel_Lid>
+    <CS_Studio_Preview_Channel_Mouth>Mouth</CS_Studio_Preview_Channel_Mouth>
+    <CS_Studio_Preview_EditPerFacing>Edit current facing only</CS_Studio_Preview_EditPerFacing>
+    <CS_Studio_Preview_EditPerFacingTip>When enabled, preview dragging and arrow-key nudging only modify the offset data for the current facing. South edits base Offset, East/West edit East Offset, and North edits North Offset.</CS_Studio_Preview_EditPerFacingTip>
+    <CS_Studio_Preview_Exp>Expression</CS_Studio_Preview_Exp>
+    <CS_Studio_Preview_Flow>AUTO</CS_Studio_Preview_Flow>
+    <CS_Studio_Preview_FlowSpeedTooltip>Playback speed baseline.</CS_Studio_Preview_FlowSpeedTooltip>
+    <CS_Studio_Preview_FlowStep_Empty>Empty</CS_Studio_Preview_FlowStep_Empty>
+    <CS_Studio_Preview_FlowStep_HappyPeak>Happy Peak</CS_Studio_Preview_FlowStep_HappyPeak>
+    <CS_Studio_Preview_FlowStep_HappySoft>Happy Soft</CS_Studio_Preview_FlowStep_HappySoft>
+    <CS_Studio_Preview_FlowStep_NeutralReset>Neutral Reset</CS_Studio_Preview_FlowStep_NeutralReset>
+    <CS_Studio_Preview_FlowStep_ReadScan>Reading Scan</CS_Studio_Preview_FlowStep_ReadScan>
+    <CS_Studio_Preview_FlowStep_ScaredScan>Scared Scan</CS_Studio_Preview_FlowStep_ScaredScan>
+    <CS_Studio_Preview_FlowStep_ScaredWide>Scared Wide</CS_Studio_Preview_FlowStep_ScaredWide>
+    <CS_Studio_Preview_FlowStep_SleepLoop>Sleep Loop</CS_Studio_Preview_FlowStep_SleepLoop>
+    <CS_Studio_Preview_FlowStep_WorkFocusDown>Work Focus Down</CS_Studio_Preview_FlowStep_WorkFocusDown>
+    <CS_Studio_Preview_FlowStep_WorkFocusUp>Work Focus Up</CS_Studio_Preview_FlowStep_WorkFocusUp>
+    <CS_Studio_Preview_FlowTooltip>Auto-play the programmatic animation for the expression currently selected in Expression: {0}. No other expression will be switched; only programmatic channels are driven.</CS_Studio_Preview_FlowTooltip>
+    <CS_Studio_Preview_Hint_Boost>Shift = boost</CS_Studio_Preview_Hint_Boost>
+    <CS_Studio_Preview_Hint_Drag>Drag = move</CS_Studio_Preview_Hint_Drag>
+    <CS_Studio_Preview_Hint_Nudge>Arrow keys = nudge</CS_Studio_Preview_Hint_Nudge>
+    <CS_Studio_Preview_Hint_ReferenceGhost>F = reference ghost</CS_Studio_Preview_Hint_ReferenceGhost>
+    <CS_Studio_Preview_Hint_Zoom>Wheel = zoom</CS_Studio_Preview_Hint_Zoom>
+    <CS_Studio_Preview_Playlist>Playlist</CS_Studio_Preview_Playlist>
+    <CS_Studio_Preview_Preset_Auto>Auto</CS_Studio_Preview_Preset_Auto>
+    <CS_Studio_Preview_Preset_Combat>Combat</CS_Studio_Preview_Preset_Combat>
+    <CS_Studio_Preview_Preset_Dead>Dead</CS_Studio_Preview_Preset_Dead>
+    <CS_Studio_Preview_Preset_Depressed>Depressed</CS_Studio_Preview_Preset_Depressed>
+    <CS_Studio_Preview_Preset_Downed>Downed</CS_Studio_Preview_Preset_Downed>
+    <CS_Studio_Preview_Preset_Panic>Panic</CS_Studio_Preview_Preset_Panic>
+    <CS_Studio_Preview_Preset_Romance>Romance</CS_Studio_Preview_Preset_Romance>
+    <CS_Studio_Preview_Preset_Tired>Tired</CS_Studio_Preview_Preset_Tired>
+    <CS_Studio_Preview_RefHint>Hold F to show a translucent reference ghost of the imported pawn (follows cursor inside preview)</CS_Studio_Preview_RefHint>
+    <CS_Studio_Preview_ResetView>Reset View</CS_Studio_Preview_ResetView>
+    <CS_Studio_Preview_RotateLeft>Rotate Left</CS_Studio_Preview_RotateLeft>
+    <CS_Studio_Preview_RotateRight>Rotate Right</CS_Studio_Preview_RotateRight>
+    <CS_Studio_Preview_SelectRace>Select Race</CS_Studio_Preview_SelectRace>
+    <CS_Studio_Preview_Var>Variant</CS_Studio_Preview_Var>
+    <CS_Studio_Preview_ZoomIn>Zoom In</CS_Studio_Preview_ZoomIn>
+    <CS_Studio_Preview_ZoomOut>Zoom Out</CS_Studio_Preview_ZoomOut>
+    <CS_Studio_Prop_Actions>Actions</CS_Studio_Prop_Actions>
+    <CS_Studio_Prop_AnchorPoint>Anchor Point</CS_Studio_Prop_AnchorPoint>
+    <CS_Studio_Prop_ColorType>Color Type</CS_Studio_Prop_ColorType>
+    <CS_Studio_Prop_CustomColor>Custom Color</CS_Studio_Prop_CustomColor>
+    <CS_Studio_Prop_DrawOrder>Draw Order</CS_Studio_Prop_DrawOrder>
+    <CS_Studio_Prop_FaceComponent>Face Component</CS_Studio_Prop_FaceComponent>
+    <CS_Studio_Prop_FlipHorizontal>Flip Horizontal</CS_Studio_Prop_FlipHorizontal>
+    <CS_Studio_Prop_HideNode>Hide Node</CS_Studio_Prop_HideNode>
+    <CS_Studio_Prop_LayerName>Layer Name</CS_Studio_Prop_LayerName>
+    <CS_Studio_Prop_MountLayer>Mount Layer on Node</CS_Studio_Prop_MountLayer>
+    <CS_Studio_Prop_NodeChildren>Child Count</CS_Studio_Prop_NodeChildren>
+    <CS_Studio_Prop_NodeInfo>Node Info</CS_Studio_Prop_NodeInfo>
+    <CS_Studio_Prop_NodePath>Node Path</CS_Studio_Prop_NodePath>
+    <CS_Studio_Prop_NodeTag>Tag</CS_Studio_Prop_NodeTag>
+    <CS_Studio_Prop_NodeTexture>Texture</CS_Studio_Prop_NodeTexture>
+    <CS_Studio_Prop_NodeWorker>Render Class</CS_Studio_Prop_NodeWorker>
+    <CS_Studio_Prop_Offset>Offset</CS_Studio_Prop_Offset>
+    <CS_Studio_Prop_OffsetX>X Offset</CS_Studio_Prop_OffsetX>
+    <CS_Studio_Prop_OffsetY>Y Offset</CS_Studio_Prop_OffsetY>
+    <CS_Studio_Prop_OffsetYHeight>Y Offset (Height)</CS_Studio_Prop_OffsetYHeight>
+    <CS_Studio_Prop_OffsetZ>Z Offset</CS_Studio_Prop_OffsetZ>
+    <CS_Studio_Prop_Scale>Scale</CS_Studio_Prop_Scale>
+    <CS_Studio_Prop_ShowNode>Show Node</CS_Studio_Prop_ShowNode>
+    <CS_Studio_Prop_TexturePath>Texture Path</CS_Studio_Prop_TexturePath>
+    <CS_Studio_Prop_Visible>Visible</CS_Studio_Prop_Visible>
+    <CS_Studio_Prop_Worker>Worker</CS_Studio_Prop_Worker>
+    <CS_Studio_Runtime_Color>Color:</CS_Studio_Runtime_Color>
+    <CS_Studio_Runtime_ColorValue>R:{0} G:{1} B:{2} A:{3}</CS_Studio_Runtime_ColorValue>
+    <CS_Studio_Runtime_Offset>Offset:</CS_Studio_Runtime_Offset>
+    <CS_Studio_Runtime_Rotation>Rotation:</CS_Studio_Runtime_Rotation>
+    <CS_Studio_Runtime_RotationValue>{0}°</CS_Studio_Runtime_RotationValue>
+    <CS_Studio_Runtime_Scale>Scale:</CS_Studio_Runtime_Scale>
+    <CS_Studio_Status_Edit>EDIT</CS_Studio_Status_Edit>
+    <CS_Studio_Status_EditorSummary>Base Slots: {0} | Layers: {1} | Zoom: {2}x | Facing: {3}</CS_Studio_Status_EditorSummary>
+    <CS_Studio_Status_Ready>READY</CS_Studio_Status_Ready>
+    <CS_Studio_Status_UnsavedChanges>* Unsaved changes</CS_Studio_Status_UnsavedChanges>
+    <CS_Studio_Tab_Attributes>Attributes</CS_Studio_Tab_Attributes>
+    <CS_Studio_Tab_BaseAppearance>Base Slots</CS_Studio_Tab_BaseAppearance>
+    <CS_Studio_Tab_Equipment>Equipment</CS_Studio_Tab_Equipment>
+    <CS_Studio_Tab_Face>Face</CS_Studio_Tab_Face>
+    <CS_Studio_Tab_Layers>Layers</CS_Studio_Tab_Layers>
+    <CS_Studio_Tab_Weapon>Weapon</CS_Studio_Tab_Weapon>
+    <CS_Studio_Transform_BaseRotation>Base Rotation</CS_Studio_Transform_BaseRotation>
+    <CS_Studio_Transform_EastRotation>East/West Rotation</CS_Studio_Transform_EastRotation>
+    <CS_Studio_Transform_EastRotationHint>East/West keeps a separate rotation offset. Scale is now unified as global all-facing scale.</CS_Studio_Transform_EastRotationHint>
+    <CS_Studio_Transform_FinalDrawOrder>Final Draw Order</CS_Studio_Transform_FinalDrawOrder>
+    <CS_Studio_Transform_GlobalHint>Scale now uses a global all-facing base value. East/West keeps only a rotation offset, and Preview rows show the current facing result.</CS_Studio_Transform_GlobalHint>
+    <CS_Studio_Transform_GlobalScaleX>Global Scale X</CS_Studio_Transform_GlobalScaleX>
+    <CS_Studio_Transform_GlobalScaleY>Global Scale Y</CS_Studio_Transform_GlobalScaleY>
+    <CS_Studio_Transform_PreviewRotation>Preview Rotation</CS_Studio_Transform_PreviewRotation>
+    <CS_Studio_Transform_PreviewScaleX>Preview Scale X</CS_Studio_Transform_PreviewScaleX>
+    <CS_Studio_Transform_PreviewScaleY>Preview Scale Y</CS_Studio_Transform_PreviewScaleY>
+    <CS_Studio_Transform_RotationOffset>Rotation Offset</CS_Studio_Transform_RotationOffset>
+    <CS_Studio_Variant_BaseName>Variant Base Name</CS_Studio_Variant_BaseName>
+    <CS_Studio_Variant_EyeRenderMode>Eye Render Mode</CS_Studio_Variant_EyeRenderMode>
+    <CS_Studio_Variant_EyeUvMoveRange>Eye UV Move Range</CS_Studio_Variant_EyeUvMoveRange>
+    <CS_Studio_Variant_HiddenExpressions>Hidden Expressions</CS_Studio_Variant_HiddenExpressions>
+    <CS_Studio_Variant_HideWhenMissing>Hide When Missing Variant</CS_Studio_Variant_HideWhenMissing>
+    <CS_Studio_Variant_LayerRole>Layer Role</CS_Studio_Variant_LayerRole>
+    <CS_Studio_Variant_Logic>Variant Logic</CS_Studio_Variant_Logic>
+    <CS_Studio_Variant_UseBlinkSuffix>Use Blink Suffix</CS_Studio_Variant_UseBlinkSuffix>
+    <CS_Studio_Variant_UseDirectionalSuffix>Use Directional Suffix</CS_Studio_Variant_UseDirectionalSuffix>
+    <CS_Studio_Variant_UseExpressionSuffix>Use Expression Suffix</CS_Studio_Variant_UseExpressionSuffix>
+    <CS_Studio_Variant_UseEyeDirectionSuffix>Use Eye Direction Suffix</CS_Studio_Variant_UseEyeDirectionSuffix>
+    <CS_Studio_Variant_UseFrameSequence>Use Frame Sequence</CS_Studio_Variant_UseFrameSequence>
+    <CS_Studio_Variant_VisibleExpressions>Visible Expressions</CS_Studio_Variant_VisibleExpressions>
+    <CS_Studio_Workflow_AnimalStandardLayers>Animal Layered Workflow</CS_Studio_Workflow_AnimalStandardLayers>
+    <CS_Studio_Workflow_CompositeBase>Composite Base Workflow</CS_Studio_Workflow_CompositeBase>
+    <CS_Studio_Workflow_CompositeBase_Hint>A single composite base contains body/head/hair but no apparel, headgear, or expressions; vanilla apparel and headgear render on top, while expressions should use transparent Head overlays.</CS_Studio_Workflow_CompositeBase_Hint>
+    <CS_Studio_Workflow_CompositeBaseLayerName>Composite Base</CS_Studio_Workflow_CompositeBaseLayerName>
+    <CS_Studio_Workflow_MechanoidStandardLayers>Mechanoid Layered Workflow</CS_Studio_Workflow_MechanoidStandardLayers>
+    <CS_Studio_Workflow_StandardLayers>Standard Layered Workflow</CS_Studio_Workflow_StandardLayers>
+</LanguageData>

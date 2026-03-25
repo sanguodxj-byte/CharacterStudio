@@ -41,6 +41,9 @@ namespace CharacterStudio
             // 加载运行时皮肤定义
             PawnSkinDefRegistry.LoadFromConfig();
 
+            // 预热运行时技能 Def，确保旧存档中的 CS_RT_* AbilityDef 引用在读档期即可被解析
+            Abilities.AbilityGrantUtility.WarmupAllRuntimeAbilityDefs();
+
             // 应用补丁
             ApplyPatches();
 
@@ -79,39 +82,41 @@ namespace CharacterStudio
         }
 
         /// <summary>
+        /// 单独应用某个补丁，避免单个补丁失败阻断后续补丁注册。
+        /// </summary>
+        private static void ApplyPatch(string patchName, System.Action applyAction)
+        {
+            try
+            {
+                applyAction();
+                Log.Message($"[CharacterStudio] 已应用补丁: {patchName}");
+            }
+            catch (System.Exception ex)
+            {
+                Log.Error($"[CharacterStudio] 应用补丁失败 [{patchName}]: {ex}");
+            }
+        }
+
+        /// <summary>
         /// 应用所有补丁
         /// </summary>
         private static void ApplyPatches()
         {
-            if (HarmonyInstance == null)
+            var harmony = HarmonyInstance;
+            if (harmony == null)
             {
                 Log.Error("[CharacterStudio] Harmony 实例为空，无法应用补丁");
                 return;
             }
 
-            try
-            {
-                // 应用 PawnRenderTree 补丁
-                Patch_PawnRenderTree.Apply(HarmonyInstance);
+            ApplyPatch("PawnRenderTree", () => Patch_PawnRenderTree.Apply(harmony));
+            ApplyPatch("PawnGizmos", () => UI.Patch_PawnGizmos.Apply(harmony));
+            ApplyPatch("AbilityGizmos", () => UI.Patch_AbilityGizmos.Apply(harmony));
+            ApplyPatch("WeaponRender", () => Rendering.Patch_WeaponRender.Apply(harmony));
+            ApplyPatch("RaceLabel", () => Patches.Patch_RaceLabel.Apply(harmony));
+            ApplyPatch("CharacterAttributeBuffStat", () => Patches.Patch_CharacterAttributeBuffStat.Apply(harmony));
 
-                // 应用 Pawn Gizmo 补丁（外观更换按钮）
-                UI.Patch_PawnGizmos.Apply(HarmonyInstance);
-
-                // 应用技能 Gizmo 补丁（皮肤技能按钮）
-                UI.Patch_AbilityGizmos.Apply(HarmonyInstance);
-
-                // 应用武器渲染覆写补丁
-                Rendering.Patch_WeaponRender.Apply(HarmonyInstance);
-
-                // 应用种族显示名 Transpiler 补丁（角色卡种族行覆盖）
-                Patches.Patch_RaceLabel.Apply(HarmonyInstance);
-
-                Log.Message("[CharacterStudio] 所有补丁已应用");
-            }
-            catch (System.Exception ex)
-            {
-                Log.Error($"[CharacterStudio] 应用补丁时出错: {ex}");
-            }
+            Log.Message("[CharacterStudio] 补丁应用流程完成");
         }
     }
 }

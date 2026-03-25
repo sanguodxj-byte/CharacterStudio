@@ -11,6 +11,9 @@ namespace CharacterStudio.UI
         // BaseAppearance 左侧面板
         // ─────────────────────────────────────────────
 
+        private const float BaseSlotRowHeight = 36f;
+        private const float BaseSlotEditButtonWidth = 30f;
+
         private void DrawBaseAppearancePanel(Rect rect)
         {
             Widgets.DrawBoxSolid(rect, UIHelper.PanelFillColor);
@@ -67,9 +70,10 @@ namespace CharacterStudio.UI
             Widgets.DrawBox(contentRect, 1);
             GUI.color = Color.white;
 
-            float viewHeight = Mathf.Max(contentRect.height, workingSkin.baseAppearance.slots.Count * TreeNodeHeight + 40f);
-            Rect viewRect = new Rect(0, 0, contentRect.width - 20f, viewHeight);
-            Widgets.BeginScrollView(contentRect.ContractedBy(2f), ref baseScrollPos, viewRect);
+            Rect scrollRect = contentRect.ContractedBy(2f);
+            float viewHeight = Mathf.Max(scrollRect.height, workingSkin.baseAppearance.slots.Count * BaseSlotRowHeight + 8f);
+            Rect viewRect = new Rect(0f, 0f, Mathf.Max(0f, scrollRect.width - 18f), viewHeight);
+            Widgets.BeginScrollView(scrollRect, ref baseScrollPos, viewRect);
 
             float y = 2f;
             int rowIndex = 0;
@@ -83,7 +87,7 @@ namespace CharacterStudio.UI
 
         private float DrawBaseSlotRow(BaseAppearanceSlotConfig slot, float y, float width, int rowIndex)
         {
-            Rect rowRect = new Rect(0f, y, width, TreeNodeHeight + 2f);
+            Rect rowRect = new Rect(0f, y, width, BaseSlotRowHeight);
             UIHelper.DrawAlternatingRowBackground(rowRect, rowIndex);
 
             if (Mouse.IsOver(rowRect))
@@ -98,13 +102,13 @@ namespace CharacterStudio.UI
                 GUI.color = Color.white;
             }
 
-            Rect statusRect = new Rect(4f, y + 2f, 18f, 18f);
+            Rect statusRect = new Rect(4f, y + 8f, 18f, 18f);
             bool enabled = slot.enabled;
             GUI.color = enabled ? new Color(0.55f, 0.95f, 1f) : Color.gray;
             Widgets.Label(statusRect, enabled ? "◆" : "◇");
             GUI.color = Color.white;
 
-            Rect toggleRect = new Rect(24f, y + 2f, 18f, 18f);
+            Rect toggleRect = new Rect(24f, y + 8f, 18f, 18f);
             GUI.color = enabled ? Color.white : Color.gray;
             if (Widgets.ButtonText(toggleRect, enabled ? "◉" : "◯", false))
             {
@@ -116,8 +120,11 @@ namespace CharacterStudio.UI
             }
             GUI.color = Color.white;
 
-            Rect nameRect = new Rect(46f, y + 1f, width - 96f, 16f);
-            Rect metaRect = new Rect(46f, y + 16f, width - 96f, 14f);
+            float textX = 46f;
+            float editX = width - BaseSlotEditButtonWidth - 4f;
+            float textWidth = Mathf.Max(64f, editX - textX - 6f);
+            Rect nameRect = new Rect(textX, y + 3f, textWidth, 16f);
+            Rect metaRect = new Rect(textX, y + 18f, textWidth, 14f);
             string slotLabel = BaseAppearanceUtility.GetDisplayName(slot.slotType);
             string summary = string.IsNullOrEmpty(slot.texPath) ? "CS_Studio_BaseSlot_Unset".Translate() : System.IO.Path.GetFileName(slot.texPath);
 
@@ -132,7 +139,7 @@ namespace CharacterStudio.UI
             GUI.color = Color.white;
             Text.Font = oldFont;
 
-            Rect editRect = new Rect(width - 40f, y + 5f, 36f, 20f);
+            Rect editRect = new Rect(editX, y + 7f, BaseSlotEditButtonWidth, 22f);
             Widgets.DrawBoxSolid(editRect, selectedBaseSlotType == slot.slotType ? UIHelper.ActiveTabColor : UIHelper.PanelFillSoftColor);
             Widgets.DrawBoxSolid(new Rect(editRect.x, editRect.yMax - 2f, editRect.width, 2f), selectedBaseSlotType == slot.slotType ? UIHelper.AccentColor : new Color(1f, 1f, 1f, 0.05f));
             GUI.color = Mouse.IsOver(editRect) ? UIHelper.HoverOutlineColor : UIHelper.BorderColor;

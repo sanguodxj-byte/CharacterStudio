@@ -25,6 +25,8 @@ namespace CharacterStudio.Abilities
             new Dictionary<string, AbilityDef>(StringComparer.OrdinalIgnoreCase);
         private static readonly Dictionary<string, string> runtimeAbilityFingerprints =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private static readonly Dictionary<string, ModularAbilityDef> runtimeAbilitySourceDefs =
+            new Dictionary<string, ModularAbilityDef>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>所有 CS 技能的最小冷却时间（0.5s = 30 ticks），防止技能被连点刷屏</summary>
         private const int MinAbilityCooldownTicks = 30;
@@ -34,19 +36,24 @@ namespace CharacterStudio.Abilities
         // ─────────────────────────────────────────────
 
         /// <summary>
-        /// 将皮肤中的所有技能授予 Pawn
-        /// 已有同名技能时跳过，不重复授予
+        /// 将技能列表授予 Pawn。
         /// </summary>
-        public static void GrantSkinAbilitiesToPawn(Pawn pawn, PawnSkinDef skin)
+        public static void GrantAbilitiesToPawn(Pawn pawn, IEnumerable<ModularAbilityDef> abilities)
         {
-            if (pawn == null || skin == null || skin.abilities == null || skin.abilities.Count == 0)
+            if (pawn == null || abilities == null)
                 return;
 
             RevokeAllCSAbilitiesFromPawn(pawn);
 
+            // 仅授予技能不应触发任何渲染树重建或全图图形刷新。
+            // 这里显式避免通过授予链路波及皮肤/服装渲染状态；
+            // 技能栏与运行时 Ability 会由原版 AbilityTracker / Gizmo 链路自行更新。
+            if (pawn.abilities == null)
+                return;
+
             var grantedSet = GetOrCreateGrantedSet(pawn);
 
-            foreach (var modAbility in skin.abilities)
+            foreach (var modAbility in abilities)
             {
                 if (modAbility == null || string.IsNullOrEmpty(modAbility.defName))
                     continue;
@@ -57,9 +64,9 @@ namespace CharacterStudio.Abilities
                     if (abilityDef == null) continue;
 
                     // 防止重复授予
-                    if (pawn.abilities?.GetAbility(abilityDef) != null) continue;
+                    if (pawn.abilities.GetAbility(abilityDef) != null) continue;
 
-                    pawn.abilities?.GainAbility(abilityDef);
+                    pawn.abilities.GainAbility(abilityDef);
                     grantedSet.Add(modAbility.defName);
 
                     if (Prefs.DevMode)
@@ -70,6 +77,18 @@ namespace CharacterStudio.Abilities
                     Log.Warning($"[CharacterStudio] 授予技能 {modAbility.defName} 时出错: {ex.Message}");
                 }
             }
+        }
+
+        /// <summary>
+        /// 将皮肤中的所有技能授予 Pawn
+        /// 已有同名技能时跳过，不重复授予
+        /// </summary>
+        public static void GrantSkinAbilitiesToPawn(Pawn pawn, PawnSkinDef skin)
+        {
+            if (pawn == null || skin == null || skin.abilities == null || skin.abilities.Count == 0)
+                return;
+
+            GrantAbilitiesToPawn(pawn, skin.abilities);
         }
 
         /// <summary>
@@ -88,10 +107,10 @@ namespace CharacterStudio.Abilities
                 {
                     if (runtimeAbilityDefs.TryGetValue(defName, out var abilityDef))
                     {
-                        var ability = pawn.abilities?.GetAbility(abilityDef);
+                        var ability = pawn.abilities.GetAbility(abilityDef);
                         if (ability != null)
                         {
-                            pawn.abilities?.RemoveAbility(abilityDef);
+                            pawn.abilities.RemoveAbility(abilityDef);
                             if (Prefs.DevMode)
                                 Log.Message($"[CharacterStudio] 已撤销技能 {defName} 从 {pawn.LabelShort}");
                         }
@@ -126,6 +145,33 @@ namespace CharacterStudio.Abilities
             return def;
         }
 
+        /// <summary>
+        /// 获取某运行时 AbilityDef 对应的原始模块化能力快照
+        /// 用于 Gizmo/热键等运行时链路在缺少显式 loadout 时仍能恢复类型信息
+        /// </summary>
+        public static ModularAbilityDef? GetRuntimeAbilitySourceDef(string modAbilityDefName)
+        {
+            if (!runtimeAbilitySourceDefs.TryGetValue(modAbilityDefName, out var def))
+            {
+                return null;
+            }
+
+            return CopyAbilityDefForRuntimeCache(def);
+        }
+
+        public static void WarmupAllRuntimeAbilityDefs()
+        {
+            foreach (ModularAbilityDef modAbility in DefDatabase<ModularAbilityDef>.AllDefsListForReading)
+            {
+                if (modAbility == null || string.IsNullOrWhiteSpace(modAbility.defName))
+                {
+                    continue;
+                }
+
+                GetOrBuildRuntimeAbilityDef(modAbility);
+            }
+        }
+
         // ─────────────────────────────────────────────
         // 运行时 AbilityDef 构建
         // ─────────────────────────────────────────────
@@ -138,11 +184,15 @@ namespace CharacterStudio.Abilities
             if (runtimeAbilityDefs.TryGetValue(key, out var cached))
             {
                 if (runtimeAbilityFingerprints.TryGetValue(key, out var oldFingerprint) && oldFingerprint == fingerprint)
+                {
+                    CacheRuntimeAbilitySource(key, modAbility);
                     return cached;
+                }
 
                 try
                 {
                     ConfigureRuntimeAbilityDef(cached, modAbility, key);
+                    CacheRuntimeAbilitySource(key, modAbility);
                     runtimeAbilityFingerprints[key] = fingerprint;
                     return cached;
                 }
@@ -164,6 +214,7 @@ namespace CharacterStudio.Abilities
 
                 runtimeAbilityDefs[key] = abilityDef;
                 runtimeAbilityFingerprints[key] = fingerprint;
+                CacheRuntimeAbilitySource(key, modAbility);
                 return abilityDef;
             }
             catch (Exception ex)
@@ -190,10 +241,14 @@ namespace CharacterStudio.Abilities
             AbilityCarrierType normalizedCarrier = ModularAbilityDefExtensions.NormalizeCarrierType(modAbility.carrierType);
             AbilityTargetType normalizedTarget = ModularAbilityDefExtensions.NormalizeTargetType(modAbility);
 
+            bool usesJumpVerb = modAbility.runtimeComponents != null
+                && modAbility.runtimeComponents.Any(c => c != null && c.enabled
+                    && (c.type == AbilityRuntimeComponentType.SmartJump || c.type == AbilityRuntimeComponentType.EShortJump));
+
             VerbProperties verbProps = normalizedCarrier switch
             {
                 AbilityCarrierType.Self => BuildVerbProps_Self(),
-                AbilityCarrierType.Target => BuildVerbProps_Target(modAbility.range, normalizedTarget),
+                AbilityCarrierType.Target => BuildVerbProps_Target(modAbility.range, normalizedTarget, usesJumpVerb),
                 AbilityCarrierType.Projectile => BuildVerbProps_Projectile(modAbility.range, normalizedTarget, modAbility.projectileDef),
                 _ => BuildVerbProps_Self()
             };
@@ -208,7 +263,18 @@ namespace CharacterStudio.Abilities
 
             if (hasEffects || hasVisualEffects || hasRuntimeComponents)
             {
-                var compProps = new CompProperties_AbilityModular();
+                var compProps = new CompProperties_AbilityModular
+                {
+                    carrierType = normalizedCarrier,
+                    targetType = normalizedTarget,
+                    useRadius = modAbility.useRadius,
+                    areaCenter = ModularAbilityDefExtensions.NormalizeAreaCenter(modAbility),
+                    areaShape = ModularAbilityDefExtensions.NormalizeAreaShape(modAbility),
+                    irregularAreaPattern = modAbility.irregularAreaPattern ?? string.Empty,
+                    range = modAbility.range,
+                    radius = modAbility.radius
+                };
+
                 if (hasEffects)
                     compProps.effects.AddRange(modAbility.effects.Where(e => e != null).Select(e => e.Clone()));
                 if (hasVisualEffects)
@@ -224,6 +290,52 @@ namespace CharacterStudio.Abilities
 
             abilityDef.ResolveReferences();
             abilityDef.PostLoad();
+        }
+
+        private static void CacheRuntimeAbilitySource(string key, ModularAbilityDef modAbility)
+        {
+            runtimeAbilitySourceDefs[key] = CopyAbilityDefForRuntimeCache(modAbility);
+        }
+
+        private static ModularAbilityDef CopyAbilityDefForRuntimeCache(ModularAbilityDef source)
+        {
+            var copy = new ModularAbilityDef
+            {
+                defName = source.defName,
+                label = source.label,
+                description = source.description,
+                iconPath = source.iconPath,
+                cooldownTicks = source.cooldownTicks,
+                warmupTicks = source.warmupTicks,
+                charges = source.charges,
+                aiCanUse = source.aiCanUse,
+                carrierType = source.carrierType,
+                targetType = source.targetType,
+                useRadius = source.useRadius,
+                areaCenter = source.areaCenter,
+                areaShape = source.areaShape,
+                irregularAreaPattern = source.irregularAreaPattern,
+                range = source.range,
+                radius = source.radius,
+                projectileDef = source.projectileDef
+            };
+
+            if (source.effects != null)
+            {
+                copy.effects.AddRange(source.effects.Where(e => e != null).Select(e => e.Clone()));
+            }
+
+            if (source.visualEffects != null)
+            {
+                copy.visualEffects.AddRange(source.visualEffects.Where(v => v != null).Select(v => v.Clone()));
+            }
+
+            if (source.runtimeComponents != null)
+            {
+                copy.runtimeComponents.AddRange(source.runtimeComponents.Where(c => c != null).Select(c => c.Clone()));
+            }
+
+            return copy;
         }
 
         private static string BuildAbilityFingerprint(ModularAbilityDef modAbility)
@@ -242,6 +354,8 @@ namespace CharacterStudio.Abilities
                 modAbility.targetType.ToString(),
                 modAbility.useRadius.ToString(),
                 modAbility.areaCenter.ToString(),
+                modAbility.areaShape.ToString(),
+                modAbility.irregularAreaPattern ?? string.Empty,
                 modAbility.range.ToString("F3"),
                 modAbility.radius.ToString("F3"),
                 modAbility.projectileDef?.defName ?? string.Empty
@@ -252,7 +366,7 @@ namespace CharacterStudio.Abilities
                 foreach (var effect in modAbility.effects)
                 {
                     if (effect == null) continue;
-                    parts.Add($"E:{effect.type}|{effect.amount:F3}|{effect.duration:F3}|{effect.chance:F3}|{effect.damageDef?.defName}|{effect.hediffDef?.defName}|{effect.summonKind?.defName}|{effect.summonCount}|{effect.canHurtSelf}");
+                    parts.Add($"E:{effect.type}|{effect.amount:F3}|{effect.duration:F3}|{effect.chance:F3}|{effect.damageDef?.defName}|{effect.hediffDef?.defName}|{effect.summonKind?.defName}|{effect.summonCount}|{effect.summonFactionDef?.defName}|{effect.controlMode}|{effect.controlMoveDistance}|{effect.terraformMode}|{effect.terraformThingDef?.defName}|{effect.terraformTerrainDef?.defName}|{effect.terraformSpawnCount}|{effect.canHurtSelf}");
                 }
             }
 
@@ -261,7 +375,9 @@ namespace CharacterStudio.Abilities
                 foreach (var vfx in modAbility.visualEffects)
                 {
                     if (vfx == null) continue;
-                    parts.Add($"V:{vfx.type}|{vfx.sourceMode}|{vfx.presetDefName}|{vfx.target}|{vfx.trigger}|{vfx.delayTicks}|{vfx.scale:F3}|{vfx.repeatCount}|{vfx.repeatIntervalTicks}|{vfx.offset.x:F3},{vfx.offset.y:F3},{vfx.offset.z:F3}|{vfx.attachToPawn}|{vfx.attachToTargetCell}|{vfx.enabled}");
+                    vfx.NormalizeLegacyData();
+                    vfx.SyncLegacyFields();
+                    parts.Add($"V:{vfx.type}|{vfx.sourceMode}|{vfx.textureSource}|{vfx.presetDefName}|{vfx.customTexturePath}|{vfx.target}|{vfx.trigger}|{vfx.delayTicks}|{vfx.displayDurationTicks}|{vfx.linkedExpression}|{vfx.linkedExpressionDurationTicks}|{vfx.linkedPupilBrightnessOffset:F3}|{vfx.linkedPupilContrastOffset:F3}|{vfx.scale:F3}|{vfx.drawSize:F3}|{vfx.useCasterFacing}|{vfx.forwardOffset:F3}|{vfx.sideOffset:F3}|{vfx.heightOffset:F3}|{vfx.rotation:F3}|{vfx.textureScale.x:F3},{vfx.textureScale.y:F3}|{vfx.repeatCount}|{vfx.repeatIntervalTicks}|{vfx.offset.x:F3},{vfx.offset.y:F3},{vfx.offset.z:F3}|{vfx.playSound}|{vfx.soundDefName}|{vfx.soundDelayTicks}|{vfx.soundVolume:F3}|{vfx.soundPitch:F3}|{vfx.attachToPawn}|{vfx.attachToTargetCell}|{vfx.enabled}");
                 }
             }
 
@@ -270,7 +386,7 @@ namespace CharacterStudio.Abilities
                 foreach (var component in modAbility.runtimeComponents)
                 {
                     if (component == null) continue;
-                    parts.Add($"R:{component.type}|{component.enabled}|{component.comboWindowTicks}|{component.cooldownTicks}|{component.jumpDistance}|{component.findCellRadius}|{component.triggerAbilityEffectsAfterJump}|{component.requiredStacks}|{component.delayTicks}|{component.wave1Radius:F3}|{component.wave1Damage:F3}|{component.wave2Radius:F3}|{component.wave2Damage:F3}|{component.wave3Radius:F3}|{component.wave3Damage:F3}|{component.waveDamageDef?.defName}");
+                    parts.Add($"R:{component.type}|{component.enabled}|{component.comboWindowTicks}|{component.cooldownTicks}|{component.jumpDistance}|{component.findCellRadius}|{component.triggerAbilityEffectsAfterJump}|{component.useMouseTargetCell}|{component.smartCastOffsetCells}|{component.smartCastClampToMaxDistance}|{component.smartCastAllowFallbackForward}|{component.overrideHotkeySlot}|{component.overrideAbilityDefName}|{component.overrideDurationTicks}|{component.followupCooldownHotkeySlot}|{component.followupCooldownTicks}|{component.requiredStacks}|{component.delayTicks}|{component.wave1Radius:F3}|{component.wave1Damage:F3}|{component.wave2Radius:F3}|{component.wave2Damage:F3}|{component.wave3Radius:F3}|{component.wave3Damage:F3}|{component.waveDamageDef?.defName}|{component.pulseIntervalTicks}|{component.pulseTotalTicks}|{component.pulseStartsImmediately}|{component.killRefreshHotkeySlot}|{component.killRefreshCooldownPercent:F3}|{component.shieldMaxDamage:F3}|{component.shieldDurationTicks:F3}|{component.shieldHealRatio:F3}|{component.shieldBonusDamageRatio:F3}|{component.maxBounceCount}|{component.bounceRange:F3}|{component.bounceDamageFalloff:F3}|{component.executeThresholdPercent:F3}|{component.executeBonusDamageScale:F3}|{component.missingHealthBonusPerTenPercent:F3}|{component.missingHealthBonusMaxScale:F3}|{component.fullHealthThresholdPercent:F3}|{component.fullHealthBonusDamageScale:F3}|{component.nearbyEnemyBonusMaxTargets}|{component.nearbyEnemyBonusPerTarget:F3}|{component.nearbyEnemyBonusRadius:F3}|{component.isolatedTargetRadius:F3}|{component.isolatedTargetBonusDamageScale:F3}|{component.markDurationTicks}|{component.markMaxStacks}|{component.markDetonationDamage:F3}|{component.markDamageDef?.defName}|{component.comboStackWindowTicks}|{component.comboStackMax}|{component.comboStackBonusDamagePerStack:F3}|{component.slowFieldDurationTicks}|{component.slowFieldRadius:F3}|{component.slowFieldHediffDefName}|{component.pierceMaxTargets}|{component.pierceBonusDamagePerTarget:F3}|{component.pierceSearchRange:F3}|{component.dashEmpowerDurationTicks}|{component.dashEmpowerBonusDamageScale:F3}|{component.hitHealAmount:F3}|{component.hitHealRatio:F3}|{component.refundHotkeySlot}|{component.hitCooldownRefundPercent:F3}|{component.splitProjectileCount}|{component.splitDamageScale:F3}|{component.splitSearchRange:F3}|{component.flightDurationTicks}|{component.flightHeightFactor:F3}");
                 }
             }
 
@@ -285,10 +401,10 @@ namespace CharacterStudio.Abilities
                 targetParams = new TargetingParameters { canTargetSelf = true, canTargetPawns = false, canTargetLocations = false }
             };
 
-        private static VerbProperties BuildVerbProps_Target(float range, AbilityTargetType targetType)
+        private static VerbProperties BuildVerbProps_Target(float range, AbilityTargetType targetType, bool useJumpVerb = false)
             => new VerbProperties
             {
-                verbClass    = typeof(Verb_CastAbility),
+                verbClass    = useJumpVerb ? typeof(Verb_CastAbilityStraightJump) : typeof(Verb_CastAbility),
                 range        = Mathf.Max(range, 1f),
                 targetParams = BuildTargetingParameters(targetType)
             };

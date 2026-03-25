@@ -342,6 +342,30 @@ namespace CharacterStudio.Rendering
         private static string NormalizeTexPath(string path)
             => string.IsNullOrEmpty(path) ? string.Empty : path.Replace('\\', '/').Trim();
 
+        private static IEnumerable<string> CollectRenderFixHiddenPaths(Pawn? pawn)
+        {
+            if (pawn == null)
+            {
+                yield break;
+            }
+
+            foreach (CharacterRenderFixPatch patch in RenderFixPatchRegistry.GetApplicablePatches(pawn))
+            {
+                if (patch?.hideNodePaths == null)
+                {
+                    continue;
+                }
+
+                foreach (string nodePath in patch.hideNodePaths)
+                {
+                    if (!string.IsNullOrWhiteSpace(nodePath))
+                    {
+                        yield return nodePath.Trim();
+                    }
+                }
+            }
+        }
+
         // ─────────────────────────────────────────────
         // 公共状态管理
         // ─────────────────────────────────────────────

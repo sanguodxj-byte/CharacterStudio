@@ -175,9 +175,14 @@ namespace CharacterStudio.Exporter
                         continue;
                     }
 
+                    equipment.EnsureDefaults();
+
                     yield return equipment.previewTexPath;
-                    yield return equipment.visual?.texPath;
-                    yield return equipment.visual?.maskTexPath;
+                    yield return equipment.worldTexPath;
+                    yield return equipment.wornTexPath;
+                    yield return equipment.maskTexPath;
+                    yield return equipment.renderData?.texPath;
+                    yield return equipment.renderData?.maskTexPath;
                 }
             }
 
@@ -242,8 +247,29 @@ namespace CharacterStudio.Exporter
                 {
                     continue;
                 }
-
+ 
                 yield return ability.iconPath;
+
+                if (ability.visualEffects == null)
+                {
+                    continue;
+                }
+
+                foreach (var vfx in ability.visualEffects)
+                {
+                    if (vfx == null)
+                    {
+                        continue;
+                    }
+
+                    vfx.NormalizeLegacyData();
+                    if (!vfx.UsesCustomTextureType || string.IsNullOrWhiteSpace(vfx.customTexturePath))
+                    {
+                        continue;
+                    }
+ 
+                    yield return vfx.customTexturePath;
+                }
             }
         }
     }

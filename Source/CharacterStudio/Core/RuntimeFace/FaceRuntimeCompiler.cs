@@ -30,6 +30,17 @@ namespace CharacterStudio.Core
             LayeredFacePartType.Tear
         };
 
+        private static readonly LayeredFacePartSide[] unsidedOnly = new[]
+        {
+            LayeredFacePartSide.None
+        };
+
+        private static readonly LayeredFacePartSide[] pairedSides = new[]
+        {
+            LayeredFacePartSide.Left,
+            LayeredFacePartSide.Right
+        };
+
         /// <summary>
         /// 获取或构建指定皮肤的运行时编译结果。
         /// 当前阶段先做轻量缓存：按皮肤定义内容签名缓存单份编译结果。
@@ -130,8 +141,18 @@ namespace CharacterStudio.Core
             {
                 foreach (LayeredFacePartType partType in nonOverlayParts)
                 {
-                    string referencePath = faceConfig.GetAnyLayeredPartPath(partType);
-                    portraitTrack.directionAvailability[partType] = BuildDirectionAvailability(referencePath);
+                    foreach (LayeredFacePartSide side in GetCompiledSides(partType))
+                    {
+                        string referencePath = faceConfig.GetAnyLayeredPartPath(partType, side);
+                        LayeredFacePartConfig? referencePartConfig = faceConfig.GetLayeredPartConfig(partType, ExpressionType.Neutral, side)
+                            ?? faceConfig.GetLayeredPartConfig(partType, ExpressionType.Blink, side)
+                            ?? faceConfig.GetLayeredPartConfig(partType, ExpressionType.Sleeping, side)
+                            ?? faceConfig.GetLayeredPartConfig(partType, ExpressionType.Dead, side);
+                        if (string.IsNullOrWhiteSpace(referencePath) && referencePartConfig == null)
+                            continue;
+
+                        portraitTrack.SetDirectionAvailability(partType, BuildDirectionAvailability(referencePath, referencePartConfig), side);
+                    }
                 }
 
                 foreach (ExpressionType expression in Enum.GetValues(typeof(ExpressionType)))
@@ -144,24 +165,37 @@ namespace CharacterStudio.Core
 
                     foreach (LayeredFacePartType partType in nonOverlayParts)
                     {
-                        string path = faceConfig.GetLayeredPartPath(partType, expression);
-                        if (!string.IsNullOrWhiteSpace(path))
-                            cache.portraitPartPaths[partType] = path;
+                        foreach (LayeredFacePartSide side in GetCompiledSides(partType))
+                        {
+                            string path = faceConfig.GetLayeredPartPath(partType, expression, side);
+                            if (!string.IsNullOrWhiteSpace(path))
+                                cache.SetPortraitPartPath(partType, path, side);
 
-                        LayeredFacePartConfig? partConfig = faceConfig.GetLayeredPartConfig(partType, expression);
-                        if (partConfig != null)
-                            AddAnchorCorrection(portraitTrack, partType, expression, partConfig.anchorCorrection);
+                            LayeredFacePartConfig? partConfig = faceConfig.GetLayeredPartConfig(partType, expression, side);
+                            if (partConfig != null)
+                            {
+                                cache.SetPortraitPartDirectionAvailability(partType, BuildDirectionAvailability(path, partConfig), side);
+                                partConfig.SyncLegacyMotionAmplitude();
+                                AddMotionAmplitude(portraitTrack, partType, expression, partConfig.motionAmplitude, side);
+                            }
+                        }
                     }
 
                     foreach (string overlayId in orderedOverlayIds)
                     {
                         string overlayPath = faceConfig.GetLayeredPartPath(LayeredFacePartType.Overlay, expression, overlayId);
                         if (!string.IsNullOrWhiteSpace(overlayPath))
-                            cache.portraitOverlayPaths[overlayId] = overlayPath;
+                            cache.SetPortraitOverlayPath(overlayId, overlayPath);
+
+                        LayeredFacePartConfig? overlayConfig = faceConfig.GetLayeredPartConfig(LayeredFacePartType.Overlay, expression, overlayId);
+                        if (overlayConfig != null)
+                            cache.SetPortraitOverlayDirectionAvailability(overlayId, BuildDirectionAvailability(overlayPath, overlayConfig));
                     }
 
                     if (cache.portraitPartPaths.Count > 0
+                        || cache.portraitPartDirections.Count > 0
                         || cache.portraitOverlayPaths.Count > 0
+                        || cache.portraitOverlayDirections.Count > 0
                         || !string.IsNullOrWhiteSpace(cache.worldPath))
                     {
                         portraitTrack.expressionCaches[expression] = cache;
@@ -170,7 +204,7 @@ namespace CharacterStudio.Core
             }
             else
             {
-                portraitTrack.directionAvailability[LayeredFacePartType.Base] = BuildDirectionAvailability(portraitTrack.basePath);
+                portraitTrack.SetDirectionAvailability(LayeredFacePartType.Base, BuildDirectionAvailability(portraitTrack.basePath));
 
                 foreach (ExpressionType expression in Enum.GetValues(typeof(ExpressionType)))
                 {
@@ -183,26 +217,27 @@ namespace CharacterStudio.Core
                         expression = expression,
                         worldPath = path
                     };
-                    cache.portraitPartPaths[LayeredFacePartType.Base] = path;
+                    cache.SetPortraitPartPath(LayeredFacePartType.Base, path);
                     portraitTrack.expressionCaches[expression] = cache;
                 }
             }
         }
 
-        private static void AddAnchorCorrection(
+        private static IEnumerable<LayeredFacePartSide> GetCompiledSides(LayeredFacePartType partType)
+        {
+            return PawnFaceConfig.SupportsSideSpecificParts(partType)
+                ? pairedSides
+                : unsidedOnly;
+        }
+
+        private static void AddMotionAmplitude(
             FacePortraitTrackData portraitTrack,
             LayeredFacePartType partType,
             ExpressionType expression,
-            Vector2 correction)
+            float amplitude,
+            LayeredFacePartSide side)
         {
-            if (!portraitTrack.anchorCorrections.TryGetValue(partType, out Dictionary<ExpressionType, Vector2>? byExpression)
-                || byExpression == null)
-            {
-                byExpression = new Dictionary<ExpressionType, Vector2>();
-                portraitTrack.anchorCorrections[partType] = byExpression;
-            }
-
-            byExpression[expression] = correction;
+            portraitTrack.SetMotionAmplitude(partType, expression, amplitude, side);
         }
 
         private static void CompileEyeDirection(PawnFaceConfig faceConfig, FacePortraitTrackData portraitTrack)
@@ -215,6 +250,7 @@ namespace CharacterStudio.Core
             runtimeData.enabled = true;
             runtimeData.useUvOffset = eyeCfg.pupilMoveRange > 0f;
             runtimeData.uvMoveRange = Mathf.Max(0f, eyeCfg.pupilMoveRange);
+            runtimeData.upperLidMoveDown = Mathf.Max(0f, eyeCfg.upperLidMoveDown);
 
             runtimeData.texCenter = eyeCfg.texCenter ?? string.Empty;
             runtimeData.texLeft = eyeCfg.texLeft ?? string.Empty;
@@ -286,21 +322,26 @@ namespace CharacterStudio.Core
 
         private static FaceDirectionAvailability BuildDirectionAvailability(string basePath)
         {
-            if (string.IsNullOrWhiteSpace(basePath))
-            {
-                return new FaceDirectionAvailability
-                {
-                    south = false,
-                    east = false,
-                    north = false
-                };
-            }
+            return BuildDirectionAvailability(basePath, null);
+        }
+
+        private static FaceDirectionAvailability BuildDirectionAvailability(string basePath, LayeredFacePartConfig? partConfig)
+        {
+            partConfig?.SyncDirectionalTexPathsFromLegacy();
+
+            bool hasSouth = partConfig != null
+                ? !string.IsNullOrWhiteSpace(partConfig.texPathSouth)
+                : !string.IsNullOrWhiteSpace(basePath);
+            bool hasEast = !string.IsNullOrWhiteSpace(partConfig?.texPathEast)
+                || (!string.IsNullOrWhiteSpace(basePath) && TextureExists(AppendDirectionalSuffix(basePath, "_east")));
+            bool hasNorth = !string.IsNullOrWhiteSpace(partConfig?.texPathNorth)
+                || (!string.IsNullOrWhiteSpace(basePath) && TextureExists(AppendDirectionalSuffix(basePath, "_north")));
 
             return new FaceDirectionAvailability
             {
-                south = true,
-                east = TextureExists(AppendDirectionalSuffix(basePath, "_east")),
-                north = TextureExists(AppendDirectionalSuffix(basePath, "_north"))
+                south = hasSouth,
+                east = hasEast,
+                north = hasNorth
             };
         }
 
@@ -380,11 +421,17 @@ namespace CharacterStudio.Core
                         hash = CombineHash(hash, (int)part.partType);
                         hash = CombineHash(hash, (int)part.expression);
                         hash = CombineHash(hash, part.texPath);
+                        hash = CombineHash(hash, part.texPathSouth);
+                        hash = CombineHash(hash, part.texPathEast);
+                        hash = CombineHash(hash, part.texPathNorth);
                         hash = CombineHash(hash, part.enabled);
+                        hash = CombineHash(hash, (int)part.side);
                         hash = CombineHash(hash, part.overlayId);
                         hash = CombineHash(hash, part.overlayOrder);
-                        hash = CombineHash(hash, part.anchorCorrection.x);
-                        hash = CombineHash(hash, part.anchorCorrection.y);
+                        float resolvedMotionAmplitude = part.motionAmplitude > 0f
+                            ? part.motionAmplitude
+                            : Mathf.Max(Mathf.Abs(part.anchorCorrection.x), Mathf.Abs(part.anchorCorrection.y));
+                        hash = CombineHash(hash, resolvedMotionAmplitude);
                     }
                 }
 
@@ -396,6 +443,7 @@ namespace CharacterStudio.Core
                 hash = CombineHash(hash, eyeConfig?.texUp);
                 hash = CombineHash(hash, eyeConfig?.texDown);
                 hash = CombineHash(hash, eyeConfig?.pupilMoveRange ?? 0f);
+                hash = CombineHash(hash, eyeConfig?.upperLidMoveDown ?? 0f);
 
                 return (skin.version ?? "0") + "-" + hash.ToString("X8");
             }

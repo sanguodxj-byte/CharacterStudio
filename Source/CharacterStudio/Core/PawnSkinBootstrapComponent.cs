@@ -1,176 +1,273 @@
-using System;
 using System.Collections.Generic;
-using CharacterStudio.Abilities;
 using HarmonyLib;
+using CharacterStudio.Abilities;
+using CharacterStudio.Performance;
+using RimWorld;
 using Verse;
 
 namespace CharacterStudio.Core
 {
     /// <summary>
-    /// 游戏级初始化：确保地图 Pawn 都拥有 CompPawnSkin 以支持运行时应用外观
+    /// 游戏组件：为现有 Pawn 补充 CompPawnSkin，并自动应用 defaultForRace 皮肤、补发 Ability。
+    /// 优化：
+    /// 1. 将原来的三次全图扫描合并为单次扫描。
+    /// 2. 使用世界签名去重，避免 LoadedGame / StartedNewGame / FinalizeInit 对同一世界状态重复执行。
+    /// 3. 对每个 Pawn 记录已完成的 bootstrap 项，避免世界状态变化后重复处理老 Pawn。
     /// </summary>
     public class PawnSkinBootstrapComponent : GameComponent
     {
-        public PawnSkinBootstrapComponent(Game game)
-        {
-        }
+        private static readonly System.Reflection.FieldInfo? CompsField =
+            AccessTools.Field(typeof(ThingWithComps), "comps");
+
+        private readonly HashSet<int> compEnsuredPawnIds = new HashSet<int>();
+        private readonly HashSet<int> defaultSkinProcessedPawnIds = new HashSet<int>();
+        private readonly HashSet<int> loadoutGrantedPawnIds = new HashSet<int>();
+
+        private BootstrapWorldSignature? lastBootstrapSignature;
+
+        public PawnSkinBootstrapComponent(Game game) { }
 
         public override void LoadedGame()
         {
             base.LoadedGame();
-            EnsureAllMapsPawnsHaveSkinComp();
-            ApplyDefaultSkinsToAllMapsPawns();
-            // 存档重载后重新授予所有 CS 技能
-            // （运行时 AbilityDef 不持久化到存档，每次加载都需重建）
-            ReGrantAllSkinAbilities();
+            RunBootstrapPass(BootstrapEntryPoint.LoadedGame);
         }
 
         public override void StartedNewGame()
         {
             base.StartedNewGame();
-            EnsureAllMapsPawnsHaveSkinComp();
-            ApplyDefaultSkinsToAllMapsPawns();
+            RunBootstrapPass(BootstrapEntryPoint.StartedNewGame);
         }
 
         public override void FinalizeInit()
         {
             base.FinalizeInit();
-            EnsureAllMapsPawnsHaveSkinComp();
-            ApplyDefaultSkinsToAllMapsPawns();
+            RunBootstrapPass(BootstrapEntryPoint.FinalizeInit);
         }
 
-        private static void ReGrantAllSkinAbilities()
+        private void RunBootstrapPass(BootstrapEntryPoint entryPoint)
         {
-            if (Current.Game == null) return;
+            CharacterStudioPerformanceStats.RecordBootstrapEntryCall(entryPoint);
 
-            int count = 0;
-            foreach (var map in Current.Game.Maps)
+            Game? game = Current.Game;
+            if (game == null)
+                return;
+
+            BootstrapWorldSignature signature = CaptureWorldSignature(game);
+            if (lastBootstrapSignature.HasValue && lastBootstrapSignature.Value.Equals(signature))
             {
-                var pawns = map?.mapPawns?.AllPawnsSpawned;
-                if (pawns == null) continue;
+                CharacterStudioPerformanceStats.RecordBootstrapPassSkipped(entryPoint, signature);
+                return;
+            }
 
-                foreach (var pawn in pawns)
+            int mapsVisited = 0;
+            int pawnsVisited = 0;
+            int compsAdded = 0;
+            int defaultSkinsApplied = 0;
+            int loadoutsGranted = 0;
+
+            foreach (Map map in game.Maps)
+            {
+                mapsVisited++;
+
+                foreach (Pawn pawn in map.mapPawns.AllPawnsSpawned)
                 {
-                    if (pawn == null) continue;
-                    var comp = pawn.GetComp<CompPawnSkin>();
-                    var skin = comp?.ActiveSkin;
-                    if (skin == null || skin.abilities == null || skin.abilities.Count == 0) continue;
+                    pawnsVisited++;
 
-                    try
-                    {
-                        CharacterStudio.Abilities.AbilityGrantUtility.GrantSkinAbilitiesToPawn(pawn, skin);
-                        count++;
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Warning($"[CharacterStudio] 存档重载重授技能失败 ({pawn.LabelShort}): {ex.Message}");
-                    }
+                    CompPawnSkin? comp = EnsureSkinCompForPawn(pawn, ref compsAdded);
+
+                    if (!pawn.RaceProps.Humanlike)
+                        continue;
+
+                    if (TryApplyDefaultSkinOnce(pawn, comp))
+                        defaultSkinsApplied++;
+
+                    if (TryGrantLoadoutOnce(pawn, comp))
+                        loadoutsGranted++;
                 }
             }
 
-            if (count > 0)
-                Log.Message($"[CharacterStudio] 存档重载已为 {count} 个 Pawn 重授 CS 技能");
+            lastBootstrapSignature = signature;
+            CharacterStudioPerformanceStats.RecordBootstrapPassExecuted(
+                entryPoint,
+                signature,
+                mapsVisited,
+                pawnsVisited,
+                compsAdded,
+                defaultSkinsApplied,
+                loadoutsGranted);
         }
 
-        private void EnsureAllMapsPawnsHaveSkinComp()
+        private static BootstrapWorldSignature CaptureWorldSignature(Game game)
         {
-            if (Current.Game == null) return;
+            int mapCount = 0;
+            int spawnedPawnCount = 0;
+            int mapIdHash = 17;
 
-            int added = 0;
-            foreach (var map in Current.Game.Maps)
+            foreach (Map map in game.Maps)
             {
-                var pawns = map?.mapPawns?.AllPawnsSpawned;
-                if (pawns == null) continue;
-
-                foreach (var pawn in pawns)
+                mapCount++;
+                spawnedPawnCount += map.mapPawns.AllPawnsSpawned.Count;
+                unchecked
                 {
-                    if (pawn == null) continue;
-                    if (pawn.GetComp<CompPawnSkin>() != null) continue;
-
-                    AddCompToPawn(pawn);
-                    added++;
+                    mapIdHash = (mapIdHash * 31) + map.uniqueID;
                 }
             }
 
-            if (added > 0)
+            return new BootstrapWorldSignature(mapCount, spawnedPawnCount, mapIdHash);
+        }
+
+        private CompPawnSkin? EnsureSkinCompForPawn(Pawn pawn, ref int compsAdded)
+        {
+            int pawnId = pawn.thingIDNumber;
+            if (compEnsuredPawnIds.Contains(pawnId))
+                return pawn.GetComp<CompPawnSkin>();
+
+            CompPawnSkin? comp = pawn.GetComp<CompPawnSkin>();
+            if (comp == null && AddCompToPawn(pawn))
             {
-                Log.Message($"[CharacterStudio] 已为现存地图 Pawn 补全 CompPawnSkin: {added}");
+                compsAdded++;
+                comp = pawn.GetComp<CompPawnSkin>();
             }
+
+            if (comp != null)
+                compEnsuredPawnIds.Add(pawnId);
+
+            return comp;
+        }
+
+        private bool TryApplyDefaultSkinOnce(Pawn pawn, CompPawnSkin? comp)
+        {
+            int pawnId = pawn.thingIDNumber;
+            if (defaultSkinProcessedPawnIds.Contains(pawnId))
+                return false;
+
+            if (comp == null)
+                return false;
+
+            defaultSkinProcessedPawnIds.Add(pawnId);
+
+            if (comp.HasActiveSkin)
+                return false;
+
+            if (!ShouldAutoApplyDefaultSkinDuringBootstrap(pawn, comp))
+                return false;
+
+            PawnSkinDef? skin = PawnSkinDefRegistry.GetDefaultSkinForRace(pawn.def);
+            if (skin == null)
+                return false;
+
+            comp.ActiveSkin = skin.Clone();
+            return true;
+        }
+
+        private static bool ShouldAutoApplyDefaultSkinDuringBootstrap(Pawn pawn, CompPawnSkin comp)
+        {
+            if (pawn == null || comp == null)
+                return false;
+
+            if (!pawn.RaceProps.Humanlike)
+                return false;
+
+            if (comp.HasActiveSkin)
+                return false;
+
+            if (!string.IsNullOrWhiteSpace(comp.ActiveSkinApplicationSource))
+                return false;
+
+            if (comp.ActiveSkinFromDefaultRaceBinding)
+                return true;
+
+            bool hasExplicitAppearanceState = !string.IsNullOrWhiteSpace(comp.ActiveSkinApplicationSource)
+                || !string.IsNullOrWhiteSpace(GetSerializedActiveSkinDefName(comp));
+            if (hasExplicitAppearanceState)
+                return false;
+
+            return pawn.Faction == Faction.OfPlayer
+                || pawn.IsColonist
+                || pawn.IsPrisonerOfColony
+                || pawn.IsSlaveOfColony;
+        }
+
+        private static string? GetSerializedActiveSkinDefName(CompPawnSkin comp)
+        {
+            var field = AccessTools.Field(typeof(CompPawnSkin), "activeSkinDefName");
+            return field?.GetValue(comp) as string;
+        }
+
+        private bool TryGrantLoadoutOnce(Pawn pawn, CompPawnSkin? comp)
+        {
+            int pawnId = pawn.thingIDNumber;
+            if (loadoutGrantedPawnIds.Contains(pawnId))
+                return false;
+
+            loadoutGrantedPawnIds.Add(pawnId);
+            if (comp == null)
+                return false;
+
+            CharacterAbilityLoadout? loadout = AbilityLoadoutRuntimeUtility.GetEffectiveLoadout(pawn);
+            bool hasEffectiveAbilities = loadout?.abilities != null && loadout.abilities.Count > 0;
+
+            // 读档恢复时必须同步“当前生效装配”，而不是仅同步皮肤模板技能。
+            // 否则显式 loadout 会在存档恢复后被皮肤技能覆盖，导致热键、Gizmo 与运行时 Ability 链路失配。
+            AbilityLoadoutRuntimeUtility.GrantEffectiveLoadoutToPawn(pawn);
+            return hasEffectiveAbilities;
+        }
+
+        private static bool AddCompToPawn(Pawn pawn)
+        {
+            if (CompsField == null)
+            {
+                Log.Error("[CharacterStudio] Failed to find ThingWithComps.comps field.");
+                return false;
+            }
+
+            List<ThingComp>? comps = CompsField.GetValue(pawn) as List<ThingComp>;
+            if (comps == null)
+            {
+                comps = new List<ThingComp>();
+                CompsField.SetValue(pawn, comps);
+            }
+
+            foreach (ThingComp existing in comps)
+            {
+                if (existing is CompPawnSkin)
+                    return false;
+            }
+
+            var comp = new CompPawnSkin { parent = pawn };
+            comps.Add(comp);
+            comp.Initialize(new CompProperties_PawnSkin());
+            comp.PostSpawnSetup(pawn.Spawned);
+
+            Log.Message($"[CharacterStudio] Added CompPawnSkin to existing pawn: {pawn.LabelShort}");
+            return true;
         }
 
         public static void ApplyDefaultSkinsToCurrentGame()
         {
-            ApplyDefaultSkinsToAllMapsPawns();
-        }
-
-        private static void ApplyDefaultSkinsToAllMapsPawns()
-        {
-            if (Current.Game == null) return;
-
-            int applied = 0;
-            foreach (var map in Current.Game.Maps)
+            Game? game = Current.Game;
+            if (game == null)
             {
-                var pawns = map?.mapPawns?.AllPawnsSpawned;
-                if (pawns == null) continue;
+                return;
+            }
 
-                foreach (var pawn in pawns)
+            foreach (Map map in game.Maps)
+            {
+                foreach (Pawn pawn in map.mapPawns.AllPawnsSpawned)
                 {
-                    if (pawn == null || pawn.def?.race == null || !pawn.RaceProps.Humanlike)
+                    if (pawn == null || !pawn.RaceProps.Humanlike)
                         continue;
 
-                    var defaultSkin = PawnSkinDefRegistry.GetDefaultSkinForRace(pawn.def);
-                    if (defaultSkin == null)
+                    CompPawnSkin? comp = pawn.GetComp<CompPawnSkin>();
+                    if (comp == null || !ShouldAutoApplyDefaultSkinDuringBootstrap(pawn, comp))
                         continue;
 
-                    var comp = pawn.GetComp<CompPawnSkin>();
-                    bool hasManualSkin = comp?.ActiveSkin != null && !comp.ActiveSkinFromDefaultRaceBinding;
-                    if (hasManualSkin)
-                        continue;
-
-                    bool alreadyUsingSameDefault = comp?.ActiveSkin?.defName == defaultSkin.defName && comp.ActiveSkinFromDefaultRaceBinding;
-                    if (alreadyUsingSameDefault)
-                        continue;
-
-                    try
-                    {
-                        if (PawnSkinRuntimeUtility.ApplySkinToPawn(pawn, defaultSkin.Clone(), fromDefaultRaceBinding: true))
-                            applied++;
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Warning($"[CharacterStudio] 默认种族皮肤应用失败 ({pawn.LabelShort} / {pawn.def.defName}): {ex.Message}");
-                    }
+                    PawnSkinDef? defaultSkin = PawnSkinDefRegistry.GetDefaultSkinForRace(pawn.def);
+                    if (defaultSkin != null)
+                        PawnSkinRuntimeUtility.ApplySkinToPawn(pawn, defaultSkin.Clone(), fromDefaultRaceBinding: true);
                 }
             }
-
-            if (applied > 0)
-                Log.Message($"[CharacterStudio] 已为 {applied} 个 Pawn 自动应用默认种族皮肤");
-        }
-
-        private static void AddCompToPawn(Pawn pawn)
-        {
-            var compsField = AccessTools.Field(typeof(ThingWithComps), "comps");
-            if (compsField == null) return;
-
-            var comps = compsField.GetValue(pawn) as List<ThingComp>;
-            if (comps == null)
-            {
-                comps = new List<ThingComp>();
-                compsField.SetValue(pawn, comps);
-            }
-
-            foreach (var thingComp in comps)
-            {
-                if (thingComp is CompPawnSkin) return;
-            }
-
-            var comp = new CompPawnSkin
-            {
-                parent = pawn
-            };
-            comps.Add(comp);
-            comp.Initialize(new CompProperties_PawnSkin());
-            comp.PostSpawnSetup(pawn.Spawned);
         }
     }
 }

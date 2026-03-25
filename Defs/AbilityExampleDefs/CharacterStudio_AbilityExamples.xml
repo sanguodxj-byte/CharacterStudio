@@ -2,13 +2,16 @@
 <Defs>
 
   <CharacterStudio.Abilities.ModularAbilityDef>
-    <defName>CS_Example_Q_ModeSlash</defName>
-    <label>Q·四式斩</label>
-    <description>示例：Q 键循环四种前向攻击形态，并开启 W 连段窗口。</description>
+    <defName>CS_Example_Q1_ModeSlash</defName>
+    <label>Q1·智能跃斩</label>
+    <description>示例：Q1 朝鼠标方向智能施法，复用原版跳跃动画跃进一格并结算伤害；随后 Q 会立即切换显示为 Q2，但仍需等待 1 秒冷却后才能释放。</description>
     <cooldownTicks>45</cooldownTicks>
     <warmupTicks>0</warmupTicks>
     <charges>1</charges>
     <carrierType>Target</carrierType>
+    <targetType>Entity</targetType>
+    <useRadius>false</useRadius>
+    <areaCenter>Target</areaCenter>
     <range>5</range>
     <effects>
       <li>
@@ -22,13 +25,17 @@
     </effects>
     <runtimeComponents>
       <li>
-        <type>QComboWindow</type>
+        <type>SmartJump</type>
         <enabled>true</enabled>
-        <comboWindowTicks>18</comboWindowTicks>
-        <cooldownTicks>120</cooldownTicks>
-        <jumpDistance>6</jumpDistance>
-        <findCellRadius>3</findCellRadius>
+        <comboWindowTicks>12</comboWindowTicks>
+        <cooldownTicks>45</cooldownTicks>
+        <jumpDistance>5</jumpDistance>
+        <findCellRadius>2</findCellRadius>
         <triggerAbilityEffectsAfterJump>true</triggerAbilityEffectsAfterJump>
+        <useMouseTargetCell>true</useMouseTargetCell>
+        <smartCastOffsetCells>1</smartCastOffsetCells>
+        <smartCastClampToMaxDistance>true</smartCastClampToMaxDistance>
+        <smartCastAllowFallbackForward>true</smartCastAllowFallbackForward>
         <requiredStacks>7</requiredStacks>
         <delayTicks>180</delayTicks>
         <wave1Radius>3</wave1Radius>
@@ -38,17 +45,212 @@
         <wave3Radius>9</wave3Radius>
         <wave3Damage>220</wave3Damage>
       </li>
+      <li>
+        <type>HotkeyOverride</type>
+        <enabled>true</enabled>
+        <overrideHotkeySlot>Q</overrideHotkeySlot>
+        <overrideAbilityDefName>CS_Example_Q2_ModeSlash</overrideAbilityDefName>
+        <overrideDurationTicks>60</overrideDurationTicks>
+      </li>
+      <li>
+        <type>FollowupCooldownGate</type>
+        <enabled>true</enabled>
+        <followupCooldownHotkeySlot>Q</followupCooldownHotkeySlot>
+        <followupCooldownTicks>60</followupCooldownTicks>
+      </li>
+    </runtimeComponents>
+  </CharacterStudio.Abilities.ModularAbilityDef>
+
+  <CharacterStudio.Abilities.ModularAbilityDef>
+    <defName>CS_Example_Q2_ModeSlash</defName>
+    <label>Q2·追击跃斩</label>
+    <description>示例：Q2 延续连段，再次智能跃进；随后 Q 会立即切换显示为 Q3，但仍需等待 1 秒冷却后才能释放。</description>
+    <cooldownTicks>45</cooldownTicks>
+    <warmupTicks>0</warmupTicks>
+    <charges>1</charges>
+    <carrierType>Target</carrierType>
+    <targetType>Entity</targetType>
+    <useRadius>false</useRadius>
+    <areaCenter>Target</areaCenter>
+    <range>5</range>
+    <effects>
+      <li>
+        <type>Damage</type>
+        <amount>22</amount>
+        <duration>0</duration>
+        <chance>1</chance>
+        <damageDef>Cut</damageDef>
+        <summonCount>1</summonCount>
+      </li>
+    </effects>
+    <runtimeComponents>
+      <li>
+        <type>SmartJump</type>
+        <enabled>true</enabled>
+        <comboWindowTicks>12</comboWindowTicks>
+        <cooldownTicks>45</cooldownTicks>
+        <jumpDistance>5</jumpDistance>
+        <findCellRadius>2</findCellRadius>
+        <triggerAbilityEffectsAfterJump>true</triggerAbilityEffectsAfterJump>
+        <useMouseTargetCell>true</useMouseTargetCell>
+        <smartCastOffsetCells>1</smartCastOffsetCells>
+        <smartCastClampToMaxDistance>true</smartCastClampToMaxDistance>
+        <smartCastAllowFallbackForward>true</smartCastAllowFallbackForward>
+        <requiredStacks>7</requiredStacks>
+        <delayTicks>180</delayTicks>
+        <wave1Radius>3</wave1Radius>
+        <wave1Damage>80</wave1Damage>
+        <wave2Radius>6</wave2Radius>
+        <wave2Damage>140</wave2Damage>
+        <wave3Radius>9</wave3Radius>
+        <wave3Damage>220</wave3Damage>
+      </li>
+      <li>
+        <type>HotkeyOverride</type>
+        <enabled>true</enabled>
+        <overrideHotkeySlot>Q</overrideHotkeySlot>
+        <overrideAbilityDefName>CS_Example_Q3_ModeSlash</overrideAbilityDefName>
+        <overrideDurationTicks>60</overrideDurationTicks>
+      </li>
+      <li>
+        <type>FollowupCooldownGate</type>
+        <enabled>true</enabled>
+        <followupCooldownHotkeySlot>Q</followupCooldownHotkeySlot>
+        <followupCooldownTicks>60</followupCooldownTicks>
+      </li>
+    </runtimeComponents>
+  </CharacterStudio.Abilities.ModularAbilityDef>
+
+  <CharacterStudio.Abilities.ModularAbilityDef>
+    <defName>CS_Example_Q3_ModeSlash</defName>
+    <label>Q3·裂步连斩</label>
+    <description>示例：Q3 继续同槽位连段；随后 Q 会立即切换显示为 Q4，但仍需等待 1 秒冷却后才能释放。</description>
+    <cooldownTicks>45</cooldownTicks>
+    <warmupTicks>0</warmupTicks>
+    <charges>1</charges>
+    <carrierType>Target</carrierType>
+    <targetType>Entity</targetType>
+    <useRadius>false</useRadius>
+    <areaCenter>Target</areaCenter>
+    <range>5</range>
+    <effects>
+      <li>
+        <type>Damage</type>
+        <amount>26</amount>
+        <duration>0</duration>
+        <chance>1</chance>
+        <damageDef>Cut</damageDef>
+        <summonCount>1</summonCount>
+      </li>
+    </effects>
+    <runtimeComponents>
+      <li>
+        <type>SmartJump</type>
+        <enabled>true</enabled>
+        <comboWindowTicks>12</comboWindowTicks>
+        <cooldownTicks>45</cooldownTicks>
+        <jumpDistance>5</jumpDistance>
+        <findCellRadius>2</findCellRadius>
+        <triggerAbilityEffectsAfterJump>true</triggerAbilityEffectsAfterJump>
+        <useMouseTargetCell>true</useMouseTargetCell>
+        <smartCastOffsetCells>1</smartCastOffsetCells>
+        <smartCastClampToMaxDistance>true</smartCastClampToMaxDistance>
+        <smartCastAllowFallbackForward>true</smartCastAllowFallbackForward>
+        <requiredStacks>7</requiredStacks>
+        <delayTicks>180</delayTicks>
+        <wave1Radius>3</wave1Radius>
+        <wave1Damage>80</wave1Damage>
+        <wave2Radius>6</wave2Radius>
+        <wave2Damage>140</wave2Damage>
+        <wave3Radius>9</wave3Radius>
+        <wave3Damage>220</wave3Damage>
+      </li>
+      <li>
+        <type>HotkeyOverride</type>
+        <enabled>true</enabled>
+        <overrideHotkeySlot>Q</overrideHotkeySlot>
+        <overrideAbilityDefName>CS_Example_Q4_ModeSlash</overrideAbilityDefName>
+        <overrideDurationTicks>60</overrideDurationTicks>
+      </li>
+      <li>
+        <type>FollowupCooldownGate</type>
+        <enabled>true</enabled>
+        <followupCooldownHotkeySlot>Q</followupCooldownHotkeySlot>
+        <followupCooldownTicks>60</followupCooldownTicks>
+      </li>
+    </runtimeComponents>
+  </CharacterStudio.Abilities.ModularAbilityDef>
+
+  <CharacterStudio.Abilities.ModularAbilityDef>
+    <defName>CS_Example_Q4_ModeSlash</defName>
+    <label>Q4·终结跃斩</label>
+    <description>示例：Q4 作为终段造成更高伤害，并额外开启 W2 连段窗口，使 W 在短时间内替换为 W2。</description>
+    <cooldownTicks>45</cooldownTicks>
+    <warmupTicks>0</warmupTicks>
+    <charges>1</charges>
+    <carrierType>Target</carrierType>
+    <targetType>Entity</targetType>
+    <useRadius>false</useRadius>
+    <areaCenter>Target</areaCenter>
+    <range>5</range>
+    <effects>
+      <li>
+        <type>Damage</type>
+        <amount>34</amount>
+        <duration>0</duration>
+        <chance>1</chance>
+        <damageDef>Cut</damageDef>
+        <summonCount>1</summonCount>
+      </li>
+    </effects>
+    <runtimeComponents>
+      <li>
+        <type>SmartJump</type>
+        <enabled>true</enabled>
+        <comboWindowTicks>12</comboWindowTicks>
+        <cooldownTicks>45</cooldownTicks>
+        <jumpDistance>5</jumpDistance>
+        <findCellRadius>2</findCellRadius>
+        <triggerAbilityEffectsAfterJump>true</triggerAbilityEffectsAfterJump>
+        <useMouseTargetCell>true</useMouseTargetCell>
+        <smartCastOffsetCells>1</smartCastOffsetCells>
+        <smartCastClampToMaxDistance>true</smartCastClampToMaxDistance>
+        <smartCastAllowFallbackForward>true</smartCastAllowFallbackForward>
+        <requiredStacks>7</requiredStacks>
+        <delayTicks>180</delayTicks>
+        <wave1Radius>3</wave1Radius>
+        <wave1Damage>80</wave1Damage>
+        <wave2Radius>6</wave2Radius>
+        <wave2Damage>140</wave2Damage>
+        <wave3Radius>9</wave3Radius>
+        <wave3Damage>220</wave3Damage>
+      </li>
+      <li>
+        <type>QComboWindow</type>
+        <enabled>true</enabled>
+        <comboWindowTicks>60</comboWindowTicks>
+      </li>
+      <li>
+        <type>HotkeyOverride</type>
+        <enabled>true</enabled>
+        <overrideHotkeySlot>W</overrideHotkeySlot>
+        <overrideAbilityDefName>CS_Example_W2_ComboBurst</overrideAbilityDefName>
+        <overrideDurationTicks>60</overrideDurationTicks>
+      </li>
     </runtimeComponents>
   </CharacterStudio.Abilities.ModularAbilityDef>
 
   <CharacterStudio.Abilities.ModularAbilityDef>
     <defName>CS_Example_W_Pierce</defName>
     <label>W·穿刺</label>
-    <description>示例：W 键释放前方小范围穿刺伤害。</description>
+    <description>示例：W 常态释放前方小范围穿刺伤害。</description>
     <cooldownTicks>75</cooldownTicks>
     <warmupTicks>8</warmupTicks>
     <charges>1</charges>
     <carrierType>Area</carrierType>
+    <targetType>Cell</targetType>
+    <useRadius>true</useRadius>
+    <areaCenter>Target</areaCenter>
     <range>2.5</range>
     <radius>1.5</radius>
     <effects>
@@ -64,13 +266,16 @@
   </CharacterStudio.Abilities.ModularAbilityDef>
 
   <CharacterStudio.Abilities.ModularAbilityDef>
-    <defName>CS_Example_W_ComboBurst</defName>
-    <label>W·裂阵追击</label>
-    <description>示例：在 Q 连段窗口内按下 W，触发更大范围的追击爆发。</description>
+    <defName>CS_Example_W2_ComboBurst</defName>
+    <label>W2·裂阵追击</label>
+    <description>示例：仅在 Q4 打开的窗口内可通过 W 触发的强化追击爆发。</description>
     <cooldownTicks>90</cooldownTicks>
     <warmupTicks>0</warmupTicks>
     <charges>1</charges>
     <carrierType>Area</carrierType>
+    <targetType>Cell</targetType>
+    <useRadius>true</useRadius>
+    <areaCenter>Target</areaCenter>
     <range>3</range>
     <radius>1.9</radius>
     <effects>
@@ -93,6 +298,9 @@
     <warmupTicks>0</warmupTicks>
     <charges>1</charges>
     <carrierType>Area</carrierType>
+    <targetType>Cell</targetType>
+    <useRadius>true</useRadius>
+    <areaCenter>Target</areaCenter>
     <range>6</range>
     <radius>1.5</radius>
     <effects>
@@ -134,6 +342,9 @@
     <warmupTicks>0</warmupTicks>
     <charges>1</charges>
     <carrierType>Area</carrierType>
+    <targetType>Cell</targetType>
+    <useRadius>true</useRadius>
+    <areaCenter>Target</areaCenter>
     <range>9</range>
     <radius>3</radius>
     <effects>

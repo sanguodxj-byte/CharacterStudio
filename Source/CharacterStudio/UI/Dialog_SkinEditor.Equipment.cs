@@ -43,7 +43,7 @@ namespace CharacterStudio.UI
             Text.Font = oldFont;
 
             float btnY = titleRect.yMax + 6f;
-            float btnCount = 6f;
+            float btnCount = 7f;
             float btnWidth = (rect.width - Margin * (btnCount + 1f)) / btnCount;
             float btnHeight = Mathf.Max(ButtonHeight - 2f, 22f);
 
@@ -78,15 +78,16 @@ namespace CharacterStudio.UI
 
             float startX = rect.x + Margin;
             DrawIconButton(new Rect(startX + (btnWidth + Margin) * 0f, btnY, btnWidth, btnHeight), "+", "CS_Studio_Equip_Btn_New".Translate(), AddNewEquipment, true);
-            DrawIconButton(new Rect(startX + (btnWidth + Margin) * 1f, btnY, btnWidth, btnHeight), "-", "CS_Studio_Btn_Delete".Translate(), DeleteSelectedEquipment);
-            DrawIconButton(new Rect(startX + (btnWidth + Margin) * 2f, btnY, btnWidth, btnHeight), "C", "CS_Studio_Panel_Duplicate".Translate(), DuplicateSelectedEquipment);
-            DrawIconButton(new Rect(startX + (btnWidth + Margin) * 3f, btnY, btnWidth, btnHeight), "A", "CS_Studio_Equip_Btn_Abilities".Translate(), () =>
+            DrawIconButton(new Rect(startX + (btnWidth + Margin) * 1f, btnY, btnWidth, btnHeight), "A", "CS_Studio_Equip_Btn_Abilities".Translate(), () =>
             {
                 SyncAbilitiesFromSkin();
                 Find.WindowStack.Add(new Dialog_AbilityEditor(workingAbilities, workingSkin.abilityHotkeys, workingSkin));
             });
-            DrawIconButton(new Rect(startX + (btnWidth + Margin) * 4f, btnY, btnWidth, btnHeight), "↓", "CS_Studio_Ability_ImportXml".Translate(), OpenEquipmentImportXmlDialog);
-            DrawIconButton(new Rect(startX + (btnWidth + Margin) * 5f, btnY, btnWidth, btnHeight), "↑", "CS_Studio_Equip_Btn_ExportXml".Translate(), ExportSelectedEquipmentToDefaultPath);
+            DrawIconButton(new Rect(startX + (btnWidth + Margin) * 2f, btnY, btnWidth, btnHeight), "✈", "CS_Studio_Equip_AircraftPreset".Translate(), AddAircraftWingAnimationPreset, true);
+            DrawIconButton(new Rect(startX + (btnWidth + Margin) * 3f, btnY, btnWidth, btnHeight), "-", "CS_Studio_Btn_Delete".Translate(), DeleteSelectedEquipment);
+            DrawIconButton(new Rect(startX + (btnWidth + Margin) * 4f, btnY, btnWidth, btnHeight), "C", "CS_Studio_Panel_Duplicate".Translate(), DuplicateSelectedEquipment);
+            DrawIconButton(new Rect(startX + (btnWidth + Margin) * 5f, btnY, btnWidth, btnHeight), "↓", "CS_Studio_Equip_ImportXmlTitle".Translate(), OpenEquipmentImportXmlDialog);
+            DrawIconButton(new Rect(startX + (btnWidth + Margin) * 6f, btnY, btnWidth, btnHeight), "↑", "CS_Studio_Equip_Btn_ExportXml".Translate(), ExportSelectedEquipmentToDefaultPath);
 
             float listY = btnY + btnHeight + 8f;
             float listHeight = rect.height - listY + rect.y - Margin;
@@ -115,18 +116,7 @@ namespace CharacterStudio.UI
             Text.Anchor = TextAnchor.UpperLeft;
             y += 20f;
 
-            GUI.color = UIHelper.SubtleColor;
-            Widgets.Label(new Rect(6f, y, viewRect.width - 12f, 20f), "CS_Studio_Equip_SelectHint".Translate());
-            GUI.color = Color.white;
-            y += 24f;
-
-            if (workingSkin.equipments.Count == 0)
-            {
-                GUI.color = UIHelper.SubtleColor;
-                Widgets.Label(new Rect(6f, y, viewRect.width - 12f, 22f), "CS_Studio_Equip_NoSelection".Translate());
-                GUI.color = Color.white;
-            }
-            else
+            if (workingSkin.equipments.Count > 0)
             {
                 for (int i = 0; i < workingSkin.equipments.Count; i++)
                 {
@@ -182,8 +172,9 @@ namespace CharacterStudio.UI
                 RefreshRenderTree();
             }
 
-            Rect nameRect = new Rect(46f, y + 1f, width - 92f, 16f);
-            Rect metaRect = new Rect(46f, y + 16f, width - 92f, 14f);
+            Rect deleteRect = new Rect(width - 28f, y + 5f, 24f, 22f);
+            Rect nameRect = new Rect(46f, y + 1f, width - 100f, 16f);
+            Rect metaRect = new Rect(46f, y + 16f, width - 100f, 14f);
 
             Text.Font = GameFont.Small;
             GUI.color = equipment.enabled ? Color.white : Color.gray;
@@ -197,11 +188,12 @@ namespace CharacterStudio.UI
             Widgets.Label(metaRect, meta);
             GUI.color = Color.white;
 
-            Rect deleteRect = new Rect(width - 22f, y + 7f, 20f, 20f);
-            if (Widgets.ButtonText(deleteRect, "×"))
+            if (UIHelper.DrawDangerButton(deleteRect, tooltip: "CS_Studio_Delete".Translate(), onClick: () =>
             {
                 SelectEquipment(index);
                 DeleteSelectedEquipment();
+            }))
+            {
                 return;
             }
 
@@ -273,6 +265,8 @@ namespace CharacterStudio.UI
             selectedNodePath = string.Empty;
             selectedBaseSlotType = null;
             currentTab = EditorTab.Equipment;
+            equipmentPivotEditMode = false;
+            isDraggingEquipmentPivot = false;
         }
 
         private void SanitizeEquipmentSelection()
@@ -334,9 +328,11 @@ namespace CharacterStudio.UI
 
             var duplicate = sourceEquipment.Clone();
             duplicate.defName = BuildUniqueEquipmentDefName(
-                string.IsNullOrWhiteSpace(duplicate.defName) ? "Equipment_Copy" : duplicate.defName + "_Copy",
+                string.IsNullOrWhiteSpace(duplicate.defName) ? "CS_Studio_Equip_DefaultCopyDefName".Translate().ToString() : duplicate.defName + "_Copy",
                 workingSkin.equipments);
-            duplicate.label = string.IsNullOrWhiteSpace(duplicate.label) ? duplicate.defName : duplicate.label + " Copy";
+            duplicate.label = string.IsNullOrWhiteSpace(duplicate.label)
+                ? duplicate.defName
+                : "CS_Studio_Equip_Label_Copy".Translate(duplicate.label).ToString();
             duplicate.EnsureDefaults();
 
             workingSkin.equipments.Insert(selectedEquipmentIndex + 1, duplicate);
@@ -388,17 +384,19 @@ namespace CharacterStudio.UI
 
         private CharacterEquipmentDef CreateDefaultEquipment(int index)
         {
+            string defaultEquipmentLabel = "CS_Studio_Equip_DefaultLabel".Translate(index + 1).ToString();
+
             var equipment = new CharacterEquipmentDef
             {
                 defName = BuildUniqueEquipmentDefName($"CS_Equipment_{index + 1}", workingSkin.equipments),
-                label = $"Equipment {index + 1}",
+                label = defaultEquipmentLabel,
                 enabled = true,
-                slotTag = "Apparel",
-                visual = new PawnLayerConfig
+                slotTag = CharacterEquipmentDef.DefaultSlotTag,
+                renderData = new CharacterEquipmentRenderData
                 {
-                    layerName = $"Equipment {index + 1}",
-                    anchorTag = "Apparel",
-                    shaderDefName = "Cutout",
+                    layerName = defaultEquipmentLabel,
+                    anchorTag = CharacterEquipmentDef.DefaultAnchorTag,
+                    shaderDefName = CharacterEquipmentDef.DefaultShaderDefName,
                     colorSource = LayerColorSource.White,
                     colorTwoSource = LayerColorSource.White,
                     scale = Vector2.one,
@@ -408,6 +406,101 @@ namespace CharacterStudio.UI
             };
 
             equipment.EnsureDefaults();
+            return equipment;
+        }
+
+        private void AddAircraftWingAnimationPreset()
+        {
+            if (workingSkin == null)
+            {
+                Log.Error("[CharacterStudio] 新增飞行翼预设失败：workingSkin 为空");
+                ShowStatus("CS_Studio_Equip_InvalidSelection".Translate());
+                return;
+            }
+
+            CaptureUndoSnapshot();
+            workingSkin.equipments ??= new List<CharacterEquipmentDef>();
+
+            var usedDefNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var existingEquipment in workingSkin.equipments)
+            {
+                if (existingEquipment != null && !string.IsNullOrWhiteSpace(existingEquipment.defName))
+                {
+                    usedDefNames.Add(existingEquipment.defName);
+                }
+            }
+
+            var presets = new List<CharacterEquipmentDef>
+            {
+                CreateAircraftPresetEquipment(usedDefNames, "Aircraft_Wing_L", "CS_Studio_Equip_Preset_LeftWing".Translate().ToString(), EquipmentTriggeredAnimationRole.MovablePart, 60f, new Vector2(0.12f, 0f), 58f, false),
+                CreateAircraftPresetEquipment(usedDefNames, "Aircraft_Wing_R", "CS_Studio_Equip_Preset_RightWing".Translate().ToString(), EquipmentTriggeredAnimationRole.MovablePart, -60f, new Vector2(-0.12f, 0f), 58f, false),
+                CreateAircraftPresetEquipment(usedDefNames, "Aircraft_VFX_Tail", "CS_Studio_Equip_Preset_TailVfx".Translate().ToString(), EquipmentTriggeredAnimationRole.EffectLayer, 0f, Vector2.zero, 68f, true),
+                CreateAircraftPresetEquipment(usedDefNames, "Aircraft_VFX_Wing_L", "CS_Studio_Equip_Preset_LeftWingVfx".Translate().ToString(), EquipmentTriggeredAnimationRole.EffectLayer, 0f, Vector2.zero, 70f, true),
+                CreateAircraftPresetEquipment(usedDefNames, "Aircraft_VFX_Wing_R", "CS_Studio_Equip_Preset_RightWingVfx".Translate().ToString(), EquipmentTriggeredAnimationRole.EffectLayer, 0f, Vector2.zero, 70f, true)
+            };
+
+            workingSkin.equipments.AddRange(presets);
+            SelectEquipment(Mathf.Max(0, workingSkin.equipments.Count - presets.Count));
+            currentTab = EditorTab.Equipment;
+            isDirty = true;
+            RefreshPreview();
+            RefreshRenderTree();
+            ShowStatus("CS_Studio_Equip_PresetAdded".Translate());
+        }
+
+        private CharacterEquipmentDef CreateAircraftPresetEquipment(
+            HashSet<string> usedDefNames,
+            string defBase,
+            string label,
+            EquipmentTriggeredAnimationRole role,
+            float deployAngle,
+            Vector2 pivot,
+            float drawOrder,
+            bool useVfxVisibility)
+        {
+            string baseName = string.IsNullOrWhiteSpace(defBase) ? "CS_Studio_Equip_DefaultPresetDefName".Translate().ToString() : defBase.Trim();
+            string uniqueDefName = baseName;
+            int suffix = 1;
+            while (!usedDefNames.Add(uniqueDefName))
+            {
+                uniqueDefName = $"{baseName}_{suffix++}";
+            }
+            var equipment = new CharacterEquipmentDef
+            {
+                defName = uniqueDefName,
+                label = label,
+                enabled = true,
+                slotTag = CharacterEquipmentDef.DefaultSlotTag,
+                renderData = new CharacterEquipmentRenderData
+                {
+                    layerName = label,
+                    anchorTag = CharacterEquipmentDef.DefaultAnchorTag,
+                    shaderDefName = CharacterEquipmentDef.DefaultShaderDefName,
+                    colorSource = LayerColorSource.White,
+                    colorTwoSource = LayerColorSource.White,
+                    scale = Vector2.one,
+                    visible = true,
+                    drawOrder = drawOrder,
+                    useTriggeredLocalAnimation = true,
+                    triggerAbilityDefName = string.Empty,
+                    animationGroupKey = defBase,
+                    triggeredAnimationRole = role,
+                    triggeredDeployAngle = deployAngle,
+                    triggeredReturnAngle = 0f,
+                    triggeredDeployTicks = 10,
+                    triggeredHoldTicks = 20,
+                    triggeredReturnTicks = 10,
+                    triggeredPivotOffset = pivot,
+                    triggeredUseVfxVisibility = useVfxVisibility,
+                    triggeredVisibleDuringDeploy = true,
+                    triggeredVisibleDuringHold = true,
+                    triggeredVisibleDuringReturn = true,
+                    triggeredVisibleOutsideCycle = !useVfxVisibility
+                }
+            };
+
+            equipment.EnsureDefaults();
+            equipment.defName = uniqueDefName;
             return equipment;
         }
 
@@ -485,7 +578,7 @@ namespace CharacterStudio.UI
                 if (workingSkin == null)
                 {
                     Log.Error("[CharacterStudio] 装备 XML 导入失败：workingSkin 为空");
-                    ShowStatus("CS_Studio_Equip_ImportFailed".Translate("workingSkin is null"));
+                    ShowStatus("CS_Studio_Equip_ImportFailed".Translate("CS_Studio_Equip_WorkingSkinNull".Translate()));
                     return;
                 }
 
@@ -806,21 +899,19 @@ namespace CharacterStudio.UI
             Widgets.Label(new Rect(0f, 0f, inRect.width, 32f), "CS_Studio_Equip_ImportXmlTitle".Translate());
             Text.Font = GameFont.Small;
 
-            Widgets.Label(new Rect(0f, 38f, inRect.width, 44f), "CS_Studio_Equip_ImportXmlHint".Translate());
-
-            Widgets.Label(new Rect(0f, 86f, 110f, 24f), "CS_Studio_Ability_ImportXmlPath".Translate());
-            xmlPath = Widgets.TextField(new Rect(112f, 86f, inRect.width - 112f, 24f), xmlPath ?? string.Empty);
+            Widgets.Label(new Rect(0f, 44f, 110f, 24f), "CS_Studio_Equip_ImportXmlPath".Translate());
+            xmlPath = Widgets.TextField(new Rect(112f, 44f, inRect.width - 112f, 24f), xmlPath ?? string.Empty);
 
             float buttonY = inRect.height - 34f;
             float buttonWidth = (inRect.width - 10f) / 3f;
 
-            if (Widgets.ButtonText(new Rect(0f, buttonY, buttonWidth, 30f), "CS_Studio_Ability_ImportReplace".Translate()))
+            if (Widgets.ButtonText(new Rect(0f, buttonY, buttonWidth, 30f), "CS_Studio_Equip_ImportReplaceAction".Translate()))
             {
                 onImport?.Invoke(xmlPath, true);
                 Close();
             }
 
-            if (Widgets.ButtonText(new Rect(buttonWidth + 5f, buttonY, buttonWidth, 30f), "CS_Studio_Ability_ImportAppend".Translate()))
+            if (Widgets.ButtonText(new Rect(buttonWidth + 5f, buttonY, buttonWidth, 30f), "CS_Studio_Equip_ImportAppendAction".Translate()))
             {
                 onImport?.Invoke(xmlPath, false);
                 Close();

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <CS_LLM_AbilityPrompt>Ability Prompt</CS_LLM_AbilityPrompt>
+    <CS_LLM_AbilityPrompt_Empty>Please enter an ability prompt first</CS_LLM_AbilityPrompt_Empty>
+    <CS_LLM_ApplyAppend>Append to Existing Abilities</CS_LLM_ApplyAppend>
+    <CS_LLM_ApplyReplace>Replace Existing Abilities</CS_LLM_ApplyReplace>
+    <CS_LLM_CharacterPrompt>Character Prompt</CS_LLM_CharacterPrompt>
+    <CS_LLM_CharacterPrompt_Empty>Please enter a character prompt first</CS_LLM_CharacterPrompt_Empty>
+    <CS_LLM_CharacterSection>Character Design Generation</CS_LLM_CharacterSection>
+    <CS_LLM_EditorTool_AbilityHint>The LLM acts as an ability editor tool and returns structured ability data that can be directly replaced into or appended to the current ability list.</CS_LLM_EditorTool_AbilityHint>
+    <CS_LLM_EditorTool_CharacterHint>The LLM acts as a character editor tool and returns structured output that is applied directly to the current editor fields, attributes, target races, hidden nodes, and ability list.</CS_LLM_EditorTool_CharacterHint>
+    <CS_LLM_GenerateAbilities>Generate Abilities</CS_LLM_GenerateAbilities>
+    <CS_LLM_GenerateAbilitiesAppended>Appended {0} abilities (was {1}, now {2})</CS_LLM_GenerateAbilitiesAppended>
+    <CS_LLM_GenerateAbilitiesEmpty>No usable abilities were returned by the LLM</CS_LLM_GenerateAbilitiesEmpty>
+    <CS_LLM_GenerateAbilitiesReplaced>Replaced the list with {0} newly generated abilities</CS_LLM_GenerateAbilitiesReplaced>
+    <CS_LLM_GenerateAbilitiesSuccess>Generated {0} abilities</CS_LLM_GenerateAbilitiesSuccess>
+    <CS_LLM_GenerateCharacter>Generate Character Design</CS_LLM_GenerateCharacter>
+    <CS_LLM_GenerateCharacterSuccess>Character design generated and applied</CS_LLM_GenerateCharacterSuccess>
+    <CS_LLM_GenerateFailed>LLM generation failed: {0}</CS_LLM_GenerateFailed>
+    <CS_LLM_OpenSettings>Open LLM Settings</CS_LLM_OpenSettings>
+    <CS_LLM_Settings_AbilityEditorPrompt>Ability Editor Tool Prompt</CS_LLM_Settings_AbilityEditorPrompt>
+    <CS_LLM_Settings_ApiKey>API Key</CS_LLM_Settings_ApiKey>
+    <CS_LLM_Settings_ApiKeyPreview>API Key Preview</CS_LLM_Settings_ApiKeyPreview>
+    <CS_LLM_Settings_BaseUrl>Base URL</CS_LLM_Settings_BaseUrl>
+    <CS_LLM_Settings_CharacterEditorPrompt>Character Editor Tool Prompt</CS_LLM_Settings_CharacterEditorPrompt>
+    <CS_LLM_Settings_Configured>Configured</CS_LLM_Settings_Configured>
+    <CS_LLM_Settings_Desc>Configure Base URL, Model, and API Key for an OpenAI-compatible endpoint to generate characters and abilities from natural language.</CS_LLM_Settings_Desc>
+    <CS_LLM_Settings_Enabled>Enable LLM generation</CS_LLM_Settings_Enabled>
+    <CS_LLM_Settings_EndpointPreview>Endpoint Preview</CS_LLM_Settings_EndpointPreview>
+    <CS_LLM_Settings_MaxTokens>Max Tokens</CS_LLM_Settings_MaxTokens>
+    <CS_LLM_Settings_Model>Model</CS_LLM_Settings_Model>
+    <CS_LLM_Settings_NotConfigured>Not Configured</CS_LLM_Settings_NotConfigured>
+    <CS_LLM_Settings_PromptsReset>Built-in prompt templates restored</CS_LLM_Settings_PromptsReset>
+    <CS_LLM_Settings_ResetPrompts>Reset Default Prompts</CS_LLM_Settings_ResetPrompts>
+    <CS_LLM_Settings_SaveFailed>Failed to save LLM settings: {0}</CS_LLM_Settings_SaveFailed>
+    <CS_LLM_Settings_SaveSuccess>LLM settings saved</CS_LLM_Settings_SaveSuccess>
+    <CS_LLM_Settings_Section_Connection>Connection</CS_LLM_Settings_Section_Connection>
+    <CS_LLM_Settings_Section_Prompts>Built-in Prompts</CS_LLM_Settings_Section_Prompts>
+    <CS_LLM_Settings_Section_Request>Request</CS_LLM_Settings_Section_Request>
+    <CS_LLM_Settings_Status>Status</CS_LLM_Settings_Status>
+    <CS_LLM_Settings_SystemPrompt>System Prompt</CS_LLM_Settings_SystemPrompt>
+    <CS_LLM_Settings_Temperature>Temperature</CS_LLM_Settings_Temperature>
+    <CS_LLM_Settings_Title>LLM Settings</CS_LLM_Settings_Title>
+</LanguageData>

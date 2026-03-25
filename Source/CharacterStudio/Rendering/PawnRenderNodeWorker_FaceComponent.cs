@@ -82,9 +82,6 @@ namespace CharacterStudio.Rendering
         private static Vector2 GetConfiguredScale(PawnLayerConfig config, Rot4 facing)
         {
             Vector2 scale = config.scale;
-            if (facing == Rot4.North)
-                return new Vector2(scale.x * config.scaleNorthMultiplier.x, scale.y * config.scaleNorthMultiplier.y);
-
             if (facing == Rot4.East || facing == Rot4.West)
                 return new Vector2(scale.x * config.scaleEastMultiplier.x, scale.y * config.scaleEastMultiplier.y);
 
@@ -132,9 +129,9 @@ namespace CharacterStudio.Rendering
                 }
                 else if (skin.faceConfig.workflowMode == FaceWorkflowMode.LayeredDynamic)
                 {
-                    path = ResolvePortraitBasePath(compiledData, exp);
-                    if (string.IsNullOrWhiteSpace(path))
-                        path = skin.faceConfig.GetLayeredPartPath(LayeredFacePartType.Base, exp);
+                    // LayeredDynamic 的 Base 现在由自定义图层节点统一承载，
+                    // FaceComponent 在肖像轨不再重复接管头部底图，避免与可编辑 [Face] Base 双绘。
+                    path = string.Empty;
                 }
                 else
                 {
@@ -178,8 +175,8 @@ namespace CharacterStudio.Rendering
         {
             if (compiledData?.portraitTrack?.expressionCaches != null
                 && compiledData.portraitTrack.expressionCaches.TryGetValue(expression, out FaceExpressionRuntimeCache? cache)
-                && cache?.portraitPartPaths != null
-                && cache.portraitPartPaths.TryGetValue(LayeredFacePartType.Base, out string path)
+                && cache != null
+                && cache.TryGetPortraitPartPath(LayeredFacePartType.Base, LayeredFacePartSide.None, out string path)
                 && !string.IsNullOrWhiteSpace(path))
             {
                 return path;
@@ -240,6 +237,9 @@ namespace CharacterStudio.Rendering
             if (System.IO.Path.IsPathRooted(path) || path.StartsWith("/"))
                 return System.IO.File.Exists(path);
 
+            if (!CharacterStudio.Rendering.RuntimeAssetLoader.IsMainThread())
+                return true;
+
             if (ContentFinder<Texture2D>.Get(path, false) != null)
                 return true;
 
@@ -288,6 +288,9 @@ namespace CharacterStudio.Rendering
         {
             if (isMultiCache.TryGetValue(path, out bool cached))
                 return cached;
+
+            if (!CharacterStudio.Rendering.RuntimeAssetLoader.IsMainThread())
+                return true;
 
             bool isMulti = ContentFinder<Texture2D>.Get(path + "_north", false) != null;
             isMultiCache[path] = isMulti;
