@@ -576,6 +576,8 @@ namespace CharacterStudio.UI
                 }
 
                 AutoConfigureProgrammaticLayeredFaceLogic(importedFaceConfig, detectedFileNames, detectedFilePathMap);
+                InheritUnsidedDirectionalPathsForPairedParts(importedFaceConfig);
+                NormalizeImportedPairedLayeredFaceParts(importedFaceConfig);
 
                 List<string> runtimeVariantFiles = files
                     .Where(file =>
@@ -896,15 +898,15 @@ namespace CharacterStudio.UI
             List<PawnLayerConfig> syncedFaceLayers = logicalLayers
                 .Select(entry =>
                 {
-                    existingFaceLayers.TryGetValue(entry.LayerName, out PawnLayerConfig? existingLayer);
-                    return BuildSyncedLayeredFaceEditableLayer(
-                        existingLayer,
-                        entry.DisplayPartType,
-                        entry.NormalizedOverlayId,
-                        entry.TexturePath,
-                        entry.OverlayOrder,
-                        pupilMoveRange,
-                        entry.Side);
+                        existingFaceLayers.TryGetValue(entry.LayerName, out PawnLayerConfig? existingLayer);
+                        return BuildSyncedLayeredFaceEditableLayer(
+                            existingLayer,
+                            entry.DisplayPartType,
+                            entry.NormalizedOverlayId,
+                            entry.TexturePath,
+                            entry.OverlayOrder,
+                            pupilMoveRange,
+                            entry.Side);
                 })
                 .ToList();
 
@@ -1269,6 +1271,90 @@ namespace CharacterStudio.UI
             if (fc.eyeDirectionConfig.pupilMoveRange <= 0f)
             {
                 fc.eyeDirectionConfig.pupilMoveRange = 0.035f;
+            }
+        }
+
+        private static void NormalizeImportedPairedLayeredFaceParts(PawnFaceConfig fc)
+        {
+            if (fc?.layeredParts == null || fc.layeredParts.Count == 0)
+                return;
+
+            LayeredFacePartType[] pairedTypes =
+            {
+                LayeredFacePartType.Brow,
+                LayeredFacePartType.Eye,
+                LayeredFacePartType.Pupil,
+                LayeredFacePartType.UpperLid,
+                LayeredFacePartType.LowerLid,
+            };
+
+            foreach (LayeredFacePartType partType in pairedTypes)
+            {
+                foreach (ExpressionType expression in Enum.GetValues(typeof(ExpressionType)))
+                {
+                    bool hasExplicitSided = fc.layeredParts.Any(part =>
+                        part != null
+                        && part.partType == partType
+                        && part.expression == expression
+                        && part.enabled
+                        && PawnFaceConfig.NormalizePartSide(partType, part.side) != LayeredFacePartSide.None
+                        && part.HasAnyTexture());
+
+                    if (!hasExplicitSided)
+                        continue;
+
+                    fc.RemoveLayeredPart(partType, expression, LayeredFacePartSide.None);
+                }
+            }
+        }
+
+        private static void InheritUnsidedDirectionalPathsForPairedParts(PawnFaceConfig fc)
+        {
+            if (fc?.layeredParts == null || fc.layeredParts.Count == 0)
+                return;
+
+            LayeredFacePartType[] pairedTypes =
+            {
+                LayeredFacePartType.Brow,
+                LayeredFacePartType.Eye,
+                LayeredFacePartType.Pupil,
+                LayeredFacePartType.UpperLid,
+                LayeredFacePartType.LowerLid,
+            };
+
+            foreach (LayeredFacePartType partType in pairedTypes)
+            {
+                foreach (ExpressionType expression in Enum.GetValues(typeof(ExpressionType)))
+                {
+                    LayeredFacePartConfig? unsided = fc.GetLayeredPartConfig(partType, expression, LayeredFacePartSide.None);
+                    if (unsided == null)
+                        continue;
+
+                    bool hasExplicitSided = false;
+                    foreach (LayeredFacePartSide side in new[] { LayeredFacePartSide.Left, LayeredFacePartSide.Right })
+                    {
+                        LayeredFacePartConfig? sided = fc.GetLayeredPartConfig(partType, expression, side);
+                        if (sided == null)
+                            continue;
+
+                        hasExplicitSided = true;
+
+                        string resolvedSouth = !string.IsNullOrWhiteSpace(sided.texPathSouth)
+                            ? sided.texPathSouth
+                            : sided.texPath;
+                        string resolvedEast = !string.IsNullOrWhiteSpace(sided.texPathEast)
+                            ? sided.texPathEast
+                            : unsided.texPathEast;
+                        string resolvedNorth = !string.IsNullOrWhiteSpace(sided.texPathNorth)
+                            ? sided.texPathNorth
+                            : unsided.texPathNorth;
+
+                        fc.SetLayeredPartDirectional(partType, expression, resolvedSouth, resolvedEast, resolvedNorth, side);
+                    }
+
+                    if (!hasExplicitSided)
+                        continue;
+                }
             }
         }
 

@@ -144,6 +144,7 @@ namespace CharacterStudio.UI
         private bool previewEquipmentAnimationPlaying = false;
         private bool previewEquipmentAnimationLoop = false;
         private float previewEquipmentAnimationLastRealtime = -1f;
+        private float previewEquipmentAnimationElapsedTicks = 0f;
         private string previewEquipmentAnimationTriggerKey = string.Empty;
         private static readonly PreviewFlowStep[] PreviewAutoPlayFlowSteps =
         {
