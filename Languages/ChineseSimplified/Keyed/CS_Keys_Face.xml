@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
+    <CS_Expression_Angry>愤怒</CS_Expression_Angry>
     <CS_Expression_AttackMelee>近战</CS_Expression_AttackMelee>
     <CS_Expression_AttackRanged>射击</CS_Expression_AttackRanged>
     <CS_Expression_Blink>眨眼</CS_Expression_Blink>
@@ -21,6 +22,7 @@
     <CS_Expression_Shock>震惊</CS_Expression_Shock>
     <CS_Expression_Sleeping>睡眠</CS_Expression_Sleeping>
     <CS_Expression_SocialRelax>社交</CS_Expression_SocialRelax>
+    <CS_Expression_Strip>脱衣</CS_Expression_Strip>
     <CS_Expression_Tired>疲惫</CS_Expression_Tired>
     <CS_Expression_WaitCombat>备战</CS_Expression_WaitCombat>
     <CS_Expression_Working>工作</CS_Expression_Working>
@@ -33,17 +35,43 @@
     <CS_Studio_Face_Create>创建面部配置</CS_Studio_Face_Create>
     <CS_Studio_Face_Enable>启用表情系统</CS_Studio_Face_Enable>
     <CS_Studio_Face_ExpressionMappings>表情贴图配置</CS_Studio_Face_ExpressionMappings>
+    <CS_Studio_Face_FullFaceAutoImport_Animated>动画表情：{0}/{1}</CS_Studio_Face_FullFaceAutoImport_Animated>
+    <CS_Studio_Face_FullFaceAutoImport_Assigned>表情载入：{0}/{1}</CS_Studio_Face_FullFaceAutoImport_Assigned>
+    <CS_Studio_Face_FullFaceAutoImport_BaseTexture>基底贴图</CS_Studio_Face_FullFaceAutoImport_BaseTexture>
+    <CS_Studio_Face_FullFaceAutoImport_Hint>自动识别模式：只需选择 Base.png（或 Neutral.png），系统会按命名规则自动扫描同目录中的表情文件。这里已收敛为摘要展示，不再展开完整表情列表与路径。</CS_Studio_Face_FullFaceAutoImport_Hint>
+    <CS_Studio_Face_FullFaceAutoImport_MinSet>核心集合：{0}/{1}</CS_Studio_Face_FullFaceAutoImport_MinSet>
+    <CS_Studio_Face_FullFaceAutoImport_Reimport>重新导入</CS_Studio_Face_FullFaceAutoImport_Reimport>
+    <CS_Studio_Face_FullFaceAutoImport_SelectBase>选择 Base.png 后自动识别</CS_Studio_Face_FullFaceAutoImport_SelectBase>
     <CS_Studio_Face_EyeDir_Center>正视</CS_Studio_Face_EyeDir_Center>
     <CS_Studio_Face_EyeDir_Create>创建眼睛方向配置</CS_Studio_Face_EyeDir_Create>
     <CS_Studio_Face_EyeDir_Down>向下</CS_Studio_Face_EyeDir_Down>
     <CS_Studio_Face_EyeDir_Enable>启用眼睛方向</CS_Studio_Face_EyeDir_Enable>
     <CS_Studio_Face_EyeDir_Left>向左</CS_Studio_Face_EyeDir_Left>
+    <CS_Studio_Face_EyeDir_Hint>为每个视线方向指定贴图；缺失的方向会自动回退到正视。</CS_Studio_Face_EyeDir_Hint>
     <CS_Studio_Face_EyeDir_Preview>预览方向</CS_Studio_Face_EyeDir_Preview>
+    <CS_Studio_Face_EyeDir_PupilMoveRange>瞳孔 UV 偏移范围</CS_Studio_Face_EyeDir_PupilMoveRange>
     <CS_Studio_Face_EyeDir_Remove>移除眼睛方向配置</CS_Studio_Face_EyeDir_Remove>
     <CS_Studio_Face_EyeDir_Right>向右</CS_Studio_Face_EyeDir_Right>
     <CS_Studio_Face_EyeDir_Title>眼睛方向配置</CS_Studio_Face_EyeDir_Title>
     <CS_Studio_Face_EyeDir_Up>向上</CS_Studio_Face_EyeDir_Up>
+    <CS_Studio_Face_EyeDir_UpperLidMoveDown>上眼睑下移量</CS_Studio_Face_EyeDir_UpperLidMoveDown>
+    <CS_Studio_Face_EyeDir_UVModeHint>当前使用 UV 偏移模式：无需额外提供左/右/上/下贴图，方向由代码驱动。</CS_Studio_Face_EyeDir_UVModeHint>
     <CS_Studio_Face_Layered_MotionAmplitude>动画位移幅度</CS_Studio_Face_Layered_MotionAmplitude>
+    <CS_Studio_Face_MovementDialog_FaceHint>MotionAmplitude 会直接驱动程序动画偏移，可结合这里的预览控制实时观察面部变化。</CS_Studio_Face_MovementDialog_FaceHint>
+    <CS_Studio_Face_MovementDialog_FaceSection>面部运动参数</CS_Studio_Face_MovementDialog_FaceSection>
+    <CS_Studio_Face_MovementDialog_FullFaceHint>整脸切换模式主要依赖贴图替换，但仍可在这里调整眼球朝向与眼睑运动参数。</CS_Studio_Face_MovementDialog_FullFaceHint>
+    <CS_Studio_Face_MovementDialog_LayerHint>调整当前选中图层的表情联动、UV 偏移和动画参数。</CS_Studio_Face_MovementDialog_LayerHint>
+    <CS_Studio_Face_MovementDialog_LayerSection>图层运动参数</CS_Studio_Face_MovementDialog_LayerSection>
+    <CS_Studio_Face_MovementDialog_NoFaceConfig>当前皮肤尚未创建 FaceConfig。请先在左侧 Face 面板启用面部系统。</CS_Studio_Face_MovementDialog_NoFaceConfig>
+    <CS_Studio_Face_MovementDialog_NoLayerSelected>请先在 Layers 面板选中一个图层，再调整其表情联动与动画参数。</CS_Studio_Face_MovementDialog_NoLayerSelected>
+    <CS_Studio_Face_MovementDialog_OverlaySection>Overlay 运动参数</CS_Studio_Face_MovementDialog_OverlaySection>
+    <CS_Studio_Face_MovementDialog_PreviewExpression>预览表情</CS_Studio_Face_MovementDialog_PreviewExpression>
+    <CS_Studio_Face_MovementDialog_PreviewEyeDirection>预览眼球朝向</CS_Studio_Face_MovementDialog_PreviewEyeDirection>
+    <CS_Studio_Face_MovementDialog_Summary>将动态表情、眼球偏移和图层联动动画参数集中到一个弹窗中编辑，同时保留原有实时预览与脏状态刷新逻辑。</CS_Studio_Face_MovementDialog_Summary>
+    <CS_Studio_Face_MovementDialog_Title>动态表情参数</CS_Studio_Face_MovementDialog_Title>
+    <CS_Studio_Face_MovementLauncher_Button>打开参数面板</CS_Studio_Face_MovementLauncher_Button>
+    <CS_Studio_Face_MovementLauncher_Hint>在独立弹窗中编辑面部部件运动、眼球朝向偏移，以及当前选中图层的表情动画参数。</CS_Studio_Face_MovementLauncher_Hint>
+    <CS_Studio_Face_MovementLauncher_Tooltip>打开动态表情与运动参数设置面板</CS_Studio_Face_MovementLauncher_Tooltip>
     <CS_Studio_Face_Layered_Title>分层面部部件</CS_Studio_Face_Layered_Title>
     <CS_Studio_Face_LayeredPart_Base>基础脸层</CS_Studio_Face_LayeredPart_Base>
     <CS_Studio_Face_LayeredPart_LowerLid>下眼睑层</CS_Studio_Face_LayeredPart_LowerLid>
@@ -54,6 +82,11 @@
     <CS_Studio_Face_PreviewHint>预览模式</CS_Studio_Face_PreviewHint>
     <CS_Studio_Face_PreviewHintValue>可在预览面板切换自动/指定表情，并即时预览当前配置</CS_Studio_Face_PreviewHintValue>
     <CS_Studio_Face_PreviewModeButton>切换预览</CS_Studio_Face_PreviewModeButton>
+    <CS_Studio_Face_OverlayMapping_Empty>当前目录未扫描到可识别的 overlay 纹理。命名需符合 Overlay_xxx 或显式语义前缀。</CS_Studio_Face_OverlayMapping_Empty>
+    <CS_Studio_Face_OverlayMapping_Hint>扫描 overlay 纹理并手动指定语义通道；偏移与缩放建议在外部工具中处理。</CS_Studio_Face_OverlayMapping_Hint>
+    <CS_Studio_Face_OverlayMapping_Suggested>建议 {0}</CS_Studio_Face_OverlayMapping_Suggested>
+    <CS_Studio_Face_OverlayMapping_Title>Overlay 映射</CS_Studio_Face_OverlayMapping_Title>
+    <CS_Studio_Face_OverlayMapping_Unmapped>未映射</CS_Studio_Face_OverlayMapping_Unmapped>
     <CS_Studio_Face_Title>表情配置</CS_Studio_Face_Title>
     <CS_Studio_Face_Type>{0} 表情</CS_Studio_Face_Type>
     <CS_Studio_Face_Workflow_FullFaceSwap>整脸切换</CS_Studio_Face_Workflow_FullFaceSwap>
