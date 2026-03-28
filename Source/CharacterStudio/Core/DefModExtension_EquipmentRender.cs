@@ -54,6 +54,11 @@ namespace CharacterStudio.Core
         public Color customColor = Color.white;
         public LayerColorSource colorTwoSource = LayerColorSource.White;
         public Color customColorTwo = Color.white;
+        public string directionalFacing = string.Empty;
+
+        public string flyerThingDefName = string.Empty;
+        public string flyerClassName = string.Empty;
+        public float flyerFlightSpeed = 1f;
 
         /// <summary>
         /// 预留字段：导出后的装备仍可附带能力绑定信息。
@@ -72,6 +77,10 @@ namespace CharacterStudio.Core
             anchorPath ??= string.Empty;
             shaderDefName = string.IsNullOrWhiteSpace(shaderDefName) ? "Cutout" : shaderDefName;
             abilityDefNames ??= new List<string>();
+            directionalFacing ??= string.Empty;
+            flyerThingDefName ??= string.Empty;
+            flyerClassName ??= string.Empty;
+            flyerFlightSpeed = Mathf.Max(0.05f, flyerFlightSpeed);
         }
 
         public bool HasRenderableTexture()
@@ -102,6 +111,7 @@ namespace CharacterStudio.Core
                 rotationNorthOffset = rotationNorthOffset,
                 drawOrder = drawOrder,
                 flipHorizontal = flipHorizontal,
+                directionalFacing = directionalFacing,
                 visible = visible,
                 colorSource = colorSource,
                 customColor = customColor,
@@ -142,6 +152,10 @@ namespace CharacterStudio.Core
                 customColor = renderData.customColor,
                 colorTwoSource = renderData.colorTwoSource,
                 customColorTwo = renderData.customColorTwo,
+                directionalFacing = renderData.directionalFacing ?? string.Empty,
+                flyerThingDefName = equipment.flyerThingDefName ?? string.Empty,
+                flyerClassName = equipment.flyerClassName ?? string.Empty,
+                flyerFlightSpeed = equipment.flyerFlightSpeed,
                 abilityDefNames = equipment.abilityDefNames != null
                     ? new List<string>(equipment.abilityDefNames)
                     : new List<string>()

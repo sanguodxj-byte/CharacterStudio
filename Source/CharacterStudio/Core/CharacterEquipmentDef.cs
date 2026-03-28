@@ -51,6 +51,15 @@ namespace CharacterStudio.Core
         /// <summary>可选来源/备注信息。</summary>
         public string sourceNote = "";
 
+        /// <summary>导出的 PawnFlyer ThingDef 名称；为空时可由导出器按能力绑定自动生成。</summary>
+        public string flyerThingDefName = "";
+
+        /// <summary>导出的 PawnFlyer thingClass 完整类型名。</summary>
+        public string flyerClassName = "CharacterStudio.Abilities.CharacterStudioPawnFlyer_Default";
+
+        /// <summary>导出的 PawnFlyer flightSpeed。</summary>
+        public float flyerFlightSpeed = 22f;
+
         /// <summary>标签列表，供分类与检索使用。</summary>
         public List<string> tags = new List<string>();
 
@@ -160,6 +169,9 @@ namespace CharacterStudio.Core
                 parentThingDefName = parentThingDefName,
                 previewTexPath = previewTexPath,
                 sourceNote = sourceNote,
+                flyerThingDefName = flyerThingDefName,
+                flyerClassName = flyerClassName,
+                flyerFlightSpeed = flyerFlightSpeed,
                 tags = tags != null ? new List<string>(tags) : new List<string>(),
                 abilityDefNames = abilityDefNames != null
                     ? new List<string>(abilityDefNames)
@@ -198,6 +210,11 @@ namespace CharacterStudio.Core
             statBases ??= new List<CharacterEquipmentStatEntry>();
             equippedStatOffsets ??= new List<CharacterEquipmentStatEntry>();
             renderData ??= CharacterEquipmentRenderData.CreateDefault();
+            flyerThingDefName ??= string.Empty;
+            flyerClassName = string.IsNullOrWhiteSpace(flyerClassName)
+                ? "CharacterStudio.Abilities.CharacterStudioPawnFlyer_Default"
+                : flyerClassName.Trim();
+            flyerFlightSpeed = Math.Max(0.05f, flyerFlightSpeed);
 
             MigrateLegacyVisualIfNeeded();
 
@@ -330,6 +347,7 @@ namespace CharacterStudio.Core
         public string anchorTag = "Apparel";
         public string anchorPath = "";
         public string shaderDefName = "Cutout";
+        public string directionalFacing = "";
         public Vector3 offset = Vector3.zero;
         public Vector3 offsetEast = Vector3.zero;
         public Vector3 offsetNorth = Vector3.zero;
@@ -375,6 +393,10 @@ namespace CharacterStudio.Core
         public bool triggeredVisibleDuringReturn = true;
         public bool triggeredVisibleOutsideCycle = true;
 
+        public EquipmentTriggeredAnimationOverride? triggeredAnimationSouth;
+        public EquipmentTriggeredAnimationOverride? triggeredAnimationEastWest;
+        public EquipmentTriggeredAnimationOverride? triggeredAnimationNorth;
+
         public static CharacterEquipmentRenderData CreateDefault()
         {
             return new CharacterEquipmentRenderData();
@@ -390,6 +412,7 @@ namespace CharacterStudio.Core
                 anchorTag = anchorTag,
                 anchorPath = anchorPath,
                 shaderDefName = shaderDefName,
+                directionalFacing = directionalFacing,
                 offset = offset,
                 offsetEast = offsetEast,
                 offsetNorth = offsetNorth,
@@ -428,7 +451,10 @@ namespace CharacterStudio.Core
                 triggeredVisibleDuringDeploy = triggeredVisibleDuringDeploy,
                 triggeredVisibleDuringHold = triggeredVisibleDuringHold,
                 triggeredVisibleDuringReturn = triggeredVisibleDuringReturn,
-                triggeredVisibleOutsideCycle = triggeredVisibleOutsideCycle
+                triggeredVisibleOutsideCycle = triggeredVisibleOutsideCycle,
+                triggeredAnimationSouth = triggeredAnimationSouth?.Clone(),
+                triggeredAnimationEastWest = triggeredAnimationEastWest?.Clone(),
+                triggeredAnimationNorth = triggeredAnimationNorth?.Clone()
             };
         }
 
@@ -452,6 +478,9 @@ namespace CharacterStudio.Core
             triggeredDeployTicks = Math.Max(1, triggeredDeployTicks);
             triggeredHoldTicks = Math.Max(0, triggeredHoldTicks);
             triggeredReturnTicks = Math.Max(1, triggeredReturnTicks);
+            triggeredAnimationSouth?.EnsureDefaults(layerName, triggerAbilityDefName, animationGroupKey);
+            triggeredAnimationEastWest?.EnsureDefaults(layerName, triggerAbilityDefName, animationGroupKey);
+            triggeredAnimationNorth?.EnsureDefaults(layerName, triggerAbilityDefName, animationGroupKey);
         }
 
         public string GetResolvedTexPath()
@@ -465,6 +494,87 @@ namespace CharacterStudio.Core
         MovablePart,
         EffectLayer,
         Vfx = EffectLayer
+    }
+
+    public class EquipmentTriggeredAnimationOverride
+    {
+        public bool useTriggeredLocalAnimation = true;
+        public string triggerAbilityDefName = string.Empty;
+        public string animationGroupKey = string.Empty;
+        public EquipmentTriggeredAnimationRole triggeredAnimationRole = EquipmentTriggeredAnimationRole.MovablePart;
+        public float triggeredDeployAngle = 45f;
+        public float triggeredReturnAngle = 0f;
+        public int triggeredDeployTicks = 12;
+        public int triggeredHoldTicks = 24;
+        public int triggeredReturnTicks = 12;
+        public Vector2 triggeredPivotOffset = Vector2.zero;
+        public bool triggeredUseVfxVisibility = false;
+        public string triggeredIdleTexPath = string.Empty;
+        public string triggeredDeployTexPath = string.Empty;
+        public string triggeredHoldTexPath = string.Empty;
+        public string triggeredReturnTexPath = string.Empty;
+        public string triggeredIdleMaskTexPath = string.Empty;
+        public string triggeredDeployMaskTexPath = string.Empty;
+        public string triggeredHoldMaskTexPath = string.Empty;
+        public string triggeredReturnMaskTexPath = string.Empty;
+        public bool triggeredVisibleDuringDeploy = true;
+        public bool triggeredVisibleDuringHold = true;
+        public bool triggeredVisibleDuringReturn = true;
+        public bool triggeredVisibleOutsideCycle = true;
+
+        public EquipmentTriggeredAnimationOverride Clone()
+        {
+            return new EquipmentTriggeredAnimationOverride
+            {
+                useTriggeredLocalAnimation = useTriggeredLocalAnimation,
+                triggerAbilityDefName = triggerAbilityDefName,
+                animationGroupKey = animationGroupKey,
+                triggeredAnimationRole = triggeredAnimationRole,
+                triggeredDeployAngle = triggeredDeployAngle,
+                triggeredReturnAngle = triggeredReturnAngle,
+                triggeredDeployTicks = triggeredDeployTicks,
+                triggeredHoldTicks = triggeredHoldTicks,
+                triggeredReturnTicks = triggeredReturnTicks,
+                triggeredPivotOffset = triggeredPivotOffset,
+                triggeredUseVfxVisibility = triggeredUseVfxVisibility,
+                triggeredIdleTexPath = triggeredIdleTexPath,
+                triggeredDeployTexPath = triggeredDeployTexPath,
+                triggeredHoldTexPath = triggeredHoldTexPath,
+                triggeredReturnTexPath = triggeredReturnTexPath,
+                triggeredIdleMaskTexPath = triggeredIdleMaskTexPath,
+                triggeredDeployMaskTexPath = triggeredDeployMaskTexPath,
+                triggeredHoldMaskTexPath = triggeredHoldMaskTexPath,
+                triggeredReturnMaskTexPath = triggeredReturnMaskTexPath,
+                triggeredVisibleDuringDeploy = triggeredVisibleDuringDeploy,
+                triggeredVisibleDuringHold = triggeredVisibleDuringHold,
+                triggeredVisibleDuringReturn = triggeredVisibleDuringReturn,
+                triggeredVisibleOutsideCycle = triggeredVisibleOutsideCycle
+            };
+        }
+
+        public void EnsureDefaults(string fallbackLayerName, string fallbackAbilityDefName, string fallbackAnimationGroupKey)
+        {
+            triggerAbilityDefName ??= string.Empty;
+            if (string.IsNullOrWhiteSpace(triggerAbilityDefName))
+            {
+                triggerAbilityDefName = fallbackAbilityDefName ?? string.Empty;
+            }
+
+            animationGroupKey = string.IsNullOrWhiteSpace(animationGroupKey)
+                ? (string.IsNullOrWhiteSpace(fallbackAnimationGroupKey) ? fallbackLayerName : fallbackAnimationGroupKey)
+                : animationGroupKey;
+            triggeredIdleTexPath ??= string.Empty;
+            triggeredDeployTexPath ??= string.Empty;
+            triggeredHoldTexPath ??= string.Empty;
+            triggeredReturnTexPath ??= string.Empty;
+            triggeredIdleMaskTexPath ??= string.Empty;
+            triggeredDeployMaskTexPath ??= string.Empty;
+            triggeredHoldMaskTexPath ??= string.Empty;
+            triggeredReturnMaskTexPath ??= string.Empty;
+            triggeredDeployTicks = Math.Max(1, triggeredDeployTicks);
+            triggeredHoldTicks = Math.Max(0, triggeredHoldTicks);
+            triggeredReturnTicks = Math.Max(1, triggeredReturnTicks);
+        }
     }
 
     public class CharacterEquipmentStatEntry

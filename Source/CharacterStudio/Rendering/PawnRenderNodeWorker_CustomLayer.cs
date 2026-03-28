@@ -35,6 +35,9 @@ namespace CharacterStudio.Rendering
                 if (!customNode.config.visible)
                     return false;
 
+                if (!MatchesDirectionalFacing(customNode.config, parms.facing))
+                    return false;
+
                 if (!IsTriggeredEquipmentLayerVisible(customNode, parms.pawn))
                     return false;
 
@@ -62,6 +65,44 @@ namespace CharacterStudio.Rendering
                         return false;
                     }
                 }
+            }
+
+            return true;
+        }
+
+        private static bool MatchesDirectionalFacing(PawnLayerConfig config, Rot4 facing)
+        {
+            string directionalFacing = config.directionalFacing?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(directionalFacing))
+            {
+                return true;
+            }
+
+            if (string.Equals(directionalFacing, "South", StringComparison.OrdinalIgnoreCase))
+            {
+                return facing == Rot4.South;
+            }
+
+            if (string.Equals(directionalFacing, "North", StringComparison.OrdinalIgnoreCase))
+            {
+                return facing == Rot4.North;
+            }
+
+            if (string.Equals(directionalFacing, "East", StringComparison.OrdinalIgnoreCase))
+            {
+                return facing == Rot4.East;
+            }
+
+            if (string.Equals(directionalFacing, "West", StringComparison.OrdinalIgnoreCase))
+            {
+                return facing == Rot4.West;
+            }
+
+            if (string.Equals(directionalFacing, "EastWest", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(directionalFacing, "Side", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(directionalFacing, "Sides", StringComparison.OrdinalIgnoreCase))
+            {
+                return facing == Rot4.East || facing == Rot4.West;
             }
 
             return true;
@@ -2763,31 +2804,36 @@ namespace CharacterStudio.Rendering
             if (config == null || !config.useTriggeredEquipmentAnimation)
                 return true;
 
+            Rot4 facing = pawn?.Rotation ?? Rot4.South;
+            EquipmentTriggeredAnimationOverride animationState = ResolveDirectionalTriggeredAnimationState(config, facing);
+            if (!animationState.useTriggeredLocalAnimation)
+                return true;
+
             CompPawnSkin? skinComp = pawn?.TryGetComp<CompPawnSkin>();
-            string triggerKey = string.IsNullOrWhiteSpace(config.triggerAbilityDefName)
-                ? config.triggeredAnimationGroupKey
-                : config.triggerAbilityDefName;
+            string triggerKey = string.IsNullOrWhiteSpace(animationState.triggerAbilityDefName)
+                ? animationState.animationGroupKey
+                : animationState.triggerAbilityDefName;
             if (skinComp == null || !skinComp.IsTriggeredEquipmentAnimationActive(triggerKey))
-                return config.triggeredVisibleOutsideCycle;
+                return animationState.triggeredVisibleOutsideCycle;
 
             int now = Find.TickManager?.TicksGame ?? 0;
             int localTick = Mathf.Max(0, now - skinComp.triggeredEquipmentAnimationStartTick);
-            int deployTicks = Mathf.Max(1, config.triggeredDeployTicks);
-            int holdTicks = Mathf.Max(0, config.triggeredHoldTicks);
+            int deployTicks = Mathf.Max(1, animationState.triggeredDeployTicks);
+            int holdTicks = Mathf.Max(0, animationState.triggeredHoldTicks);
 
             if (localTick < deployTicks)
-                return config.triggeredAnimationRole == EquipmentTriggeredAnimationRole.EffectLayer
-                    ? (config.triggeredUseVfxVisibility && config.triggeredVisibleDuringDeploy)
-                    : config.triggeredVisibleDuringDeploy;
+                return animationState.triggeredAnimationRole == EquipmentTriggeredAnimationRole.EffectLayer
+                    ? (animationState.triggeredUseVfxVisibility && animationState.triggeredVisibleDuringDeploy)
+                    : animationState.triggeredVisibleDuringDeploy;
 
             if (localTick < deployTicks + holdTicks)
-                return config.triggeredAnimationRole == EquipmentTriggeredAnimationRole.EffectLayer
-                    ? (config.triggeredUseVfxVisibility && config.triggeredVisibleDuringHold)
-                    : config.triggeredVisibleDuringHold;
+                return animationState.triggeredAnimationRole == EquipmentTriggeredAnimationRole.EffectLayer
+                    ? (animationState.triggeredUseVfxVisibility && animationState.triggeredVisibleDuringHold)
+                    : animationState.triggeredVisibleDuringHold;
 
-            return config.triggeredAnimationRole == EquipmentTriggeredAnimationRole.EffectLayer
-                ? (config.triggeredUseVfxVisibility && config.triggeredVisibleDuringReturn)
-                : config.triggeredVisibleDuringReturn;
+            return animationState.triggeredAnimationRole == EquipmentTriggeredAnimationRole.EffectLayer
+                ? (animationState.triggeredUseVfxVisibility && animationState.triggeredVisibleDuringReturn)
+                : animationState.triggeredVisibleDuringReturn;
         }
 
         private void ApplyTriggeredEquipmentAnimation(PawnRenderNode_Custom customNode, Pawn? pawn)
@@ -2796,10 +2842,19 @@ namespace CharacterStudio.Rendering
             if (config == null || !config.useTriggeredEquipmentAnimation)
                 return;
 
+            Rot4 facing = pawn?.Rotation ?? Rot4.South;
+            EquipmentTriggeredAnimationOverride animationState = ResolveDirectionalTriggeredAnimationState(config, facing);
+            if (!animationState.useTriggeredLocalAnimation)
+            {
+                customNode.currentAnimAngle = 0f;
+                customNode.currentAnimOffset = Vector3.zero;
+                return;
+            }
+
             CompPawnSkin? skinComp = pawn?.TryGetComp<CompPawnSkin>();
-            string triggerKey = string.IsNullOrWhiteSpace(config.triggerAbilityDefName)
-                ? config.triggeredAnimationGroupKey
-                : config.triggerAbilityDefName;
+            string triggerKey = string.IsNullOrWhiteSpace(animationState.triggerAbilityDefName)
+                ? animationState.animationGroupKey
+                : animationState.triggerAbilityDefName;
             if (skinComp == null || !skinComp.IsTriggeredEquipmentAnimationActive(triggerKey))
             {
                 customNode.currentAnimAngle = 0f;
@@ -2809,29 +2864,29 @@ namespace CharacterStudio.Rendering
 
             int now = Find.TickManager?.TicksGame ?? 0;
             int localTick = Mathf.Max(0, now - skinComp.triggeredEquipmentAnimationStartTick);
-            int deployTicks = Mathf.Max(1, config.triggeredDeployTicks);
-            int holdTicks = Mathf.Max(0, config.triggeredHoldTicks);
-            int returnTicks = Mathf.Max(1, config.triggeredReturnTicks);
+            int deployTicks = Mathf.Max(1, animationState.triggeredDeployTicks);
+            int holdTicks = Mathf.Max(0, animationState.triggeredHoldTicks);
+            int returnTicks = Mathf.Max(1, animationState.triggeredReturnTicks);
 
             float angle;
             if (localTick < deployTicks)
             {
                 float t = Mathf.Clamp01(localTick / (float)deployTicks);
-                angle = Mathf.Lerp(config.triggeredReturnAngle, config.triggeredDeployAngle, t);
+                angle = Mathf.Lerp(animationState.triggeredReturnAngle, animationState.triggeredDeployAngle, t);
             }
             else if (localTick < deployTicks + holdTicks)
             {
-                angle = config.triggeredDeployAngle;
+                angle = animationState.triggeredDeployAngle;
             }
             else
             {
                 float t = Mathf.Clamp01((localTick - deployTicks - holdTicks) / (float)returnTicks);
-                angle = Mathf.Lerp(config.triggeredDeployAngle, config.triggeredReturnAngle, t);
+                angle = Mathf.Lerp(animationState.triggeredDeployAngle, animationState.triggeredReturnAngle, t);
             }
 
             customNode.currentAnimAngle = angle;
 
-            Vector2 pivot = config.animPivotOffset;
+            Vector2 pivot = animationState.triggeredPivotOffset;
             if (pivot == Vector2.zero)
             {
                 customNode.currentAnimOffset = Vector3.zero;
@@ -2844,6 +2899,32 @@ namespace CharacterStudio.Rendering
             float rotX = cos * pivot.x - sin * pivot.y;
             float rotZ = sin * pivot.x + cos * pivot.y;
             customNode.currentAnimOffset = new Vector3(pivot.x - rotX, 0f, pivot.y - rotZ);
+        }
+
+        private static EquipmentTriggeredAnimationOverride ResolveDirectionalTriggeredAnimationState(PawnLayerConfig config, Rot4 facing)
+        {
+            EquipmentTriggeredAnimationOverride? overrideData = facing == Rot4.North
+                ? config.triggeredAnimationNorth
+                : ((facing == Rot4.East || facing == Rot4.West) ? config.triggeredAnimationEastWest : config.triggeredAnimationSouth);
+
+            return overrideData ?? new EquipmentTriggeredAnimationOverride
+            {
+                useTriggeredLocalAnimation = config.useTriggeredEquipmentAnimation,
+                triggerAbilityDefName = config.triggerAbilityDefName ?? string.Empty,
+                animationGroupKey = config.triggeredAnimationGroupKey ?? string.Empty,
+                triggeredAnimationRole = config.triggeredAnimationRole,
+                triggeredDeployAngle = config.triggeredDeployAngle,
+                triggeredReturnAngle = config.triggeredReturnAngle,
+                triggeredDeployTicks = config.triggeredDeployTicks,
+                triggeredHoldTicks = config.triggeredHoldTicks,
+                triggeredReturnTicks = config.triggeredReturnTicks,
+                triggeredPivotOffset = config.triggeredPivotOffset,
+                triggeredUseVfxVisibility = config.triggeredUseVfxVisibility,
+                triggeredVisibleDuringDeploy = config.triggeredVisibleDuringDeploy,
+                triggeredVisibleDuringHold = config.triggeredVisibleDuringHold,
+                triggeredVisibleDuringReturn = config.triggeredVisibleDuringReturn,
+                triggeredVisibleOutsideCycle = config.triggeredVisibleOutsideCycle
+            };
         }
 
         public static void ClearCache()
