@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using CharacterStudio.Abilities;
 using CharacterStudio.AI;
 using CharacterStudio.Attributes;
@@ -51,6 +52,12 @@ namespace CharacterStudio.Core
     /// </summary>
     public class PawnSkinDef : Def
     {
+        private static readonly string[] ApparelNodeMarkers =
+        {
+            "Apparel",
+            "Headgear"
+        };
+
         // ─────────────────────────────────────────────
         // 基础配置
         // ─────────────────────────────────────────────
@@ -247,6 +254,43 @@ namespace CharacterStudio.Core
             }
 
             return clone;
+        }
+
+        public void RemoveApparelHidingData()
+        {
+            hideVanillaApparel = false;
+
+            hiddenPaths ??= new List<string>();
+            hiddenPaths = hiddenPaths
+                .Where(path => !IsApparelNodeReference(path))
+                .ToList();
+
+#pragma warning disable CS0618
+            hiddenTags ??= new List<string>();
+            hiddenTags = hiddenTags
+                .Where(tag => !IsApparelNodeReference(tag))
+                .ToList();
+#pragma warning restore CS0618
+        }
+
+        private static bool IsApparelNodeReference(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            string normalizedValue = value;
+
+            foreach (string marker in ApparelNodeMarkers)
+            {
+                if (normalizedValue.IndexOf(marker, System.StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

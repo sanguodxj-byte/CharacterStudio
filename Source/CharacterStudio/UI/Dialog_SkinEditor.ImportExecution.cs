@@ -330,6 +330,8 @@ namespace CharacterStudio.UI
                 workingSkin.targetRaces.Add(previewRace.defName);
             }
 
+            workingSkin.RemoveApparelHidingData();
+
             RebuildNodeRulesFromWorkingSkin();
 
             Pawn? resolvedTargetPawn = boundPawn ?? ResolvePreferredTargetPawnForSkin(workingSkin, previewRace);
@@ -384,6 +386,7 @@ namespace CharacterStudio.UI
 
         private void FinalizeImportState(Pawn? boundPawn)
         {
+            workingSkin?.RemoveApparelHidingData();
             targetPawn = boundPawn;
 
             string preferredRaceDefName = boundPawn?.def?.defName

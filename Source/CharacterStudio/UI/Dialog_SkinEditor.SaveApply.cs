@@ -59,6 +59,8 @@ namespace CharacterStudio.UI
                     return;
                 }
 
+                savePlanSkin.RemoveApparelHidingData();
+
                 SkinSaver.SaveSkinDef(savePlanSkin, filePath);
 
                 var registered = PawnSkinDefRegistry.RegisterOrReplace(savePlanSkin.Clone());
@@ -146,6 +148,7 @@ namespace CharacterStudio.UI
             {
                 var applyPlan = BuildApplicationPlan(targetPawn, false, "ApplyToTargetPawn");
                 var runtimeSkin = applyPlan.runtimeSkin;
+                runtimeSkin.RemoveApparelHidingData();
                 if (CharacterApplicationExecutor.Execute(applyPlan))
                 {
                     RefreshRenderTree();

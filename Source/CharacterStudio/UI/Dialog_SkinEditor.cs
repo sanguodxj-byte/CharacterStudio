@@ -540,6 +540,8 @@ namespace CharacterStudio.UI
 
             patch.hideNodePaths = (workingSkin.hiddenPaths ?? new List<string>())
                 .Where(nodePath => !string.IsNullOrWhiteSpace(nodePath))
+                .Where(nodePath => nodePath.IndexOf("Apparel", StringComparison.OrdinalIgnoreCase) < 0)
+                .Where(nodePath => nodePath.IndexOf("Headgear", StringComparison.OrdinalIgnoreCase) < 0)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
