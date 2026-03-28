@@ -468,14 +468,20 @@ namespace CharacterStudio.UI
 
             CharacterEquipmentDef? equipment = workingSkin.equipments[selectedEquipmentIndex];
             CharacterEquipmentRenderData? renderData = equipment?.renderData;
-            if (renderData == null || !renderData.useTriggeredLocalAnimation)
+            if (renderData == null)
             {
                 return string.Empty;
             }
 
-            return string.IsNullOrWhiteSpace(renderData.triggerAbilityDefName)
-                ? (renderData.animationGroupKey ?? string.Empty)
-                : renderData.triggerAbilityDefName;
+            EquipmentTriggeredAnimationOverride animationState = ResolveSelectedEquipmentAnimationState(renderData);
+            if (!animationState.useTriggeredLocalAnimation)
+            {
+                return string.Empty;
+            }
+
+            return string.IsNullOrWhiteSpace(animationState.triggerAbilityDefName)
+                ? (animationState.animationGroupKey ?? string.Empty)
+                : animationState.triggerAbilityDefName;
         }
 
         private int GetSelectedEquipmentAnimationDurationTicks()
@@ -494,14 +500,57 @@ namespace CharacterStudio.UI
 
             CharacterEquipmentDef? equipment = workingSkin.equipments[selectedEquipmentIndex];
             CharacterEquipmentRenderData? renderData = equipment?.renderData;
-            if (renderData == null || !renderData.useTriggeredLocalAnimation)
+            if (renderData == null)
             {
                 return 0;
             }
 
-            return Mathf.Max(1, renderData.triggeredDeployTicks)
-                + Mathf.Max(0, renderData.triggeredHoldTicks)
-                + Mathf.Max(1, renderData.triggeredReturnTicks);
+            EquipmentTriggeredAnimationOverride animationState = ResolveSelectedEquipmentAnimationState(renderData);
+            if (!animationState.useTriggeredLocalAnimation)
+            {
+                return 0;
+            }
+
+            return Mathf.Max(1, animationState.triggeredDeployTicks)
+                + Mathf.Max(0, animationState.triggeredHoldTicks)
+                + Mathf.Max(1, animationState.triggeredReturnTicks);
+        }
+
+        private EquipmentTriggeredAnimationOverride ResolveSelectedEquipmentAnimationState(CharacterEquipmentRenderData renderData)
+        {
+            if (previewRotation == Rot4.North && renderData.triggeredAnimationNorth != null)
+            {
+                return renderData.triggeredAnimationNorth;
+            }
+
+            if ((previewRotation == Rot4.East || previewRotation == Rot4.West) && renderData.triggeredAnimationEastWest != null)
+            {
+                return renderData.triggeredAnimationEastWest;
+            }
+
+            if (renderData.triggeredAnimationSouth != null)
+            {
+                return renderData.triggeredAnimationSouth;
+            }
+
+            return new EquipmentTriggeredAnimationOverride
+            {
+                useTriggeredLocalAnimation = renderData.useTriggeredLocalAnimation,
+                triggerAbilityDefName = renderData.triggerAbilityDefName ?? string.Empty,
+                animationGroupKey = renderData.animationGroupKey ?? string.Empty,
+                triggeredAnimationRole = renderData.triggeredAnimationRole,
+                triggeredDeployAngle = renderData.triggeredDeployAngle,
+                triggeredReturnAngle = renderData.triggeredReturnAngle,
+                triggeredDeployTicks = renderData.triggeredDeployTicks,
+                triggeredHoldTicks = renderData.triggeredHoldTicks,
+                triggeredReturnTicks = renderData.triggeredReturnTicks,
+                triggeredPivotOffset = renderData.triggeredPivotOffset,
+                triggeredUseVfxVisibility = renderData.triggeredUseVfxVisibility,
+                triggeredVisibleDuringDeploy = renderData.triggeredVisibleDuringDeploy,
+                triggeredVisibleDuringHold = renderData.triggeredVisibleDuringHold,
+                triggeredVisibleDuringReturn = renderData.triggeredVisibleDuringReturn,
+                triggeredVisibleOutsideCycle = renderData.triggeredVisibleOutsideCycle
+            };
         }
 
         private void StopPreviewEquipmentAnimation(bool refreshPreview = true)
@@ -657,10 +706,18 @@ namespace CharacterStudio.UI
             {
                 previewEquipmentAnimationTriggerKey = currentTriggerKey;
                 int durationTicks = GetSelectedEquipmentAnimationDurationTicks();
-                if (!skinComp.IsTriggeredEquipmentAnimationActive(currentTriggerKey) && durationTicks > 0)
+                if (durationTicks > 0)
                 {
                     int now = Find.TickManager?.TicksGame ?? 0;
-                    skinComp.TriggerEquipmentAnimationState(currentTriggerKey, now, durationTicks);
+                    int startTick = skinComp.IsTriggeredEquipmentAnimationActive(currentTriggerKey)
+                        ? skinComp.triggeredEquipmentAnimationStartTick
+                        : now;
+                    if (startTick < 0)
+                    {
+                        startTick = now;
+                    }
+
+                    skinComp.TriggerEquipmentAnimationState(currentTriggerKey, startTick, durationTicks);
                 }
             }
 
@@ -1193,13 +1250,19 @@ namespace CharacterStudio.UI
 
             CharacterEquipmentDef? equipment = workingSkin.equipments[selectedEquipmentIndex];
             CharacterEquipmentRenderData? renderData = equipment?.renderData;
-            if (renderData == null || !renderData.useTriggeredLocalAnimation)
+            if (renderData == null)
+            {
+                return;
+            }
+
+            EquipmentTriggeredAnimationOverride animationState = ResolveSelectedEquipmentAnimationState(renderData);
+            if (!animationState.useTriggeredLocalAnimation)
             {
                 return;
             }
 
             float pixelsPerUnit = GetPreviewPixelsPerUnit(previewRect);
-            Vector2 pivotScreenPos = GetSelectedEquipmentPivotScreenPosition(previewRect, renderData, pixelsPerUnit);
+            Vector2 pivotScreenPos = GetSelectedEquipmentPivotScreenPosition(previewRect, renderData, animationState, pixelsPerUnit);
             float ringRadius = equipmentPivotEditMode ? 11f : 9f;
             Color pivotColor = equipmentPivotEditMode
                 ? new Color(0.3f, 1f, 0.92f, 0.95f)
@@ -1221,8 +1284,13 @@ namespace CharacterStudio.UI
 
         private Vector2 GetSelectedEquipmentPivotScreenPosition(Rect previewRect, CharacterEquipmentRenderData renderData, float pixelsPerUnit)
         {
+            return GetSelectedEquipmentPivotScreenPosition(previewRect, renderData, ResolveSelectedEquipmentAnimationState(renderData), pixelsPerUnit);
+        }
+
+        private Vector2 GetSelectedEquipmentPivotScreenPosition(Rect previewRect, CharacterEquipmentRenderData renderData, EquipmentTriggeredAnimationOverride animationState, float pixelsPerUnit)
+        {
             Vector3 layerOffset = GetDisplayedLayerOffsetForPreview(renderData);
-            Vector2 pivot = renderData.triggeredPivotOffset;
+            Vector2 pivot = animationState.triggeredPivotOffset;
             Vector3 worldPivotOffset = new Vector3(layerOffset.x + pivot.x, layerOffset.y, layerOffset.z + pivot.y);
             return previewRect.center + new Vector2(worldPivotOffset.x, -worldPivotOffset.z) * pixelsPerUnit;
         }
@@ -1246,14 +1314,21 @@ namespace CharacterStudio.UI
 
             CharacterEquipmentDef? equipment = workingSkin.equipments[selectedEquipmentIndex];
             renderData = equipment?.renderData;
-            if (renderData == null || !renderData.useTriggeredLocalAnimation)
+            if (renderData == null)
+            {
+                renderData = null;
+                return false;
+            }
+
+            EquipmentTriggeredAnimationOverride animationState = ResolveSelectedEquipmentAnimationState(renderData);
+            if (!animationState.useTriggeredLocalAnimation)
             {
                 renderData = null;
                 return false;
             }
 
             float pixelsPerUnit = GetPreviewPixelsPerUnit(previewRect);
-            pivotScreenPos = GetSelectedEquipmentPivotScreenPosition(previewRect, renderData, pixelsPerUnit);
+            pivotScreenPos = GetSelectedEquipmentPivotScreenPosition(previewRect, renderData, animationState, pixelsPerUnit);
             return true;
         }
 
@@ -1322,10 +1397,11 @@ namespace CharacterStudio.UI
             }
 
             Vector2 delta = evt.delta;
-            Vector2 pivot = renderData.triggeredPivotOffset;
+            EquipmentTriggeredAnimationOverride animationState = ResolveSelectedEquipmentAnimationState(renderData);
+            Vector2 pivot = animationState.triggeredPivotOffset;
             pivot.x += delta.x * sensitivity;
             pivot.y += -delta.y * sensitivity;
-            renderData.triggeredPivotOffset = pivot;
+            animationState.triggeredPivotOffset = pivot;
             isDirty = true;
             RefreshPreview();
             evt.Use();

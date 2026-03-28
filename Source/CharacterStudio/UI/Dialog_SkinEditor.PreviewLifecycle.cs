@@ -156,7 +156,15 @@ namespace CharacterStudio.UI
                 if (durationTicks > 0)
                 {
                     int now = Find.TickManager?.TicksGame ?? 0;
-                    skinComp.TriggerEquipmentAnimationState(currentTriggerKey, now, durationTicks);
+                    int startTick = skinComp.IsTriggeredEquipmentAnimationActive(currentTriggerKey)
+                        ? skinComp.triggeredEquipmentAnimationStartTick
+                        : now;
+                    if (startTick < 0)
+                    {
+                        startTick = now;
+                    }
+
+                    skinComp.TriggerEquipmentAnimationState(currentTriggerKey, startTick, durationTicks);
                 }
             }
 
