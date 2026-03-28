@@ -106,6 +106,9 @@ namespace CharacterStudio.Exporter
                     equipment.useWornGraphicMask ? new XElement("useWornGraphicMask", equipment.useWornGraphicMask.ToString().ToLower()) : null,
                     !string.IsNullOrWhiteSpace(equipment.previewTexPath) ? new XElement("previewTexPath", equipment.previewTexPath) : null,
                     !string.IsNullOrWhiteSpace(equipment.sourceNote) ? new XElement("sourceNote", equipment.sourceNote) : null,
+                    !string.IsNullOrWhiteSpace(equipment.flyerThingDefName) ? new XElement("flyerThingDefName", equipment.flyerThingDefName) : null,
+                    !string.IsNullOrWhiteSpace(equipment.flyerClassName) ? new XElement("flyerClassName", equipment.flyerClassName) : null,
+                    Math.Abs(equipment.flyerFlightSpeed - 22f) > 0.0001f ? new XElement("flyerFlightSpeed", equipment.flyerFlightSpeed.ToString(System.Globalization.CultureInfo.InvariantCulture)) : null,
                     GenerateStringListXml("tags", equipment.tags),
                     GenerateStringListXml("abilityDefNames", equipment.abilityDefNames),
                     GenerateStringListXml("thingCategories", equipment.thingCategories),
@@ -161,6 +164,7 @@ namespace CharacterStudio.Exporter
                 !string.IsNullOrWhiteSpace(renderData.anchorPath) ? new XElement("anchorPath", renderData.anchorPath) : null,
                 !string.IsNullOrWhiteSpace(renderData.maskTexPath) ? new XElement("maskTexPath", renderData.maskTexPath) : null,
                 !string.IsNullOrWhiteSpace(renderData.shaderDefName) ? new XElement("shaderDefName", renderData.shaderDefName) : null,
+                !string.IsNullOrWhiteSpace(renderData.directionalFacing) ? new XElement("directionalFacing", renderData.directionalFacing) : null,
                 new XElement("offset", FormatVector3(renderData.offset)),
                 renderData.offsetEast != Vector3.zero ? new XElement("offsetEast", FormatVector3(renderData.offsetEast)) : null,
                 renderData.offsetNorth != Vector3.zero ? new XElement("offsetNorth", FormatVector3(renderData.offsetNorth)) : null,
@@ -176,7 +180,69 @@ namespace CharacterStudio.Exporter
                 new XElement("colorSource", renderData.colorSource.ToString()),
                 renderData.colorSource == LayerColorSource.Fixed ? new XElement("customColor", FormatColor(renderData.customColor)) : null,
                 new XElement("colorTwoSource", renderData.colorTwoSource.ToString()),
-                renderData.colorTwoSource == LayerColorSource.Fixed ? new XElement("customColorTwo", FormatColor(renderData.customColorTwo)) : null
+                renderData.colorTwoSource == LayerColorSource.Fixed ? new XElement("customColorTwo", FormatColor(renderData.customColorTwo)) : null,
+                renderData.useTriggeredLocalAnimation ? new XElement("useTriggeredLocalAnimation", renderData.useTriggeredLocalAnimation.ToString().ToLower()) : null,
+                !string.IsNullOrWhiteSpace(renderData.triggerAbilityDefName) ? new XElement("triggerAbilityDefName", renderData.triggerAbilityDefName) : null,
+                !string.IsNullOrWhiteSpace(renderData.animationGroupKey) ? new XElement("animationGroupKey", renderData.animationGroupKey) : null,
+                renderData.triggeredAnimationRole != EquipmentTriggeredAnimationRole.MovablePart ? new XElement("triggeredAnimationRole", renderData.triggeredAnimationRole.ToString()) : null,
+                renderData.triggeredDeployAngle != 45f ? new XElement("triggeredDeployAngle", renderData.triggeredDeployAngle.ToString(System.Globalization.CultureInfo.InvariantCulture)) : null,
+                renderData.triggeredReturnAngle != 0f ? new XElement("triggeredReturnAngle", renderData.triggeredReturnAngle.ToString(System.Globalization.CultureInfo.InvariantCulture)) : null,
+                renderData.triggeredDeployTicks != 12 ? new XElement("triggeredDeployTicks", renderData.triggeredDeployTicks) : null,
+                renderData.triggeredHoldTicks != 24 ? new XElement("triggeredHoldTicks", renderData.triggeredHoldTicks) : null,
+                renderData.triggeredReturnTicks != 12 ? new XElement("triggeredReturnTicks", renderData.triggeredReturnTicks) : null,
+                renderData.triggeredPivotOffset != Vector2.zero ? new XElement("triggeredPivotOffset", FormatVector2(renderData.triggeredPivotOffset)) : null,
+                renderData.triggeredUseVfxVisibility ? new XElement("triggeredUseVfxVisibility", renderData.triggeredUseVfxVisibility.ToString().ToLower()) : null,
+                !string.IsNullOrWhiteSpace(renderData.triggeredIdleTexPath) ? new XElement("triggeredIdleTexPath", renderData.triggeredIdleTexPath) : null,
+                !string.IsNullOrWhiteSpace(renderData.triggeredDeployTexPath) ? new XElement("triggeredDeployTexPath", renderData.triggeredDeployTexPath) : null,
+                !string.IsNullOrWhiteSpace(renderData.triggeredHoldTexPath) ? new XElement("triggeredHoldTexPath", renderData.triggeredHoldTexPath) : null,
+                !string.IsNullOrWhiteSpace(renderData.triggeredReturnTexPath) ? new XElement("triggeredReturnTexPath", renderData.triggeredReturnTexPath) : null,
+                !string.IsNullOrWhiteSpace(renderData.triggeredIdleMaskTexPath) ? new XElement("triggeredIdleMaskTexPath", renderData.triggeredIdleMaskTexPath) : null,
+                !string.IsNullOrWhiteSpace(renderData.triggeredDeployMaskTexPath) ? new XElement("triggeredDeployMaskTexPath", renderData.triggeredDeployMaskTexPath) : null,
+                !string.IsNullOrWhiteSpace(renderData.triggeredHoldMaskTexPath) ? new XElement("triggeredHoldMaskTexPath", renderData.triggeredHoldMaskTexPath) : null,
+                !string.IsNullOrWhiteSpace(renderData.triggeredReturnMaskTexPath) ? new XElement("triggeredReturnMaskTexPath", renderData.triggeredReturnMaskTexPath) : null,
+                !renderData.triggeredVisibleDuringDeploy ? new XElement("triggeredVisibleDuringDeploy", renderData.triggeredVisibleDuringDeploy.ToString().ToLower()) : null,
+                !renderData.triggeredVisibleDuringHold ? new XElement("triggeredVisibleDuringHold", renderData.triggeredVisibleDuringHold.ToString().ToLower()) : null,
+                !renderData.triggeredVisibleDuringReturn ? new XElement("triggeredVisibleDuringReturn", renderData.triggeredVisibleDuringReturn.ToString().ToLower()) : null,
+                !renderData.triggeredVisibleOutsideCycle ? new XElement("triggeredVisibleOutsideCycle", renderData.triggeredVisibleOutsideCycle.ToString().ToLower()) : null,
+                GenerateEquipmentTriggeredAnimationOverrideXml("triggeredAnimationSouth", renderData.triggeredAnimationSouth),
+                GenerateEquipmentTriggeredAnimationOverrideXml("triggeredAnimationEastWest", renderData.triggeredAnimationEastWest),
+                GenerateEquipmentTriggeredAnimationOverrideXml("triggeredAnimationNorth", renderData.triggeredAnimationNorth)
+            );
+        }
+
+        private static XElement? GenerateEquipmentTriggeredAnimationOverrideXml(string tagName, EquipmentTriggeredAnimationOverride? animation)
+        {
+            if (animation == null)
+            {
+                return null;
+            }
+
+            animation.EnsureDefaults(string.Empty, string.Empty, string.Empty);
+
+            return new XElement(tagName,
+                new XElement("useTriggeredLocalAnimation", animation.useTriggeredLocalAnimation.ToString().ToLower()),
+                !string.IsNullOrWhiteSpace(animation.triggerAbilityDefName) ? new XElement("triggerAbilityDefName", animation.triggerAbilityDefName) : null,
+                !string.IsNullOrWhiteSpace(animation.animationGroupKey) ? new XElement("animationGroupKey", animation.animationGroupKey) : null,
+                new XElement("triggeredAnimationRole", animation.triggeredAnimationRole.ToString()),
+                new XElement("triggeredDeployAngle", animation.triggeredDeployAngle.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+                animation.triggeredReturnAngle != 0f ? new XElement("triggeredReturnAngle", animation.triggeredReturnAngle.ToString(System.Globalization.CultureInfo.InvariantCulture)) : null,
+                new XElement("triggeredDeployTicks", animation.triggeredDeployTicks),
+                new XElement("triggeredHoldTicks", animation.triggeredHoldTicks),
+                new XElement("triggeredReturnTicks", animation.triggeredReturnTicks),
+                animation.triggeredPivotOffset != Vector2.zero ? new XElement("triggeredPivotOffset", FormatVector2(animation.triggeredPivotOffset)) : null,
+                new XElement("triggeredUseVfxVisibility", animation.triggeredUseVfxVisibility.ToString().ToLower()),
+                !string.IsNullOrWhiteSpace(animation.triggeredIdleTexPath) ? new XElement("triggeredIdleTexPath", animation.triggeredIdleTexPath) : null,
+                !string.IsNullOrWhiteSpace(animation.triggeredDeployTexPath) ? new XElement("triggeredDeployTexPath", animation.triggeredDeployTexPath) : null,
+                !string.IsNullOrWhiteSpace(animation.triggeredHoldTexPath) ? new XElement("triggeredHoldTexPath", animation.triggeredHoldTexPath) : null,
+                !string.IsNullOrWhiteSpace(animation.triggeredReturnTexPath) ? new XElement("triggeredReturnTexPath", animation.triggeredReturnTexPath) : null,
+                !string.IsNullOrWhiteSpace(animation.triggeredIdleMaskTexPath) ? new XElement("triggeredIdleMaskTexPath", animation.triggeredIdleMaskTexPath) : null,
+                !string.IsNullOrWhiteSpace(animation.triggeredDeployMaskTexPath) ? new XElement("triggeredDeployMaskTexPath", animation.triggeredDeployMaskTexPath) : null,
+                !string.IsNullOrWhiteSpace(animation.triggeredHoldMaskTexPath) ? new XElement("triggeredHoldMaskTexPath", animation.triggeredHoldMaskTexPath) : null,
+                !string.IsNullOrWhiteSpace(animation.triggeredReturnMaskTexPath) ? new XElement("triggeredReturnMaskTexPath", animation.triggeredReturnMaskTexPath) : null,
+                new XElement("triggeredVisibleDuringDeploy", animation.triggeredVisibleDuringDeploy.ToString().ToLower()),
+                new XElement("triggeredVisibleDuringHold", animation.triggeredVisibleDuringHold.ToString().ToLower()),
+                new XElement("triggeredVisibleDuringReturn", animation.triggeredVisibleDuringReturn.ToString().ToLower()),
+                new XElement("triggeredVisibleOutsideCycle", animation.triggeredVisibleOutsideCycle.ToString().ToLower())
             );
         }
 
@@ -589,7 +655,30 @@ namespace CharacterStudio.Exporter
                     new XElement("splitSearchRange", component.splitSearchRange),
                     new XElement("flightDurationTicks", component.flightDurationTicks),
                     new XElement("flightHeightFactor", component.flightHeightFactor),
-                    new XElement("suppressCombatActionsDuringFlightState", component.suppressCombatActionsDuringFlightState.ToString().ToLower())
+                    new XElement("suppressCombatActionsDuringFlightState", component.suppressCombatActionsDuringFlightState.ToString().ToLower()),
+                    !string.IsNullOrWhiteSpace(component.flyerThingDefName) ? new XElement("flyerThingDefName", component.flyerThingDefName) : null,
+                    component.flyerWarmupTicks != 0 ? new XElement("flyerWarmupTicks", component.flyerWarmupTicks) : null,
+                    !component.launchFromCasterPosition ? new XElement("launchFromCasterPosition", component.launchFromCasterPosition.ToString().ToLower()) : null,
+                    !component.requireValidTargetCell ? new XElement("requireValidTargetCell", component.requireValidTargetCell.ToString().ToLower()) : null,
+                    !component.storeTargetForFollowup ? new XElement("storeTargetForFollowup", component.storeTargetForFollowup.ToString().ToLower()) : null,
+                    component.enableFlightOnlyWindow ? new XElement("enableFlightOnlyWindow", component.enableFlightOnlyWindow.ToString().ToLower()) : null,
+                    component.flightOnlyWindowTicks != 180 ? new XElement("flightOnlyWindowTicks", component.flightOnlyWindowTicks) : null,
+                    !string.IsNullOrWhiteSpace(component.flightOnlyAbilityDefName) ? new XElement("flightOnlyAbilityDefName", component.flightOnlyAbilityDefName) : null,
+                    !component.hideCasterDuringTakeoff ? new XElement("hideCasterDuringTakeoff", component.hideCasterDuringTakeoff.ToString().ToLower()) : null,
+                    !component.autoExpireFlightMarkerOnLanding ? new XElement("autoExpireFlightMarkerOnLanding", component.autoExpireFlightMarkerOnLanding.ToString().ToLower()) : null,
+                    !string.IsNullOrWhiteSpace(component.requiredFlightSourceAbilityDefName) ? new XElement("requiredFlightSourceAbilityDefName", component.requiredFlightSourceAbilityDefName) : null,
+                    component.requireReservedTargetCell ? new XElement("requireReservedTargetCell", component.requireReservedTargetCell.ToString().ToLower()) : null,
+                    component.consumeFlightStateOnCast ? new XElement("consumeFlightStateOnCast", component.consumeFlightStateOnCast.ToString().ToLower()) : null,
+                    !component.onlyUseDuringFlightWindow ? new XElement("onlyUseDuringFlightWindow", component.onlyUseDuringFlightWindow.ToString().ToLower()) : null,
+                    component.landingBurstRadius != 3f ? new XElement("landingBurstRadius", component.landingBurstRadius.ToString(System.Globalization.CultureInfo.InvariantCulture)) : null,
+                    component.landingBurstDamage != 30f ? new XElement("landingBurstDamage", component.landingBurstDamage.ToString(System.Globalization.CultureInfo.InvariantCulture)) : null,
+                    component.landingBurstDamageDef != null ? new XElement("landingBurstDamageDef", component.landingBurstDamageDef.defName) : null,
+                    !string.IsNullOrWhiteSpace(component.landingEffecterDefName) ? new XElement("landingEffecterDefName", component.landingEffecterDefName) : null,
+                    !string.IsNullOrWhiteSpace(component.landingSoundDefName) ? new XElement("landingSoundDefName", component.landingSoundDefName) : null,
+                    component.affectBuildings ? new XElement("affectBuildings", component.affectBuildings.ToString().ToLower()) : null,
+                    !component.affectCells ? new XElement("affectCells", component.affectCells.ToString().ToLower()) : null,
+                    component.knockbackTargets ? new XElement("knockbackTargets", component.knockbackTargets.ToString().ToLower()) : null,
+                    component.knockbackDistance != 1.5f ? new XElement("knockbackDistance", component.knockbackDistance.ToString(System.Globalization.CultureInfo.InvariantCulture)) : null
                 );
 
                 root.Add(compEl);
@@ -777,6 +866,12 @@ namespace CharacterStudio.Exporter
                     {
                         defsRoot.Add(equipmentEl);
                     }
+
+                    XElement? flyerDef = GenerateEquipmentFlyerThingDefXml(equipment);
+                    if (flyerDef != null)
+                    {
+                        defsRoot.Add(flyerDef);
+                    }
                 }
             }
 
@@ -815,6 +910,40 @@ namespace CharacterStudio.Exporter
             );
 
             return thingDef;
+        }
+
+        public static XElement? GenerateEquipmentFlyerThingDefXml(CharacterEquipmentDef? equipment)
+        {
+            if (equipment == null)
+            {
+                return null;
+            }
+
+            equipment.EnsureDefaults();
+            if (string.IsNullOrWhiteSpace(equipment.flyerThingDefName))
+            {
+                return null;
+            }
+
+            string flyerClassName = string.IsNullOrWhiteSpace(equipment.flyerClassName)
+                ? "CharacterStudio.Abilities.CharacterStudioPawnFlyer_Default"
+                : equipment.flyerClassName;
+
+            return new XElement("ThingDef",
+                new XAttribute("ParentName", "PawnFlyerBase"),
+                new XElement("defName", equipment.flyerThingDefName),
+                new XElement("label", $"{equipment.GetDisplayLabel()} flyer"),
+                new XElement("thingClass", flyerClassName),
+                new XElement("drawOffscreen", "true"),
+                new XElement("drawerType", "RealtimeOnly"),
+                new XElement("altitudeLayer", "Pawn"),
+                new XElement("pawnFlyer",
+                    new XElement("flightDurationMin", "0.35"),
+                    new XElement("flightSpeed", equipment.flyerFlightSpeed.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+                    new XElement("workerClass", "PawnFlyerWorker"),
+                    new XElement("heightFactor", "0")
+                )
+            );
         }
 
         private static XElement? GenerateEquipmentGraphicDataXml(CharacterEquipmentDef equipment)
@@ -886,6 +1015,7 @@ namespace CharacterStudio.Exporter
                     new XElement("enabled", renderExtension.enabled.ToString().ToLower()),
                     new XElement("texPath", renderExtension.texPath ?? string.Empty),
                     !string.IsNullOrWhiteSpace(renderExtension.maskTexPath) ? new XElement("maskTexPath", renderExtension.maskTexPath) : null,
+                    !string.IsNullOrWhiteSpace(renderExtension.directionalFacing) ? new XElement("directionalFacing", renderExtension.directionalFacing) : null,
                     new XElement("anchorTag", string.IsNullOrWhiteSpace(renderExtension.anchorTag) ? "Apparel" : renderExtension.anchorTag),
                     !string.IsNullOrWhiteSpace(renderExtension.anchorPath) ? new XElement("anchorPath", renderExtension.anchorPath) : null,
                     !string.IsNullOrWhiteSpace(renderExtension.shaderDefName) ? new XElement("shaderDefName", renderExtension.shaderDefName) : null,
@@ -905,6 +1035,9 @@ namespace CharacterStudio.Exporter
                     renderExtension.colorSource == LayerColorSource.Fixed ? new XElement("customColor", FormatColor(renderExtension.customColor)) : null,
                     new XElement("colorTwoSource", renderExtension.colorTwoSource.ToString()),
                     renderExtension.colorTwoSource == LayerColorSource.Fixed ? new XElement("customColorTwo", FormatColor(renderExtension.customColorTwo)) : null,
+                    !string.IsNullOrWhiteSpace(renderExtension.flyerThingDefName) ? new XElement("flyerThingDefName", renderExtension.flyerThingDefName) : null,
+                    !string.IsNullOrWhiteSpace(renderExtension.flyerClassName) ? new XElement("flyerClassName", renderExtension.flyerClassName) : null,
+                    Math.Abs(renderExtension.flyerFlightSpeed - 1f) > 0.0001f ? new XElement("flyerFlightSpeed", renderExtension.flyerFlightSpeed.ToString(System.Globalization.CultureInfo.InvariantCulture)) : null,
                     GenerateStringListXml("abilityDefNames", renderExtension.abilityDefNames)
                 )
             );

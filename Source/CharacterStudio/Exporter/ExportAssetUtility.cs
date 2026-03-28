@@ -183,6 +183,50 @@ namespace CharacterStudio.Exporter
                     yield return equipment.maskTexPath;
                     yield return equipment.renderData?.texPath;
                     yield return equipment.renderData?.maskTexPath;
+                    yield return equipment.renderData?.triggeredIdleTexPath;
+                    yield return equipment.renderData?.triggeredDeployTexPath;
+                    yield return equipment.renderData?.triggeredHoldTexPath;
+                    yield return equipment.renderData?.triggeredReturnTexPath;
+                    yield return equipment.renderData?.triggeredIdleMaskTexPath;
+                    yield return equipment.renderData?.triggeredDeployMaskTexPath;
+                    yield return equipment.renderData?.triggeredHoldMaskTexPath;
+                    yield return equipment.renderData?.triggeredReturnMaskTexPath;
+
+                    if (equipment.renderData?.triggeredAnimationSouth != null)
+                    {
+                        yield return equipment.renderData.triggeredAnimationSouth.triggeredIdleTexPath;
+                        yield return equipment.renderData.triggeredAnimationSouth.triggeredDeployTexPath;
+                        yield return equipment.renderData.triggeredAnimationSouth.triggeredHoldTexPath;
+                        yield return equipment.renderData.triggeredAnimationSouth.triggeredReturnTexPath;
+                        yield return equipment.renderData.triggeredAnimationSouth.triggeredIdleMaskTexPath;
+                        yield return equipment.renderData.triggeredAnimationSouth.triggeredDeployMaskTexPath;
+                        yield return equipment.renderData.triggeredAnimationSouth.triggeredHoldMaskTexPath;
+                        yield return equipment.renderData.triggeredAnimationSouth.triggeredReturnMaskTexPath;
+                    }
+
+                    if (equipment.renderData?.triggeredAnimationEastWest != null)
+                    {
+                        yield return equipment.renderData.triggeredAnimationEastWest.triggeredIdleTexPath;
+                        yield return equipment.renderData.triggeredAnimationEastWest.triggeredDeployTexPath;
+                        yield return equipment.renderData.triggeredAnimationEastWest.triggeredHoldTexPath;
+                        yield return equipment.renderData.triggeredAnimationEastWest.triggeredReturnTexPath;
+                        yield return equipment.renderData.triggeredAnimationEastWest.triggeredIdleMaskTexPath;
+                        yield return equipment.renderData.triggeredAnimationEastWest.triggeredDeployMaskTexPath;
+                        yield return equipment.renderData.triggeredAnimationEastWest.triggeredHoldMaskTexPath;
+                        yield return equipment.renderData.triggeredAnimationEastWest.triggeredReturnMaskTexPath;
+                    }
+
+                    if (equipment.renderData?.triggeredAnimationNorth != null)
+                    {
+                        yield return equipment.renderData.triggeredAnimationNorth.triggeredIdleTexPath;
+                        yield return equipment.renderData.triggeredAnimationNorth.triggeredDeployTexPath;
+                        yield return equipment.renderData.triggeredAnimationNorth.triggeredHoldTexPath;
+                        yield return equipment.renderData.triggeredAnimationNorth.triggeredReturnTexPath;
+                        yield return equipment.renderData.triggeredAnimationNorth.triggeredIdleMaskTexPath;
+                        yield return equipment.renderData.triggeredAnimationNorth.triggeredDeployMaskTexPath;
+                        yield return equipment.renderData.triggeredAnimationNorth.triggeredHoldMaskTexPath;
+                        yield return equipment.renderData.triggeredAnimationNorth.triggeredReturnMaskTexPath;
+                    }
                 }
             }
 

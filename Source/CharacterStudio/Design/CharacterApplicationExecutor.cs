@@ -24,6 +24,7 @@ namespace CharacterStudio.Design
             }
 
             plan.runtimeSkin = PawnSkinRuntimeValidator.PrepareForRuntime(plan.runtimeSkin);
+            plan.runtimeSkin.RemoveApparelHidingData();
 
             if (string.IsNullOrWhiteSpace(plan.runtimeSkin.defName))
             {

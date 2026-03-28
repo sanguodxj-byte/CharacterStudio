@@ -160,6 +160,7 @@ namespace CharacterStudio.Exporter
         {
             CreateDirectoryStructure(modPath);
             ValidateAssetRights(exportConfig);
+            PrepareEquipmentExportBindings(exportConfig);
             GenerateAboutXml(modPath, exportConfig);
 
             if (exportConfig.CopyTextures)
@@ -169,6 +170,140 @@ namespace CharacterStudio.Exporter
 
             GenerateDefinitionFiles(modPath, exportConfig);
             GenerateManifestXml(modPath, exportConfig);
+        }
+
+        private void PrepareEquipmentExportBindings(ModExportConfig config)
+        {
+            if (config.SkinDef?.equipments == null || config.SkinDef.equipments.Count == 0)
+            {
+                return;
+            }
+
+            config.Abilities ??= new List<ModularAbilityDef>();
+            List<ModularAbilityDef> skinAbilities = config.SkinDef.abilities ?? new List<ModularAbilityDef>();
+            HashSet<string> existingAbilityNames = new HashSet<string>(
+                config.Abilities
+                    .Where(static ability => ability != null && !string.IsNullOrWhiteSpace(ability.defName))
+                    .Select(static ability => ability.defName),
+                StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, string> flyerThingDefByAbility = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (CharacterEquipmentDef equipment in config.SkinDef.equipments)
+            {
+                if (equipment == null || !equipment.enabled)
+                {
+                    continue;
+                }
+
+                equipment.EnsureDefaults();
+                string? sharedFlyerThingDefName = equipment.abilityDefNames?
+                    .FirstOrDefault(abilityDefName => !string.IsNullOrWhiteSpace(abilityDefName)
+                        && flyerThingDefByAbility.TryGetValue(abilityDefName, out _));
+                if (!string.IsNullOrWhiteSpace(sharedFlyerThingDefName)
+                    && flyerThingDefByAbility.TryGetValue(sharedFlyerThingDefName, out string existingFlyerThingDefName))
+                {
+                    equipment.flyerThingDefName = existingFlyerThingDefName;
+                }
+                else if (string.IsNullOrWhiteSpace(equipment.flyerThingDefName) && EquipmentNeedsFlyerExport(equipment, skinAbilities, config.Abilities))
+                {
+                    equipment.flyerThingDefName = $"{equipment.GetResolvedThingDefName()}_Flyer";
+                }
+
+                if (!string.IsNullOrWhiteSpace(equipment.flyerThingDefName))
+                {
+                    foreach (string abilityDefName in equipment.abilityDefNames ?? new List<string>())
+                    {
+                        if (!string.IsNullOrWhiteSpace(abilityDefName))
+                        {
+                            flyerThingDefByAbility[abilityDefName] = equipment.flyerThingDefName;
+                        }
+                    }
+                }
+
+                foreach (string abilityDefName in equipment.abilityDefNames ?? new List<string>())
+                {
+                    if (string.IsNullOrWhiteSpace(abilityDefName) || !existingAbilityNames.Add(abilityDefName))
+                    {
+                        continue;
+                    }
+
+                    ModularAbilityDef? sourceAbility = skinAbilities.FirstOrDefault(ability =>
+                        ability != null && string.Equals(ability.defName, abilityDefName, StringComparison.OrdinalIgnoreCase));
+                    if (sourceAbility != null)
+                    {
+                        config.Abilities.Add(sourceAbility.Clone());
+                    }
+                }
+            }
+
+            foreach (CharacterEquipmentDef equipment in config.SkinDef.equipments)
+            {
+                if (equipment == null || !equipment.enabled || string.IsNullOrWhiteSpace(equipment.flyerThingDefName))
+                {
+                    continue;
+                }
+
+                ApplyFlyerThingDefToBoundAbilities(equipment, config.Abilities);
+                ApplyFlyerThingDefToBoundAbilities(equipment, skinAbilities);
+            }
+        }
+
+        private static bool EquipmentNeedsFlyerExport(
+            CharacterEquipmentDef equipment,
+            IEnumerable<ModularAbilityDef> skinAbilities,
+            IEnumerable<ModularAbilityDef> exportAbilities)
+        {
+            IEnumerable<ModularAbilityDef> combined = (skinAbilities ?? Enumerable.Empty<ModularAbilityDef>())
+                .Concat(exportAbilities ?? Enumerable.Empty<ModularAbilityDef>());
+
+            foreach (string abilityDefName in equipment.abilityDefNames ?? new List<string>())
+            {
+                ModularAbilityDef? ability = combined.FirstOrDefault(candidate =>
+                    candidate != null && string.Equals(candidate.defName, abilityDefName, StringComparison.OrdinalIgnoreCase));
+                if (ability?.runtimeComponents == null)
+                {
+                    continue;
+                }
+
+                if (ability.runtimeComponents.Any(component =>
+                        component != null
+                        && component.enabled
+                        && component.type == AbilityRuntimeComponentType.VanillaPawnFlyer))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void ApplyFlyerThingDefToBoundAbilities(CharacterEquipmentDef equipment, IEnumerable<ModularAbilityDef> abilities)
+        {
+            if (string.IsNullOrWhiteSpace(equipment.flyerThingDefName) || abilities == null)
+            {
+                return;
+            }
+
+            foreach (string abilityDefName in equipment.abilityDefNames ?? new List<string>())
+            {
+                ModularAbilityDef? ability = abilities.FirstOrDefault(candidate =>
+                    candidate != null && string.Equals(candidate.defName, abilityDefName, StringComparison.OrdinalIgnoreCase));
+                if (ability?.runtimeComponents == null)
+                {
+                    continue;
+                }
+
+                foreach (AbilityRuntimeComponentConfig component in ability.runtimeComponents)
+                {
+                    if (component != null
+                        && component.enabled
+                        && component.type == AbilityRuntimeComponentType.VanillaPawnFlyer
+                        && string.IsNullOrWhiteSpace(component.flyerThingDefName))
+                    {
+                        component.flyerThingDefName = equipment.flyerThingDefName;
+                    }
+                }
+            }
         }
 
         private void GenerateDefinitionFiles(string modPath, ModExportConfig exportConfig)
@@ -435,6 +570,27 @@ namespace CharacterStudio.Exporter
                 {
                     if (expression == null) continue;
                     expression.texPath = Remap(expression.texPath);
+                    if (expression.frames != null)
+                    {
+                        foreach (var frame in expression.frames)
+                        {
+                            if (frame != null)
+                            {
+                                frame.texPath = Remap(frame.texPath);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (skin.faceConfig?.layeredParts != null)
+            {
+                foreach (var part in skin.faceConfig.layeredParts)
+                {
+                    if (part != null)
+                    {
+                        part.texPath = Remap(part.texPath);
+                    }
                 }
             }
 
@@ -463,6 +619,17 @@ namespace CharacterStudio.Exporter
                     {
                         equipment.renderData.texPath = Remap(equipment.renderData.texPath);
                         equipment.renderData.maskTexPath = Remap(equipment.renderData.maskTexPath);
+                        equipment.renderData.triggeredIdleTexPath = Remap(equipment.renderData.triggeredIdleTexPath);
+                        equipment.renderData.triggeredDeployTexPath = Remap(equipment.renderData.triggeredDeployTexPath);
+                        equipment.renderData.triggeredHoldTexPath = Remap(equipment.renderData.triggeredHoldTexPath);
+                        equipment.renderData.triggeredReturnTexPath = Remap(equipment.renderData.triggeredReturnTexPath);
+                        equipment.renderData.triggeredIdleMaskTexPath = Remap(equipment.renderData.triggeredIdleMaskTexPath);
+                        equipment.renderData.triggeredDeployMaskTexPath = Remap(equipment.renderData.triggeredDeployMaskTexPath);
+                        equipment.renderData.triggeredHoldMaskTexPath = Remap(equipment.renderData.triggeredHoldMaskTexPath);
+                        equipment.renderData.triggeredReturnMaskTexPath = Remap(equipment.renderData.triggeredReturnMaskTexPath);
+                        RemapAnimationOverride(equipment.renderData.triggeredAnimationSouth, Remap);
+                        RemapAnimationOverride(equipment.renderData.triggeredAnimationEastWest, Remap);
+                        RemapAnimationOverride(equipment.renderData.triggeredAnimationNorth, Remap);
                     }
                 }
             }
@@ -476,7 +643,35 @@ namespace CharacterStudio.Exporter
             {
                 if (ability == null) continue;
                 ability.iconPath = Remap(ability.iconPath);
+
+                if (ability.visualEffects != null)
+                {
+                    foreach (var vfx in ability.visualEffects)
+                    {
+                        if (vfx != null)
+                        {
+                            vfx.customTexturePath = Remap(vfx.customTexturePath);
+                        }
+                    }
+                }
             }
+        }
+
+        private static void RemapAnimationOverride(EquipmentTriggeredAnimationOverride? animationOverride, Func<string?, string> remap)
+        {
+            if (animationOverride == null)
+            {
+                return;
+            }
+
+            animationOverride.triggeredIdleTexPath = remap(animationOverride.triggeredIdleTexPath);
+            animationOverride.triggeredDeployTexPath = remap(animationOverride.triggeredDeployTexPath);
+            animationOverride.triggeredHoldTexPath = remap(animationOverride.triggeredHoldTexPath);
+            animationOverride.triggeredReturnTexPath = remap(animationOverride.triggeredReturnTexPath);
+            animationOverride.triggeredIdleMaskTexPath = remap(animationOverride.triggeredIdleMaskTexPath);
+            animationOverride.triggeredDeployMaskTexPath = remap(animationOverride.triggeredDeployMaskTexPath);
+            animationOverride.triggeredHoldMaskTexPath = remap(animationOverride.triggeredHoldMaskTexPath);
+            animationOverride.triggeredReturnMaskTexPath = remap(animationOverride.triggeredReturnMaskTexPath);
         }
 
         private string? FindSourceTexture(string texPath, List<string> searchPaths)
