@@ -100,7 +100,6 @@ namespace CharacterStudio.UI
             UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Skin_HideVanillaHead".Translate(), ref skinDef.hideVanillaHead);
             UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Skin_HideVanillaHair".Translate(), ref skinDef.hideVanillaHair);
             UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Skin_HideVanillaBody".Translate(), ref skinDef.hideVanillaBody);
-            UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Skin_HideVanillaApparel".Translate(), ref skinDef.hideVanillaApparel);
 
             // 目标限制
             UIHelper.DrawSectionTitle(ref vy, width, "CS_Studio_Section_Targets".Translate());
@@ -322,4 +321,4 @@ namespace CharacterStudio.UI
             Find.WindowStack.Add(new FloatMenu(options));
         }
     }
-}
+}
