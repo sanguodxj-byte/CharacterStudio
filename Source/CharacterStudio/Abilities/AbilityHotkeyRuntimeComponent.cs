@@ -114,7 +114,9 @@ namespace CharacterStudio.Abilities
                 return;
 
             if (Find.Targeter != null && Find.Targeter.IsTargeting)
-                return;
+            {
+                Find.Targeter.StopTargeting();
+            }
 
             if (IsBlockingWindowOpen())
                 return;

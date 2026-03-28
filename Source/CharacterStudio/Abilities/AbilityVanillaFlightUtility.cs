@@ -93,6 +93,36 @@ namespace CharacterStudio.Abilities
                 Map launchMap = caster.MapHeld;
                 GenSpawn.Spawn(csFlyer, caster.PositionHeld, launchMap, WipeMode.Vanish);
 
+                if (!csFlyer.Spawned || csFlyer.Map != launchMap)
+                {
+                    failureReason = $"flyer failed to remain spawned on map: {flyerDef.defName}";
+
+                    if (caster.Spawned == false && launchMap != null)
+                    {
+                        IntVec3 fallbackCell = destination.IsValid && destination.InBounds(launchMap) && destination.Standable(launchMap)
+                            ? destination
+                            : (caster.PositionHeld.IsValid && caster.PositionHeld.InBounds(launchMap) ? caster.PositionHeld : IntVec3.Invalid);
+
+                        if (!fallbackCell.IsValid)
+                        {
+                            fallbackCell = CellFinder.StandableCellNear(destination.IsValid ? destination : csFlyer.PositionHeld, launchMap, 6);
+                        }
+
+                        if (fallbackCell.IsValid)
+                        {
+                            GenSpawn.Spawn(caster, fallbackCell, launchMap, WipeMode.Vanish);
+                        }
+                    }
+
+                    ClearVanillaFlightState(caster);
+                    if (csFlyer.Destroyed == false)
+                    {
+                        csFlyer.Destroy(DestroyMode.Vanish);
+                    }
+
+                    return false;
+                }
+
                 if (skinComp != null)
                 {
                     int nowTick = Find.TickManager?.TicksGame ?? 0;
