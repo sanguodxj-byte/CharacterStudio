@@ -247,10 +247,16 @@ namespace CharacterStudio.Core
             if ((facing == Rot4.East || facing == Rot4.West) && !string.IsNullOrWhiteSpace(texPathEast))
                 return texPathEast;
 
-            if (!string.IsNullOrWhiteSpace(texPathSouth))
-                return texPathSouth;
+            if (facing == Rot4.South)
+            {
+                if (!string.IsNullOrWhiteSpace(texPathSouth))
+                    return texPathSouth;
 
-            return GetPrimaryTexPath();
+                if (!string.IsNullOrWhiteSpace(texPath))
+                    return texPath;
+            }
+
+            return string.Empty;
         }
 
         public void SyncDirectionalTexPathsFromLegacy()
@@ -710,7 +716,39 @@ namespace CharacterStudio.Core
 
         public string GetLayeredDirectionalPartPath(LayeredFacePartType partType, ExpressionType expression, LayeredFacePartSide side, Rot4 facing)
         {
-            return GetLayeredPartConfigInternal(partType, expression, null, includeAllOverlayGroups: true, preferredSide: side)?.GetDirectionalTexPath(facing) ?? string.Empty;
+            LayeredFacePartSide normalizedSide = NormalizePartSide(partType, side);
+            LayeredFacePartConfig? preferred = GetLayeredPartConfigInternal(partType, expression, null, includeAllOverlayGroups: true, preferredSide: normalizedSide);
+            if (preferred != null)
+            {
+                string preferredDirectionalPath = preferred.GetDirectionalTexPath(facing);
+                if (HasExplicitDirectionalTexture(preferred, facing) || string.IsNullOrWhiteSpace(preferredDirectionalPath))
+                    return preferredDirectionalPath;
+            }
+
+            if (SupportsSideSpecificParts(partType)
+                && normalizedSide != LayeredFacePartSide.None
+                && (facing == Rot4.East || facing == Rot4.West || facing == Rot4.North))
+            {
+                LayeredFacePartConfig? exactUnsided = GetLayeredPartConfigInternal(partType, expression, null, includeAllOverlayGroups: true, preferredSide: LayeredFacePartSide.None);
+                if (exactUnsided != null)
+                {
+                    string unsidedDirectionalPath = exactUnsided.GetDirectionalTexPath(facing);
+                    if (HasExplicitDirectionalTexture(exactUnsided, facing))
+                        return unsidedDirectionalPath;
+                }
+
+                LayeredFacePartConfig? neutralAnySided = EnumerateLayeredParts(partType, null, includeAllOverlayGroups: true)
+                    .FirstOrDefault(p => p.enabled && p.expression == ExpressionType.Neutral && p.HasAnyTexture() && HasExplicitDirectionalTexture(p, facing));
+                if (neutralAnySided != null)
+                    return neutralAnySided.GetDirectionalTexPath(facing);
+
+                LayeredFacePartConfig? anySided = EnumerateLayeredParts(partType, null, includeAllOverlayGroups: true)
+                    .FirstOrDefault(p => p.enabled && p.HasAnyTexture() && HasExplicitDirectionalTexture(p, facing));
+                if (anySided != null)
+                    return anySided.GetDirectionalTexPath(facing);
+            }
+
+            return preferred?.GetDirectionalTexPath(facing) ?? string.Empty;
         }
 
         /// <summary>
@@ -724,6 +762,20 @@ namespace CharacterStudio.Core
         public string GetLayeredDirectionalPartPath(LayeredFacePartType partType, ExpressionType expression, string overlayId, Rot4 facing)
         {
             return GetLayeredPartConfigInternal(partType, expression, overlayId, includeAllOverlayGroups: false, preferredSide: null)?.GetDirectionalTexPath(facing) ?? string.Empty;
+        }
+
+        private static bool HasExplicitDirectionalTexture(LayeredFacePartConfig config, Rot4 facing)
+        {
+            if (config == null)
+                return false;
+
+            if (facing == Rot4.North)
+                return !string.IsNullOrWhiteSpace(config.texPathNorth);
+
+            if (facing == Rot4.East || facing == Rot4.West)
+                return !string.IsNullOrWhiteSpace(config.texPathEast);
+
+            return !string.IsNullOrWhiteSpace(config.texPathSouth) || !string.IsNullOrWhiteSpace(config.texPath);
         }
 
         /// <summary>获取指定类型的已启用分层部件数量</summary>
@@ -803,6 +855,42 @@ namespace CharacterStudio.Core
             return first?.GetDirectionalTexPath(facing) ?? string.Empty;
         }
 
+        public string GetAnyDirectionalLayeredPartPath(LayeredFacePartType partType, LayeredFacePartSide side, Rot4 facing)
+        {
+            if (layeredParts == null || layeredParts.Count == 0)
+                return string.Empty;
+
+            LayeredFacePartSide normalizedSide = NormalizePartSide(partType, side);
+
+            LayeredFacePartConfig? neutralSide = EnumerateLayeredParts(partType, null, includeAllOverlayGroups: true, normalizedSide)
+                .FirstOrDefault(p => p.enabled && p.expression == ExpressionType.Neutral && p.HasAnyTexture());
+            if (neutralSide != null)
+                return neutralSide.GetDirectionalTexPath(facing);
+
+            if (normalizedSide != LayeredFacePartSide.None)
+            {
+                LayeredFacePartConfig? neutralUnsided = EnumerateLayeredParts(partType, null, includeAllOverlayGroups: true, LayeredFacePartSide.None)
+                    .FirstOrDefault(p => p.enabled && p.expression == ExpressionType.Neutral && p.HasAnyTexture());
+                if (neutralUnsided != null)
+                    return neutralUnsided.GetDirectionalTexPath(facing);
+            }
+
+            LayeredFacePartConfig? firstSide = EnumerateLayeredParts(partType, null, includeAllOverlayGroups: true, normalizedSide)
+                .FirstOrDefault(p => p.enabled && p.HasAnyTexture());
+            if (firstSide != null)
+                return firstSide.GetDirectionalTexPath(facing);
+
+            if (normalizedSide != LayeredFacePartSide.None)
+            {
+                LayeredFacePartConfig? firstUnsided = EnumerateLayeredParts(partType, null, includeAllOverlayGroups: true, LayeredFacePartSide.None)
+                    .FirstOrDefault(p => p.enabled && p.HasAnyTexture());
+                if (firstUnsided != null)
+                    return firstUnsided.GetDirectionalTexPath(facing);
+            }
+
+            return string.Empty;
+        }
+
         public string GetAnyLayeredPartPath(LayeredFacePartType partType, LayeredFacePartSide side)
         {
             if (layeredParts == null || layeredParts.Count == 0)
@@ -877,6 +965,21 @@ namespace CharacterStudio.Core
                     && p.HasAnyTexture());
 
             return first?.GetPrimaryTexPath() ?? string.Empty;
+        }
+
+        public string GetAnyDirectionalLayeredPartPath(LayeredFacePartType partType, string overlayId, Rot4 facing)
+        {
+            if (layeredParts == null || layeredParts.Count == 0)
+                return string.Empty;
+
+            LayeredFacePartConfig? neutral = EnumerateLayeredParts(partType, overlayId, includeAllOverlayGroups: false)
+                .FirstOrDefault(p => p.enabled && p.expression == ExpressionType.Neutral && p.HasAnyTexture());
+            if (neutral != null)
+                return neutral.GetDirectionalTexPath(facing);
+
+            LayeredFacePartConfig? first = EnumerateLayeredParts(partType, overlayId, includeAllOverlayGroups: false)
+                .FirstOrDefault(p => p.enabled && p.HasAnyTexture());
+            return first?.GetDirectionalTexPath(facing) ?? string.Empty;
         }
 
         public List<string> GetOrderedOverlayIds()
