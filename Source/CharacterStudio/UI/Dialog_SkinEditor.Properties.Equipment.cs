@@ -421,6 +421,15 @@ namespace CharacterStudio.UI
                     MarkEquipmentDirty();
                 }
 
+                string directionalFacing = renderData.directionalFacing ?? string.Empty;
+                UIHelper.DrawPropertyField(ref y, width, "Directional Facing", ref directionalFacing);
+                if (directionalFacing != (renderData.directionalFacing ?? string.Empty))
+                {
+                    CaptureUndoSnapshot();
+                    renderData.directionalFacing = directionalFacing;
+                    MarkEquipmentDirty(false);
+                }
+
                 bool visible = renderData.visible;
                 UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Prop_Visible".Translate(), ref visible);
                 if (visible != renderData.visible)
@@ -717,10 +726,187 @@ namespace CharacterStudio.UI
                     bool useVfxVisibility = renderData.triggeredUseVfxVisibility;
                     UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Equip_TriggeredAnimation_UseVfxVisibility".Translate(), ref useVfxVisibility);
                     if (useVfxVisibility != renderData.triggeredUseVfxVisibility) { CaptureUndoSnapshot(); renderData.triggeredUseVfxVisibility = useVfxVisibility; MarkEquipmentDirty(); }
+
+                    DrawTriggeredAnimationOverrideSection(ref y, width, "South Override", ref renderData.triggeredAnimationSouth, MarkEquipmentDirty);
+                    DrawTriggeredAnimationOverrideSection(ref y, width, "East/West Override", ref renderData.triggeredAnimationEastWest, MarkEquipmentDirty);
+                    DrawTriggeredAnimationOverrideSection(ref y, width, "North Override", ref renderData.triggeredAnimationNorth, MarkEquipmentDirty);
                 }
             }
 
             Widgets.EndScrollView();
+        }
+
+        private void DrawTriggeredAnimationOverrideSection(
+            ref float y,
+            float width,
+            string title,
+            ref EquipmentTriggeredAnimationOverride? animationOverride,
+            Action<bool> markEquipmentDirty)
+        {
+            if (!DrawCollapsibleSection(ref y, width, title, $"EquipmentTriggeredOverride_{title}"))
+            {
+                return;
+            }
+
+            bool enabled = animationOverride != null;
+            UIHelper.DrawPropertyCheckbox(ref y, width, "Enabled", ref enabled);
+            if (!enabled)
+            {
+                if (animationOverride != null)
+                {
+                    CaptureUndoSnapshot();
+                    animationOverride = null;
+                    markEquipmentDirty(false);
+                }
+
+                return;
+            }
+
+            animationOverride ??= new EquipmentTriggeredAnimationOverride();
+            animationOverride.EnsureDefaults(string.Empty, string.Empty, string.Empty);
+            EquipmentTriggeredAnimationOverride overrideData = animationOverride;
+
+            bool useTriggeredLocalAnimation = overrideData.useTriggeredLocalAnimation;
+            UIHelper.DrawPropertyCheckbox(ref y, width, "Use Triggered Local Animation", ref useTriggeredLocalAnimation);
+            if (useTriggeredLocalAnimation != overrideData.useTriggeredLocalAnimation)
+            {
+                CaptureUndoSnapshot();
+                overrideData.useTriggeredLocalAnimation = useTriggeredLocalAnimation;
+                markEquipmentDirty(false);
+            }
+
+            string triggerAbilityDefName = overrideData.triggerAbilityDefName ?? string.Empty;
+            UIHelper.DrawPropertyField(ref y, width, "Trigger Ability DefName", ref triggerAbilityDefName);
+            if (triggerAbilityDefName != (overrideData.triggerAbilityDefName ?? string.Empty))
+            {
+                CaptureUndoSnapshot();
+                overrideData.triggerAbilityDefName = triggerAbilityDefName;
+                markEquipmentDirty(false);
+            }
+
+            string animationGroupKey = overrideData.animationGroupKey ?? string.Empty;
+            UIHelper.DrawPropertyField(ref y, width, "Animation Group Key", ref animationGroupKey);
+            if (animationGroupKey != (overrideData.animationGroupKey ?? string.Empty))
+            {
+                CaptureUndoSnapshot();
+                overrideData.animationGroupKey = animationGroupKey;
+                markEquipmentDirty(false);
+            }
+
+            UIHelper.DrawPropertyDropdown(ref y, width, "Role", overrideData.triggeredAnimationRole,
+                (EquipmentTriggeredAnimationRole[])Enum.GetValues(typeof(EquipmentTriggeredAnimationRole)),
+                option => option.ToString(),
+                val =>
+                {
+                    CaptureUndoSnapshot();
+                    overrideData.triggeredAnimationRole = val;
+                    markEquipmentDirty(false);
+                });
+
+            float deployAngle = overrideData.triggeredDeployAngle;
+            UIHelper.DrawPropertySlider(ref y, width, "Deploy Angle", ref deployAngle, -180f, 180f, "F0");
+            if (Math.Abs(deployAngle - overrideData.triggeredDeployAngle) > 0.0001f)
+            {
+                CaptureUndoSnapshot();
+                overrideData.triggeredDeployAngle = deployAngle;
+                markEquipmentDirty(false);
+            }
+
+            float returnAngle = overrideData.triggeredReturnAngle;
+            UIHelper.DrawPropertySlider(ref y, width, "Return Angle", ref returnAngle, -180f, 180f, "F0");
+            if (Math.Abs(returnAngle - overrideData.triggeredReturnAngle) > 0.0001f)
+            {
+                CaptureUndoSnapshot();
+                overrideData.triggeredReturnAngle = returnAngle;
+                markEquipmentDirty(false);
+            }
+
+            float deployTicksValue = overrideData.triggeredDeployTicks;
+            UIHelper.DrawPropertySlider(ref y, width, "Deploy Ticks", ref deployTicksValue, 1f, 300f, "F0");
+            int deployTicks = Mathf.RoundToInt(deployTicksValue);
+            if (deployTicks != overrideData.triggeredDeployTicks)
+            {
+                CaptureUndoSnapshot();
+                overrideData.triggeredDeployTicks = deployTicks;
+                markEquipmentDirty(false);
+            }
+
+            float holdTicksValue = overrideData.triggeredHoldTicks;
+            UIHelper.DrawPropertySlider(ref y, width, "Hold Ticks", ref holdTicksValue, 0f, 600f, "F0");
+            int holdTicks = Mathf.RoundToInt(holdTicksValue);
+            if (holdTicks != overrideData.triggeredHoldTicks)
+            {
+                CaptureUndoSnapshot();
+                overrideData.triggeredHoldTicks = holdTicks;
+                markEquipmentDirty(false);
+            }
+
+            float returnTicksValue = overrideData.triggeredReturnTicks;
+            UIHelper.DrawPropertySlider(ref y, width, "Return Ticks", ref returnTicksValue, 1f, 300f, "F0");
+            int returnTicks = Mathf.RoundToInt(returnTicksValue);
+            if (returnTicks != overrideData.triggeredReturnTicks)
+            {
+                CaptureUndoSnapshot();
+                overrideData.triggeredReturnTicks = returnTicks;
+                markEquipmentDirty(false);
+            }
+
+            float pivotX = overrideData.triggeredPivotOffset.x;
+            UIHelper.DrawPropertySlider(ref y, width, "Pivot X", ref pivotX, -1f, 1f, "F3");
+            float pivotY = overrideData.triggeredPivotOffset.y;
+            UIHelper.DrawPropertySlider(ref y, width, "Pivot Y", ref pivotY, -1f, 1f, "F3");
+            Vector2 newPivot = new Vector2(pivotX, pivotY);
+            if (newPivot != overrideData.triggeredPivotOffset)
+            {
+                CaptureUndoSnapshot();
+                overrideData.triggeredPivotOffset = newPivot;
+                markEquipmentDirty(false);
+            }
+
+            bool triggeredUseVfxVisibility = overrideData.triggeredUseVfxVisibility;
+            UIHelper.DrawPropertyCheckbox(ref y, width, "Use VFX Visibility", ref triggeredUseVfxVisibility);
+            if (triggeredUseVfxVisibility != overrideData.triggeredUseVfxVisibility)
+            {
+                CaptureUndoSnapshot();
+                overrideData.triggeredUseVfxVisibility = triggeredUseVfxVisibility;
+                markEquipmentDirty(false);
+            }
+
+            bool visibleDuringDeploy = overrideData.triggeredVisibleDuringDeploy;
+            UIHelper.DrawPropertyCheckbox(ref y, width, "Visible During Deploy", ref visibleDuringDeploy);
+            if (visibleDuringDeploy != overrideData.triggeredVisibleDuringDeploy)
+            {
+                CaptureUndoSnapshot();
+                overrideData.triggeredVisibleDuringDeploy = visibleDuringDeploy;
+                markEquipmentDirty(false);
+            }
+
+            bool visibleDuringHold = overrideData.triggeredVisibleDuringHold;
+            UIHelper.DrawPropertyCheckbox(ref y, width, "Visible During Hold", ref visibleDuringHold);
+            if (visibleDuringHold != overrideData.triggeredVisibleDuringHold)
+            {
+                CaptureUndoSnapshot();
+                overrideData.triggeredVisibleDuringHold = visibleDuringHold;
+                markEquipmentDirty(false);
+            }
+
+            bool visibleDuringReturn = overrideData.triggeredVisibleDuringReturn;
+            UIHelper.DrawPropertyCheckbox(ref y, width, "Visible During Return", ref visibleDuringReturn);
+            if (visibleDuringReturn != overrideData.triggeredVisibleDuringReturn)
+            {
+                CaptureUndoSnapshot();
+                overrideData.triggeredVisibleDuringReturn = visibleDuringReturn;
+                markEquipmentDirty(false);
+            }
+
+            bool visibleOutsideCycle = overrideData.triggeredVisibleOutsideCycle;
+            UIHelper.DrawPropertyCheckbox(ref y, width, "Visible Outside Cycle", ref visibleOutsideCycle);
+            if (visibleOutsideCycle != overrideData.triggeredVisibleOutsideCycle)
+            {
+                CaptureUndoSnapshot();
+                overrideData.triggeredVisibleOutsideCycle = visibleOutsideCycle;
+                markEquipmentDirty(false);
+            }
         }
     }
 }

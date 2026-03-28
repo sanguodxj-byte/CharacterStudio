@@ -432,11 +432,62 @@ namespace CharacterStudio.UI
 
             var presets = new List<CharacterEquipmentDef>
             {
-                CreateAircraftPresetEquipment(usedDefNames, "Aircraft_Wing_L", "CS_Studio_Equip_Preset_LeftWing".Translate().ToString(), EquipmentTriggeredAnimationRole.MovablePart, 60f, new Vector2(0.12f, 0f), 58f, false),
-                CreateAircraftPresetEquipment(usedDefNames, "Aircraft_Wing_R", "CS_Studio_Equip_Preset_RightWing".Translate().ToString(), EquipmentTriggeredAnimationRole.MovablePart, -60f, new Vector2(-0.12f, 0f), 58f, false),
-                CreateAircraftPresetEquipment(usedDefNames, "Aircraft_VFX_Tail", "CS_Studio_Equip_Preset_TailVfx".Translate().ToString(), EquipmentTriggeredAnimationRole.EffectLayer, 0f, Vector2.zero, 68f, true),
-                CreateAircraftPresetEquipment(usedDefNames, "Aircraft_VFX_Wing_L", "CS_Studio_Equip_Preset_LeftWingVfx".Translate().ToString(), EquipmentTriggeredAnimationRole.EffectLayer, 0f, Vector2.zero, 70f, true),
-                CreateAircraftPresetEquipment(usedDefNames, "Aircraft_VFX_Wing_R", "CS_Studio_Equip_Preset_RightWingVfx".Translate().ToString(), EquipmentTriggeredAnimationRole.EffectLayer, 0f, Vector2.zero, 70f, true)
+                CreateAircraftPresetEquipment(
+                    usedDefNames,
+                    "Aircraft_Wing_L",
+                    "AircraftWingLeft",
+                    "CS_Studio_Equip_Preset_LeftWing".Translate().ToString(),
+                    EquipmentTriggeredAnimationRole.MovablePart,
+                    60f,
+                    new Vector2(0.12f, 0f),
+                    58f,
+                    useVfxVisibility: false,
+                    visibleDuringDeploy: true,
+                    visibleDuringHold: true,
+                    visibleDuringReturn: true,
+                    visibleOutsideCycle: true),
+                CreateAircraftPresetEquipment(
+                    usedDefNames,
+                    "Aircraft_Wing_R",
+                    "AircraftWingRight",
+                    "CS_Studio_Equip_Preset_RightWing".Translate().ToString(),
+                    EquipmentTriggeredAnimationRole.MovablePart,
+                    -60f,
+                    new Vector2(-0.12f, 0f),
+                    58f,
+                    useVfxVisibility: false,
+                    visibleDuringDeploy: true,
+                    visibleDuringHold: true,
+                    visibleDuringReturn: true,
+                    visibleOutsideCycle: true),
+                CreateAircraftPresetEquipment(
+                    usedDefNames,
+                    "Aircraft_VFX_Wing_L",
+                    "AircraftWingLeft",
+                    "CS_Studio_Equip_Preset_LeftWingVfx".Translate().ToString(),
+                    EquipmentTriggeredAnimationRole.EffectLayer,
+                    0f,
+                    Vector2.zero,
+                    70f,
+                    useVfxVisibility: true,
+                    visibleDuringDeploy: false,
+                    visibleDuringHold: true,
+                    visibleDuringReturn: false,
+                    visibleOutsideCycle: false),
+                CreateAircraftPresetEquipment(
+                    usedDefNames,
+                    "Aircraft_VFX_Wing_R",
+                    "AircraftWingRight",
+                    "CS_Studio_Equip_Preset_RightWingVfx".Translate().ToString(),
+                    EquipmentTriggeredAnimationRole.EffectLayer,
+                    0f,
+                    Vector2.zero,
+                    70f,
+                    useVfxVisibility: true,
+                    visibleDuringDeploy: false,
+                    visibleDuringHold: true,
+                    visibleDuringReturn: false,
+                    visibleOutsideCycle: false)
             };
 
             workingSkin.equipments.AddRange(presets);
@@ -451,12 +502,17 @@ namespace CharacterStudio.UI
         private CharacterEquipmentDef CreateAircraftPresetEquipment(
             HashSet<string> usedDefNames,
             string defBase,
+            string animationGroupKey,
             string label,
             EquipmentTriggeredAnimationRole role,
             float deployAngle,
             Vector2 pivot,
             float drawOrder,
-            bool useVfxVisibility)
+            bool useVfxVisibility,
+            bool visibleDuringDeploy,
+            bool visibleDuringHold,
+            bool visibleDuringReturn,
+            bool visibleOutsideCycle)
         {
             string baseName = string.IsNullOrWhiteSpace(defBase) ? "CS_Studio_Equip_DefaultPresetDefName".Translate().ToString() : defBase.Trim();
             string uniqueDefName = baseName;
@@ -483,7 +539,7 @@ namespace CharacterStudio.UI
                     drawOrder = drawOrder,
                     useTriggeredLocalAnimation = true,
                     triggerAbilityDefName = string.Empty,
-                    animationGroupKey = defBase,
+                    animationGroupKey = animationGroupKey,
                     triggeredAnimationRole = role,
                     triggeredDeployAngle = deployAngle,
                     triggeredReturnAngle = 0f,
@@ -492,10 +548,10 @@ namespace CharacterStudio.UI
                     triggeredReturnTicks = 10,
                     triggeredPivotOffset = pivot,
                     triggeredUseVfxVisibility = useVfxVisibility,
-                    triggeredVisibleDuringDeploy = true,
-                    triggeredVisibleDuringHold = true,
-                    triggeredVisibleDuringReturn = true,
-                    triggeredVisibleOutsideCycle = !useVfxVisibility
+                    triggeredVisibleDuringDeploy = visibleDuringDeploy,
+                    triggeredVisibleDuringHold = visibleDuringHold,
+                    triggeredVisibleDuringReturn = visibleDuringReturn,
+                    triggeredVisibleOutsideCycle = visibleOutsideCycle
                 }
             };
 
@@ -520,7 +576,21 @@ namespace CharacterStudio.UI
                 ? lastImportedEquipmentXmlPath
                 : (!string.IsNullOrWhiteSpace(lastExportedEquipmentXmlPath) ? lastExportedEquipmentXmlPath : GetDefaultEquipmentExportFilePath());
 
-            Find.WindowStack.Add(new Dialog_EquipmentXmlImport(initialPath, ImportEquipmentsFromXmlPath));
+            Find.WindowStack.Add(new Dialog_FileBrowser(GetEquipmentImportBrowseStartPath(initialPath), selectedPath =>
+            {
+                string normalizedPath = selectedPath?.Trim().Trim('"') ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(normalizedPath))
+                {
+                    return;
+                }
+
+                Find.WindowStack.Add(new FloatMenu(new List<FloatMenuOption>
+                {
+                    new FloatMenuOption("CS_Studio_Equip_ImportReplaceAction".Translate(), () => ImportEquipmentsFromXmlPath(normalizedPath, true)),
+                    new FloatMenuOption("CS_Studio_Equip_ImportAppendAction".Translate(), () => ImportEquipmentsFromXmlPath(normalizedPath, false)),
+                    new FloatMenuOption("CS_Studio_Btn_Cancel".Translate(), () => { })
+                }));
+            }, "*.xml"));
         }
 
         private void ExportSelectedEquipmentToDefaultPath()
@@ -560,7 +630,8 @@ namespace CharacterStudio.UI
         private static XDocument CreateEquipmentsDocument(List<CharacterEquipmentDef> equipmentList)
         {
             var defs = new XElement("Defs");
-            var skinRoot = new XElement(nameof(PawnSkinDef));
+            var skinRoot = new XElement("CharacterEquipmentExportDef",
+                new XElement("schemaVersion", "1.0"));
             var equipmentsEl = ModExportXmlWriter.GenerateEquipmentsXml(equipmentList);
             if (equipmentsEl != null)
             {
@@ -841,7 +912,33 @@ namespace CharacterStudio.UI
         private static bool IsPawnSkinDefNode(string nodeName)
         {
             return string.Equals(nodeName, nameof(PawnSkinDef), StringComparison.OrdinalIgnoreCase)
-                || string.Equals(nodeName, typeof(PawnSkinDef).FullName, StringComparison.OrdinalIgnoreCase);
+                || string.Equals(nodeName, typeof(PawnSkinDef).FullName, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(nodeName, "CharacterEquipmentExportDef", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string GetEquipmentImportBrowseStartPath(string initialPath)
+        {
+            if (string.IsNullOrWhiteSpace(initialPath))
+            {
+                return GetEquipmentExportDir();
+            }
+
+            string normalizedPath = initialPath.Trim().Trim('"');
+            if (Directory.Exists(normalizedPath))
+            {
+                return normalizedPath;
+            }
+
+            if (File.Exists(normalizedPath))
+            {
+                string? directory = Path.GetDirectoryName(normalizedPath);
+                if (!string.IsNullOrWhiteSpace(directory) && Directory.Exists(directory))
+                {
+                    return directory;
+                }
+            }
+
+            return GetEquipmentExportDir();
         }
 
         private static bool IsCharacterEquipmentNode(string nodeName)
@@ -874,53 +971,4 @@ namespace CharacterStudio.UI
         }
     }
 
-    internal class Dialog_EquipmentXmlImport : Window
-    {
-        private string xmlPath;
-        private readonly Action<string, bool> onImport;
-
-        public override Vector2 InitialSize => new Vector2(720f, 220f);
-
-        public Dialog_EquipmentXmlImport(string initialPath, Action<string, bool> onImport)
-        {
-            xmlPath = initialPath ?? string.Empty;
-            this.onImport = onImport;
-            doCloseX = true;
-            doCloseButton = false;
-            draggable = true;
-            resizeable = false;
-            forcePause = true;
-            absorbInputAroundWindow = true;
-        }
-
-        public override void DoWindowContents(Rect inRect)
-        {
-            Text.Font = GameFont.Medium;
-            Widgets.Label(new Rect(0f, 0f, inRect.width, 32f), "CS_Studio_Equip_ImportXmlTitle".Translate());
-            Text.Font = GameFont.Small;
-
-            Widgets.Label(new Rect(0f, 44f, 110f, 24f), "CS_Studio_Equip_ImportXmlPath".Translate());
-            xmlPath = Widgets.TextField(new Rect(112f, 44f, inRect.width - 112f, 24f), xmlPath ?? string.Empty);
-
-            float buttonY = inRect.height - 34f;
-            float buttonWidth = (inRect.width - 10f) / 3f;
-
-            if (Widgets.ButtonText(new Rect(0f, buttonY, buttonWidth, 30f), "CS_Studio_Equip_ImportReplaceAction".Translate()))
-            {
-                onImport?.Invoke(xmlPath, true);
-                Close();
-            }
-
-            if (Widgets.ButtonText(new Rect(buttonWidth + 5f, buttonY, buttonWidth, 30f), "CS_Studio_Equip_ImportAppendAction".Translate()))
-            {
-                onImport?.Invoke(xmlPath, false);
-                Close();
-            }
-
-            if (Widgets.ButtonText(new Rect((buttonWidth + 5f) * 2f, buttonY, buttonWidth, 30f), "CS_Studio_Btn_Cancel".Translate()))
-            {
-                Close();
-            }
-        }
-    }
 }
