@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -651,6 +652,13 @@ namespace CharacterStudio.Abilities
         CustomTexture
     }
 
+    public enum AbilityVisualFacingMode
+    {
+        None,
+        CasterFacing,
+        CastDirection
+    }
+
     public enum AbilityVisualEffectTrigger
     {
         OnCastStart,
@@ -678,6 +686,7 @@ namespace CharacterStudio.Abilities
         public float linkedPupilContrastOffset = 0f;
         public float scale = 1.0f;
         public float drawSize = 1.5f;
+        public AbilityVisualFacingMode facingMode = AbilityVisualFacingMode.None;
         public bool useCasterFacing = false;
         public float forwardOffset = 0f;
         public float sideOffset = 0f;
@@ -702,6 +711,18 @@ namespace CharacterStudio.Abilities
 
         public void NormalizeLegacyData()
         {
+            if (!System.Enum.IsDefined(typeof(AbilityVisualFacingMode), facingMode))
+            {
+                facingMode = useCasterFacing ? AbilityVisualFacingMode.CasterFacing : AbilityVisualFacingMode.None;
+            }
+
+            if (facingMode == AbilityVisualFacingMode.None && useCasterFacing)
+            {
+                facingMode = AbilityVisualFacingMode.CasterFacing;
+            }
+
+            useCasterFacing = facingMode == AbilityVisualFacingMode.CasterFacing;
+
             if (type == AbilityVisualEffectType.Preset || type == AbilityVisualEffectType.CustomTexture)
             {
                 if (type == AbilityVisualEffectType.CustomTexture && string.IsNullOrWhiteSpace(customTexturePath))
@@ -737,6 +758,8 @@ namespace CharacterStudio.Abilities
                 AbilityVisualEffectType.CustomTexture => AbilityVisualEffectSourceMode.CustomTexture,
                 _ => AbilityVisualEffectSourceMode.BuiltIn
             };
+
+            useCasterFacing = facingMode == AbilityVisualFacingMode.CasterFacing;
         }
 
         public AbilityVisualEffectConfig Clone()

@@ -1337,7 +1337,7 @@ namespace CharacterStudio.Abilities
                 }
 
                 mote.exactPosition = spawnPos;
-                mote.exactRotation = vfx.rotation;
+                mote.exactRotation = ResolveVfxRotation(vfx, target, caster);
                 mote.rotationRate = 0f;
                 mote.instanceColor = Color.white;
                 mote.linearScale = new Vector3(scaleX, 1f, scaleZ);
@@ -1407,34 +1407,95 @@ namespace CharacterStudio.Abilities
             pos += vfx.offset;
             pos.y += vfx.heightOffset;
 
-            if (!vfx.useCasterFacing)
+            if (!TryResolveFacingBasis(vfx, target, caster, out Vector3 forward, out Vector3 right))
             {
                 return pos;
             }
 
-            Vector3 forward = Vector3.zero;
-            Vector3 right = Vector3.zero;
-            switch (caster.Rotation.AsInt)
+            return pos + forward * vfx.forwardOffset + right * vfx.sideOffset;
+        }
+
+        private static float ResolveVfxRotation(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster)
+        {
+            return vfx.rotation + ResolveAutoFacingAngle(vfx, target, caster);
+        }
+
+        private static float ResolveAutoFacingAngle(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster)
+        {
+            if (!TryResolveFacingBasis(vfx, target, caster, out Vector3 forward, out _))
             {
-                case 0: // North
-                    forward = new Vector3(0f, 0f, 1f);
-                    right = new Vector3(1f, 0f, 0f);
-                    break;
-                case 1: // East
-                    forward = new Vector3(1f, 0f, 0f);
-                    right = new Vector3(0f, 0f, -1f);
-                    break;
-                case 2: // South
-                    forward = new Vector3(0f, 0f, -1f);
-                    right = new Vector3(-1f, 0f, 0f);
-                    break;
-                case 3: // West
-                    forward = new Vector3(-1f, 0f, 0f);
-                    right = new Vector3(0f, 0f, 1f);
-                    break;
+                return 0f;
             }
 
-            return pos + forward * vfx.forwardOffset + right * vfx.sideOffset;
+            if (Mathf.Abs(forward.x) >= Mathf.Abs(forward.z))
+            {
+                return forward.x >= 0f ? 90f : 270f;
+            }
+
+            return forward.z >= 0f ? 0f : 180f;
+        }
+
+        private static bool TryResolveFacingBasis(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster, out Vector3 forward, out Vector3 right)
+        {
+            AbilityVisualFacingMode facingMode = ResolveFacingMode(vfx);
+            if (facingMode == AbilityVisualFacingMode.None)
+            {
+                forward = Vector3.zero;
+                right = Vector3.zero;
+                return false;
+            }
+
+            IntVec3 forwardCell = facingMode == AbilityVisualFacingMode.CastDirection
+                ? ResolveCastDirectionCell(target, caster)
+                : caster.Rotation.FacingCell;
+
+            if (forwardCell == IntVec3.Zero)
+            {
+                forwardCell = caster.Rotation.FacingCell;
+            }
+
+            forward = forwardCell.ToVector3();
+            if (forward == Vector3.zero)
+            {
+                forward = new Vector3(0f, 0f, 1f);
+            }
+
+            right = new Vector3(forward.z, 0f, -forward.x);
+            return true;
+        }
+
+        private static AbilityVisualFacingMode ResolveFacingMode(AbilityVisualEffectConfig vfx)
+        {
+            AbilityVisualFacingMode facingMode = vfx.facingMode;
+            if (!Enum.IsDefined(typeof(AbilityVisualFacingMode), facingMode))
+            {
+                return vfx.useCasterFacing ? AbilityVisualFacingMode.CasterFacing : AbilityVisualFacingMode.None;
+            }
+
+            if (facingMode == AbilityVisualFacingMode.None && vfx.useCasterFacing)
+            {
+                return AbilityVisualFacingMode.CasterFacing;
+            }
+
+            return facingMode;
+        }
+
+        private static IntVec3 ResolveCastDirectionCell(LocalTargetInfo target, Pawn caster)
+        {
+            IntVec3 origin = caster.Position;
+            IntVec3 destination = target.IsValid ? target.Cell : origin + caster.Rotation.FacingCell;
+            IntVec3 delta = destination - origin;
+            if (delta == IntVec3.Zero)
+            {
+                return caster.Rotation.FacingCell;
+            }
+
+            if (Mathf.Abs(delta.x) >= Mathf.Abs(delta.z))
+            {
+                return delta.x >= 0 ? IntVec3.East : IntVec3.West;
+            }
+
+            return delta.z >= 0 ? IntVec3.North : IntVec3.South;
         }
 
         private static ThingDef GetOrCreateCustomTextureMoteDef(string texturePath, float drawSize, int displayDurationTicks)

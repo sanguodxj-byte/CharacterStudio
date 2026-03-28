@@ -148,7 +148,7 @@ namespace CharacterStudio.UI
 
             if (UsesCustomTextureSettings(vfx))
             {
-                height += RowHeight * 3f;
+                height += RowHeight * 5f;
             }
 
             height += RowHeight * 2f;
@@ -173,6 +173,17 @@ namespace CharacterStudio.UI
             return titleLabel;
         }
 
+        private string BuildVfxSecondarySummary(AbilityVisualEffectConfig vfx)
+        {
+            string facingText = UsesCustomTextureSettings(vfx)
+                ? GetVfxFacingModeLabel(vfx.facingMode)
+                : "CS_Studio_VFX_FacingMode_None".Translate();
+            return "CS_Studio_VFX_SummaryLine".Translate(
+                GetVfxTargetLabel(vfx.target),
+                GetVfxTriggerLabel(vfx.trigger),
+                facingText);
+        }
+
         private void DrawVfxItem(Rect rect, AbilityVisualEffectConfig vfx, int index)
         {
             Widgets.DrawMenuSection(rect);
@@ -186,6 +197,11 @@ namespace CharacterStudio.UI
             GUI.color = vfx.enabled ? Color.white : Color.gray;
             Widgets.Label(new Rect(inner.x, inner.y, inner.width - 120f, 24f), BuildVfxTitleLabel(vfx, index));
             GUI.color = Color.white;
+            Text.Font = GameFont.Tiny;
+            GUI.color = UIHelper.SubtleColor;
+            Widgets.Label(new Rect(inner.x, inner.y + 18f, inner.width - 120f, 18f), BuildVfxSecondarySummary(vfx));
+            GUI.color = Color.white;
+            Text.Font = GameFont.Small;
 
             float enabledWidth = 112f;
             Rect enabledRect = new Rect(inner.x + inner.width - 186f, inner.y, enabledWidth, 24f);
@@ -220,7 +236,7 @@ namespace CharacterStudio.UI
                 return;
             }
 
-            float y = inner.y + 28f;
+            float y = inner.y + 36f;
             float gap = 8f;
             float colW = (inner.width - gap) * 0.5f;
             float labelW = 42f;
@@ -434,17 +450,37 @@ namespace CharacterStudio.UI
                 }
                 y += RowHeight;
 
-                bool useCasterFacing = vfx.useCasterFacing;
-                float checkboxRowY = y;
-                UIHelper.DrawPropertyCheckbox(ref checkboxRowY, colW, "CS_Studio_VFX_UseCasterFacing".Translate(), ref useCasterFacing, labelWidth: Mathf.Max(88f, colW - 30f));
-                if (vfx.useCasterFacing != useCasterFacing)
+                DrawVfxDropdownRow(inner.x, y, labelW, fieldW, "CS_Studio_VFX_FacingModeShort".Translate(), GetVfxFacingModeLabel(vfx.facingMode), () =>
                 {
-                    vfx.useCasterFacing = useCasterFacing;
-                    NotifyAbilityPreviewDirty();
-                }
+                    var options = new List<FloatMenuOption>();
+                    foreach (AbilityVisualFacingMode facingMode in Enum.GetValues(typeof(AbilityVisualFacingMode)))
+                    {
+                        AbilityVisualFacingMode captured = facingMode;
+                        options.Add(new FloatMenuOption(GetVfxFacingModeLabel(captured), () =>
+                        {
+                            vfx.facingMode = captured;
+                            vfx.SyncLegacyFields();
+                            NotifyAbilityPreviewDirty();
+                        }));
+                    }
 
+                    Find.WindowStack.Add(new FloatMenu(options));
+                });
                 string heightStr = vfx.heightOffset.ToString("F2");
                 DrawNumberRow(y, rightX, "CS_Studio_VFX_HeightShort".Translate(), ref vfx.heightOffset, ref heightStr, -10f, 10f);
+                y += RowHeight;
+
+                string forwardStr = vfx.forwardOffset.ToString("F2");
+                DrawNumberRow(y, inner.x, "CS_Studio_VFX_ForwardOffsetShort".Translate(), ref vfx.forwardOffset, ref forwardStr, -20f, 20f);
+                string sideStr = vfx.sideOffset.ToString("F2");
+                DrawNumberRow(y, rightX, "CS_Studio_VFX_SideOffsetShort".Translate(), ref vfx.sideOffset, ref sideStr, -20f, 20f);
+                y += RowHeight;
+
+                Text.Font = GameFont.Tiny;
+                GUI.color = UIHelper.SubtleColor;
+                Widgets.Label(new Rect(inner.x, y + 3f, inner.width, 18f), "CS_Studio_VFX_FacingModeHint".Translate());
+                GUI.color = Color.white;
+                Text.Font = GameFont.Small;
                 y += RowHeight;
             }
 
@@ -581,6 +617,11 @@ namespace CharacterStudio.UI
                 AbilityVisualEffectTrigger.OnExpire => "CS_Studio_VFX_Trigger_OnExpire".Translate(),
                 _ => trigger.ToString()
             };
+        }
+
+        private static string GetVfxFacingModeLabel(AbilityVisualFacingMode facingMode)
+        {
+            return ($"CS_Studio_VFX_FacingMode_{facingMode}").Translate();
         }
 
         private void DrawVfxDropdownRow(float x, float y, float labelW, float fieldW, string label, string value, Action onClick)

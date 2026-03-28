@@ -19,15 +19,132 @@ namespace CharacterStudio.Abilities
         /// </summary>
         protected static IntVec3 ResolveCell(AbilityVisualEffectConfig config, LocalTargetInfo target, Pawn caster)
         {
+            return ResolvePosition(config, target, caster).ToIntVec3();
+        }
+
+        protected static Vector3 ResolvePosition(AbilityVisualEffectConfig config, LocalTargetInfo target, Pawn caster)
+        {
+            Vector3 pos;
             switch (config.target)
             {
                 case VisualEffectTarget.Caster:
-                    return caster.Position;
+                    pos = caster.DrawPos;
+                    break;
                 case VisualEffectTarget.Target:
-                    return target.IsValid ? target.Cell : caster.Position;
+                    if (target.HasThing)
+                    {
+                        pos = target.Thing.DrawPos;
+                    }
+                    else if (target.IsValid)
+                    {
+                        pos = target.Cell.ToVector3Shifted();
+                    }
+                    else
+                    {
+                        pos = caster.DrawPos;
+                    }
+                    break;
                 default: // Both — 默认在目标位置（调用者可循环调用两次）
-                    return target.IsValid ? target.Cell : caster.Position;
+                    pos = target.IsValid ? target.Cell.ToVector3Shifted() : caster.DrawPos;
+                    break;
             }
+
+            pos += config.offset;
+            pos.y += config.heightOffset;
+
+            if (!TryResolveFacingBasis(config, target, caster, out Vector3 forward, out Vector3 right))
+            {
+                return pos;
+            }
+
+            return pos + forward * config.forwardOffset + right * config.sideOffset;
+        }
+
+        protected static IEnumerable<Vector3> ResolvePositions(AbilityVisualEffectConfig config, LocalTargetInfo target, Pawn caster)
+        {
+            if (config.target == VisualEffectTarget.Both)
+            {
+                Vector3 casterPos = ResolvePositionForMode(config, target, caster, VisualEffectTarget.Caster);
+                yield return casterPos;
+
+                Vector3 targetPos = ResolvePositionForMode(config, target, caster, VisualEffectTarget.Target);
+                if ((targetPos - casterPos).sqrMagnitude > 0.0001f)
+                {
+                    yield return targetPos;
+                }
+
+                yield break;
+            }
+
+            yield return ResolvePosition(config, target, caster);
+        }
+
+        private static Vector3 ResolvePositionForMode(AbilityVisualEffectConfig config, LocalTargetInfo target, Pawn caster, VisualEffectTarget mode)
+        {
+            AbilityVisualEffectConfig resolvedConfig = config.Clone();
+            resolvedConfig.target = mode;
+            return ResolvePosition(resolvedConfig, target, caster);
+        }
+
+        private static bool TryResolveFacingBasis(AbilityVisualEffectConfig config, LocalTargetInfo target, Pawn caster, out Vector3 forward, out Vector3 right)
+        {
+            AbilityVisualFacingMode facingMode = ResolveFacingMode(config);
+            if (facingMode == AbilityVisualFacingMode.None)
+            {
+                forward = Vector3.zero;
+                right = Vector3.zero;
+                return false;
+            }
+
+            IntVec3 forwardCell = facingMode == AbilityVisualFacingMode.CastDirection
+                ? ResolveCastDirectionCell(target, caster)
+                : caster.Rotation.FacingCell;
+            if (forwardCell == IntVec3.Zero)
+            {
+                forwardCell = caster.Rotation.FacingCell;
+            }
+
+            forward = forwardCell.ToVector3();
+            if (forward == Vector3.zero)
+            {
+                forward = new Vector3(0f, 0f, 1f);
+            }
+
+            right = new Vector3(forward.z, 0f, -forward.x);
+            return true;
+        }
+
+        private static AbilityVisualFacingMode ResolveFacingMode(AbilityVisualEffectConfig config)
+        {
+            if (!Enum.IsDefined(typeof(AbilityVisualFacingMode), config.facingMode))
+            {
+                return config.useCasterFacing ? AbilityVisualFacingMode.CasterFacing : AbilityVisualFacingMode.None;
+            }
+
+            if (config.facingMode == AbilityVisualFacingMode.None && config.useCasterFacing)
+            {
+                return AbilityVisualFacingMode.CasterFacing;
+            }
+
+            return config.facingMode;
+        }
+
+        private static IntVec3 ResolveCastDirectionCell(LocalTargetInfo target, Pawn caster)
+        {
+            IntVec3 origin = caster.Position;
+            IntVec3 destination = target.IsValid ? target.Cell : origin + caster.Rotation.FacingCell;
+            IntVec3 delta = destination - origin;
+            if (delta == IntVec3.Zero)
+            {
+                return caster.Rotation.FacingCell;
+            }
+
+            if (Mathf.Abs(delta.x) >= Mathf.Abs(delta.z))
+            {
+                return delta.x >= 0 ? IntVec3.East : IntVec3.West;
+            }
+
+            return delta.z >= 0 ? IntVec3.North : IntVec3.South;
         }
     }
 
@@ -40,10 +157,8 @@ namespace CharacterStudio.Abilities
         {
             var map = caster.Map;
             if (map == null) return;
-            IntVec3 cell = ResolveCell(config, target, caster);
-            FleckMaker.ThrowDustPuff(cell.ToVector3Shifted(), map, config.scale);
-            if (config.target == VisualEffectTarget.Both && target.IsValid && target.Cell != caster.Position)
-                FleckMaker.ThrowDustPuff(caster.Position.ToVector3Shifted(), map, config.scale);
+            foreach (Vector3 pos in ResolvePositions(config, target, caster))
+                FleckMaker.ThrowDustPuff(pos, map, config.scale);
         }
     }
 
@@ -56,10 +171,8 @@ namespace CharacterStudio.Abilities
         {
             var map = caster.Map;
             if (map == null) return;
-            IntVec3 cell = ResolveCell(config, target, caster);
-            FleckMaker.ThrowMicroSparks(cell.ToVector3Shifted(), map);
-            if (config.target == VisualEffectTarget.Both && target.IsValid && target.Cell != caster.Position)
-                FleckMaker.ThrowMicroSparks(caster.Position.ToVector3Shifted(), map);
+            foreach (Vector3 pos in ResolvePositions(config, target, caster))
+                FleckMaker.ThrowMicroSparks(pos, map);
         }
     }
 
@@ -72,10 +185,8 @@ namespace CharacterStudio.Abilities
         {
             var map = caster.Map;
             if (map == null) return;
-            IntVec3 cell = ResolveCell(config, target, caster);
-            FleckMaker.ThrowLightningGlow(cell.ToVector3Shifted(), map, config.scale);
-            if (config.target == VisualEffectTarget.Both && target.IsValid && target.Cell != caster.Position)
-                FleckMaker.ThrowLightningGlow(caster.Position.ToVector3Shifted(), map, config.scale);
+            foreach (Vector3 pos in ResolvePositions(config, target, caster))
+                FleckMaker.ThrowLightningGlow(pos, map, config.scale);
         }
     }
 
@@ -88,10 +199,8 @@ namespace CharacterStudio.Abilities
         {
             var map = caster.Map;
             if (map == null) return;
-            IntVec3 cell = ResolveCell(config, target, caster);
-            FleckMaker.ThrowFireGlow(cell.ToVector3Shifted(), map, config.scale);
-            if (config.target == VisualEffectTarget.Both && target.IsValid && target.Cell != caster.Position)
-                FleckMaker.ThrowFireGlow(caster.Position.ToVector3Shifted(), map, config.scale);
+            foreach (Vector3 pos in ResolvePositions(config, target, caster))
+                FleckMaker.ThrowFireGlow(pos, map, config.scale);
         }
     }
 
@@ -104,10 +213,8 @@ namespace CharacterStudio.Abilities
         {
             var map = caster.Map;
             if (map == null) return;
-            IntVec3 cell = ResolveCell(config, target, caster);
-            FleckMaker.ThrowSmoke(cell.ToVector3Shifted(), map, config.scale);
-            if (config.target == VisualEffectTarget.Both && target.IsValid && target.Cell != caster.Position)
-                FleckMaker.ThrowSmoke(caster.Position.ToVector3Shifted(), map, config.scale);
+            foreach (Vector3 pos in ResolvePositions(config, target, caster))
+                FleckMaker.ThrowSmoke(pos, map, config.scale);
         }
     }
 
@@ -120,10 +227,8 @@ namespace CharacterStudio.Abilities
         {
             var map = caster.Map;
             if (map == null) return;
-            IntVec3 cell = ResolveCell(config, target, caster);
-            PlayExplosionAt(cell.ToVector3Shifted(), map, config.scale);
-            if (config.target == VisualEffectTarget.Both && target.IsValid && target.Cell != caster.Position)
-                PlayExplosionAt(caster.Position.ToVector3Shifted(), map, config.scale);
+            foreach (Vector3 pos in ResolvePositions(config, target, caster))
+                PlayExplosionAt(pos, map, config.scale);
         }
 
         private static void PlayExplosionAt(Vector3 pos, Map map, float scale)
