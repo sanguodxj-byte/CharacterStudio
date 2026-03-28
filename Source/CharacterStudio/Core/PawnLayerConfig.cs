@@ -158,6 +158,9 @@ namespace CharacterStudio.Core
         /// <summary>是否根据方向翻转</summary>
         public bool flipHorizontal = false;
 
+        /// <summary>可选：仅在指定朝向显示（South/East/West/North，留空表示不限制）</summary>
+        public string directionalFacing = string.Empty;
+
         /// <summary>仅在特定朝向时显示</summary>
         public RotDrawMode rotDrawMode = RotDrawMode.Fresh | RotDrawMode.Rotting;
 
@@ -303,6 +306,7 @@ namespace CharacterStudio.Core
         public int triggeredDeployTicks = 12;
         public int triggeredHoldTicks = 24;
         public int triggeredReturnTicks = 12;
+        public Vector2 triggeredPivotOffset = Vector2.zero;
         public bool triggeredUseVfxVisibility = false;
         public string triggeredIdleTexPath = string.Empty;
         public string triggeredDeployTexPath = string.Empty;
@@ -316,6 +320,9 @@ namespace CharacterStudio.Core
         public bool triggeredVisibleDuringHold = true;
         public bool triggeredVisibleDuringReturn = true;
         public bool triggeredVisibleOutsideCycle = true;
+        public EquipmentTriggeredAnimationOverride? triggeredAnimationSouth;
+        public EquipmentTriggeredAnimationOverride? triggeredAnimationEastWest;
+        public EquipmentTriggeredAnimationOverride? triggeredAnimationNorth;
 
         /// <summary>
         /// 复制当前配置
@@ -339,6 +346,7 @@ namespace CharacterStudio.Core
                 rotationEastOffset = this.rotationEastOffset,
                 rotationNorthOffset = this.rotationNorthOffset,
                 flipHorizontal = this.flipHorizontal,
+                directionalFacing = this.directionalFacing,
                 rotDrawMode = this.rotDrawMode,
                 workerClass = this.workerClass,
                 graphicClass = this.graphicClass,
@@ -383,6 +391,7 @@ namespace CharacterStudio.Core
                 triggeredDeployTicks = this.triggeredDeployTicks,
                 triggeredHoldTicks = this.triggeredHoldTicks,
                 triggeredReturnTicks = this.triggeredReturnTicks,
+                triggeredPivotOffset = this.triggeredPivotOffset,
                 triggeredUseVfxVisibility = this.triggeredUseVfxVisibility,
                 triggeredIdleTexPath = this.triggeredIdleTexPath,
                 triggeredDeployTexPath = this.triggeredDeployTexPath,
@@ -395,7 +404,10 @@ namespace CharacterStudio.Core
                 triggeredVisibleDuringDeploy = this.triggeredVisibleDuringDeploy,
                 triggeredVisibleDuringHold = this.triggeredVisibleDuringHold,
                 triggeredVisibleDuringReturn = this.triggeredVisibleDuringReturn,
-                triggeredVisibleOutsideCycle = this.triggeredVisibleOutsideCycle
+                triggeredVisibleOutsideCycle = this.triggeredVisibleOutsideCycle,
+                triggeredAnimationSouth = this.triggeredAnimationSouth?.Clone(),
+                triggeredAnimationEastWest = this.triggeredAnimationEastWest?.Clone(),
+                triggeredAnimationNorth = this.triggeredAnimationNorth?.Clone()
             };
         }
     }
