@@ -2480,6 +2480,8 @@ namespace CharacterStudio.Rendering
                 && config.eyeRenderMode == EyeRenderMode.UvOffset
                 && config.eyeUvMoveRange > 0f)
             {
+                // UV 偏移模式仍应保留当前已解析出的朝向底图，
+                // 这里只跳过 channel 后缀切换，不允许把 east/west 的底图重新抹回 front-neutral。
                 return resolvedNeutralPath;
             }
 
