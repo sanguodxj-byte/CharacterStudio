@@ -479,9 +479,20 @@ namespace CharacterStudio.UI
                 return string.Empty;
             }
 
-            return string.IsNullOrWhiteSpace(animationState.triggerAbilityDefName)
-                ? (animationState.animationGroupKey ?? string.Empty)
-                : animationState.triggerAbilityDefName;
+            if (!string.IsNullOrWhiteSpace(animationState.triggerAbilityDefName))
+            {
+                return animationState.triggerAbilityDefName;
+            }
+
+            if (!string.IsNullOrWhiteSpace(animationState.animationGroupKey))
+            {
+                return animationState.animationGroupKey;
+            }
+
+            string equipmentKey = !string.IsNullOrWhiteSpace(equipment?.defName)
+                ? equipment!.defName!
+                : $"Equipment_{selectedEquipmentIndex}";
+            return $"Preview_{equipmentKey}";
         }
 
         private int GetSelectedEquipmentAnimationDurationTicks()
@@ -557,6 +568,7 @@ namespace CharacterStudio.UI
         {
             previewEquipmentAnimationPlaying = false;
             previewEquipmentAnimationLastRealtime = -1f;
+            previewEquipmentAnimationElapsedTicks = 0f;
 
             var previewPawn = mannequin?.CurrentPawn;
             var skinComp = previewPawn?.GetComp<CompPawnSkin>();
@@ -585,14 +597,14 @@ namespace CharacterStudio.UI
             previewEquipmentAnimationLoop = loop;
             previewEquipmentAnimationPlaying = true;
             previewEquipmentAnimationLastRealtime = Time.realtimeSinceStartup;
+            previewEquipmentAnimationElapsedTicks = 0f;
             previewEquipmentAnimationTriggerKey = triggerKey;
 
             var previewPawn = mannequin?.CurrentPawn;
             var skinComp = previewPawn?.GetComp<CompPawnSkin>();
             if (skinComp != null)
             {
-                int now = Find.TickManager?.TicksGame ?? 0;
-                skinComp.TriggerEquipmentAnimationState(triggerKey, now, durationTicks);
+                ApplyPreviewEquipmentAnimationState(skinComp, triggerKey, durationTicks);
             }
         }
 
@@ -652,6 +664,7 @@ namespace CharacterStudio.UI
             }
 
             previewEquipmentAnimationLastRealtime = nowRealtime;
+            previewEquipmentAnimationElapsedTicks += deltaRealtime * 60f;
 
             var previewPawn = mannequin?.CurrentPawn;
             var skinComp = previewPawn?.GetComp<CompPawnSkin>();
@@ -660,20 +673,34 @@ namespace CharacterStudio.UI
                 return;
             }
 
-            int nowTick = Find.TickManager?.TicksGame ?? 0;
-            if (skinComp.IsTriggeredEquipmentAnimationActive(triggerKey))
-            {
-                return;
-            }
-
             if (previewEquipmentAnimationLoop)
             {
-                skinComp.TriggerEquipmentAnimationState(triggerKey, nowTick, durationTicks);
+                if (durationTicks > 0)
+                {
+                    previewEquipmentAnimationElapsedTicks %= durationTicks;
+                }
+            }
+            else if (previewEquipmentAnimationElapsedTicks >= durationTicks)
+            {
+                StopPreviewEquipmentAnimation(refreshPreview: false);
+                skinComp.RequestRenderRefresh();
                 return;
             }
 
-            StopPreviewEquipmentAnimation(refreshPreview: false);
-            skinComp.RequestRenderRefresh();
+            ApplyPreviewEquipmentAnimationState(skinComp, triggerKey, durationTicks);
+        }
+
+        private void ApplyPreviewEquipmentAnimationState(CompPawnSkin skinComp, string triggerKey, int durationTicks)
+        {
+            if (skinComp == null || string.IsNullOrWhiteSpace(triggerKey) || durationTicks <= 0)
+            {
+                return;
+            }
+
+            int nowTick = Find.TickManager?.TicksGame ?? 0;
+            int elapsedTicks = Mathf.Clamp(Mathf.RoundToInt(previewEquipmentAnimationElapsedTicks), 0, Math.Max(0, durationTicks - 1));
+            int startTick = nowTick - elapsedTicks;
+            skinComp.TriggerEquipmentAnimationState(triggerKey, startTick, durationTicks);
         }
 
         private void SyncPreviewOverridesToSkinComp()
@@ -708,16 +735,7 @@ namespace CharacterStudio.UI
                 int durationTicks = GetSelectedEquipmentAnimationDurationTicks();
                 if (durationTicks > 0)
                 {
-                    int now = Find.TickManager?.TicksGame ?? 0;
-                    int startTick = skinComp.IsTriggeredEquipmentAnimationActive(currentTriggerKey)
-                        ? skinComp.triggeredEquipmentAnimationStartTick
-                        : now;
-                    if (startTick < 0)
-                    {
-                        startTick = now;
-                    }
-
-                    skinComp.TriggerEquipmentAnimationState(currentTriggerKey, startTick, durationTicks);
+                    ApplyPreviewEquipmentAnimationState(skinComp, currentTriggerKey, durationTicks);
                 }
             }
 

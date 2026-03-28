@@ -6,6 +6,7 @@ using System.Xml;
 using System.Xml.Linq;
 using CharacterStudio.Core;
 using CharacterStudio.Exporter;
+using RimWorld;
 using UnityEngine;
 using Verse;
 
@@ -15,6 +16,7 @@ namespace CharacterStudio.UI
     {
         private static string lastImportedEquipmentXmlPath = string.Empty;
         private static string lastExportedEquipmentXmlPath = string.Empty;
+        private static readonly Dictionary<string, ThingDef> runtimeTestEquipmentDefs = new Dictionary<string, ThingDef>(StringComparer.OrdinalIgnoreCase);
 
         private void DrawEquipmentPanel(Rect rect)
         {
@@ -43,7 +45,7 @@ namespace CharacterStudio.UI
             Text.Font = oldFont;
 
             float btnY = titleRect.yMax + 6f;
-            float btnCount = 7f;
+            float btnCount = 8f;
             float btnWidth = (rect.width - Margin * (btnCount + 1f)) / btnCount;
             float btnHeight = Mathf.Max(ButtonHeight - 2f, 22f);
 
@@ -86,8 +88,9 @@ namespace CharacterStudio.UI
             DrawIconButton(new Rect(startX + (btnWidth + Margin) * 2f, btnY, btnWidth, btnHeight), "✈", "CS_Studio_Equip_AircraftPreset".Translate(), AddAircraftWingAnimationPreset, true);
             DrawIconButton(new Rect(startX + (btnWidth + Margin) * 3f, btnY, btnWidth, btnHeight), "-", "CS_Studio_Btn_Delete".Translate(), DeleteSelectedEquipment);
             DrawIconButton(new Rect(startX + (btnWidth + Margin) * 4f, btnY, btnWidth, btnHeight), "C", "CS_Studio_Panel_Duplicate".Translate(), DuplicateSelectedEquipment);
-            DrawIconButton(new Rect(startX + (btnWidth + Margin) * 5f, btnY, btnWidth, btnHeight), "↓", "CS_Studio_Equip_ImportXmlTitle".Translate(), OpenEquipmentImportXmlDialog);
-            DrawIconButton(new Rect(startX + (btnWidth + Margin) * 6f, btnY, btnWidth, btnHeight), "↑", "CS_Studio_Equip_Btn_ExportXml".Translate(), ExportSelectedEquipmentToDefaultPath);
+            DrawIconButton(new Rect(startX + (btnWidth + Margin) * 5f, btnY, btnWidth, btnHeight), "T", "CS_Studio_Equip_Btn_TestSpawn".Translate(), SpawnSelectedEquipmentForTest, true);
+            DrawIconButton(new Rect(startX + (btnWidth + Margin) * 6f, btnY, btnWidth, btnHeight), "↓", "CS_Studio_Equip_ImportXmlTitle".Translate(), OpenEquipmentImportXmlDialog);
+            DrawIconButton(new Rect(startX + (btnWidth + Margin) * 7f, btnY, btnWidth, btnHeight), "↑", "CS_Studio_Equip_Btn_ExportXml".Translate(), ExportSelectedEquipmentToDefaultPath);
 
             float listY = btnY + btnHeight + 8f;
             float listHeight = rect.height - listY + rect.y - Margin;
@@ -380,6 +383,188 @@ namespace CharacterStudio.UI
             RefreshPreview();
             RefreshRenderTree();
             ShowStatus("CS_Studio_Equip_Deleted".Translate(removedLabel));
+        }
+
+        private void SpawnSelectedEquipmentForTest()
+        {
+            workingSkin.equipments ??= new List<CharacterEquipmentDef>();
+            SanitizeEquipmentSelection();
+            if (selectedEquipmentIndex < 0 || selectedEquipmentIndex >= workingSkin.equipments.Count)
+            {
+                ShowStatus("CS_Studio_Equip_NoSelection".Translate());
+                return;
+            }
+
+            CharacterEquipmentDef? selected = workingSkin.equipments[selectedEquipmentIndex]?.Clone();
+            if (selected == null)
+            {
+                ShowStatus("CS_Studio_Equip_InvalidSelection".Translate());
+                return;
+            }
+
+            selected.EnsureDefaults();
+            Map? map = targetPawn?.Map ?? Find.CurrentMap;
+            if (map == null)
+            {
+                ShowStatus("CS_Studio_Equip_TestSpawnFailed".Translate("Map unavailable"));
+                return;
+            }
+
+            ThingDef? thingDef = ResolveEquipmentThingDefForTest(selected);
+            if (thingDef == null)
+            {
+                ShowStatus("CS_Studio_Equip_TestSpawnFailed".Translate("ThingDef unavailable"));
+                return;
+            }
+
+            try
+            {
+                Thing thing = ThingMaker.MakeThing(thingDef);
+                IntVec3 origin = targetPawn != null && targetPawn.Spawned && targetPawn.Map == map
+                    ? targetPawn.Position
+                    : map.Center;
+                IntVec3 spawnCell = origin;
+                if (!spawnCell.InBounds(map) || !spawnCell.Standable(map))
+                {
+                    spawnCell = CellFinder.StandableCellNear(origin, map, 8);
+                }
+
+                GenSpawn.Spawn(thing, spawnCell, map, WipeMode.Vanish);
+                ShowStatus("CS_Studio_Equip_TestSpawned".Translate(selected.GetDisplayLabel()));
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"[CharacterStudio] 地图测试生成装备失败: {ex}");
+                ShowStatus("CS_Studio_Equip_TestSpawnFailed".Translate(ex.Message));
+            }
+        }
+
+        private static ThingDef? ResolveEquipmentThingDefForTest(CharacterEquipmentDef equipment)
+        {
+            string resolvedThingDefName = equipment.GetResolvedThingDefName();
+            if (string.IsNullOrWhiteSpace(resolvedThingDefName))
+            {
+                return null;
+            }
+
+            ThingDef? existing = DefDatabase<ThingDef>.GetNamedSilentFail(resolvedThingDefName);
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            if (runtimeTestEquipmentDefs.TryGetValue(resolvedThingDefName, out ThingDef cached))
+            {
+                return cached;
+            }
+
+            ThingDef? runtimeDef = CreateRuntimeTestEquipmentThingDef(equipment, resolvedThingDefName);
+            if (runtimeDef == null)
+            {
+                return null;
+            }
+
+            DefDatabase<ThingDef>.Add(runtimeDef);
+            runtimeTestEquipmentDefs[resolvedThingDefName] = runtimeDef;
+            return runtimeDef;
+        }
+
+        private static ThingDef? CreateRuntimeTestEquipmentThingDef(CharacterEquipmentDef equipment, string resolvedThingDefName)
+        {
+            string texPath = string.IsNullOrWhiteSpace(equipment.worldTexPath)
+                ? (equipment.renderData?.GetResolvedTexPath() ?? string.Empty)
+                : equipment.worldTexPath;
+            if (string.IsNullOrWhiteSpace(texPath))
+            {
+                return null;
+            }
+
+            ThingDef? parentDef = DefDatabase<ThingDef>.GetNamedSilentFail(equipment.parentThingDefName);
+            ShaderTypeDef shader = DefDatabase<ShaderTypeDef>.GetNamedSilentFail(equipment.shaderDefName) ?? ShaderTypeDefOf.Cutout;
+
+            ThingDef runtimeDef = new ThingDef
+            {
+                defName = resolvedThingDefName,
+                label = equipment.GetDisplayLabel(),
+                description = equipment.description ?? string.Empty,
+                thingClass = parentDef?.thingClass ?? typeof(Apparel),
+                category = parentDef?.category ?? ThingCategory.Item,
+                altitudeLayer = parentDef?.altitudeLayer ?? AltitudeLayer.Item,
+                drawerType = parentDef?.drawerType ?? DrawerType.MapMeshOnly,
+                useHitPoints = parentDef?.useHitPoints ?? true,
+                selectable = true,
+                drawGUIOverlay = true,
+                rotatable = false,
+                statBases = parentDef?.statBases != null ? new List<StatModifier>(parentDef.statBases) : new List<StatModifier>(),
+                equippedStatOffsets = parentDef?.equippedStatOffsets != null ? new List<StatModifier>(parentDef.equippedStatOffsets) : new List<StatModifier>(),
+                modExtensions = new List<DefModExtension>()
+            };
+
+            runtimeDef.graphicData = new GraphicData
+            {
+                texPath = texPath,
+                graphicClass = typeof(Graphic_Single),
+                shaderType = shader,
+                drawSize = Vector2.one
+            };
+
+            runtimeDef.thingCategories = equipment.thingCategories?
+                .Select(name => DefDatabase<ThingCategoryDef>.GetNamedSilentFail(name))
+                .Where(def => def != null)
+                .Cast<ThingCategoryDef>()
+                .ToList();
+
+            runtimeDef.apparel = new ApparelProperties
+            {
+                wornGraphicPath = string.IsNullOrWhiteSpace(equipment.wornTexPath) ? texPath : equipment.wornTexPath,
+                useWornGraphicMask = equipment.useWornGraphicMask,
+                bodyPartGroups = equipment.bodyPartGroups?
+                    .Select(name => DefDatabase<BodyPartGroupDef>.GetNamedSilentFail(name))
+                    .Where(def => def != null)
+                    .Cast<BodyPartGroupDef>()
+                    .ToList() ?? new List<BodyPartGroupDef>(),
+                layers = equipment.apparelLayers?
+                    .Select(name => DefDatabase<ApparelLayerDef>.GetNamedSilentFail(name))
+                    .Where(def => def != null)
+                    .Cast<ApparelLayerDef>()
+                    .ToList() ?? new List<ApparelLayerDef>(),
+                tags = equipment.apparelTags != null ? new List<string>(equipment.apparelTags) : new List<string>()
+            };
+
+            foreach (CharacterEquipmentStatEntry entry in equipment.statBases ?? new List<CharacterEquipmentStatEntry>())
+            {
+                if (entry == null || string.IsNullOrWhiteSpace(entry.statDefName))
+                {
+                    continue;
+                }
+
+                StatDef? statDef = DefDatabase<StatDef>.GetNamedSilentFail(entry.statDefName);
+                if (statDef != null)
+                {
+                    runtimeDef.statBases.Add(new StatModifier { stat = statDef, value = entry.value });
+                }
+            }
+
+            foreach (CharacterEquipmentStatEntry entry in equipment.equippedStatOffsets ?? new List<CharacterEquipmentStatEntry>())
+            {
+                if (entry == null || string.IsNullOrWhiteSpace(entry.statDefName))
+                {
+                    continue;
+                }
+
+                StatDef? statDef = DefDatabase<StatDef>.GetNamedSilentFail(entry.statDefName);
+                if (statDef != null)
+                {
+                    runtimeDef.equippedStatOffsets.Add(new StatModifier { stat = statDef, value = entry.value });
+                }
+            }
+
+            DefModExtension_EquipmentRender renderExtension = DefModExtension_EquipmentRender.FromEquipment(equipment);
+            renderExtension.EnsureDefaults();
+            runtimeDef.modExtensions.Add(renderExtension);
+            runtimeDef.ResolveReferences();
+            runtimeDef.PostLoad();
+            return runtimeDef;
         }
 
         private CharacterEquipmentDef CreateDefaultEquipment(int index)
