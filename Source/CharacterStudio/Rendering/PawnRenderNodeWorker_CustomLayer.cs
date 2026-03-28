@@ -1029,10 +1029,12 @@ namespace CharacterStudio.Rendering
             float primaryWave,
             float slowWave)
         {
+            PawnEyeDirectionConfig.LidMotionConfig lidMotion = GetLayeredLidMotionConfig(customNode);
+
             if (partType == LayeredFacePartType.UpperLid)
             {
                 float replacementMoveDown = GetLayeredUpperLidMoveDown(customNode);
-                float sideBiasX = GetLayeredFaceSideBias(customNode, 0.00035f);
+                float sideBiasX = GetLayeredFaceSideBias(customNode, lidMotion.upperSideBiasX);
                 switch (state)
                 {
                     case LidState.Blink:
@@ -1043,11 +1045,11 @@ namespace CharacterStudio.Rendering
                         float phaseProgress = blinkSkinComp?.GetBlinkProgress01() ?? 0f;
                         float animatedMoveDown = blinkPhase switch
                         {
-                            BlinkPhase.ClosingLid => Mathf.Lerp(0f, replacementMoveDown, Mathf.Clamp01(phaseProgress / 0.5f)),
+                            BlinkPhase.ClosingLid => Mathf.Lerp(0f, replacementMoveDown, Mathf.Clamp01(phaseProgress / Mathf.Max(0.0001f, lidMotion.upperBlinkClosingPhaseDuration))),
                             BlinkPhase.HideBaseEyeParts => replacementMoveDown,
                             BlinkPhase.ShowReplacementEye => replacementMoveDown,
                             BlinkPhase.RestoreBaseEyeParts => replacementMoveDown,
-                            BlinkPhase.OpeningLid => Mathf.Lerp(replacementMoveDown, 0f, Mathf.Clamp01((phaseProgress - 0.6f) / 0.4f)),
+                            BlinkPhase.OpeningLid => Mathf.Lerp(replacementMoveDown, 0f, Mathf.Clamp01((phaseProgress - lidMotion.upperBlinkOpeningStart) / Mathf.Max(0.0001f, lidMotion.upperBlinkOpeningDuration))),
                             _ => 0f,
                         };
 
@@ -1055,7 +1057,7 @@ namespace CharacterStudio.Rendering
                             customNode,
                             0f,
                             new Vector3(sideBiasX, 0f, animatedMoveDown),
-                            new Vector3(1.01f, 1f, 0.88f));
+                            new Vector3(lidMotion.upperBlinkScaleX, 1f, lidMotion.upperBlinkScaleZ));
                         break;
                     }
 
@@ -1064,7 +1066,7 @@ namespace CharacterStudio.Rendering
                             customNode,
                             0f,
                             new Vector3(sideBiasX, 0f, replacementMoveDown),
-                            new Vector3(1.01f, 1f, 0.90f));
+                            new Vector3(lidMotion.upperCloseScaleX, 1f, lidMotion.upperCloseScaleZ));
                         break;
 
                     case LidState.Half:
@@ -1073,29 +1075,29 @@ namespace CharacterStudio.Rendering
                         CompPawnSkin? skinComp = pawn?.TryGetComp<CompPawnSkin>();
                         EyeAnimationVariant eyeVariant = skinComp?.GetEffectiveEyeAnimationVariant() ?? EyeAnimationVariant.NeutralSoft;
 
-                        float halfOffset = Mathf.Max(0f, replacementMoveDown - 0.0016f);
-                        float halfScale = 0.95f;
+                        float halfOffset = Mathf.Max(0f, replacementMoveDown - lidMotion.upperHalfBaseOffsetSubtract);
+                        float halfScale = lidMotion.upperHalfScaleDefault;
                         if (eyeVariant == EyeAnimationVariant.NeutralSoft)
                         {
-                            halfOffset += 0.0003f;
-                            halfScale = 0.93f;
+                            halfOffset += lidMotion.upperHalfNeutralSoftExtraOffset;
+                            halfScale = lidMotion.upperHalfScaleNeutralSoft;
                         }
                         else if (eyeVariant == EyeAnimationVariant.NeutralLookDown)
                         {
-                            halfOffset += 0.0008f;
-                            halfScale = 0.91f;
+                            halfOffset += lidMotion.upperHalfLookDownExtraOffset;
+                            halfScale = lidMotion.upperHalfScaleLookDown;
                         }
                         else if (eyeVariant == EyeAnimationVariant.ScaredFlinch)
                         {
-                            halfOffset += 0.0010f;
-                            halfScale = 0.89f;
+                            halfOffset += lidMotion.upperHalfScaredExtraOffset;
+                            halfScale = lidMotion.upperHalfScaleScared;
                         }
 
                         SetProgrammaticFaceTransform(
                             customNode,
                             0f,
-                            new Vector3(sideBiasX, 0f, halfOffset + slowWave * 0.0004f),
-                            new Vector3(1.01f, 1f, halfScale));
+                            new Vector3(sideBiasX, 0f, halfOffset + slowWave * lidMotion.upperHalfSlowWaveOffset),
+                            new Vector3(lidMotion.upperCloseScaleX, 1f, halfScale));
                         break;
                     }
 
@@ -1110,13 +1112,13 @@ namespace CharacterStudio.Rendering
                             return;
                         }
 
-                        float happyOffset = eyeVariant == EyeAnimationVariant.HappySoft ? -0.0014f : -0.0008f;
-                        float happyScale = eyeVariant == EyeAnimationVariant.HappySoft ? 0.90f : 0.95f;
+                        float happyOffset = eyeVariant == EyeAnimationVariant.HappySoft ? lidMotion.upperHappySoftOffset : lidMotion.upperHappyOpenOffset;
+                        float happyScale = eyeVariant == EyeAnimationVariant.HappySoft ? lidMotion.upperHappySoftScale : lidMotion.upperHappyOpenScale;
                         SetProgrammaticFaceTransform(
                             customNode,
-                            -1.2f + primaryWave * 0.2f,
-                            new Vector3(sideBiasX, 0f, happyOffset + slowWave * 0.0004f),
-                            new Vector3(1.02f, 1f, happyScale));
+                            lidMotion.upperHappyAngleBase + primaryWave * lidMotion.upperHappyAngleWave,
+                            new Vector3(sideBiasX, 0f, happyOffset + slowWave * lidMotion.upperHappySlowWaveOffset),
+                            new Vector3(lidMotion.upperHappyScaleX, 1f, happyScale));
                         break;
                     }
 
@@ -1124,7 +1126,7 @@ namespace CharacterStudio.Rendering
                         SetProgrammaticFaceTransform(
                             customNode,
                             0f,
-                            new Vector3(sideBiasX, 0f, slowWave * 0.0003f),
+                            new Vector3(sideBiasX, 0f, slowWave * lidMotion.upperDefaultSlowWaveOffset),
                             Vector3.one);
                         break;
                 }
@@ -1134,46 +1136,46 @@ namespace CharacterStudio.Rendering
 
             if (partType == LayeredFacePartType.LowerLid)
             {
-                float sideBiasX = GetLayeredFaceSideBias(customNode, 0.0002f);
+                float sideBiasX = GetLayeredFaceSideBias(customNode, lidMotion.lowerSideBiasX);
                 switch (state)
                 {
                     case LidState.Blink:
                         SetProgrammaticFaceTransform(
                             customNode,
                             0f,
-                            new Vector3(sideBiasX, 0f, -0.0024f),
-                            new Vector3(1.00f, 1f, 0.96f));
+                            new Vector3(sideBiasX, 0f, lidMotion.lowerBlinkOffset),
+                            new Vector3(lidMotion.lowerBlinkScaleX, 1f, lidMotion.lowerBlinkScaleZ));
                         break;
 
                     case LidState.Close:
                         SetProgrammaticFaceTransform(
                             customNode,
                             0f,
-                            new Vector3(sideBiasX, 0f, -0.0018f),
-                            new Vector3(1.00f, 1f, 0.97f));
+                            new Vector3(sideBiasX, 0f, lidMotion.lowerCloseOffset),
+                            new Vector3(lidMotion.lowerCloseScaleX, 1f, lidMotion.lowerCloseScaleZ));
                         break;
 
                     case LidState.Half:
                         SetProgrammaticFaceTransform(
                             customNode,
                             0f,
-                            new Vector3(sideBiasX, 0f, -0.0012f + slowWave * 0.0003f),
-                            new Vector3(1.00f, 1f, 0.985f));
+                            new Vector3(sideBiasX, 0f, lidMotion.lowerHalfOffset + slowWave * lidMotion.lowerHalfSlowWaveOffset),
+                            new Vector3(lidMotion.lowerHalfScaleX, 1f, lidMotion.lowerHalfScaleZ));
                         break;
 
                     case LidState.Happy:
                         SetProgrammaticFaceTransform(
                             customNode,
-                            0.85f + primaryWave * 0.15f,
-                            new Vector3(sideBiasX, 0f, -0.0008f + slowWave * 0.0003f),
-                            new Vector3(1.01f, 1f, 0.98f));
+                            lidMotion.lowerHappyAngleBase + primaryWave * lidMotion.lowerHappyAngleWave,
+                            new Vector3(sideBiasX, 0f, lidMotion.lowerHappyOffset + slowWave * lidMotion.lowerHappySlowWaveOffset),
+                            new Vector3(lidMotion.lowerHappyScaleX, 1f, lidMotion.lowerHappyScaleZ));
                         break;
 
                     default:
                         SetProgrammaticFaceTransform(
                             customNode,
                             0f,
-                            new Vector3(sideBiasX, 0f, -slowWave * 0.0002f),
+                            new Vector3(sideBiasX, 0f, -slowWave * lidMotion.lowerDefaultSlowWaveOffset),
                             Vector3.one);
                         break;
                 }
@@ -1187,42 +1189,50 @@ namespace CharacterStudio.Rendering
                     SetProgrammaticFaceTransform(
                         customNode,
                         0f,
-                        new Vector3(0f, 0f, 0.0045f),
-                        new Vector3(1.02f, 1f, 0.72f));
+                        new Vector3(0f, 0f, lidMotion.genericBlinkOffset),
+                        new Vector3(lidMotion.genericBlinkScaleX, 1f, lidMotion.genericBlinkScaleZ));
                     break;
 
                 case LidState.Close:
                     SetProgrammaticFaceTransform(
                         customNode,
                         0f,
-                        new Vector3(0f, 0f, 0.0035f),
-                        new Vector3(1.01f, 1f, 0.78f));
+                        new Vector3(0f, 0f, lidMotion.genericCloseOffset),
+                        new Vector3(lidMotion.genericCloseScaleX, 1f, lidMotion.genericCloseScaleZ));
                     break;
 
                 case LidState.Half:
                     SetProgrammaticFaceTransform(
                         customNode,
                         0f,
-                        new Vector3(0f, 0f, 0.0022f + slowWave * 0.0005f),
-                        new Vector3(1.01f, 1f, 0.89f));
+                        new Vector3(0f, 0f, lidMotion.genericHalfOffset + slowWave * lidMotion.genericHalfSlowWaveOffset),
+                        new Vector3(lidMotion.genericHalfScaleX, 1f, lidMotion.genericHalfScaleZ));
                     break;
 
                 case LidState.Happy:
                     SetProgrammaticFaceTransform(
                         customNode,
-                        -1.1f + primaryWave * 0.25f,
-                        new Vector3(0f, 0f, -0.001f + slowWave * 0.0005f),
-                        new Vector3(1.03f, 1f, 0.91f));
+                        lidMotion.genericHappyAngleBase + primaryWave * lidMotion.genericHappyAngleWave,
+                        new Vector3(0f, 0f, lidMotion.genericHappyOffset + slowWave * lidMotion.genericHappySlowWaveOffset),
+                        new Vector3(lidMotion.genericHappyScaleX, 1f, lidMotion.genericHappyScaleZ));
                     break;
 
                 default:
                     SetProgrammaticFaceTransform(
                         customNode,
                         0f,
-                        new Vector3(0f, 0f, slowWave * 0.0004f),
-                        new Vector3(1f, 1f, 0.99f + Mathf.Abs(primaryWave) * 0.01f));
+                        new Vector3(0f, 0f, slowWave * lidMotion.genericDefaultSlowWaveOffset),
+                        new Vector3(1f, 1f, lidMotion.genericDefaultScaleZBase + Mathf.Abs(primaryWave) * lidMotion.genericDefaultScaleZWaveAmplitude));
                     break;
             }
+        }
+
+        private PawnEyeDirectionConfig.LidMotionConfig GetLayeredLidMotionConfig(PawnRenderNode_Custom customNode)
+        {
+            Pawn? pawn = customNode.tree?.pawn;
+            CompPawnSkin? skinComp = pawn?.TryGetComp<CompPawnSkin>();
+            return skinComp?.ActiveSkin?.faceConfig?.eyeDirectionConfig?.lidMotion
+                ?? new PawnEyeDirectionConfig.LidMotionConfig();
         }
 
         private void ApplyProgrammaticMouthTransform(
@@ -1306,7 +1316,7 @@ namespace CharacterStudio.Rendering
             // 因此当用户只切换 LidState（Blink / Half / Close）而未启用眼方向模块时，
             // 会命中默认 0.0044f 或旧编译缓存，导致预览里看起来“没有任何变化”。
             // 对程序化眼睑位移来说，源配置值本身更可靠，应优先直读 active skin。
-            float configuredMoveDown = Mathf.Max(0f, skinComp?.ActiveSkin?.faceConfig?.eyeDirectionConfig?.upperLidMoveDown ?? 0.0044f);
+            float configuredMoveDown = Mathf.Max(0f, skinComp?.ActiveSkin?.faceConfig?.eyeDirectionConfig?.upperLidMoveDown ?? 0f);
 
             FaceEyeDirectionRuntimeData? eyeData = skinComp?.CurrentFaceRuntimeCompiledData?.portraitTrack?.eyeDirection;
             if (eyeData?.enabled == true)
@@ -2293,6 +2303,36 @@ namespace CharacterStudio.Rendering
             bool isOverlay = partType == LayeredFacePartType.Overlay;
             string overlayId = GetEffectiveLayeredOverlayId(customNode, pawn);
 
+            bool isLayeredEyePart = partType == LayeredFacePartType.Eye
+                || partType == LayeredFacePartType.Pupil
+                || partType == LayeredFacePartType.UpperLid
+                || partType == LayeredFacePartType.LowerLid;
+            bool isClosedEyeState = expression == ExpressionType.Blink
+                || expression == ExpressionType.Sleeping
+                || expression == ExpressionType.Dead;
+            bool isSideFacing = facing == Rot4.East || facing == Rot4.West;
+            bool shouldPreferExplicitDirectionalPath = isSideFacing
+                && (!isLayeredEyePart || !isClosedEyeState);
+
+            if (shouldPreferExplicitDirectionalPath)
+            {
+                string explicitDirectionalPath = isOverlay
+                    ? faceConfig.GetLayeredDirectionalPartPath(partType, expression, overlayId, facing)
+                    : faceConfig.GetLayeredDirectionalPartPath(partType, expression, side, facing);
+                if (!string.IsNullOrWhiteSpace(explicitDirectionalPath))
+                {
+                    return explicitDirectionalPath;
+                }
+
+                string explicitNeutralDirectionalPath = isOverlay
+                    ? faceConfig.GetLayeredDirectionalPartPath(partType, ExpressionType.Neutral, overlayId, facing)
+                    : faceConfig.GetLayeredDirectionalPartPath(partType, ExpressionType.Neutral, side, facing);
+                if (!string.IsNullOrWhiteSpace(explicitNeutralDirectionalPath))
+                {
+                    return explicitNeutralDirectionalPath;
+                }
+            }
+
             string? compiledPath = ResolveCompiledLayeredFacePartPath(
                 compiledData,
                 currentTrack,
@@ -2337,9 +2377,11 @@ namespace CharacterStudio.Rendering
             if (!string.IsNullOrWhiteSpace(neutralPath))
                 return neutralPath;
 
-            if (partType == LayeredFacePartType.Base)
+            if (!isOverlay)
             {
-                string anyPath = faceConfig.GetAnyDirectionalLayeredPartPath(partType, facing);
+                string anyPath = partType == LayeredFacePartType.Base
+                    ? faceConfig.GetAnyDirectionalLayeredPartPath(partType, facing)
+                    : faceConfig.GetAnyDirectionalLayeredPartPath(partType, side, facing);
                 if (!string.IsNullOrWhiteSpace(anyPath))
                     return anyPath;
             }
@@ -2348,12 +2390,25 @@ namespace CharacterStudio.Rendering
             {
                 string anyOverlayPath = faceConfig.GetLayeredDirectionalPartPath(partType, ExpressionType.Neutral, overlayId, facing);
                 if (string.IsNullOrWhiteSpace(anyOverlayPath))
+                    anyOverlayPath = faceConfig.GetAnyDirectionalLayeredPartPath(partType, overlayId, facing);
+                if (string.IsNullOrWhiteSpace(anyOverlayPath))
                     anyOverlayPath = faceConfig.GetAnyLayeredPartPath(partType, overlayId);
                 if (!string.IsNullOrWhiteSpace(anyOverlayPath))
                     return anyOverlayPath;
             }
 
             return null;
+        }
+
+        private static bool ShouldUseUvOffsetPupil(PawnRenderNode_Custom customNode, LayeredFacePartType partType)
+        {
+            if (partType != LayeredFacePartType.Pupil)
+                return false;
+
+            PawnLayerConfig? config = customNode.config;
+            return config != null
+                && config.eyeRenderMode == EyeRenderMode.UvOffset
+                && config.eyeUvMoveRange > 0f;
         }
 
         private string? TryResolveLayeredPairedPartVariantPath(

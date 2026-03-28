@@ -1,9 +1,11 @@
 using System.Collections.Generic;
+using System.Linq;
 using HarmonyLib;
 using CharacterStudio.Attributes;
 using Verse;
 using CharacterStudio.Rendering;
 using CharacterStudio.Abilities;
+using UnityEngine;
 
 namespace CharacterStudio.Core
 {
@@ -30,6 +32,10 @@ namespace CharacterStudio.Core
             }
 
             var preparedSkin = PawnSkinRuntimeValidator.PrepareForRuntime(skin);
+
+            // 在真正清缓存并重建渲染树之前，先同步预热本次皮肤会用到的外部纹理与材质。
+            // 这样可以显著降低 Apply -> RefreshHiddenNodes 期间命中 Graphic_Runtime 透明回退材质的概率。
+            PrewarmExternalSkinAssets(preparedSkin);
 
             // 使用静默赋值避免 setter 在此处触发 RequestRenderRefresh，
             // 后续 RefreshHiddenNodes + ForceRebuildRenderTree 负责完整刷新，
@@ -64,6 +70,102 @@ namespace CharacterStudio.Core
             CharacterAttributeBuffService.SyncAttributeBuff(pawn);
 
             return true;
+        }
+
+        private static void PrewarmExternalSkinAssets(PawnSkinDef? skin)
+        {
+            if (skin == null)
+                return;
+
+            foreach (string texturePath in EnumerateExternalTexturePaths(skin))
+            {
+                try
+                {
+                    Texture2D? texture = RuntimeAssetLoader.LoadTextureRaw(texturePath);
+                    if (texture != null)
+                    {
+                        RuntimeAssetLoader.GetMaterialForTexture(texture);
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    Log.Warning($"[CharacterStudio] 预热外部纹理失败，已继续应用流程: {texturePath} ({ex.Message})");
+                }
+            }
+        }
+
+        private static IEnumerable<string> EnumerateExternalTexturePaths(PawnSkinDef skin)
+        {
+            HashSet<string> yielded = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+            List<string> pendingExternalPaths = new List<string>();
+
+            void YieldIfExternal(string? path)
+            {
+                if (string.IsNullOrWhiteSpace(path))
+                    return;
+
+                string nonNullPath = path ?? string.Empty;
+                if (!RuntimeAssetLoader.LooksLikeExternalTexturePath(nonNullPath))
+                    return;
+
+                string resolvedPath = RuntimeAssetLoader.ResolveTexturePathForLoad(nonNullPath);
+                if (!yielded.Add(resolvedPath))
+                    return;
+
+                pendingExternalPaths.Add(resolvedPath);
+            }
+
+            if (!string.IsNullOrWhiteSpace(skin.previewTexPath))
+                YieldIfExternal(skin.previewTexPath);
+
+            if (skin.layers != null)
+            {
+                foreach (PawnLayerConfig layer in skin.layers)
+                {
+                    if (layer == null)
+                        continue;
+
+                    YieldIfExternal(layer.texPath);
+                    YieldIfExternal(layer.maskTexPath);
+                }
+            }
+
+            if (skin.equipments != null)
+            {
+                foreach (CharacterEquipmentDef equipment in skin.equipments)
+                {
+                    if (equipment == null)
+                        continue;
+
+                    YieldIfExternal(equipment.previewTexPath);
+                    YieldIfExternal(equipment.worldTexPath);
+                    YieldIfExternal(equipment.wornTexPath);
+                    YieldIfExternal(equipment.maskTexPath);
+                    YieldIfExternal(equipment.renderData?.texPath);
+                    YieldIfExternal(equipment.renderData?.maskTexPath);
+                }
+            }
+
+            if (skin.weaponRenderConfig?.carryVisual != null)
+            {
+                WeaponCarryVisualConfig carryVisual = skin.weaponRenderConfig.carryVisual;
+                YieldIfExternal(carryVisual.texUndrafted);
+                YieldIfExternal(carryVisual.texDrafted);
+                YieldIfExternal(carryVisual.texCasting);
+            }
+
+            if (skin.faceConfig?.layeredParts != null)
+            {
+                foreach (var part in skin.faceConfig.layeredParts.Where(p => p != null))
+                {
+                    YieldIfExternal(part.texPath);
+                    YieldIfExternal(part.texPathSouth);
+                    YieldIfExternal(part.texPathEast);
+                    YieldIfExternal(part.texPathNorth);
+                }
+            }
+
+            return pendingExternalPaths;
         }
 
         public static bool ClearSkinFromPawn(Pawn? pawn)
