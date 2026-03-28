@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 using Verse;
 
 namespace CharacterStudio.Core
@@ -26,6 +27,80 @@ namespace CharacterStudio.Core
     /// </summary>
     public class PawnEyeDirectionConfig
     {
+        public class LidMotionConfig
+        {
+            public float upperSideBiasX = 0.00035f;
+            public float upperBlinkScaleX = 1.01f;
+            public float upperBlinkScaleZ = 0.88f;
+            public float upperCloseScaleX = 1.01f;
+            public float upperCloseScaleZ = 0.90f;
+            public float upperHalfBaseOffsetSubtract = 0.0016f;
+            public float upperHalfNeutralSoftExtraOffset = 0.0003f;
+            public float upperHalfLookDownExtraOffset = 0.0008f;
+            public float upperHalfScaredExtraOffset = 0.0010f;
+            public float upperHalfSlowWaveOffset = 0.0004f;
+            public float upperHalfScaleDefault = 0.95f;
+            public float upperHalfScaleNeutralSoft = 0.93f;
+            public float upperHalfScaleLookDown = 0.91f;
+            public float upperHalfScaleScared = 0.89f;
+            public float upperHappySoftOffset = -0.0014f;
+            public float upperHappyOpenOffset = -0.0008f;
+            public float upperHappySoftScale = 0.90f;
+            public float upperHappyOpenScale = 0.95f;
+            public float upperHappyScaleX = 1.02f;
+            public float upperHappyAngleBase = -1.2f;
+            public float upperHappyAngleWave = 0.2f;
+            public float upperHappySlowWaveOffset = 0.0004f;
+            public float upperDefaultSlowWaveOffset = 0.0003f;
+            public float upperBlinkClosingPhaseDuration = 0.5f;
+            public float upperBlinkOpeningStart = 0.6f;
+            public float upperBlinkOpeningDuration = 0.4f;
+
+            public float lowerSideBiasX = 0.0002f;
+            public float lowerBlinkOffset = -0.0024f;
+            public float lowerBlinkScaleX = 1.00f;
+            public float lowerBlinkScaleZ = 0.96f;
+            public float lowerCloseOffset = -0.0018f;
+            public float lowerCloseScaleX = 1.00f;
+            public float lowerCloseScaleZ = 0.97f;
+            public float lowerHalfOffset = -0.0012f;
+            public float lowerHalfSlowWaveOffset = 0.0003f;
+            public float lowerHalfScaleX = 1.00f;
+            public float lowerHalfScaleZ = 0.985f;
+            public float lowerHappyAngleBase = 0.85f;
+            public float lowerHappyAngleWave = 0.15f;
+            public float lowerHappyOffset = -0.0008f;
+            public float lowerHappySlowWaveOffset = 0.0003f;
+            public float lowerHappyScaleX = 1.01f;
+            public float lowerHappyScaleZ = 0.98f;
+            public float lowerDefaultSlowWaveOffset = 0.0002f;
+
+            public float genericBlinkOffset = 0.0045f;
+            public float genericBlinkScaleX = 1.02f;
+            public float genericBlinkScaleZ = 0.72f;
+            public float genericCloseOffset = 0.0035f;
+            public float genericCloseScaleX = 1.01f;
+            public float genericCloseScaleZ = 0.78f;
+            public float genericHalfOffset = 0.0022f;
+            public float genericHalfSlowWaveOffset = 0.0005f;
+            public float genericHalfScaleX = 1.01f;
+            public float genericHalfScaleZ = 0.89f;
+            public float genericHappyAngleBase = -1.1f;
+            public float genericHappyAngleWave = 0.25f;
+            public float genericHappyOffset = -0.001f;
+            public float genericHappySlowWaveOffset = 0.0005f;
+            public float genericHappyScaleX = 1.03f;
+            public float genericHappyScaleZ = 0.91f;
+            public float genericDefaultSlowWaveOffset = 0.0004f;
+            public float genericDefaultScaleZBase = 0.99f;
+            public float genericDefaultScaleZWaveAmplitude = 0.01f;
+
+            public LidMotionConfig Clone()
+            {
+                return (LidMotionConfig)MemberwiseClone();
+            }
+        }
+
         /// <summary>是否启用眼睛方向功能</summary>
         public bool enabled = false;
 
@@ -63,6 +138,9 @@ namespace CharacterStudio.Core
         /// 仅影响 LayeredDynamic 中的 UpperLid 程序位移。
         /// </summary>
         public float upperLidMoveDown = 0.0044f;
+
+        /// <summary>程序化眼睑/眨眼运动参数。</summary>
+        public LidMotionConfig lidMotion = new LidMotionConfig();
 
         // ─────────────────────────────────────────────
         // 查询 API
@@ -113,6 +191,7 @@ namespace CharacterStudio.Core
             texDown          = this.texDown,
             pupilMoveRange   = this.pupilMoveRange,
             upperLidMoveDown = this.upperLidMoveDown,
+            lidMotion        = this.lidMotion?.Clone() ?? new LidMotionConfig(),
         };
     }
 }

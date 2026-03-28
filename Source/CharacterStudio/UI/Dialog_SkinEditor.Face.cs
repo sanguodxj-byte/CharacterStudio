@@ -225,9 +225,6 @@ namespace CharacterStudio.UI
 
         private void DrawFaceMovementSettingsLauncher(ref float y, float width)
         {
-            UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_MovementDialog_Title".Translate());
-            DrawFaceInfoBanner(ref y, width, "CS_Studio_Face_MovementLauncher_Hint".Translate(), accent: true);
-
             Rect buttonRect = new Rect(0f, y, width, 28f);
             if (DrawFaceToolbarButton(buttonRect,
                 "CS_Studio_Face_MovementLauncher_Button".Translate(),

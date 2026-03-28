@@ -76,6 +76,74 @@
     <CS_Studio_Face_MovementDialog_PreviewEyeDirection>Preview Eye Direction</CS_Studio_Face_MovementDialog_PreviewEyeDirection>
     <CS_Studio_Face_MovementDialog_Summary>Fine-tune dynamic facial motion, gaze offsets, and expression-linked layer animation in one place. Changes still use the same live preview and dirty-state update flow as the main editor.</CS_Studio_Face_MovementDialog_Summary>
     <CS_Studio_Face_MovementDialog_Title>Dynamic Expression Parameters</CS_Studio_Face_MovementDialog_Title>
+    <CS_Studio_Face_LidMotion_GenericBlinkOffset>Generic Blink Offset</CS_Studio_Face_LidMotion_GenericBlinkOffset>
+    <CS_Studio_Face_LidMotion_GenericBlinkScaleX>Generic Blink Scale X</CS_Studio_Face_LidMotion_GenericBlinkScaleX>
+    <CS_Studio_Face_LidMotion_GenericBlinkScaleZ>Generic Blink Scale Z</CS_Studio_Face_LidMotion_GenericBlinkScaleZ>
+    <CS_Studio_Face_LidMotion_GenericCloseOffset>Generic Close Offset</CS_Studio_Face_LidMotion_GenericCloseOffset>
+    <CS_Studio_Face_LidMotion_GenericCloseScaleX>Generic Close Scale X</CS_Studio_Face_LidMotion_GenericCloseScaleX>
+    <CS_Studio_Face_LidMotion_GenericCloseScaleZ>Generic Close Scale Z</CS_Studio_Face_LidMotion_GenericCloseScaleZ>
+    <CS_Studio_Face_LidMotion_GenericDefaultSlowWaveOffset>Generic Default Slow Wave Offset</CS_Studio_Face_LidMotion_GenericDefaultSlowWaveOffset>
+    <CS_Studio_Face_LidMotion_GenericDefaultScaleZBase>Generic Default Scale Z Base</CS_Studio_Face_LidMotion_GenericDefaultScaleZBase>
+    <CS_Studio_Face_LidMotion_GenericDefaultScaleZWave>Generic Default Scale Z Wave</CS_Studio_Face_LidMotion_GenericDefaultScaleZWave>
+    <CS_Studio_Face_LidMotion_GenericHappyAngleBase>Generic Happy Angle Base</CS_Studio_Face_LidMotion_GenericHappyAngleBase>
+    <CS_Studio_Face_LidMotion_GenericHappyAngleWave>Generic Happy Angle Wave</CS_Studio_Face_LidMotion_GenericHappyAngleWave>
+    <CS_Studio_Face_LidMotion_GenericHappyOffset>Generic Happy Offset</CS_Studio_Face_LidMotion_GenericHappyOffset>
+    <CS_Studio_Face_LidMotion_GenericHappyScaleX>Generic Happy Scale X</CS_Studio_Face_LidMotion_GenericHappyScaleX>
+    <CS_Studio_Face_LidMotion_GenericHappyScaleZ>Generic Happy Scale Z</CS_Studio_Face_LidMotion_GenericHappyScaleZ>
+    <CS_Studio_Face_LidMotion_GenericHappySlowWaveOffset>Generic Happy Slow Wave Offset</CS_Studio_Face_LidMotion_GenericHappySlowWaveOffset>
+    <CS_Studio_Face_LidMotion_GenericHalfOffset>Generic Half Offset</CS_Studio_Face_LidMotion_GenericHalfOffset>
+    <CS_Studio_Face_LidMotion_GenericHalfScaleX>Generic Half Scale X</CS_Studio_Face_LidMotion_GenericHalfScaleX>
+    <CS_Studio_Face_LidMotion_GenericHalfScaleZ>Generic Half Scale Z</CS_Studio_Face_LidMotion_GenericHalfScaleZ>
+    <CS_Studio_Face_LidMotion_GenericHalfSlowWaveOffset>Generic Half Slow Wave Offset</CS_Studio_Face_LidMotion_GenericHalfSlowWaveOffset>
+    <CS_Studio_Face_LidMotion_GenericSection>Fallback Lid Motion</CS_Studio_Face_LidMotion_GenericSection>
+    <CS_Studio_Face_LidMotion_Hint>All blink and eyelid motion values here are runtime-driven configuration. No lid transform magnitudes should remain hardcoded in code.</CS_Studio_Face_LidMotion_Hint>
+    <CS_Studio_Face_LidMotion_LowerBlinkOffset>Lower Blink Offset</CS_Studio_Face_LidMotion_LowerBlinkOffset>
+    <CS_Studio_Face_LidMotion_LowerBlinkScaleX>Lower Blink Scale X</CS_Studio_Face_LidMotion_LowerBlinkScaleX>
+    <CS_Studio_Face_LidMotion_LowerBlinkScaleZ>Lower Blink Scale Z</CS_Studio_Face_LidMotion_LowerBlinkScaleZ>
+    <CS_Studio_Face_LidMotion_LowerCloseOffset>Lower Close Offset</CS_Studio_Face_LidMotion_LowerCloseOffset>
+    <CS_Studio_Face_LidMotion_LowerCloseScaleX>Lower Close Scale X</CS_Studio_Face_LidMotion_LowerCloseScaleX>
+    <CS_Studio_Face_LidMotion_LowerCloseScaleZ>Lower Close Scale Z</CS_Studio_Face_LidMotion_LowerCloseScaleZ>
+    <CS_Studio_Face_LidMotion_LowerDefaultSlowWaveOffset>Lower Default Slow Wave Offset</CS_Studio_Face_LidMotion_LowerDefaultSlowWaveOffset>
+    <CS_Studio_Face_LidMotion_LowerHappyAngleBase>Lower Happy Angle Base</CS_Studio_Face_LidMotion_LowerHappyAngleBase>
+    <CS_Studio_Face_LidMotion_LowerHappyAngleWave>Lower Happy Angle Wave</CS_Studio_Face_LidMotion_LowerHappyAngleWave>
+    <CS_Studio_Face_LidMotion_LowerHappyOffset>Lower Happy Offset</CS_Studio_Face_LidMotion_LowerHappyOffset>
+    <CS_Studio_Face_LidMotion_LowerHappyScaleX>Lower Happy Scale X</CS_Studio_Face_LidMotion_LowerHappyScaleX>
+    <CS_Studio_Face_LidMotion_LowerHappyScaleZ>Lower Happy Scale Z</CS_Studio_Face_LidMotion_LowerHappyScaleZ>
+    <CS_Studio_Face_LidMotion_LowerHappySlowWaveOffset>Lower Happy Slow Wave Offset</CS_Studio_Face_LidMotion_LowerHappySlowWaveOffset>
+    <CS_Studio_Face_LidMotion_LowerHalfOffset>Lower Half Offset</CS_Studio_Face_LidMotion_LowerHalfOffset>
+    <CS_Studio_Face_LidMotion_LowerHalfScaleX>Lower Half Scale X</CS_Studio_Face_LidMotion_LowerHalfScaleX>
+    <CS_Studio_Face_LidMotion_LowerHalfScaleZ>Lower Half Scale Z</CS_Studio_Face_LidMotion_LowerHalfScaleZ>
+    <CS_Studio_Face_LidMotion_LowerHalfSlowWaveOffset>Lower Half Slow Wave Offset</CS_Studio_Face_LidMotion_LowerHalfSlowWaveOffset>
+    <CS_Studio_Face_LidMotion_LowerSection>Lower Lid Motion</CS_Studio_Face_LidMotion_LowerSection>
+    <CS_Studio_Face_LidMotion_LowerSideBiasX>Lower Side Bias X</CS_Studio_Face_LidMotion_LowerSideBiasX>
+    <CS_Studio_Face_LidMotion_Title>Blink / Lid Motion</CS_Studio_Face_LidMotion_Title>
+    <CS_Studio_Face_LidMotion_BlinkClosingDuration>Upper Blink Closing Duration</CS_Studio_Face_LidMotion_BlinkClosingDuration>
+    <CS_Studio_Face_LidMotion_BlinkOpeningDuration>Upper Blink Opening Duration</CS_Studio_Face_LidMotion_BlinkOpeningDuration>
+    <CS_Studio_Face_LidMotion_BlinkOpeningStart>Upper Blink Opening Start</CS_Studio_Face_LidMotion_BlinkOpeningStart>
+    <CS_Studio_Face_LidMotion_UpperBlinkScaleX>Upper Blink Scale X</CS_Studio_Face_LidMotion_UpperBlinkScaleX>
+    <CS_Studio_Face_LidMotion_UpperBlinkScaleZ>Upper Blink Scale Z</CS_Studio_Face_LidMotion_UpperBlinkScaleZ>
+    <CS_Studio_Face_LidMotion_UpperCloseScaleX>Upper Close Scale X</CS_Studio_Face_LidMotion_UpperCloseScaleX>
+    <CS_Studio_Face_LidMotion_UpperCloseScaleZ>Upper Close Scale Z</CS_Studio_Face_LidMotion_UpperCloseScaleZ>
+    <CS_Studio_Face_LidMotion_UpperDefaultSlowWaveOffset>Upper Default Slow Wave Offset</CS_Studio_Face_LidMotion_UpperDefaultSlowWaveOffset>
+    <CS_Studio_Face_LidMotion_UpperHalfBaseOffsetSubtract>Upper Half Base Offset Subtract</CS_Studio_Face_LidMotion_UpperHalfBaseOffsetSubtract>
+    <CS_Studio_Face_LidMotion_UpperHalfLookDownOffset>Upper Half LookDown Extra Offset</CS_Studio_Face_LidMotion_UpperHalfLookDownOffset>
+    <CS_Studio_Face_LidMotion_UpperHalfScaleDefault>Upper Half Default Scale</CS_Studio_Face_LidMotion_UpperHalfScaleDefault>
+    <CS_Studio_Face_LidMotion_UpperHalfScaleLookDown>Upper Half LookDown Scale</CS_Studio_Face_LidMotion_UpperHalfScaleLookDown>
+    <CS_Studio_Face_LidMotion_UpperHalfScaleScared>Upper Half Scared Scale</CS_Studio_Face_LidMotion_UpperHalfScaleScared>
+    <CS_Studio_Face_LidMotion_UpperHalfScaleSoft>Upper Half Soft Scale</CS_Studio_Face_LidMotion_UpperHalfScaleSoft>
+    <CS_Studio_Face_LidMotion_UpperHalfScaredOffset>Upper Half Scared Extra Offset</CS_Studio_Face_LidMotion_UpperHalfScaredOffset>
+    <CS_Studio_Face_LidMotion_UpperHalfSlowWaveOffset>Upper Half Slow Wave Offset</CS_Studio_Face_LidMotion_UpperHalfSlowWaveOffset>
+    <CS_Studio_Face_LidMotion_UpperHalfSoftOffset>Upper Half Soft Extra Offset</CS_Studio_Face_LidMotion_UpperHalfSoftOffset>
+    <CS_Studio_Face_LidMotion_UpperHappyAngleBase>Upper Happy Angle Base</CS_Studio_Face_LidMotion_UpperHappyAngleBase>
+    <CS_Studio_Face_LidMotion_UpperHappyAngleWave>Upper Happy Angle Wave</CS_Studio_Face_LidMotion_UpperHappyAngleWave>
+    <CS_Studio_Face_LidMotion_UpperHappyOffsetOpen>Upper Happy Open Offset</CS_Studio_Face_LidMotion_UpperHappyOffsetOpen>
+    <CS_Studio_Face_LidMotion_UpperHappyOffsetSoft>Upper Happy Soft Offset</CS_Studio_Face_LidMotion_UpperHappyOffsetSoft>
+    <CS_Studio_Face_LidMotion_UpperHappyScaleOpen>Upper Happy Open Scale</CS_Studio_Face_LidMotion_UpperHappyScaleOpen>
+    <CS_Studio_Face_LidMotion_UpperHappyScaleSoft>Upper Happy Soft Scale</CS_Studio_Face_LidMotion_UpperHappyScaleSoft>
+    <CS_Studio_Face_LidMotion_UpperHappyScaleX>Upper Happy Scale X</CS_Studio_Face_LidMotion_UpperHappyScaleX>
+    <CS_Studio_Face_LidMotion_UpperHappySlowWaveOffset>Upper Happy Slow Wave Offset</CS_Studio_Face_LidMotion_UpperHappySlowWaveOffset>
+    <CS_Studio_Face_LidMotion_UpperSideBiasX>Upper Side Bias X</CS_Studio_Face_LidMotion_UpperSideBiasX>
+    <CS_Studio_Face_LidMotion_GenericBlinkScaleX>Generic Blink Scale X</CS_Studio_Face_LidMotion_GenericBlinkScaleX>
     <CS_Studio_Face_MovementLauncher_Button>Open Parameter Panel</CS_Studio_Face_MovementLauncher_Button>
     <CS_Studio_Face_MovementLauncher_Hint>Edit face-part motion, eye-direction offsets, and selected-layer expression animation in a dedicated popup.</CS_Studio_Face_MovementLauncher_Hint>
     <CS_Studio_Face_MovementLauncher_Tooltip>Open the dynamic expression and movement parameter dialog</CS_Studio_Face_MovementLauncher_Tooltip>

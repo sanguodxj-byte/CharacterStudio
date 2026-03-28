@@ -45,6 +45,7 @@
     <CS_Studio_Face_EyeDir_Center>正视</CS_Studio_Face_EyeDir_Center>
     <CS_Studio_Face_EyeDir_Create>创建眼睛方向配置</CS_Studio_Face_EyeDir_Create>
     <CS_Studio_Face_EyeDir_Down>向下</CS_Studio_Face_EyeDir_Down>
+    <CS_Studio_Face_EyeDir_Auto>自动（运行时推断）</CS_Studio_Face_EyeDir_Auto>
     <CS_Studio_Face_EyeDir_Enable>启用眼睛方向</CS_Studio_Face_EyeDir_Enable>
     <CS_Studio_Face_EyeDir_Left>向左</CS_Studio_Face_EyeDir_Left>
     <CS_Studio_Face_EyeDir_Hint>为每个视线方向指定贴图；缺失的方向会自动回退到正视。</CS_Studio_Face_EyeDir_Hint>
@@ -69,6 +70,73 @@
     <CS_Studio_Face_MovementDialog_PreviewEyeDirection>预览眼球朝向</CS_Studio_Face_MovementDialog_PreviewEyeDirection>
     <CS_Studio_Face_MovementDialog_Summary>将动态表情、眼球偏移和图层联动动画参数集中到一个弹窗中编辑，同时保留原有实时预览与脏状态刷新逻辑。</CS_Studio_Face_MovementDialog_Summary>
     <CS_Studio_Face_MovementDialog_Title>动态表情参数</CS_Studio_Face_MovementDialog_Title>
+    <CS_Studio_Face_LidMotion_GenericBlinkOffset>通用眨眼位移</CS_Studio_Face_LidMotion_GenericBlinkOffset>
+    <CS_Studio_Face_LidMotion_GenericBlinkScaleX>通用眨眼横向缩放</CS_Studio_Face_LidMotion_GenericBlinkScaleX>
+    <CS_Studio_Face_LidMotion_GenericBlinkScaleZ>通用眨眼纵向缩放</CS_Studio_Face_LidMotion_GenericBlinkScaleZ>
+    <CS_Studio_Face_LidMotion_GenericCloseOffset>通用闭眼位移</CS_Studio_Face_LidMotion_GenericCloseOffset>
+    <CS_Studio_Face_LidMotion_GenericCloseScaleX>通用闭眼横向缩放</CS_Studio_Face_LidMotion_GenericCloseScaleX>
+    <CS_Studio_Face_LidMotion_GenericCloseScaleZ>通用闭眼纵向缩放</CS_Studio_Face_LidMotion_GenericCloseScaleZ>
+    <CS_Studio_Face_LidMotion_GenericDefaultSlowWaveOffset>通用默认缓动位移</CS_Studio_Face_LidMotion_GenericDefaultSlowWaveOffset>
+    <CS_Studio_Face_LidMotion_GenericDefaultScaleZBase>通用默认纵向缩放基值</CS_Studio_Face_LidMotion_GenericDefaultScaleZBase>
+    <CS_Studio_Face_LidMotion_GenericDefaultScaleZWave>通用默认纵向缩放波动</CS_Studio_Face_LidMotion_GenericDefaultScaleZWave>
+    <CS_Studio_Face_LidMotion_GenericHappyAngleBase>通用开心角度基值</CS_Studio_Face_LidMotion_GenericHappyAngleBase>
+    <CS_Studio_Face_LidMotion_GenericHappyAngleWave>通用开心角度波动</CS_Studio_Face_LidMotion_GenericHappyAngleWave>
+    <CS_Studio_Face_LidMotion_GenericHappyOffset>通用开心位移</CS_Studio_Face_LidMotion_GenericHappyOffset>
+    <CS_Studio_Face_LidMotion_GenericHappyScaleX>通用开心横向缩放</CS_Studio_Face_LidMotion_GenericHappyScaleX>
+    <CS_Studio_Face_LidMotion_GenericHappyScaleZ>通用开心纵向缩放</CS_Studio_Face_LidMotion_GenericHappyScaleZ>
+    <CS_Studio_Face_LidMotion_GenericHappySlowWaveOffset>通用开心缓动位移</CS_Studio_Face_LidMotion_GenericHappySlowWaveOffset>
+    <CS_Studio_Face_LidMotion_GenericHalfOffset>通用半闭位移</CS_Studio_Face_LidMotion_GenericHalfOffset>
+    <CS_Studio_Face_LidMotion_GenericHalfScaleX>通用半闭横向缩放</CS_Studio_Face_LidMotion_GenericHalfScaleX>
+    <CS_Studio_Face_LidMotion_GenericHalfScaleZ>通用半闭纵向缩放</CS_Studio_Face_LidMotion_GenericHalfScaleZ>
+    <CS_Studio_Face_LidMotion_GenericHalfSlowWaveOffset>通用半闭缓动位移</CS_Studio_Face_LidMotion_GenericHalfSlowWaveOffset>
+    <CS_Studio_Face_LidMotion_GenericSection>通用眼睑运动</CS_Studio_Face_LidMotion_GenericSection>
+    <CS_Studio_Face_LidMotion_Hint>这里的所有眨眼与眼睑运动量都会直接驱动运行时程序动画，不应再在代码中写死位移或缩放常量。</CS_Studio_Face_LidMotion_Hint>
+    <CS_Studio_Face_LidMotion_LowerBlinkOffset>下眼睑眨眼位移</CS_Studio_Face_LidMotion_LowerBlinkOffset>
+    <CS_Studio_Face_LidMotion_LowerBlinkScaleX>下眼睑眨眼横向缩放</CS_Studio_Face_LidMotion_LowerBlinkScaleX>
+    <CS_Studio_Face_LidMotion_LowerBlinkScaleZ>下眼睑眨眼纵向缩放</CS_Studio_Face_LidMotion_LowerBlinkScaleZ>
+    <CS_Studio_Face_LidMotion_LowerCloseOffset>下眼睑闭眼位移</CS_Studio_Face_LidMotion_LowerCloseOffset>
+    <CS_Studio_Face_LidMotion_LowerCloseScaleX>下眼睑闭眼横向缩放</CS_Studio_Face_LidMotion_LowerCloseScaleX>
+    <CS_Studio_Face_LidMotion_LowerCloseScaleZ>下眼睑闭眼纵向缩放</CS_Studio_Face_LidMotion_LowerCloseScaleZ>
+    <CS_Studio_Face_LidMotion_LowerDefaultSlowWaveOffset>下眼睑默认缓动位移</CS_Studio_Face_LidMotion_LowerDefaultSlowWaveOffset>
+    <CS_Studio_Face_LidMotion_LowerHappyAngleBase>下眼睑开心角度基值</CS_Studio_Face_LidMotion_LowerHappyAngleBase>
+    <CS_Studio_Face_LidMotion_LowerHappyAngleWave>下眼睑开心角度波动</CS_Studio_Face_LidMotion_LowerHappyAngleWave>
+    <CS_Studio_Face_LidMotion_LowerHappyOffset>下眼睑开心位移</CS_Studio_Face_LidMotion_LowerHappyOffset>
+    <CS_Studio_Face_LidMotion_LowerHappyScaleX>下眼睑开心横向缩放</CS_Studio_Face_LidMotion_LowerHappyScaleX>
+    <CS_Studio_Face_LidMotion_LowerHappyScaleZ>下眼睑开心纵向缩放</CS_Studio_Face_LidMotion_LowerHappyScaleZ>
+    <CS_Studio_Face_LidMotion_LowerHappySlowWaveOffset>下眼睑开心缓动位移</CS_Studio_Face_LidMotion_LowerHappySlowWaveOffset>
+    <CS_Studio_Face_LidMotion_LowerHalfOffset>下眼睑半闭位移</CS_Studio_Face_LidMotion_LowerHalfOffset>
+    <CS_Studio_Face_LidMotion_LowerHalfScaleX>下眼睑半闭横向缩放</CS_Studio_Face_LidMotion_LowerHalfScaleX>
+    <CS_Studio_Face_LidMotion_LowerHalfScaleZ>下眼睑半闭纵向缩放</CS_Studio_Face_LidMotion_LowerHalfScaleZ>
+    <CS_Studio_Face_LidMotion_LowerHalfSlowWaveOffset>下眼睑半闭缓动位移</CS_Studio_Face_LidMotion_LowerHalfSlowWaveOffset>
+    <CS_Studio_Face_LidMotion_LowerSection>下眼睑运动</CS_Studio_Face_LidMotion_LowerSection>
+    <CS_Studio_Face_LidMotion_LowerSideBiasX>下眼睑左右偏移</CS_Studio_Face_LidMotion_LowerSideBiasX>
+    <CS_Studio_Face_LidMotion_Title>眨眼 / 眼睑运动</CS_Studio_Face_LidMotion_Title>
+    <CS_Studio_Face_LidMotion_BlinkClosingDuration>上眼睑眨眼闭合时长</CS_Studio_Face_LidMotion_BlinkClosingDuration>
+    <CS_Studio_Face_LidMotion_BlinkOpeningDuration>上眼睑眨眼张开时长</CS_Studio_Face_LidMotion_BlinkOpeningDuration>
+    <CS_Studio_Face_LidMotion_BlinkOpeningStart>上眼睑眨眼张开起点</CS_Studio_Face_LidMotion_BlinkOpeningStart>
+    <CS_Studio_Face_LidMotion_UpperBlinkScaleX>上眼睑眨眼横向缩放</CS_Studio_Face_LidMotion_UpperBlinkScaleX>
+    <CS_Studio_Face_LidMotion_UpperBlinkScaleZ>上眼睑眨眼纵向缩放</CS_Studio_Face_LidMotion_UpperBlinkScaleZ>
+    <CS_Studio_Face_LidMotion_UpperCloseScaleX>上眼睑闭眼横向缩放</CS_Studio_Face_LidMotion_UpperCloseScaleX>
+    <CS_Studio_Face_LidMotion_UpperCloseScaleZ>上眼睑闭眼纵向缩放</CS_Studio_Face_LidMotion_UpperCloseScaleZ>
+    <CS_Studio_Face_LidMotion_UpperDefaultSlowWaveOffset>上眼睑默认缓动位移</CS_Studio_Face_LidMotion_UpperDefaultSlowWaveOffset>
+    <CS_Studio_Face_LidMotion_UpperHalfBaseOffsetSubtract>上眼睑半闭基础位移扣减</CS_Studio_Face_LidMotion_UpperHalfBaseOffsetSubtract>
+    <CS_Studio_Face_LidMotion_UpperHalfLookDownOffset>上眼睑下视附加位移</CS_Studio_Face_LidMotion_UpperHalfLookDownOffset>
+    <CS_Studio_Face_LidMotion_UpperHalfScaleDefault>上眼睑半闭默认缩放</CS_Studio_Face_LidMotion_UpperHalfScaleDefault>
+    <CS_Studio_Face_LidMotion_UpperHalfScaleLookDown>上眼睑下视半闭缩放</CS_Studio_Face_LidMotion_UpperHalfScaleLookDown>
+    <CS_Studio_Face_LidMotion_UpperHalfScaleScared>上眼睑惊恐半闭缩放</CS_Studio_Face_LidMotion_UpperHalfScaleScared>
+    <CS_Studio_Face_LidMotion_UpperHalfScaleSoft>上眼睑柔和半闭缩放</CS_Studio_Face_LidMotion_UpperHalfScaleSoft>
+    <CS_Studio_Face_LidMotion_UpperHalfScaredOffset>上眼睑惊恐附加位移</CS_Studio_Face_LidMotion_UpperHalfScaredOffset>
+    <CS_Studio_Face_LidMotion_UpperHalfSlowWaveOffset>上眼睑半闭缓动位移</CS_Studio_Face_LidMotion_UpperHalfSlowWaveOffset>
+    <CS_Studio_Face_LidMotion_UpperHalfSoftOffset>上眼睑柔和半闭附加位移</CS_Studio_Face_LidMotion_UpperHalfSoftOffset>
+    <CS_Studio_Face_LidMotion_UpperHappyAngleBase>上眼睑开心角度基值</CS_Studio_Face_LidMotion_UpperHappyAngleBase>
+    <CS_Studio_Face_LidMotion_UpperHappyAngleWave>上眼睑开心角度波动</CS_Studio_Face_LidMotion_UpperHappyAngleWave>
+    <CS_Studio_Face_LidMotion_UpperHappyOffsetOpen>上眼睑开心张眼位移</CS_Studio_Face_LidMotion_UpperHappyOffsetOpen>
+    <CS_Studio_Face_LidMotion_UpperHappyOffsetSoft>上眼睑开心柔和位移</CS_Studio_Face_LidMotion_UpperHappyOffsetSoft>
+    <CS_Studio_Face_LidMotion_UpperHappyScaleOpen>上眼睑开心张眼缩放</CS_Studio_Face_LidMotion_UpperHappyScaleOpen>
+    <CS_Studio_Face_LidMotion_UpperHappyScaleSoft>上眼睑开心柔和缩放</CS_Studio_Face_LidMotion_UpperHappyScaleSoft>
+    <CS_Studio_Face_LidMotion_UpperHappyScaleX>上眼睑开心横向缩放</CS_Studio_Face_LidMotion_UpperHappyScaleX>
+    <CS_Studio_Face_LidMotion_UpperHappySlowWaveOffset>上眼睑开心缓动位移</CS_Studio_Face_LidMotion_UpperHappySlowWaveOffset>
+    <CS_Studio_Face_LidMotion_UpperSideBiasX>上眼睑左右偏移</CS_Studio_Face_LidMotion_UpperSideBiasX>
     <CS_Studio_Face_MovementLauncher_Button>打开参数面板</CS_Studio_Face_MovementLauncher_Button>
     <CS_Studio_Face_MovementLauncher_Hint>在独立弹窗中编辑面部部件运动、眼球朝向偏移，以及当前选中图层的表情动画参数。</CS_Studio_Face_MovementLauncher_Hint>
     <CS_Studio_Face_MovementLauncher_Tooltip>打开动态表情与运动参数设置面板</CS_Studio_Face_MovementLauncher_Tooltip>
