@@ -500,15 +500,38 @@ namespace CharacterStudio.UI
                 -vfx.offset.z * pixelsPerUnit);
             offset += new Vector2(0f, -(vfx.offset.y + vfx.heightOffset) * pixelsPerUnit * PreviewHeightPixelsFactor);
 
-            if (vfx.useCasterFacing)
+            AbilityVisualFacingMode facingMode = ResolvePreviewFacingMode(vfx);
+            if (facingMode != AbilityVisualFacingMode.None)
             {
-                Vector2 forwardDir = ResolvePreviewCastDirection();
+                Vector2 forwardDir = facingMode == AbilityVisualFacingMode.CastDirection
+                    ? ResolvePreviewCastDirection()
+                    : ResolvePreviewCasterFacingDirection();
                 Vector2 sideDir = ResolvePreviewSideDirection(forwardDir);
                 offset += forwardDir * (vfx.forwardOffset * pixelsPerUnit)
                     + sideDir * (vfx.sideOffset * pixelsPerUnit);
             }
 
             return pos + offset;
+        }
+
+        private static AbilityVisualFacingMode ResolvePreviewFacingMode(AbilityVisualEffectConfig vfx)
+        {
+            if (!Enum.IsDefined(typeof(AbilityVisualFacingMode), vfx.facingMode))
+            {
+                return vfx.useCasterFacing ? AbilityVisualFacingMode.CasterFacing : AbilityVisualFacingMode.None;
+            }
+
+            if (vfx.facingMode == AbilityVisualFacingMode.None && vfx.useCasterFacing)
+            {
+                return AbilityVisualFacingMode.CasterFacing;
+            }
+
+            return vfx.facingMode;
+        }
+
+        private static Vector2 ResolvePreviewCasterFacingDirection()
+        {
+            return new Vector2(0f, -1f);
         }
 
         private AbilityVisualEffectConfig? GetPreviewVisualEffectByIndex(int index)
@@ -597,14 +620,18 @@ namespace CharacterStudio.UI
             }
 
             bool facingChanged = false;
-            if (!vfx.useCasterFacing)
+            if (ResolvePreviewFacingMode(vfx) == AbilityVisualFacingMode.None)
             {
-                vfx.useCasterFacing = true;
+                vfx.facingMode = AbilityVisualFacingMode.CastDirection;
+                vfx.SyncLegacyFields();
                 facingChanged = true;
             }
 
             Vector2 delta = currentMousePos - abilityPreviewInteraction.dragStartMouse;
-            Vector2 forwardDir = ResolvePreviewCastDirection();
+            AbilityVisualFacingMode facingMode = ResolvePreviewFacingMode(vfx);
+            Vector2 forwardDir = facingMode == AbilityVisualFacingMode.CasterFacing
+                ? ResolvePreviewCasterFacingDirection()
+                : ResolvePreviewCastDirection();
             Vector2 sideDir = ResolvePreviewSideDirection(forwardDir);
             float pixelsPerUnit = GetPreviewPixelsPerOffsetUnit(drawRect);
             float forwardDelta = Vector2.Dot(delta, forwardDir) / pixelsPerUnit;
@@ -1527,7 +1554,8 @@ namespace CharacterStudio.UI
             }
  
             Rect texRect = ResolvePreviewTextureRect(drawRect, evt, center);
-            float rotation = evt.sourceVfx?.rotation ?? evt.previewRotation;
+            AbilityVisualEffectConfig? vfx = evt.sourceVfx;
+            float rotation = (vfx?.rotation ?? evt.previewRotation) + ResolvePreviewAutoFacingAngle(vfx);
             float maxOverflowX = Mathf.Max(6f, texRect.width * 0.12f);
             float maxOverflowY = Mathf.Max(6f, texRect.height * 0.12f);
             texRect.x = Mathf.Clamp(texRect.x, drawRect.x - maxOverflowX, drawRect.xMax - texRect.width + maxOverflowX);
@@ -1556,7 +1584,6 @@ namespace CharacterStudio.UI
             }
  
             Vector2 worldSize = GetPreviewTextureWorldSizeCells(evt);
-            AbilityVisualEffectConfig? vfx = evt.sourceVfx;
             string tip = "CS_Studio_Ability_PreviewTextureTooltip".Translate(
                 GetPreviewTextureDisplayPath(evt),
                 worldSize.x.ToString("F2"),
@@ -1566,6 +1593,30 @@ namespace CharacterStudio.UI
                 (vfx?.heightOffset ?? 0f).ToString("F2"),
                 rotation.ToString("F1"));
             TooltipHandler.TipRegion(texRect.ExpandedBy(4f), tip);
+        }
+
+        private float ResolvePreviewAutoFacingAngle(AbilityVisualEffectConfig? vfx)
+        {
+            if (vfx == null)
+            {
+                return 0f;
+            }
+
+            AbilityVisualFacingMode facingMode = ResolvePreviewFacingMode(vfx);
+            if (facingMode == AbilityVisualFacingMode.None)
+            {
+                return 0f;
+            }
+
+            Vector2 forward = facingMode == AbilityVisualFacingMode.CasterFacing
+                ? ResolvePreviewCasterFacingDirection()
+                : ResolvePreviewCastDirection();
+            if (Mathf.Abs(forward.x) >= Mathf.Abs(forward.y))
+            {
+                return forward.x >= 0f ? 90f : 270f;
+            }
+
+            return forward.y >= 0f ? 180f : 0f;
         }
 
         private static bool PointInRotatedRect(Vector2 point, Rect rect, float angleDegrees)

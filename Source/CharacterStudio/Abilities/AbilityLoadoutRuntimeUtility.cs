@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CharacterStudio.Core;
+using RimWorld;
 using Verse;
 
 namespace CharacterStudio.Abilities
@@ -202,12 +203,12 @@ namespace CharacterStudio.Abilities
 
             if (explicitLoadout == null)
             {
-                return skinLoadout;
+                return MergeEquipmentAbilitiesIntoLoadout(pawn, skinLoadout);
             }
 
             if (skinLoadout == null)
             {
-                return explicitLoadout;
+                return MergeEquipmentAbilitiesIntoLoadout(pawn, explicitLoadout);
             }
 
             bool explicitHasAbilities = HasAbilities(explicitLoadout);
@@ -216,17 +217,91 @@ namespace CharacterStudio.Abilities
 
             if (!explicitHasAbilities)
             {
-                return skinLoadout;
+                return MergeEquipmentAbilitiesIntoLoadout(pawn, skinLoadout);
             }
 
             if (explicitHasConfiguredHotkeys || !skinHasConfiguredHotkeys)
             {
-                return explicitLoadout;
+                return MergeEquipmentAbilitiesIntoLoadout(pawn, explicitLoadout);
             }
 
             var repairedLoadout = explicitLoadout.Clone();
             repairedLoadout.hotkeys = skinLoadout.hotkeys?.Clone() ?? new SkinAbilityHotkeyConfig();
-            return repairedLoadout;
+            return MergeEquipmentAbilitiesIntoLoadout(pawn, repairedLoadout);
+        }
+
+        private static CharacterAbilityLoadout? MergeEquipmentAbilitiesIntoLoadout(Pawn? pawn, CharacterAbilityLoadout? baseLoadout)
+        {
+            if (pawn == null)
+            {
+                return baseLoadout;
+            }
+
+            List<ModularAbilityDef> equipmentAbilities = CollectEquipmentAbilities(pawn);
+            if (equipmentAbilities.Count == 0)
+            {
+                return baseLoadout;
+            }
+
+            CharacterAbilityLoadout merged = baseLoadout?.Clone() ?? new CharacterAbilityLoadout();
+            merged.abilities ??= new List<ModularAbilityDef>();
+
+            HashSet<string> existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (ModularAbilityDef ability in merged.abilities)
+            {
+                if (ability != null && !string.IsNullOrWhiteSpace(ability.defName))
+                {
+                    existing.Add(ability.defName);
+                }
+            }
+
+            foreach (ModularAbilityDef ability in equipmentAbilities)
+            {
+                if (ability == null || string.IsNullOrWhiteSpace(ability.defName) || !existing.Add(ability.defName))
+                {
+                    continue;
+                }
+
+                merged.abilities.Add(ability.Clone());
+            }
+
+            return merged;
+        }
+
+        private static List<ModularAbilityDef> CollectEquipmentAbilities(Pawn pawn)
+        {
+            var result = new List<ModularAbilityDef>();
+            List<Apparel>? wornApparel = pawn.apparel?.WornApparel;
+            if (wornApparel == null || wornApparel.Count == 0)
+            {
+                return result;
+            }
+
+            HashSet<string> seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (Apparel apparel in wornApparel)
+            {
+                DefModExtension_EquipmentRender? extension = apparel?.def?.GetModExtension<DefModExtension_EquipmentRender>();
+                if (extension?.abilityDefNames == null)
+                {
+                    continue;
+                }
+
+                foreach (string defName in extension.abilityDefNames)
+                {
+                    if (string.IsNullOrWhiteSpace(defName) || !seen.Add(defName))
+                    {
+                        continue;
+                    }
+
+                    ModularAbilityDef resolved = DefDatabase<ModularAbilityDef>.GetNamedSilentFail(defName);
+                    if (resolved != null)
+                    {
+                        result.Add(resolved);
+                    }
+                }
+            }
+
+            return result;
         }
 
         private static bool HasAbilities(CharacterAbilityLoadout? loadout)

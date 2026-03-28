@@ -326,6 +326,14 @@
     <CS_Studio_VFX_TextureSource_LocalPath>Local Path</CS_Studio_VFX_TextureSource_LocalPath>
     <CS_Studio_VFX_TextureSource_Vanilla>Vanilla Path</CS_Studio_VFX_TextureSource_Vanilla>
     <CS_Studio_VFX_Title>Visual Effects</CS_Studio_VFX_Title>
+    <CS_Studio_VFX_FacingModeShort>Facing</CS_Studio_VFX_FacingModeShort>
+    <CS_Studio_VFX_FacingMode_None>No Auto Facing</CS_Studio_VFX_FacingMode_None>
+    <CS_Studio_VFX_FacingMode_CasterFacing>Caster Facing</CS_Studio_VFX_FacingMode_CasterFacing>
+    <CS_Studio_VFX_FacingMode_CastDirection>Cast Direction</CS_Studio_VFX_FacingMode_CastDirection>
+    <CS_Studio_VFX_ForwardOffsetShort>Forward</CS_Studio_VFX_ForwardOffsetShort>
+    <CS_Studio_VFX_SideOffsetShort>Side</CS_Studio_VFX_SideOffsetShort>
+    <CS_Studio_VFX_FacingModeHint>Facing changes the basis used by forward/side offsets and also adds base auto-rotation for custom texture VFX.</CS_Studio_VFX_FacingModeHint>
+    <CS_Studio_VFX_SummaryLine>{0} · {1} · {2}</CS_Studio_VFX_SummaryLine>
     <CS_Studio_VFX_Trigger_OnCastFinish>Cast Finish</CS_Studio_VFX_Trigger_OnCastFinish>
     <CS_Studio_VFX_Trigger_OnCastStart>Cast Start</CS_Studio_VFX_Trigger_OnCastStart>
     <CS_Studio_VFX_Trigger_OnDurationTick>Duration Tick</CS_Studio_VFX_Trigger_OnDurationTick>

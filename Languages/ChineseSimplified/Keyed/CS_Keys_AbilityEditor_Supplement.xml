@@ -336,6 +336,14 @@
     <CS_Studio_VFX_TextureSource_LocalPath>本地路径</CS_Studio_VFX_TextureSource_LocalPath>
     <CS_Studio_VFX_TextureSource_Vanilla>原版路径</CS_Studio_VFX_TextureSource_Vanilla>
     <CS_Studio_VFX_Title>外观特效</CS_Studio_VFX_Title>
+    <CS_Studio_VFX_FacingModeShort>朝向</CS_Studio_VFX_FacingModeShort>
+    <CS_Studio_VFX_FacingMode_None>不自动朝向</CS_Studio_VFX_FacingMode_None>
+    <CS_Studio_VFX_FacingMode_CasterFacing>施法者朝向</CS_Studio_VFX_FacingMode_CasterFacing>
+    <CS_Studio_VFX_FacingMode_CastDirection>施法方向</CS_Studio_VFX_FacingMode_CastDirection>
+    <CS_Studio_VFX_ForwardOffsetShort>前移</CS_Studio_VFX_ForwardOffsetShort>
+    <CS_Studio_VFX_SideOffsetShort>侧移</CS_Studio_VFX_SideOffsetShort>
+    <CS_Studio_VFX_FacingModeHint>朝向会同时影响前移/侧移偏移基准，并为自定义纹理特效自动叠加基础旋转。</CS_Studio_VFX_FacingModeHint>
+    <CS_Studio_VFX_SummaryLine>{0} · {1} · {2}</CS_Studio_VFX_SummaryLine>
     <CS_Studio_VFX_Trigger_OnCastFinish>施法完成</CS_Studio_VFX_Trigger_OnCastFinish>
     <CS_Studio_VFX_Trigger_OnCastStart>施法开始</CS_Studio_VFX_Trigger_OnCastStart>
     <CS_Studio_VFX_Trigger_OnDurationTick>持续触发</CS_Studio_VFX_Trigger_OnDurationTick>
