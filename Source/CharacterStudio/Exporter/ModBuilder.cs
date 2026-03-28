@@ -200,7 +200,7 @@ namespace CharacterStudio.Exporter
                     .FirstOrDefault(abilityDefName => !string.IsNullOrWhiteSpace(abilityDefName)
                         && flyerThingDefByAbility.TryGetValue(abilityDefName, out _));
                 if (!string.IsNullOrWhiteSpace(sharedFlyerThingDefName)
-                    && flyerThingDefByAbility.TryGetValue(sharedFlyerThingDefName, out string existingFlyerThingDefName))
+                    && flyerThingDefByAbility.TryGetValue(sharedFlyerThingDefName!, out string existingFlyerThingDefName))
                 {
                     equipment.flyerThingDefName = existingFlyerThingDefName;
                 }

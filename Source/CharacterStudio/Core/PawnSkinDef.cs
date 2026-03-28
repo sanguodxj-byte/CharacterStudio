@@ -280,7 +280,7 @@ namespace CharacterStudio.Core
                 return false;
             }
 
-            string normalizedValue = value;
+            string normalizedValue = value!;
 
             foreach (string marker in ApparelNodeMarkers)
             {
