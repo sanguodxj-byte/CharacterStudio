@@ -459,32 +459,6 @@ namespace CharacterStudio.UI
                     RefreshPreview();
                 }
 
-                UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Variant_EyeRenderMode".Translate(), layer.eyeRenderMode,
-                    (EyeRenderMode[])Enum.GetValues(typeof(EyeRenderMode)),
-                    option => option.ToString(),
-                    val =>
-                    {
-                        CaptureUndoSnapshot();
-                        layer.eyeRenderMode = val;
-                        ApplyToOtherSelectedLayers(l => l.eyeRenderMode = val);
-                        isDirty = true;
-                        RefreshPreview();
-                    });
-
-                if (layer.eyeRenderMode == EyeRenderMode.UvOffset)
-                {
-                    float eyeUvMoveRange = layer.eyeUvMoveRange;
-                    UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Variant_EyeUvMoveRange".Translate(), ref eyeUvMoveRange, 0f, 0.2f, "F3");
-                    if (Math.Abs(eyeUvMoveRange - layer.eyeUvMoveRange) > 0.0001f)
-                    {
-                        CaptureUndoSnapshot();
-                        layer.eyeUvMoveRange = eyeUvMoveRange;
-                        ApplyToOtherSelectedLayers(l => l.eyeUvMoveRange = eyeUvMoveRange);
-                        isDirty = true;
-                        RefreshPreview();
-                    }
-                }
-
                 string visibleExpressionsText = string.Join(", ", layer.visibleExpressions ?? Array.Empty<string>());
                 UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Variant_VisibleExpressions".Translate(), ref visibleExpressionsText);
                 string normalizedVisibleExpressionsText = string.Join(", ", layer.visibleExpressions ?? Array.Empty<string>());
@@ -509,112 +483,6 @@ namespace CharacterStudio.UI
                     ApplyToOtherSelectedLayers(l => l.hiddenExpressions = (string[])parsed.Clone());
                     isDirty = true;
                     RefreshPreview();
-                }
-            }
-
-            if (DrawCollapsibleSection(ref y, width, "CS_Studio_Section_Animation".Translate(), "Animation"))
-            {
-                UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Anim_Type".Translate(), layer.animationType,
-                    (LayerAnimationType[])Enum.GetValues(typeof(LayerAnimationType)),
-                    type => $"CS_Studio_Anim_{type}".Translate(),
-                    val =>
-                    {
-                        layer.animationType = val;
-                        ApplyToOtherSelectedLayers(l => l.animationType = val);
-                        isDirty = true;
-                        RefreshPreview();
-                    });
-
-                if (layer.animationType != LayerAnimationType.None)
-                {
-                    float freq = layer.animFrequency;
-                    UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_Frequency".Translate(), ref freq, 0.1f, 5f);
-                    if (Math.Abs(freq - layer.animFrequency) > 0.0001f)
-                    {
-                        CaptureUndoSnapshot();
-                        layer.animFrequency = freq;
-                        ApplyToOtherSelectedLayers(l => l.animFrequency = freq);
-                        isDirty = true;
-                        RefreshPreview();
-                    }
-
-                    float amp = layer.animAmplitude;
-                    UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_Amplitude".Translate(), ref amp, 1f, 45f);
-                    if (Math.Abs(amp - layer.animAmplitude) > 0.0001f)
-                    {
-                        CaptureUndoSnapshot();
-                        layer.animAmplitude = amp;
-                        ApplyToOtherSelectedLayers(l => l.animAmplitude = amp);
-                        isDirty = true;
-                        RefreshPreview();
-                    }
-
-                    if (layer.animationType == LayerAnimationType.Twitch)
-                    {
-                        float speed = layer.animSpeed;
-                        UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_Speed".Translate(), ref speed, 0.1f, 3f);
-                        if (Math.Abs(speed - layer.animSpeed) > 0.0001f)
-                        {
-                            CaptureUndoSnapshot();
-                            layer.animSpeed = speed;
-                            ApplyToOtherSelectedLayers(l => l.animSpeed = speed);
-                            isDirty = true;
-                            RefreshPreview();
-                        }
-                    }
-
-                    float phase = layer.animPhaseOffset;
-                    UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_PhaseOffset".Translate(), ref phase, 0f, 1f);
-                    if (Math.Abs(phase - layer.animPhaseOffset) > 0.0001f)
-                    {
-                        CaptureUndoSnapshot();
-                        layer.animPhaseOffset = phase;
-                        ApplyToOtherSelectedLayers(l => l.animPhaseOffset = phase);
-                        isDirty = true;
-                        RefreshPreview();
-                    }
-
-                    bool affectsOffset = layer.animAffectsOffset;
-                    UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Anim_AffectsOffset".Translate(), ref affectsOffset);
-                    if (affectsOffset != layer.animAffectsOffset)
-                    {
-                        CaptureUndoSnapshot();
-                        layer.animAffectsOffset = affectsOffset;
-                        ApplyToOtherSelectedLayers(l => l.animAffectsOffset = affectsOffset);
-                        isDirty = true;
-                        RefreshPreview();
-                    }
-
-                    if (layer.animAffectsOffset)
-                    {
-                        float offsetAmp = layer.animOffsetAmplitude;
-                        UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_OffsetAmplitude".Translate(), ref offsetAmp, 0.001f, 0.1f, "F3");
-                        if (Math.Abs(offsetAmp - layer.animOffsetAmplitude) > 0.0001f)
-                        {
-                            CaptureUndoSnapshot();
-                            layer.animOffsetAmplitude = offsetAmp;
-                            ApplyToOtherSelectedLayers(l => l.animOffsetAmplitude = offsetAmp);
-                            isDirty = true;
-                            RefreshPreview();
-                        }
-                    }
-
-                    if (layer.animationType == LayerAnimationType.Spin)
-                    {
-                        float pivotX = layer.animPivotOffset.x;
-                        float pivotY = layer.animPivotOffset.y;
-                        UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_PivotX".Translate(), ref pivotX, -1f, 1f, "F3");
-                        UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_PivotY".Translate(), ref pivotY, -1f, 1f, "F3");
-                        var newPivot = new Vector2(pivotX, pivotY);
-                        if (newPivot != layer.animPivotOffset)
-                        {
-                            CaptureUndoSnapshot();
-                            layer.animPivotOffset = newPivot;
-                            ApplyToOtherSelectedLayers(l => l.animPivotOffset = newPivot);
-                            isDirty = true;
-                            RefreshPreview();
-                        }
-                    }
                 }
             }
 
@@ -715,6 +583,145 @@ namespace CharacterStudio.UI
             }
 
             y += 28f;
+        }
+
+        internal void DrawSelectedLayerExpressionMovementSection(ref float y, float width, PawnLayerConfig layer)
+        {
+            DrawPropertyHint(ref y, width, "CS_Studio_Face_MovementDialog_LayerHint".Translate());
+            UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Prop_LayerName".Translate(), string.IsNullOrWhiteSpace(layer.layerName) ? "CS_Studio_None".Translate() : layer.layerName);
+
+            UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Variant_EyeRenderMode".Translate(), layer.eyeRenderMode,
+                (EyeRenderMode[])Enum.GetValues(typeof(EyeRenderMode)),
+                option => option.ToString(),
+                val =>
+                {
+                    CaptureUndoSnapshot();
+                    layer.eyeRenderMode = val;
+                    ApplyToOtherSelectedLayers(l => l.eyeRenderMode = val);
+                    isDirty = true;
+                    RefreshPreview();
+                });
+
+            if (layer.eyeRenderMode == EyeRenderMode.UvOffset)
+            {
+                float eyeUvMoveRange = layer.eyeUvMoveRange;
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Variant_EyeUvMoveRange".Translate(), ref eyeUvMoveRange, 0f, 0.2f, "F3");
+                if (Math.Abs(eyeUvMoveRange - layer.eyeUvMoveRange) > 0.0001f)
+                {
+                    CaptureUndoSnapshot();
+                    layer.eyeUvMoveRange = eyeUvMoveRange;
+                    ApplyToOtherSelectedLayers(l => l.eyeUvMoveRange = eyeUvMoveRange);
+                    isDirty = true;
+                    RefreshPreview();
+                }
+            }
+
+            UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Section_Animation".Translate());
+            UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Anim_Type".Translate(), layer.animationType,
+                (LayerAnimationType[])Enum.GetValues(typeof(LayerAnimationType)),
+                type => $"CS_Studio_Anim_{type}".Translate(),
+                val =>
+                {
+                    CaptureUndoSnapshot();
+                    layer.animationType = val;
+                    ApplyToOtherSelectedLayers(l => l.animationType = val);
+                    isDirty = true;
+                    RefreshPreview();
+                });
+
+            if (layer.animationType == LayerAnimationType.None)
+            {
+                return;
+            }
+
+            float freq = layer.animFrequency;
+            UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_Frequency".Translate(), ref freq, 0.1f, 5f);
+            if (Math.Abs(freq - layer.animFrequency) > 0.0001f)
+            {
+                CaptureUndoSnapshot();
+                layer.animFrequency = freq;
+                ApplyToOtherSelectedLayers(l => l.animFrequency = freq);
+                isDirty = true;
+                RefreshPreview();
+            }
+
+            float amp = layer.animAmplitude;
+            UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_Amplitude".Translate(), ref amp, 1f, 45f);
+            if (Math.Abs(amp - layer.animAmplitude) > 0.0001f)
+            {
+                CaptureUndoSnapshot();
+                layer.animAmplitude = amp;
+                ApplyToOtherSelectedLayers(l => l.animAmplitude = amp);
+                isDirty = true;
+                RefreshPreview();
+            }
+
+            if (layer.animationType == LayerAnimationType.Twitch)
+            {
+                float speed = layer.animSpeed;
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_Speed".Translate(), ref speed, 0.1f, 3f);
+                if (Math.Abs(speed - layer.animSpeed) > 0.0001f)
+                {
+                    CaptureUndoSnapshot();
+                    layer.animSpeed = speed;
+                    ApplyToOtherSelectedLayers(l => l.animSpeed = speed);
+                    isDirty = true;
+                    RefreshPreview();
+                }
+            }
+
+            float phase = layer.animPhaseOffset;
+            UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_PhaseOffset".Translate(), ref phase, 0f, 1f);
+            if (Math.Abs(phase - layer.animPhaseOffset) > 0.0001f)
+            {
+                CaptureUndoSnapshot();
+                layer.animPhaseOffset = phase;
+                ApplyToOtherSelectedLayers(l => l.animPhaseOffset = phase);
+                isDirty = true;
+                RefreshPreview();
+            }
+
+            bool affectsOffset = layer.animAffectsOffset;
+            UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Anim_AffectsOffset".Translate(), ref affectsOffset);
+            if (affectsOffset != layer.animAffectsOffset)
+            {
+                CaptureUndoSnapshot();
+                layer.animAffectsOffset = affectsOffset;
+                ApplyToOtherSelectedLayers(l => l.animAffectsOffset = affectsOffset);
+                isDirty = true;
+                RefreshPreview();
+            }
+
+            if (layer.animAffectsOffset)
+            {
+                float offsetAmp = layer.animOffsetAmplitude;
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_OffsetAmplitude".Translate(), ref offsetAmp, 0.001f, 0.1f, "F3");
+                if (Math.Abs(offsetAmp - layer.animOffsetAmplitude) > 0.0001f)
+                {
+                    CaptureUndoSnapshot();
+                    layer.animOffsetAmplitude = offsetAmp;
+                    ApplyToOtherSelectedLayers(l => l.animOffsetAmplitude = offsetAmp);
+                    isDirty = true;
+                    RefreshPreview();
+                }
+            }
+
+            if (layer.animationType == LayerAnimationType.Spin)
+            {
+                float pivotX = layer.animPivotOffset.x;
+                float pivotY = layer.animPivotOffset.y;
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_PivotX".Translate(), ref pivotX, -1f, 1f, "F3");
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_PivotY".Translate(), ref pivotY, -1f, 1f, "F3");
+                var newPivot = new Vector2(pivotX, pivotY);
+                if (newPivot != layer.animPivotOffset)
+                {
+                    CaptureUndoSnapshot();
+                    layer.animPivotOffset = newPivot;
+                    ApplyToOtherSelectedLayers(l => l.animPivotOffset = newPivot);
+                    isDirty = true;
+                    RefreshPreview();
+                }
+            }
         }
 
         private string GetLayerAnimationSummary(PawnLayerConfig layer)

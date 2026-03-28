@@ -217,10 +217,65 @@ namespace CharacterStudio.UI
             }
 
             y += 8f;
-            DrawEyeDirectionSection(fc, ref y, width);
+            DrawFaceMovementSettingsLauncher(ref y, width);
 
             viewRect.height = Mathf.Max(y + 10f, contentRect.height - 4f);
             Widgets.EndScrollView();
+        }
+
+        private void DrawFaceMovementSettingsLauncher(ref float y, float width)
+        {
+            UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_MovementDialog_Title".Translate());
+            DrawFaceInfoBanner(ref y, width, "CS_Studio_Face_MovementLauncher_Hint".Translate(), accent: true);
+
+            Rect buttonRect = new Rect(0f, y, width, 28f);
+            if (DrawFaceToolbarButton(buttonRect,
+                "CS_Studio_Face_MovementLauncher_Button".Translate(),
+                "CS_Studio_Face_MovementLauncher_Tooltip".Translate(),
+                OpenFaceMovementSettingsDialog,
+                accent: true))
+            {
+            }
+
+            y += 34f;
+        }
+
+        private void OpenFaceMovementSettingsDialog()
+        {
+            Find.WindowStack.Add(new Dialog_FaceMovementSettings(this));
+        }
+
+        internal void DrawFaceMovementDialogContents(ref float y, float width)
+        {
+            PawnFaceConfig? fc = workingSkin.faceConfig;
+            if (fc == null)
+            {
+                DrawPropertyHint(ref y, width, "CS_Studio_Face_MovementDialog_NoFaceConfig".Translate());
+                return;
+            }
+
+            if (fc.workflowMode == FaceWorkflowMode.LayeredDynamic)
+            {
+                DrawLayeredPartMotionSection(fc, ref y, width);
+            }
+            else
+            {
+                DrawPropertyHint(ref y, width, "CS_Studio_Face_MovementDialog_FullFaceHint".Translate());
+            }
+
+            DrawEyeDirectionSection(fc, ref y, width, includeHeader: true, includeTextureRows: true);
+        }
+
+        internal void DrawSelectedLayerMovementDialogContents(ref float y, float width)
+        {
+            UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_MovementDialog_LayerSection".Translate());
+            if (selectedLayerIndex < 0 || selectedLayerIndex >= workingSkin.layers.Count)
+            {
+                DrawPropertyHint(ref y, width, "CS_Studio_Face_MovementDialog_NoLayerSelected".Translate());
+                return;
+            }
+
+            DrawSelectedLayerExpressionMovementSection(ref y, width, workingSkin.layers[selectedLayerIndex]);
         }
 
         private void OpenFaceWorkflowMenu()
@@ -255,14 +310,14 @@ namespace CharacterStudio.UI
         private void DrawFullFaceSwapSection(PawnFaceConfig fc, ref float y, float width, int exprCount)
         {
             UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_ExpressionMappings".Translate());
-            DrawFaceInfoBanner(ref y, width, "自动识别模式：只需选择 Base.png（或 Neutral.png），系统会按命名规则自动扫描同目录中的表情文件。已收敛为摘要展示，不再展开完整表情列表与路径。", accent: true);
+            DrawFaceInfoBanner(ref y, width, "CS_Studio_Face_FullFaceAutoImport_Hint".Translate(), accent: true);
 
             UIHelper.DrawPropertyFieldWithButton(
                 ref y,
                 width,
-                "基底贴图",
+                "CS_Studio_Face_FullFaceAutoImport_BaseTexture".Translate(),
                 string.IsNullOrWhiteSpace(fc.GetTexPath(ExpressionType.Neutral))
-                    ? "选择 Base.png 后自动识别"
+                    ? "CS_Studio_Face_FullFaceAutoImport_SelectBase".Translate().ToString()
                     : fc.GetTexPath(ExpressionType.Neutral),
                 () => OpenFullFaceAutoImportDialog(fc));
 
@@ -284,18 +339,18 @@ namespace CharacterStudio.UI
             Text.Font = GameFont.Tiny;
             GUI.color = UIHelper.SubtleColor;
             Widgets.Label(new Rect(8f, y + 6f, width - 16f, 16f),
-                $"表情载入：{assignedCount}/{exprCount}");
+                "CS_Studio_Face_FullFaceAutoImport_Assigned".Translate(assignedCount, exprCount));
             Widgets.Label(new Rect(8f, y + 24f, width - 16f, 16f),
-                $"动画表情：{animatedCount}/{exprCount}");
+                "CS_Studio_Face_FullFaceAutoImport_Animated".Translate(animatedCount, exprCount));
 
             bool minSetComplete = minSetDone >= MinSetExpressions.Count;
             GUI.color = minSetComplete ? new Color(0.4f, 0.9f, 0.4f) : new Color(1f, 0.85f, 0.3f);
             Widgets.Label(new Rect(8f, y + 42f, width - 16f, 16f),
-                $"核心集合：{minSetDone}/{MinSetExpressions.Count}");
+                "CS_Studio_Face_FullFaceAutoImport_MinSet".Translate(minSetDone, MinSetExpressions.Count));
             GUI.color = Color.white;
             Text.Font = GameFont.Small;
 
-            if (Widgets.ButtonText(new Rect(width - 98f, y + 54f, 92f, 20f), "重新导入"))
+            if (Widgets.ButtonText(new Rect(width - 98f, y + 54f, 92f, 20f), "CS_Studio_Face_FullFaceAutoImport_Reimport".Translate()))
             {
                 OpenFullFaceAutoImportDialog(fc);
             }
@@ -344,8 +399,8 @@ namespace CharacterStudio.UI
         {
             EnsureScannedOverlayCandidates(fc);
 
-            UIHelper.DrawSectionTitle(ref y, width, "Overlay 映射");
-            DrawPropertyHint(ref y, width, "扫描 overlay 纹理并手动指定语义通道；偏移与缩放建议在外部工具中处理。");
+            UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_OverlayMapping_Title".Translate());
+            DrawPropertyHint(ref y, width, "CS_Studio_Face_OverlayMapping_Hint".Translate());
 
             if (!string.IsNullOrWhiteSpace(scannedOverlayCacheError))
             {
@@ -355,7 +410,7 @@ namespace CharacterStudio.UI
 
             if (scannedOverlayCandidates.Count == 0)
             {
-                DrawPropertyHint(ref y, width, "当前目录未扫描到可识别的 overlay 纹理。命名需符合 Overlay_xxx 或显式语义前缀。");
+                DrawPropertyHint(ref y, width, "CS_Studio_Face_OverlayMapping_Empty".Translate());
                 return;
             }
 
@@ -371,7 +426,9 @@ namespace CharacterStudio.UI
         {
             string mappedOverlayId = GetMappedOverlayIdForPath(fc, candidate.FilePath);
             string displayLabel = string.IsNullOrWhiteSpace(mappedOverlayId)
-                ? (string.IsNullOrWhiteSpace(candidate.SuggestedOverlayId) ? "未映射" : $"建议 {candidate.SuggestedOverlayId}")
+                ? (string.IsNullOrWhiteSpace(candidate.SuggestedOverlayId)
+                    ? "CS_Studio_Face_OverlayMapping_Unmapped".Translate().ToString()
+                    : "CS_Studio_Face_OverlayMapping_Suggested".Translate(candidate.SuggestedOverlayId).ToString())
                 : mappedOverlayId;
 
             Rect rowRect = new Rect(0f, y, width, 22f);
@@ -521,23 +578,6 @@ namespace CharacterStudio.UI
         private void DrawLayeredPartConfigSection(PawnFaceConfig fc, ref float y, float width)
         {
             UIHelper.DrawSectionTitle(ref y, width, "通用表情与部件调整");
-            DrawPropertyHint(ref y, width, "MotionAmplitude 会直接驱动程序动画偏移；可在中间预览面板开启预览流实时观察。");
-
-            UIHelper.DrawPropertyFieldWithButton(
-                ref y,
-                width,
-                "表情",
-                GetPreviewOverrideLabel(previewExpressionOverrideEnabled, GetExpressionTypeLabel(previewExpression)),
-                OpenPreviewExpressionMenu);
-            y += 2f;
-
-            UIHelper.DrawPropertyFieldWithButton(
-                ref y,
-                width,
-                "眼球朝向",
-                GetPreviewOverrideLabel(previewEyeDirectionOverrideEnabled, previewEyeDirection.ToString()),
-                OpenPreviewEyeDirectionMenu);
-            y += 4f;
 
             foreach (LayeredFacePartType partType in EnumerateLayeredPartEditorTypes())
             {
@@ -780,34 +820,15 @@ namespace CharacterStudio.UI
             }
 
             y += 26f;
-
-            LayeredFacePartConfig? editablePart = isOverlay
-                ? fc.GetLayeredPartConfig(partType, expression, resolvedOverlayId)
-                : fc.GetLayeredPartConfig(partType, expression, normalizedSide);
-            if (editablePart == null)
-                return;
-
-            editablePart.SyncLegacyMotionAmplitude();
-
-            float motionAmplitude = editablePart.motionAmplitude;
-            UIHelper.DrawPropertySlider(ref y, width,
-                "CS_Studio_Face_Layered_MotionAmplitude".Translate(),
-                ref motionAmplitude, 0f, 0.01f, "F4", 20f);
-            if (!Mathf.Approximately(motionAmplitude, editablePart.motionAmplitude))
-            {
-                editablePart.motionAmplitude = motionAmplitude;
-                editablePart.anchorCorrection = Vector2.zero;
-                isDirty = true;
-                RefreshPreview();
-            }
-
-            y += 4f;
         }
 
-        private void DrawEyeDirectionSection(PawnFaceConfig fc, ref float y, float width)
+        private void DrawEyeDirectionSection(PawnFaceConfig fc, ref float y, float width, bool includeHeader = true, bool includeTextureRows = true)
         {
-            UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_EyeDir_Title".Translate());
-            DrawFaceInfoBanner(ref y, width, "CS_Studio_Face_EyeDir_Hint".Translate());
+            if (includeHeader)
+            {
+                UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_EyeDir_Title".Translate());
+                DrawFaceInfoBanner(ref y, width, "CS_Studio_Face_EyeDir_Hint".Translate());
+            }
 
             if (fc.eyeDirectionConfig == null)
             {
@@ -846,80 +867,7 @@ namespace CharacterStudio.UI
                 }
 
                 y += 4f;
-                float pupilRange = eyeCfg.pupilMoveRange;
-                UIHelper.DrawPropertySlider(ref y, width,
-                    "CS_Studio_Face_EyeDir_PupilMoveRange".Translate(),
-                    ref pupilRange, 0f, 0.15f, "F3");
-                if (pupilRange != eyeCfg.pupilMoveRange)
-                {
-                    eyeCfg.pupilMoveRange = pupilRange;
-                    isDirty = true;
-                    RefreshPreview();
-                }
-
-                y += 4f;
-                float upperLidMoveDown = eyeCfg.upperLidMoveDown;
-                UIHelper.DrawPropertySlider(ref y, width,
-                    "CS_Studio_Face_EyeDir_UpperLidMoveDown".Translate(),
-                    ref upperLidMoveDown, 0f, 0.02f, "F4");
-                if (upperLidMoveDown != eyeCfg.upperLidMoveDown)
-                {
-                    eyeCfg.upperLidMoveDown = upperLidMoveDown;
-                    isDirty = true;
-                    RefreshPreview();
-                }
-
-                y += 4f;
-                if (eyeCfg.pupilMoveRange > 0f)
-                {
-                    DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Center".Translate(),
-                        eyeCfg.texCenter, path =>
-                        {
-                            eyeCfg.texCenter = path;
-                            isDirty = true;
-                            RefreshPreview();
-                        });
-                    UIHelper.DrawPropertyLabel(ref y, width,
-                        "CS_Studio_Face_EyeDir_UVModeHint".Translate(), "");
-                }
-                else
-                {
-                    DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Center".Translate(),
-                        eyeCfg.texCenter, path =>
-                        {
-                            eyeCfg.texCenter = path;
-                            isDirty = true;
-                            RefreshPreview();
-                        });
-                    DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Left".Translate(),
-                        eyeCfg.texLeft, path =>
-                        {
-                            eyeCfg.texLeft = path;
-                            isDirty = true;
-                            RefreshPreview();
-                        });
-                    DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Right".Translate(),
-                        eyeCfg.texRight, path =>
-                        {
-                            eyeCfg.texRight = path;
-                            isDirty = true;
-                            RefreshPreview();
-                        });
-                    DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Up".Translate(),
-                        eyeCfg.texUp, path =>
-                        {
-                            eyeCfg.texUp = path;
-                            isDirty = true;
-                            RefreshPreview();
-                        });
-                    DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Down".Translate(),
-                        eyeCfg.texDown, path =>
-                        {
-                            eyeCfg.texDown = path;
-                            isDirty = true;
-                            RefreshPreview();
-                        });
-                }
+                DrawEyeDirectionMovementControls(ref y, width, eyeCfg, includeTextureRows);
 
                 y += 4f;
                 GUI.color = new Color(1f, 0.4f, 0.4f);
@@ -931,6 +879,195 @@ namespace CharacterStudio.UI
                 }
                 GUI.color = Color.white;
                 y += 28f;
+            }
+        }
+
+        private void DrawLayeredPartMotionSection(PawnFaceConfig fc, ref float y, float width)
+        {
+            UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_MovementDialog_FaceSection".Translate());
+            DrawPropertyHint(ref y, width, "CS_Studio_Face_MovementDialog_FaceHint".Translate());
+
+            UIHelper.DrawPropertyFieldWithButton(
+                ref y,
+                width,
+                "CS_Studio_Face_MovementDialog_PreviewExpression".Translate(),
+                GetPreviewOverrideLabel(previewExpressionOverrideEnabled, GetExpressionTypeLabel(previewExpression)),
+                OpenPreviewExpressionMenu);
+            y += 2f;
+
+            UIHelper.DrawPropertyFieldWithButton(
+                ref y,
+                width,
+                "CS_Studio_Face_MovementDialog_PreviewEyeDirection".Translate(),
+                GetPreviewOverrideLabel(previewEyeDirectionOverrideEnabled, previewEyeDirection.ToString()),
+                OpenPreviewEyeDirectionMenu);
+            y += 4f;
+
+            foreach (LayeredFacePartType partType in EnumerateLayeredPartEditorTypes())
+            {
+                DrawLayeredPartMotionEditorGroup(fc, ref y, width, partType);
+            }
+
+            List<string> overlayIds = fc.GetOrderedOverlayIds();
+            if (overlayIds.Any())
+            {
+                UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_MovementDialog_OverlaySection".Translate());
+                foreach (string overlayId in overlayIds)
+                {
+                    DrawLayeredPartMotionRow(fc, ref y, width, LayeredFacePartType.Overlay, previewExpression, overlayId: overlayId);
+                }
+            }
+        }
+
+        private void DrawLayeredPartMotionEditorGroup(PawnFaceConfig fc, ref float y, float width, LayeredFacePartType partType)
+        {
+            UIHelper.DrawSectionTitle(ref y, width, GetLayeredFacePartTypeLabel(partType));
+
+            if (PawnFaceConfig.SupportsSideSpecificParts(partType))
+            {
+                bool hasExplicitSidedContent =
+                    fc.CountLayeredParts(partType, LayeredFacePartSide.Left) > 0
+                    || fc.CountLayeredParts(partType, LayeredFacePartSide.Right) > 0;
+
+                if (hasExplicitSidedContent)
+                {
+                    DrawLayeredPartMotionRow(fc, ref y, width, partType, previewExpression, side: LayeredFacePartSide.Left);
+                    DrawLayeredPartMotionRow(fc, ref y, width, partType, previewExpression, side: LayeredFacePartSide.Right);
+                    y += 2f;
+                    return;
+                }
+            }
+
+            DrawLayeredPartMotionRow(fc, ref y, width, partType, previewExpression);
+            y += 2f;
+        }
+
+        private void DrawLayeredPartMotionRow(
+            PawnFaceConfig fc,
+            ref float y,
+            float width,
+            LayeredFacePartType partType,
+            ExpressionType expression,
+            string? overlayId = null,
+            LayeredFacePartSide side = LayeredFacePartSide.None)
+        {
+            bool isOverlay = partType == LayeredFacePartType.Overlay;
+            string resolvedOverlayId = PawnFaceConfig.NormalizeOverlayId(overlayId);
+            if (isOverlay && string.IsNullOrWhiteSpace(resolvedOverlayId))
+            {
+                return;
+            }
+
+            LayeredFacePartSide normalizedSide = PawnFaceConfig.NormalizePartSide(partType, side);
+            LayeredFacePartConfig? editablePart = isOverlay
+                ? fc.GetLayeredPartConfig(partType, expression, resolvedOverlayId)
+                : fc.GetLayeredPartConfig(partType, expression, normalizedSide);
+            if (editablePart == null)
+            {
+                return;
+            }
+
+            editablePart.SyncLegacyMotionAmplitude();
+
+            string label = isOverlay ? resolvedOverlayId : GetLayeredPartEditorLabel(partType, normalizedSide);
+            UIHelper.DrawPropertyLabel(ref y, width, label, editablePart.motionAmplitude.ToString("F4"));
+
+            float motionAmplitude = editablePart.motionAmplitude;
+            UIHelper.DrawPropertySlider(ref y, width,
+                "CS_Studio_Face_Layered_MotionAmplitude".Translate(),
+                ref motionAmplitude, 0f, 0.01f, "F4", 20f);
+            if (!Mathf.Approximately(motionAmplitude, editablePart.motionAmplitude))
+            {
+                editablePart.motionAmplitude = motionAmplitude;
+                editablePart.anchorCorrection = Vector2.zero;
+                isDirty = true;
+                RefreshPreview();
+            }
+
+            y += 4f;
+        }
+
+        private void DrawEyeDirectionMovementControls(ref float y, float width, PawnEyeDirectionConfig eyeCfg, bool includeTextureRows)
+        {
+            y += 4f;
+            float pupilRange = eyeCfg.pupilMoveRange;
+            UIHelper.DrawPropertySlider(ref y, width,
+                "CS_Studio_Face_EyeDir_PupilMoveRange".Translate(),
+                ref pupilRange, 0f, 0.15f, "F3");
+            if (pupilRange != eyeCfg.pupilMoveRange)
+            {
+                eyeCfg.pupilMoveRange = pupilRange;
+                isDirty = true;
+                RefreshPreview();
+            }
+
+            y += 4f;
+            float upperLidMoveDown = eyeCfg.upperLidMoveDown;
+            UIHelper.DrawPropertySlider(ref y, width,
+                "CS_Studio_Face_EyeDir_UpperLidMoveDown".Translate(),
+                ref upperLidMoveDown, 0f, 0.02f, "F4");
+            if (upperLidMoveDown != eyeCfg.upperLidMoveDown)
+            {
+                eyeCfg.upperLidMoveDown = upperLidMoveDown;
+                isDirty = true;
+                RefreshPreview();
+            }
+
+            if (!includeTextureRows)
+            {
+                return;
+            }
+
+            y += 4f;
+            if (eyeCfg.pupilMoveRange > 0f)
+            {
+                DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Center".Translate(),
+                    eyeCfg.texCenter, path =>
+                    {
+                        eyeCfg.texCenter = path;
+                        isDirty = true;
+                        RefreshPreview();
+                    });
+                UIHelper.DrawPropertyLabel(ref y, width,
+                    "CS_Studio_Face_EyeDir_UVModeHint".Translate(), "");
+            }
+            else
+            {
+                DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Center".Translate(),
+                    eyeCfg.texCenter, path =>
+                    {
+                        eyeCfg.texCenter = path;
+                        isDirty = true;
+                        RefreshPreview();
+                    });
+                DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Left".Translate(),
+                    eyeCfg.texLeft, path =>
+                    {
+                        eyeCfg.texLeft = path;
+                        isDirty = true;
+                        RefreshPreview();
+                    });
+                DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Right".Translate(),
+                    eyeCfg.texRight, path =>
+                    {
+                        eyeCfg.texRight = path;
+                        isDirty = true;
+                        RefreshPreview();
+                    });
+                DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Up".Translate(),
+                    eyeCfg.texUp, path =>
+                    {
+                        eyeCfg.texUp = path;
+                        isDirty = true;
+                        RefreshPreview();
+                    });
+                DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Down".Translate(),
+                    eyeCfg.texDown, path =>
+                    {
+                        eyeCfg.texDown = path;
+                        isDirty = true;
+                        RefreshPreview();
+                    });
             }
         }
 

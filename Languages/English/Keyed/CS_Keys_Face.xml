@@ -37,6 +37,13 @@
     <CS_Studio_Face_Create>Create Face Config</CS_Studio_Face_Create>
     <CS_Studio_Face_Enable>Enable Expression System</CS_Studio_Face_Enable>
     <CS_Studio_Face_ExpressionMappings>Expression Texture Mappings</CS_Studio_Face_ExpressionMappings>
+    <CS_Studio_Face_FullFaceAutoImport_Animated>Animated expressions: {0}/{1}</CS_Studio_Face_FullFaceAutoImport_Animated>
+    <CS_Studio_Face_FullFaceAutoImport_Assigned>Expressions loaded: {0}/{1}</CS_Studio_Face_FullFaceAutoImport_Assigned>
+    <CS_Studio_Face_FullFaceAutoImport_BaseTexture>Base Texture</CS_Studio_Face_FullFaceAutoImport_BaseTexture>
+    <CS_Studio_Face_FullFaceAutoImport_Hint>Auto-detect mode: select Base.png (or Neutral.png) and CharacterStudio will scan sibling expression files by naming convention. This section is intentionally summarized instead of expanding every path inline.</CS_Studio_Face_FullFaceAutoImport_Hint>
+    <CS_Studio_Face_FullFaceAutoImport_MinSet>Core set: {0}/{1}</CS_Studio_Face_FullFaceAutoImport_MinSet>
+    <CS_Studio_Face_FullFaceAutoImport_Reimport>Reimport</CS_Studio_Face_FullFaceAutoImport_Reimport>
+    <CS_Studio_Face_FullFaceAutoImport_SelectBase>Select Base.png for auto-detect</CS_Studio_Face_FullFaceAutoImport_SelectBase>
     <CS_Studio_Face_EyeDir_Auto>Auto (runtime inferred)</CS_Studio_Face_EyeDir_Auto>
     <CS_Studio_Face_EyeDir_Center>Center</CS_Studio_Face_EyeDir_Center>
     <CS_Studio_Face_EyeDir_Create>Create Eye Direction Config</CS_Studio_Face_EyeDir_Create>
@@ -50,12 +57,28 @@
     <CS_Studio_Face_EyeDir_Right>Right</CS_Studio_Face_EyeDir_Right>
     <CS_Studio_Face_EyeDir_Title>Eye Direction Config</CS_Studio_Face_EyeDir_Title>
     <CS_Studio_Face_EyeDir_Up>Up</CS_Studio_Face_EyeDir_Up>
+    <CS_Studio_Face_EyeDir_UpperLidMoveDown>Upper Lid Move Down</CS_Studio_Face_EyeDir_UpperLidMoveDown>
     <CS_Studio_Face_EyeDir_UVModeHint>UV offset mode active: Left/Right/Up/Down textures not needed, direction is code-driven</CS_Studio_Face_EyeDir_UVModeHint>
     <CS_Studio_Face_Frames>frames</CS_Studio_Face_Frames>
     <CS_Studio_Face_HeadTexHint>Assign a full head texture for each expression, or click [+F] to add multiple frames for animation.</CS_Studio_Face_HeadTexHint>
     <CS_Studio_Face_Layered_Enable>Enable this layered part entry</CS_Studio_Face_Layered_Enable>
     <CS_Studio_Face_Layered_Hint>Use this mode when your art is split into reusable facial parts. Usually you only need to name the parts and assign paths; movement and fallback are code-driven.</CS_Studio_Face_Layered_Hint>
     <CS_Studio_Face_Layered_MotionAmplitude>Motion Amplitude</CS_Studio_Face_Layered_MotionAmplitude>
+    <CS_Studio_Face_MovementDialog_FaceHint>Motion Amplitude directly drives procedural face offsets. Use the preview controls here to inspect facial movement in real time.</CS_Studio_Face_MovementDialog_FaceHint>
+    <CS_Studio_Face_MovementDialog_FaceSection>Face Movement</CS_Studio_Face_MovementDialog_FaceSection>
+    <CS_Studio_Face_MovementDialog_FullFaceHint>Full Face Swap mainly uses texture replacement. Eye direction and lid movement can still be tuned here.</CS_Studio_Face_MovementDialog_FullFaceHint>
+    <CS_Studio_Face_MovementDialog_LayerHint>Adjust expression-linked UV offset and animation parameters for the currently selected layer.</CS_Studio_Face_MovementDialog_LayerHint>
+    <CS_Studio_Face_MovementDialog_LayerSection>Layer Movement</CS_Studio_Face_MovementDialog_LayerSection>
+    <CS_Studio_Face_MovementDialog_NoFaceConfig>No Face Config exists yet. Enable the face system from the left Face panel first.</CS_Studio_Face_MovementDialog_NoFaceConfig>
+    <CS_Studio_Face_MovementDialog_NoLayerSelected>Select a layer in the Layers panel before editing expression-linked animation settings.</CS_Studio_Face_MovementDialog_NoLayerSelected>
+    <CS_Studio_Face_MovementDialog_OverlaySection>Overlay Motion</CS_Studio_Face_MovementDialog_OverlaySection>
+    <CS_Studio_Face_MovementDialog_PreviewExpression>Preview Expression</CS_Studio_Face_MovementDialog_PreviewExpression>
+    <CS_Studio_Face_MovementDialog_PreviewEyeDirection>Preview Eye Direction</CS_Studio_Face_MovementDialog_PreviewEyeDirection>
+    <CS_Studio_Face_MovementDialog_Summary>Fine-tune dynamic facial motion, gaze offsets, and expression-linked layer animation in one place. Changes still use the same live preview and dirty-state update flow as the main editor.</CS_Studio_Face_MovementDialog_Summary>
+    <CS_Studio_Face_MovementDialog_Title>Dynamic Expression Parameters</CS_Studio_Face_MovementDialog_Title>
+    <CS_Studio_Face_MovementLauncher_Button>Open Parameter Panel</CS_Studio_Face_MovementLauncher_Button>
+    <CS_Studio_Face_MovementLauncher_Hint>Edit face-part motion, eye-direction offsets, and selected-layer expression animation in a dedicated popup.</CS_Studio_Face_MovementLauncher_Hint>
+    <CS_Studio_Face_MovementLauncher_Tooltip>Open the dynamic expression and movement parameter dialog</CS_Studio_Face_MovementLauncher_Tooltip>
     <CS_Studio_Face_Layered_PartSummary>{0}/{1} expressions configured for this part.</CS_Studio_Face_Layered_PartSummary>
     <CS_Studio_Face_Layered_SourceRoot>Layered Source Root</CS_Studio_Face_Layered_SourceRoot>
     <CS_Studio_Face_Layered_Stats>{0} paths assigned across {2}/{3} part groups, for {1} expressions.</CS_Studio_Face_Layered_Stats>
@@ -77,6 +100,11 @@
     <CS_Studio_Face_PreviewHint>Preview Mode</CS_Studio_Face_PreviewHint>
     <CS_Studio_Face_PreviewHintValue>Switch between auto and a forced expression in the preview panel to inspect the current face setup instantly</CS_Studio_Face_PreviewHintValue>
     <CS_Studio_Face_PreviewModeButton>Preview Mode</CS_Studio_Face_PreviewModeButton>
+    <CS_Studio_Face_OverlayMapping_Empty>No recognizable overlay textures were found in the current directory. Names should follow Overlay_xxx or an explicit semantic prefix.</CS_Studio_Face_OverlayMapping_Empty>
+    <CS_Studio_Face_OverlayMapping_Hint>Scan overlay textures and manually assign their semantic channel. Offset and scale are still better handled in external art tools.</CS_Studio_Face_OverlayMapping_Hint>
+    <CS_Studio_Face_OverlayMapping_Suggested>Suggested {0}</CS_Studio_Face_OverlayMapping_Suggested>
+    <CS_Studio_Face_OverlayMapping_Title>Overlay Mapping</CS_Studio_Face_OverlayMapping_Title>
+    <CS_Studio_Face_OverlayMapping_Unmapped>Unmapped</CS_Studio_Face_OverlayMapping_Unmapped>
     <CS_Studio_Face_Title>Face Configuration</CS_Studio_Face_Title>
     <CS_Studio_Face_Type>{0} Expression</CS_Studio_Face_Type>
     <CS_Studio_Face_TypeSummary>{0} ({1}/{2} configured)</CS_Studio_Face_TypeSummary>
