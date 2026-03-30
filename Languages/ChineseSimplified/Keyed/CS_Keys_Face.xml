@@ -178,4 +178,11 @@
     <CS_Studio_Preview_MouthState_Open>张嘴</CS_Studio_Preview_MouthState_Open>
     <CS_Studio_Preview_MouthState_Sleep>睡眠</CS_Studio_Preview_MouthState_Sleep>
     <CS_Studio_Preview_MouthState_Smile>微笑</CS_Studio_Preview_MouthState_Smile>
+    <CS_Studio_Face_AnimationPreview_Title>眨眼动画预览</CS_Studio_Face_AnimationPreview_Title>
+    <CS_Studio_Face_PreviewBlinkPlay>预览一次</CS_Studio_Face_PreviewBlinkPlay>
+    <CS_Studio_Face_PreviewBlinkLoop>循环播放</CS_Studio_Face_PreviewBlinkLoop>
+    <CS_Studio_Face_PreviewBlinkTooltip>触发程序化眨眼动画预览</CS_Studio_Face_PreviewBlinkTooltip>
+    <CS_Studio_Face_Layered_SourceRoot>资源根目录</CS_Studio_Face_Layered_SourceRoot>
+    <CS_Studio_Face_LayeredPart_Hair>头发层 (Hair)</CS_Studio_Face_LayeredPart_Hair>
+    <CS_Studio_Face_Workflow_LayeredDynamic>分层动态 (Layered)</CS_Studio_Face_Workflow_LayeredDynamic>
 </LanguageData>

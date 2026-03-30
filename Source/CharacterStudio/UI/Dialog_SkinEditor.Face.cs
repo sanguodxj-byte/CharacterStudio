@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using CharacterStudio.Core;
+using CharacterStudio.Rendering;
 using UnityEngine;
 using Verse;
 
@@ -53,7 +54,7 @@ namespace CharacterStudio.UI
             string? overlayId = null,
             LayeredFacePartSide side = LayeredFacePartSide.None)
         {
-            if (partType == LayeredFacePartType.Overlay)
+            if (PawnFaceConfig.IsOverlayPart(partType))
             {
                 string resolvedOverlayId = PawnFaceConfig.NormalizeOverlayId(overlayId);
                 return $"{partType}|{resolvedOverlayId}|{expression}";
@@ -167,7 +168,7 @@ namespace CharacterStudio.UI
                 ? contentRect.height
                 : fc.workflowMode == FaceWorkflowMode.FullFaceSwap
                     ? Mathf.Max(contentRect.height + 240f, 620f)
-                    : Mathf.Max(contentRect.height + 420f, 1080f);
+                    : Mathf.Max(contentRect.height + 1200f, 2400f);
             Rect viewRect = new Rect(0, 0, contentRect.width - 20f, estimatedViewHeight);
 
             Widgets.BeginScrollView(contentRect.ContractedBy(2f), ref faceScrollPos, viewRect);
@@ -217,10 +218,44 @@ namespace CharacterStudio.UI
             }
 
             y += 8f;
+            DrawFaceAnimationPreviewSection(ref y, width);
             DrawFaceMovementSettingsLauncher(ref y, width);
 
             viewRect.height = Mathf.Max(y + 10f, contentRect.height - 4f);
             Widgets.EndScrollView();
+        }
+
+        private void DrawFaceAnimationPreviewSection(ref float y, float width)
+        {
+            UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_AnimationPreview_Title".Translate());
+
+            float btnHeight = 24f;
+            float btnWidth = 100f;
+            float spacing = 8f;
+            
+            Rect rowRect = new Rect(0f, y, width, btnHeight);
+            
+            Rect playRect = new Rect(0f, y, btnWidth, btnHeight);
+            bool isPlayingOnce = previewFaceAnimationPlaying && !previewFaceAnimationLoop;
+            if (DrawFaceToolbarButton(playRect, 
+                (isPlayingOnce ? "▶ " : string.Empty) + "CS_Studio_Face_PreviewBlinkPlay".Translate(),
+                "CS_Studio_Face_PreviewBlinkTooltip".Translate(),
+                () => TogglePreviewFaceAnimation(loop: false),
+                accent: isPlayingOnce))
+            {
+            }
+
+            Rect loopRect = new Rect(btnWidth + spacing, y, btnWidth, btnHeight);
+            bool isLooping = previewFaceAnimationPlaying && previewFaceAnimationLoop;
+            if (DrawFaceToolbarButton(loopRect, 
+                (isLooping ? "▶ " : string.Empty) + "CS_Studio_Face_PreviewBlinkLoop".Translate(),
+                "CS_Studio_Face_PreviewBlinkTooltip".Translate(),
+                () => TogglePreviewFaceAnimation(loop: true),
+                accent: isLooping))
+            {
+            }
+
+            y += btnHeight + 12f;
         }
 
         private void DrawFaceMovementSettingsLauncher(ref float y, float width)
@@ -307,7 +342,6 @@ namespace CharacterStudio.UI
         private void DrawFullFaceSwapSection(PawnFaceConfig fc, ref float y, float width, int exprCount)
         {
             UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_ExpressionMappings".Translate());
-            DrawFaceInfoBanner(ref y, width, "CS_Studio_Face_FullFaceAutoImport_Hint".Translate(), accent: true);
 
             UIHelper.DrawPropertyFieldWithButton(
                 ref y,
@@ -319,40 +353,6 @@ namespace CharacterStudio.UI
                 () => OpenFullFaceAutoImportDialog(fc));
 
             y += 4f;
-
-            int assignedCount = fc.expressions.Count(e =>
-                !string.IsNullOrEmpty(e.texPath) || (e.frames != null && e.frames.Count > 0));
-            int animatedCount = fc.expressions.Count(e => e != null && e.frames != null && e.frames.Count > 0);
-            int minSetDone = fc.expressions.Count(e =>
-                MinSetExpressions.Contains(e.expression) &&
-                (!string.IsNullOrEmpty(e.texPath) || (e.frames != null && e.frames.Count > 0)));
-
-            Rect statsRect = new Rect(0f, y, width, 78f);
-            Widgets.DrawBoxSolid(statsRect, UIHelper.PanelFillSoftColor);
-            GUI.color = UIHelper.BorderColor;
-            Widgets.DrawBox(statsRect, 1);
-            GUI.color = Color.white;
-
-            Text.Font = GameFont.Tiny;
-            GUI.color = UIHelper.SubtleColor;
-            Widgets.Label(new Rect(8f, y + 6f, width - 16f, 16f),
-                "CS_Studio_Face_FullFaceAutoImport_Assigned".Translate(assignedCount, exprCount));
-            Widgets.Label(new Rect(8f, y + 24f, width - 16f, 16f),
-                "CS_Studio_Face_FullFaceAutoImport_Animated".Translate(animatedCount, exprCount));
-
-            bool minSetComplete = minSetDone >= MinSetExpressions.Count;
-            GUI.color = minSetComplete ? new Color(0.4f, 0.9f, 0.4f) : new Color(1f, 0.85f, 0.3f);
-            Widgets.Label(new Rect(8f, y + 42f, width - 16f, 16f),
-                "CS_Studio_Face_FullFaceAutoImport_MinSet".Translate(minSetDone, MinSetExpressions.Count));
-            GUI.color = Color.white;
-            Text.Font = GameFont.Small;
-
-            if (Widgets.ButtonText(new Rect(width - 98f, y + 54f, 92f, 20f), "CS_Studio_Face_FullFaceAutoImport_Reimport".Translate()))
-            {
-                OpenFullFaceAutoImportDialog(fc);
-            }
-
-            y += 84f;
         }
 
         private void DrawLayeredDynamicSection(PawnFaceConfig fc, ref float y, float width, int exprCount)
@@ -366,30 +366,20 @@ namespace CharacterStudio.UI
                 {
                     Find.WindowStack.Add(new Dialog_FileBrowser(fc.layeredSourceRoot ?? string.Empty, path =>
                     {
-                        fc.layeredSourceRoot = path ?? string.Empty;
-                        isDirty = true;
+                        if (!string.IsNullOrWhiteSpace(path))
+                        {
+                            AutoPopulateLayeredFacePartsFromDirectory(fc, path);
+                        }
                     }));
                 });
 
-            string currentRoot = fc.layeredSourceRoot ?? string.Empty;
-            string newRoot = Widgets.TextField(new Rect(0f, y, width - 34f, 20f), currentRoot);
-            if (!ArePathStringsEquivalent(newRoot, currentRoot))
-            {
-                fc.layeredSourceRoot = newRoot;
-                isDirty = true;
-            }
+            y += 4f;
 
-            if (UIHelper.DrawDangerButton(new Rect(width - 32f, y - 1f, 28f, 22f), tooltip: "CS_Studio_Clear".Translate(), onClick: () =>
+            if (fc.HasAnyLayeredPart())
             {
-                fc.layeredSourceRoot = string.Empty;
-                isDirty = true;
-            }))
-            {
+                DrawLayeredPartConfigSection(fc, ref y, width);
+                DrawScannedOverlayMappingSection(fc, ref y, width);
             }
-
-            y += 30f;
-            DrawScannedOverlayMappingSection(fc, ref y, width);
-            DrawLayeredPartConfigSection(fc, ref y, width);
         }
 
         private void DrawScannedOverlayMappingSection(PawnFaceConfig fc, ref float y, float width)
@@ -581,13 +571,19 @@ namespace CharacterStudio.UI
                 DrawLayeredPartEditorGroup(fc, ref y, width, partType);
             }
 
-            List<string> overlayIds = fc.GetOrderedOverlayIds();
-            if (overlayIds.Any())
+            // 绘制所有覆盖层风格的部件 (Overlay, Hair 等)
+            foreach (LayeredFacePartType partType in Enum.GetValues(typeof(LayeredFacePartType)))
             {
-                UIHelper.DrawSectionTitle(ref y, width, "Overlay 图层");
-                foreach (string overlayId in overlayIds)
+                if (!PawnFaceConfig.IsOverlayPart(partType)) continue;
+
+                List<string> overlayIds = fc.GetOrderedOverlayIds(partType);
+                if (overlayIds.Any())
                 {
-                    DrawLayeredPartRow(fc, ref y, width, LayeredFacePartType.Overlay, previewExpression, overlayId: overlayId);
+                    UIHelper.DrawSectionTitle(ref y, width, GetLayeredFacePartTypeLabel(partType));
+                    foreach (string overlayId in overlayIds)
+                    {
+                        DrawLayeredPartRow(fc, ref y, width, partType, previewExpression, overlayId: overlayId);
+                    }
                 }
             }
         }
@@ -648,7 +644,7 @@ namespace CharacterStudio.UI
             string? overlayId = null,
             LayeredFacePartSide side = LayeredFacePartSide.None)
         {
-            bool isOverlay = partType == LayeredFacePartType.Overlay;
+            bool isOverlay = PawnFaceConfig.IsOverlayPart(partType);
             string resolvedOverlayId = PawnFaceConfig.NormalizeOverlayId(overlayId);
             if (isOverlay && string.IsNullOrWhiteSpace(resolvedOverlayId))
                 return;
@@ -746,12 +742,14 @@ namespace CharacterStudio.UI
 
                 TryAutoPopulateLayeredFacePartsFromBase(fc, partType, expression, newBufferPath);
 
+                FaceRuntimeCompiler.ClearCache();
+                PawnRenderNodeWorker_FaceComponent.ClearCache();
                 isDirty = true;
                 RefreshPreview();
                 existing = changedPart;
                 actualPath = changedPart?.texPath ?? string.Empty;
             }
-            else
+            else if (!layeredPartPathBuffer.ContainsKey(bufferKey))
             {
                 layeredPartPathBuffer[bufferKey] = actualPath;
             }
@@ -785,6 +783,8 @@ namespace CharacterStudio.UI
 
                     TryAutoPopulateLayeredFacePartsFromBase(fc, partType, expression, path);
 
+                    FaceRuntimeCompiler.ClearCache();
+                    PawnRenderNodeWorker_FaceComponent.ClearCache();
                     isDirty = true;
                     RefreshPreview();
                 }));
@@ -808,6 +808,8 @@ namespace CharacterStudio.UI
                 }
 
                 layeredPartPathBuffer[bufferKey] = string.Empty;
+                FaceRuntimeCompiler.ClearCache();
+                PawnRenderNodeWorker_FaceComponent.ClearCache();
                 isDirty = true;
                 RefreshPreview();
                 existing = null;
@@ -905,13 +907,19 @@ namespace CharacterStudio.UI
                 DrawLayeredPartMotionEditorGroup(fc, ref y, width, partType);
             }
 
-            List<string> overlayIds = fc.GetOrderedOverlayIds();
-            if (overlayIds.Any())
+            // 绘制所有覆盖层风格的部件 (Overlay, Hair 等) 的运动设置
+            foreach (LayeredFacePartType partType in Enum.GetValues(typeof(LayeredFacePartType)))
             {
-                UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_MovementDialog_OverlaySection".Translate());
-                foreach (string overlayId in overlayIds)
+                if (!PawnFaceConfig.IsOverlayPart(partType)) continue;
+
+                List<string> overlayIds = fc.GetOrderedOverlayIds(partType);
+                if (overlayIds.Any())
                 {
-                    DrawLayeredPartMotionRow(fc, ref y, width, LayeredFacePartType.Overlay, previewExpression, overlayId: overlayId);
+                    UIHelper.DrawSectionTitle(ref y, width, GetLayeredFacePartTypeLabel(partType));
+                    foreach (string overlayId in overlayIds)
+                    {
+                        DrawLayeredPartMotionRow(fc, ref y, width, partType, previewExpression, overlayId: overlayId);
+                    }
                 }
             }
         }
@@ -948,7 +956,7 @@ namespace CharacterStudio.UI
             string? overlayId = null,
             LayeredFacePartSide side = LayeredFacePartSide.None)
         {
-            bool isOverlay = partType == LayeredFacePartType.Overlay;
+            bool isOverlay = PawnFaceConfig.IsOverlayPart(partType);
             string resolvedOverlayId = PawnFaceConfig.NormalizeOverlayId(overlayId);
             if (isOverlay && string.IsNullOrWhiteSpace(resolvedOverlayId))
             {
@@ -977,6 +985,7 @@ namespace CharacterStudio.UI
             {
                 editablePart.motionAmplitude = motionAmplitude;
                 editablePart.anchorCorrection = Vector2.zero;
+                FaceRuntimeCompiler.ClearCache();
                 isDirty = true;
                 RefreshPreview();
             }

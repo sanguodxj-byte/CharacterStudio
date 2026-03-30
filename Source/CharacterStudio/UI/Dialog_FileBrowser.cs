@@ -14,8 +14,6 @@ namespace CharacterStudio.UI
         private const float ToolbarGap = 10f;
         private const float SearchHeight = 24f;
         private const float SectionGap = 10f;
-        private const float PreviewPaneWidth = 280f;
-        private const float PreviewSquareSize = 220f;
         private const float HoverPreviewSize = 300f;
         private const float EntryHeight = 72f;
         private const float ThumbnailSize = 56f;
@@ -38,6 +36,8 @@ namespace CharacterStudio.UI
 
         private readonly Dictionary<string, Texture2D?> thumbnailCache = new Dictionary<string, Texture2D?>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> thumbnailLoadFailures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly Queue<string> pendingThumbnailLoads = new Queue<string>();
+        private readonly HashSet<string> queuedThumbnailLoads = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         private string currentPath;
         private readonly Action<string> onFileSelected;
@@ -45,13 +45,11 @@ namespace CharacterStudio.UI
         private Vector2 scrollPos;
         private string searchText = "";
         private string? selectedFilePath;
-        private string? selectedPreviewResolvedPath;
         private string? hoveredFilePath;
-        private string? hoveredPreviewResolvedPath;
 
         private List<FileSystemInfo> currentFiles = new List<FileSystemInfo>();
 
-        public override Vector2 InitialSize => new Vector2(920f, 680f);
+        public override Vector2 InitialSize => new Vector2(640f, 680f);
 
         public Dialog_FileBrowser(string initialPath, Action<string> onSelect, string fileFilter = "*.png")
         {
@@ -76,6 +74,8 @@ namespace CharacterStudio.UI
         private void RefreshFileList()
         {
             currentFiles.Clear();
+            pendingThumbnailLoads.Clear();
+            queuedThumbnailLoads.Clear();
             try
             {
                 DirectoryInfo dir = new DirectoryInfo(currentPath);
@@ -109,7 +109,6 @@ namespace CharacterStudio.UI
                     && currentFiles.All(f => !string.Equals(f.FullName, selectedFilePath, StringComparison.OrdinalIgnoreCase)))
                 {
                     selectedFilePath = null;
-                    selectedPreviewResolvedPath = null;
                 }
             }
             catch (Exception ex)
@@ -120,6 +119,8 @@ namespace CharacterStudio.UI
 
         public override void DoWindowContents(Rect inRect)
         {
+            ProcessPendingThumbnails();
+
             Rect titleRect = new Rect(0f, 0f, inRect.width, HeaderHeight);
             Widgets.DrawBoxSolid(titleRect, UIHelper.PanelFillSoftColor);
             Widgets.DrawBoxSolid(new Rect(titleRect.x, titleRect.yMax - 2f, titleRect.width, 2f), UIHelper.AccentSoftColor);
@@ -193,12 +194,7 @@ namespace CharacterStudio.UI
         private void DrawBody(Rect inRect, float y)
         {
             Rect bodyRect = new Rect(0f, y, inRect.width, inRect.height - y - 10f);
-            float listWidth = Mathf.Max(260f, bodyRect.width - PreviewPaneWidth - 12f);
-            Rect listRect = new Rect(bodyRect.x, bodyRect.y, listWidth, bodyRect.height);
-            Rect previewRect = new Rect(listRect.xMax + 12f, bodyRect.y, bodyRect.width - listWidth - 12f, bodyRect.height);
-
-            DrawFileList(listRect);
-            DrawPreviewPane(previewRect);
+            DrawFileList(bodyRect);
         }
 
         private void DrawFileList(Rect listRect)
@@ -214,7 +210,6 @@ namespace CharacterStudio.UI
             Widgets.DrawBoxSolid(new Rect(listRect.x, listRect.y, listRect.width, 2f), UIHelper.AccentSoftColor);
 
             hoveredFilePath = null;
-            hoveredPreviewResolvedPath = null;
 
             Widgets.BeginScrollView(listRect.ContractedBy(2f), ref scrollPos, viewRect);
 
@@ -252,7 +247,6 @@ namespace CharacterStudio.UI
             if (isHovered)
             {
                 hoveredFilePath = item.FullName;
-                hoveredPreviewResolvedPath = item is FileInfo ? ResolvePreviewPath(item.FullName) : null;
             }
 
             if (Widgets.ButtonInvisible(entryRect))
@@ -295,7 +289,6 @@ namespace CharacterStudio.UI
         private void HandleItemClick(FileSystemInfo item)
         {
             selectedFilePath = item.FullName;
-            selectedPreviewResolvedPath = item is FileInfo ? ResolvePreviewPath(item.FullName) : null;
 
             if (item is DirectoryInfo)
             {
@@ -328,83 +321,6 @@ namespace CharacterStudio.UI
             DrawFallbackGlyph(rect, item is DirectoryInfo ? "DIR" : "IMG");
         }
 
-        private void DrawPreviewPane(Rect rect)
-        {
-            Widgets.DrawBoxSolid(rect, UIHelper.PanelFillColor);
-            GUI.color = UIHelper.BorderColor;
-            Widgets.DrawBox(rect, 1);
-            GUI.color = Color.white;
-
-            Rect innerRect = rect.ContractedBy(10f);
-            Rect titleRect = new Rect(innerRect.x, innerRect.y, innerRect.width, 26f);
-            Widgets.DrawBoxSolid(titleRect, UIHelper.PanelFillSoftColor);
-            Widgets.DrawBoxSolid(new Rect(titleRect.x, titleRect.yMax - 2f, titleRect.width, 2f), UIHelper.AccentSoftColor);
-            GUI.color = UIHelper.BorderColor;
-            Widgets.DrawBox(titleRect, 1);
-            GUI.color = Color.white;
-
-            Text.Font = GameFont.Tiny;
-            Text.Anchor = TextAnchor.MiddleLeft;
-            GUI.color = UIHelper.HeaderColor;
-            Widgets.Label(new Rect(titleRect.x + 8f, titleRect.y, titleRect.width - 16f, titleRect.height), "预览");
-            GUI.color = Color.white;
-            Text.Anchor = TextAnchor.UpperLeft;
-            Text.Font = GameFont.Small;
-
-            FileSystemInfo? selectedItem = ResolveSelectedItem();
-            if (selectedItem == null)
-            {
-                Rect emptyRect = new Rect(innerRect.x, titleRect.yMax + 8f, innerRect.width, innerRect.height - titleRect.height - 8f);
-                Text.Anchor = TextAnchor.MiddleCenter;
-                GUI.color = UIHelper.SubtleColor;
-                Widgets.Label(emptyRect, "选择或悬浮图片后可在此查看预览");
-                GUI.color = Color.white;
-                Text.Anchor = TextAnchor.UpperLeft;
-                return;
-            }
-
-            Rect fileNameRect = new Rect(innerRect.x, titleRect.yMax + 8f, innerRect.width, 38f);
-            GUI.color = UIHelper.HeaderColor;
-            Widgets.Label(fileNameRect, selectedItem.Name);
-            GUI.color = Color.white;
-            TooltipHandler.TipRegion(fileNameRect, selectedItem.FullName);
-
-            float squareSize = Mathf.Min(Mathf.Min(innerRect.width, PreviewSquareSize), innerRect.yMax - (fileNameRect.yMax + 8f) - 108f);
-            squareSize = Mathf.Max(140f, squareSize);
-            Rect previewImageRect = new Rect(innerRect.x + (innerRect.width - squareSize) / 2f, fileNameRect.yMax + 6f, squareSize, squareSize);
-            DrawPreviewFrame(previewImageRect);
-
-            Texture2D previewTexture = GetThumbnailTexture(selectedItem);
-            if (previewTexture != null)
-            {
-                DrawScaledTexture(previewImageRect.ContractedBy(6f), previewTexture);
-            }
-            else
-            {
-                DrawFallbackGlyph(previewImageRect, selectedItem is DirectoryInfo ? "DIR" : "N/A");
-            }
-
-            float infoY = previewImageRect.yMax + 10f;
-            Text.Font = GameFont.Tiny;
-            GUI.color = UIHelper.SubtleColor;
-            Widgets.Label(new Rect(innerRect.x, infoY, innerRect.width, 18f), $"路径: {selectedItem.FullName}");
-            infoY += 20f;
-            Widgets.Label(new Rect(innerRect.x, infoY, innerRect.width, 18f), $"类型: {GetMetadataLabel(selectedItem)}");
-            infoY += 24f;
-            GUI.color = Color.white;
-            Text.Font = GameFont.Small;
-
-            if (selectedItem is FileInfo)
-            {
-                Rect selectButtonRect = new Rect(innerRect.x, infoY, innerRect.width, 28f);
-                if (DrawBrowserButton(selectButtonRect, "选择此文件", accent: true))
-                {
-                    onFileSelected?.Invoke(selectedItem.FullName);
-                    Close();
-                }
-            }
-        }
-
         private List<FileSystemInfo> GetVisibleFiles()
         {
             if (string.IsNullOrWhiteSpace(searchText))
@@ -426,6 +342,34 @@ namespace CharacterStudio.UI
             }
 
             return currentFiles.FirstOrDefault(item => string.Equals(item.FullName, selectedFilePath, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private void ProcessPendingThumbnails()
+        {
+            int processedCount = 0;
+            // 处理队列中的缩略图，每帧最多处理 2 个，以避免阻塞主线程
+            while (processedCount < 2 && pendingThumbnailLoads.Count > 0)
+            {
+                string resolvedPath = pendingThumbnailLoads.Dequeue();
+                queuedThumbnailLoads.Remove(resolvedPath);
+
+                if (thumbnailCache.ContainsKey(resolvedPath) || thumbnailLoadFailures.Contains(resolvedPath))
+                {
+                    continue;
+                }
+
+                Texture2D? texture = RuntimeAssetLoader.LoadTextureRaw(resolvedPath);
+                if (texture == null)
+                {
+                    thumbnailLoadFailures.Add(resolvedPath);
+                    thumbnailCache[resolvedPath] = null;
+                }
+                else
+                {
+                    thumbnailCache[resolvedPath] = texture;
+                }
+                processedCount++;
+            }
         }
 
         private Texture2D GetThumbnailTexture(FileSystemInfo item)
@@ -456,16 +400,13 @@ namespace CharacterStudio.UI
                 return BaseContent.BadTex;
             }
 
-            Texture2D? texture = RuntimeAssetLoader.LoadTextureRaw(resolvedPath);
-            if (texture == null)
+            if (!queuedThumbnailLoads.Contains(resolvedPath))
             {
-                thumbnailLoadFailures.Add(resolvedPath);
-                thumbnailCache[resolvedPath] = null;
-                return BaseContent.BadTex;
+                pendingThumbnailLoads.Enqueue(resolvedPath);
+                queuedThumbnailLoads.Add(resolvedPath);
             }
 
-            thumbnailCache[resolvedPath] = texture;
-            return texture;
+            return BaseContent.GreyTex;
         }
 
         private static bool CanShowThumbnail(string fullPath)

@@ -134,26 +134,12 @@ namespace CharacterStudio.UI
                     RefreshPreview();
                 }
 
-                DrawPropertyHint(ref y, width, "CS_Studio_Transform_GlobalHint".Translate());
-
-                float scaleX = layer.scale.x;
-                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Transform_GlobalScaleX".Translate(), ref scaleX, 0.1f, 3f, "F3");
-                if (Math.Abs(scaleX - layer.scale.x) > 0.0001f || Math.Abs(scaleX - layer.scale.y) > 0.0001f)
+                float uniformScaleValue = layer.scale.x;
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Transform_GlobalScale".Translate(), ref uniformScaleValue, 0.1f, 3f, "F3");
+                if (Math.Abs(uniformScaleValue - layer.scale.x) > 0.0001f || Math.Abs(uniformScaleValue - layer.scale.y) > 0.0001f)
                 {
                     CaptureUndoSnapshot();
-                    Vector2 uniformScale = new Vector2(scaleX, scaleX);
-                    layer.scale = uniformScale;
-                    ApplyToOtherSelectedLayers(l => l.scale = uniformScale);
-                    isDirty = true;
-                    RefreshPreview();
-                }
-
-                float scaleY = layer.scale.y;
-                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Transform_GlobalScaleY".Translate(), ref scaleY, 0.1f, 3f, "F3");
-                if (Math.Abs(scaleY - layer.scale.x) > 0.0001f || Math.Abs(scaleY - layer.scale.y) > 0.0001f)
-                {
-                    CaptureUndoSnapshot();
-                    Vector2 uniformScale = new Vector2(scaleY, scaleY);
+                    Vector2 uniformScale = new Vector2(uniformScaleValue, uniformScaleValue);
                     layer.scale = uniformScale;
                     ApplyToOtherSelectedLayers(l => l.scale = uniformScale);
                     isDirty = true;
@@ -171,17 +157,8 @@ namespace CharacterStudio.UI
                     RefreshPreview();
                 }
 
-                float currentScaleX = GetEditableLayerScaleForPreview(layer).x;
-                UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Transform_PreviewScaleX".Translate(), currentScaleX.ToString("F3"));
-
-                float currentScaleY = GetEditableLayerScaleForPreview(layer).y;
-                UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Transform_PreviewScaleY".Translate(), currentScaleY.ToString("F3"));
-
-                float currentRotation = GetEditableLayerRotationForPreview(layer);
-                UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Transform_PreviewRotation".Translate(), currentRotation.ToString("F0"));
-
                 float newDrawOrder = layer.drawOrder;
-                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_DrawOrder".Translate(), ref newDrawOrder, -10f, 100f, "F0");
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_DrawOrder".Translate(), ref newDrawOrder, -10f, 100f, "F3");
                 if (Mathf.Abs(newDrawOrder - layer.drawOrder) > 0.0001f)
                 {
                     CaptureUndoSnapshot();
@@ -190,8 +167,6 @@ namespace CharacterStudio.UI
                     isDirty = true;
                     RefreshPreview();
                 }
-
-                UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Transform_FinalDrawOrder".Translate(), Mathf.Clamp(layer.drawOrder, -10f, 100f).ToString("F0"));
 
                 bool flip = layer.flipHorizontal;
                 UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Prop_FlipHorizontal".Translate(), ref flip);
@@ -496,21 +471,7 @@ namespace CharacterStudio.UI
 
         private void DrawLayerContextSection(ref float y, float width, PawnLayerConfig layer)
         {
-            string textureDisplay = string.IsNullOrWhiteSpace(layer.texPath)
-                ? "CS_Studio_None".Translate().ToString()
-                : layer.texPath;
-            UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Prop_TexturePath".Translate(), textureDisplay);
-
             UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Panel_Preview".Translate(), previewRotation.ToString());
-
-            float currentScaleX = GetEditableLayerScaleForPreview(layer).x;
-            UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Transform_PreviewScaleX".Translate(), currentScaleX.ToString("F3"));
-
-            float currentScaleY = GetEditableLayerScaleForPreview(layer).y;
-            UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Transform_PreviewScaleY".Translate(), currentScaleY.ToString("F3"));
-
-            float currentRotation = GetEditableLayerRotationForPreview(layer);
-            UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Transform_PreviewRotation".Translate(), currentRotation.ToString("F0"));
 
             UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Variant_Logic".Translate(), layer.variantLogic.ToString());
             UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Anim_Type".Translate(), GetLayerAnimationSummary(layer));

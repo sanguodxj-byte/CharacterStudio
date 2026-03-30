@@ -141,6 +141,10 @@ namespace CharacterStudio.UI
         private float previewAutoPlayIntervalSeconds = 0.75f;
         private float previewAutoPlayNextStepTime = 0f;
         private int previewAutoPlayStepIndex = 0;
+
+        private bool previewFaceAnimationPlaying = false;
+        private bool previewFaceAnimationLoop = false;
+
         private bool previewEquipmentAnimationPlaying = false;
         private bool previewEquipmentAnimationLoop = false;
         private float previewEquipmentAnimationLastRealtime = -1f;

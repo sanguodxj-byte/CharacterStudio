@@ -42,6 +42,7 @@ namespace CharacterStudio.UI
                 { "LidLower", LayeredFacePartType.LowerLid },
                 { "LowerLids", LayeredFacePartType.LowerLid },
                 { "Mouth", LayeredFacePartType.Mouth },
+                { "Hair", LayeredFacePartType.Hair },
             };
 
         private static readonly HashSet<string> DirectionalVariantTokens =
@@ -360,7 +361,7 @@ namespace CharacterStudio.UI
                         out string texPathNorth,
                         out List<string> recognizedDirectionalStems);
 
-                    int overlayOrder = partType == LayeredFacePartType.Overlay ? GetOverlayOrder(overlayId) : 0;
+                    int overlayOrder = PawnFaceConfig.IsOverlayPart(partType) ? GetOverlayOrder(overlayId) : 0;
                     ApplyAutoScannedLayeredPart(
                         importedFaceConfig,
                         partType,
@@ -491,6 +492,12 @@ namespace CharacterStudio.UI
                     LayeredFacePartType.Pupil,
                     new[] { "Pupil_Left" },
                     new[] { "Pupil_Right" });
+
+                TryApplyFirstAvailableStem(LayeredFacePartType.Hair, ExpressionType.Neutral, new[] { "Hair_front" }, "front");
+                TryApplyFirstAvailableStem(LayeredFacePartType.Hair, ExpressionType.Neutral, new[] { "Hair_back" }, "back");
+                TryApplyFirstAvailableStem(LayeredFacePartType.Hair, ExpressionType.Neutral, new[] { "Hair_east", "Hair_side" }, "east");
+                TryApplyFirstAvailableStem(LayeredFacePartType.Hair, ExpressionType.Neutral, new[] { "Hair_north" }, "north");
+                TryApplyFirstAvailableStem(LayeredFacePartType.Hair, ExpressionType.Neutral, new[] { "Hair" });
 
                 TryApplyFirstAvailableStem(LayeredFacePartType.Eye, ExpressionType.Blink, new[] { "Eye_blink" });
 
@@ -644,7 +651,7 @@ namespace CharacterStudio.UI
                     ? texPathEast
                     : texPathNorth;
 
-            if (partType == LayeredFacePartType.Overlay)
+            if (PawnFaceConfig.IsOverlayPart(partType))
             {
                 string resolvedOverlayId = PawnFaceConfig.NormalizeOverlayId(overlayId);
                 if (string.IsNullOrWhiteSpace(resolvedOverlayId))
@@ -749,7 +756,7 @@ namespace CharacterStudio.UI
                     continue;
                 }
 
-                string bufferKey = part.partType == LayeredFacePartType.Overlay
+                string bufferKey = PawnFaceConfig.IsOverlayPart(part.partType)
                     ? GetLayeredPartBufferKey(part.partType, part.expression, PawnFaceConfig.NormalizeOverlayId(part.overlayId))
                     : GetLayeredPartBufferKey(part.partType, part.expression, side: part.side);
 
@@ -846,11 +853,11 @@ namespace CharacterStudio.UI
                         || !string.IsNullOrWhiteSpace(part.texPathNorth)))
                 .Select(part =>
                 {
-                    LayeredFacePartType displayPartType = part.partType == LayeredFacePartType.Overlay
-                        ? PawnFaceConfig.GetOverlayDisplayPartType(part.overlayId)
+                    LayeredFacePartType displayPartType = PawnFaceConfig.IsOverlayPart(part.partType)
+                        ? PawnFaceConfig.GetOverlayDisplayPartType(part.overlayId, part.partType)
                         : part.partType;
                     string normalizedOverlayId = PawnFaceConfig.NormalizeOverlayId(part.overlayId);
-                    LayeredFacePartSide normalizedSide = part.partType == LayeredFacePartType.Overlay
+                    LayeredFacePartSide normalizedSide = PawnFaceConfig.IsOverlayPart(part.partType)
                         ? LayeredFacePartSide.None
                         : PawnFaceConfig.NormalizePartSide(part.partType, part.side);
                     string preferredTexturePath = !string.IsNullOrWhiteSpace(part.texPathSouth)
@@ -925,7 +932,7 @@ namespace CharacterStudio.UI
             return partType == LayeredFacePartType.Blush
                 || partType == LayeredFacePartType.Tear
                 || partType == LayeredFacePartType.Sweat
-                || partType == LayeredFacePartType.Overlay;
+                || PawnFaceConfig.IsOverlayPart(partType);
         }
 
         private static string ResolveEditableFaceOverlayId(LayeredFacePartType displayPartType, string overlayId)
@@ -960,13 +967,13 @@ namespace CharacterStudio.UI
 
             foreach (ExpressionType expression in Enum.GetValues(typeof(ExpressionType)))
             {
-                if (partType == LayeredFacePartType.Overlay)
+                if (PawnFaceConfig.IsOverlayPart(partType))
                 {
-                    LayeredFacePartConfig? existing = resolvedFaceConfig.GetLayeredPartConfig(LayeredFacePartType.Overlay, expression, overlayId);
+                    LayeredFacePartConfig? existing = resolvedFaceConfig.GetLayeredPartConfig(partType, expression, overlayId);
                     if (existing != null)
                     {
                         resolvedFaceConfig.SetLayeredPart(
-                            LayeredFacePartType.Overlay,
+                            partType,
                             expression,
                             texPath,
                             overlayId,
@@ -995,12 +1002,12 @@ namespace CharacterStudio.UI
             PawnFaceConfig resolvedFaceConfig = fc!;
             foreach (ExpressionType expression in Enum.GetValues(typeof(ExpressionType)))
             {
-                if (partType == LayeredFacePartType.Overlay)
+                if (PawnFaceConfig.IsOverlayPart(partType))
                 {
-                    LayeredFacePartConfig? existing = resolvedFaceConfig.GetLayeredPartConfig(LayeredFacePartType.Overlay, expression, overlayId);
+                    LayeredFacePartConfig? existing = resolvedFaceConfig.GetLayeredPartConfig(partType, expression, overlayId);
                     if (existing != null)
                     {
-                        resolvedFaceConfig.RemoveLayeredPart(LayeredFacePartType.Overlay, expression, overlayId);
+                        resolvedFaceConfig.RemoveLayeredPart(partType, expression, overlayId);
                     }
                 }
                 else
@@ -1045,10 +1052,8 @@ namespace CharacterStudio.UI
             if (!Enum.TryParse(partToken, true, out LayeredFacePartType parsedDisplayPartType))
                 return false;
 
-            bool isOverlayDisplayPart = IsEditableFaceOverlayDisplayPart(parsedDisplayPartType);
-            partType = isOverlayDisplayPart
-                ? LayeredFacePartType.Overlay
-                : parsedDisplayPartType;
+            bool isOverlayStyle = PawnFaceConfig.IsOverlayPart(parsedDisplayPartType);
+            partType = parsedDisplayPartType;
 
             int scanIndex = bracketIndex;
             while (scanIndex >= 0 && scanIndex < nameBody.Length)
@@ -1058,12 +1063,12 @@ namespace CharacterStudio.UI
                     break;
 
                 string token = nameBody.Substring(scanIndex + 1, closeIndex - scanIndex - 1);
-                if (!isOverlayDisplayPart
+                if (!isOverlayStyle
                     && Enum.TryParse(token, true, out LayeredFacePartSide parsedSide))
                 {
                     side = PawnFaceConfig.NormalizePartSide(partType, parsedSide);
                 }
-                else if (isOverlayDisplayPart && !string.IsNullOrWhiteSpace(token))
+                else if (isOverlayStyle && !string.IsNullOrWhiteSpace(token))
                 {
                     overlayId = PawnFaceConfig.NormalizeOverlayId(token);
                 }
@@ -1071,7 +1076,7 @@ namespace CharacterStudio.UI
                 scanIndex = nameBody.IndexOf('[', closeIndex + 1);
             }
 
-            if (isOverlayDisplayPart)
+            if (isOverlayStyle)
             {
                 overlayId = ResolveEditableFaceOverlayId(parsedDisplayPartType, overlayId);
                 side = LayeredFacePartSide.None;
@@ -1124,14 +1129,18 @@ namespace CharacterStudio.UI
             layer.useFrameSequence = false;
             layer.hideWhenMissingVariant = false;
             layer.eyeRenderMode = eyeRenderMode;
-            layer.eyeUvMoveRange = displayPartType == LayeredFacePartType.Pupil && eyeRenderMode == EyeRenderMode.UvOffset
-                ? pupilMoveRange
-                : 0f;
+            layer.eyeUvMoveRange = 0f;
 
             if (existingLayer == null)
             {
                 layer.anchorTag = "Head";
                 layer.anchorPath = string.Empty;
+                layer.drawOrder = GetLayeredFaceDefaultDrawOrder(displayPartType, overlayOrder, normalizedOverlayId);
+            }
+
+            if (displayPartType == LayeredFacePartType.Hair
+                && normalizedOverlayId.Equals("back", StringComparison.OrdinalIgnoreCase))
+            {
                 layer.drawOrder = GetLayeredFaceDefaultDrawOrder(displayPartType, overlayOrder, normalizedOverlayId);
             }
 
@@ -1143,17 +1152,14 @@ namespace CharacterStudio.UI
             string normalizedOverlayId,
             LayeredFacePartSide side = LayeredFacePartSide.None)
         {
-            bool isOverlayDisplayPart = displayPartType == LayeredFacePartType.Blush
-                || displayPartType == LayeredFacePartType.Tear
-                || displayPartType == LayeredFacePartType.Sweat
-                || displayPartType == LayeredFacePartType.Overlay;
-            string overlayLabel = isOverlayDisplayPart && !string.IsNullOrWhiteSpace(normalizedOverlayId)
-                ? $"[{normalizedOverlayId}]"
+            bool isOverlayStyle = PawnFaceConfig.IsOverlayPart(displayPartType);
+            string overlayLabel = isOverlayStyle && !string.IsNullOrWhiteSpace(normalizedOverlayId)
+                ? $" [{normalizedOverlayId}]"
                 : string.Empty;
             LayeredFacePartSide normalizedSide = PawnFaceConfig.NormalizePartSide(displayPartType, side);
             string sideLabel = normalizedSide == LayeredFacePartSide.None
                 ? string.Empty
-                : $"[{normalizedSide}]";
+                : $" [{normalizedSide}]";
             return $"[Face] {displayPartType}{overlayLabel}{sideLabel}";
         }
 
@@ -1175,6 +1181,8 @@ namespace CharacterStudio.UI
                     return eyeRenderMode == EyeRenderMode.UvOffset
                         ? LayerVariantLogic.None
                         : LayerVariantLogic.EyeDirectionOnly;
+                case LayeredFacePartType.Hair:
+                    return LayerVariantLogic.ChannelState;
                 default:
                     return LayerVariantLogic.None;
             }
@@ -1196,6 +1204,8 @@ namespace CharacterStudio.UI
                     return LayerRole.Eye;
                 case LayeredFacePartType.Mouth:
                     return LayerRole.Mouth;
+                case LayeredFacePartType.Hair:
+                    return LayerRole.Decoration;
                 case LayeredFacePartType.Blush:
                 case LayeredFacePartType.Sweat:
                 case LayeredFacePartType.Tear:
@@ -1212,6 +1222,12 @@ namespace CharacterStudio.UI
             {
                 case LayeredFacePartType.Base:
                     return 50.05f;
+                case LayeredFacePartType.Hair:
+                {
+                    if (overlayId.Contains("front")) return 50.15f;
+                    if (overlayId.Contains("back")) return 49.99f;
+                    return 50.32f;
+                }
                 case LayeredFacePartType.Eye:
                     return 50.12f;
                 case LayeredFacePartType.Pupil:
@@ -1398,9 +1414,12 @@ namespace CharacterStudio.UI
             List<string> tailSegments = segments.Skip(1).ToList();
 
             if (segments[0].Equals("Overlay", StringComparison.OrdinalIgnoreCase)
-                || segments[0].Equals("Overlays", StringComparison.OrdinalIgnoreCase))
+                || segments[0].Equals("Overlays", StringComparison.OrdinalIgnoreCase)
+                || segments[0].Equals("Hair", StringComparison.OrdinalIgnoreCase))
             {
-                partType = LayeredFacePartType.Overlay;
+                partType = segments[0].Equals("Hair", StringComparison.OrdinalIgnoreCase) 
+                    ? LayeredFacePartType.Hair 
+                    : LayeredFacePartType.Overlay;
 
                 while (tailSegments.Count > 0 && DirectionalVariantTokens.Contains(tailSegments[tailSegments.Count - 1]))
                 {
@@ -1785,7 +1804,7 @@ namespace CharacterStudio.UI
             LayeredFacePartSide side = LayeredFacePartSide.None)
         {
             string partLabel = GetLayeredFacePartTypeLabel(partType);
-            if (partType == LayeredFacePartType.Overlay)
+            if (PawnFaceConfig.IsOverlayPart(partType))
             {
                 string resolvedOverlayId = PawnFaceConfig.NormalizeOverlayId(overlayId);
                 return expression == ExpressionType.Neutral

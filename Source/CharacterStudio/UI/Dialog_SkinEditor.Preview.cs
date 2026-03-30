@@ -629,6 +629,48 @@ namespace CharacterStudio.UI
             RefreshPreview();
         }
 
+        private void TogglePreviewFaceAnimation(bool loop)
+        {
+            if (previewFaceAnimationPlaying && previewFaceAnimationLoop == loop)
+            {
+                previewFaceAnimationPlaying = false;
+                return;
+            }
+
+            previewFaceAnimationPlaying = true;
+            previewFaceAnimationLoop = loop;
+            
+            var skinComp = mannequin?.CurrentPawn?.GetComp<CompPawnSkin>();
+            skinComp?.TriggerBlink();
+            RefreshPreview();
+        }
+
+        private void UpdatePreviewFaceAnimation()
+        {
+            if (!previewFaceAnimationPlaying)
+            {
+                return;
+            }
+
+            var skinComp = mannequin?.CurrentPawn?.GetComp<CompPawnSkin>();
+            if (skinComp == null)
+            {
+                return;
+            }
+
+            if (!skinComp.IsBlinkActive())
+            {
+                if (previewFaceAnimationLoop)
+                {
+                    skinComp.TriggerBlink();
+                }
+                else
+                {
+                    previewFaceAnimationPlaying = false;
+                }
+            }
+        }
+
         private void UpdatePreviewEquipmentAnimation()
         {
             if (!previewEquipmentAnimationPlaying)

@@ -19,6 +19,7 @@ namespace CharacterStudio.UI
                 // 更新热加载
                 mannequin?.Update();
                 UpdatePreviewAutoPlay();
+                UpdatePreviewFaceAnimation();
 
                 // 在任何 IMGUI 控件绘制前读取 F 键状态，避免 TextField 焦点拦截
                 isHoldingReferenceGhost = Input.GetKey(ReferenceGhostHotkey);
