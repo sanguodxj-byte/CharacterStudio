@@ -28,7 +28,7 @@ finally {
 }
 Write-Host '      Build succeeded' -ForegroundColor Green
 
-# 2. Copy DLL to 1.6/Assemblies
+# 2. Copy DLL to Assemblies (1.5 and 1.6)
 Write-Host '[2/3] Copying DLL...' -ForegroundColor Yellow
 $releaseDir = Join-Path $SRC 'obj\Release'
 $dll = Get-ChildItem -Path $releaseDir -Filter 'CharacterStudio.dll' -Recurse -File | Select-Object -First 1
@@ -40,13 +40,16 @@ if ($null -eq $dll) {
     throw 'Could not find build output CharacterStudio.dll'
 }
 
-if (-not (Test-Path $TARGET_ASSEMBLIES)) {
-    New-Item -ItemType Directory -Path $TARGET_ASSEMBLIES -Force | Out-Null
+$targetDirs = @('1.5\Assemblies', '1.6\Assemblies')
+foreach ($td in $targetDirs) {
+    $targetPath = Join-Path $ROOT $td
+    if (-not (Test-Path $targetPath)) {
+        New-Item -ItemType Directory -Path $targetPath -Force | Out-Null
+    }
+    $dllTarget = Join-Path $targetPath 'CharacterStudio.dll'
+    Copy-Item -Path $dll.FullName -Destination $dllTarget -Force
+    Write-Host "      Copied to: $td" -ForegroundColor Green
 }
-$localDllTarget = Join-Path $TARGET_ASSEMBLIES 'CharacterStudio.dll'
-Copy-Item -Path $dll.FullName -Destination $localDllTarget -Force
-Write-Host "      Copied: $($dll.FullName)" -ForegroundColor Green
-Write-Host "         -> $localDllTarget"
 
 # 3. Deploy to RimWorld Mods
 Write-Host '[3/3] Deploying to RimWorld...' -ForegroundColor Yellow
@@ -54,7 +57,7 @@ if (-not (Test-Path $RIMWORLD_MODS_ROOT)) {
     Write-Host '      [skip] RimWorld Mods directory does not exist' -ForegroundColor DarkGray
 }
 else {
-    $dirs = @('About', '1.6\Assemblies', 'Languages', 'Defs', 'Textures')
+    $dirs = @('About', '1.5\Assemblies', '1.6\Assemblies', 'Languages', 'Defs', 'Textures')
     foreach ($d in $dirs) {
         $src = Join-Path $ROOT $d
         $dst = Join-Path $RIMWORLD_MOD $d
