@@ -323,10 +323,25 @@ namespace CharacterStudio.Rendering
                     || layer.texPath.StartsWith("/", StringComparison.Ordinal)
                     || System.IO.File.Exists(layer.texPath));
 
+            // 如果节点设置了非默认的绘制顺序或偏移/缩放，或者 workerClass 是空的，
+            // 强制使用 PawnRenderNodeWorker_CustomLayer。
+            // 否则，原版 Worker (如 PawnRenderNodeWorker_Hair) 会无视 drawOrder 属性。
+            Type workerClass = layer.workerClass ?? typeof(PawnRenderNodeWorker_CustomLayer);
+            
+            bool isVanillaWorker = workerClass.Name.Contains("PawnRenderNodeWorker_Hair") 
+                || workerClass.Name.Contains("PawnRenderNodeWorker_Beard")
+                || workerClass.Name.Contains("PawnRenderNodeWorker_Apparel");
+
+            // 如果是 CS 显式添加的图层，或者导入的原版图层但用户可能需要调整核心排序/偏移，就切换为我们的 Worker
+            if (layer.drawOrder != 0f || layer.offset != Vector3.zero || isVanillaWorker)
+            {
+                workerClass = typeof(PawnRenderNodeWorker_CustomLayer);
+            }
+
             var props = new PawnRenderNodeProperties
             {
                 texPath      = isExternalTexture ? string.Empty : layer.texPath,
-                workerClass  = layer.workerClass ?? typeof(PawnRenderNodeWorker_CustomLayer),
+                workerClass  = workerClass,
                 nodeClass    = typeof(PawnRenderNode_Custom),
                 pawnType     = PawnRenderNodeProperties.RenderNodePawnType.Any,
                 baseLayer    = layer.drawOrder,
@@ -335,6 +350,11 @@ namespace CharacterStudio.Rendering
                 drawSize     = layer.scale,
                 debugLabel   = layer.layerName
             };
+
+            if (!string.IsNullOrWhiteSpace(layer.anchorTag))
+            {
+                props.parentTagDef = DefDatabase<PawnRenderNodeTagDef>.GetNamedSilentFail(layer.anchorTag);
+            }
 
             switch (layer.colorSource)
             {
@@ -610,16 +630,16 @@ namespace CharacterStudio.Rendering
                         continue;
                     }
 
-                    if (partType == LayeredFacePartType.Overlay)
+                    if (PawnFaceConfig.IsOverlayPart(partType))
                     {
-                        List<string> overlayIds = faceConfig.GetOrderedOverlayIds();
+                        List<string> overlayIds = faceConfig.GetOrderedOverlayIds(partType);
                         foreach (string overlayId in overlayIds)
                         {
                             string overlayTexPath = faceConfig.GetAnyLayeredPartPath(partType, overlayId);
                             if (string.IsNullOrWhiteSpace(overlayTexPath))
                                 continue;
 
-                            int overlayOrder = faceConfig.GetOverlayOrder(overlayId);
+                            int overlayOrder = faceConfig.GetOverlayOrder(overlayId, partType);
                             PawnLayerConfig overlayLayer = BuildLayeredFacePartLayer(skinDef, faceConfig, partType, overlayTexPath, overlayId, overlayOrder);
                             PawnRenderNodeProperties overlayProps = CreateNodeProperties(overlayLayer);
 
@@ -692,6 +712,7 @@ namespace CharacterStudio.Rendering
             yield return LayeredFacePartType.LowerLid;
             yield return LayeredFacePartType.Brow;
             yield return LayeredFacePartType.Mouth;
+            yield return LayeredFacePartType.Hair;
             yield return LayeredFacePartType.Blush;
             yield return LayeredFacePartType.Tear;
             yield return LayeredFacePartType.Sweat;
@@ -736,27 +757,33 @@ namespace CharacterStudio.Rendering
         {
             float pupilMoveRange = faceConfig.eyeDirectionConfig?.pupilMoveRange ?? 0f;
             string normalizedOverlayId = PawnFaceConfig.NormalizeOverlayId(overlayId);
-            string overlayLabel = string.IsNullOrWhiteSpace(normalizedOverlayId) ? string.Empty : $"[{normalizedOverlayId}]";
+            
+            // 修正：在标签之间添加空格，以匹配编辑器和 VanillaImportUtility 生成图层名称的惯例。
+            string overlayLabel = string.IsNullOrWhiteSpace(normalizedOverlayId) ? string.Empty : $" [{normalizedOverlayId}]";
             LayeredFacePartType displayPartType = partType == LayeredFacePartType.Overlay
                 ? PawnFaceConfig.GetOverlayDisplayPartType(normalizedOverlayId)
                 : partType;
-            string sideLabel = side == LayeredFacePartSide.None ? string.Empty : $"[{side}]";
+            string sideLabel = side == LayeredFacePartSide.None ? string.Empty : $" [{side}]";
+            
             string layerName = $"[Face] {displayPartType}{overlayLabel}{sideLabel}";
             string fallbackLayerName = $"[Face] {displayPartType}{overlayLabel}";
+
             PawnLayerConfig? editableLayer = skinDef?.layers?.FirstOrDefault(layer =>
                 layer != null
-                && string.Equals(layer.layerName, layerName, StringComparison.OrdinalIgnoreCase));
+                && string.Equals(layer.layerName?.Trim(), layerName.Trim(), StringComparison.OrdinalIgnoreCase));
 
-            if (editableLayer == null && side != LayeredFacePartSide.None)
+            bool hasExplicitSidedContent = side != LayeredFacePartSide.None
+                && (faceConfig.CountLayeredParts(partType, LayeredFacePartSide.Left) > 0
+                    || faceConfig.CountLayeredParts(partType, LayeredFacePartSide.Right) > 0);
+
+            if (editableLayer == null && side != LayeredFacePartSide.None && !hasExplicitSidedContent)
             {
                 editableLayer = skinDef?.layers?.FirstOrDefault(layer =>
                     layer != null
-                    && string.Equals(layer.layerName, fallbackLayerName, StringComparison.OrdinalIgnoreCase));
+                    && string.Equals(layer.layerName?.Trim(), fallbackLayerName.Trim(), StringComparison.OrdinalIgnoreCase));
             }
 
-            EyeRenderMode defaultEyeRenderMode = partType == LayeredFacePartType.Pupil && pupilMoveRange > 0f
-                ? EyeRenderMode.UvOffset
-                : EyeRenderMode.TextureSwap;
+            EyeRenderMode defaultEyeRenderMode = EyeRenderMode.TextureSwap;
 
             PawnLayerConfig resolvedLayer = editableLayer?.Clone() ?? new PawnLayerConfig();
             resolvedLayer.layerName = layerName;
@@ -765,17 +792,33 @@ namespace CharacterStudio.Rendering
             resolvedLayer.anchorPath ??= string.Empty;
             resolvedLayer.workerClass = typeof(PawnRenderNodeWorker_CustomLayer);
             resolvedLayer.shaderDefName = string.IsNullOrWhiteSpace(resolvedLayer.shaderDefName) ? "Cutout" : resolvedLayer.shaderDefName;
-            resolvedLayer.customColor = resolvedLayer.customColor == default ? Color.white : resolvedLayer.customColor;
-            resolvedLayer.customColorTwo = resolvedLayer.customColorTwo == default ? Color.white : resolvedLayer.customColorTwo;
+            resolvedLayer.customColor = (resolvedLayer.customColor == default || resolvedLayer.customColor.a == 0) ? Color.white : resolvedLayer.customColor;
+            resolvedLayer.customColorTwo = (resolvedLayer.customColorTwo == default || resolvedLayer.customColorTwo.a == 0) ? Color.white : resolvedLayer.customColorTwo;
             resolvedLayer.visible = editableLayer?.visible ?? true;
-            resolvedLayer.role = editableLayer?.role ?? GetLayeredFaceRole(displayPartType);
+            // Hair 不是情绪覆盖层，强制使用 Decoration 角色，
+            // 避免旧数据中保存的 Emotion 角色导致 ChannelState 无激活通道时整层被抑制。
+            resolvedLayer.role = displayPartType == LayeredFacePartType.Hair
+                ? LayerRole.Decoration
+                : (editableLayer?.role ?? GetLayeredFaceRole(displayPartType));
             resolvedLayer.useDirectionalSuffix = editableLayer?.useDirectionalSuffix ?? true;
-            resolvedLayer.drawOrder = editableLayer?.drawOrder ?? GetLayeredFaceDrawOrder(partType, overlayOrder, normalizedOverlayId);
+            
+            bool forceCanonicalHairBackOrder = displayPartType == LayeredFacePartType.Hair
+                && normalizedOverlayId.Equals("back", StringComparison.OrdinalIgnoreCase);
+
+            // 绝对信任用户设置的 drawOrder，除非它为 0（表示用户未修改或希望使用默认高度映射）。
+            // Hair back 必须永远压在所有 face 部件（含 Base）下方，因此不保留旧项目里的历史 drawOrder。
+            if (!forceCanonicalHairBackOrder && editableLayer != null && editableLayer.drawOrder != 0f)
+            {
+                resolvedLayer.drawOrder = editableLayer.drawOrder;
+            }
+            else
+            {
+                resolvedLayer.drawOrder = GetLayeredFaceDrawOrder(partType, overlayOrder, normalizedOverlayId);
+            }
+
             resolvedLayer.eyeRenderMode = editableLayer?.eyeRenderMode ?? defaultEyeRenderMode;
             resolvedLayer.variantLogic = GetResolvedLayeredFaceVariantLogic(editableLayer, displayPartType, resolvedLayer.eyeRenderMode);
-            resolvedLayer.eyeUvMoveRange = partType == LayeredFacePartType.Pupil
-                ? (editableLayer?.eyeUvMoveRange ?? pupilMoveRange)
-                : 0f;
+            resolvedLayer.eyeUvMoveRange = 0f;
             return resolvedLayer;
         }
 
@@ -845,6 +888,8 @@ namespace CharacterStudio.Rendering
                     return eyeRenderMode == EyeRenderMode.UvOffset
                         ? LayerVariantLogic.None
                         : LayerVariantLogic.EyeDirectionOnly;
+                case LayeredFacePartType.Hair:
+                    return LayerVariantLogic.ChannelState;
                 default:
                     return LayerVariantLogic.None;
             }
@@ -866,6 +911,8 @@ namespace CharacterStudio.Rendering
                     return LayerRole.Eye;
                 case LayeredFacePartType.Mouth:
                     return LayerRole.Mouth;
+                case LayeredFacePartType.Hair:
+                    return LayerRole.Decoration;
                 case LayeredFacePartType.Blush:
                 case LayeredFacePartType.Sweat:
                 case LayeredFacePartType.Tear:
@@ -881,43 +928,49 @@ namespace CharacterStudio.Rendering
             switch (partType)
             {
                 case LayeredFacePartType.Base:
-                    return 50.05f;
+                    return 0.05f;
+                case LayeredFacePartType.Hair:
+                {
+                    if (overlayId.Contains("front")) return 0.155f;
+                    if (overlayId.Contains("back")) return -1.0f;
+                    return 0.32f;
+                }
                 case LayeredFacePartType.Eye:
-                    return 50.12f;
+                    return 0.118f;
                 case LayeredFacePartType.Pupil:
-                    return 50.14f;
+                    return 0.128f;
                 case LayeredFacePartType.UpperLid:
-                    return 50.145f;
+                    return 0.136f;
                 case LayeredFacePartType.LowerLid:
-                    return 50.147f;
+                    return 0.138f;
                 case LayeredFacePartType.Brow:
-                    return 50.16f;
+                    return 0.16f;
                 case LayeredFacePartType.Mouth:
-                    return 50.18f;
+                    return 0.18f;
                 case LayeredFacePartType.Blush:
-                    return 50.22f;
+                    return 0.146f;
                 case LayeredFacePartType.Tear:
-                    return 50.24f;
+                    return 0.148f;
                 case LayeredFacePartType.Sweat:
-                    return 50.26f;
+                    return 0.150f;
                 case LayeredFacePartType.Overlay:
                 {
                     switch (PawnFaceConfig.GetOverlayKind(overlayId))
                     {
                         case LayeredOverlayKind.Blush:
-                            return 50.22f;
+                            return 0.146f;
                         case LayeredOverlayKind.Tear:
-                            return 50.24f;
+                            return 0.148f;
                         case LayeredOverlayKind.Sweat:
-                            return 50.26f;
+                            return 0.150f;
                         case LayeredOverlayKind.Sleep:
-                            return 50.28f;
+                            return 0.152f;
                         default:
-                            return 50.30f + Math.Max(0, overlayOrder - 4) * 0.002f;
+                            return 0.154f + Math.Max(0, overlayOrder - 4) * 0.0002f;
                     }
                 }
                 default:
-                    return 50.20f;
+                    return 0.20f;
             }
         }
 

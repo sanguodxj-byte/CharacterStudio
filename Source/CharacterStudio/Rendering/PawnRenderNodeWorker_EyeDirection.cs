@@ -132,9 +132,14 @@ namespace CharacterStudio.Rendering
             {
                 case EyeDirection.Left:  offsetX = +r; break;
                 case EyeDirection.Right: offsetX = -r; break;
-                case EyeDirection.Up:    offsetY = +r; break;
-                case EyeDirection.Down:  offsetY = -r; break;
+                case EyeDirection.Up:    offsetY = -r; break;
+                case EyeDirection.Down:  offsetY = +r; break;
                 // Center: 不偏移
+            }
+
+            if (parms.facing == Rot4.West)
+            {
+                offsetX = -offsetX;
             }
 
             // _MainTex_ST.xy = scale（保持 (1,1)），_MainTex_ST.zw = offset
