@@ -1024,10 +1024,27 @@ namespace CharacterStudio.Core
                 if (targetCell.IsValid && pawn.Position.IsValid)
                 {
                     IntVec3 delta = targetCell - pawn.Position;
-                    return MapDeltaToEyeDirection(delta, pawn.Rotation);
+                    // 只有当目标不是脚下时才追踪，否则视为待机
+                    if (delta.LengthHorizontalSquared > 1.1f)
+                        return MapDeltaToEyeDirection(delta, pawn.Rotation);
                 }
 
-                return MapRotationToEyeDirection(pawn.Rotation);
+                // 待机随机注视逻辑
+                int tick = Find.TickManager?.TicksGame ?? 0;
+                int pawnSeed = pawn.thingIDNumber;
+
+                // 每 160 Tick (约 2.6 秒) 切换一次视线状态
+                int cycle = Mathf.Abs(pawnSeed + tick / 160) % 12;
+
+                return cycle switch
+                {
+                    1 => EyeDirection.Left,
+                    3 => EyeDirection.Right,
+                    5 => EyeDirection.Up,
+                    7 => EyeDirection.Down,
+                    // 其它时间保持看向正面或身体朝向，增加停留感
+                    _ => MapRotationToEyeDirection(pawn.Rotation)
+                };
             }
 
             private static IntVec3 GetJobTargetCell(Pawn pawn)
@@ -1055,22 +1072,15 @@ namespace CharacterStudio.Core
             {
                 if (delta == IntVec3.Zero) return EyeDirection.Center;
 
-                int localX;
-                int localZ;
-                if (rot == Rot4.North) { localX = -delta.x; localZ = -delta.z; }
-                else if (rot == Rot4.East) { localX = delta.z; localZ = -delta.x; }
-                else if (rot == Rot4.West) { localX = -delta.z; localZ = delta.x; }
-                else { localX = delta.x; localZ = delta.z; }
-
-                int absX = Math.Abs(localX);
-                int absZ = Math.Abs(localZ);
+                int absX = Math.Abs(delta.x);
+                int absZ = Math.Abs(delta.z);
 
                 if (absX <= 1 && absZ <= 1) return EyeDirection.Center;
 
                 if (absX >= absZ)
-                    return localX > 0 ? EyeDirection.Right : EyeDirection.Left;
+                    return delta.x > 0 ? EyeDirection.Right : EyeDirection.Left;
 
-                return localZ > 0 ? EyeDirection.Down : EyeDirection.Up;
+                return delta.z > 0 ? EyeDirection.Up : EyeDirection.Down;
             }
 
             private static EyeDirection MapRotationToEyeDirection(Rot4 rot)
@@ -1553,6 +1563,8 @@ namespace CharacterStudio.Core
 
                 if (ShouldUpdateEyeDirection(owner, pawn))
                     owner.UpdateEyeDirectionState();
+
+                owner.UpdateGlobalFaceDriveState();
             }
 
             private static bool ShouldUpdateExpression(Pawn pawn)
@@ -2074,6 +2086,15 @@ namespace CharacterStudio.Core
             return expEntry.frames.Count - 1;
         }
 
+        public void TriggerBlink()
+        {
+            if (faceExpressionState != null && !faceExpressionState.IsBlinkActive)
+            {
+                faceExpressionState.StartBlink(BlinkDuration);
+                RequestRenderRefresh();
+            }
+        }
+
         private void UpdateBlinkLogic()
         {
             if (previewOverrides.PreviewExpression.HasValue) return;
@@ -2137,6 +2158,9 @@ namespace CharacterStudio.Core
 
         public BlinkPhase GetBlinkPhase()
             => faceExpressionState.IsBlinkActive ? faceExpressionState.blinkPhase : BlinkPhase.None;
+
+        public float GetBlinkPhaseProgress01()
+            => faceExpressionState.IsBlinkActive ? faceExpressionState.GetBlinkPhaseProgress01() : 0f;
 
         /// <summary>返回当前眨眼进度（0~1）。前半段为闭合，后半段为回弹。</summary>
         public float GetBlinkProgress01()
@@ -2412,8 +2436,8 @@ namespace CharacterStudio.Core
             {
                 ExpressionType.Shock => pulse < 3 ? PupilScaleVariant.DilatedMax : PupilScaleVariant.ScaredPulse,
                 ExpressionType.Scared => pulse < 2 ? PupilScaleVariant.ScaredPulse : PupilScaleVariant.DilatedMax,
-                ExpressionType.Happy => pulse == 0 ? PupilScaleVariant.Contracted : PupilScaleVariant.SlightlyContracted,
-                ExpressionType.Cheerful => pulse <= 1 ? PupilScaleVariant.Contracted : PupilScaleVariant.SlightlyContracted,
+                ExpressionType.Happy => PupilScaleVariant.Neutral,
+                ExpressionType.Cheerful => PupilScaleVariant.Neutral,
                 ExpressionType.Lovin => PupilScaleVariant.SlightlyContracted,
                 ExpressionType.Working => PupilScaleVariant.Focus,
                 ExpressionType.Reading => PupilScaleVariant.Focus,
@@ -2488,6 +2512,52 @@ namespace CharacterStudio.Core
 
             if (eyeDirectionState.SetDirection(resolvedDirection))
                 RequestRenderRefresh();
+        }
+
+        private void UpdateGlobalFaceDriveState()
+        {
+            if (Pawn == null || !FaceRuntimeActivationGuard.CanProcessFaceRuntime(this, Pawn)) 
+                return;
+
+            FaceRuntimeState runtimeState = CurrentFaceRuntimeState;
+            int tick = Find.TickManager?.TicksGame ?? 0;
+            int pawnSeed = Pawn.thingIDNumber;
+
+            // 1. Blink Eased (0.0 ~ 1.0) 带有 Cos 缓动曲线
+            float rawBlinkProgress = GetBlinkProgress01();
+            if (rawBlinkProgress <= 0f)
+            {
+                runtimeState.blinkEased = 0f;
+            }
+            else if (rawBlinkProgress >= 1f)
+            {
+                runtimeState.blinkEased = 1f;
+            }
+            else
+            {
+                // Ease In-Out 缓动：使眼睑闭合和睁开时有物理弹性感
+                runtimeState.blinkEased = 0.5f - 0.5f * Mathf.Cos(rawBlinkProgress * Mathf.PI);
+            }
+
+            // 2. Gaze Offset (视线二维偏移矢量)
+            EyeDirection curDir = CurEyeDirection;
+            Vector2 targetGaze = Vector2.zero;
+            switch (curDir)
+            {
+                case EyeDirection.Left:  targetGaze = new Vector2(-1f, 0f); break;
+                case EyeDirection.Right: targetGaze = new Vector2(1f, 0f); break;
+                case EyeDirection.Up:    targetGaze = new Vector2(0f, 1f); break;
+                case EyeDirection.Down:  targetGaze = new Vector2(0f, -1f); break;
+            }
+            // 使用极轻量的线性插值实现视线的平滑跟踪，而不是瞬间跳变 (模拟 FA)
+            runtimeState.gazeOffset = Vector2.Lerp(runtimeState.gazeOffset, targetGaze, 0.3f);
+
+            // 3. Breathing Pulse (简谐呼吸波)
+            // 周期约 2.5 秒 (150 ticks)，产生 -1 到 1 的波动
+            runtimeState.breathingPulse = Mathf.Sin((tick + pawnSeed) * 0.0418f);
+
+            // 全局驱动数据持续变化，但我们不在这里触发 Refresh，
+            // 而是由 GPU (MPB) 在每次真正需要绘制 Mesh 时直接读取这些值。
         }
 
         public void RequestRenderRefresh()

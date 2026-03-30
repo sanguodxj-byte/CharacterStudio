@@ -582,6 +582,16 @@ namespace CharacterStudio.Core
         public EyeAnimationVariant eyeDirectionRuntimeVariant = EyeAnimationVariant.NeutralOpen;
         public PupilScaleVariant pupilScaleRuntimeVariant = PupilScaleVariant.Neutral;
 
+        // --- 全局程序动画驱动源 (Global Procedural Animation Drive) ---
+        /// <summary>当前眨眼的缓动进度 (0=张开, 1=完全闭合，经过 Cos 曲线缓动)</summary>
+        public float blinkEased = 0f;
+        
+        /// <summary>当前视线的二维偏移矢量 (基于实际目标坐标映射)</summary>
+        public UnityEngine.Vector2 gazeOffset = UnityEngine.Vector2.zero;
+        
+        /// <summary>当前呼吸起伏系数 (-1 到 1 的简谐运动)</summary>
+        public float breathingPulse = 0f;
+
         /// <summary>下次允许更新世界轨状态的 Tick。</summary>
         public int nextWorldUpdateTick = 0;
 

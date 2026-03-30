@@ -32,6 +32,7 @@ namespace CharacterStudio.Core
         Blush,
         Sweat,
         Tear,
+        Hair,
         Overlay
     }
 
@@ -360,9 +361,9 @@ namespace CharacterStudio.Core
 
         private void InvalidateLookup() => _lookupCache = null;
 
-        private static bool IsOverlayPart(LayeredFacePartType partType)
+        public static bool IsOverlayPart(LayeredFacePartType partType)
         {
-            return partType == LayeredFacePartType.Overlay;
+            return partType == LayeredFacePartType.Overlay || partType == LayeredFacePartType.Hair;
         }
 
         public static bool SupportsSideSpecificParts(LayeredFacePartType partType)
@@ -431,8 +432,13 @@ namespace CharacterStudio.Core
             }
         }
 
-        public static LayeredFacePartType GetOverlayDisplayPartType(string? overlayId)
+        public static LayeredFacePartType GetOverlayDisplayPartType(string? overlayId, LayeredFacePartType originalPartType = LayeredFacePartType.Overlay)
         {
+            if (originalPartType == LayeredFacePartType.Hair)
+            {
+                return LayeredFacePartType.Hair;
+            }
+
             switch (GetOverlayKind(overlayId))
             {
                 case LayeredOverlayKind.Blush:
@@ -441,8 +447,6 @@ namespace CharacterStudio.Core
                     return LayeredFacePartType.Tear;
                 case LayeredOverlayKind.Sweat:
                     return LayeredFacePartType.Sweat;
-                case LayeredOverlayKind.Sleep:
-                    return LayeredFacePartType.Overlay;
                 default:
                     return LayeredFacePartType.Overlay;
             }
@@ -591,6 +595,12 @@ namespace CharacterStudio.Core
 
             if (normalizedPreferredSide.HasValue && normalizedPreferredSide.Value != LayeredFacePartSide.None)
             {
+                bool hasExplicitSidedContent = CountLayeredParts(partType, normalizedPreferredSide.Value) > 0
+                    || EnumerateLayeredParts(partType, overlayId, includeAllOverlayGroups)
+                        .Any(p => p.enabled
+                            && p.HasAnyTexture()
+                            && NormalizePartSide(partType, p.side) != LayeredFacePartSide.None);
+
                 LayeredFacePartConfig? exactPreferred = Find(expression, normalizedPreferredSide.Value);
                 if (exactPreferred != null)
                     return exactPreferred;
@@ -601,6 +611,9 @@ namespace CharacterStudio.Core
                     if (neutralPreferred != null)
                         return neutralPreferred;
                 }
+
+                if (hasExplicitSidedContent)
+                    return null;
 
                 LayeredFacePartConfig? exactUnsided = Find(expression, LayeredFacePartSide.None);
                 if (exactUnsided != null)
@@ -982,13 +995,13 @@ namespace CharacterStudio.Core
             return first?.GetDirectionalTexPath(facing) ?? string.Empty;
         }
 
-        public List<string> GetOrderedOverlayIds()
+        public List<string> GetOrderedOverlayIds(LayeredFacePartType partType = LayeredFacePartType.Overlay)
         {
             if (layeredParts == null || layeredParts.Count == 0)
                 return new List<string>();
 
             return layeredParts
-                .Where(p => p != null && p.partType == LayeredFacePartType.Overlay)
+                .Where(p => p != null && p.partType == partType)
                 .GroupBy(p => NormalizeOverlayId(p.overlayId), StringComparer.OrdinalIgnoreCase)
                 .OrderBy(g => GetCanonicalOverlayOrder(g.Key))
                 .ThenBy(g => g.Min(p => p.overlayOrder))
@@ -997,7 +1010,7 @@ namespace CharacterStudio.Core
                 .ToList();
         }
 
-        public int GetOverlayOrder(string overlayId)
+        public int GetOverlayOrder(string overlayId, LayeredFacePartType partType = LayeredFacePartType.Overlay)
         {
             string normalized = NormalizeOverlayId(overlayId);
             int canonicalOrder = GetCanonicalOverlayOrder(normalized);
@@ -1005,16 +1018,17 @@ namespace CharacterStudio.Core
             if (layeredParts == null || layeredParts.Count == 0)
                 return canonicalOrder;
 
-            return layeredParts
+            var part = layeredParts
                 .Where(p => p != null
-                    && p.partType == LayeredFacePartType.Overlay
+                    && p.partType == partType
                     && MatchesOverlayId(p, normalized))
-                .Select(p => p.overlayOrder)
-                .DefaultIfEmpty(canonicalOrder)
-                .Min();
+                .OrderBy(p => p.overlayOrder)
+                .FirstOrDefault();
+
+            return part?.overlayOrder ?? canonicalOrder;
         }
 
-        public void SetOverlayOrder(string overlayId, int overlayOrder)
+        public void SetOverlayOrder(string overlayId, int overlayOrder, LayeredFacePartType partType = LayeredFacePartType.Overlay)
         {
             if (layeredParts == null || layeredParts.Count == 0)
                 return;
@@ -1023,7 +1037,7 @@ namespace CharacterStudio.Core
             int resolvedOrder = Math.Max(GetCanonicalOverlayOrder(normalized), overlayOrder);
             foreach (var part in layeredParts.Where(p =>
                          p != null
-                         && p.partType == LayeredFacePartType.Overlay
+                         && p.partType == partType
                          && MatchesOverlayId(p, normalized)))
             {
                 part.overlayId = normalized;

@@ -130,11 +130,17 @@ namespace CharacterStudio.Core
                 portraitTrack.basePath = worldTrack.defaultPath;
 
             List<string> orderedOverlayIds = faceConfig.GetOrderedOverlayIds();
+            List<string> orderedHairOverlayIds = faceConfig.GetOrderedOverlayIds(LayeredFacePartType.Hair);
             portraitTrack.orderedOverlayIds = orderedOverlayIds;
 
             foreach (string overlayId in orderedOverlayIds)
             {
                 portraitTrack.overlayOrders[overlayId] = faceConfig.GetOverlayOrder(overlayId);
+            }
+
+            foreach (string overlayId in orderedHairOverlayIds)
+            {
+                portraitTrack.overlayOrders[overlayId] = faceConfig.GetOverlayOrder(overlayId, LayeredFacePartType.Hair);
             }
 
             if (faceConfig.workflowMode == FaceWorkflowMode.LayeredDynamic)
@@ -188,6 +194,17 @@ namespace CharacterStudio.Core
                             cache.SetPortraitOverlayPath(overlayId, overlayPath);
 
                         LayeredFacePartConfig? overlayConfig = faceConfig.GetLayeredPartConfig(LayeredFacePartType.Overlay, expression, overlayId);
+                        if (overlayConfig != null)
+                            cache.SetPortraitOverlayDirectionAvailability(overlayId, BuildDirectionAvailability(overlayPath, overlayConfig));
+                    }
+
+                    foreach (string overlayId in orderedHairOverlayIds)
+                    {
+                        string overlayPath = faceConfig.GetLayeredPartPath(LayeredFacePartType.Hair, expression, overlayId);
+                        if (!string.IsNullOrWhiteSpace(overlayPath))
+                            cache.SetPortraitOverlayPath(overlayId, overlayPath);
+
+                        LayeredFacePartConfig? overlayConfig = faceConfig.GetLayeredPartConfig(LayeredFacePartType.Hair, expression, overlayId);
                         if (overlayConfig != null)
                             cache.SetPortraitOverlayDirectionAvailability(overlayId, BuildDirectionAvailability(overlayPath, overlayConfig));
                     }
