@@ -51,6 +51,14 @@
     <CS_Studio_Preview_Channel_Eye>Eye</CS_Studio_Preview_Channel_Eye>
     <CS_Studio_Preview_Channel_Lid>Lid</CS_Studio_Preview_Channel_Lid>
     <CS_Studio_Preview_Channel_Mouth>Mouth</CS_Studio_Preview_Channel_Mouth>
+    <CS_Studio_Preview_Strip>Strip</CS_Studio_Preview_Strip>
+    <CS_Studio_Preview_StripTooltip>Hide vanilla apparel in preview (does not affect the actual character).</CS_Studio_Preview_StripTooltip>
+    <CS_Studio_Preview_Dress>Dress</CS_Studio_Preview_Dress>
+    <CS_Studio_Preview_StripHead>No Hat</CS_Studio_Preview_StripHead>
+    <CS_Studio_Preview_StripHeadTooltip>Hide vanilla headgear in preview.</CS_Studio_Preview_StripHeadTooltip>
+    <CS_Studio_Preview_DressHead>Hat</CS_Studio_Preview_DressHead>
+    <CS_Studio_Preview_SelectApparel>Select Apparel</CS_Studio_Preview_SelectApparel>
+    <CS_Studio_Preview_ClearApparel>Clear All Apparel</CS_Studio_Preview_ClearApparel>
     <CS_Studio_Preview_EditPerFacing>Edit current facing only</CS_Studio_Preview_EditPerFacing>
     <CS_Studio_Preview_EditPerFacingTip>When enabled, preview dragging and arrow-key nudging only modify the offset data for the current facing. South edits base Offset, East/West edit East Offset, and North edits North Offset.</CS_Studio_Preview_EditPerFacingTip>
     <CS_Studio_Preview_Exp>Expression</CS_Studio_Preview_Exp>

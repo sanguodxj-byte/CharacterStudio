@@ -820,6 +820,22 @@ namespace CharacterStudio.UI
         // 预览面板
         // ─────────────────────────────────────────────
 
+        private void OpenPreviewApparelMenu()
+        {
+            Find.WindowStack.Add(new Dialog_ApparelBrowser(apparel =>
+            {
+                if (apparel == null)
+                {
+                    mannequin?.ClearApparel();
+                }
+                else
+                {
+                    mannequin?.EquipApparel(apparel);
+                }
+                RefreshPreview();
+            }));
+        }
+
         private void DrawPreviewPanel(Rect rect)
         {
             Widgets.DrawBoxSolid(rect, UIHelper.PanelFillColor);
@@ -906,6 +922,41 @@ namespace CharacterStudio.UI
                 previewZoom = 1f;
                 RefreshPreview();
             });
+
+            // 裸体/脱帽预览
+            float stripBtnWidth = 52f;
+            float stripBtnX = btnX + btnWidth + 20f + Margin * 2f;
+            if (mannequin != null)
+            {
+                if (DrawPreviewToolbarButton(new Rect(stripBtnX, btnY, stripBtnWidth, btnHeight), mannequin.showClothes ? "CS_Studio_Preview_Strip".Translate() : "CS_Studio_Preview_Dress".Translate(), () =>
+                {
+                    mannequin.showClothes = !mannequin.showClothes;
+                    RefreshPreview();
+                }, !mannequin.showClothes))
+                {
+                }
+                TooltipHandler.TipRegion(new Rect(stripBtnX, btnY, stripBtnWidth, btnHeight), "CS_Studio_Preview_StripTooltip".Translate());
+                stripBtnX += stripBtnWidth + Margin;
+
+                if (DrawPreviewToolbarButton(new Rect(stripBtnX, btnY, stripBtnWidth, btnHeight), mannequin.showHeadgear ? "CS_Studio_Preview_StripHead".Translate() : "CS_Studio_Preview_DressHead".Translate(), () =>
+                {
+                    mannequin.showHeadgear = !mannequin.showHeadgear;
+                    RefreshPreview();
+                }, !mannequin.showHeadgear))
+                {
+                }
+                TooltipHandler.TipRegion(new Rect(stripBtnX, btnY, stripBtnWidth, btnHeight), "CS_Studio_Preview_StripHeadTooltip".Translate());
+                stripBtnX += stripBtnWidth + Margin;
+
+                // 选择服装按钮
+                float apparelBtnWidth = 64f;
+                if (DrawPreviewToolbarButton(new Rect(stripBtnX, btnY, apparelBtnWidth, btnHeight), "CS_Studio_Preview_SelectApparel".Translate(), () =>
+                {
+                    OpenPreviewApparelMenu();
+                }))
+                {
+                }
+            }
 
             float autoPlayWidth = 72f;
             Rect autoPlayRect = new Rect(rect.xMax - Margin - autoPlayWidth, btnY, autoPlayWidth, btnHeight);

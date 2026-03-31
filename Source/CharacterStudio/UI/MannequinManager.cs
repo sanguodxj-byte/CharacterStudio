@@ -44,6 +44,12 @@ namespace CharacterStudio.UI
         public string currentExpression = "Neutral";
         public int currentVariant = 0;
 
+        public bool showClothes = true;
+        public bool showHeadgear = true;
+
+        // 手动装备的服装
+        private System.Collections.Generic.List<ThingDef> manualApparelDefs = new System.Collections.Generic.List<ThingDef>();
+
         // ─────────────────────────────────────────────
         // 公共方法
         // ─────────────────────────────────────────────
@@ -314,6 +320,90 @@ namespace CharacterStudio.UI
             }
         }
 
+        /// <summary>
+        /// 装备指定服装
+        /// </summary>
+        public void EquipApparel(ThingDef apparelDef)
+        {
+            if (mannequinPawn == null || apparelDef == null || !apparelDef.IsApparel) return;
+
+            if (!manualApparelDefs.Contains(apparelDef))
+                manualApparelDefs.Add(apparelDef);
+
+            // 穿上新衣服
+            try
+            {
+                Apparel apparel = (Apparel)ThingMaker.MakeThing(apparelDef);
+                // Wear 会自动处理层级冲突并脱掉冲突的旧衣服
+                mannequinPawn.apparel.Wear(apparel, false);
+                
+                // 同步 manualApparelDefs 以反映实际穿着情况（Wear 可能会导致其他衣服脱落）
+                SyncManualApparelFromPawn();
+            }
+            catch (Exception ex)
+            {
+                Log.Warning($"[CharacterStudio] 装备服装失败: {apparelDef.defName}, {ex.Message}");
+            }
+
+            needsRefresh = true;
+        }
+
+        /// <summary>
+        /// 脱掉所有手动装备的服装
+        /// </summary>
+        public void ClearApparel()
+        {
+            if (mannequinPawn == null) return;
+
+            var worn = mannequinPawn.apparel.WornApparel.ToList();
+            foreach (var a in worn)
+            {
+                mannequinPawn.apparel.Remove(a);
+            }
+            manualApparelDefs.Clear();
+            needsRefresh = true;
+        }
+
+        private void SyncManualApparelFromPawn()
+        {
+            if (mannequinPawn == null) return;
+            manualApparelDefs = mannequinPawn.apparel.WornApparel.Select(a => a.def).ToList();
+        }
+
+        private void ReapplyManualApparel()
+        {
+            if (mannequinPawn == null || manualApparelDefs.Count == 0) return;
+
+            var toEquip = manualApparelDefs.ToList();
+            // 先清空当前所有衣服（包含随机生成的）
+            var current = mannequinPawn.apparel.WornApparel.ToList();
+            foreach (var a in current) mannequinPawn.apparel.Remove(a);
+
+            foreach (var def in toEquip)
+            {
+                try
+                {
+                    Apparel apparel = (Apparel)ThingMaker.MakeThing(def);
+                    mannequinPawn.apparel.Wear(apparel, false);
+                }
+                catch { }
+            }
+            
+            // 再次同步，防止因种族限制等原因导致的穿着失败
+            SyncManualApparelFromPawn();
+        }
+
+        /// <summary>
+        /// 获取所有原版服装
+        /// </summary>
+        public static ThingDef[] GetAvailableApparel()
+        {
+            return DefDatabase<ThingDef>.AllDefs
+                .Where(d => d.IsApparel)
+                .OrderBy(d => d.label)
+                .ToArray();
+        }
+
         // ─────────────────────────────────────────────
         // 私有方法
         // ─────────────────────────────────────────────
@@ -371,6 +461,18 @@ namespace CharacterStudio.UI
 
                 if (mannequinPawn != null)
                 {
+                    // 应用手动选择的服装（覆盖随机生成的）
+                    if (manualApparelDefs.Count > 0)
+                    {
+                        ReapplyManualApparel();
+                    }
+                    else
+                    {
+                        // 如果没有手动设置过，则清空随机生成的衣服（保持纯净预览）
+                        var randomApparel = mannequinPawn.apparel.WornApparel.ToList();
+                        foreach (var a in randomApparel) mannequinPawn.apparel.Remove(a);
+                    }
+
                     // 确保渲染器初始化
                     mannequinPawn.Drawer.renderer.SetAllGraphicsDirty();
                     
@@ -410,7 +512,9 @@ namespace CharacterStudio.UI
                     portraitSize,
                     rotation,
                     PreviewCameraOffset, // 以头部区域为预览中心，而非默认身体中心
-                    zoom // 传递 zoom 参数给 PortraitsCache
+                    zoom, // 传递 zoom 参数给 PortraitsCache
+                    showHeadgear,
+                    showClothes
                 );
 
                 if (portrait != null)

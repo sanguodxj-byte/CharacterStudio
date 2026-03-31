@@ -44,22 +44,6 @@ namespace CharacterStudio.Rendering
                 if (!IsExpressionVisibleForLayer(customNode.config, parms.pawn))
                     return false;
 
-                if (customNode.layeredFacePartType == LayeredFacePartType.Hair)
-                {
-                    string hairOverlayId = customNode.layeredOverlayId?.Trim() ?? string.Empty;
-                    bool isSideFacing = parms.facing == Rot4.East || parms.facing == Rot4.West;
-
-                    if (isSideFacing)
-                    {
-                        if (!hairOverlayId.Equals("east", StringComparison.OrdinalIgnoreCase))
-                            return false;
-                    }
-                    else if (hairOverlayId.Equals("east", StringComparison.OrdinalIgnoreCase))
-                    {
-                        return false;
-                    }
-                }
-
                 // 统一预览与游戏内的 LayeredDynamic 渲染结果：
                 // 这里不再因为 World Track 而直接裁掉局部面部部件，
                 // 否则游戏内会与编辑器预览使用两套完全不同的面部表现。

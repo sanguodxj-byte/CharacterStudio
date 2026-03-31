@@ -45,6 +45,8 @@ namespace CharacterStudio.Rendering
                 }
                 else if ((anyNodesInjected || anyLayeredFaceInjected) && IsGraphicsReadyForVanillaNodes(tree))
                 {
+                    // 仅允许按贴图路径隐藏 vanilla body/head 等非 apparel 节点；
+                    // apparel/headgear 节点在 Hiding 侧已被永久排除。
                     HideVanillaNodesByImportedTexPaths(tree, skinDef);
                 }
             }
@@ -456,26 +458,6 @@ namespace CharacterStudio.Rendering
                 }
             }
 
-            if (pawn.apparel?.WornApparel == null || pawn.apparel.WornApparel.Count == 0)
-                yield break;
-
-            foreach (var apparel in pawn.apparel.WornApparel)
-            {
-                if (apparel?.def == null)
-                    continue;
-
-                if (injectedSkinEquipmentThingDefs.Contains(apparel.def.defName))
-                    continue;
-
-                var renderExtension = apparel.def.GetModExtension<DefModExtension_EquipmentRender>();
-                if (renderExtension == null || !renderExtension.enabled || !renderExtension.HasRenderableTexture())
-                    continue;
-
-                string fallbackLabel = apparel.LabelCap;
-                PawnLayerConfig layer = renderExtension.ToPawnLayerConfig(fallbackLabel);
-                layer.layerName = $"[EquipmentWorn] {layer.layerName}";
-                yield return layer;
-            }
         }
 
         private static PawnLayerConfig? BuildWeaponCarryVisualLayer(PawnSkinDef? skinDef)
@@ -795,19 +777,21 @@ namespace CharacterStudio.Rendering
             resolvedLayer.customColor = (resolvedLayer.customColor == default || resolvedLayer.customColor.a == 0) ? Color.white : resolvedLayer.customColor;
             resolvedLayer.customColorTwo = (resolvedLayer.customColorTwo == default || resolvedLayer.customColorTwo.a == 0) ? Color.white : resolvedLayer.customColorTwo;
             resolvedLayer.visible = editableLayer?.visible ?? true;
-            // Hair 不是情绪覆盖层，强制使用 Decoration 角色，
-            // 避免旧数据中保存的 Emotion 角色导致 ChannelState 无激活通道时整层被抑制。
-            resolvedLayer.role = displayPartType == LayeredFacePartType.Hair
-                ? LayerRole.Decoration
-                : (editableLayer?.role ?? GetLayeredFaceRole(displayPartType));
+            resolvedLayer.role = editableLayer?.role ?? GetLayeredFaceRole(displayPartType);
             resolvedLayer.useDirectionalSuffix = editableLayer?.useDirectionalSuffix ?? true;
-            
-            bool forceCanonicalHairBackOrder = displayPartType == LayeredFacePartType.Hair
-                && normalizedOverlayId.Equals("back", StringComparison.OrdinalIgnoreCase);
+            if (displayPartType == LayeredFacePartType.Hair)
+            {
+                if (normalizedOverlayId.Equals("east", StringComparison.OrdinalIgnoreCase))
+                    resolvedLayer.directionalFacing = "EastWest";
+                else if (normalizedOverlayId.Equals("north", StringComparison.OrdinalIgnoreCase)
+                    || normalizedOverlayId.Equals("back", StringComparison.OrdinalIgnoreCase))
+                    resolvedLayer.directionalFacing = "North";
+                else
+                    resolvedLayer.directionalFacing = "South";
+            }
 
             // 绝对信任用户设置的 drawOrder，除非它为 0（表示用户未修改或希望使用默认高度映射）。
-            // Hair back 必须永远压在所有 face 部件（含 Base）下方，因此不保留旧项目里的历史 drawOrder。
-            if (!forceCanonicalHairBackOrder && editableLayer != null && editableLayer.drawOrder != 0f)
+            if (editableLayer != null && editableLayer.drawOrder != 0f)
             {
                 resolvedLayer.drawOrder = editableLayer.drawOrder;
             }

@@ -434,11 +434,6 @@ namespace CharacterStudio.Core
 
         public static LayeredFacePartType GetOverlayDisplayPartType(string? overlayId, LayeredFacePartType originalPartType = LayeredFacePartType.Overlay)
         {
-            if (originalPartType == LayeredFacePartType.Hair)
-            {
-                return LayeredFacePartType.Hair;
-            }
-
             switch (GetOverlayKind(overlayId))
             {
                 case LayeredOverlayKind.Blush:

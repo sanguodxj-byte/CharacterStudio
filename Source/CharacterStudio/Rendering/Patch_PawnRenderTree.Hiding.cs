@@ -22,10 +22,6 @@ namespace CharacterStudio.Rendering
         private static ConditionalWeakTable<PawnRenderNode, Graphic[]> savedGraphicsByNode =
             new ConditionalWeakTable<PawnRenderNode, Graphic[]>();
 
-        // 保存被隐藏节点的 useGraphic 原值，确保 synthetic-layer 模式下
-        // 能暂时关闭父节点自身绘制，同时在恢复时还原。
-        private static ConditionalWeakTable<PawnRenderNode, BoxedBool> savedUseGraphicByNode = new ConditionalWeakTable<PawnRenderNode, BoxedBool>();
-
         private static HashSet<PawnRenderNode> GetHiddenSet(PawnRenderTree tree)
         {
             return hiddenNodesByTree.GetOrCreateValue(tree);
@@ -48,7 +44,6 @@ namespace CharacterStudio.Rendering
                 return;
 
             ClearNodeGraphicsCache(node);
-            DisableNodeGraphic(node);
             HideChildNodes(node, hidden);
         }
 
@@ -103,35 +98,6 @@ namespace CharacterStudio.Rendering
             }
         }
 
-        private sealed class BoxedBool
-        {
-            public bool value;
-        }
-
-        private static void DisableNodeGraphic(PawnRenderNode node)
-        {
-            if (node?.Props == null) return;
-
-            savedUseGraphicByNode.Remove(node);
-            savedUseGraphicByNode.Add(node, new BoxedBool { value = node.Props.useGraphic });
-            node.Props.useGraphic = false;
-        }
-
-        private static void RestoreNodeGraphicFlag(PawnRenderNode node)
-        {
-            if (node?.Props == null) return;
-
-            if (savedUseGraphicByNode.TryGetValue(node, out var boxed))
-            {
-                node.Props.useGraphic = boxed.value;
-                savedUseGraphicByNode.Remove(node);
-            }
-            else
-            {
-                node.Props.useGraphic = true;
-            }
-        }
-
         private static void RestoreNodeGraphicsCache(PawnRenderNode node)
         {
             var field = GetGraphicsField();
@@ -153,7 +119,6 @@ namespace CharacterStudio.Rendering
                     }
                     savedGraphicsByNode.Remove(node);
                 }
-                RestoreNodeGraphicFlag(node);
             }
             catch (Exception ex)
             {
@@ -172,6 +137,10 @@ namespace CharacterStudio.Rendering
             {
                 if (child == null) continue;
                 if (child is PawnRenderNode_Custom) continue;
+
+                // 绝不连坐隐藏服装和武器，只有当 hideVanillaApparel 配置控制时才处理
+                if (IsApparelLikeNode(child)) continue;
+                if (child.Props?.workerClass != null && child.Props.workerClass.Name.IndexOf("Weapon", StringComparison.OrdinalIgnoreCase) >= 0) continue;
 
                 if (hidden.Add(child))
                 {
@@ -233,8 +202,14 @@ namespace CharacterStudio.Rendering
         private static void HideApparelLikeNodesRecursive(PawnRenderNode node)
         {
             if (node == null) return;
+            
+            // 允许皮肤系统主动明确地隐藏 apparel / headgear 节点。
+            // 因为现在隐藏已经是完全动态、基于单树、且利用 ClearMat 的 0 污染方案，
+            // 我们可以放心地移除原先为了防蓝图污染而加入的锁定限制！
             if (!(node is PawnRenderNode_Custom) && IsApparelLikeNode(node))
+            {
                 HideNode(node);
+            }
 
             if (node.children == null) return;
             foreach (var child in node.children)
@@ -246,6 +221,8 @@ namespace CharacterStudio.Rendering
 
         private static bool IsApparelLikeNode(PawnRenderNode node)
         {
+            if (node.apparel != null) return true;
+
             var props = node.Props;
             string tag = props?.tagDef?.defName ?? string.Empty;
             string workerName = props?.workerClass?.Name ?? string.Empty;
@@ -284,7 +261,7 @@ namespace CharacterStudio.Rendering
 
             if (!(node is PawnRenderNode_Custom))
             {
-                // 跳过服装和头盔节点，绝对不隐藏
+                // 绝对禁止通过贴图路径匹配隐藏 vanilla apparel / headgear 节点。
                 if (IsApparelLikeNode(node)) goto recurse;
 
                 string nodeTexPath = ResolveNodeTexturePathForHide(node, pawn);
@@ -375,7 +352,6 @@ namespace CharacterStudio.Rendering
         {
             hiddenNodesByTree = new ConditionalWeakTable<PawnRenderTree, HashSet<PawnRenderNode>>();
             savedGraphicsByNode = new ConditionalWeakTable<PawnRenderNode, Graphic[]>();
-            savedUseGraphicByNode = new ConditionalWeakTable<PawnRenderNode, BoxedBool>();
         }
 
         private static void RestoreAndRemoveHiddenForTree(PawnRenderTree tree)

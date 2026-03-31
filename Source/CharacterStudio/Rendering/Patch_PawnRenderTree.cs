@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Collections;
 using HarmonyLib;
 using CharacterStudio.Core;
 using UnityEngine;
 using Verse;
+using RimWorld;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
@@ -25,7 +27,7 @@ namespace CharacterStudio.Rendering
         private static Harmony? harmony;
 
         private static readonly object patchStateLock = new object();
-        private static readonly HashSet<MethodInfo> patchedCanDrawNowMethods = new HashSet<MethodInfo>();
+        private static readonly HashSet<MethodInfo> patchedWorkerMethods = new HashSet<MethodInfo>();
 
         // ─────────────────────────────────────────────
         // 反射字段缓存
@@ -134,23 +136,17 @@ namespace CharacterStudio.Rendering
                     harmony.Patch(setupMethod, postfix: new HarmonyMethod(postfixMethod));
                     Log.Message("[CharacterStudio] PawnRenderTree.TrySetupGraphIfNeeded 补丁已应用");
                 }
-                else
+
+                var materialMethod = AccessTools.Method(typeof(PawnRenderNodeWorker), "GetFinalizedMaterial");
+                var materialPostfix = AccessTools.Method(typeof(Patch_PawnRenderTree), nameof(GetFinalizedMaterial_Postfix));
+                
+                if (materialMethod != null && materialPostfix != null)
                 {
-                    Log.Warning("[CharacterStudio] 无法找到 PawnRenderTree.TrySetupGraphIfNeeded 方法");
+                    harmony.Patch(materialMethod, postfix: new HarmonyMethod(materialPostfix));
+                    lock (patchStateLock) { patchedWorkerMethods.Add(materialMethod); }
                 }
 
-                var canDrawMethod = AccessTools.Method(typeof(PawnRenderNodeWorker), nameof(PawnRenderNodeWorker.CanDrawNow));
-                var canDrawPrefix = AccessTools.Method(typeof(Patch_PawnRenderTree), nameof(CanDrawNow_Prefix));
-
-                if (canDrawMethod != null && canDrawPrefix != null)
-                {
-                    harmony.Patch(canDrawMethod, prefix: new HarmonyMethod(canDrawPrefix));
-                    lock (patchStateLock) { patchedCanDrawNowMethods.Add(canDrawMethod); }
-                    Log.Message("[CharacterStudio] PawnRenderNodeWorker.CanDrawNow 补丁已应用");
-                }
-
-                if (canDrawPrefix != null)
-                    PatchAllDerivedCanDrawNowMethods(harmony, canDrawPrefix);
+                PatchAllDerivedWorkerMethods(harmony, materialPostfix);
             }
             catch (Exception ex)
             {
@@ -158,9 +154,8 @@ namespace CharacterStudio.Rendering
             }
         }
 
-        private static void PatchAllDerivedCanDrawNowMethods(Harmony harmony, MethodInfo canDrawPrefix)
+        private static void PatchAllDerivedWorkerMethods(Harmony harmony, MethodInfo workerPrefix)
         {
-            if (canDrawPrefix == null) return;
             try
             {
                 var workerType   = typeof(PawnRenderNodeWorker);
@@ -176,25 +171,21 @@ namespace CharacterStudio.Rendering
                             if (!workerType.IsAssignableFrom(type)) continue;
                             if (type.IsAbstract) continue;
 
-                            var method = type.GetMethod("CanDrawNow",
-                                BindingFlags.Instance | BindingFlags.Public |
-                                BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
-
-                            if (method != null)
+                            if (workerPrefix != null)
                             {
-                                try
+                                var matMethod = type.GetMethod("GetFinalizedMaterial", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+                                if (matMethod != null)
                                 {
-                                    harmony.Patch(method, prefix: new HarmonyMethod(canDrawPrefix));
-                                    patchedTypes.Add(type);
-                                    lock (patchStateLock) { patchedCanDrawNowMethods.Add(method); }
-                                    if (Prefs.DevMode)
-                                        Log.Message($"[CharacterStudio] {type.FullName}.CanDrawNow 补丁已应用");
-                                }
-                                catch (Exception ex)
-                                {
-                                    Log.Warning($"[CharacterStudio] 无法补丁 {type.FullName}.CanDrawNow: {ex.Message}");
+                                    try
+                                    {
+                                        harmony.Patch(matMethod, postfix: new HarmonyMethod(workerPrefix));
+                                        lock (patchStateLock) { patchedWorkerMethods.Add(matMethod); }
+                                    }
+                                    catch (Exception ex) { Log.Warning($"[CharacterStudio] 无法补丁 {type.FullName}.GetFinalizedMaterial: {ex.Message}"); }
                                 }
                             }
+
+                            patchedTypes.Add(type);
                         }
                     }
                     catch { }
@@ -202,7 +193,7 @@ namespace CharacterStudio.Rendering
             }
             catch (Exception ex)
             {
-                Log.Warning($"[CharacterStudio] 补丁派生 CanDrawNow 时出错: {ex.Message}");
+                Log.Warning($"[CharacterStudio] 补丁派生 Worker 时出错: {ex.Message}");
             }
         }
 
@@ -217,8 +208,8 @@ namespace CharacterStudio.Rendering
                 List<MethodInfo> methodsToUnpatch;
                 lock (patchStateLock)
                 {
-                    methodsToUnpatch = new List<MethodInfo>(patchedCanDrawNowMethods);
-                    patchedCanDrawNowMethods.Clear();
+                    methodsToUnpatch = new List<MethodInfo>(patchedWorkerMethods);
+                    patchedWorkerMethods.Clear();
                 }
 
                 foreach (var method in methodsToUnpatch)
@@ -237,34 +228,31 @@ namespace CharacterStudio.Rendering
         }
 
         // ─────────────────────────────────────────────
-        // Harmony 前缀：CanDrawNow
+        // Harmony 后缀：GetFinalizedMaterial
         // ─────────────────────────────────────────────
 
-        private static bool CanDrawNow_Prefix(PawnRenderNode __0, ref bool __result)
+        public static void GetFinalizedMaterial_Postfix(PawnRenderNode node, ref Material __result)
         {
-            if (__0?.tree == null) return true;
-            if (__0 is PawnRenderNode_Custom) return true;
+            if (node == null || node.tree == null) return;
+            if (node is PawnRenderNode_Custom) return;
 
-            var hidden = GetHiddenSet(__0.tree);
-            if (hidden.Contains(__0))
+            try
             {
-                if (HasCustomDescendant(__0)) return true;
-                __result = false;
-                return false;
+                if (hiddenNodesByTree.TryGetValue(node.tree, out var hidden) && hidden != null && hidden.Contains(node))
+                {
+                    if (__result != null)
+                    {
+                        // 核心破解方法：
+                        // 为了满足 AppendDrawRequests_Prefix() 不被空材质截断（截断会连坐子节点服装），
+                        // 我们必须返回一个合法材质。
+                        // 严禁使用 InvisibilityMatPool（那会变成游戏内的半透明幽灵，依旧带有原版轮廓和纹理！）。
+                        // 必须使用原版内置的最底层的 BaseContent.ClearMat (全宇宙最纯净的完全透明空材质)！
+                        // 这样实现了绝对透明 + 维持原版下行防剪裁的完美平衡，性能损耗约等于渲染空气。
+                        __result = BaseContent.ClearMat;
+                    }
+                }
             }
-            return true;
-        }
-
-        private static bool HasCustomDescendant(PawnRenderNode node)
-        {
-            if (node?.children == null) return false;
-            foreach (var child in node.children)
-            {
-                if (child == null) continue;
-                if (child is PawnRenderNode_Custom) return true;
-                if (HasCustomDescendant(child)) return true;
-            }
-            return false;
+            catch { }
         }
 
         // ─────────────────────────────────────────────
@@ -497,10 +485,11 @@ namespace CharacterStudio.Rendering
                     HideNodeByTagName(nodesByTag!, "Apparel");
                     HideNodeByTagName(nodesByTag!, "Headgear");
                 }
-                else
-                {
-                    HideApparelLikeNodesRecursive(tree.rootNode);
-                }
+                
+                // 强制进行启发式递归遍历寻找服装节点。
+                // 原版动态装配的衣服通常没有明确的 TagDef（它们是运行时由 ApparelGraphicRecord 注入的），
+                // 必须借助 workerClass.Name 包含 "Apparel" 才能可靠捕捉。
+                HideApparelLikeNodesRecursive(tree.rootNode);
             }
 
             // hiddenPaths（NodePath 精确定位）
@@ -545,15 +534,11 @@ namespace CharacterStudio.Rendering
                 var tagsToHide = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 if (skinDef.hiddenTags != null)
                     foreach (var t in skinDef.hiddenTags)
-                        if (!string.IsNullOrEmpty(t) &&
-                            t.IndexOf("Apparel", StringComparison.OrdinalIgnoreCase) < 0 &&
-                            t.IndexOf("Headgear", StringComparison.OrdinalIgnoreCase) < 0)
+                        if (!string.IsNullOrEmpty(t))
                             tagsToHide.Add(t);
 
                 foreach (var t in fallbackTagsFromMissedPaths)
-                    if (t.IndexOf("Apparel", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        t.IndexOf("Headgear", StringComparison.OrdinalIgnoreCase) < 0)
-                        tagsToHide.Add(t);
+                    tagsToHide.Add(t);
 
                 foreach (var t in tagsToHide)
                     HideNodeByTagName(nodesByTag!, t);

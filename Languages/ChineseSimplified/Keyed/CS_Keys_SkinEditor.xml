@@ -44,6 +44,15 @@
     <CS_Studio_Preview_Channel_Eye>眼</CS_Studio_Preview_Channel_Eye>
     <CS_Studio_Preview_Channel_Lid>睑</CS_Studio_Preview_Channel_Lid>
     <CS_Studio_Preview_Channel_Mouth>嘴</CS_Studio_Preview_Channel_Mouth>
+    <CS_Studio_Preview_EditPerFacingTip>启用后，预览区拖拽与方向键微调只会修改当前朝向对应的偏移数据。南向修改基础 Offset，东/西向修改侧视 Offset，北向修改北向 Offset。</CS_Studio_Preview_EditPerFacingTip>
+    <CS_Studio_Preview_Strip>脱衣</CS_Studio_Preview_Strip>
+    <CS_Studio_Preview_StripTooltip>在预览中隐藏该角色的原版服装（不影响实际角色）。</CS_Studio_Preview_StripTooltip>
+    <CS_Studio_Preview_Dress>穿衣</CS_Studio_Preview_Dress>
+    <CS_Studio_Preview_StripHead>脱帽</CS_Studio_Preview_StripHead>
+    <CS_Studio_Preview_StripHeadTooltip>在预览中隐藏该角色的原版头盔/帽子。</CS_Studio_Preview_StripHeadTooltip>
+    <CS_Studio_Preview_DressHead>戴帽</CS_Studio_Preview_DressHead>
+    <CS_Studio_Preview_SelectApparel>选择服装</CS_Studio_Preview_SelectApparel>
+    <CS_Studio_Preview_ClearApparel>脱掉所有服装</CS_Studio_Preview_ClearApparel>
     <CS_Studio_Preview_Exp>表情</CS_Studio_Preview_Exp>
     <CS_Studio_Preview_Flow>AUTO</CS_Studio_Preview_Flow>
     <CS_Studio_Preview_FlowSpeedTooltip>播放速度基准。</CS_Studio_Preview_FlowSpeedTooltip>
