@@ -328,7 +328,139 @@ namespace CharacterStudio.UI
                 return;
             }
 
+            DrawOverlayMappingSection(ref y, width, fc);
             DrawFaceTuningSections(ref y, width, fc);
+        }
+
+        private void DrawOverlayMappingSection(ref float y, float width, PawnFaceConfig fc)
+        {
+            fc.EnsureDefaultOverlayRules();
+
+            y += 6f;
+            UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_OverlayRule_Title".Translate());
+            DrawPropertyHint(ref y, width, "CS_Studio_Face_OverlayRule_Hint".Translate());
+
+            foreach (PawnFaceConfig.ExpressionOverlayRule rule in fc.expressionOverlayRules)
+            {
+                UIHelper.DrawPropertyFieldWithButton(ref y, width, rule.expression.ToString(), rule.emotionState, () =>
+                {
+                    List<FloatMenuOption> options = new List<FloatMenuOption>();
+                    foreach (EmotionOverlayState state in Enum.GetValues(typeof(EmotionOverlayState)))
+                    {
+                        EmotionOverlayState localState = state;
+                        options.Add(new FloatMenuOption(localState.ToString(), () =>
+                        {
+                            rule.emotionState = localState.ToString();
+                            isDirty = true;
+                            RefreshPreview();
+                        }));
+                    }
+
+                    Find.WindowStack.Add(new FloatMenu(options));
+                });
+                y += 2f;
+            }
+
+            UIHelper.DrawPropertyFieldWithButton(ref y, width, "CS_Studio_Face_OverlayRule_AddExpression".Translate(), "CS_Studio_Add".Translate(), () =>
+            {
+                List<FloatMenuOption> options = new List<FloatMenuOption>();
+                foreach (ExpressionType expression in Enum.GetValues(typeof(ExpressionType)))
+                {
+                    ExpressionType localExpression = expression;
+                    options.Add(new FloatMenuOption(localExpression.ToString(), () =>
+                    {
+                        fc.expressionOverlayRules.Add(new PawnFaceConfig.ExpressionOverlayRule
+                        {
+                            expression = localExpression,
+                            emotionState = nameof(EmotionOverlayState.None)
+                        });
+                        isDirty = true;
+                        RefreshPreview();
+                    }));
+                }
+
+                Find.WindowStack.Add(new FloatMenu(options));
+            });
+            y += 4f;
+
+            y += 4f;
+            UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_OverlayRule_RoutingTitle".Translate());
+            foreach (PawnFaceConfig.EmotionOverlayRule rule in fc.emotionOverlayRules)
+            {
+                string display = string.IsNullOrWhiteSpace(rule.overlayId) ? "—" : rule.overlayId;
+                UIHelper.DrawPropertyFieldWithButton(ref y, width, rule.emotionState, display, () =>
+                {
+                    List<FloatMenuOption> options = new List<FloatMenuOption>
+                    {
+                        new FloatMenuOption("(None)", () =>
+                        {
+                            rule.overlayId = string.Empty;
+                            isDirty = true;
+                            RefreshPreview();
+                        })
+                    };
+
+                    HashSet<string> overlayIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    foreach (string id in fc.GetOrderedOverlayIds())
+                    {
+                        if (overlayIds.Add(id))
+                        {
+                            string localId = id;
+                            options.Add(new FloatMenuOption(localId, () =>
+                            {
+                                rule.overlayId = localId;
+                                isDirty = true;
+                                RefreshPreview();
+                            }));
+                        }
+                    }
+
+                    foreach (string builtin in new[] { "Blush", "Tear", "Sweat", "Sleep", "Gloomy" })
+                    {
+                        if (overlayIds.Add(builtin))
+                        {
+                            string localId = builtin;
+                            options.Add(new FloatMenuOption(localId, () =>
+                            {
+                                rule.overlayId = localId;
+                                isDirty = true;
+                                RefreshPreview();
+                            }));
+                        }
+                    }
+
+                    Find.WindowStack.Add(new FloatMenu(options));
+                });
+                y += 2f;
+            }
+
+            UIHelper.DrawPropertyFieldWithButton(ref y, width, "CS_Studio_Face_OverlayRule_AddRouting".Translate(), "CS_Studio_Add".Translate(), () =>
+            {
+                EnsureScannedOverlayCandidates(fc);
+
+                List<FloatMenuOption> emotionOptions = new List<FloatMenuOption>();
+                foreach (EmotionOverlayState state in Enum.GetValues(typeof(EmotionOverlayState)))
+                {
+                    EmotionOverlayState localState = state;
+                    emotionOptions.Add(new FloatMenuOption(localState.ToString(), () =>
+                    {
+                        string suggestedOverlayId = scannedOverlayCandidates
+                            .Select(candidate => candidate.SuggestedOverlayId)
+                            .FirstOrDefault(id => !string.IsNullOrWhiteSpace(id)) ?? string.Empty;
+
+                        fc.emotionOverlayRules.Add(new PawnFaceConfig.EmotionOverlayRule
+                        {
+                            emotionState = localState.ToString(),
+                            overlayId = suggestedOverlayId
+                        });
+                        isDirty = true;
+                        RefreshPreview();
+                    }));
+                }
+
+                Find.WindowStack.Add(new FloatMenu(emotionOptions));
+            });
+            y += 4f;
         }
 
         private void OpenFaceWorkflowMenu()

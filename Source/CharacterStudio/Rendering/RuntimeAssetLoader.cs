@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using UnityEngine;
 using Verse;
 
@@ -38,6 +39,9 @@ namespace CharacterStudio.Rendering
         private static readonly HashSet<string> nonMainThreadLoadWarnings = new HashSet<string>();
         private static readonly HashSet<string> missingFileWarnings = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private static readonly HashSet<string> textureLoadFailureErrors = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private static readonly Dictionary<string, byte[]> pendingTextureBytes = new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase);
+        private static readonly HashSet<string> pendingTextureReadRequests = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private static readonly HashSet<string> pendingTextureReadFailures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         // ─────────────────────────────────────────────
         // 节点数据注册表 (Patch层 → Worker层 数据传递)
@@ -110,14 +114,20 @@ namespace CharacterStudio.Rendering
 
                 if (!IsMainThread())
                 {
+                    QueueBackgroundTextureRead(resolvedPath);
                     lock (textureCacheLock)
                     {
                         if (nonMainThreadLoadWarnings.Add(resolvedPath))
                         {
-                            Log.Warning($"[CharacterStudio] 阻止在非主线程即时加载外部纹理，避免 Unity 崩溃: {resolvedPath}");
+                            Log.Warning($"[CharacterStudio] 已将外部纹理读取排队到后台线程，等待主线程完成纹理创建: {resolvedPath}");
                         }
                     }
                     return null;
+                }
+
+                if (TryFinalizeQueuedTexture(resolvedPath, useCache, out Texture2D? queuedTexture))
+                {
+                    return queuedTexture;
                 }
 
                 if (!string.Equals(requestedPath, resolvedPath, StringComparison.OrdinalIgnoreCase))
@@ -127,51 +137,8 @@ namespace CharacterStudio.Rendering
 
                 // Log.Message($"[CharacterStudio] 正在加载外部纹理: {resolvedPath}"); // 调试日志
 
-                // 读取文件字节（在锁外执行IO操作）
                 byte[] bytes = File.ReadAllBytes(resolvedPath);
-
-                // 创建纹理（需要在主线程执行）
-                var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-                tex.name = Path.GetFileNameWithoutExtension(resolvedPath);
-                tex.filterMode = FilterMode.Bilinear;
-                tex.wrapMode = TextureWrapMode.Clamp;
-                tex.anisoLevel = 0;
-
-                // 加载图像数据
-                if (!ImageConversion.LoadImage(tex, bytes))
-                {
-                    LogErrorOnce(
-                        textureLoadFailureErrors,
-                        resolvedPath,
-                        $"[CharacterStudio] 无法解析图像: {resolvedPath}");
-                    UnityEngine.Object.Destroy(tex);
-                    return null;
-                }
-
-                FixTransparentEdgeBleeding(tex);
-
-                // 压缩纹理以节省内存 (暂时禁用压缩，以防兼容性问题导致显示空白)
-                // tex.Compress(true);
-                // 禁用 Mipmap 生成，因为我们在创建 Texture2D 时指定了 no mipmaps
-                // 外部 PNG/JPG 运行时加载不会经过导入器的 Alpha Is Transparency 扩边流程，
-                // 因此这里先手动修正透明边缘颜色，再提交像素数据，避免五官边缘出现色差/硬边。
-                tex.Apply(false, false); // 保持可读以便调试，且暂不释放CPU内存
-
-                // 添加到缓存（线程安全）
-                if (useCache)
-                {
-                    lock (textureCacheLock)
-                    {
-                        // 更新文件修改时间
-                        fileLastWriteTimes[resolvedPath] = File.GetLastWriteTime(resolvedPath);
-
-                        EnsureCacheCapacity(textureCache, cacheAccessTimes, MaxTextureCacheSize);
-                        textureCache[resolvedPath] = tex;
-                        cacheAccessTimes[resolvedPath] = DateTime.Now;
-                    }
-                }
-
-                return tex;
+                return CreateTextureFromBytes(resolvedPath, bytes, useCache);
             }
             catch (Exception ex)
             {
@@ -544,6 +511,11 @@ namespace CharacterStudio.Rendering
                 return false;
             }
 
+            if (!IsMainThread())
+            {
+                return false;
+            }
+
             int textureInstanceId = texture.GetInstanceID();
             lock (textureCacheLock)
             {
@@ -650,6 +622,9 @@ namespace CharacterStudio.Rendering
             fileLastWriteTimes.Remove(fullPath);
             cacheAccessTimes.Remove(fullPath);
             nonMainThreadLoadWarnings.Remove(fullPath);
+            pendingTextureBytes.Remove(fullPath);
+            pendingTextureReadRequests.Remove(fullPath);
+            pendingTextureReadFailures.Remove(fullPath);
         }
 
         private static void RegisterMaterialCacheKeyForTexture(int textureInstanceId, string cacheKey)
@@ -788,6 +763,116 @@ namespace CharacterStudio.Rendering
 
         private static readonly int mainThreadId = System.Threading.Thread.CurrentThread.ManagedThreadId;
 
+        private static void QueueBackgroundTextureRead(string resolvedPath)
+        {
+            if (string.IsNullOrWhiteSpace(resolvedPath))
+            {
+                return;
+            }
+
+            lock (textureCacheLock)
+            {
+                if (pendingTextureBytes.ContainsKey(resolvedPath) || pendingTextureReadRequests.Contains(resolvedPath))
+                {
+                    return;
+                }
+
+                pendingTextureReadRequests.Add(resolvedPath);
+            }
+
+            ThreadPool.QueueUserWorkItem(_ =>
+            {
+                try
+                {
+                    byte[] bytes = File.ReadAllBytes(resolvedPath);
+                    lock (textureCacheLock)
+                    {
+                        pendingTextureReadRequests.Remove(resolvedPath);
+                        pendingTextureReadFailures.Remove(resolvedPath);
+                        pendingTextureBytes[resolvedPath] = bytes;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    bool shouldLog;
+                    lock (textureCacheLock)
+                    {
+                        pendingTextureReadRequests.Remove(resolvedPath);
+                        pendingTextureBytes.Remove(resolvedPath);
+                        shouldLog = pendingTextureReadFailures.Add(resolvedPath);
+                    }
+
+                    if (shouldLog)
+                    {
+                        Log.Warning($"[CharacterStudio] 后台读取外部纹理失败: {resolvedPath} - {ex.Message}");
+                    }
+                }
+            });
+        }
+
+        private static bool TryFinalizeQueuedTexture(string resolvedPath, bool useCache, out Texture2D? texture)
+        {
+            texture = null;
+
+            byte[]? queuedBytes = null;
+            lock (textureCacheLock)
+            {
+                if (!pendingTextureBytes.TryGetValue(resolvedPath, out queuedBytes) || queuedBytes == null)
+                {
+                    return false;
+                }
+
+                pendingTextureBytes.Remove(resolvedPath);
+            }
+
+            texture = CreateTextureFromBytes(resolvedPath, queuedBytes, useCache);
+            if (texture == null)
+            {
+                QueueBackgroundTextureRead(resolvedPath);
+            }
+            return texture != null;
+        }
+
+        private static Texture2D? CreateTextureFromBytes(string resolvedPath, byte[] bytes, bool useCache)
+        {
+            if (!IsMainThread())
+            {
+                return null;
+            }
+
+            var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            tex.name = Path.GetFileNameWithoutExtension(resolvedPath);
+            tex.filterMode = FilterMode.Bilinear;
+            tex.wrapMode = TextureWrapMode.Clamp;
+            tex.anisoLevel = 0;
+
+            if (!ImageConversion.LoadImage(tex, bytes))
+            {
+                LogErrorOnce(
+                    textureLoadFailureErrors,
+                    resolvedPath,
+                    $"[CharacterStudio] 无法解析图像: {resolvedPath}");
+                UnityEngine.Object.Destroy(tex);
+                return null;
+            }
+
+            FixTransparentEdgeBleeding(tex);
+            tex.Apply(false, false);
+
+            if (useCache)
+            {
+                lock (textureCacheLock)
+                {
+                    fileLastWriteTimes[resolvedPath] = File.GetLastWriteTime(resolvedPath);
+                    EnsureCacheCapacity(textureCache, cacheAccessTimes, MaxTextureCacheSize);
+                    textureCache[resolvedPath] = tex;
+                    cacheAccessTimes[resolvedPath] = DateTime.Now;
+                }
+            }
+
+            return tex;
+        }
+
         // ─────────────────────────────────────────────
         // 节点数据注册表方法
         // ─────────────────────────────────────────────
@@ -879,6 +964,11 @@ namespace CharacterStudio.Rendering
         public static Material? GetVariant(Material baseMat, string suffix)
         {
             if (baseMat == null || baseMat.mainTexture == null || string.IsNullOrEmpty(suffix))
+            {
+                return null;
+            }
+
+            if (!IsMainThread())
             {
                 return null;
             }

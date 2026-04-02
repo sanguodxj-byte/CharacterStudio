@@ -524,10 +524,14 @@ namespace CharacterStudio.UI
                 targetSlot.colorTwoSource = cloned.colorTwoSource;
                 targetSlot.customColorTwo = cloned.customColorTwo;
                 targetSlot.scale = cloned.scale;
+                targetSlot.scaleEastMultiplier = cloned.scaleEastMultiplier;
+                targetSlot.scaleNorthMultiplier = cloned.scaleNorthMultiplier;
                 targetSlot.offset = cloned.offset;
                 targetSlot.offsetEast = cloned.offsetEast;
                 targetSlot.offsetNorth = cloned.offsetNorth;
                 targetSlot.rotation = cloned.rotation;
+                targetSlot.rotationEastOffset = cloned.rotationEastOffset;
+                targetSlot.rotationNorthOffset = cloned.rotationNorthOffset;
                 targetSlot.flipHorizontal = cloned.flipHorizontal;
                 targetSlot.drawOrderOffset = cloned.drawOrderOffset;
                 targetSlot.graphicClass = cloned.graphicClass;

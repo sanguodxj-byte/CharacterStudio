@@ -321,6 +321,22 @@ namespace CharacterStudio.Core
     /// </summary>
     public class PawnFaceConfig
     {
+        public class ExpressionOverlayRule
+        {
+            public ExpressionType expression = ExpressionType.Neutral;
+            public string emotionState = nameof(EmotionOverlayState.None);
+
+            public ExpressionOverlayRule Clone() => (ExpressionOverlayRule)MemberwiseClone();
+        }
+
+        public class EmotionOverlayRule
+        {
+            public string emotionState = nameof(EmotionOverlayState.None);
+            public string overlayId = string.Empty;
+
+            public EmotionOverlayRule Clone() => (EmotionOverlayRule)MemberwiseClone();
+        }
+
         public class BrowMotionConfig
         {
             public float angryAngleBase = -4.5f;
@@ -443,6 +459,8 @@ namespace CharacterStudio.Core
         public BrowMotionConfig browMotion = new BrowMotionConfig();
         public MouthMotionConfig mouthMotion = new MouthMotionConfig();
         public EmotionOverlayMotionConfig emotionOverlayMotion = new EmotionOverlayMotionConfig();
+        public List<ExpressionOverlayRule> expressionOverlayRules = new List<ExpressionOverlayRule>();
+        public List<EmotionOverlayRule> emotionOverlayRules = new List<EmotionOverlayRule>();
 
         // Dictionary 缓存，首次 GetExpression 时懒初始化
         private Dictionary<ExpressionType, ExpressionTexPath>? _lookupCache;
@@ -463,6 +481,64 @@ namespace CharacterStudio.Core
         }
 
         private void InvalidateLookup() => _lookupCache = null;
+
+        public void EnsureDefaultOverlayRules()
+        {
+            if (expressionOverlayRules == null || expressionOverlayRules.Count == 0)
+            {
+                expressionOverlayRules = new List<ExpressionOverlayRule>
+                {
+                    new ExpressionOverlayRule { expression = ExpressionType.Lovin, emotionState = nameof(EmotionOverlayState.Lovin) },
+                    new ExpressionOverlayRule { expression = ExpressionType.Happy, emotionState = nameof(EmotionOverlayState.Blush) },
+                    new ExpressionOverlayRule { expression = ExpressionType.Cheerful, emotionState = nameof(EmotionOverlayState.Blush) },
+                    new ExpressionOverlayRule { expression = ExpressionType.SocialRelax, emotionState = nameof(EmotionOverlayState.Blush) },
+                    new ExpressionOverlayRule { expression = ExpressionType.Scared, emotionState = nameof(EmotionOverlayState.Sweat) },
+                    new ExpressionOverlayRule { expression = ExpressionType.Shock, emotionState = nameof(EmotionOverlayState.Sweat) },
+                    new ExpressionOverlayRule { expression = ExpressionType.WaitCombat, emotionState = nameof(EmotionOverlayState.Sweat) },
+                    new ExpressionOverlayRule { expression = ExpressionType.AttackMelee, emotionState = nameof(EmotionOverlayState.Sweat) },
+                    new ExpressionOverlayRule { expression = ExpressionType.AttackRanged, emotionState = nameof(EmotionOverlayState.Sweat) },
+                    new ExpressionOverlayRule { expression = ExpressionType.Pain, emotionState = nameof(EmotionOverlayState.Tear) },
+                    new ExpressionOverlayRule { expression = ExpressionType.Sad, emotionState = nameof(EmotionOverlayState.Tear) },
+                    new ExpressionOverlayRule { expression = ExpressionType.Hopeless, emotionState = nameof(EmotionOverlayState.Tear) },
+                    new ExpressionOverlayRule { expression = ExpressionType.Dead, emotionState = nameof(EmotionOverlayState.Tear) },
+                    new ExpressionOverlayRule { expression = ExpressionType.Gloomy, emotionState = nameof(EmotionOverlayState.Gloomy) },
+                };
+            }
+
+            if (emotionOverlayRules == null || emotionOverlayRules.Count == 0)
+            {
+                emotionOverlayRules = new List<EmotionOverlayRule>
+                {
+                    new EmotionOverlayRule { emotionState = nameof(EmotionOverlayState.Lovin), overlayId = "Blush" },
+                    new EmotionOverlayRule { emotionState = nameof(EmotionOverlayState.Blush), overlayId = "Blush" },
+                    new EmotionOverlayRule { emotionState = nameof(EmotionOverlayState.Tear), overlayId = "Tear" },
+                    new EmotionOverlayRule { emotionState = nameof(EmotionOverlayState.Gloomy), overlayId = "Gloomy" },
+                    new EmotionOverlayRule { emotionState = nameof(EmotionOverlayState.Sweat), overlayId = "Sweat" },
+                };
+            }
+        }
+
+        public EmotionOverlayState ResolveEmotionOverlayState(ExpressionType expression)
+        {
+            EnsureDefaultOverlayRules();
+            ExpressionOverlayRule? rule = expressionOverlayRules.FirstOrDefault(r => r.expression == expression);
+            if (rule == null || string.IsNullOrWhiteSpace(rule.emotionState))
+                return EmotionOverlayState.None;
+
+            return Enum.TryParse(rule.emotionState, true, out EmotionOverlayState state)
+                ? state
+                : EmotionOverlayState.None;
+        }
+
+        public string ResolveOverlayId(EmotionOverlayState emotionState, ExpressionType expression)
+        {
+            EnsureDefaultOverlayRules();
+            if (expression == ExpressionType.Sleeping)
+                return "Sleep";
+
+            EmotionOverlayRule? rule = emotionOverlayRules.FirstOrDefault(r => string.Equals(r.emotionState, emotionState.ToString(), StringComparison.OrdinalIgnoreCase));
+            return rule?.overlayId ?? string.Empty;
+        }
 
         public static bool IsOverlayPart(LayeredFacePartType partType)
         {
@@ -1482,6 +1558,8 @@ namespace CharacterStudio.Core
             clone.browMotion = this.browMotion?.Clone() ?? new BrowMotionConfig();
             clone.mouthMotion = this.mouthMotion?.Clone() ?? new MouthMotionConfig();
             clone.emotionOverlayMotion = this.emotionOverlayMotion?.Clone() ?? new EmotionOverlayMotionConfig();
+            clone.expressionOverlayRules = this.expressionOverlayRules?.Select(r => r.Clone()).ToList() ?? new List<ExpressionOverlayRule>();
+            clone.emotionOverlayRules = this.emotionOverlayRules?.Select(r => r.Clone()).ToList() ?? new List<EmotionOverlayRule>();
             // _lookupCache 保持 null，首次使用时懒初始化
             return clone;
         }

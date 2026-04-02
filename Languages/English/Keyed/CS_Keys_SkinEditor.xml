@@ -151,6 +151,13 @@
     <CS_Studio_Transform_PreviewScaleY>Preview Scale Y</CS_Studio_Transform_PreviewScaleY>
     <CS_Studio_Transform_RotationOffset>Rotation Offset</CS_Studio_Transform_RotationOffset>
     <CS_Studio_Variant_BaseName>Variant Base Name</CS_Studio_Variant_BaseName>
+    <CS_Studio_Variant_DirectionalFacing>Directional Facing</CS_Studio_Variant_DirectionalFacing>
+    <CS_Studio_Variant_DirectionalFacing_Any>Any Facing</CS_Studio_Variant_DirectionalFacing_Any>
+    <CS_Studio_Variant_DirectionalFacing_South>South Only</CS_Studio_Variant_DirectionalFacing_South>
+    <CS_Studio_Variant_DirectionalFacing_North>North Only</CS_Studio_Variant_DirectionalFacing_North>
+    <CS_Studio_Variant_DirectionalFacing_East>East Only</CS_Studio_Variant_DirectionalFacing_East>
+    <CS_Studio_Variant_DirectionalFacing_West>West Only</CS_Studio_Variant_DirectionalFacing_West>
+    <CS_Studio_Variant_DirectionalFacing_EastWest>East/West Only</CS_Studio_Variant_DirectionalFacing_EastWest>
     <CS_Studio_Variant_EyeRenderMode>Eye Render Mode</CS_Studio_Variant_EyeRenderMode>
     <CS_Studio_Variant_EyeUvMoveRange>Eye UV Move Range</CS_Studio_Variant_EyeUvMoveRange>
     <CS_Studio_Variant_HiddenExpressions>Hidden Expressions</CS_Studio_Variant_HiddenExpressions>

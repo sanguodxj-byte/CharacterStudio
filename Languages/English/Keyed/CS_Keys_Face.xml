@@ -173,6 +173,11 @@
     <CS_Studio_Face_OverlayMapping_Suggested>Suggested {0}</CS_Studio_Face_OverlayMapping_Suggested>
     <CS_Studio_Face_OverlayMapping_Title>Overlay Mapping</CS_Studio_Face_OverlayMapping_Title>
     <CS_Studio_Face_OverlayMapping_Unmapped>Unmapped</CS_Studio_Face_OverlayMapping_Unmapped>
+    <CS_Studio_Face_OverlayRule_Title>Overlay Rule Mapping</CS_Studio_Face_OverlayRule_Title>
+    <CS_Studio_Face_OverlayRule_Hint>Configure the mapping from expression to emotion overlay state, and from emotion overlay state to overlay id, instead of relying on hardcoded logic.</CS_Studio_Face_OverlayRule_Hint>
+    <CS_Studio_Face_OverlayRule_RoutingTitle>Emotion State to OverlayId</CS_Studio_Face_OverlayRule_RoutingTitle>
+    <CS_Studio_Face_OverlayRule_AddExpression>Add Expression Mapping</CS_Studio_Face_OverlayRule_AddExpression>
+    <CS_Studio_Face_OverlayRule_AddRouting>Add Emotion Routing</CS_Studio_Face_OverlayRule_AddRouting>
     <CS_Studio_Face_OverlayOrder_Label>Order</CS_Studio_Face_OverlayOrder_Label>
     <CS_Studio_Face_OverlayOrder_MoveUp>Move this overlay layer up</CS_Studio_Face_OverlayOrder_MoveUp>
     <CS_Studio_Face_OverlayOrder_MoveDown>Move this overlay layer down</CS_Studio_Face_OverlayOrder_MoveDown>

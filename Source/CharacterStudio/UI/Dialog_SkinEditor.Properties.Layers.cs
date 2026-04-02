@@ -134,14 +134,24 @@ namespace CharacterStudio.UI
                     RefreshPreview();
                 }
 
-                float uniformScaleValue = layer.scale.x;
-                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Transform_GlobalScale".Translate(), ref uniformScaleValue, 0.1f, 3f, "F3");
-                if (Math.Abs(uniformScaleValue - layer.scale.x) > 0.0001f || Math.Abs(uniformScaleValue - layer.scale.y) > 0.0001f)
+                float scaleX = layer.scale.x;
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Transform_GlobalScaleX".Translate(), ref scaleX, 0.1f, 3f, "F3");
+                if (Math.Abs(scaleX - layer.scale.x) > 0.0001f)
                 {
                     CaptureUndoSnapshot();
-                    Vector2 uniformScale = new Vector2(uniformScaleValue, uniformScaleValue);
-                    layer.scale = uniformScale;
-                    ApplyToOtherSelectedLayers(l => l.scale = uniformScale);
+                    layer.scale.x = scaleX;
+                    ApplyToOtherSelectedLayers(l => l.scale.x = scaleX);
+                    isDirty = true;
+                    RefreshPreview();
+                }
+
+                float scaleY = layer.scale.y;
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Transform_GlobalScaleY".Translate(), ref scaleY, 0.1f, 3f, "F3");
+                if (Math.Abs(scaleY - layer.scale.y) > 0.0001f)
+                {
+                    CaptureUndoSnapshot();
+                    layer.scale.y = scaleY;
+                    ApplyToOtherSelectedLayers(l => l.scale.y = scaleY);
                     isDirty = true;
                     RefreshPreview();
                 }
@@ -267,8 +277,6 @@ namespace CharacterStudio.UI
                     RefreshPreview();
                 }
 
-                DrawPropertyHint(ref y, width, "CS_Studio_Transform_EastRotationHint".Translate());
-
                 float eastRotationOffset = layer.rotationEastOffset;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Transform_RotationOffset".Translate(), ref eastRotationOffset, -180f, 180f, "F0");
                 if (Math.Abs(eastRotationOffset - layer.rotationEastOffset) > 0.0001f)
@@ -378,6 +386,19 @@ namespace CharacterStudio.UI
                     isDirty = true;
                     RefreshPreview();
                 }
+
+                string[] directionalFacingOptions = { string.Empty, "South", "North", "East", "West", "EastWest" };
+                UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Variant_DirectionalFacing".Translate(), layer.directionalFacing ?? string.Empty,
+                    directionalFacingOptions,
+                    option => GetDirectionalFacingLabel(option),
+                    val =>
+                    {
+                        CaptureUndoSnapshot();
+                        layer.directionalFacing = val;
+                        ApplyToOtherSelectedLayers(l => l.directionalFacing = val);
+                        isDirty = true;
+                        RefreshPreview();
+                    });
 
                 bool useExpressionSuffix = layer.useExpressionSuffix;
                 UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Variant_UseExpressionSuffix".Translate(), ref useExpressionSuffix);
@@ -544,6 +565,15 @@ namespace CharacterStudio.UI
             }
 
             y += 28f;
+        }
+
+        private static string GetDirectionalFacingLabel(string option)
+        {
+            string key = string.IsNullOrWhiteSpace(option)
+                ? "CS_Studio_Variant_DirectionalFacing_Any"
+                : $"CS_Studio_Variant_DirectionalFacing_{option}";
+
+            return key.CanTranslate() ? key.Translate() : option;
         }
 
         internal void DrawSelectedLayerExpressionMovementSection(ref float y, float width, PawnLayerConfig layer)

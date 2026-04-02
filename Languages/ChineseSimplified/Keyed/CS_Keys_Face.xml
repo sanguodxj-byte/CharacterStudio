@@ -155,6 +155,11 @@
     <CS_Studio_Face_OverlayMapping_Suggested>建议 {0}</CS_Studio_Face_OverlayMapping_Suggested>
     <CS_Studio_Face_OverlayMapping_Title>Overlay 映射</CS_Studio_Face_OverlayMapping_Title>
     <CS_Studio_Face_OverlayMapping_Unmapped>未映射</CS_Studio_Face_OverlayMapping_Unmapped>
+    <CS_Studio_Face_OverlayRule_Title>Overlay 对应关系</CS_Studio_Face_OverlayRule_Title>
+    <CS_Studio_Face_OverlayRule_Hint>配置“表情 → 情绪叠层状态”以及“情绪叠层状态 → OverlayId”的对应关系，替代原有硬编码映射。</CS_Studio_Face_OverlayRule_Hint>
+    <CS_Studio_Face_OverlayRule_RoutingTitle>情绪状态到 OverlayId</CS_Studio_Face_OverlayRule_RoutingTitle>
+    <CS_Studio_Face_OverlayRule_AddExpression>新增表情映射</CS_Studio_Face_OverlayRule_AddExpression>
+    <CS_Studio_Face_OverlayRule_AddRouting>新增情绪路由</CS_Studio_Face_OverlayRule_AddRouting>
     <CS_Studio_Face_OverlayOrder_Label>层级</CS_Studio_Face_OverlayOrder_Label>
     <CS_Studio_Face_OverlayOrder_MoveUp>上移当前 overlay 层</CS_Studio_Face_OverlayOrder_MoveUp>
     <CS_Studio_Face_OverlayOrder_MoveDown>下移当前 overlay 层</CS_Studio_Face_OverlayOrder_MoveDown>

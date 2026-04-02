@@ -298,6 +298,8 @@ namespace CharacterStudio.Exporter
 
             if (!string.IsNullOrEmpty(layer.variantBaseName))
                 yield return new XElement("variantBaseName", layer.variantBaseName);
+            if (!string.IsNullOrWhiteSpace(layer.directionalFacing))
+                yield return new XElement("directionalFacing", layer.directionalFacing);
             if (!layer.useDirectionalSuffix)
                 yield return new XElement("useDirectionalSuffix", layer.useDirectionalSuffix.ToString().ToLower());
             if (layer.useExpressionSuffix)
@@ -483,11 +485,21 @@ namespace CharacterStudio.Exporter
             }
 
             if (config.browMotion != null)
-                element.Add(new XElement("browMotion", DirectXmlToXElement(config.browMotion)));
+                element.Add(new XElement("browMotion", DirectXmlToInnerElements(config.browMotion)));
             if (config.mouthMotion != null)
-                element.Add(new XElement("mouthMotion", DirectXmlToXElement(config.mouthMotion)));
+                element.Add(new XElement("mouthMotion", DirectXmlToInnerElements(config.mouthMotion)));
             if (config.emotionOverlayMotion != null)
-                element.Add(new XElement("emotionOverlayMotion", DirectXmlToXElement(config.emotionOverlayMotion)));
+                element.Add(new XElement("emotionOverlayMotion", DirectXmlToInnerElements(config.emotionOverlayMotion)));
+            if (config.expressionOverlayRules != null && config.expressionOverlayRules.Count > 0)
+                element.Add(new XElement("expressionOverlayRules", config.expressionOverlayRules.Select(rule => new XElement("li",
+                    new XElement("expression", rule.expression.ToString()),
+                    new XElement("emotionState", rule.emotionState ?? string.Empty)
+                ))));
+            if (config.emotionOverlayRules != null && config.emotionOverlayRules.Count > 0)
+                element.Add(new XElement("emotionOverlayRules", config.emotionOverlayRules.Select(rule => new XElement("li",
+                    new XElement("emotionState", rule.emotionState ?? string.Empty),
+                    new XElement("overlayId", rule.overlayId ?? string.Empty)
+                ))));
 
             return element;
         }
@@ -509,10 +521,11 @@ namespace CharacterStudio.Exporter
             return element;
         }
 
-        private static XElement DirectXmlToXElement(object value)
+        private static IEnumerable<object> DirectXmlToInnerElements(object value)
         {
             string xml = Verse.DirectXmlSaver.XElementFromObject(value, value.GetType()).ToString();
-            return XElement.Parse(xml);
+            XElement element = XElement.Parse(xml);
+            return element.Elements().Cast<object>().ToList();
         }
 
         public static XElement? GenerateSkinAbilitiesXml(List<ModularAbilityDef>? abilities)

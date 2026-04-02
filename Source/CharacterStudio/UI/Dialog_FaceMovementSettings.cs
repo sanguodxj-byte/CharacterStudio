@@ -52,10 +52,7 @@ namespace CharacterStudio.UI
             float y = 0f;
             float width = viewRect.width;
             DrawDialogSummary(ref y, width);
-            owner.DrawFaceMovementDialogContents(ref y, width);
             owner.DrawFaceRuntimeTuningDialogContents(ref y, width);
-            y += 2f;
-            owner.DrawSelectedLayerMovementDialogContents(ref y, width);
 
             viewHeight = Mathf.Max(y + 12f, contentRect.height - 4f);
             Widgets.EndScrollView();

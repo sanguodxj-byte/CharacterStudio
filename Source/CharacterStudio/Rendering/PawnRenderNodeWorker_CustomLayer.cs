@@ -1584,7 +1584,7 @@ namespace CharacterStudio.Rendering
             if (skinComp == null || faceConfig == null)
                 return string.Empty;
 
-            string semanticOverlayId = ResolveSemanticOverlayId(skinComp.GetEffectiveEmotionOverlayState(), skinComp.GetEffectiveExpression());
+            string semanticOverlayId = ResolveSemanticOverlayId(faceConfig, skinComp.GetEffectiveEmotionOverlayState(), skinComp.GetEffectiveExpression());
             if (string.IsNullOrWhiteSpace(semanticOverlayId))
                 return string.Empty;
 
@@ -1593,8 +1593,11 @@ namespace CharacterStudio.Rendering
                 : string.Empty;
         }
 
-        private string ResolveSemanticOverlayId(EmotionOverlayState emotionState, ExpressionType expression)
+        private string ResolveSemanticOverlayId(PawnFaceConfig? faceConfig, EmotionOverlayState emotionState, ExpressionType expression)
         {
+            if (faceConfig != null)
+                return faceConfig.ResolveOverlayId(emotionState, expression);
+
             if (expression == ExpressionType.Sleeping)
                 return "Sleep";
 

@@ -382,6 +382,15 @@ namespace CharacterStudio.Rendering
                     var g = node.PrimaryGraphic;
                     if (g == null) return false;
 
+                    if (g is Graphic_Runtime runtimeGraphic)
+                    {
+                        if (!runtimeGraphic.IsInitializedSuccessfully)
+                            return false;
+
+                        if (Graphic_Runtime.IsPendingMainThreadInitialization(runtimeGraphic.path))
+                            return false;
+                    }
+
                     string path = g.path ?? string.Empty;
                     if (GraphicsNotReadyPaths.Contains(path))
                         return false;

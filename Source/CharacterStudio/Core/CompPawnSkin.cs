@@ -872,6 +872,10 @@ namespace CharacterStudio.Core
                 if (owner.previewOverrides.PreviewEmotionOverlayState.HasValue)
                     return owner.previewOverrides.PreviewEmotionOverlayState.Value;
 
+                PawnFaceConfig? faceConfig = owner.ActiveSkin?.faceConfig;
+                if (faceConfig != null)
+                    return faceConfig.ResolveEmotionOverlayState(expression);
+
                 return CompPawnSkin.ResolveEmotionOverlayState(expression);
             }
 

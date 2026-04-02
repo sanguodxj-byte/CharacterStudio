@@ -634,6 +634,7 @@ namespace CharacterStudio.Exporter
                     new XElement("role", layer.role.ToString()),
                     new XElement("variantLogic", layer.variantLogic.ToString()),
                     !string.IsNullOrEmpty(layer.variantBaseName) ? new XElement("variantBaseName", layer.variantBaseName) : null,
+                    !string.IsNullOrWhiteSpace(layer.directionalFacing) ? new XElement("directionalFacing", layer.directionalFacing) : null,
                     !layer.useDirectionalSuffix ? new XElement("useDirectionalSuffix", layer.useDirectionalSuffix.ToString().ToLower()) : null,
                     layer.useExpressionSuffix ? new XElement("useExpressionSuffix", layer.useExpressionSuffix.ToString().ToLower()) : null,
                     layer.useEyeDirectionSuffix ? new XElement("useEyeDirectionSuffix", layer.useEyeDirectionSuffix.ToString().ToLower()) : null,
@@ -775,6 +776,16 @@ namespace CharacterStudio.Exporter
                 element.Add(new XElement("mouthMotion", DirectXmlSaver.XElementFromObject(config.mouthMotion, typeof(PawnFaceConfig.MouthMotionConfig)).Elements()));
             if (config.emotionOverlayMotion != null)
                 element.Add(new XElement("emotionOverlayMotion", DirectXmlSaver.XElementFromObject(config.emotionOverlayMotion, typeof(PawnFaceConfig.EmotionOverlayMotionConfig)).Elements()));
+            if (config.expressionOverlayRules != null && config.expressionOverlayRules.Count > 0)
+                element.Add(new XElement("expressionOverlayRules", config.expressionOverlayRules.Select(rule => new XElement("li",
+                    new XElement("expression", rule.expression.ToString()),
+                    new XElement("emotionState", rule.emotionState ?? string.Empty)
+                ))));
+            if (config.emotionOverlayRules != null && config.emotionOverlayRules.Count > 0)
+                element.Add(new XElement("emotionOverlayRules", config.emotionOverlayRules.Select(rule => new XElement("li",
+                    new XElement("emotionState", rule.emotionState ?? string.Empty),
+                    new XElement("overlayId", rule.overlayId ?? string.Empty)
+                ))));
 
             return element;
         }
@@ -843,17 +854,18 @@ namespace CharacterStudio.Exporter
             if (eyeCfg.pupilMoveRange != 0f)             el.Add(new XElement("pupilMoveRange", eyeCfg.pupilMoveRange.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)));
             if (!Mathf.Approximately(eyeCfg.upperLidMoveDown, 0.0044f))
                 el.Add(new XElement("upperLidMoveDown", eyeCfg.upperLidMoveDown.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)));
-            el.Add(new XElement("lidMotion", DirectXmlToXElement(eyeCfg.lidMotion)));
-            el.Add(new XElement("eyeMotion", DirectXmlToXElement(eyeCfg.eyeMotion)));
-            el.Add(new XElement("pupilMotion", DirectXmlToXElement(eyeCfg.pupilMotion)));
+            el.Add(new XElement("lidMotion", DirectXmlToInnerElements(eyeCfg.lidMotion)));
+            el.Add(new XElement("eyeMotion", DirectXmlToInnerElements(eyeCfg.eyeMotion)));
+            el.Add(new XElement("pupilMotion", DirectXmlToInnerElements(eyeCfg.pupilMotion)));
 
             return el;
         }
 
-        private static XElement DirectXmlToXElement(object value)
+        private static IEnumerable<object> DirectXmlToInnerElements(object value)
         {
             string xml = DirectXmlSaver.XElementFromObject(value, value.GetType()).ToString();
-            return XElement.Parse(xml);
+            XElement element = XElement.Parse(xml);
+            return element.Elements().Cast<object>().ToList();
         }
 
         private static XElement GenerateWeaponRenderConfigXml(CharacterStudio.Core.WeaponRenderConfig cfg)

@@ -421,14 +421,16 @@ namespace CharacterStudio.UI
                     MarkEquipmentDirty();
                 }
 
-                string directionalFacing = renderData.directionalFacing ?? string.Empty;
-                UIHelper.DrawPropertyField(ref y, width, "Directional Facing", ref directionalFacing);
-                if (directionalFacing != (renderData.directionalFacing ?? string.Empty))
-                {
-                    CaptureUndoSnapshot();
-                    renderData.directionalFacing = directionalFacing;
-                    MarkEquipmentDirty(false);
-                }
+                string[] directionalFacingOptions = { string.Empty, "South", "North", "East", "West", "EastWest" };
+                UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Variant_DirectionalFacing".Translate(), renderData.directionalFacing ?? string.Empty,
+                    directionalFacingOptions,
+                    option => GetDirectionalFacingLabel(option),
+                    val =>
+                    {
+                        CaptureUndoSnapshot();
+                        renderData.directionalFacing = val;
+                        MarkEquipmentDirty(false);
+                    });
 
                 bool visible = renderData.visible;
                 UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Prop_Visible".Translate(), ref visible);
