@@ -449,6 +449,11 @@ namespace CharacterStudio.Rendering
                 return null;
             }
 
+            if (!IsMainThread())
+            {
+                return null;
+            }
+
             try
             {
                 shader ??= ShaderDatabase.Cutout;

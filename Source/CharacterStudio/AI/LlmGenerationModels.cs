@@ -16,7 +16,7 @@ namespace CharacterStudio.AI
         public string apiKey = "";
         public float temperature = 0.7f;
         public int maxTokens = 1800;
-        public bool enabled = true;
+        public bool enabled = false;
         public string systemPrompt = DefaultSystemPrompt;
         public string characterEditorPrompt = DefaultCharacterEditorPrompt;
         public string abilityEditorPrompt = DefaultAbilityEditorPrompt;
@@ -24,6 +24,8 @@ namespace CharacterStudio.AI
         public bool IsConfigured => !string.IsNullOrWhiteSpace(baseUrl)
             && !string.IsNullOrWhiteSpace(model)
             && !string.IsNullOrWhiteSpace(apiKey);
+
+        public bool IsAvailable => enabled && IsConfigured;
 
         public string GetMaskedApiKey()
         {
@@ -69,7 +71,7 @@ namespace CharacterStudio.AI
             Scribe_Values.Look(ref apiKey, "apiKey", "");
             Scribe_Values.Look(ref temperature, "temperature", 0.7f);
             Scribe_Values.Look(ref maxTokens, "maxTokens", 1800);
-            Scribe_Values.Look(ref enabled, "enabled", true);
+            Scribe_Values.Look(ref enabled, "enabled", false);
             Scribe_Values.Look(ref systemPrompt, "systemPrompt", DefaultSystemPrompt);
             Scribe_Values.Look(ref characterEditorPrompt, "characterEditorPrompt", DefaultCharacterEditorPrompt);
             Scribe_Values.Look(ref abilityEditorPrompt, "abilityEditorPrompt", DefaultAbilityEditorPrompt);

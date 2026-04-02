@@ -146,7 +146,8 @@ namespace CharacterStudio.Rendering
                     lock (patchStateLock) { patchedWorkerMethods.Add(materialMethod); }
                 }
 
-                PatchAllDerivedWorkerMethods(harmony, materialPostfix);
+                if (materialPostfix != null)
+                    PatchAllDerivedWorkerMethods(harmony, materialPostfix);
             }
             catch (Exception ex)
             {

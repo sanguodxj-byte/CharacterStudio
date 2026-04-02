@@ -173,6 +173,9 @@
     <CS_Studio_Face_OverlayMapping_Suggested>Suggested {0}</CS_Studio_Face_OverlayMapping_Suggested>
     <CS_Studio_Face_OverlayMapping_Title>Overlay Mapping</CS_Studio_Face_OverlayMapping_Title>
     <CS_Studio_Face_OverlayMapping_Unmapped>Unmapped</CS_Studio_Face_OverlayMapping_Unmapped>
+    <CS_Studio_Face_OverlayOrder_Label>Order</CS_Studio_Face_OverlayOrder_Label>
+    <CS_Studio_Face_OverlayOrder_MoveUp>Move this overlay layer up</CS_Studio_Face_OverlayOrder_MoveUp>
+    <CS_Studio_Face_OverlayOrder_MoveDown>Move this overlay layer down</CS_Studio_Face_OverlayOrder_MoveDown>
     <CS_Studio_Face_Title>Face Configuration</CS_Studio_Face_Title>
     <CS_Studio_Face_Type>{0} Expression</CS_Studio_Face_Type>
     <CS_Studio_Face_TypeSummary>{0} ({1}/{2} configured)</CS_Studio_Face_TypeSummary>
@@ -181,6 +184,133 @@
     <CS_Studio_Face_Workflow_FullFaceSwap_Desc>Classic workflow: assign one full-face texture per expression, optionally using frame animation.</CS_Studio_Face_Workflow_FullFaceSwap_Desc>
     <CS_Studio_Face_Workflow_LayeredDynamic>Layered Dynamic</CS_Studio_Face_Workflow_LayeredDynamic>
     <CS_Studio_Face_Workflow_LayeredDynamic_Desc>Layered workflow: configure named facial parts per expression. Runtime code drives positioning and fallback automatically.</CS_Studio_Face_Workflow_LayeredDynamic_Desc>
+    <CS_Studio_Face_MotionSection_LidMotion>Lid Motion</CS_Studio_Face_MotionSection_LidMotion>
+    <CS_Studio_Face_MotionSection_EyeMotion>Eye Motion</CS_Studio_Face_MotionSection_EyeMotion>
+    <CS_Studio_Face_MotionSection_PupilMotion>Pupil Motion</CS_Studio_Face_MotionSection_PupilMotion>
+    <CS_Studio_Face_MotionSection_BrowMotion>Brow Motion</CS_Studio_Face_MotionSection_BrowMotion>
+    <CS_Studio_Face_MotionSection_MouthMotion>Mouth Motion</CS_Studio_Face_MotionSection_MouthMotion>
+    <CS_Studio_Face_MotionSection_EmotionOverlayMotion>Emotion Overlay Motion</CS_Studio_Face_MotionSection_EmotionOverlayMotion>
+    <CS_Studio_Face_Motion_Lid_GenericDefaultScaleZWaveAmplitude>Fallback Default Scale Z Wave</CS_Studio_Face_Motion_Lid_GenericDefaultScaleZWaveAmplitude>
+    <CS_Studio_Face_Motion_Eye_SideBiasX>Eye Side Bias X</CS_Studio_Face_Motion_Eye_SideBiasX>
+    <CS_Studio_Face_Motion_Eye_PrimaryWaveOffsetZ>Eye Primary Wave Offset Z</CS_Studio_Face_Motion_Eye_PrimaryWaveOffsetZ>
+    <CS_Studio_Face_Motion_Eye_DirLeftOffsetX>Eye Look Left Offset X</CS_Studio_Face_Motion_Eye_DirLeftOffsetX>
+    <CS_Studio_Face_Motion_Eye_DirRightOffsetX>Eye Look Right Offset X</CS_Studio_Face_Motion_Eye_DirRightOffsetX>
+    <CS_Studio_Face_Motion_Eye_DirUpOffsetZ>Eye Look Up Offset Z</CS_Studio_Face_Motion_Eye_DirUpOffsetZ>
+    <CS_Studio_Face_Motion_Eye_DirDownOffsetZ>Eye Look Down Offset Z</CS_Studio_Face_Motion_Eye_DirDownOffsetZ>
+    <CS_Studio_Face_Motion_Eye_NeutralSoftOffsetZ>Eye Neutral Soft Offset Z</CS_Studio_Face_Motion_Eye_NeutralSoftOffsetZ>
+    <CS_Studio_Face_Motion_Eye_NeutralLookDownOffsetZ>Eye Neutral Look Down Offset Z</CS_Studio_Face_Motion_Eye_NeutralLookDownOffsetZ>
+    <CS_Studio_Face_Motion_Eye_NeutralGlanceWaveOffsetX>Eye Neutral Glance Wave Offset X</CS_Studio_Face_Motion_Eye_NeutralGlanceWaveOffsetX>
+    <CS_Studio_Face_Motion_Eye_NeutralGlanceSideOffsetX>Eye Neutral Glance Side Offset X</CS_Studio_Face_Motion_Eye_NeutralGlanceSideOffsetX>
+    <CS_Studio_Face_Motion_Eye_WorkFocusDownOffsetZ>Eye Work Focus Down Offset Z</CS_Studio_Face_Motion_Eye_WorkFocusDownOffsetZ>
+    <CS_Studio_Face_Motion_Eye_WorkFocusUpOffsetZ>Eye Work Focus Up Offset Z</CS_Studio_Face_Motion_Eye_WorkFocusUpOffsetZ>
+    <CS_Studio_Face_Motion_Eye_HappySoftOffsetZ>Eye Happy Soft Offset Z</CS_Studio_Face_Motion_Eye_HappySoftOffsetZ>
+    <CS_Studio_Face_Motion_Eye_ShockWideOffsetZ>Eye Shock Wide Offset Z</CS_Studio_Face_Motion_Eye_ShockWideOffsetZ>
+    <CS_Studio_Face_Motion_Eye_ScaredWideOffsetZ>Eye Scared Wide Offset Z</CS_Studio_Face_Motion_Eye_ScaredWideOffsetZ>
+    <CS_Studio_Face_Motion_Eye_ScaredWideWaveOffsetX>Eye Scared Wide Wave Offset X</CS_Studio_Face_Motion_Eye_ScaredWideWaveOffsetX>
+    <CS_Studio_Face_Motion_Eye_ScaredWideSideOffsetX>Eye Scared Wide Side Offset X</CS_Studio_Face_Motion_Eye_ScaredWideSideOffsetX>
+    <CS_Studio_Face_Motion_Eye_ScaredFlinchOffsetZ>Eye Scared Flinch Offset Z</CS_Studio_Face_Motion_Eye_ScaredFlinchOffsetZ>
+    <CS_Studio_Face_Motion_Eye_ScaredFlinchWaveOffsetX>Eye Scared Flinch Wave Offset X</CS_Studio_Face_Motion_Eye_ScaredFlinchWaveOffsetX>
+    <CS_Studio_Face_Motion_Eye_ScaredFlinchSideOffsetX>Eye Scared Flinch Side Offset X</CS_Studio_Face_Motion_Eye_ScaredFlinchSideOffsetX>
+    <CS_Studio_Face_Motion_Eye_BaseAngleWave>Eye Base Angle Wave</CS_Studio_Face_Motion_Eye_BaseAngleWave>
+    <CS_Studio_Face_Motion_Eye_SlowWaveOffsetZ>Eye Slow Wave Offset Z</CS_Studio_Face_Motion_Eye_SlowWaveOffsetZ>
+    <CS_Studio_Face_Motion_Eye_ScaleXBase>Eye Scale X Base</CS_Studio_Face_Motion_Eye_ScaleXBase>
+    <CS_Studio_Face_Motion_Eye_ScaleXWaveAmplitude>Eye Scale X Wave Amplitude</CS_Studio_Face_Motion_Eye_ScaleXWaveAmplitude>
+    <CS_Studio_Face_Motion_Pupil_SideBiasX>Pupil Side Bias X</CS_Studio_Face_Motion_Pupil_SideBiasX>
+    <CS_Studio_Face_Motion_Pupil_SlowWaveOffsetZ>Pupil Slow Wave Offset Z</CS_Studio_Face_Motion_Pupil_SlowWaveOffsetZ>
+    <CS_Studio_Face_Motion_Pupil_DirLeftOffsetX>Pupil Look Left Offset X</CS_Studio_Face_Motion_Pupil_DirLeftOffsetX>
+    <CS_Studio_Face_Motion_Pupil_DirRightOffsetX>Pupil Look Right Offset X</CS_Studio_Face_Motion_Pupil_DirRightOffsetX>
+    <CS_Studio_Face_Motion_Pupil_DirUpOffsetZ>Pupil Look Up Offset Z</CS_Studio_Face_Motion_Pupil_DirUpOffsetZ>
+    <CS_Studio_Face_Motion_Pupil_DirDownOffsetZ>Pupil Look Down Offset Z</CS_Studio_Face_Motion_Pupil_DirDownOffsetZ>
+    <CS_Studio_Face_Motion_Pupil_NeutralSoftOffsetZ>Pupil Neutral Soft Offset Z</CS_Studio_Face_Motion_Pupil_NeutralSoftOffsetZ>
+    <CS_Studio_Face_Motion_Pupil_NeutralLookDownOffsetZ>Pupil Neutral Look Down Offset Z</CS_Studio_Face_Motion_Pupil_NeutralLookDownOffsetZ>
+    <CS_Studio_Face_Motion_Pupil_NeutralGlanceWaveOffsetX>Pupil Neutral Glance Wave Offset X</CS_Studio_Face_Motion_Pupil_NeutralGlanceWaveOffsetX>
+    <CS_Studio_Face_Motion_Pupil_NeutralGlanceSideOffsetX>Pupil Neutral Glance Side Offset X</CS_Studio_Face_Motion_Pupil_NeutralGlanceSideOffsetX>
+    <CS_Studio_Face_Motion_Pupil_WorkFocusDownOffsetZ>Pupil Work Focus Down Offset Z</CS_Studio_Face_Motion_Pupil_WorkFocusDownOffsetZ>
+    <CS_Studio_Face_Motion_Pupil_WorkFocusUpOffsetZ>Pupil Work Focus Up Offset Z</CS_Studio_Face_Motion_Pupil_WorkFocusUpOffsetZ>
+    <CS_Studio_Face_Motion_Pupil_HappyOpenOffsetZ>Pupil Happy Open Offset Z</CS_Studio_Face_Motion_Pupil_HappyOpenOffsetZ>
+    <CS_Studio_Face_Motion_Pupil_ShockWideOffsetZ>Pupil Shock Wide Offset Z</CS_Studio_Face_Motion_Pupil_ShockWideOffsetZ>
+    <CS_Studio_Face_Motion_Pupil_ScaredWideOffsetZ>Pupil Scared Wide Offset Z</CS_Studio_Face_Motion_Pupil_ScaredWideOffsetZ>
+    <CS_Studio_Face_Motion_Pupil_ScaredWideWaveOffsetX>Pupil Scared Wide Wave Offset X</CS_Studio_Face_Motion_Pupil_ScaredWideWaveOffsetX>
+    <CS_Studio_Face_Motion_Pupil_ScaredWideSideOffsetX>Pupil Scared Wide Side Offset X</CS_Studio_Face_Motion_Pupil_ScaredWideSideOffsetX>
+    <CS_Studio_Face_Motion_Pupil_ScaredFlinchOffsetZ>Pupil Scared Flinch Offset Z</CS_Studio_Face_Motion_Pupil_ScaredFlinchOffsetZ>
+    <CS_Studio_Face_Motion_Pupil_ScaredFlinchWaveOffsetX>Pupil Scared Flinch Wave Offset X</CS_Studio_Face_Motion_Pupil_ScaredFlinchWaveOffsetX>
+    <CS_Studio_Face_Motion_Pupil_ScaredFlinchSideOffsetX>Pupil Scared Flinch Side Offset X</CS_Studio_Face_Motion_Pupil_ScaredFlinchSideOffsetX>
+    <CS_Studio_Face_Motion_Pupil_TransformAngleWave>Pupil Transform Angle Wave</CS_Studio_Face_Motion_Pupil_TransformAngleWave>
+    <CS_Studio_Face_Motion_Pupil_FinalWaveOffsetX>Pupil Final Wave Offset X</CS_Studio_Face_Motion_Pupil_FinalWaveOffsetX>
+    <CS_Studio_Face_Motion_Pupil_FocusScaleBase>Pupil Focus Scale Base</CS_Studio_Face_Motion_Pupil_FocusScaleBase>
+    <CS_Studio_Face_Motion_Pupil_DilatedScaleBase>Pupil Dilated Scale Base</CS_Studio_Face_Motion_Pupil_DilatedScaleBase>
+    <CS_Studio_Face_Motion_Pupil_DilatedMaxScaleBase>Pupil Dilated Max Scale Base</CS_Studio_Face_Motion_Pupil_DilatedMaxScaleBase>
+    <CS_Studio_Face_Motion_Pupil_ScaredPulseScaleBase>Pupil Scared Pulse Scale Base</CS_Studio_Face_Motion_Pupil_ScaredPulseScaleBase>
+    <CS_Studio_Face_Motion_Brow_AngryAngleBase>Brow Angry Angle Base</CS_Studio_Face_Motion_Brow_AngryAngleBase>
+    <CS_Studio_Face_Motion_Brow_AngryAngleWave>Brow Angry Angle Wave</CS_Studio_Face_Motion_Brow_AngryAngleWave>
+    <CS_Studio_Face_Motion_Brow_AngryOffsetZBase>Brow Angry Offset Z Base</CS_Studio_Face_Motion_Brow_AngryOffsetZBase>
+    <CS_Studio_Face_Motion_Brow_AngrySlowWaveOffsetZ>Brow Angry Slow Wave Offset Z</CS_Studio_Face_Motion_Brow_AngrySlowWaveOffsetZ>
+    <CS_Studio_Face_Motion_Brow_AngryScaleX>Brow Angry Scale X</CS_Studio_Face_Motion_Brow_AngryScaleX>
+    <CS_Studio_Face_Motion_Brow_AngryScaleZ>Brow Angry Scale Z</CS_Studio_Face_Motion_Brow_AngryScaleZ>
+    <CS_Studio_Face_Motion_Brow_SadAngleBase>Brow Sad Angle Base</CS_Studio_Face_Motion_Brow_SadAngleBase>
+    <CS_Studio_Face_Motion_Brow_SadAngleWave>Brow Sad Angle Wave</CS_Studio_Face_Motion_Brow_SadAngleWave>
+    <CS_Studio_Face_Motion_Brow_SadOffsetZBase>Brow Sad Offset Z Base</CS_Studio_Face_Motion_Brow_SadOffsetZBase>
+    <CS_Studio_Face_Motion_Brow_SadSlowWaveOffsetZ>Brow Sad Slow Wave Offset Z</CS_Studio_Face_Motion_Brow_SadSlowWaveOffsetZ>
+    <CS_Studio_Face_Motion_Brow_SadScaleX>Brow Sad Scale X</CS_Studio_Face_Motion_Brow_SadScaleX>
+    <CS_Studio_Face_Motion_Brow_SadScaleZ>Brow Sad Scale Z</CS_Studio_Face_Motion_Brow_SadScaleZ>
+    <CS_Studio_Face_Motion_Brow_HappyAngleBase>Brow Happy Angle Base</CS_Studio_Face_Motion_Brow_HappyAngleBase>
+    <CS_Studio_Face_Motion_Brow_HappyAngleWave>Brow Happy Angle Wave</CS_Studio_Face_Motion_Brow_HappyAngleWave>
+    <CS_Studio_Face_Motion_Brow_HappyOffsetZBase>Brow Happy Offset Z Base</CS_Studio_Face_Motion_Brow_HappyOffsetZBase>
+    <CS_Studio_Face_Motion_Brow_HappySlowWaveOffsetZ>Brow Happy Slow Wave Offset Z</CS_Studio_Face_Motion_Brow_HappySlowWaveOffsetZ>
+    <CS_Studio_Face_Motion_Brow_HappyScaleX>Brow Happy Scale X</CS_Studio_Face_Motion_Brow_HappyScaleX>
+    <CS_Studio_Face_Motion_Brow_HappyScaleZ>Brow Happy Scale Z</CS_Studio_Face_Motion_Brow_HappyScaleZ>
+    <CS_Studio_Face_Motion_Brow_DefaultSlowWaveOffsetZ>Brow Default Slow Wave Offset Z</CS_Studio_Face_Motion_Brow_DefaultSlowWaveOffsetZ>
+    <CS_Studio_Face_Motion_Mouth_SmileAngleWave>Mouth Smile Angle Wave</CS_Studio_Face_Motion_Mouth_SmileAngleWave>
+    <CS_Studio_Face_Motion_Mouth_SmileOffsetZBase>Mouth Smile Offset Z Base</CS_Studio_Face_Motion_Mouth_SmileOffsetZBase>
+    <CS_Studio_Face_Motion_Mouth_SmilePrimaryWaveOffsetZ>Mouth Smile Primary Wave Offset Z</CS_Studio_Face_Motion_Mouth_SmilePrimaryWaveOffsetZ>
+    <CS_Studio_Face_Motion_Mouth_SmileScaleXBase>Mouth Smile Scale X Base</CS_Studio_Face_Motion_Mouth_SmileScaleXBase>
+    <CS_Studio_Face_Motion_Mouth_SmileScaleXWave>Mouth Smile Scale X Wave</CS_Studio_Face_Motion_Mouth_SmileScaleXWave>
+    <CS_Studio_Face_Motion_Mouth_SmileScaleZ>Mouth Smile Scale Z</CS_Studio_Face_Motion_Mouth_SmileScaleZ>
+    <CS_Studio_Face_Motion_Mouth_OpenAngleWave>Mouth Open Angle Wave</CS_Studio_Face_Motion_Mouth_OpenAngleWave>
+    <CS_Studio_Face_Motion_Mouth_OpenOffsetZBase>Mouth Open Offset Z Base</CS_Studio_Face_Motion_Mouth_OpenOffsetZBase>
+    <CS_Studio_Face_Motion_Mouth_OpenPrimaryWaveOffsetZ>Mouth Open Primary Wave Offset Z</CS_Studio_Face_Motion_Mouth_OpenPrimaryWaveOffsetZ>
+    <CS_Studio_Face_Motion_Mouth_OpenScaleX>Mouth Open Scale X</CS_Studio_Face_Motion_Mouth_OpenScaleX>
+    <CS_Studio_Face_Motion_Mouth_OpenScaleZBase>Mouth Open Scale Z Base</CS_Studio_Face_Motion_Mouth_OpenScaleZBase>
+    <CS_Studio_Face_Motion_Mouth_OpenScaleZWave>Mouth Open Scale Z Wave</CS_Studio_Face_Motion_Mouth_OpenScaleZWave>
+    <CS_Studio_Face_Motion_Mouth_DownAngleBase>Mouth Downturned Angle Base</CS_Studio_Face_Motion_Mouth_DownAngleBase>
+    <CS_Studio_Face_Motion_Mouth_DownAngleWave>Mouth Downturned Angle Wave</CS_Studio_Face_Motion_Mouth_DownAngleWave>
+    <CS_Studio_Face_Motion_Mouth_DownOffsetZBase>Mouth Downturned Offset Z Base</CS_Studio_Face_Motion_Mouth_DownOffsetZBase>
+    <CS_Studio_Face_Motion_Mouth_DownSlowWaveOffsetZ>Mouth Downturned Slow Wave Offset Z</CS_Studio_Face_Motion_Mouth_DownSlowWaveOffsetZ>
+    <CS_Studio_Face_Motion_Mouth_DownScaleX>Mouth Downturned Scale X</CS_Studio_Face_Motion_Mouth_DownScaleX>
+    <CS_Studio_Face_Motion_Mouth_DownScaleZ>Mouth Downturned Scale Z</CS_Studio_Face_Motion_Mouth_DownScaleZ>
+    <CS_Studio_Face_Motion_Mouth_SleepOffsetZ>Mouth Sleeping Offset Z</CS_Studio_Face_Motion_Mouth_SleepOffsetZ>
+    <CS_Studio_Face_Motion_Mouth_SleepScaleX>Mouth Sleeping Scale X</CS_Studio_Face_Motion_Mouth_SleepScaleX>
+    <CS_Studio_Face_Motion_Mouth_SleepScaleZ>Mouth Sleeping Scale Z</CS_Studio_Face_Motion_Mouth_SleepScaleZ>
+    <CS_Studio_Face_Motion_Mouth_EatingAngleWave>Mouth Eating Angle Wave</CS_Studio_Face_Motion_Mouth_EatingAngleWave>
+    <CS_Studio_Face_Motion_Mouth_EatingOffsetZBase>Mouth Eating Offset Z Base</CS_Studio_Face_Motion_Mouth_EatingOffsetZBase>
+    <CS_Studio_Face_Motion_Mouth_EatingPrimaryWaveOffsetZ>Mouth Eating Primary Wave Offset Z</CS_Studio_Face_Motion_Mouth_EatingPrimaryWaveOffsetZ>
+    <CS_Studio_Face_Motion_Mouth_EatingScaleX>Mouth Eating Scale X</CS_Studio_Face_Motion_Mouth_EatingScaleX>
+    <CS_Studio_Face_Motion_Mouth_EatingScaleZBase>Mouth Eating Scale Z Base</CS_Studio_Face_Motion_Mouth_EatingScaleZBase>
+    <CS_Studio_Face_Motion_Mouth_EatingScaleZWave>Mouth Eating Scale Z Wave</CS_Studio_Face_Motion_Mouth_EatingScaleZWave>
+    <CS_Studio_Face_Motion_Mouth_ShockScaredAngleWave>Mouth Shock/Scared Angle Wave</CS_Studio_Face_Motion_Mouth_ShockScaredAngleWave>
+    <CS_Studio_Face_Motion_Mouth_ShockScaredOffsetZBase>Mouth Shock/Scared Offset Z Base</CS_Studio_Face_Motion_Mouth_ShockScaredOffsetZBase>
+    <CS_Studio_Face_Motion_Mouth_ShockScaredPrimaryWaveOffsetZ>Mouth Shock/Scared Primary Wave Offset Z</CS_Studio_Face_Motion_Mouth_ShockScaredPrimaryWaveOffsetZ>
+    <CS_Studio_Face_Motion_Mouth_ShockScaredScaleX>Mouth Shock/Scared Scale X</CS_Studio_Face_Motion_Mouth_ShockScaredScaleX>
+    <CS_Studio_Face_Motion_Mouth_ShockScaredScaleZBase>Mouth Shock/Scared Scale Z Base</CS_Studio_Face_Motion_Mouth_ShockScaredScaleZBase>
+    <CS_Studio_Face_Motion_Mouth_ShockScaredScaleZWave>Mouth Shock/Scared Scale Z Wave</CS_Studio_Face_Motion_Mouth_ShockScaredScaleZWave>
+    <CS_Studio_Face_Motion_Mouth_DefaultSlowWaveOffsetZ>Mouth Default Slow Wave Offset Z</CS_Studio_Face_Motion_Mouth_DefaultSlowWaveOffsetZ>
+    <CS_Studio_Face_Motion_Emotion_BlushPulseBase>Blush Pulse Base</CS_Studio_Face_Motion_Emotion_BlushPulseBase>
+    <CS_Studio_Face_Motion_Emotion_BlushPulseWave>Blush Pulse Wave</CS_Studio_Face_Motion_Emotion_BlushPulseWave>
+    <CS_Studio_Face_Motion_Emotion_BlushOffsetZBase>Blush Offset Z Base</CS_Studio_Face_Motion_Emotion_BlushOffsetZBase>
+    <CS_Studio_Face_Motion_Emotion_BlushSlowWaveOffsetZ>Blush Slow Wave Offset Z</CS_Studio_Face_Motion_Emotion_BlushSlowWaveOffsetZ>
+    <CS_Studio_Face_Motion_Emotion_BlushScaleZBase>Blush Scale Z Base</CS_Studio_Face_Motion_Emotion_BlushScaleZBase>
+    <CS_Studio_Face_Motion_Emotion_BlushScaleZWave>Blush Scale Z Wave</CS_Studio_Face_Motion_Emotion_BlushScaleZWave>
+    <CS_Studio_Face_Motion_Emotion_TearPulseBase>Tear Pulse Base</CS_Studio_Face_Motion_Emotion_TearPulseBase>
+    <CS_Studio_Face_Motion_Emotion_TearPulseWave>Tear Pulse Wave</CS_Studio_Face_Motion_Emotion_TearPulseWave>
+    <CS_Studio_Face_Motion_Emotion_TearAngleWave>Tear Angle Wave</CS_Studio_Face_Motion_Emotion_TearAngleWave>
+    <CS_Studio_Face_Motion_Emotion_TearOffsetZBase>Tear Offset Z Base</CS_Studio_Face_Motion_Emotion_TearOffsetZBase>
+    <CS_Studio_Face_Motion_Emotion_TearPrimaryWaveOffsetZ>Tear Primary Wave Offset Z</CS_Studio_Face_Motion_Emotion_TearPrimaryWaveOffsetZ>
+    <CS_Studio_Face_Motion_Emotion_SweatPulseBase>Sweat Pulse Base</CS_Studio_Face_Motion_Emotion_SweatPulseBase>
+    <CS_Studio_Face_Motion_Emotion_SweatPulseWave>Sweat Pulse Wave</CS_Studio_Face_Motion_Emotion_SweatPulseWave>
+    <CS_Studio_Face_Motion_Emotion_SweatAngleWave>Sweat Angle Wave</CS_Studio_Face_Motion_Emotion_SweatAngleWave>
+    <CS_Studio_Face_Motion_Emotion_SweatOffsetXWave>Sweat Offset X Wave</CS_Studio_Face_Motion_Emotion_SweatOffsetXWave>
+    <CS_Studio_Face_Motion_Emotion_SweatOffsetZBase>Sweat Offset Z Base</CS_Studio_Face_Motion_Emotion_SweatOffsetZBase>
+    <CS_Studio_Face_Motion_Emotion_SweatSlowWaveOffsetZ>Sweat Slow Wave Offset Z</CS_Studio_Face_Motion_Emotion_SweatSlowWaveOffsetZ>
     <CS_Studio_Preview_BrowState_Angry>Angry</CS_Studio_Preview_BrowState_Angry>
     <CS_Studio_Preview_BrowState_Happy>Happy</CS_Studio_Preview_BrowState_Happy>
     <CS_Studio_Preview_BrowState_Normal>Normal</CS_Studio_Preview_BrowState_Normal>

@@ -320,6 +320,10 @@ namespace CharacterStudio.Core
             if (!string.IsNullOrWhiteSpace(path))
                 return path;
 
+            string neutralPath = faceConfig.GetLayeredPartPath(LayeredFacePartType.Base, ExpressionType.Neutral);
+            if (!string.IsNullOrWhiteSpace(neutralPath))
+                return neutralPath;
+
             return faceConfig.GetAnyLayeredPartPath(LayeredFacePartType.Base);
         }
 

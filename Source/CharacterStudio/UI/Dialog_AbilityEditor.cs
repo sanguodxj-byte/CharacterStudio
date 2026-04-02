@@ -85,6 +85,7 @@ namespace CharacterStudio.UI
             }
         }
         private string abilitySearchText = string.Empty;
+        private string selectedExtensionPanelId = string.Empty;
         private string llmAbilityPrompt = string.Empty;
         private readonly SkinAbilityHotkeyConfig? boundHotkeys;
         private readonly SkinAbilityHotkeyConfig standaloneHotkeys = new();

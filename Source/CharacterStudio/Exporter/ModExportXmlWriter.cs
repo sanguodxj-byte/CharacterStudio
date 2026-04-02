@@ -449,11 +449,17 @@ namespace CharacterStudio.Exporter
                         new XElement("partType", part.partType.ToString()),
                         new XElement("expression", part.expression.ToString()),
                         new XElement("texPath", part.texPath),
+                        !string.IsNullOrWhiteSpace(part.texPathSouth) ? new XElement("texPathSouth", part.texPathSouth) : null,
+                        !string.IsNullOrWhiteSpace(part.texPathEast) ? new XElement("texPathEast", part.texPathEast) : null,
+                        !string.IsNullOrWhiteSpace(part.texPathNorth) ? new XElement("texPathNorth", part.texPathNorth) : null,
                         new XElement("enabled", part.enabled.ToString().ToLower()),
-                        part.partType == LayeredFacePartType.Overlay && !string.IsNullOrWhiteSpace(part.overlayId)
+                        PawnFaceConfig.NormalizePartSide(part.partType, part.side) != LayeredFacePartSide.None
+                            ? new XElement("side", PawnFaceConfig.NormalizePartSide(part.partType, part.side).ToString())
+                            : null,
+                        PawnFaceConfig.IsOverlayPart(part.partType) && !string.IsNullOrWhiteSpace(part.overlayId)
                             ? new XElement("overlayId", part.overlayId)
                             : null,
-                        part.partType == LayeredFacePartType.Overlay
+                        PawnFaceConfig.IsOverlayPart(part.partType)
                             ? new XElement("overlayOrder", part.overlayOrder)
                             : null,
                         part.motionAmplitude > 0f
@@ -476,6 +482,13 @@ namespace CharacterStudio.Exporter
                 if (eyeEl != null) element.Add(eyeEl);
             }
 
+            if (config.browMotion != null)
+                element.Add(new XElement("browMotion", DirectXmlToXElement(config.browMotion)));
+            if (config.mouthMotion != null)
+                element.Add(new XElement("mouthMotion", DirectXmlToXElement(config.mouthMotion)));
+            if (config.emotionOverlayMotion != null)
+                element.Add(new XElement("emotionOverlayMotion", DirectXmlToXElement(config.emotionOverlayMotion)));
+
             return element;
         }
 
@@ -494,6 +507,12 @@ namespace CharacterStudio.Exporter
             }
 
             return element;
+        }
+
+        private static XElement DirectXmlToXElement(object value)
+        {
+            string xml = Verse.DirectXmlSaver.XElementFromObject(value, value.GetType()).ToString();
+            return XElement.Parse(xml);
         }
 
         public static XElement? GenerateSkinAbilitiesXml(List<ModularAbilityDef>? abilities)
@@ -1312,6 +1331,144 @@ namespace CharacterStudio.Exporter
             if (eyeCfg.pupilMoveRange != 0f)             el.Add(new XElement("pupilMoveRange", eyeCfg.pupilMoveRange.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)));
             if (!Mathf.Approximately(eyeCfg.upperLidMoveDown, 0.0044f))
                 el.Add(new XElement("upperLidMoveDown", eyeCfg.upperLidMoveDown.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)));
+            el.Add(new XElement("lidMotion",
+                new XElement("upperSideBiasX", eyeCfg.lidMotion.upperSideBiasX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("upperBlinkScaleX", eyeCfg.lidMotion.upperBlinkScaleX.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("upperBlinkScaleZ", eyeCfg.lidMotion.upperBlinkScaleZ.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("upperCloseScaleX", eyeCfg.lidMotion.upperCloseScaleX.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("upperCloseScaleZ", eyeCfg.lidMotion.upperCloseScaleZ.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("upperHalfBaseOffsetSubtract", eyeCfg.lidMotion.upperHalfBaseOffsetSubtract.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("upperHalfNeutralSoftExtraOffset", eyeCfg.lidMotion.upperHalfNeutralSoftExtraOffset.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("upperHalfLookDownExtraOffset", eyeCfg.lidMotion.upperHalfLookDownExtraOffset.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("upperHalfScaredExtraOffset", eyeCfg.lidMotion.upperHalfScaredExtraOffset.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("upperHalfSlowWaveOffset", eyeCfg.lidMotion.upperHalfSlowWaveOffset.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("upperHalfScaleDefault", eyeCfg.lidMotion.upperHalfScaleDefault.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("upperHalfScaleNeutralSoft", eyeCfg.lidMotion.upperHalfScaleNeutralSoft.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("upperHalfScaleLookDown", eyeCfg.lidMotion.upperHalfScaleLookDown.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("upperHalfScaleScared", eyeCfg.lidMotion.upperHalfScaleScared.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("upperHappySoftOffset", eyeCfg.lidMotion.upperHappySoftOffset.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("upperHappyOpenOffset", eyeCfg.lidMotion.upperHappyOpenOffset.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("upperHappySoftScale", eyeCfg.lidMotion.upperHappySoftScale.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("upperHappyOpenScale", eyeCfg.lidMotion.upperHappyOpenScale.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("upperHappyScaleX", eyeCfg.lidMotion.upperHappyScaleX.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("upperHappyAngleBase", eyeCfg.lidMotion.upperHappyAngleBase.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("upperHappyAngleWave", eyeCfg.lidMotion.upperHappyAngleWave.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("upperHappySlowWaveOffset", eyeCfg.lidMotion.upperHappySlowWaveOffset.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("upperDefaultSlowWaveOffset", eyeCfg.lidMotion.upperDefaultSlowWaveOffset.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("lowerSideBiasX", eyeCfg.lidMotion.lowerSideBiasX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("lowerBlinkOffset", eyeCfg.lidMotion.lowerBlinkOffset.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("lowerBlinkScaleX", eyeCfg.lidMotion.lowerBlinkScaleX.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("lowerBlinkScaleZ", eyeCfg.lidMotion.lowerBlinkScaleZ.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("lowerCloseOffset", eyeCfg.lidMotion.lowerCloseOffset.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("lowerCloseScaleX", eyeCfg.lidMotion.lowerCloseScaleX.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("lowerCloseScaleZ", eyeCfg.lidMotion.lowerCloseScaleZ.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("lowerHalfOffset", eyeCfg.lidMotion.lowerHalfOffset.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("lowerHalfSlowWaveOffset", eyeCfg.lidMotion.lowerHalfSlowWaveOffset.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("lowerHalfScaleX", eyeCfg.lidMotion.lowerHalfScaleX.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("lowerHalfScaleZ", eyeCfg.lidMotion.lowerHalfScaleZ.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("lowerHappyAngleBase", eyeCfg.lidMotion.lowerHappyAngleBase.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("lowerHappyAngleWave", eyeCfg.lidMotion.lowerHappyAngleWave.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("lowerHappyOffset", eyeCfg.lidMotion.lowerHappyOffset.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("lowerHappySlowWaveOffset", eyeCfg.lidMotion.lowerHappySlowWaveOffset.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("lowerHappyScaleX", eyeCfg.lidMotion.lowerHappyScaleX.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("lowerHappyScaleZ", eyeCfg.lidMotion.lowerHappyScaleZ.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("lowerDefaultSlowWaveOffset", eyeCfg.lidMotion.lowerDefaultSlowWaveOffset.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("genericBlinkOffset", eyeCfg.lidMotion.genericBlinkOffset.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("genericBlinkScaleX", eyeCfg.lidMotion.genericBlinkScaleX.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("genericBlinkScaleZ", eyeCfg.lidMotion.genericBlinkScaleZ.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("genericCloseOffset", eyeCfg.lidMotion.genericCloseOffset.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("genericCloseScaleX", eyeCfg.lidMotion.genericCloseScaleX.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("genericCloseScaleZ", eyeCfg.lidMotion.genericCloseScaleZ.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("genericHalfOffset", eyeCfg.lidMotion.genericHalfOffset.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("genericHalfSlowWaveOffset", eyeCfg.lidMotion.genericHalfSlowWaveOffset.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("genericHalfScaleX", eyeCfg.lidMotion.genericHalfScaleX.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("genericHalfScaleZ", eyeCfg.lidMotion.genericHalfScaleZ.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("genericHappyAngleBase", eyeCfg.lidMotion.genericHappyAngleBase.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("genericHappyAngleWave", eyeCfg.lidMotion.genericHappyAngleWave.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("genericHappyOffset", eyeCfg.lidMotion.genericHappyOffset.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("genericHappySlowWaveOffset", eyeCfg.lidMotion.genericHappySlowWaveOffset.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("genericHappyScaleX", eyeCfg.lidMotion.genericHappyScaleX.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("genericHappyScaleZ", eyeCfg.lidMotion.genericHappyScaleZ.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("genericDefaultSlowWaveOffset", eyeCfg.lidMotion.genericDefaultSlowWaveOffset.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("genericDefaultScaleZBase", eyeCfg.lidMotion.genericDefaultScaleZBase.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("genericDefaultScaleZWaveAmplitude", eyeCfg.lidMotion.genericDefaultScaleZWaveAmplitude.ToString("F4", System.Globalization.CultureInfo.InvariantCulture))
+            ));
+            el.Add(new XElement("eyeMotion",
+                new XElement("sideBiasX", eyeCfg.eyeMotion.sideBiasX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("primaryWaveOffsetZ", eyeCfg.eyeMotion.primaryWaveOffsetZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("dirLeftOffsetX", eyeCfg.eyeMotion.dirLeftOffsetX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("dirRightOffsetX", eyeCfg.eyeMotion.dirRightOffsetX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("dirUpOffsetZ", eyeCfg.eyeMotion.dirUpOffsetZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("dirDownOffsetZ", eyeCfg.eyeMotion.dirDownOffsetZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("neutralSoftOffsetZ", eyeCfg.eyeMotion.neutralSoftOffsetZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("neutralLookDownOffsetZ", eyeCfg.eyeMotion.neutralLookDownOffsetZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("neutralGlanceWaveOffsetX", eyeCfg.eyeMotion.neutralGlanceWaveOffsetX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("neutralGlanceSideOffsetX", eyeCfg.eyeMotion.neutralGlanceSideOffsetX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("workFocusDownOffsetZ", eyeCfg.eyeMotion.workFocusDownOffsetZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("workFocusUpOffsetZ", eyeCfg.eyeMotion.workFocusUpOffsetZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("happySoftOffsetZ", eyeCfg.eyeMotion.happySoftOffsetZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("shockWideOffsetZ", eyeCfg.eyeMotion.shockWideOffsetZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("scaredWideOffsetZ", eyeCfg.eyeMotion.scaredWideOffsetZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("scaredWideWaveOffsetX", eyeCfg.eyeMotion.scaredWideWaveOffsetX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("scaredWideSideOffsetX", eyeCfg.eyeMotion.scaredWideSideOffsetX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("scaredFlinchOffsetZ", eyeCfg.eyeMotion.scaredFlinchOffsetZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("scaredFlinchWaveOffsetX", eyeCfg.eyeMotion.scaredFlinchWaveOffsetX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("scaredFlinchSideOffsetX", eyeCfg.eyeMotion.scaredFlinchSideOffsetX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("baseAngleWave", eyeCfg.eyeMotion.baseAngleWave.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("slowWaveOffsetZ", eyeCfg.eyeMotion.slowWaveOffsetZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("scaleXBase", eyeCfg.eyeMotion.scaleXBase.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("scaleXWaveAmplitude", eyeCfg.eyeMotion.scaleXWaveAmplitude.ToString("F4", System.Globalization.CultureInfo.InvariantCulture))
+            ));
+            el.Add(new XElement("pupilMotion",
+                new XElement("sideBiasX", eyeCfg.pupilMotion.sideBiasX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("slowWaveOffsetZ", eyeCfg.pupilMotion.slowWaveOffsetZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("dirLeftOffsetX", eyeCfg.pupilMotion.dirLeftOffsetX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("dirRightOffsetX", eyeCfg.pupilMotion.dirRightOffsetX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("dirUpOffsetZ", eyeCfg.pupilMotion.dirUpOffsetZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("dirDownOffsetZ", eyeCfg.pupilMotion.dirDownOffsetZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("neutralSoftOffsetZ", eyeCfg.pupilMotion.neutralSoftOffsetZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("neutralLookDownOffsetZ", eyeCfg.pupilMotion.neutralLookDownOffsetZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("neutralGlanceWaveOffsetX", eyeCfg.pupilMotion.neutralGlanceWaveOffsetX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("neutralGlanceSideOffsetX", eyeCfg.pupilMotion.neutralGlanceSideOffsetX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("workFocusDownOffsetZ", eyeCfg.pupilMotion.workFocusDownOffsetZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("workFocusUpOffsetZ", eyeCfg.pupilMotion.workFocusUpOffsetZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("happyOpenOffsetZ", eyeCfg.pupilMotion.happyOpenOffsetZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("shockWideOffsetZ", eyeCfg.pupilMotion.shockWideOffsetZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("scaredWideOffsetZ", eyeCfg.pupilMotion.scaredWideOffsetZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("scaredWideWaveOffsetX", eyeCfg.pupilMotion.scaredWideWaveOffsetX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("scaredWideSideOffsetX", eyeCfg.pupilMotion.scaredWideSideOffsetX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("scaredFlinchOffsetZ", eyeCfg.pupilMotion.scaredFlinchOffsetZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("scaredFlinchWaveOffsetX", eyeCfg.pupilMotion.scaredFlinchWaveOffsetX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("scaredFlinchSideOffsetX", eyeCfg.pupilMotion.scaredFlinchSideOffsetX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("transformAngleWave", eyeCfg.pupilMotion.transformAngleWave.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("finalWaveOffsetX", eyeCfg.pupilMotion.finalWaveOffsetX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("focusScaleBase", eyeCfg.pupilMotion.focusScaleBase.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("focusScaleWave", eyeCfg.pupilMotion.focusScaleWave.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("slightlyContractedScaleBase", eyeCfg.pupilMotion.slightlyContractedScaleBase.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("slightlyContractedScaleWave", eyeCfg.pupilMotion.slightlyContractedScaleWave.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("contractedScaleBase", eyeCfg.pupilMotion.contractedScaleBase.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("contractedScaleWave", eyeCfg.pupilMotion.contractedScaleWave.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("dilatedScaleBase", eyeCfg.pupilMotion.dilatedScaleBase.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("dilatedScaleWave", eyeCfg.pupilMotion.dilatedScaleWave.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("dilatedMaxScaleBase", eyeCfg.pupilMotion.dilatedMaxScaleBase.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("dilatedMaxScaleWave", eyeCfg.pupilMotion.dilatedMaxScaleWave.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("scaredPulseScaleBase", eyeCfg.pupilMotion.scaredPulseScaleBase.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("scaredPulseScaleWave", eyeCfg.pupilMotion.scaredPulseScaleWave.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("shockScaredMinScaleBase", eyeCfg.pupilMotion.shockScaredMinScaleBase.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("shockScaredMinScaleWave", eyeCfg.pupilMotion.shockScaredMinScaleWave.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("happyMaxScaleBase", eyeCfg.pupilMotion.happyMaxScaleBase.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("happyMaxScaleWave", eyeCfg.pupilMotion.happyMaxScaleWave.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("sleepingScale", eyeCfg.pupilMotion.sleepingScale.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("workFocusMaxScale", eyeCfg.pupilMotion.workFocusMaxScale.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("neutralSoftMaxScale", eyeCfg.pupilMotion.neutralSoftMaxScale.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("neutralLookDownMaxScale", eyeCfg.pupilMotion.neutralLookDownMaxScale.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("shockWideMinScaleBase", eyeCfg.pupilMotion.shockWideMinScaleBase.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("shockWideMinScaleWave", eyeCfg.pupilMotion.shockWideMinScaleWave.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("scaredWideMinScaleBase", eyeCfg.pupilMotion.scaredWideMinScaleBase.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("scaredWideMinScaleWave", eyeCfg.pupilMotion.scaredWideMinScaleWave.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("scaredFlinchMinScaleBase", eyeCfg.pupilMotion.scaredFlinchMinScaleBase.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("scaredFlinchMinScaleWave", eyeCfg.pupilMotion.scaredFlinchMinScaleWave.ToString("F4", System.Globalization.CultureInfo.InvariantCulture))
+            ));
 
             return el;
         }

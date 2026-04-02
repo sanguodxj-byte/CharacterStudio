@@ -73,7 +73,8 @@ namespace CharacterStudio.UI
             {
                 GUI.color = Color.gray;
                 Text.Anchor = TextAnchor.MiddleLeft;
-                Widgets.Label(searchRect.IndentedBy(4f), "CS_Studio_Browser_Search".Translate());
+                Rect placeholderRect = new Rect(searchRect.x + 4f, searchRect.y, searchRect.width - 8f, searchRect.height);
+                Widgets.Label(placeholderRect, "CS_Studio_Browser_Search".Translate());
                 GUI.color = Color.white;
                 Text.Anchor = TextAnchor.UpperLeft;
             }

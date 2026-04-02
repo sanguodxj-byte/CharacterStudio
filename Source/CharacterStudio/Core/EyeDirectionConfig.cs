@@ -27,6 +27,90 @@ namespace CharacterStudio.Core
     /// </summary>
     public class PawnEyeDirectionConfig
     {
+        public class EyeMotionConfig
+        {
+            public float sideBiasX = 0.0002f;
+            public float primaryWaveOffsetZ = 0.0004f;
+            public float dirLeftOffsetX = -0.0012f;
+            public float dirRightOffsetX = 0.0012f;
+            public float dirUpOffsetZ = -0.0010f;
+            public float dirDownOffsetZ = 0.0012f;
+            public float neutralSoftOffsetZ = 0.0005f;
+            public float neutralLookDownOffsetZ = 0.0010f;
+            public float neutralGlanceWaveOffsetX = 0.0008f;
+            public float neutralGlanceSideOffsetX = 0.00035f;
+            public float workFocusDownOffsetZ = 0.0016f;
+            public float workFocusUpOffsetZ = -0.0012f;
+            public float happySoftOffsetZ = -0.0006f;
+            public float shockWideOffsetZ = -0.0018f;
+            public float scaredWideOffsetZ = -0.0012f;
+            public float scaredWideWaveOffsetX = 0.0006f;
+            public float scaredWideSideOffsetX = 0.0003f;
+            public float scaredFlinchOffsetZ = 0.0008f;
+            public float scaredFlinchWaveOffsetX = 0.0007f;
+            public float scaredFlinchSideOffsetX = 0.00045f;
+            public float baseAngleWave = 0.15f;
+            public float slowWaveOffsetZ = 0.0004f;
+            public float scaleXBase = 1.01f;
+            public float scaleXWaveAmplitude = 0.01f;
+
+            public EyeMotionConfig Clone() => (EyeMotionConfig)MemberwiseClone();
+        }
+
+        public class PupilMotionConfig
+        {
+            public float sideBiasX = 0.000028f;
+            public float slowWaveOffsetZ = 0.00005f;
+            public float dirLeftOffsetX = -0.00018f;
+            public float dirRightOffsetX = 0.00018f;
+            public float dirUpOffsetZ = -0.00014f;
+            public float dirDownOffsetZ = 0.00016f;
+            public float neutralSoftOffsetZ = 0.00004f;
+            public float neutralLookDownOffsetZ = 0.00012f;
+            public float neutralGlanceWaveOffsetX = 0.00010f;
+            public float neutralGlanceSideOffsetX = 0.000045f;
+            public float workFocusDownOffsetZ = 0.00020f;
+            public float workFocusUpOffsetZ = -0.00015f;
+            public float happyOpenOffsetZ = -0.00003f;
+            public float shockWideOffsetZ = -0.00012f;
+            public float scaredWideOffsetZ = -0.00008f;
+            public float scaredWideWaveOffsetX = 0.00008f;
+            public float scaredWideSideOffsetX = 0.00004f;
+            public float scaredFlinchOffsetZ = 0.00008f;
+            public float scaredFlinchWaveOffsetX = 0.00009f;
+            public float scaredFlinchSideOffsetX = 0.000055f;
+            public float transformAngleWave = 0.35f;
+            public float finalWaveOffsetX = 0.00004f;
+            public float focusScaleBase = 0.94f;
+            public float focusScaleWave = 0.01f;
+            public float slightlyContractedScaleBase = 0.88f;
+            public float slightlyContractedScaleWave = 0.01f;
+            public float contractedScaleBase = 0.78f;
+            public float contractedScaleWave = 0.015f;
+            public float dilatedScaleBase = 1.12f;
+            public float dilatedScaleWave = 0.02f;
+            public float dilatedMaxScaleBase = 1.22f;
+            public float dilatedMaxScaleWave = 0.03f;
+            public float scaredPulseScaleBase = 1.16f;
+            public float scaredPulseScaleWave = 0.05f;
+            public float shockScaredMinScaleBase = 1.08f;
+            public float shockScaredMinScaleWave = 0.03f;
+            public float happyMaxScaleBase = 0.96f;
+            public float happyMaxScaleWave = 0.01f;
+            public float sleepingScale = 0.9f;
+            public float workFocusMaxScale = 0.98f;
+            public float neutralSoftMaxScale = 0.96f;
+            public float neutralLookDownMaxScale = 0.94f;
+            public float shockWideMinScaleBase = 1.18f;
+            public float shockWideMinScaleWave = 0.02f;
+            public float scaredWideMinScaleBase = 1.14f;
+            public float scaredWideMinScaleWave = 0.03f;
+            public float scaredFlinchMinScaleBase = 1.04f;
+            public float scaredFlinchMinScaleWave = 0.01f;
+
+            public PupilMotionConfig Clone() => (PupilMotionConfig)MemberwiseClone();
+        }
+
         public class LidMotionConfig
         {
             public float upperSideBiasX = 0.00035f;
@@ -142,6 +226,12 @@ namespace CharacterStudio.Core
         /// <summary>程序化眼睑/眨眼运动参数。</summary>
         public LidMotionConfig lidMotion = new LidMotionConfig();
 
+        /// <summary>程序化眼球运动参数。</summary>
+        public EyeMotionConfig eyeMotion = new EyeMotionConfig();
+
+        /// <summary>程序化瞳孔运动参数。</summary>
+        public PupilMotionConfig pupilMotion = new PupilMotionConfig();
+
         // ─────────────────────────────────────────────
         // 查询 API
         // ─────────────────────────────────────────────
@@ -192,6 +282,8 @@ namespace CharacterStudio.Core
             pupilMoveRange   = this.pupilMoveRange,
             upperLidMoveDown = this.upperLidMoveDown,
             lidMotion        = this.lidMotion?.Clone() ?? new LidMotionConfig(),
+            eyeMotion        = this.eyeMotion?.Clone() ?? new EyeMotionConfig(),
+            pupilMotion      = this.pupilMotion?.Clone() ?? new PupilMotionConfig(),
         };
     }
 }

@@ -14,8 +14,11 @@ namespace CharacterStudio.Rendering
     {
         private static readonly object initWarningLock = new object();
         private static readonly HashSet<string> initWarnings = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        public bool IsInitializedSuccessfully { get; private set; }
+
         public override void Init(GraphicRequest req)
         {
+            IsInitializedSuccessfully = false;
             this.data = req.graphicData;
             this.path = req.path;
             this.color = req.color;
@@ -53,12 +56,18 @@ namespace CharacterStudio.Rendering
 
             // 获取材质
             Material? mat = RuntimeAssetLoader.GetMaterialForTexture(tex, req.shader);
+
+            if (mat == null && !RuntimeAssetLoader.IsMainThread())
+            {
+                return;
+            }
             
             // 应用颜色
             if (mat != null)
             {
                 mat.color = this.color;
                 this.mat = mat; // Graphic_Single 直接使用 mat 字段
+                IsInitializedSuccessfully = true;
             }
             else
             {
@@ -69,6 +78,11 @@ namespace CharacterStudio.Rendering
 
         private void ApplyFallbackMaterial(Shader? requestedShader)
         {
+            if (!RuntimeAssetLoader.IsMainThread())
+            {
+                return;
+            }
+
             Material? fallbackMat = RuntimeAssetLoader.GetMaterialForTexture(
                 BaseContent.ClearTex,
                 requestedShader ?? ShaderDatabase.Transparent);
@@ -77,6 +91,7 @@ namespace CharacterStudio.Rendering
             {
                 fallbackMat.color = new Color(this.color.r, this.color.g, this.color.b, 0f);
                 this.mat = fallbackMat;
+                IsInitializedSuccessfully = true;
             }
         }
 

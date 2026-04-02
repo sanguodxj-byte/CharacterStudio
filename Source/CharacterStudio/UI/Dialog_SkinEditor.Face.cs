@@ -48,6 +48,16 @@ namespace CharacterStudio.UI
             return ($"CS_Studio_Face_LayeredPart_{partType}").Translate();
         }
 
+        private static string GetFaceMotionSectionLabel(string key)
+        {
+            return ($"CS_Studio_Face_MotionSection_{key}").Translate();
+        }
+
+        private static string GetFaceMotionLabel(string key)
+        {
+            return ($"CS_Studio_Face_Motion_{key}").Translate();
+        }
+
         private static string GetLayeredPartBufferKey(
             LayeredFacePartType partType,
             ExpressionType expression,
@@ -310,6 +320,17 @@ namespace CharacterStudio.UI
             DrawSelectedLayerExpressionMovementSection(ref y, width, workingSkin.layers[selectedLayerIndex]);
         }
 
+        internal void DrawFaceRuntimeTuningDialogContents(ref float y, float width)
+        {
+            PawnFaceConfig? fc = workingSkin.faceConfig;
+            if (fc == null)
+            {
+                return;
+            }
+
+            DrawFaceTuningSections(ref y, width, fc);
+        }
+
         private void OpenFaceWorkflowMenu()
         {
             if (workingSkin.faceConfig == null)
@@ -382,12 +403,42 @@ namespace CharacterStudio.UI
             }
         }
 
+        private void MoveOverlayOrder(PawnFaceConfig fc, LayeredFacePartType partType, string overlayId, int direction)
+        {
+            List<string> orderedIds = fc.GetOrderedOverlayIds(partType);
+            int currentIndex = orderedIds.FindIndex(id => string.Equals(id, overlayId, StringComparison.OrdinalIgnoreCase));
+            if (currentIndex < 0)
+            {
+                return;
+            }
+
+            int targetIndex = currentIndex + direction;
+            if (targetIndex < 0 || targetIndex >= orderedIds.Count)
+            {
+                return;
+            }
+
+            string currentId = orderedIds[currentIndex];
+            string targetId = orderedIds[targetIndex];
+            int currentOrder = fc.GetOverlayOrder(currentId, partType);
+            int targetOrder = fc.GetOverlayOrder(targetId, partType);
+
+            fc.SetOverlayOrder(currentId, targetOrder, partType);
+            fc.SetOverlayOrder(targetId, currentOrder, partType);
+            fc.NormalizeOverlayOrders();
+            layeredPartPathBuffer.Clear();
+            FaceRuntimeCompiler.ClearCache();
+            PawnRenderNodeWorker_FaceComponent.ClearCache();
+            PawnRenderNodeWorker_CustomLayer.ClearExternalGraphicCache();
+            isDirty = true;
+            RefreshPreview();
+        }
+
         private void DrawScannedOverlayMappingSection(PawnFaceConfig fc, ref float y, float width)
         {
             EnsureScannedOverlayCandidates(fc);
 
             UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_OverlayMapping_Title".Translate());
-            DrawPropertyHint(ref y, width, "CS_Studio_Face_OverlayMapping_Hint".Translate());
 
             if (!string.IsNullOrWhiteSpace(scannedOverlayCacheError))
             {
@@ -418,7 +469,7 @@ namespace CharacterStudio.UI
                     : "CS_Studio_Face_OverlayMapping_Suggested".Translate(candidate.SuggestedOverlayId).ToString())
                 : mappedOverlayId;
 
-            Rect rowRect = new Rect(0f, y, width, 22f);
+            Rect rowRect = new Rect(0f, y, width, 20f);
             Widgets.DrawBoxSolid(rowRect, UIHelper.AlternatingRowColor);
             GUI.color = UIHelper.BorderColor;
             Widgets.DrawBox(rowRect, 1);
@@ -426,17 +477,17 @@ namespace CharacterStudio.UI
 
             Text.Font = GameFont.Tiny;
             Text.Anchor = TextAnchor.MiddleLeft;
-            Widgets.Label(new Rect(6f, y, Mathf.Max(60f, width - 92f), 22f), candidate.FileName);
+            Widgets.Label(new Rect(6f, y, Mathf.Max(60f, width - 84f), 20f), candidate.FileName);
             Text.Anchor = TextAnchor.UpperLeft;
             Text.Font = GameFont.Small;
 
-            Rect buttonRect = new Rect(width - 84f, y + 1f, 84f, 20f);
+            Rect buttonRect = new Rect(width - 78f, y, 78f, 20f);
             if (UIHelper.DrawSelectionButton(buttonRect, displayLabel))
             {
                 OpenScannedOverlayMappingMenu(fc, candidate);
             }
 
-            y += 24f;
+            y += 21f;
         }
 
         private void EnsureScannedOverlayCandidates(PawnFaceConfig fc)
@@ -659,6 +710,12 @@ namespace CharacterStudio.UI
             string actualPath = existing?.texPath ?? string.Empty;
             bool enabled = existing?.enabled ?? !string.IsNullOrWhiteSpace(actualPath);
 
+            if (isOverlay)
+            {
+                DrawCompactOverlayPartRow(fc, ref y, width, partType, expression, resolvedOverlayId, existing, actualPath);
+                return;
+            }
+
             Rect partRowRect = new Rect(0f, y, width, 24f);
             Widgets.DrawBoxSolid(partRowRect,
                 !string.IsNullOrWhiteSpace(actualPath) ? UIHelper.AccentSoftColor : UIHelper.AlternatingRowColor);
@@ -671,6 +728,11 @@ namespace CharacterStudio.UI
                 new Rect(6f, y, 84f, 24f),
                 isOverlay ? resolvedOverlayId : GetLayeredPartEditorLabel(partType, normalizedSide));
             Text.Anchor = TextAnchor.UpperLeft;
+
+            if (isOverlay)
+            {
+                DrawOverlayOrderControls(fc, partType, resolvedOverlayId, ref y, width);
+            }
 
             Rect toggleRect = new Rect(92f, y + 3f, 24f, 18f);
             bool newEnabled = enabled;
@@ -744,6 +806,7 @@ namespace CharacterStudio.UI
 
                 FaceRuntimeCompiler.ClearCache();
                 PawnRenderNodeWorker_FaceComponent.ClearCache();
+                PawnRenderNodeWorker_CustomLayer.ClearExternalGraphicCache();
                 isDirty = true;
                 RefreshPreview();
                 existing = changedPart;
@@ -785,6 +848,7 @@ namespace CharacterStudio.UI
 
                     FaceRuntimeCompiler.ClearCache();
                     PawnRenderNodeWorker_FaceComponent.ClearCache();
+                    PawnRenderNodeWorker_CustomLayer.ClearExternalGraphicCache();
                     isDirty = true;
                     RefreshPreview();
                 }));
@@ -810,6 +874,7 @@ namespace CharacterStudio.UI
                 layeredPartPathBuffer[bufferKey] = string.Empty;
                 FaceRuntimeCompiler.ClearCache();
                 PawnRenderNodeWorker_FaceComponent.ClearCache();
+                PawnRenderNodeWorker_CustomLayer.ClearExternalGraphicCache();
                 isDirty = true;
                 RefreshPreview();
                 existing = null;
@@ -819,6 +884,120 @@ namespace CharacterStudio.UI
             }
 
             y += 26f;
+        }
+
+        private void DrawCompactOverlayPartRow(
+            PawnFaceConfig fc,
+            ref float y,
+            float width,
+            LayeredFacePartType partType,
+            ExpressionType expression,
+            string overlayId,
+            LayeredFacePartConfig? existing,
+            string actualPath)
+        {
+            Rect rowRect = new Rect(0f, y, width, 22f);
+            Widgets.DrawBoxSolid(rowRect,
+                !string.IsNullOrWhiteSpace(actualPath) ? UIHelper.AccentSoftColor : UIHelper.AlternatingRowColor);
+            GUI.color = UIHelper.BorderColor;
+            Widgets.DrawBox(rowRect, 1);
+            GUI.color = Color.white;
+
+            string displayPath = string.IsNullOrWhiteSpace(actualPath)
+                ? "—"
+                : Path.GetFileName(actualPath);
+
+            Text.Anchor = TextAnchor.MiddleLeft;
+            Widgets.Label(new Rect(6f, y, 74f, 22f), overlayId);
+
+            Text.Font = GameFont.Tiny;
+            GUI.color = string.IsNullOrWhiteSpace(actualPath) ? UIHelper.SubtleColor : Color.white;
+            Widgets.Label(new Rect(82f, y, Mathf.Max(60f, width - 192f), 22f), displayPath);
+            GUI.color = Color.white;
+            Text.Font = GameFont.Small;
+            Text.Anchor = TextAnchor.UpperLeft;
+
+            DrawOverlayOrderControls(fc, partType, overlayId, ref y, width);
+
+            if (UIHelper.DrawBrowseButton(new Rect(width - 44f, y, 20f, 20f), () =>
+            {
+                string browsePath = actualPath;
+                Find.WindowStack.Add(new Dialog_FileBrowser(browsePath, path =>
+                {
+                    fc.SetLayeredPart(partType, expression, path ?? string.Empty, overlayId, fc.GetOverlayOrder(overlayId, partType));
+
+                    LayeredFacePartConfig? changedPart = fc.GetLayeredPartConfig(partType, expression, overlayId);
+                    if (changedPart != null)
+                    {
+                        changedPart.enabled = !string.IsNullOrWhiteSpace(path);
+                    }
+
+                    layeredPartPathBuffer.Clear();
+                    FaceRuntimeCompiler.ClearCache();
+                    PawnRenderNodeWorker_FaceComponent.ClearCache();
+                    PawnRenderNodeWorker_CustomLayer.ClearExternalGraphicCache();
+                    isDirty = true;
+                    RefreshPreview();
+                }));
+            }))
+            {
+            }
+
+            if (UIHelper.DrawDangerButton(new Rect(width - 22f, y, 20f, 20f), tooltip: "CS_Studio_Clear".Translate(), onClick: () =>
+            {
+                fc.RemoveLayeredPart(partType, expression, overlayId);
+                layeredPartPathBuffer.Clear();
+                FaceRuntimeCompiler.ClearCache();
+                PawnRenderNodeWorker_FaceComponent.ClearCache();
+                PawnRenderNodeWorker_CustomLayer.ClearExternalGraphicCache();
+                isDirty = true;
+                RefreshPreview();
+            }))
+            {
+            }
+
+            y += 23f;
+        }
+
+        private void DrawOverlayOrderControls(PawnFaceConfig fc, LayeredFacePartType partType, string overlayId, ref float y, float width)
+        {
+            List<string> orderedIds = fc.GetOrderedOverlayIds(partType);
+            int currentIndex = orderedIds.FindIndex(id => string.Equals(id, overlayId, StringComparison.OrdinalIgnoreCase));
+            if (currentIndex < 0)
+            {
+                return;
+            }
+
+            int order = fc.GetOverlayOrder(overlayId, partType);
+            Rect labelRect = new Rect(width - 136f, y + 1f, 26f, 20f);
+            Rect valueRect = new Rect(width - 112f, y + 1f, 18f, 20f);
+            Rect upRect = new Rect(width - 90f, y + 1f, 20f, 20f);
+            Rect downRect = new Rect(width - 68f, y + 1f, 20f, 20f);
+
+            Text.Font = GameFont.Tiny;
+            GUI.color = UIHelper.SubtleColor;
+            Widgets.Label(labelRect, "CS_Studio_Face_OverlayOrder_Label".Translate());
+            GUI.color = Color.white;
+            Widgets.Label(valueRect, order.ToString());
+            Text.Font = GameFont.Small;
+
+            bool canMoveUp = currentIndex > 0;
+            bool canMoveDown = currentIndex < orderedIds.Count - 1;
+
+            GUI.enabled = canMoveUp;
+            if (Widgets.ButtonText(upRect, "↑"))
+            {
+                MoveOverlayOrder(fc, partType, overlayId, -1);
+            }
+            GUI.enabled = canMoveDown;
+            if (Widgets.ButtonText(downRect, "↓"))
+            {
+                MoveOverlayOrder(fc, partType, overlayId, 1);
+            }
+            GUI.enabled = true;
+
+            TooltipHandler.TipRegion(upRect, "CS_Studio_Face_OverlayOrder_MoveUp".Translate());
+            TooltipHandler.TipRegion(downRect, "CS_Studio_Face_OverlayOrder_MoveDown".Translate());
         }
 
         private void DrawEyeDirectionSection(PawnFaceConfig fc, ref float y, float width, bool includeHeader = true, bool includeTextureRows = true)
@@ -995,6 +1174,10 @@ namespace CharacterStudio.UI
 
         private void DrawEyeDirectionMovementControls(ref float y, float width, PawnEyeDirectionConfig eyeCfg, bool includeTextureRows)
         {
+            eyeCfg.eyeMotion ??= new PawnEyeDirectionConfig.EyeMotionConfig();
+            eyeCfg.pupilMotion ??= new PawnEyeDirectionConfig.PupilMotionConfig();
+            eyeCfg.lidMotion ??= new PawnEyeDirectionConfig.LidMotionConfig();
+
             y += 4f;
             float pupilRange = eyeCfg.pupilMoveRange;
             UIHelper.DrawPropertySlider(ref y, width,
@@ -1021,6 +1204,7 @@ namespace CharacterStudio.UI
 
             if (!includeTextureRows)
             {
+                DrawEyeMotionConfigSection(ref y, width, eyeCfg.eyeMotion, eyeCfg.pupilMotion);
                 return;
             }
 
@@ -1074,6 +1258,231 @@ namespace CharacterStudio.UI
                         isDirty = true;
                         RefreshPreview();
                     });
+            }
+
+            DrawEyeMotionConfigSection(ref y, width, eyeCfg.eyeMotion, eyeCfg.pupilMotion);
+        }
+
+        private void DrawEyeMotionConfigSection(ref float y, float width, PawnEyeDirectionConfig.EyeMotionConfig eyeMotion, PawnEyeDirectionConfig.PupilMotionConfig pupilMotion)
+        {
+            y += 6f;
+            UIHelper.DrawSectionTitle(ref y, width, GetFaceMotionSectionLabel("EyeMotion"));
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Eye_SideBiasX"), ref eyeMotion.sideBiasX, 0f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Eye_PrimaryWaveOffsetZ"), ref eyeMotion.primaryWaveOffsetZ, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Eye_DirLeftOffsetX"), ref eyeMotion.dirLeftOffsetX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Eye_DirRightOffsetX"), ref eyeMotion.dirRightOffsetX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Eye_DirUpOffsetZ"), ref eyeMotion.dirUpOffsetZ, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Eye_DirDownOffsetZ"), ref eyeMotion.dirDownOffsetZ, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Eye_NeutralSoftOffsetZ"), ref eyeMotion.neutralSoftOffsetZ, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Eye_NeutralLookDownOffsetZ"), ref eyeMotion.neutralLookDownOffsetZ, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Eye_NeutralGlanceWaveOffsetX"), ref eyeMotion.neutralGlanceWaveOffsetX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Eye_NeutralGlanceSideOffsetX"), ref eyeMotion.neutralGlanceSideOffsetX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Eye_WorkFocusDownOffsetZ"), ref eyeMotion.workFocusDownOffsetZ, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Eye_WorkFocusUpOffsetZ"), ref eyeMotion.workFocusUpOffsetZ, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Eye_HappySoftOffsetZ"), ref eyeMotion.happySoftOffsetZ, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Eye_ShockWideOffsetZ"), ref eyeMotion.shockWideOffsetZ, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Eye_ScaredWideOffsetZ"), ref eyeMotion.scaredWideOffsetZ, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Eye_ScaredWideWaveOffsetX"), ref eyeMotion.scaredWideWaveOffsetX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Eye_ScaredWideSideOffsetX"), ref eyeMotion.scaredWideSideOffsetX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Eye_ScaredFlinchOffsetZ"), ref eyeMotion.scaredFlinchOffsetZ, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Eye_ScaredFlinchWaveOffsetX"), ref eyeMotion.scaredFlinchWaveOffsetX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Eye_ScaredFlinchSideOffsetX"), ref eyeMotion.scaredFlinchSideOffsetX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Eye_BaseAngleWave"), ref eyeMotion.baseAngleWave, -2f, 2f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Eye_SlowWaveOffsetZ"), ref eyeMotion.slowWaveOffsetZ, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Eye_ScaleXBase"), ref eyeMotion.scaleXBase, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Eye_ScaleXWaveAmplitude"), ref eyeMotion.scaleXWaveAmplitude, 0f, 1f, "F4");
+
+            y += 6f;
+            UIHelper.DrawSectionTitle(ref y, width, GetFaceMotionSectionLabel("PupilMotion"));
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_SideBiasX"), ref pupilMotion.sideBiasX, 0f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_SlowWaveOffsetZ"), ref pupilMotion.slowWaveOffsetZ, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DirLeftOffsetX"), ref pupilMotion.dirLeftOffsetX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DirRightOffsetX"), ref pupilMotion.dirRightOffsetX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DirUpOffsetZ"), ref pupilMotion.dirUpOffsetZ, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DirDownOffsetZ"), ref pupilMotion.dirDownOffsetZ, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_NeutralSoftOffsetZ"), ref pupilMotion.neutralSoftOffsetZ, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_NeutralLookDownOffsetZ"), ref pupilMotion.neutralLookDownOffsetZ, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_NeutralGlanceWaveOffsetX"), ref pupilMotion.neutralGlanceWaveOffsetX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_NeutralGlanceSideOffsetX"), ref pupilMotion.neutralGlanceSideOffsetX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_WorkFocusDownOffsetZ"), ref pupilMotion.workFocusDownOffsetZ, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_WorkFocusUpOffsetZ"), ref pupilMotion.workFocusUpOffsetZ, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_HappyOpenOffsetZ"), ref pupilMotion.happyOpenOffsetZ, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_ShockWideOffsetZ"), ref pupilMotion.shockWideOffsetZ, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_ScaredWideOffsetZ"), ref pupilMotion.scaredWideOffsetZ, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_ScaredWideWaveOffsetX"), ref pupilMotion.scaredWideWaveOffsetX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_ScaredWideSideOffsetX"), ref pupilMotion.scaredWideSideOffsetX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_ScaredFlinchOffsetZ"), ref pupilMotion.scaredFlinchOffsetZ, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_ScaredFlinchWaveOffsetX"), ref pupilMotion.scaredFlinchWaveOffsetX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_ScaredFlinchSideOffsetX"), ref pupilMotion.scaredFlinchSideOffsetX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_TransformAngleWave"), ref pupilMotion.transformAngleWave, -2f, 2f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_FinalWaveOffsetX"), ref pupilMotion.finalWaveOffsetX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_FocusScaleBase"), ref pupilMotion.focusScaleBase, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DilatedScaleBase"), ref pupilMotion.dilatedScaleBase, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DilatedMaxScaleBase"), ref pupilMotion.dilatedMaxScaleBase, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_ScaredPulseScaleBase"), ref pupilMotion.scaredPulseScaleBase, 0f, 3f, "F4");
+        }
+
+        private void DrawFaceTuningSections(ref float y, float width, PawnFaceConfig fc)
+        {
+            fc.browMotion ??= new PawnFaceConfig.BrowMotionConfig();
+            fc.mouthMotion ??= new PawnFaceConfig.MouthMotionConfig();
+            fc.emotionOverlayMotion ??= new PawnFaceConfig.EmotionOverlayMotionConfig();
+            PawnEyeDirectionConfig eyeCfg = fc.eyeDirectionConfig ??= new PawnEyeDirectionConfig();
+            eyeCfg.lidMotion ??= new PawnEyeDirectionConfig.LidMotionConfig();
+
+            y += 6f;
+            UIHelper.DrawSectionTitle(ref y, width, GetFaceMotionSectionLabel("LidMotion"));
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperSideBiasX".Translate(), ref eyeCfg.lidMotion.upperSideBiasX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperBlinkScaleX".Translate(), ref eyeCfg.lidMotion.upperBlinkScaleX, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperBlinkScaleZ".Translate(), ref eyeCfg.lidMotion.upperBlinkScaleZ, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperCloseScaleX".Translate(), ref eyeCfg.lidMotion.upperCloseScaleX, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperCloseScaleZ".Translate(), ref eyeCfg.lidMotion.upperCloseScaleZ, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperHalfBaseOffsetSubtract".Translate(), ref eyeCfg.lidMotion.upperHalfBaseOffsetSubtract, 0f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperHalfSoftOffset".Translate(), ref eyeCfg.lidMotion.upperHalfNeutralSoftExtraOffset, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperHalfLookDownOffset".Translate(), ref eyeCfg.lidMotion.upperHalfLookDownExtraOffset, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperHalfScaredOffset".Translate(), ref eyeCfg.lidMotion.upperHalfScaredExtraOffset, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperHalfSlowWaveOffset".Translate(), ref eyeCfg.lidMotion.upperHalfSlowWaveOffset, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperHalfScaleDefault".Translate(), ref eyeCfg.lidMotion.upperHalfScaleDefault, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperHalfScaleSoft".Translate(), ref eyeCfg.lidMotion.upperHalfScaleNeutralSoft, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperHalfScaleLookDown".Translate(), ref eyeCfg.lidMotion.upperHalfScaleLookDown, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperHalfScaleScared".Translate(), ref eyeCfg.lidMotion.upperHalfScaleScared, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperHappyOffsetSoft".Translate(), ref eyeCfg.lidMotion.upperHappySoftOffset, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperHappyOffsetOpen".Translate(), ref eyeCfg.lidMotion.upperHappyOpenOffset, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperHappyScaleSoft".Translate(), ref eyeCfg.lidMotion.upperHappySoftScale, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperHappyScaleOpen".Translate(), ref eyeCfg.lidMotion.upperHappyOpenScale, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperHappyScaleX".Translate(), ref eyeCfg.lidMotion.upperHappyScaleX, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperHappyAngleBase".Translate(), ref eyeCfg.lidMotion.upperHappyAngleBase, -20f, 20f, "F3");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperHappyAngleWave".Translate(), ref eyeCfg.lidMotion.upperHappyAngleWave, -5f, 5f, "F3");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperHappySlowWaveOffset".Translate(), ref eyeCfg.lidMotion.upperHappySlowWaveOffset, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperDefaultSlowWaveOffset".Translate(), ref eyeCfg.lidMotion.upperDefaultSlowWaveOffset, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerSideBiasX".Translate(), ref eyeCfg.lidMotion.lowerSideBiasX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerBlinkOffset".Translate(), ref eyeCfg.lidMotion.lowerBlinkOffset, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerBlinkScaleX".Translate(), ref eyeCfg.lidMotion.lowerBlinkScaleX, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerBlinkScaleZ".Translate(), ref eyeCfg.lidMotion.lowerBlinkScaleZ, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerCloseOffset".Translate(), ref eyeCfg.lidMotion.lowerCloseOffset, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerCloseScaleX".Translate(), ref eyeCfg.lidMotion.lowerCloseScaleX, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerCloseScaleZ".Translate(), ref eyeCfg.lidMotion.lowerCloseScaleZ, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerHalfOffset".Translate(), ref eyeCfg.lidMotion.lowerHalfOffset, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerHalfSlowWaveOffset".Translate(), ref eyeCfg.lidMotion.lowerHalfSlowWaveOffset, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerHalfScaleX".Translate(), ref eyeCfg.lidMotion.lowerHalfScaleX, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerHalfScaleZ".Translate(), ref eyeCfg.lidMotion.lowerHalfScaleZ, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerHappyAngleBase".Translate(), ref eyeCfg.lidMotion.lowerHappyAngleBase, -20f, 20f, "F3");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerHappyAngleWave".Translate(), ref eyeCfg.lidMotion.lowerHappyAngleWave, -5f, 5f, "F3");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerHappyOffset".Translate(), ref eyeCfg.lidMotion.lowerHappyOffset, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerHappySlowWaveOffset".Translate(), ref eyeCfg.lidMotion.lowerHappySlowWaveOffset, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerHappyScaleX".Translate(), ref eyeCfg.lidMotion.lowerHappyScaleX, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerHappyScaleZ".Translate(), ref eyeCfg.lidMotion.lowerHappyScaleZ, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerDefaultSlowWaveOffset".Translate(), ref eyeCfg.lidMotion.lowerDefaultSlowWaveOffset, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericBlinkOffset".Translate(), ref eyeCfg.lidMotion.genericBlinkOffset, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericBlinkScaleX".Translate(), ref eyeCfg.lidMotion.genericBlinkScaleX, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericBlinkScaleZ".Translate(), ref eyeCfg.lidMotion.genericBlinkScaleZ, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericCloseOffset".Translate(), ref eyeCfg.lidMotion.genericCloseOffset, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericCloseScaleX".Translate(), ref eyeCfg.lidMotion.genericCloseScaleX, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericCloseScaleZ".Translate(), ref eyeCfg.lidMotion.genericCloseScaleZ, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericHalfOffset".Translate(), ref eyeCfg.lidMotion.genericHalfOffset, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericHalfSlowWaveOffset".Translate(), ref eyeCfg.lidMotion.genericHalfSlowWaveOffset, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericHalfScaleX".Translate(), ref eyeCfg.lidMotion.genericHalfScaleX, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericHalfScaleZ".Translate(), ref eyeCfg.lidMotion.genericHalfScaleZ, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericHappyAngleBase".Translate(), ref eyeCfg.lidMotion.genericHappyAngleBase, -20f, 20f, "F3");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericHappyAngleWave".Translate(), ref eyeCfg.lidMotion.genericHappyAngleWave, -5f, 5f, "F3");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericHappyOffset".Translate(), ref eyeCfg.lidMotion.genericHappyOffset, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericHappySlowWaveOffset".Translate(), ref eyeCfg.lidMotion.genericHappySlowWaveOffset, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericHappyScaleX".Translate(), ref eyeCfg.lidMotion.genericHappyScaleX, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericHappyScaleZ".Translate(), ref eyeCfg.lidMotion.genericHappyScaleZ, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericDefaultSlowWaveOffset".Translate(), ref eyeCfg.lidMotion.genericDefaultSlowWaveOffset, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericDefaultScaleZBase".Translate(), ref eyeCfg.lidMotion.genericDefaultScaleZBase, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Lid_GenericDefaultScaleZWaveAmplitude"), ref eyeCfg.lidMotion.genericDefaultScaleZWaveAmplitude, 0f, 1f, "F4");
+
+            y += 6f;
+            UIHelper.DrawSectionTitle(ref y, width, GetFaceMotionSectionLabel("BrowMotion"));
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_AngryAngleBase"), ref fc.browMotion.angryAngleBase, -20f, 20f, "F3");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_AngryAngleWave"), ref fc.browMotion.angryAngleWave, -5f, 5f, "F3");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_AngryOffsetZBase"), ref fc.browMotion.angryOffsetZBase, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_AngrySlowWaveOffsetZ"), ref fc.browMotion.angrySlowWaveOffsetZ, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_AngryScaleX"), ref fc.browMotion.angryScaleX, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_AngryScaleZ"), ref fc.browMotion.angryScaleZ, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_SadAngleBase"), ref fc.browMotion.sadAngleBase, -20f, 20f, "F3");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_SadAngleWave"), ref fc.browMotion.sadAngleWave, -5f, 5f, "F3");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_SadOffsetZBase"), ref fc.browMotion.sadOffsetZBase, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_SadSlowWaveOffsetZ"), ref fc.browMotion.sadSlowWaveOffsetZ, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_SadScaleX"), ref fc.browMotion.sadScaleX, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_SadScaleZ"), ref fc.browMotion.sadScaleZ, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_HappyAngleBase"), ref fc.browMotion.happyAngleBase, -20f, 20f, "F3");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_HappyAngleWave"), ref fc.browMotion.happyAngleWave, -5f, 5f, "F3");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_HappyOffsetZBase"), ref fc.browMotion.happyOffsetZBase, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_HappySlowWaveOffsetZ"), ref fc.browMotion.happySlowWaveOffsetZ, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_HappyScaleX"), ref fc.browMotion.happyScaleX, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_HappyScaleZ"), ref fc.browMotion.happyScaleZ, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_DefaultSlowWaveOffsetZ"), ref fc.browMotion.defaultSlowWaveOffsetZ, -0.02f, 0.02f, "F6");
+
+            y += 6f;
+            UIHelper.DrawSectionTitle(ref y, width, GetFaceMotionSectionLabel("MouthMotion"));
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_SmileAngleWave"), ref fc.mouthMotion.smileAngleWave, -5f, 5f, "F3");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_SmileOffsetZBase"), ref fc.mouthMotion.smileOffsetZBase, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_SmilePrimaryWaveOffsetZ"), ref fc.mouthMotion.smilePrimaryWaveOffsetZ, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_SmileScaleXBase"), ref fc.mouthMotion.smileScaleXBase, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_SmileScaleXWave"), ref fc.mouthMotion.smileScaleXWave, 0f, 1f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_SmileScaleZ"), ref fc.mouthMotion.smileScaleZ, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_OpenAngleWave"), ref fc.mouthMotion.openAngleWave, -5f, 5f, "F3");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_OpenOffsetZBase"), ref fc.mouthMotion.openOffsetZBase, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_OpenPrimaryWaveOffsetZ"), ref fc.mouthMotion.openPrimaryWaveOffsetZ, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_OpenScaleX"), ref fc.mouthMotion.openScaleX, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_OpenScaleZBase"), ref fc.mouthMotion.openScaleZBase, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_OpenScaleZWave"), ref fc.mouthMotion.openScaleZWave, 0f, 1f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_DownAngleBase"), ref fc.mouthMotion.downAngleBase, -20f, 20f, "F3");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_DownAngleWave"), ref fc.mouthMotion.downAngleWave, -5f, 5f, "F3");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_DownOffsetZBase"), ref fc.mouthMotion.downOffsetZBase, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_DownSlowWaveOffsetZ"), ref fc.mouthMotion.downSlowWaveOffsetZ, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_DownScaleX"), ref fc.mouthMotion.downScaleX, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_DownScaleZ"), ref fc.mouthMotion.downScaleZ, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_SleepOffsetZ"), ref fc.mouthMotion.sleepOffsetZ, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_SleepScaleX"), ref fc.mouthMotion.sleepScaleX, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_SleepScaleZ"), ref fc.mouthMotion.sleepScaleZ, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_EatingAngleWave"), ref fc.mouthMotion.eatingAngleWave, -5f, 5f, "F3");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_EatingOffsetZBase"), ref fc.mouthMotion.eatingOffsetZBase, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_EatingPrimaryWaveOffsetZ"), ref fc.mouthMotion.eatingPrimaryWaveOffsetZ, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_EatingScaleX"), ref fc.mouthMotion.eatingScaleX, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_EatingScaleZBase"), ref fc.mouthMotion.eatingScaleZBase, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_EatingScaleZWave"), ref fc.mouthMotion.eatingScaleZWave, 0f, 1f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_ShockScaredAngleWave"), ref fc.mouthMotion.shockScaredAngleWave, -5f, 5f, "F3");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_ShockScaredOffsetZBase"), ref fc.mouthMotion.shockScaredOffsetZBase, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_ShockScaredPrimaryWaveOffsetZ"), ref fc.mouthMotion.shockScaredPrimaryWaveOffsetZ, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_ShockScaredScaleX"), ref fc.mouthMotion.shockScaredScaleX, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_ShockScaredScaleZBase"), ref fc.mouthMotion.shockScaredScaleZBase, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_ShockScaredScaleZWave"), ref fc.mouthMotion.shockScaredScaleZWave, 0f, 1f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_DefaultSlowWaveOffsetZ"), ref fc.mouthMotion.defaultSlowWaveOffsetZ, -0.02f, 0.02f, "F6");
+
+            y += 6f;
+            UIHelper.DrawSectionTitle(ref y, width, GetFaceMotionSectionLabel("EmotionOverlayMotion"));
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Emotion_BlushPulseBase"), ref fc.emotionOverlayMotion.blushPulseBase, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Emotion_BlushPulseWave"), ref fc.emotionOverlayMotion.blushPulseWave, 0f, 1f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Emotion_BlushOffsetZBase"), ref fc.emotionOverlayMotion.blushOffsetZBase, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Emotion_BlushSlowWaveOffsetZ"), ref fc.emotionOverlayMotion.blushSlowWaveOffsetZ, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Emotion_BlushScaleZBase"), ref fc.emotionOverlayMotion.blushScaleZBase, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Emotion_BlushScaleZWave"), ref fc.emotionOverlayMotion.blushScaleZWave, 0f, 1f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Emotion_TearPulseBase"), ref fc.emotionOverlayMotion.tearPulseBase, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Emotion_TearPulseWave"), ref fc.emotionOverlayMotion.tearPulseWave, 0f, 1f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Emotion_TearAngleWave"), ref fc.emotionOverlayMotion.tearAngleWave, -5f, 5f, "F3");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Emotion_TearOffsetZBase"), ref fc.emotionOverlayMotion.tearOffsetZBase, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Emotion_TearPrimaryWaveOffsetZ"), ref fc.emotionOverlayMotion.tearPrimaryWaveOffsetZ, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Emotion_SweatPulseBase"), ref fc.emotionOverlayMotion.sweatPulseBase, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Emotion_SweatPulseWave"), ref fc.emotionOverlayMotion.sweatPulseWave, 0f, 1f, "F4");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Emotion_SweatAngleWave"), ref fc.emotionOverlayMotion.sweatAngleWave, -10f, 10f, "F3");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Emotion_SweatOffsetXWave"), ref fc.emotionOverlayMotion.sweatOffsetXWave, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Emotion_SweatOffsetZBase"), ref fc.emotionOverlayMotion.sweatOffsetZBase, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Emotion_SweatSlowWaveOffsetZ"), ref fc.emotionOverlayMotion.sweatSlowWaveOffsetZ, -0.02f, 0.02f, "F6");
+        }
+
+        private void DrawFloatProperty(ref float y, float width, string label, ref float value, float min, float max, string format)
+        {
+            float edited = value;
+            UIHelper.DrawPropertySlider(ref y, width, label, ref edited, min, max, format);
+            if (!Mathf.Approximately(edited, value))
+            {
+                value = edited;
+                FaceRuntimeCompiler.ClearCache();
+                isDirty = true;
+                RefreshPreview();
             }
         }
 

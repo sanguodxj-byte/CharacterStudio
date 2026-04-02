@@ -391,7 +391,7 @@ namespace CharacterStudio.UI
             if (llmCharacterGenerating) return;
 
             var settings = LlmSettingsRepository.GetOrLoad();
-            if (!settings.enabled || !settings.IsConfigured)
+            if (!settings.IsAvailable)
             {
                 ShowStatus("CS_LLM_Settings_NotConfigured".Translate());
                 Find.WindowStack.Add(new Dialog_LlmSettings());

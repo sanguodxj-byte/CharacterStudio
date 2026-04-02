@@ -94,6 +94,95 @@
 - 导出时可以按“纯外观包”或更完整的角色包来组织内容。
 - 导出前有素材权利确认步骤，说明这个工具默认面向可发布、可分发的创作场景。
 
+## 给扩展模组作者的接口说明
+
+Character Studio 现在已经开放了几条面向外部模组的稳定入口，适合做联动、运行时扩展或自定义编辑器增强。
+
+### 1. 通过 `CharacterStudioAPI` 读写运行时状态
+
+你可以直接使用 `CharacterStudio.Core.CharacterStudioAPI`：
+
+- 查询 Pawn 是否已被 Character Studio 接管
+- 获取当前生效皮肤与技能 Loadout
+- 注册或替换运行时 `PawnSkinDef`
+- 主动授予 / 撤销技能
+
+### 2. 订阅全局事件
+
+目前已开放这些全局事件：
+
+- `CharacterStudioAPI.SkinChangedGlobal`
+- `CharacterStudioAPI.AbilitiesGrantedGlobal`
+- `CharacterStudioAPI.AbilitiesRevokedGlobal`
+- `CharacterStudioAPI.RuntimeSkinRegisteredGlobal`
+
+适合做“皮肤应用后联动特效”“技能授予后同步自定义状态”“运行时皮肤注册后建立额外索引”这类扩展。
+
+### 3. 为每个图层追加外部动画
+
+现在可以通过 `CharacterStudioAPI.RegisterLayerAnimationProvider(...)` 给每个 `PawnLayerConfig` 追加程序化动画。你返回的是**增量**，会叠加在 Character Studio 自带图层动画之后，而不是替换原逻辑。
+
+如果你只想处理部分图层，推荐使用带 matcher 的重载，让 provider 只在命中的图层上执行，避免每个 provider 对所有图层全量运行。
+
+示例：让名为 `Tail_Main` 的图层持续摆动，让 `Ear_*` 图层在预览和游戏里带一点呼吸感缩放。
+
+```csharp
+using CharacterStudio.Core;
+using UnityEngine;
+using Verse;
+
+[StaticConstructorOnStartup]
+public static class MyCharacterStudioBridge
+{
+    static MyCharacterStudioBridge()
+    {
+        CharacterStudioAPI.RegisterLayerAnimationProvider(
+            "my-mod.layer-anim",
+            context =>
+                context.layer != null
+                && ((context.layer.layerName ?? string.Empty) == "Tail_Main"
+                    || (context.layer.layerName ?? string.Empty).StartsWith("Ear_")),
+            AnimateLayer);
+    }
+
+    private static CharacterStudioLayerAnimationResult AnimateLayer(CharacterStudioLayerAnimationContext context)
+    {
+        if (context.layer == null || context.pawn == null)
+        {
+            return CharacterStudioLayerAnimationResult.Identity();
+        }
+
+        string layerName = context.layer.layerName ?? string.Empty;
+        float time = context.currentTick / 60f;
+
+        if (layerName == "Tail_Main")
+        {
+            float angle = Mathf.Sin(time * 2.2f) * 9f;
+            Vector3 offset = new Vector3(Mathf.Sin(time * 2.2f) * 0.01f, 0f, 0f);
+            return new CharacterStudioLayerAnimationResult(angle, offset, Vector3.one);
+        }
+
+        if (layerName.StartsWith("Ear_"))
+        {
+            float pulse = 1f + Mathf.Sin(time * 1.4f) * 0.03f;
+            return new CharacterStudioLayerAnimationResult(0f, Vector3.zero, new Vector3(pulse, 1f, pulse));
+        }
+
+        return CharacterStudioLayerAnimationResult.Identity();
+    }
+}
+```
+
+`CharacterStudioLayerAnimationContext` 里当前会提供这些信息：
+
+- `pawn`：当前正在渲染的 Pawn
+- `layer`：当前图层配置（`PawnLayerConfig`）
+- `facing`：当前朝向
+- `currentTick`：当前渲染 Tick
+- `isPreview`：是否处于非 Playing 的预览环境
+
+因此你可以按 `layer.layerName`、`layer.role`、`anchorTag`、`pawn.Faction` 或自定义组件状态来决定是否追加动画。
+
 ## 一句话总结
 
 如果你想要的是“在 RimWorld 里直接把角色外观做出来，还能顺手打包成能分享的模组”，那 Character Studio 做的正是这件事。

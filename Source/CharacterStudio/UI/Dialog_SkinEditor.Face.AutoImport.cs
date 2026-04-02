@@ -349,13 +349,14 @@ namespace CharacterStudio.UI
                     string sourceStem,
                     string? overlayId = null,
                     LayeredFacePartSide side = LayeredFacePartSide.None,
-                    Rot4 facing = default)
+                    Rot4? facing = null)
                 {
+                    Rot4 resolvedFacing = facing ?? Rot4.South;
                     ResolveAutoImportDirectionalPaths(
                         detectedFilePathMap,
                         texturePath,
                         sourceStem,
-                        facing,
+                        resolvedFacing,
                         out string texPathSouth,
                         out string texPathEast,
                         out string texPathNorth,
@@ -1224,9 +1225,8 @@ namespace CharacterStudio.UI
                     return 50.05f;
                 case LayeredFacePartType.Hair:
                 {
-                    if (overlayId.Contains("front")) return 50.15f;
-                    if (overlayId.Contains("back")) return 49.99f;
-                    return 50.32f;
+                    if (overlayId.Contains("back")) return 50.31f;
+                    return 50.15f;
                 }
                 case LayeredFacePartType.Eye:
                     return 50.12f;
@@ -1604,6 +1604,35 @@ namespace CharacterStudio.UI
             texPathNorth = string.Empty;
             recognizedStems = new List<string>();
 
+            if (sourceStem.StartsWith("Hair_", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!string.IsNullOrWhiteSpace(texturePath))
+                {
+                    string normalizedStem = sourceStem.Trim();
+                    if (normalizedStem.EndsWith("_north", StringComparison.OrdinalIgnoreCase))
+                    {
+                        texPathNorth = texturePath;
+                    }
+                    else if (normalizedStem.EndsWith("_east", StringComparison.OrdinalIgnoreCase)
+                        || normalizedStem.EndsWith("_west", StringComparison.OrdinalIgnoreCase)
+                        || normalizedStem.EndsWith("_side", StringComparison.OrdinalIgnoreCase))
+                    {
+                        texPathEast = texturePath;
+                    }
+                    else
+                    {
+                        texPathSouth = texturePath;
+                    }
+                }
+
+                if (!string.IsNullOrWhiteSpace(sourceStem))
+                {
+                    recognizedStems.Add(sourceStem);
+                }
+
+                return;
+            }
+
             string directionalStem = StripViewDirectionalSuffix(sourceStem);
             bool sourceHasDirection = !directionalStem.Equals(sourceStem, StringComparison.OrdinalIgnoreCase);
             string baseStem = sourceHasDirection ? directionalStem : sourceStem;
@@ -1613,11 +1642,11 @@ namespace CharacterStudio.UI
                 new KeyValuePair<string, DirectionAssignment>(baseStem, DirectionAssignment.South),
                 new KeyValuePair<string, DirectionAssignment>(baseStem + "_south", DirectionAssignment.South),
                 new KeyValuePair<string, DirectionAssignment>(baseStem + "_front", DirectionAssignment.South),
+                new KeyValuePair<string, DirectionAssignment>(baseStem + "_back", DirectionAssignment.South),
                 new KeyValuePair<string, DirectionAssignment>(baseStem + "_east", DirectionAssignment.East),
                 new KeyValuePair<string, DirectionAssignment>(baseStem + "_west", DirectionAssignment.East),
                 new KeyValuePair<string, DirectionAssignment>(baseStem + "_side", DirectionAssignment.East),
-                new KeyValuePair<string, DirectionAssignment>(baseStem + "_north", DirectionAssignment.North),
-                new KeyValuePair<string, DirectionAssignment>(baseStem + "_back", DirectionAssignment.North)
+                new KeyValuePair<string, DirectionAssignment>(baseStem + "_north", DirectionAssignment.North)
             };
 
             foreach (KeyValuePair<string, DirectionAssignment> candidate in candidates)
@@ -1702,8 +1731,7 @@ namespace CharacterStudio.UI
 
         private static void TryParseViewFacingToken(string token, ref Rot4 facing)
         {
-            if (token.Equals("north", StringComparison.OrdinalIgnoreCase)
-                || token.Equals("back", StringComparison.OrdinalIgnoreCase))
+            if (token.Equals("north", StringComparison.OrdinalIgnoreCase))
             {
                 facing = Rot4.North;
                 return;
@@ -1718,6 +1746,7 @@ namespace CharacterStudio.UI
             }
 
             if (token.Equals("south", StringComparison.OrdinalIgnoreCase)
+                || token.Equals("back", StringComparison.OrdinalIgnoreCase)
                 || token.Equals("front", StringComparison.OrdinalIgnoreCase))
             {
                 facing = Rot4.South;
@@ -1862,7 +1891,7 @@ namespace CharacterStudio.UI
                 + "\n\n说明：paired 部件的 left / right 会作为左右独立层导入；_east / _west 会写入侧视资源，_north 会写入后视资源，Base 或 _south 会写入正视资源；仍未直接映射的命名才会保留在派生文件列表中。"
                 + "\n分层面部条目会同步写入图层编辑器中的 [Face] 图层，左右独立部件会拆分为独立图层，后续可直接调整层级、位置与显示。";
 
-            Find.WindowStack.Add(new Dialog_MessageBox(summary));
+            Find.WindowStack.Add(new Dialog_CopyableText("分层面部自动导入摘要", summary));
         }
     }
 }

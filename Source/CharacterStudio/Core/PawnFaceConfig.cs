@@ -321,6 +321,105 @@ namespace CharacterStudio.Core
     /// </summary>
     public class PawnFaceConfig
     {
+        public class BrowMotionConfig
+        {
+            public float angryAngleBase = -4.5f;
+            public float angryAngleWave = 0.6f;
+            public float angryOffsetZBase = -0.004f;
+            public float angrySlowWaveOffsetZ = 0.0008f;
+            public float angryScaleX = 1.04f;
+            public float angryScaleZ = 0.97f;
+
+            public float sadAngleBase = 3.25f;
+            public float sadAngleWave = 0.45f;
+            public float sadOffsetZBase = 0.0045f;
+            public float sadSlowWaveOffsetZ = 0.0008f;
+            public float sadScaleX = 1.02f;
+            public float sadScaleZ = 0.98f;
+
+            public float happyAngleBase = -1.5f;
+            public float happyAngleWave = 0.25f;
+            public float happyOffsetZBase = -0.0015f;
+            public float happySlowWaveOffsetZ = 0.0004f;
+            public float happyScaleX = 1.03f;
+            public float happyScaleZ = 0.97f;
+
+            public float defaultSlowWaveOffsetZ = 0.0006f;
+
+            public BrowMotionConfig Clone() => (BrowMotionConfig)MemberwiseClone();
+        }
+
+        public class MouthMotionConfig
+        {
+            public float smileAngleWave = 0.6f;
+            public float smileOffsetZBase = -0.001f;
+            public float smilePrimaryWaveOffsetZ = 0.0006f;
+            public float smileScaleXBase = 1.06f;
+            public float smileScaleXWave = 0.02f;
+            public float smileScaleZ = 0.94f;
+
+            public float openAngleWave = 0.8f;
+            public float openOffsetZBase = 0.004f;
+            public float openPrimaryWaveOffsetZ = 0.0015f;
+            public float openScaleX = 1.03f;
+            public float openScaleZBase = 1.14f;
+            public float openScaleZWave = 0.04f;
+
+            public float downAngleBase = -0.75f;
+            public float downAngleWave = 0.3f;
+            public float downOffsetZBase = 0.0025f;
+            public float downSlowWaveOffsetZ = 0.0006f;
+            public float downScaleX = 0.99f;
+            public float downScaleZ = 0.90f;
+
+            public float sleepOffsetZ = 0.002f;
+            public float sleepScaleX = 0.97f;
+            public float sleepScaleZ = 0.84f;
+
+            public float eatingAngleWave = 1.25f;
+            public float eatingOffsetZBase = 0.002f;
+            public float eatingPrimaryWaveOffsetZ = 0.001f;
+            public float eatingScaleX = 1.01f;
+            public float eatingScaleZBase = 1.05f;
+            public float eatingScaleZWave = 0.04f;
+
+            public float shockScaredAngleWave = 0.75f;
+            public float shockScaredOffsetZBase = 0.0032f;
+            public float shockScaredPrimaryWaveOffsetZ = 0.001f;
+            public float shockScaredScaleX = 1.02f;
+            public float shockScaredScaleZBase = 1.10f;
+            public float shockScaredScaleZWave = 0.03f;
+
+            public float defaultSlowWaveOffsetZ = 0.0005f;
+
+            public MouthMotionConfig Clone() => (MouthMotionConfig)MemberwiseClone();
+        }
+
+        public class EmotionOverlayMotionConfig
+        {
+            public float blushPulseBase = 1.04f;
+            public float blushPulseWave = 0.05f;
+            public float blushOffsetZBase = -0.001f;
+            public float blushSlowWaveOffsetZ = 0.001f;
+            public float blushScaleZBase = 1.02f;
+            public float blushScaleZWave = 0.02f;
+
+            public float tearPulseBase = 1.01f;
+            public float tearPulseWave = 0.02f;
+            public float tearAngleWave = 0.5f;
+            public float tearOffsetZBase = 0.002f;
+            public float tearPrimaryWaveOffsetZ = 0.0015f;
+
+            public float sweatPulseBase = 1f;
+            public float sweatPulseWave = 0.03f;
+            public float sweatAngleWave = 2.5f;
+            public float sweatOffsetXWave = 0.0025f;
+            public float sweatOffsetZBase = 0.0015f;
+            public float sweatSlowWaveOffsetZ = 0.001f;
+
+            public EmotionOverlayMotionConfig Clone() => (EmotionOverlayMotionConfig)MemberwiseClone();
+        }
+
         public bool enabled = false;
 
         /// <summary>表情工作流模式：整脸换图 / 分层动态</summary>
@@ -340,6 +439,10 @@ namespace CharacterStudio.Core
         /// 空值安全：渲染与编辑器侧均需做 null 防护。
         /// </summary>
         public PawnEyeDirectionConfig? eyeDirectionConfig = null;
+
+        public BrowMotionConfig browMotion = new BrowMotionConfig();
+        public MouthMotionConfig mouthMotion = new MouthMotionConfig();
+        public EmotionOverlayMotionConfig emotionOverlayMotion = new EmotionOverlayMotionConfig();
 
         // Dictionary 缓存，首次 GetExpression 时懒初始化
         private Dictionary<ExpressionType, ExpressionTexPath>? _lookupCache;
@@ -363,7 +466,8 @@ namespace CharacterStudio.Core
 
         public static bool IsOverlayPart(LayeredFacePartType partType)
         {
-            return partType == LayeredFacePartType.Overlay || partType == LayeredFacePartType.Hair;
+            return partType == LayeredFacePartType.Overlay
+                || partType == LayeredFacePartType.Hair;
         }
 
         public static bool SupportsSideSpecificParts(LayeredFacePartType partType)
@@ -434,6 +538,9 @@ namespace CharacterStudio.Core
 
         public static LayeredFacePartType GetOverlayDisplayPartType(string? overlayId, LayeredFacePartType originalPartType = LayeredFacePartType.Overlay)
         {
+            if (originalPartType == LayeredFacePartType.Hair)
+                return LayeredFacePartType.Hair;
+
             switch (GetOverlayKind(overlayId))
             {
                 case LayeredOverlayKind.Blush:
@@ -1372,6 +1479,9 @@ namespace CharacterStudio.Core
 
             // 克隆眼睛方向配置（若存在）
             clone.eyeDirectionConfig = this.eyeDirectionConfig?.Clone();
+            clone.browMotion = this.browMotion?.Clone() ?? new BrowMotionConfig();
+            clone.mouthMotion = this.mouthMotion?.Clone() ?? new MouthMotionConfig();
+            clone.emotionOverlayMotion = this.emotionOverlayMotion?.Clone() ?? new EmotionOverlayMotionConfig();
             // _lookupCache 保持 null，首次使用时懒初始化
             return clone;
         }

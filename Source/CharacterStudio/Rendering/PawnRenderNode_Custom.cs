@@ -88,6 +88,18 @@ namespace CharacterStudio.Rendering
         /// <summary>程序化表情透明度是否已完成首次同步</summary>
         public bool hasProgrammaticAlphaInitialized = false;
 
+        /// <summary>外部图层动画上次更新 Tick</summary>
+        public int lastExternalLayerAnimationTick = int.MinValue;
+
+        /// <summary>外部图层动画附加旋转</summary>
+        public float currentExternalLayerAngle = 0f;
+
+        /// <summary>外部图层动画附加位移</summary>
+        public Vector3 currentExternalLayerOffset = Vector3.zero;
+
+        /// <summary>外部图层动画附加缩放乘数</summary>
+        public Vector3 currentExternalLayerScale = Vector3.one;
+
         public PawnRenderNode_Custom(Pawn pawn, PawnRenderNodeProperties props, PawnRenderTree tree)
             : base(pawn, props, tree)
         {

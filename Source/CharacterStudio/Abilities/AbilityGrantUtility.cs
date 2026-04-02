@@ -16,6 +16,9 @@ namespace CharacterStudio.Abilities
     /// </summary>
     public static class AbilityGrantUtility
     {
+        public static event Action<Pawn, IReadOnlyCollection<string>>? AbilitiesGrantedGlobal;
+        public static event Action<Pawn, IReadOnlyCollection<string>>? AbilitiesRevokedGlobal;
+
         // 追踪已授予给每个 Pawn 的 CS 技能 defName，用于撤销
         private static readonly Dictionary<int, HashSet<string>> grantedAbilityNames =
             new Dictionary<int, HashSet<string>>();
@@ -52,6 +55,7 @@ namespace CharacterStudio.Abilities
                 return;
 
             var grantedSet = GetOrCreateGrantedSet(pawn);
+            List<string> newlyGrantedAbilityNames = new List<string>();
 
             foreach (var modAbility in abilities)
             {
@@ -68,6 +72,7 @@ namespace CharacterStudio.Abilities
 
                     pawn.abilities.GainAbility(abilityDef);
                     grantedSet.Add(modAbility.defName);
+                    newlyGrantedAbilityNames.Add(modAbility.defName);
 
                     if (Prefs.DevMode)
                         Log.Message($"[CharacterStudio] 已授予技能 {modAbility.label ?? modAbility.defName} 给 {pawn.LabelShort}");
@@ -76,6 +81,11 @@ namespace CharacterStudio.Abilities
                 {
                     Log.Warning($"[CharacterStudio] 授予技能 {modAbility.defName} 时出错: {ex.Message}");
                 }
+            }
+
+            if (newlyGrantedAbilityNames.Count > 0)
+            {
+                AbilitiesGrantedGlobal?.Invoke(pawn, newlyGrantedAbilityNames);
             }
         }
 
@@ -101,6 +111,8 @@ namespace CharacterStudio.Abilities
             int pawnId = pawn.thingIDNumber;
             if (!grantedAbilityNames.TryGetValue(pawnId, out var grantedSet)) return;
 
+            List<string> revokedAbilityNames = grantedSet.ToList();
+
             foreach (var defName in grantedSet.ToList())
             {
                 try
@@ -123,6 +135,11 @@ namespace CharacterStudio.Abilities
             }
 
             grantedAbilityNames.Remove(pawnId);
+
+            if (revokedAbilityNames.Count > 0)
+            {
+                AbilitiesRevokedGlobal?.Invoke(pawn, revokedAbilityNames);
+            }
         }
 
         /// <summary>

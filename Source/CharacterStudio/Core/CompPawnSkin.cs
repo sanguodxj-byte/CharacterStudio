@@ -14,6 +14,8 @@ namespace CharacterStudio.Core
     /// </summary>
     public class CompPawnSkin : ThingComp
     {
+        public static event Action<Pawn, PawnSkinDef?, bool, bool, string>? SkinChangedGlobal;
+
         private PawnSkinDef? activeSkin;
         private string? activeSkinDefName;
         private bool needsRefresh = false;
@@ -1489,6 +1491,7 @@ namespace CharacterStudio.Core
                     owner.SyncXenotype(skin);
 
                 ApplyRefreshDirective(owner, directive.refreshDirective);
+                owner.RaiseSkinChangedGlobal();
                 return writeResult;
             }
 
@@ -1872,6 +1875,22 @@ namespace CharacterStudio.Core
         public bool ActiveSkinPreviewMode => activeSkinPreviewMode;
         public string ActiveSkinApplicationSource => activeSkinApplicationSource ?? string.Empty;
         public bool ShouldInjectEquipmentRenderDataDirectly => activeSkinPreviewMode;
+
+        private void RaiseSkinChangedGlobal()
+        {
+            Pawn? pawn = Pawn;
+            if (pawn == null)
+            {
+                return;
+            }
+
+            SkinChangedGlobal?.Invoke(
+                pawn,
+                activeSkin,
+                activeSkinFromDefaultRaceBinding,
+                activeSkinPreviewMode,
+                ActiveSkinApplicationSource);
+        }
 
         internal SkinApplicationWriteResult SetActiveSkinWithSource(PawnSkinDef? skin, bool fromDefaultRaceBinding)
         {

@@ -12,8 +12,26 @@ using Verse;
 
 namespace CharacterStudio.AI
 {
-    public static class LlmGenerationService
-    {
+        public static class LlmGenerationService
+        {
+        private static void EnsureLlmAvailable(CharacterStudioLlmSettings settings)
+        {
+            if (settings == null)
+            {
+                throw new ArgumentNullException(nameof(settings));
+            }
+
+            if (!settings.enabled)
+            {
+                throw new InvalidOperationException("LLM 功能未启用，请先在设置中开启 AI 辅助。");
+            }
+
+            if (!settings.IsConfigured)
+            {
+                throw new InvalidOperationException("LLM 配置未完成，请先填写 Base URL、Model 与 API Key。");
+            }
+        }
+
         // ─────────────────────────────────────────────
         // 异步请求入口（避免主线程阻塞）
         // ─────────────────────────────────────────────
@@ -118,15 +136,7 @@ namespace CharacterStudio.AI
 
         private static string RequestJson(CharacterStudioLlmSettings settings, string userPrompt, string schemaPrompt, string contextPrompt, string editorPrompt)
         {
-            if (settings == null)
-            {
-                throw new ArgumentNullException(nameof(settings));
-            }
-
-            if (!settings.IsConfigured)
-            {
-                throw new InvalidOperationException("LLM 配置未完成，请先填写 Base URL、Model 与 API Key。");
-            }
+            EnsureLlmAvailable(settings);
 
             if (string.IsNullOrWhiteSpace(userPrompt))
             {

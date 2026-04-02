@@ -15,6 +15,7 @@ namespace CharacterStudio.UI
         {
             Widgets.DrawMenuSection(rect);
             Rect inner = rect.ContractedBy(Margin);
+            List<AbilityEditorExtensionPanel> extensionPanels = new List<AbilityEditorExtensionPanel>(AbilityEditorExtensionRegistry.Panels);
 
             bool DrawBarButton(Rect buttonRect, string label, Action action, bool active = false)
             {
@@ -38,26 +39,40 @@ namespace CharacterStudio.UI
                 return true;
             }
 
-            float tabW = inner.width / 4f;
             int effectCount = selectedAbility?.effects?.Count ?? 0;
             int vfxCount = selectedAbility?.visualEffects?.Count ?? 0;
             int rcCount = selectedAbility?.runtimeComponents?.Count ?? 0;
             bool hasPreviewContent = effectCount > 0 || vfxCount > 0 || rcCount > 0;
 
-            string[] tabs = {
+            List<string> tabs = new List<string>
+            {
                 $"CS_Studio_Effect_Title".Translate() + (effectCount > 0 ? $" ({effectCount})" : ""),
                 "CS_Studio_VFX_Title".Translate() + (vfxCount > 0 ? $" ({vfxCount})" : ""),
                 "CS_Studio_Section_RuntimeComponents".Translate().RawText.Split('.')[0] + (rcCount > 0 ? $" ({rcCount})" : ""),
                 "CS_Studio_Ability_PreviewTab".Translate() + (hasPreviewContent ? " •" : string.Empty)
             };
 
-            for (int i = 0; i < tabs.Length; i++)
+            foreach (AbilityEditorExtensionPanel extensionPanel in extensionPanels)
+            {
+                tabs.Add(extensionPanel.label);
+            }
+
+            float tabW = inner.width / Mathf.Max(1f, tabs.Count);
+
+            for (int i = 0; i < tabs.Count; i++)
             {
                 Rect tabRect = new Rect(inner.x + tabW * i, inner.y, tabW, 26f);
                 bool active = rightPanelTab == i;
                 if (DrawBarButton(tabRect, tabs[i], () =>
                 {
                     rightPanelTab = i;
+                    if (i >= 4)
+                    {
+                        int extensionIndex = i - 4;
+                        selectedExtensionPanelId = extensionIndex >= 0 && extensionIndex < extensionPanels.Count
+                            ? extensionPanels[extensionIndex].id
+                            : string.Empty;
+                    }
                 }, active))
                 {
                 }
@@ -70,8 +85,54 @@ namespace CharacterStudio.UI
                 case 0: DrawEffectsPanelBody(bodyRect); break;
                 case 1: DrawVisualEffectsPanelBody(bodyRect); break;
                 case 2: DrawRCPanelBody(bodyRect); break;
-                default: DrawAbilityPreviewPanelBody(bodyRect); break;
+                case 3: DrawAbilityPreviewPanelBody(bodyRect); break;
+                default:
+                    DrawExtensionPanelBody(bodyRect, extensionPanels);
+                    break;
             }
+        }
+
+        private void DrawExtensionPanelBody(Rect rect, List<AbilityEditorExtensionPanel> extensionPanels)
+        {
+            if (selectedAbility == null)
+            {
+                Widgets.DrawHighlight(rect);
+                Text.Anchor = TextAnchor.MiddleCenter;
+                GUI.color = Color.gray;
+                Widgets.Label(rect, "CS_Studio_Ability_SelectHint".Translate());
+                GUI.color = Color.white;
+                Text.Anchor = TextAnchor.UpperLeft;
+                return;
+            }
+
+            AbilityEditorExtensionPanel? panel = null;
+            if (!string.IsNullOrWhiteSpace(selectedExtensionPanelId))
+            {
+                AbilityEditorExtensionRegistry.TryGetPanel(selectedExtensionPanelId, out panel);
+            }
+
+            if (panel == null)
+            {
+                int extensionIndex = rightPanelTab - 4;
+                if (extensionIndex >= 0 && extensionIndex < extensionPanels.Count)
+                {
+                    panel = extensionPanels[extensionIndex];
+                    selectedExtensionPanelId = panel.id;
+                }
+            }
+
+            if (panel?.drawer == null)
+            {
+                Widgets.DrawHighlight(rect);
+                Text.Anchor = TextAnchor.MiddleCenter;
+                GUI.color = Color.gray;
+                Widgets.Label(rect, "No extension panel registered.");
+                GUI.color = Color.white;
+                Text.Anchor = TextAnchor.UpperLeft;
+                return;
+            }
+
+            panel.drawer(rect, selectedAbility, resetPlayback => NotifyAbilityPreviewDirty(resetPlayback));
         }
 
         private void DrawEffectsPanelBody(Rect rect)

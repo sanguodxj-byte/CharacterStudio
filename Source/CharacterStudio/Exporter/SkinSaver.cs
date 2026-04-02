@@ -736,14 +736,17 @@ namespace CharacterStudio.Exporter
                         new XElement("partType", part.partType.ToString()),
                         new XElement("expression", part.expression.ToString()),
                         new XElement("texPath", part.texPath),
+                        !string.IsNullOrWhiteSpace(part.texPathSouth) ? new XElement("texPathSouth", part.texPathSouth) : null,
+                        !string.IsNullOrWhiteSpace(part.texPathEast) ? new XElement("texPathEast", part.texPathEast) : null,
+                        !string.IsNullOrWhiteSpace(part.texPathNorth) ? new XElement("texPathNorth", part.texPathNorth) : null,
                         new XElement("enabled", part.enabled.ToString().ToLower()),
                         normalizedSide != LayeredFacePartSide.None
                             ? new XElement("side", normalizedSide.ToString())
                             : null,
-                        part.partType == LayeredFacePartType.Overlay && !string.IsNullOrWhiteSpace(part.overlayId)
+                        PawnFaceConfig.IsOverlayPart(part.partType) && !string.IsNullOrWhiteSpace(part.overlayId)
                             ? new XElement("overlayId", part.overlayId)
                             : null,
-                        part.partType == LayeredFacePartType.Overlay
+                        PawnFaceConfig.IsOverlayPart(part.partType)
                             ? new XElement("overlayOrder", part.overlayOrder)
                             : null,
                         part.motionAmplitude > 0f
@@ -765,6 +768,13 @@ namespace CharacterStudio.Exporter
                 var eyeEl = GenerateEyeDirectionConfigXml(config.eyeDirectionConfig);
                 if (eyeEl != null) element.Add(eyeEl);
             }
+
+            if (config.browMotion != null)
+                element.Add(new XElement("browMotion", DirectXmlSaver.XElementFromObject(config.browMotion, typeof(PawnFaceConfig.BrowMotionConfig)).Elements()));
+            if (config.mouthMotion != null)
+                element.Add(new XElement("mouthMotion", DirectXmlSaver.XElementFromObject(config.mouthMotion, typeof(PawnFaceConfig.MouthMotionConfig)).Elements()));
+            if (config.emotionOverlayMotion != null)
+                element.Add(new XElement("emotionOverlayMotion", DirectXmlSaver.XElementFromObject(config.emotionOverlayMotion, typeof(PawnFaceConfig.EmotionOverlayMotionConfig)).Elements()));
 
             return element;
         }
@@ -833,8 +843,17 @@ namespace CharacterStudio.Exporter
             if (eyeCfg.pupilMoveRange != 0f)             el.Add(new XElement("pupilMoveRange", eyeCfg.pupilMoveRange.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)));
             if (!Mathf.Approximately(eyeCfg.upperLidMoveDown, 0.0044f))
                 el.Add(new XElement("upperLidMoveDown", eyeCfg.upperLidMoveDown.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)));
+            el.Add(new XElement("lidMotion", DirectXmlToXElement(eyeCfg.lidMotion)));
+            el.Add(new XElement("eyeMotion", DirectXmlToXElement(eyeCfg.eyeMotion)));
+            el.Add(new XElement("pupilMotion", DirectXmlToXElement(eyeCfg.pupilMotion)));
 
             return el;
+        }
+
+        private static XElement DirectXmlToXElement(object value)
+        {
+            string xml = DirectXmlSaver.XElementFromObject(value, value.GetType()).ToString();
+            return XElement.Parse(xml);
         }
 
         private static XElement GenerateWeaponRenderConfigXml(CharacterStudio.Core.WeaponRenderConfig cfg)

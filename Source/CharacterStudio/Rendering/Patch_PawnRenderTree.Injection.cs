@@ -538,7 +538,9 @@ namespace CharacterStudio.Rendering
                 var newChildren = new PawnRenderNode[parent.children.Length + 1];
                 Array.Copy(parent.children, newChildren, parent.children.Length);
                 newChildren[parent.children.Length] = child;
-                parent.children = newChildren;
+                parent.children = newChildren
+                    .OrderBy(node => node?.Props?.baseLayer ?? 0f)
+                    .ToArray();
             }
         }
 
@@ -600,8 +602,8 @@ namespace CharacterStudio.Rendering
                     || !faceConfig.HasAnyLayeredPart())
                     return false;
 
-                PawnRenderNode? parentNode = FindParentNode(tree, "Head");
-                if (parentNode == null)
+                PawnRenderNode? defaultHeadParentNode = FindParentNode(tree, "Head");
+                if (defaultHeadParentNode == null)
                     return false;
 
                 bool anyInjected = false;
@@ -636,6 +638,7 @@ namespace CharacterStudio.Rendering
                             overlayCustomNode.layeredFacePartType = partType;
                             overlayCustomNode.layeredOverlayId = overlayId;
                             overlayCustomNode.layeredOverlayOrder = overlayOrder;
+                            PawnRenderNode parentNode = ResolveLayeredFaceParentNode(tree, defaultHeadParentNode, partType, overlayId);
                             overlayNode.parent = parentNode;
                             overlayNode.debugOffset = overlayLayer.offset;
 
@@ -665,6 +668,7 @@ namespace CharacterStudio.Rendering
                         customNode.config = layer;
                         customNode.layeredFacePartType = partType;
                         customNode.layeredFacePartSide = side;
+                        PawnRenderNode parentNode = ResolveLayeredFaceParentNode(tree, defaultHeadParentNode, partType, string.Empty);
                         node.parent = parentNode;
                         node.debugOffset = layer.offset;
 
@@ -683,6 +687,24 @@ namespace CharacterStudio.Rendering
                 Log.Warning($"[CharacterStudio] 注入 LayeredDynamic 面部分层节点时出错: {ex.Message}");
                 return false;
             }
+        }
+
+        private static PawnRenderNode ResolveLayeredFaceParentNode(
+            PawnRenderTree tree,
+            PawnRenderNode defaultHeadParentNode,
+            LayeredFacePartType partType,
+            string overlayId)
+        {
+            string normalizedOverlayId = PawnFaceConfig.NormalizeOverlayId(overlayId);
+            if (partType == LayeredFacePartType.Hair
+                && normalizedOverlayId.Equals("back", StringComparison.OrdinalIgnoreCase))
+            {
+                PawnRenderNode? bodyParentNode = FindParentNode(tree, "Body");
+                if (bodyParentNode != null)
+                    return bodyParentNode;
+            }
+
+            return defaultHeadParentNode;
         }
 
         private static IEnumerable<LayeredFacePartType> GetLayeredFaceInjectionOrder()
@@ -783,12 +805,13 @@ namespace CharacterStudio.Rendering
             {
                 if (normalizedOverlayId.Equals("east", StringComparison.OrdinalIgnoreCase))
                     resolvedLayer.directionalFacing = "EastWest";
-                else if (normalizedOverlayId.Equals("north", StringComparison.OrdinalIgnoreCase)
-                    || normalizedOverlayId.Equals("back", StringComparison.OrdinalIgnoreCase))
+                else if (normalizedOverlayId.Equals("north", StringComparison.OrdinalIgnoreCase))
                     resolvedLayer.directionalFacing = "North";
                 else
                     resolvedLayer.directionalFacing = "South";
             }
+
+            float defaultDrawOrder = GetLayeredFaceDrawOrder(partType, overlayOrder, normalizedOverlayId);
 
             // 绝对信任用户设置的 drawOrder，除非它为 0（表示用户未修改或希望使用默认高度映射）。
             if (editableLayer != null && editableLayer.drawOrder != 0f)
@@ -797,7 +820,13 @@ namespace CharacterStudio.Rendering
             }
             else
             {
-                resolvedLayer.drawOrder = GetLayeredFaceDrawOrder(partType, overlayOrder, normalizedOverlayId);
+                resolvedLayer.drawOrder = defaultDrawOrder;
+            }
+
+            if (displayPartType == LayeredFacePartType.Hair
+                && normalizedOverlayId.Equals("back", StringComparison.OrdinalIgnoreCase))
+            {
+                resolvedLayer.drawOrder = Math.Min(resolvedLayer.drawOrder, defaultDrawOrder);
             }
 
             resolvedLayer.eyeRenderMode = editableLayer?.eyeRenderMode ?? defaultEyeRenderMode;
@@ -915,9 +944,8 @@ namespace CharacterStudio.Rendering
                     return 0.05f;
                 case LayeredFacePartType.Hair:
                 {
-                    if (overlayId.Contains("front")) return 0.155f;
-                    if (overlayId.Contains("back")) return -1.0f;
-                    return 0.32f;
+                    if (overlayId.Contains("back")) return 0.201f;
+                    return 0.155f;
                 }
                 case LayeredFacePartType.Eye:
                     return 0.118f;

@@ -86,42 +86,50 @@ namespace CharacterStudio.Core
 
     internal static class FaceTransformEvaluator
     {
-        public static FaceTransformResult Evaluate(FaceTransformContext context, PawnEyeDirectionConfig.LidMotionConfig lidMotion, float upperLidMoveDown)
+        public static FaceTransformResult Evaluate(
+            FaceTransformContext context,
+            PawnFaceConfig.BrowMotionConfig browMotion,
+            PawnFaceConfig.MouthMotionConfig mouthMotion,
+            PawnFaceConfig.EmotionOverlayMotionConfig emotionOverlayMotion,
+            PawnEyeDirectionConfig.LidMotionConfig lidMotion,
+            PawnEyeDirectionConfig.EyeMotionConfig eyeMotion,
+            PawnEyeDirectionConfig.PupilMotionConfig pupilMotion,
+            float upperLidMoveDown)
         {
             return context.partType switch
             {
-                LayeredFacePartType.Brow => EvaluateBrow(context),
-                LayeredFacePartType.Eye => EvaluateEye(context),
-                LayeredFacePartType.Pupil => EvaluatePupil(context),
+                LayeredFacePartType.Brow => EvaluateBrow(context, browMotion),
+                LayeredFacePartType.Eye => EvaluateEye(context, eyeMotion),
+                LayeredFacePartType.Pupil => EvaluatePupil(context, pupilMotion),
                 LayeredFacePartType.UpperLid => EvaluateUpperLid(context, lidMotion, upperLidMoveDown),
                 LayeredFacePartType.LowerLid => EvaluateLowerLid(context, lidMotion),
-                LayeredFacePartType.Mouth => EvaluateMouth(context),
+                LayeredFacePartType.Mouth => EvaluateMouth(context, mouthMotion),
                 LayeredFacePartType.Hair => EvaluateHair(),
-                LayeredFacePartType.Blush => EvaluateBlush(context),
-                LayeredFacePartType.Tear => EvaluateTear(context),
-                LayeredFacePartType.Sweat => EvaluateSweat(context),
+                LayeredFacePartType.Blush => EvaluateBlush(context, emotionOverlayMotion),
+                LayeredFacePartType.Tear => EvaluateTear(context, emotionOverlayMotion),
+                LayeredFacePartType.Sweat => EvaluateSweat(context, emotionOverlayMotion),
                 LayeredFacePartType.Overlay => EvaluateOverlay(context),
                 _ => FaceTransformResult.Visible(0f, Vector3.zero, Vector3.one)
             };
         }
 
-        private static FaceTransformResult EvaluateBrow(FaceTransformContext context)
+        private static FaceTransformResult EvaluateBrow(FaceTransformContext context, PawnFaceConfig.BrowMotionConfig motion)
         {
             return context.browState switch
             {
                 BrowState.Angry => FaceTransformResult.Visible(
-                    -4.5f + context.primaryWave * 0.6f,
-                    new Vector3(0f, 0f, -0.004f + context.slowWave * 0.0008f),
-                    new Vector3(1.04f, 1f, 0.97f)),
+                    motion.angryAngleBase + context.primaryWave * motion.angryAngleWave,
+                    new Vector3(0f, 0f, motion.angryOffsetZBase + context.slowWave * motion.angrySlowWaveOffsetZ),
+                    new Vector3(motion.angryScaleX, 1f, motion.angryScaleZ)),
                 BrowState.Sad => FaceTransformResult.Visible(
-                    3.25f + context.primaryWave * 0.45f,
-                    new Vector3(0f, 0f, 0.0045f + context.slowWave * 0.0008f),
-                    new Vector3(1.02f, 1f, 0.98f)),
+                    motion.sadAngleBase + context.primaryWave * motion.sadAngleWave,
+                    new Vector3(0f, 0f, motion.sadOffsetZBase + context.slowWave * motion.sadSlowWaveOffsetZ),
+                    new Vector3(motion.sadScaleX, 1f, motion.sadScaleZ)),
                 BrowState.Happy => FaceTransformResult.Visible(
-                    -1.5f + context.primaryWave * 0.25f,
-                    new Vector3(0f, 0f, -0.0015f + context.slowWave * 0.0004f),
-                    new Vector3(1.03f, 1f, 0.97f)),
-                _ => FaceTransformResult.Visible(0f, new Vector3(0f, 0f, context.slowWave * 0.0006f), Vector3.one)
+                    motion.happyAngleBase + context.primaryWave * motion.happyAngleWave,
+                    new Vector3(0f, 0f, motion.happyOffsetZBase + context.slowWave * motion.happySlowWaveOffsetZ),
+                    new Vector3(motion.happyScaleX, 1f, motion.happyScaleZ)),
+                _ => FaceTransformResult.Visible(0f, new Vector3(0f, 0f, context.slowWave * motion.defaultSlowWaveOffsetZ), Vector3.one)
             };
         }
 
@@ -136,53 +144,53 @@ namespace CharacterStudio.Core
         private static float SideBias(LayeredFacePartSide side, float magnitude)
             => SideSign(side) * magnitude;
 
-        private static FaceTransformResult EvaluateEye(FaceTransformContext context)
+        private static FaceTransformResult EvaluateEye(FaceTransformContext context, PawnEyeDirectionConfig.EyeMotionConfig motion)
         {
             if (context.lidState == LidState.Blink || context.lidState == LidState.Close)
                 return FaceTransformResult.Hidden();
 
             float sideSign = SideSign(context.side);
-            float offsetX = SideBias(context.side, 0.00002f);
-            float offsetZ = 0.00004f * context.primaryWave;
+            float offsetX = SideBias(context.side, motion.sideBiasX);
+            float offsetZ = motion.primaryWaveOffsetZ * context.primaryWave;
 
             switch (context.eyeDirection)
             {
-                case EyeDirection.Left: offsetX = -0.00012f; break;
-                case EyeDirection.Right: offsetX = 0.00012f; break;
-                case EyeDirection.Up: offsetZ -= 0.00010f; break;
-                case EyeDirection.Down: offsetZ += 0.000012f; break;
+                case EyeDirection.Left: offsetX = motion.dirLeftOffsetX; break;
+                case EyeDirection.Right: offsetX = motion.dirRightOffsetX; break;
+                case EyeDirection.Up: offsetZ += motion.dirUpOffsetZ; break;
+                case EyeDirection.Down: offsetZ += motion.dirDownOffsetZ; break;
             }
 
             switch (context.eyeVariant)
             {
                 case EyeAnimationVariant.NeutralSoft:
-                    offsetZ += 0.00005f;
+                    offsetZ += motion.neutralSoftOffsetZ;
                     break;
                 case EyeAnimationVariant.NeutralLookDown:
-                    offsetZ += 0.000010f;
+                    offsetZ += motion.neutralLookDownOffsetZ;
                     break;
                 case EyeAnimationVariant.NeutralGlance:
-                    offsetX += (context.primaryWave > 0f ? 0.00008f : -0.00008f) + sideSign * 0.000035f;
+                    offsetX += (context.primaryWave > 0f ? motion.neutralGlanceWaveOffsetX : -motion.neutralGlanceWaveOffsetX) + sideSign * motion.neutralGlanceSideOffsetX;
                     break;
                 case EyeAnimationVariant.WorkFocusDown:
-                    offsetZ += 0.000016f;
+                    offsetZ += motion.workFocusDownOffsetZ;
                     break;
                 case EyeAnimationVariant.WorkFocusUp:
-                    offsetZ -= 0.00012f;
+                    offsetZ += motion.workFocusUpOffsetZ;
                     break;
                 case EyeAnimationVariant.HappySoft:
-                    offsetZ -= 0.00006f;
+                    offsetZ += motion.happySoftOffsetZ;
                     break;
                 case EyeAnimationVariant.ShockWide:
-                    offsetZ -= 0.00018f;
+                    offsetZ += motion.shockWideOffsetZ;
                     break;
                 case EyeAnimationVariant.ScaredWide:
-                    offsetZ -= 0.00012f;
-                    offsetX += context.primaryWave * 0.00006f + sideSign * 0.00003f;
+                    offsetZ += motion.scaredWideOffsetZ;
+                    offsetX += context.primaryWave * motion.scaredWideWaveOffsetX + sideSign * motion.scaredWideSideOffsetX;
                     break;
                 case EyeAnimationVariant.ScaredFlinch:
-                    offsetZ += 0.00008f;
-                    offsetX += context.slowWave * 0.00007f + sideSign * 0.000045f;
+                    offsetZ += motion.scaredFlinchOffsetZ;
+                    offsetX += context.slowWave * motion.scaredFlinchWaveOffsetX + sideSign * motion.scaredFlinchSideOffsetX;
                     break;
                 case EyeAnimationVariant.HappyClosedPeak:
                     return FaceTransformResult.Hidden();
@@ -208,58 +216,58 @@ namespace CharacterStudio.Core
                 scaleZ = Mathf.Min(scaleZ, 0.94f);
 
             return FaceTransformResult.Visible(
-                context.primaryWave * 0.15f,
-                new Vector3(offsetX, 0f, offsetZ + context.slowWave * 0.00004f),
-                new Vector3(1.01f + Mathf.Abs(context.slowWave) * 0.01f, 1f, scaleZ));
+                context.primaryWave * motion.baseAngleWave,
+                new Vector3(offsetX, 0f, offsetZ + context.slowWave * motion.slowWaveOffsetZ),
+                new Vector3(motion.scaleXBase + Mathf.Abs(context.slowWave) * motion.scaleXWaveAmplitude, 1f, scaleZ));
         }
 
-        private static FaceTransformResult EvaluatePupil(FaceTransformContext context)
+        private static FaceTransformResult EvaluatePupil(FaceTransformContext context, PawnEyeDirectionConfig.PupilMotionConfig motion)
         {
             if (context.lidState == LidState.Blink || context.lidState == LidState.Close)
                 return FaceTransformResult.Hidden();
 
             float sideSign = SideSign(context.side);
-            float offsetX = SideBias(context.side, 0.000028f);
-            float offsetZ = context.slowWave * 0.00005f;
+            float offsetX = SideBias(context.side, motion.sideBiasX);
+            float offsetZ = context.slowWave * motion.slowWaveOffsetZ;
 
             switch (context.eyeDirection)
             {
-                case EyeDirection.Left: offsetX = -0.00018f; break;
-                case EyeDirection.Right: offsetX = 0.00018f; break;
-                case EyeDirection.Up: offsetZ -= 0.00014f; break;
-                case EyeDirection.Down: offsetZ += 0.000016f; break;
+                case EyeDirection.Left: offsetX = motion.dirLeftOffsetX; break;
+                case EyeDirection.Right: offsetX = motion.dirRightOffsetX; break;
+                case EyeDirection.Up: offsetZ += motion.dirUpOffsetZ; break;
+                case EyeDirection.Down: offsetZ += motion.dirDownOffsetZ; break;
             }
 
             switch (context.eyeVariant)
             {
                 case EyeAnimationVariant.NeutralSoft:
-                    offsetZ += 0.00004f;
+                    offsetZ += motion.neutralSoftOffsetZ;
                     break;
                 case EyeAnimationVariant.NeutralLookDown:
-                    offsetZ += 0.000012f;
+                    offsetZ += motion.neutralLookDownOffsetZ;
                     break;
                 case EyeAnimationVariant.NeutralGlance:
-                    offsetX += (context.primaryWave > 0f ? 0.00010f : -0.00010f) + sideSign * 0.000045f;
+                    offsetX += (context.primaryWave > 0f ? motion.neutralGlanceWaveOffsetX : -motion.neutralGlanceWaveOffsetX) + sideSign * motion.neutralGlanceSideOffsetX;
                     break;
                 case EyeAnimationVariant.WorkFocusDown:
-                    offsetZ += 0.000020f;
+                    offsetZ += motion.workFocusDownOffsetZ;
                     break;
                 case EyeAnimationVariant.WorkFocusUp:
-                    offsetZ -= 0.00015f;
+                    offsetZ += motion.workFocusUpOffsetZ;
                     break;
                 case EyeAnimationVariant.HappyOpen:
-                    offsetZ -= 0.00003f;
+                    offsetZ += motion.happyOpenOffsetZ;
                     break;
                 case EyeAnimationVariant.ShockWide:
-                    offsetZ -= 0.00012f;
+                    offsetZ += motion.shockWideOffsetZ;
                     break;
                 case EyeAnimationVariant.ScaredWide:
-                    offsetZ -= 0.00008f;
-                    offsetX += context.primaryWave * 0.00008f + sideSign * 0.00004f;
+                    offsetZ += motion.scaredWideOffsetZ;
+                    offsetX += context.primaryWave * motion.scaredWideWaveOffsetX + sideSign * motion.scaredWideSideOffsetX;
                     break;
                 case EyeAnimationVariant.ScaredFlinch:
-                    offsetZ += 0.00008f;
-                    offsetX += context.slowWave * 0.00009f + sideSign * 0.000055f;
+                    offsetZ += motion.scaredFlinchOffsetZ;
+                    offsetX += context.slowWave * motion.scaredFlinchWaveOffsetX + sideSign * motion.scaredFlinchSideOffsetX;
                     break;
                 case EyeAnimationVariant.HappyClosedPeak:
                 case EyeAnimationVariant.BlinkClosed:
@@ -268,35 +276,35 @@ namespace CharacterStudio.Core
 
             float scale = context.pupilVariant switch
             {
-                PupilScaleVariant.Focus => 0.94f + Mathf.Abs(context.slowWave) * 0.01f,
-                PupilScaleVariant.SlightlyContracted => 0.88f + Mathf.Abs(context.slowWave) * 0.01f,
-                PupilScaleVariant.Contracted => 0.78f + Mathf.Abs(context.slowWave) * 0.015f,
-                PupilScaleVariant.Dilated => 1.12f + Mathf.Abs(context.primaryWave) * 0.02f,
-                PupilScaleVariant.DilatedMax => 1.22f + Mathf.Abs(context.primaryWave) * 0.03f,
-                PupilScaleVariant.ScaredPulse => 1.16f + Mathf.Abs(context.primaryWave) * 0.05f,
+                PupilScaleVariant.Focus => motion.focusScaleBase + Mathf.Abs(context.slowWave) * motion.focusScaleWave,
+                PupilScaleVariant.SlightlyContracted => motion.slightlyContractedScaleBase + Mathf.Abs(context.slowWave) * motion.slightlyContractedScaleWave,
+                PupilScaleVariant.Contracted => motion.contractedScaleBase + Mathf.Abs(context.slowWave) * motion.contractedScaleWave,
+                PupilScaleVariant.Dilated => motion.dilatedScaleBase + Mathf.Abs(context.primaryWave) * motion.dilatedScaleWave,
+                PupilScaleVariant.DilatedMax => motion.dilatedMaxScaleBase + Mathf.Abs(context.primaryWave) * motion.dilatedMaxScaleWave,
+                PupilScaleVariant.ScaredPulse => motion.scaredPulseScaleBase + Mathf.Abs(context.primaryWave) * motion.scaredPulseScaleWave,
                 PupilScaleVariant.BlinkHidden => 0f,
                 _ => 1f,
             };
 
             if (context.expression == ExpressionType.Shock || context.expression == ExpressionType.Scared)
-                scale = Mathf.Max(scale, 1.08f + Mathf.Abs(context.primaryWave) * 0.03f);
+                scale = Mathf.Max(scale, motion.shockScaredMinScaleBase + Mathf.Abs(context.primaryWave) * motion.shockScaredMinScaleWave);
             else if (context.expression == ExpressionType.Happy || context.expression == ExpressionType.Cheerful)
-                scale = Mathf.Min(scale, 0.96f + Mathf.Abs(context.slowWave) * 0.01f);
+                scale = Mathf.Min(scale, motion.happyMaxScaleBase + Mathf.Abs(context.slowWave) * motion.happyMaxScaleWave);
             else if (context.expression == ExpressionType.Sleeping)
-                scale = 0.9f;
+                scale = motion.sleepingScale;
             else if (context.eyeVariant == EyeAnimationVariant.WorkFocusDown)
-                scale = Mathf.Min(scale, 0.98f);
+                scale = Mathf.Min(scale, motion.workFocusMaxScale);
 
             if (context.eyeVariant == EyeAnimationVariant.NeutralSoft)
-                scale = Mathf.Min(scale, 0.96f);
+                scale = Mathf.Min(scale, motion.neutralSoftMaxScale);
             else if (context.eyeVariant == EyeAnimationVariant.NeutralLookDown)
-                scale = Mathf.Min(scale, 0.94f);
+                scale = Mathf.Min(scale, motion.neutralLookDownMaxScale);
             else if (context.eyeVariant == EyeAnimationVariant.ShockWide)
-                scale = Mathf.Max(scale, 1.18f + Mathf.Abs(context.primaryWave) * 0.02f);
+                scale = Mathf.Max(scale, motion.shockWideMinScaleBase + Mathf.Abs(context.primaryWave) * motion.shockWideMinScaleWave);
             else if (context.eyeVariant == EyeAnimationVariant.ScaredWide)
-                scale = Mathf.Max(scale, 1.14f + Mathf.Abs(context.slowWave) * 0.03f);
+                scale = Mathf.Max(scale, motion.scaredWideMinScaleBase + Mathf.Abs(context.slowWave) * motion.scaredWideMinScaleWave);
             else if (context.eyeVariant == EyeAnimationVariant.ScaredFlinch)
-                scale = Mathf.Max(scale, 1.04f + Mathf.Abs(context.primaryWave) * 0.01f);
+                scale = Mathf.Max(scale, motion.scaredFlinchMinScaleBase + Mathf.Abs(context.primaryWave) * motion.scaredFlinchMinScaleWave);
 
             if (context.pupilVariant == PupilScaleVariant.BlinkHidden)
                 return FaceTransformResult.Hidden();
@@ -305,8 +313,8 @@ namespace CharacterStudio.Core
                 return FaceTransformResult.Visible(0f, Vector3.zero, new Vector3(scale, 1f, scale));
 
             return FaceTransformResult.Visible(
-                context.primaryWave * 0.35f,
-                new Vector3(offsetX + context.primaryWave * 0.00004f, 0f, offsetZ),
+                context.primaryWave * motion.transformAngleWave,
+                new Vector3(offsetX + context.primaryWave * motion.finalWaveOffsetX, 0f, offsetZ),
                 new Vector3(scale, 1f, scale));
         }
 
@@ -380,37 +388,37 @@ namespace CharacterStudio.Core
             }
         }
 
-        private static FaceTransformResult EvaluateMouth(FaceTransformContext context)
+        private static FaceTransformResult EvaluateMouth(FaceTransformContext context, PawnFaceConfig.MouthMotionConfig motion)
         {
             return context.mouthState switch
             {
                 MouthState.Smile => FaceTransformResult.Visible(
-                    context.slowWave * 0.6f,
-                    new Vector3(0f, 0f, -0.001f + context.primaryWave * 0.0006f),
-                    new Vector3(1.06f + Mathf.Abs(context.primaryWave) * 0.02f, 1f, 0.94f)),
+                    context.slowWave * motion.smileAngleWave,
+                    new Vector3(0f, 0f, motion.smileOffsetZBase + context.primaryWave * motion.smilePrimaryWaveOffsetZ),
+                    new Vector3(motion.smileScaleXBase + Mathf.Abs(context.primaryWave) * motion.smileScaleXWave, 1f, motion.smileScaleZ)),
                 MouthState.Open => FaceTransformResult.Visible(
-                    context.primaryWave * 0.8f,
-                    new Vector3(0f, 0f, 0.004f + Mathf.Abs(context.primaryWave) * 0.0015f),
-                    new Vector3(1.03f, 1f, 1.14f + Mathf.Abs(context.slowWave) * 0.04f)),
+                    context.primaryWave * motion.openAngleWave,
+                    new Vector3(0f, 0f, motion.openOffsetZBase + Mathf.Abs(context.primaryWave) * motion.openPrimaryWaveOffsetZ),
+                    new Vector3(motion.openScaleX, 1f, motion.openScaleZBase + Mathf.Abs(context.slowWave) * motion.openScaleZWave)),
                 MouthState.Down => FaceTransformResult.Visible(
-                    -0.75f + context.primaryWave * 0.3f,
-                    new Vector3(0f, 0f, 0.0025f + context.slowWave * 0.0006f),
-                    new Vector3(0.99f, 1f, 0.90f)),
+                    motion.downAngleBase + context.primaryWave * motion.downAngleWave,
+                    new Vector3(0f, 0f, motion.downOffsetZBase + context.slowWave * motion.downSlowWaveOffsetZ),
+                    new Vector3(motion.downScaleX, 1f, motion.downScaleZ)),
                 MouthState.Sleep => FaceTransformResult.Visible(
                     0f,
-                    new Vector3(0f, 0f, 0.002f),
-                    new Vector3(0.97f, 1f, 0.84f)),
+                    new Vector3(0f, 0f, motion.sleepOffsetZ),
+                    new Vector3(motion.sleepScaleX, 1f, motion.sleepScaleZ)),
                 _ => context.expression switch
                 {
                     ExpressionType.Eating => FaceTransformResult.Visible(
-                        context.primaryWave * 1.25f,
-                        new Vector3(0f, 0f, 0.002f + Mathf.Abs(context.primaryWave) * 0.001f),
-                        new Vector3(1.01f, 1f, 1.05f + Mathf.Abs(context.primaryWave) * 0.04f)),
+                        context.primaryWave * motion.eatingAngleWave,
+                        new Vector3(0f, 0f, motion.eatingOffsetZBase + Mathf.Abs(context.primaryWave) * motion.eatingPrimaryWaveOffsetZ),
+                        new Vector3(motion.eatingScaleX, 1f, motion.eatingScaleZBase + Mathf.Abs(context.primaryWave) * motion.eatingScaleZWave)),
                     ExpressionType.Shock or ExpressionType.Scared => FaceTransformResult.Visible(
-                        context.primaryWave * 0.75f,
-                        new Vector3(0f, 0f, 0.0032f + Mathf.Abs(context.primaryWave) * 0.001f),
-                        new Vector3(1.02f, 1f, 1.10f + Mathf.Abs(context.slowWave) * 0.03f)),
-                    _ => FaceTransformResult.Visible(0f, new Vector3(0f, 0f, context.slowWave * 0.0005f), Vector3.one)
+                        context.primaryWave * motion.shockScaredAngleWave,
+                        new Vector3(0f, 0f, motion.shockScaredOffsetZBase + Mathf.Abs(context.primaryWave) * motion.shockScaredPrimaryWaveOffsetZ),
+                        new Vector3(motion.shockScaredScaleX, 1f, motion.shockScaredScaleZBase + Mathf.Abs(context.slowWave) * motion.shockScaredScaleZWave)),
+                    _ => FaceTransformResult.Visible(0f, new Vector3(0f, 0f, context.slowWave * motion.defaultSlowWaveOffsetZ), Vector3.one)
                 }
             };
         }
@@ -418,41 +426,41 @@ namespace CharacterStudio.Core
         private static FaceTransformResult EvaluateHair()
             => FaceTransformResult.Visible(0f, Vector3.zero, Vector3.one);
 
-        private static FaceTransformResult EvaluateBlush(FaceTransformContext context)
+        private static FaceTransformResult EvaluateBlush(FaceTransformContext context, PawnFaceConfig.EmotionOverlayMotionConfig motion)
         {
             bool active = context.emotionState == EmotionOverlayState.Lovin || context.emotionState == EmotionOverlayState.Blush;
             if (!active)
                 return FaceTransformResult.Hidden();
 
-            float pulse = 1.04f + Mathf.Abs(context.primaryWave) * 0.05f;
+            float pulse = motion.blushPulseBase + Mathf.Abs(context.primaryWave) * motion.blushPulseWave;
             return FaceTransformResult.Visible(
                 0f,
-                new Vector3(0f, 0f, -0.001f + context.slowWave * 0.001f),
-                new Vector3(pulse, 1f, 1.02f + Mathf.Abs(context.slowWave) * 0.02f));
+                new Vector3(0f, 0f, motion.blushOffsetZBase + context.slowWave * motion.blushSlowWaveOffsetZ),
+                new Vector3(pulse, 1f, motion.blushScaleZBase + Mathf.Abs(context.slowWave) * motion.blushScaleZWave));
         }
 
-        private static FaceTransformResult EvaluateTear(FaceTransformContext context)
+        private static FaceTransformResult EvaluateTear(FaceTransformContext context, PawnFaceConfig.EmotionOverlayMotionConfig motion)
         {
             bool active = context.emotionState == EmotionOverlayState.Tear || context.emotionState == EmotionOverlayState.Gloomy;
             if (!active)
                 return FaceTransformResult.Hidden();
 
-            float pulse = 1.01f + Mathf.Abs(context.slowWave) * 0.02f;
+            float pulse = motion.tearPulseBase + Mathf.Abs(context.slowWave) * motion.tearPulseWave;
             return FaceTransformResult.Visible(
-                context.primaryWave * 0.5f,
-                new Vector3(0f, 0f, 0.002f + Mathf.Abs(context.primaryWave) * 0.0015f),
+                context.primaryWave * motion.tearAngleWave,
+                new Vector3(0f, 0f, motion.tearOffsetZBase + Mathf.Abs(context.primaryWave) * motion.tearPrimaryWaveOffsetZ),
                 new Vector3(pulse, 1f, pulse));
         }
 
-        private static FaceTransformResult EvaluateSweat(FaceTransformContext context)
+        private static FaceTransformResult EvaluateSweat(FaceTransformContext context, PawnFaceConfig.EmotionOverlayMotionConfig motion)
         {
             if (context.emotionState != EmotionOverlayState.Sweat)
                 return FaceTransformResult.Hidden();
 
-            float pulse = 1f + Mathf.Abs(context.primaryWave) * 0.03f;
+            float pulse = motion.sweatPulseBase + Mathf.Abs(context.primaryWave) * motion.sweatPulseWave;
             return FaceTransformResult.Visible(
-                context.primaryWave * 2.5f,
-                new Vector3(context.primaryWave * 0.0025f, 0f, 0.0015f + Mathf.Abs(context.slowWave) * 0.001f),
+                context.primaryWave * motion.sweatAngleWave,
+                new Vector3(context.primaryWave * motion.sweatOffsetXWave, 0f, motion.sweatOffsetZBase + Mathf.Abs(context.slowWave) * motion.sweatSlowWaveOffsetZ),
                 new Vector3(pulse, 1f, pulse));
         }
 

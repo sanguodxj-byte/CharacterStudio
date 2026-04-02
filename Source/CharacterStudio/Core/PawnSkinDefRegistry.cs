@@ -17,6 +17,8 @@ namespace CharacterStudio.Core
     [StaticConstructorOnStartup]
     public static class PawnSkinDefRegistry
     {
+        public static event Action<PawnSkinDef, bool>? RuntimeSkinRegisteredGlobal;
+
         private static readonly Dictionary<string, PawnSkinDef> runtimeDefsByName = new Dictionary<string, PawnSkinDef>();
         private static bool loaded;
         private static bool loading;
@@ -83,12 +85,14 @@ namespace CharacterStudio.Core
                 oldDef.ResolveDefNameHash();
                 DefDatabase<PawnSkinDef>.ResolveAllReferences(onlyExactlyMyType: false, parallel: false);
                 runtimeDefsByName[oldDef.defName] = oldDef;
+                RuntimeSkinRegisteredGlobal?.Invoke(oldDef, true);
                 return oldDef;
             }
 
             DefDatabase<PawnSkinDef>.Add(def);
             DefDatabase<PawnSkinDef>.ResolveAllReferences(onlyExactlyMyType: false, parallel: false);
             runtimeDefsByName[def.defName] = def;
+            RuntimeSkinRegisteredGlobal?.Invoke(def, false);
 
             return def;
         }
