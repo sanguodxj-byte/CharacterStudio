@@ -343,4 +343,120 @@
     <CS_Studio_VFX_TriggerShort>Trigger</CS_Studio_VFX_TriggerShort>
     <CS_Studio_VFX_TypeShort>Type</CS_Studio_VFX_TypeShort>
     <CS_Studio_VFX_UseCasterFacing>Use Caster Facing</CS_Studio_VFX_UseCasterFacing>
+    <CS_Ability_BoundPawn>Bound Pawn</CS_Ability_BoundPawn>
+    <CS_Ability_Carrier>Carrier</CS_Ability_Carrier>
+    <CS_Ability_Grant>Grant Ability</CS_Ability_Grant>
+    <CS_Ability_GrantSuccess>Abilities granted successfully.</CS_Ability_GrantSuccess>
+    <CS_Ability_Hotkey_AbilityMissing>Assigned ability is missing.</CS_Ability_Hotkey_AbilityMissing>
+    <CS_Ability_Hotkey_CastSuccess>Ability cast successfully.</CS_Ability_Hotkey_CastSuccess>
+    <CS_Ability_Hotkey_QMode>Q Mode</CS_Ability_Hotkey_QMode>
+    <CS_Ability_Hotkey_SlotCooldown>{0} cooldown: {1}t</CS_Ability_Hotkey_SlotCooldown>
+    <CS_Ability_NoPawnBound>No pawn bound.</CS_Ability_NoPawnBound>
+    <CS_Ability_NotReady>Not ready.</CS_Ability_NotReady>
+    <CS_Ability_OnCooldown>On cooldown.</CS_Ability_OnCooldown>
+    <CS_Ability_R_Ready>R is ready.</CS_Ability_R_Ready>
+    <CS_Ability_R_SecondStageArmed>R second stage armed.</CS_Ability_R_SecondStageArmed>
+    <CS_Ability_R_SecondStageCast>R second stage cast.</CS_Ability_R_SecondStageCast>
+    <CS_Ability_R_StackGain>R stacks: {0}/{1}</CS_Ability_R_StackGain>
+    <CS_Ability_R_StackingOff>R stacking disabled.</CS_Ability_R_StackingOff>
+    <CS_Ability_R_StackingOn>R stacking enabled.</CS_Ability_R_StackingOn>
+    <CS_Ability_R_TargetInvalid>R target is invalid.</CS_Ability_R_TargetInvalid>
+    <CS_Ability_Revoke>Revoke Ability</CS_Ability_Revoke>
+    <CS_Ability_RevokeSuccess>Abilities revoked successfully.</CS_Ability_RevokeSuccess>
+    <CS_Ability_Validate_CarrierNeedsRange>{0} usually requires range greater than 0.</CS_Ability_Validate_CarrierNeedsRange>
+    <CS_Ability_Validate_ChargesNonPositive>Charges should be greater than 0.</CS_Ability_Validate_ChargesNonPositive>
+    <CS_Ability_Validate_ControlDuration>Control duration cannot be negative.</CS_Ability_Validate_ControlDuration>
+    <CS_Ability_Validate_ControlMoveDistance>Control move distance must be greater than 0.</CS_Ability_Validate_ControlMoveDistance>
+    <CS_Ability_Validate_CooldownNegative>Cooldown cannot be negative.</CS_Ability_Validate_CooldownNegative>
+    <CS_Ability_Validate_DamageAmount>Damage amount must be greater than 0.</CS_Ability_Validate_DamageAmount>
+    <CS_Ability_Validate_DefNameEmpty>DefName cannot be empty.</CS_Ability_Validate_DefNameEmpty>
+    <CS_Ability_Validate_DefNameInvalid>DefName contains invalid characters.</CS_Ability_Validate_DefNameInvalid>
+    <CS_Ability_Validate_EShortJumpCooldown>Jump cooldown cannot be negative.</CS_Ability_Validate_EShortJumpCooldown>
+    <CS_Ability_Validate_EShortJumpDistance>Jump distance must be greater than 0.</CS_Ability_Validate_EShortJumpDistance>
+    <CS_Ability_Validate_EShortJumpFindCellRadius>Landing search radius cannot be negative.</CS_Ability_Validate_EShortJumpFindCellRadius>
+    <CS_Ability_Validate_EffectChanceRange>Effect chance {0} must be between 0 and 1.</CS_Ability_Validate_EffectChanceRange>
+    <CS_Ability_Validate_EffectIndexError>Effect #{0}: {1}</CS_Ability_Validate_EffectIndexError>
+    <CS_Ability_Validate_EffectIndexWarning>Effect #{0}: {1}</CS_Ability_Validate_EffectIndexWarning>
+    <CS_Ability_Validate_EffectNegativeAmount>Effect amount is negative.</CS_Ability_Validate_EffectNegativeAmount>
+    <CS_Ability_Validate_Failed>Validation failed</CS_Ability_Validate_Failed>
+    <CS_Ability_Validate_FlightDurationTicks>Flight duration must be greater than 0 ticks.</CS_Ability_Validate_FlightDurationTicks>
+    <CS_Ability_Validate_FlightHeightFactor>Flight height factor cannot be negative.</CS_Ability_Validate_FlightHeightFactor>
+    <CS_Ability_Validate_FlightHeightFactorWarning>Flight height factor is unusually high.</CS_Ability_Validate_FlightHeightFactorWarning>
+    <CS_Ability_Validate_FlightOnlyFollowupReservedTargetRecommended>Reserved target cell is recommended for this follow-up mode.</CS_Ability_Validate_FlightOnlyFollowupReservedTargetRecommended>
+    <CS_Ability_Validate_FlightOnlyFollowupSourceRecommended>Source ability DefName is recommended for this flight-only follow-up.</CS_Ability_Validate_FlightOnlyFollowupSourceRecommended>
+    <CS_Ability_Validate_FullHealthBonusScale>Full-health bonus scale must be greater than 0.</CS_Ability_Validate_FullHealthBonusScale>
+    <CS_Ability_Validate_FullHealthThreshold>Full-health threshold must be between 0 and 1.</CS_Ability_Validate_FullHealthThreshold>
+    <CS_Ability_Validate_HediffRequired>{0} requires a HediffDef.</CS_Ability_Validate_HediffRequired>
+    <CS_Ability_Validate_IsolatedTargetBonusScale>Isolated target bonus scale must be greater than 0.</CS_Ability_Validate_IsolatedTargetBonusScale>
+    <CS_Ability_Validate_IsolatedTargetRadius>Isolation radius must be greater than 0.</CS_Ability_Validate_IsolatedTargetRadius>
+    <CS_Ability_Validate_LabelEmpty>Label is empty.</CS_Ability_Validate_LabelEmpty>
+    <CS_Ability_Validate_LandingBurstDamage>Landing burst damage must be greater than 0.</CS_Ability_Validate_LandingBurstDamage>
+    <CS_Ability_Validate_LandingBurstRadius>Landing burst radius must be greater than 0.</CS_Ability_Validate_LandingBurstRadius>
+    <CS_Ability_Validate_NearbyEnemyBonusMaxTargets>Nearby-enemy max targets must be greater than 0.</CS_Ability_Validate_NearbyEnemyBonusMaxTargets>
+    <CS_Ability_Validate_NearbyEnemyBonusPerTarget>Nearby-enemy bonus per target must be greater than 0.</CS_Ability_Validate_NearbyEnemyBonusPerTarget>
+    <CS_Ability_Validate_NearbyEnemyBonusRadius>Nearby-enemy radius must be greater than 0.</CS_Ability_Validate_NearbyEnemyBonusRadius>
+    <CS_Ability_Validate_NoEffects>No gameplay effects configured.</CS_Ability_Validate_NoEffects>
+    <CS_Ability_Validate_ProjectileDefMissing>Projectile carrier is missing a projectile def.</CS_Ability_Validate_ProjectileDefMissing>
+    <CS_Ability_Validate_QComboWindowTicks>Combo window must be greater than 0 ticks.</CS_Ability_Validate_QComboWindowTicks>
+    <CS_Ability_Validate_RDelayTicks>Delay cannot be negative.</CS_Ability_Validate_RDelayTicks>
+    <CS_Ability_Validate_RRequiredStacks>Required stacks must be greater than 0.</CS_Ability_Validate_RRequiredStacks>
+    <CS_Ability_Validate_RWaveDamage>Wave damage values must be greater than 0.</CS_Ability_Validate_RWaveDamage>
+    <CS_Ability_Validate_RWaveRadius>Wave radius values must be greater than 0.</CS_Ability_Validate_RWaveRadius>
+    <CS_Ability_Validate_RadiusNegative>Radius cannot be negative.</CS_Ability_Validate_RadiusNegative>
+    <CS_Ability_Validate_RangeNegative>Range cannot be negative.</CS_Ability_Validate_RangeNegative>
+    <CS_Ability_Validate_RuntimeComponentError>Runtime component #{0} ({1}): {2}</CS_Ability_Validate_RuntimeComponentError>
+    <CS_Ability_Validate_RuntimeComponentNull>Runtime component #{0} is null.</CS_Ability_Validate_RuntimeComponentNull>
+    <CS_Ability_Validate_RuntimeComponentWarning>Runtime component #{0} ({1}): {2}</CS_Ability_Validate_RuntimeComponentWarning>
+    <CS_Ability_Validate_RuntimeConflict_DashEmpowerNeedsMovement>{0} requires a movement runtime component.</CS_Ability_Validate_RuntimeConflict_DashEmpowerNeedsMovement>
+    <CS_Ability_Validate_RuntimeConflict_DuplicateSingleton>Duplicate singleton runtime component {0} ({1}): {2}</CS_Ability_Validate_RuntimeConflict_DuplicateSingleton>
+    <CS_Ability_Validate_RuntimeConflict_FlightOnlyNeedsVanillaFlyer>{0} requires VanillaPawnFlyer.</CS_Ability_Validate_RuntimeConflict_FlightOnlyNeedsVanillaFlyer>
+    <CS_Ability_Validate_RuntimeConflict_FlightStateWithVanillaFlyer>{0} conflicts with {1}.</CS_Ability_Validate_RuntimeConflict_FlightStateWithVanillaFlyer>
+    <CS_Ability_Validate_RuntimeConflict_LandingBurstNeedsVanillaFlyer>{0} requires VanillaPawnFlyer.</CS_Ability_Validate_RuntimeConflict_LandingBurstNeedsVanillaFlyer>
+    <CS_Ability_Validate_RuntimeConflict_MovementDuplicate>Multiple movement runtime components detected: {0}</CS_Ability_Validate_RuntimeConflict_MovementDuplicate>
+    <CS_Ability_Validate_SummonCount>Summon count must be greater than 0.</CS_Ability_Validate_SummonCount>
+    <CS_Ability_Validate_SummonKindRequired>Summon effect requires a PawnKindDef.</CS_Ability_Validate_SummonKindRequired>
+    <CS_Ability_Validate_TerraformSpawnCount>Terraform spawn count must be greater than 0.</CS_Ability_Validate_TerraformSpawnCount>
+    <CS_Ability_Validate_TerraformTerrainRequired>Terraform terrain replacement requires a TerrainDef.</CS_Ability_Validate_TerraformTerrainRequired>
+    <CS_Ability_Validate_TerraformThingRequired>Terraform spawn requires a ThingDef.</CS_Ability_Validate_TerraformThingRequired>
+    <CS_Ability_Validate_VanillaFlightWindowTicks>Flight-only window ticks must be greater than 0.</CS_Ability_Validate_VanillaFlightWindowTicks>
+    <CS_Ability_Validate_VanillaFlyerThingDefRequired>VanillaPawnFlyer requires a ThingDef name.</CS_Ability_Validate_VanillaFlyerThingDefRequired>
+    <CS_Ability_Validate_WarmupNegative>Warmup cannot be negative.</CS_Ability_Validate_WarmupNegative>
+    <CS_Ability_Validate_Warnings>Warnings</CS_Ability_Validate_Warnings>
+    <CS_Studio_Ability_ExamplesNotFound>No ability examples found.</CS_Studio_Ability_ExamplesNotFound>
+    <CS_Studio_Ability_ExportFailed>Ability export failed: {0}</CS_Studio_Ability_ExportFailed>
+    <CS_Studio_Ability_ExportSuccess>Ability export completed.</CS_Studio_Ability_ExportSuccess>
+    <CS_Studio_Ability_Hotkey_E>E</CS_Studio_Ability_Hotkey_E>
+    <CS_Studio_Ability_Hotkey_Enable>Enable hotkeys</CS_Studio_Ability_Hotkey_Enable>
+    <CS_Studio_Ability_Hotkey_Q>Q</CS_Studio_Ability_Hotkey_Q>
+    <CS_Studio_Ability_Hotkey_R>R</CS_Studio_Ability_Hotkey_R>
+    <CS_Studio_Ability_Hotkey_W>W</CS_Studio_Ability_Hotkey_W>
+    <CS_Studio_Ability_Hotkey_WCombo>W Combo</CS_Studio_Ability_Hotkey_WCombo>
+    <CS_Studio_Ability_PreviewRuntimeFlightOnlyStateAlways>Always</CS_Studio_Ability_PreviewRuntimeFlightOnlyStateAlways>
+    <CS_Studio_Ability_PreviewRuntimeFlightOnlyStateWindow>Flight Window Only</CS_Studio_Ability_PreviewRuntimeFlightOnlyStateWindow>
+    <CS_Studio_Add>Add</CS_Studio_Add>
+    <CS_Studio_Equip_Btn_TestSpawn>Test Spawn</CS_Studio_Equip_Btn_TestSpawn>
+    <CS_Studio_Equip_TestSpawnFailed>Test spawn failed.</CS_Studio_Equip_TestSpawnFailed>
+    <CS_Studio_Equip_TestSpawned>Test spawn succeeded.</CS_Studio_Equip_TestSpawned>
+    <CS_Studio_Export_ConfirmRights>I confirm I have the right to export these assets.</CS_Studio_Export_ConfirmRights>
+    <CS_Studio_Export_ConfirmRights_Desc>You must confirm asset rights before export.</CS_Studio_Export_ConfirmRights_Desc>
+    <CS_Studio_Export_ConfirmationSection>Confirmation</CS_Studio_Export_ConfirmationSection>
+    <CS_Studio_Export_ModuleAbilitiesEmptyHint>No ability module content selected.</CS_Studio_Export_ModuleAbilitiesEmptyHint>
+    <CS_Studio_Export_ModuleAbilitiesHint>Include ability content in export.</CS_Studio_Export_ModuleAbilitiesHint>
+    <CS_Studio_Export_ModuleGeneHint>Include gene content in export.</CS_Studio_Export_ModuleGeneHint>
+    <CS_Studio_Export_ModulePawnKindHint>Include PawnKind content in export.</CS_Studio_Export_ModulePawnKindHint>
+    <CS_Studio_Export_ModuleSummary>Selected export modules: {0}</CS_Studio_Export_ModuleSummary>
+    <CS_Studio_Export_ModuleSummonHint>Include summon content in export.</CS_Studio_Export_ModuleSummonHint>
+    <CS_Studio_Face_AnimationPreview_Title>Animation Preview</CS_Studio_Face_AnimationPreview_Title>
+    <CS_Studio_Face_PreviewBlinkLoop>Blink Loop</CS_Studio_Face_PreviewBlinkLoop>
+    <CS_Studio_Face_PreviewBlinkPlay>Play Blink</CS_Studio_Face_PreviewBlinkPlay>
+    <CS_Studio_Face_PreviewBlinkTooltip>Preview blink animation.</CS_Studio_Face_PreviewBlinkTooltip>
+    <CS_Studio_Menu_Abilities>Abilities</CS_Studio_Menu_Abilities>
+    <CS_Studio_Panel_CollapseAll>Collapse All</CS_Studio_Panel_CollapseAll>
+    <CS_Studio_Panel_ExpandAll>Expand All</CS_Studio_Panel_ExpandAll>
+    <CS_Studio_Panel_RefreshTree>Refresh Tree</CS_Studio_Panel_RefreshTree>
+    <CS_Studio_Section_Rendering>Rendering</CS_Studio_Section_Rendering>
+    <CS_Studio_Section_SkinBase>Skin Base</CS_Studio_Section_SkinBase>
+    <CS_Studio_Section_Targets>Targets</CS_Studio_Section_Targets>
+    <CS_Studio_Status_Loading>Loading...</CS_Studio_Status_Loading>
+    <CS_Studio_VFX_NoPresetsRegistered>No presets registered.</CS_Studio_VFX_NoPresetsRegistered>
 </LanguageData>

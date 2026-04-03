@@ -14,6 +14,8 @@
     <CS_Studio_Ability_AreaShape_Circle>圆形</CS_Studio_Ability_AreaShape_Circle>
     <CS_Studio_Ability_AreaShape_Line>直线</CS_Studio_Ability_AreaShape_Line>
     <CS_Studio_Ability_AreaShape_Cone>扇形</CS_Studio_Ability_AreaShape_Cone>
+    <CS_Studio_Ability_AreaShape_Cross>十字</CS_Studio_Ability_AreaShape_Cross>
+    <CS_Studio_Ability_AreaShape_Square>方形</CS_Studio_Ability_AreaShape_Square>
     <CS_Studio_Ability_AreaShape_Rectangle>矩形</CS_Studio_Ability_AreaShape_Rectangle>
     <CS_Studio_Ability_AreaShape_Irregular>不规则</CS_Studio_Ability_AreaShape_Irregular>
     <CS_Ability_EffectType_Damage>伤害</CS_Ability_EffectType_Damage>
@@ -53,6 +55,8 @@
     <CS_Ability_RuntimeComponentType_FlightState>飞行姿态</CS_Ability_RuntimeComponentType_FlightState>
     <CS_Ability_RuntimeComponentType_VanillaPawnFlyer>真实原版飞行</CS_Ability_RuntimeComponentType_VanillaPawnFlyer>
     <CS_Ability_RuntimeComponentType_VanillaPawnFlyer_Short>真实飞行</CS_Ability_RuntimeComponentType_VanillaPawnFlyer_Short>
+    <CS_Ability_RuntimeComponentType_TimeStop>时停</CS_Ability_RuntimeComponentType_TimeStop>
+    <CS_Ability_RuntimeComponentType_TimeStop_Short>时停</CS_Ability_RuntimeComponentType_TimeStop_Short>
     <CS_Ability_SelectPawn>选择角色</CS_Ability_SelectPawn>
     <CS_Ability_SelectArea>目标区域</CS_Ability_SelectArea>
     <CS_Ability_Summary_Damage>伤害：{0}</CS_Ability_Summary_Damage>
@@ -64,6 +68,12 @@
     <CS_Ability_Summary_Control>控制：{0}</CS_Ability_Summary_Control>
     <CS_Ability_Summary_Terraform>地形改造：{0}</CS_Ability_Summary_Terraform>
     <CS_Ability_ClearBinding>清除绑定</CS_Ability_ClearBinding>
+    <CS_Ability_BoundPawn>已绑定角色</CS_Ability_BoundPawn>
+    <CS_Ability_Grant>授予技能</CS_Ability_Grant>
+    <CS_Ability_GrantSuccess>技能授予成功。</CS_Ability_GrantSuccess>
+    <CS_Ability_NoPawnBound>未绑定角色。</CS_Ability_NoPawnBound>
+    <CS_Ability_Revoke>撤销技能</CS_Ability_Revoke>
+    <CS_Ability_RevokeSuccess>技能撤销成功。</CS_Ability_RevokeSuccess>
     <CS_Studio_Runtime_Desc_QComboWindow>施放后开启一个短暂的 Q 连段接受窗口。</CS_Studio_Runtime_Desc_QComboWindow>
     <CS_Studio_Runtime_Desc_HotkeyOverride>暂时将某个热键技能替换为另一个指定技能。</CS_Studio_Runtime_Desc_HotkeyOverride>
     <CS_Studio_Runtime_Desc_FollowupCooldownGate>对指定后续热键施加额外冷却门限制。</CS_Studio_Runtime_Desc_FollowupCooldownGate>
@@ -91,5 +101,60 @@
     <CS_Studio_Runtime_Desc_VanillaPawnFlyer>启动一个真实的 RimWorld 1.6 PawnFlyer，而不是伪飞行姿态。</CS_Studio_Runtime_Desc_VanillaPawnFlyer>
     <CS_Studio_Runtime_Desc_FlightLandingBurst>真实飞行结束落地时触发一次落地爆发。</CS_Studio_Runtime_Desc_FlightLandingBurst>
     <CS_Studio_Runtime_Desc_ProjectileSplit>分裂出额外后续命中，攻击附近目标。</CS_Studio_Runtime_Desc_ProjectileSplit>
+    <CS_Studio_Runtime_Desc_TimeStop>短时间停止其他 Pawn 与地图更新，仅保留施法者继续行动，并尽可能冻结其他动画。</CS_Studio_Runtime_Desc_TimeStop>
     <CS_Studio_Runtime_DuplicateSingletonBlocked>已存在 {0}；重复添加这类单例型运行时组件已被阻止。</CS_Studio_Runtime_DuplicateSingletonBlocked>
+    <CS_Studio_Runtime_TimeStopDurationTicks>时停时长（Tick）</CS_Studio_Runtime_TimeStopDurationTicks>
+    <CS_Studio_Runtime_TimeStopFreezeVisuals>冻结其他动画</CS_Studio_Runtime_TimeStopFreezeVisuals>
+    <CS_Ability_Validate_TimeStopDurationTicks>时停时长必须大于 0。</CS_Ability_Validate_TimeStopDurationTicks>
+    <CS_Studio_VFX_Type_LineTexture>线状贴图</CS_Studio_VFX_Type_LineTexture>
+    <CS_Studio_VFX_Type_WallTexture>墙状贴图</CS_Studio_VFX_Type_WallTexture>
+    <CS_Studio_VFX_Type_DustPuff>尘雾</CS_Studio_VFX_Type_DustPuff>
+    <CS_Studio_VFX_Type_MicroSparks>微型火花</CS_Studio_VFX_Type_MicroSparks>
+    <CS_Studio_VFX_Type_LightningGlow>闪电光晕</CS_Studio_VFX_Type_LightningGlow>
+    <CS_Studio_VFX_Type_FireGlow>火焰光晕</CS_Studio_VFX_Type_FireGlow>
+    <CS_Studio_VFX_Type_Smoke>烟雾</CS_Studio_VFX_Type_Smoke>
+    <CS_Studio_VFX_Type_ExplosionEffect>爆炸闪光</CS_Studio_VFX_Type_ExplosionEffect>
+    <CS_Studio_VFX_Type_Preset>预设特效</CS_Studio_VFX_Type_Preset>
+    <CS_Studio_VFX_Type_CustomTexture>自定义贴图</CS_Studio_VFX_Type_CustomTexture>
+    <CS_Studio_VFX_Target_Caster>施法者</CS_Studio_VFX_Target_Caster>
+    <CS_Studio_VFX_Target_Target>目标</CS_Studio_VFX_Target_Target>
+    <CS_Studio_VFX_Target_Both>两者</CS_Studio_VFX_Target_Both>
+    <CS_Studio_VFX_Title>外观特效</CS_Studio_VFX_Title>
+    <CS_Studio_VFX_Add>+ 添加</CS_Studio_VFX_Add>
+    <CS_Studio_VFX_EmptyHint>暂无外观特效。点击「+ 添加」可配置技能触发时播放的粒子/闪光效果。</CS_Studio_VFX_EmptyHint>
+    <CS_Studio_VFX_Enabled>启用</CS_Studio_VFX_Enabled>
+    <CS_Studio_VFX_SourceModeShort>来源</CS_Studio_VFX_SourceModeShort>
+    <CS_Studio_VFX_TargetShort>目标</CS_Studio_VFX_TargetShort>
+    <CS_Studio_VFX_TextureShort>纹理</CS_Studio_VFX_TextureShort>
+    <CS_Studio_VFX_FacingModeShort>朝向</CS_Studio_VFX_FacingModeShort>
+    <CS_Studio_VFX_TriggerShort>时机</CS_Studio_VFX_TriggerShort>
+    <CS_Studio_VFX_TypeShort>类型</CS_Studio_VFX_TypeShort>
+    <CS_Studio_VFX_SpatialShort>空间</CS_Studio_VFX_SpatialShort>
+    <CS_Studio_VFX_PathShort>路径</CS_Studio_VFX_PathShort>
+    <CS_Studio_VFX_AnchorShort>锚点A</CS_Studio_VFX_AnchorShort>
+    <CS_Studio_VFX_AnchorBShort>锚点B</CS_Studio_VFX_AnchorBShort>
+    <CS_Studio_VFX_LineWidthShort>线宽</CS_Studio_VFX_LineWidthShort>
+    <CS_Studio_VFX_WallHeightShort>墙高</CS_Studio_VFX_WallHeightShort>
+    <CS_Studio_VFX_WallThicknessShort>墙厚</CS_Studio_VFX_WallThicknessShort>
+    <CS_Studio_VFX_SegmentsShort>分段</CS_Studio_VFX_SegmentsShort>
+    <CS_Studio_VFX_SpatialMode_Point>点</CS_Studio_VFX_SpatialMode_Point>
+    <CS_Studio_VFX_SpatialMode_Line>线</CS_Studio_VFX_SpatialMode_Line>
+    <CS_Studio_VFX_SpatialMode_Wall>墙</CS_Studio_VFX_SpatialMode_Wall>
+    <CS_Studio_VFX_AnchorMode_Caster>施法者</CS_Studio_VFX_AnchorMode_Caster>
+    <CS_Studio_VFX_AnchorMode_Target>目标</CS_Studio_VFX_AnchorMode_Target>
+    <CS_Studio_VFX_AnchorMode_TargetCell>目标格</CS_Studio_VFX_AnchorMode_TargetCell>
+    <CS_Studio_VFX_AnchorMode_AreaCenter>区域中心</CS_Studio_VFX_AnchorMode_AreaCenter>
+    <CS_Studio_VFX_PathMode_None>无</CS_Studio_VFX_PathMode_None>
+    <CS_Studio_VFX_PathMode_DirectLineCasterToTarget>施法者到目标直线</CS_Studio_VFX_PathMode_DirectLineCasterToTarget>
+    <CS_Ability_Validate_VfxTexturePathRequired>视觉特效需要有效的贴图路径。</CS_Ability_Validate_VfxTexturePathRequired>
+    <CS_Ability_Validate_VfxLineWidthPositive>线宽必须大于 0。</CS_Ability_Validate_VfxLineWidthPositive>
+    <CS_Ability_Validate_VfxWallHeightPositive>墙高必须大于 0。</CS_Ability_Validate_VfxWallHeightPositive>
+    <CS_Ability_Validate_VfxWallThicknessPositive>墙厚必须大于 0。</CS_Ability_Validate_VfxWallThicknessPositive>
+    <CS_Ability_Validate_VfxSegmentCountPositive>分段数量必须大于 0。</CS_Ability_Validate_VfxSegmentCountPositive>
+    <CS_Ability_Validate_VfxSegmentRevealNonNegative>分段显现间隔不能为负数。</CS_Ability_Validate_VfxSegmentRevealNonNegative>
+    <CS_Ability_Validate_VfxRepeatCountPositive>特效重复次数必须大于 0。</CS_Ability_Validate_VfxRepeatCountPositive>
+    <CS_Ability_Validate_VfxDurationPositive>特效持续时间必须大于 0。</CS_Ability_Validate_VfxDurationPositive>
+    <CS_Ability_Validate_VfxNull>第 {0} 个视觉特效为空。</CS_Ability_Validate_VfxNull>
+    <CS_Ability_Validate_VfxIndexError>视觉特效 #{0}: {1}</CS_Ability_Validate_VfxIndexError>
+    <CS_Ability_Validate_VfxIndexWarning>视觉特效 #{0}: {1}</CS_Ability_Validate_VfxIndexWarning>
 </LanguageData>

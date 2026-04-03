@@ -353,4 +353,121 @@
     <CS_Studio_VFX_TriggerShort>时机</CS_Studio_VFX_TriggerShort>
     <CS_Studio_VFX_TypeShort>类型</CS_Studio_VFX_TypeShort>
     <CS_Studio_VFX_UseCasterFacing>使用施法者朝向</CS_Studio_VFX_UseCasterFacing>
+    <CS_Ability_BoundPawn>已绑定角色</CS_Ability_BoundPawn>
+    <CS_Ability_Carrier>载体</CS_Ability_Carrier>
+    <CS_Ability_Grant>授予技能</CS_Ability_Grant>
+    <CS_Ability_GrantSuccess>技能授予成功。</CS_Ability_GrantSuccess>
+    <CS_Ability_Hotkey_AbilityMissing>已绑定技能不存在。</CS_Ability_Hotkey_AbilityMissing>
+    <CS_Ability_Hotkey_CastSuccess>技能施放成功。</CS_Ability_Hotkey_CastSuccess>
+    <CS_Ability_Hotkey_QMode>Q 模式</CS_Ability_Hotkey_QMode>
+    <CS_Ability_Hotkey_SlotCooldown>{0} 冷却：{1}t</CS_Ability_Hotkey_SlotCooldown>
+    <CS_Ability_NoPawnBound>未绑定角色。</CS_Ability_NoPawnBound>
+    <CS_Ability_NotReady>尚未就绪。</CS_Ability_NotReady>
+    <CS_Ability_OnCooldown>正在冷却中。</CS_Ability_OnCooldown>
+    <CS_Ability_R_Ready>R 已就绪。</CS_Ability_R_Ready>
+    <CS_Ability_R_SecondStageArmed>R 二段已准备。</CS_Ability_R_SecondStageArmed>
+    <CS_Ability_R_SecondStageCast>R 二段已施放。</CS_Ability_R_SecondStageCast>
+    <CS_Ability_R_StackGain>R 层数：{0}/{1}</CS_Ability_R_StackGain>
+    <CS_Ability_R_StackingOff>R 叠层已关闭。</CS_Ability_R_StackingOff>
+    <CS_Ability_R_StackingOn>R 叠层已开启。</CS_Ability_R_StackingOn>
+    <CS_Ability_R_TargetInvalid>R 目标无效。</CS_Ability_R_TargetInvalid>
+    <CS_Ability_Revoke>撤销技能</CS_Ability_Revoke>
+    <CS_Ability_RevokeSuccess>技能撤销成功。</CS_Ability_RevokeSuccess>
+    <CS_Ability_Validate_CarrierNeedsRange>{0} 通常需要大于 0 的射程。</CS_Ability_Validate_CarrierNeedsRange>
+    <CS_Ability_Validate_ChargesNonPositive>次数应大于 0。</CS_Ability_Validate_ChargesNonPositive>
+    <CS_Ability_Validate_ControlDuration>控制持续时间不能为负数。</CS_Ability_Validate_ControlDuration>
+    <CS_Ability_Validate_ControlMoveDistance>控制移动距离必须大于 0。</CS_Ability_Validate_ControlMoveDistance>
+    <CS_Ability_Validate_CooldownNegative>冷却不能为负数。</CS_Ability_Validate_CooldownNegative>
+    <CS_Ability_Validate_DamageAmount>伤害数值必须大于 0。</CS_Ability_Validate_DamageAmount>
+    <CS_Ability_Validate_DefNameEmpty>DefName 不能为空。</CS_Ability_Validate_DefNameEmpty>
+    <CS_Ability_Validate_DefNameInvalid>DefName 包含非法字符。</CS_Ability_Validate_DefNameInvalid>
+    <CS_Ability_Validate_EShortJumpCooldown>位移冷却不能为负数。</CS_Ability_Validate_EShortJumpCooldown>
+    <CS_Ability_Validate_EShortJumpDistance>位移距离必须大于 0。</CS_Ability_Validate_EShortJumpDistance>
+    <CS_Ability_Validate_EShortJumpFindCellRadius>落点搜索半径不能为负数。</CS_Ability_Validate_EShortJumpFindCellRadius>
+    <CS_Ability_Validate_EffectChanceRange>效果概率 {0} 必须在 0 到 1 之间。</CS_Ability_Validate_EffectChanceRange>
+    <CS_Ability_Validate_EffectIndexError>效果 #{0}: {1}</CS_Ability_Validate_EffectIndexError>
+    <CS_Ability_Validate_EffectIndexWarning>效果 #{0}: {1}</CS_Ability_Validate_EffectIndexWarning>
+    <CS_Ability_Validate_EffectNegativeAmount>效果数值为负数。</CS_Ability_Validate_EffectNegativeAmount>
+    <CS_Ability_Validate_Failed>校验失败</CS_Ability_Validate_Failed>
+    <CS_Ability_Validate_FlightDurationTicks>飞行持续时间必须大于 0 tick。</CS_Ability_Validate_FlightDurationTicks>
+    <CS_Ability_Validate_FlightHeightFactor>飞行高度系数不能为负数。</CS_Ability_Validate_FlightHeightFactor>
+    <CS_Ability_Validate_FlightHeightFactorWarning>飞行高度系数异常偏高。</CS_Ability_Validate_FlightHeightFactorWarning>
+    <CS_Ability_Validate_FlightOnlyFollowupReservedTargetRecommended>这种后续技能模式建议保留目标格。</CS_Ability_Validate_FlightOnlyFollowupReservedTargetRecommended>
+    <CS_Ability_Validate_FlightOnlyFollowupSourceRecommended>这种飞行后续技能建议填写来源技能 DefName。</CS_Ability_Validate_FlightOnlyFollowupSourceRecommended>
+    <CS_Ability_Validate_FullHealthBonusScale>满血增伤倍率必须大于 0。</CS_Ability_Validate_FullHealthBonusScale>
+    <CS_Ability_Validate_FullHealthThreshold>满血阈值必须在 0 到 1 之间。</CS_Ability_Validate_FullHealthThreshold>
+    <CS_Ability_Validate_HediffRequired>{0} 需要指定 HediffDef。</CS_Ability_Validate_HediffRequired>
+    <CS_Ability_Validate_IsolatedTargetBonusScale>孤立目标增伤倍率必须大于 0。</CS_Ability_Validate_IsolatedTargetBonusScale>
+    <CS_Ability_Validate_IsolatedTargetRadius>孤立判定半径必须大于 0。</CS_Ability_Validate_IsolatedTargetRadius>
+    <CS_Ability_Validate_LabelEmpty>标签为空。</CS_Ability_Validate_LabelEmpty>
+    <CS_Ability_Validate_LandingBurstDamage>落地爆发伤害必须大于 0。</CS_Ability_Validate_LandingBurstDamage>
+    <CS_Ability_Validate_LandingBurstRadius>落地爆发半径必须大于 0。</CS_Ability_Validate_LandingBurstRadius>
+    <CS_Ability_Validate_NearbyEnemyBonusMaxTargets>邻敌计数上限必须大于 0。</CS_Ability_Validate_NearbyEnemyBonusMaxTargets>
+    <CS_Ability_Validate_NearbyEnemyBonusPerTarget>每个邻敌增伤必须大于 0。</CS_Ability_Validate_NearbyEnemyBonusPerTarget>
+    <CS_Ability_Validate_NearbyEnemyBonusRadius>邻敌判定半径必须大于 0。</CS_Ability_Validate_NearbyEnemyBonusRadius>
+    <CS_Ability_Validate_NoEffects>未配置任何游戏逻辑效果。</CS_Ability_Validate_NoEffects>
+    <CS_Ability_Validate_ProjectileDefMissing>投射物载体缺少 projectileDef。</CS_Ability_Validate_ProjectileDefMissing>
+    <CS_Ability_Validate_QComboWindowTicks>连段窗口必须大于 0 tick。</CS_Ability_Validate_QComboWindowTicks>
+    <CS_Ability_Validate_RDelayTicks>延迟不能为负数。</CS_Ability_Validate_RDelayTicks>
+    <CS_Ability_Validate_RRequiredStacks>所需层数必须大于 0。</CS_Ability_Validate_RRequiredStacks>
+    <CS_Ability_Validate_RWaveDamage>波次伤害必须大于 0。</CS_Ability_Validate_RWaveDamage>
+    <CS_Ability_Validate_RWaveRadius>波次半径必须大于 0。</CS_Ability_Validate_RWaveRadius>
+    <CS_Ability_Validate_RadiusNegative>半径不能为负数。</CS_Ability_Validate_RadiusNegative>
+    <CS_Ability_Validate_RangeNegative>射程不能为负数。</CS_Ability_Validate_RangeNegative>
+    <CS_Ability_Validate_RuntimeComponentError>运行时组件 #{0}（{1}）：{2}</CS_Ability_Validate_RuntimeComponentError>
+    <CS_Ability_Validate_RuntimeComponentNull>第 {0} 个运行时组件为空。</CS_Ability_Validate_RuntimeComponentNull>
+    <CS_Ability_Validate_RuntimeComponentWarning>运行时组件 #{0}（{1}）：{2}</CS_Ability_Validate_RuntimeComponentWarning>
+    <CS_Ability_Validate_RuntimeConflict_DashEmpowerNeedsMovement>{0} 需要配合位移型运行时组件。</CS_Ability_Validate_RuntimeConflict_DashEmpowerNeedsMovement>
+    <CS_Ability_Validate_RuntimeConflict_DuplicateSingleton>重复的单例运行时组件 {0}（{1}）：{2}</CS_Ability_Validate_RuntimeConflict_DuplicateSingleton>
+    <CS_Ability_Validate_RuntimeConflict_FlightOnlyNeedsVanillaFlyer>{0} 需要 VanillaPawnFlyer。</CS_Ability_Validate_RuntimeConflict_FlightOnlyNeedsVanillaFlyer>
+    <CS_Ability_Validate_RuntimeConflict_FlightStateWithVanillaFlyer>{0} 与 {1} 冲突。</CS_Ability_Validate_RuntimeConflict_FlightStateWithVanillaFlyer>
+    <CS_Ability_Validate_RuntimeConflict_LandingBurstNeedsVanillaFlyer>{0} 需要 VanillaPawnFlyer。</CS_Ability_Validate_RuntimeConflict_LandingBurstNeedsVanillaFlyer>
+    <CS_Ability_Validate_RuntimeConflict_MovementDuplicate>检测到多个位移型运行时组件：{0}</CS_Ability_Validate_RuntimeConflict_MovementDuplicate>
+    <CS_Ability_Validate_SummonCount>召唤数量必须大于 0。</CS_Ability_Validate_SummonCount>
+    <CS_Ability_Validate_SummonKindRequired>召唤效果需要指定 PawnKindDef。</CS_Ability_Validate_SummonKindRequired>
+    <CS_Ability_Validate_TerraformSpawnCount>地形生成数量必须大于 0。</CS_Ability_Validate_TerraformSpawnCount>
+    <CS_Ability_Validate_TerraformTerrainRequired>替换地形需要指定 TerrainDef。</CS_Ability_Validate_TerraformTerrainRequired>
+    <CS_Ability_Validate_TerraformThingRequired>生成物体需要指定 ThingDef。</CS_Ability_Validate_TerraformThingRequired>
+    <CS_Ability_Validate_VanillaFlightWindowTicks>飞行专用窗口时长必须大于 0。</CS_Ability_Validate_VanillaFlightWindowTicks>
+    <CS_Ability_Validate_VanillaFlyerThingDefRequired>VanillaPawnFlyer 需要填写 ThingDef 名称。</CS_Ability_Validate_VanillaFlyerThingDefRequired>
+    <CS_Ability_Validate_WarmupNegative>前摇不能为负数。</CS_Ability_Validate_WarmupNegative>
+    <CS_Ability_Validate_Warnings>警告</CS_Ability_Validate_Warnings>
+    <CS_Studio_Ability_ExamplesNotFound>未找到技能示例。</CS_Studio_Ability_ExamplesNotFound>
+    <CS_Studio_Ability_ExportFailed>技能导出失败：{0}</CS_Studio_Ability_ExportFailed>
+    <CS_Studio_Ability_ExportSuccess>技能导出完成。</CS_Studio_Ability_ExportSuccess>
+    <CS_Studio_Ability_Hotkey_E>E</CS_Studio_Ability_Hotkey_E>
+    <CS_Studio_Ability_Hotkey_Enable>启用热键</CS_Studio_Ability_Hotkey_Enable>
+    <CS_Studio_Ability_Hotkey_Q>Q</CS_Studio_Ability_Hotkey_Q>
+    <CS_Studio_Ability_Hotkey_R>R</CS_Studio_Ability_Hotkey_R>
+    <CS_Studio_Ability_Hotkey_W>W</CS_Studio_Ability_Hotkey_W>
+    <CS_Studio_Ability_Hotkey_WCombo>W 连段</CS_Studio_Ability_Hotkey_WCombo>
+    <CS_Studio_Ability_PreviewRuntimeFlightOnlyStateAlways>始终可用</CS_Studio_Ability_PreviewRuntimeFlightOnlyStateAlways>
+    <CS_Studio_Ability_PreviewRuntimeFlightOnlyStateWindow>仅飞行窗口</CS_Studio_Ability_PreviewRuntimeFlightOnlyStateWindow>
+    <CS_Studio_Add>添加</CS_Studio_Add>
+    <CS_Studio_Equip_Btn_TestSpawn>测试生成</CS_Studio_Equip_Btn_TestSpawn>
+    <CS_Studio_Equip_TestSpawnFailed>测试生成失败。</CS_Studio_Equip_TestSpawnFailed>
+    <CS_Studio_Equip_TestSpawned>测试生成成功。</CS_Studio_Equip_TestSpawned>
+    <CS_Studio_Export_ConfirmRights>我确认拥有这些素材的导出权利。</CS_Studio_Export_ConfirmRights>
+    <CS_Studio_Export_ConfirmRights_Desc>导出前必须确认素材权利。</CS_Studio_Export_ConfirmRights_Desc>
+    <CS_Studio_Export_ConfirmationSection>确认事项</CS_Studio_Export_ConfirmationSection>
+    <CS_Studio_Export_ModuleAbilitiesEmptyHint>未选择任何技能模块内容。</CS_Studio_Export_ModuleAbilitiesEmptyHint>
+    <CS_Studio_Export_ModuleAbilitiesHint>导出中包含技能内容。</CS_Studio_Export_ModuleAbilitiesHint>
+    <CS_Studio_Export_ModuleGeneHint>导出中包含 Gene 内容。</CS_Studio_Export_ModuleGeneHint>
+    <CS_Studio_Export_ModulePawnKindHint>导出中包含 PawnKind 内容。</CS_Studio_Export_ModulePawnKindHint>
+    <CS_Studio_Export_ModuleSummary>已选择导出模块：{0}</CS_Studio_Export_ModuleSummary>
+    <CS_Studio_Export_ModuleSummonHint>导出中包含召唤内容。</CS_Studio_Export_ModuleSummonHint>
+    <CS_Studio_Face_AnimationPreview_Title>动画预览</CS_Studio_Face_AnimationPreview_Title>
+    <CS_Studio_Face_PreviewBlinkLoop>眨眼循环</CS_Studio_Face_PreviewBlinkLoop>
+    <CS_Studio_Face_PreviewBlinkPlay>播放眨眼</CS_Studio_Face_PreviewBlinkPlay>
+    <CS_Studio_Face_PreviewBlinkTooltip>预览眨眼动画。</CS_Studio_Face_PreviewBlinkTooltip>
+    <CS_Studio_Menu_Abilities>技能</CS_Studio_Menu_Abilities>
+    <CS_Studio_Panel_CollapseAll>全部折叠</CS_Studio_Panel_CollapseAll>
+    <CS_Studio_Panel_ExpandAll>全部展开</CS_Studio_Panel_ExpandAll>
+    <CS_Studio_Panel_RefreshTree>刷新树</CS_Studio_Panel_RefreshTree>
+    <CS_Studio_Runtime_Color>颜色</CS_Studio_Runtime_Color>
+    <CS_Studio_Runtime_Offset>偏移</CS_Studio_Runtime_Offset>
+    <CS_Studio_Runtime_Rotation>旋转</CS_Studio_Runtime_Rotation>
+    <CS_Studio_Runtime_Scale>缩放</CS_Studio_Runtime_Scale>
+    <CS_Studio_Section_Rendering>渲染</CS_Studio_Section_Rendering>
+    <CS_Studio_VFX_NoPresetsRegistered>未注册任何预设。</CS_Studio_VFX_NoPresetsRegistered>
 </LanguageData>
