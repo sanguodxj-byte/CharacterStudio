@@ -288,6 +288,24 @@ namespace CharacterStudio.Core
         /// <summary>动画相位偏移（0-1，用于错开多个图层）</summary>
         public float animPhaseOffset = 0f;
 
+        /// <summary>Brownian 漫游半径（相对角色中心）</summary>
+        public float brownianRadius = 0.18f;
+
+        /// <summary>Brownian 随机扰动力度</summary>
+        public float brownianJitter = 0.012f;
+
+        /// <summary>Brownian 速度阻尼（越大越稳）</summary>
+        public float brownianDamping = 0.92f;
+
+        /// <summary>战斗状态下收拢到角色附近的半径</summary>
+        public float brownianCombatRadius = 0.06f;
+
+        /// <summary>是否启用通行约束，避免漂移到不可通行格</summary>
+        public bool brownianRespectWalkability = false;
+
+        /// <summary>是否限制在当前房间内游走</summary>
+        public bool brownianStayInRoom = false;
+
         /// <summary>
         /// 旋转枢轴点本地偏移（相对于图层锚点，单位与 offset 相同）。
         /// 仅在 animationType == Spin 时使用：图层将绕
@@ -381,6 +399,12 @@ namespace CharacterStudio.Core
                 animAffectsOffset = this.animAffectsOffset,
                 animOffsetAmplitude = this.animOffsetAmplitude,
                 animPhaseOffset = this.animPhaseOffset,
+                brownianRadius = this.brownianRadius,
+                brownianJitter = this.brownianJitter,
+                brownianDamping = this.brownianDamping,
+                brownianCombatRadius = this.brownianCombatRadius,
+                brownianRespectWalkability = this.brownianRespectWalkability,
+                brownianStayInRoom = this.brownianStayInRoom,
                 animPivotOffset = this.animPivotOffset,
                 useTriggeredEquipmentAnimation = this.useTriggeredEquipmentAnimation,
                 triggerAbilityDefName = this.triggerAbilityDefName,
@@ -467,7 +491,9 @@ namespace CharacterStudio.Core
         /// <summary>呼吸起伏（缩放动画）</summary>
         Breathe,
         /// <summary>持续旋转（以枢轴点为中心匀速旋转，适用于旋翼/飞行器等）</summary>
-        Spin
+        Spin,
+        /// <summary>布朗运动闲逛（以角色为中心的随机游走）</summary>
+        Brownian
     }
 
     /// <summary>

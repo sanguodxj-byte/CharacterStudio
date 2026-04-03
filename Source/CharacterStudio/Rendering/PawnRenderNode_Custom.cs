@@ -58,6 +58,12 @@ namespace CharacterStudio.Rendering
         /// <summary>Spin 模式下上一次更新的游戏 Tick</summary>
         public int lastSpinTick = -1;
 
+        /// <summary>Brownian 模式下上次更新 Tick</summary>
+        public int lastBrownianTick = -1;
+
+        /// <summary>Brownian 模式下当前速度</summary>
+        public Vector3 currentBrownianVelocity = Vector3.zero;
+
         /// <summary>当前动画产生的位移偏移</summary>
         public Vector3 currentAnimOffset = Vector3.zero;
 

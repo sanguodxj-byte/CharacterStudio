@@ -103,6 +103,7 @@ namespace CharacterStudio.Core
                 LayeredFacePartType.Pupil => EvaluatePupil(context, pupilMotion),
                 LayeredFacePartType.UpperLid => EvaluateUpperLid(context, lidMotion, upperLidMoveDown),
                 LayeredFacePartType.LowerLid => EvaluateLowerLid(context, lidMotion),
+                LayeredFacePartType.ReplacementEye => EvaluateReplacementEye(context),
                 LayeredFacePartType.Mouth => EvaluateMouth(context, mouthMotion),
                 LayeredFacePartType.Hair => EvaluateHair(),
                 LayeredFacePartType.Blush => EvaluateBlush(context, emotionOverlayMotion),
@@ -466,19 +467,28 @@ namespace CharacterStudio.Core
 
         private static FaceTransformResult EvaluateOverlay(FaceTransformContext context)
         {
-            if (PawnFaceConfig.GetOverlayDisplayPartType(context.overlayId) == LayeredFacePartType.Eye)
+            return FaceTransformResult.Visible(0f, Vector3.zero, Vector3.one);
+        }
+
+        private static FaceTransformResult EvaluateReplacementEye(FaceTransformContext context)
+        {
+            if (!context.hasReplacementEyeOverlay)
+                return FaceTransformResult.Hidden();
+
+            if (context.isBlinkActive)
             {
-                if (!context.hasReplacementEyeOverlay)
-                    return FaceTransformResult.Hidden();
-
-                if (context.isBlinkActive && context.blinkPhase != BlinkPhase.ShowReplacementEye)
-                    return FaceTransformResult.Hidden();
-
-                if (!context.isBlinkActive && context.expression == ExpressionType.Neutral)
-                    return FaceTransformResult.Hidden();
+                return context.blinkPhase == BlinkPhase.ShowReplacementEye
+                    ? FaceTransformResult.Visible(0f, Vector3.zero, Vector3.one)
+                    : FaceTransformResult.Hidden();
             }
 
-            return FaceTransformResult.Visible(0f, Vector3.zero, Vector3.one);
+            return context.expression switch
+            {
+                ExpressionType.Dead => FaceTransformResult.Visible(0f, Vector3.zero, Vector3.one),
+                ExpressionType.Sleeping => FaceTransformResult.Visible(0f, Vector3.zero, Vector3.one),
+                ExpressionType.Happy or ExpressionType.Cheerful or ExpressionType.Lovin or ExpressionType.SocialRelax => FaceTransformResult.Visible(0f, Vector3.zero, Vector3.one),
+                _ => FaceTransformResult.Hidden()
+            };
         }
     }
 }

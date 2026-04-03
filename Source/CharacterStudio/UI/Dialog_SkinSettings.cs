@@ -66,18 +66,19 @@ namespace CharacterStudio.UI
 
         public override void DoWindowContents(Rect inRect)
         {
-            Text.Font = GameFont.Medium;
-            Widgets.Label(new Rect(0, 0, inRect.width, 30), "CS_Studio_Skin_Settings".Translate());
-            Text.Font = GameFont.Small;
+            Rect shellRect = new Rect(0f, 0f, inRect.width, inRect.height);
+            Rect titleRect = UIHelper.DrawPanelShell(shellRect, "CS_Studio_Skin_Settings".Translate(), 0f);
 
-            float y = 40;
+            float y = titleRect.yMax + 8f;
             float labelWidth = 120f;
             float fieldWidth = inRect.width - labelWidth - 20;
 
             Rect scrollRect = new Rect(0, y, inRect.width, inRect.height - y - 50);
             Rect viewRect = new Rect(0, 0, scrollRect.width - 16, 930);
 
-            Widgets.BeginScrollView(scrollRect, ref scrollPos, viewRect);
+            UIHelper.DrawContentCard(scrollRect);
+
+            Widgets.BeginScrollView(scrollRect.ContractedBy(2f), ref scrollPos, viewRect);
 
             float vy = 0;
             float width = viewRect.width;
@@ -87,7 +88,6 @@ namespace CharacterStudio.UI
             UIHelper.DrawPropertyField(ref vy, width, "DefName", ref tempDefName);
             UIHelper.DrawPropertyField(ref vy, width, "CS_Studio_Label".Translate(), ref tempLabel);
             
-            // 描述使用原生的 TextArea，UIHelper 暂未包含
             Widgets.Label(new Rect(0, vy, 100, 24), "CS_Studio_Description".Translate());
             tempDescription = Widgets.TextArea(new Rect(100, vy, width - 100, 60), tempDescription);
             vy += 65;
@@ -164,7 +164,7 @@ namespace CharacterStudio.UI
                 UIHelper.DrawPropertySlider(ref vy, width, "CS_Studio_WeaponRender_OffEastZ".Translate(), ref wrc.offsetEast.z, -2f, 2f, "F3");
 
                 // 重置按钮
-                if (Widgets.ButtonText(new Rect(0, vy, 120, 24), "CS_Studio_WeaponRender_Reset".Translate()))
+                if (UIHelper.DrawToolbarButton(new Rect(0, vy, 120, 24), "CS_Studio_WeaponRender_Reset".Translate()))
                 {
                     skinDef.weaponRenderConfig = new CharacterStudio.Core.WeaponRenderConfig { enabled = true };
                     onChanged?.Invoke();
@@ -181,7 +181,7 @@ namespace CharacterStudio.UI
             float btnWidth = 100f;
             float btnY = inRect.height - 35;
 
-            if (Widgets.ButtonText(new Rect(inRect.width / 2 - btnWidth / 2, btnY, btnWidth, 30), "CS_Studio_Btn_OK".Translate()))
+            if (UIHelper.DrawToolbarButton(new Rect(inRect.width / 2 - btnWidth / 2, btnY, btnWidth, 30), "CS_Studio_Btn_OK".Translate(), accent: true))
             {
                 Close();
             }

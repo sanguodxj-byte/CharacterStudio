@@ -8,22 +8,8 @@ namespace CharacterStudio.UI
     {
         private void DrawPropertiesHeader(Rect rect)
         {
-            Rect titleRect = new Rect(rect.x + Margin, rect.y + Margin, rect.width - Margin * 2, 26f);
-            Widgets.DrawBoxSolid(titleRect, UIHelper.PanelFillSoftColor);
-            Widgets.DrawBoxSolid(new Rect(titleRect.x, titleRect.yMax - 2f, titleRect.width, 2f), UIHelper.AccentSoftColor);
-            GUI.color = UIHelper.BorderColor;
-            Widgets.DrawBox(titleRect, 1);
-            GUI.color = Color.white;
-
-            GameFont oldFont = Text.Font;
-            Text.Font = GameFont.Tiny;
-            Text.Anchor = TextAnchor.MiddleLeft;
-            GUI.color = UIHelper.HeaderColor;
             string title = layerModificationWorkflowActive ? "图层修改补丁属性" : "CS_Studio_Panel_Properties".Translate();
-            Widgets.Label(new Rect(titleRect.x + 8f, titleRect.y, titleRect.width - 72f, titleRect.height), title);
-            GUI.color = Color.white;
-            Text.Anchor = TextAnchor.UpperLeft;
-            Text.Font = oldFont;
+            Rect titleRect = UIHelper.DrawPanelShell(rect, title, Margin, 72f);
 
             float expandBtnWidth = 24f;
             DrawPropertiesHeaderButton(new Rect(rect.x + rect.width - Margin - expandBtnWidth * 2 - 4, rect.y + Margin + 1f, expandBtnWidth, 24f), "+", "CS_Studio_Tip_ExpandAll".Translate(), () =>
@@ -60,23 +46,7 @@ namespace CharacterStudio.UI
 
         private bool DrawPropertiesHeaderButton(Rect buttonRect, string label, string tooltip, Action onClick)
         {
-            Widgets.DrawBoxSolid(buttonRect, UIHelper.PanelFillSoftColor);
-            Widgets.DrawBoxSolid(new Rect(buttonRect.x, buttonRect.yMax - 2f, buttonRect.width, 2f), new Color(1f, 1f, 1f, 0.05f));
-            GUI.color = Mouse.IsOver(buttonRect) ? UIHelper.HoverOutlineColor : UIHelper.BorderColor;
-            Widgets.DrawBox(buttonRect, 1);
-            GUI.color = Color.white;
-
-            GameFont oldFont = Text.Font;
-            Text.Font = GameFont.Tiny;
-            Text.Anchor = TextAnchor.MiddleCenter;
-            GUI.color = UIHelper.HeaderColor;
-            Widgets.Label(buttonRect, label);
-            GUI.color = Color.white;
-            Text.Anchor = TextAnchor.UpperLeft;
-            Text.Font = oldFont;
-
-            TooltipHandler.TipRegion(buttonRect, tooltip);
-            if (Widgets.ButtonInvisible(buttonRect))
+            if (UIHelper.DrawToolbarButton(buttonRect, label, tooltip: tooltip))
             {
                 onClick();
                 return true;
@@ -87,6 +57,39 @@ namespace CharacterStudio.UI
 
         private void DrawActivePropertiesContent(Rect rect)
         {
+            float propsY = GetPropertiesContentTop(rect);
+            Rect summaryRect = new Rect(rect.x + Margin, propsY, rect.width - Margin * 2f, 34f);
+            UIHelper.DrawContentCard(summaryRect);
+
+            string summaryText;
+            if (!string.IsNullOrEmpty(selectedNodePath) && cachedRootSnapshot != null)
+            {
+                summaryText = "CS_Studio_Properties_Summary_Node".Translate();
+            }
+            else if (selectedBaseSlotType != null)
+            {
+                summaryText = "CS_Studio_Properties_Summary_BaseSlot".Translate();
+            }
+            else if (!layerModificationWorkflowActive &&
+                currentTab == EditorTab.Equipment &&
+                selectedEquipmentIndex >= 0 &&
+                selectedEquipmentIndex < (workingSkin.equipments?.Count ?? 0))
+            {
+                summaryText = "CS_Studio_Properties_Summary_Equipment".Translate();
+            }
+            else
+            {
+                summaryText = "CS_Studio_Properties_Summary_Layer".Translate();
+            }
+
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.MiddleLeft;
+            GUI.color = UIHelper.SubtleColor;
+            Widgets.Label(new Rect(summaryRect.x + 8f, summaryRect.y, summaryRect.width - 16f, summaryRect.height), summaryText);
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = GameFont.Small;
+
             if (!string.IsNullOrEmpty(selectedNodePath) && cachedRootSnapshot != null)
             {
                 DrawNodeProperties(rect);

@@ -9,34 +9,12 @@ namespace CharacterStudio.UI
     {
         private void DrawWeaponPanel(Rect rect)
         {
-            Widgets.DrawBoxSolid(rect, UIHelper.PanelFillColor);
-            GUI.color = UIHelper.BorderColor;
-            Widgets.DrawBox(rect, 1);
-            GUI.color = Color.white;
-
-            Rect titleRect = new Rect(rect.x + Margin, rect.y + Margin, rect.width - Margin * 2, 26f);
-            Widgets.DrawBoxSolid(titleRect, UIHelper.PanelFillSoftColor);
-            Widgets.DrawBoxSolid(new Rect(titleRect.x, titleRect.yMax - 2f, titleRect.width, 2f), UIHelper.AccentSoftColor);
-            GUI.color = UIHelper.BorderColor;
-            Widgets.DrawBox(titleRect, 1);
-            GUI.color = Color.white;
-
-            GameFont oldFont = Text.Font;
-            Text.Font = GameFont.Tiny;
-            Text.Anchor = TextAnchor.MiddleLeft;
-            GUI.color = UIHelper.HeaderColor;
-            Widgets.Label(new Rect(titleRect.x + 8f, titleRect.y, titleRect.width - 16f, titleRect.height), "CS_Studio_Tab_Weapon".Translate());
-            GUI.color = Color.white;
-            Text.Anchor = TextAnchor.UpperLeft;
-            Text.Font = oldFont;
+            Rect titleRect = UIHelper.DrawPanelShell(rect, "CS_Studio_Tab_Weapon".Translate(), Margin);
 
             float contentY = titleRect.yMax + 8f;
             float contentHeight = rect.height - contentY + rect.y - Margin;
             Rect contentRect = new Rect(rect.x + Margin, contentY, rect.width - Margin * 2, contentHeight);
-            Widgets.DrawBoxSolid(contentRect, UIHelper.PanelFillSoftColor);
-            GUI.color = UIHelper.BorderColor;
-            Widgets.DrawBox(contentRect, 1);
-            GUI.color = Color.white;
+            UIHelper.DrawContentCard(contentRect);
 
             Rect viewRect = new Rect(0, 0, contentRect.width - 20f, Mathf.Max(contentRect.height + 320f, 980f));
 
@@ -191,7 +169,7 @@ namespace CharacterStudio.UI
             UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_WeaponCarry_OffEastX".Translate(), ref carry.offsetEast.x, -2f, 2f, "F3");
             UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_WeaponCarry_OffEastZ".Translate(), ref carry.offsetEast.z, -2f, 2f, "F3");
 
-            if (Widgets.ButtonText(new Rect(0f, y, 140f, 24f), "CS_Studio_WeaponCarry_Reset".Translate()))
+            if (UIHelper.DrawToolbarButton(new Rect(0f, y, 140f, 24f), "CS_Studio_WeaponCarry_Reset".Translate()))
             {
                 CaptureUndoSnapshot();
                 weaponOverride.carryVisual = new WeaponCarryVisualConfig { enabled = true, anchorTag = carry.anchorTag };
@@ -210,15 +188,13 @@ namespace CharacterStudio.UI
             UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Section_WeaponRender".Translate());
 
             Rect renderSummaryRect = new Rect(0f, y, width, 40f);
-            Widgets.DrawBoxSolid(renderSummaryRect, UIHelper.PanelFillSoftColor);
-            GUI.color = UIHelper.BorderColor;
-            Widgets.DrawBox(renderSummaryRect, 1);
+            UIHelper.DrawContentCard(renderSummaryRect);
             Text.Font = GameFont.Tiny;
             GUI.color = UIHelper.SubtleColor;
             Widgets.Label(new Rect(8f, y + 4f, width - 16f, 16f),
-                $"携带贴图：{(string.IsNullOrWhiteSpace(carry.texUndrafted) ? 0 : 1) + (string.IsNullOrWhiteSpace(carry.texDrafted) ? 0 : 1) + (string.IsNullOrWhiteSpace(carry.texCasting) ? 0 : 1)}/3");
+                "CS_Studio_WeaponRender_SummaryCarry".Translate((string.IsNullOrWhiteSpace(carry.texUndrafted) ? 0 : 1) + (string.IsNullOrWhiteSpace(carry.texDrafted) ? 0 : 1) + (string.IsNullOrWhiteSpace(carry.texCasting) ? 0 : 1), 3));
             Widgets.Label(new Rect(8f, y + 20f, width - 16f, 16f),
-                $"渲染覆写：{(weaponOverride.enabled ? 1 : 0)}/1");
+                "CS_Studio_WeaponRender_SummaryOverride".Translate(weaponOverride.enabled ? 1 : 0, 1));
             GUI.color = Color.white;
             Text.Font = GameFont.Small;
             y += 46f;

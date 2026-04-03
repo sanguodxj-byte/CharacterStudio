@@ -142,6 +142,7 @@
     <CS_Studio_Face_MovementLauncher_Tooltip>打开动态表情与运动参数设置面板</CS_Studio_Face_MovementLauncher_Tooltip>
     <CS_Studio_Face_Layered_Title>分层面部部件</CS_Studio_Face_Layered_Title>
     <CS_Studio_Face_LayeredPart_Base>基础脸层</CS_Studio_Face_LayeredPart_Base>
+    <CS_Studio_Face_LayeredPart_ReplacementEye>替换眼层</CS_Studio_Face_LayeredPart_ReplacementEye>
     <CS_Studio_Face_LayeredPart_LowerLid>下眼睑层</CS_Studio_Face_LayeredPart_LowerLid>
     <CS_Studio_Face_LayeredPart_UpperLid>上眼睑层</CS_Studio_Face_LayeredPart_UpperLid>
     <CS_Studio_Face_MinSetProgress>最小集 {0}/{1} 已完成（★ 标记为推荐优先配置）</CS_Studio_Face_MinSetProgress>
@@ -155,6 +156,26 @@
     <CS_Studio_Face_OverlayMapping_Suggested>建议 {0}</CS_Studio_Face_OverlayMapping_Suggested>
     <CS_Studio_Face_OverlayMapping_Title>Overlay 映射</CS_Studio_Face_OverlayMapping_Title>
     <CS_Studio_Face_OverlayMapping_Unmapped>未映射</CS_Studio_Face_OverlayMapping_Unmapped>
+    <CS_Studio_Face_OverlaySemantic_Blush>脸红</CS_Studio_Face_OverlaySemantic_Blush>
+    <CS_Studio_Face_OverlaySemantic_Tear>泪滴</CS_Studio_Face_OverlaySemantic_Tear>
+    <CS_Studio_Face_OverlaySemantic_Sweat>汗滴</CS_Studio_Face_OverlaySemantic_Sweat>
+    <CS_Studio_Face_OverlaySemantic_Sleep>睡眠</CS_Studio_Face_OverlaySemantic_Sleep>
+    <CS_Studio_Face_OverlaySemantic_Gloomy>阴郁</CS_Studio_Face_OverlaySemantic_Gloomy>
+    <CS_Studio_Face_OverlaySemanticKey_lovin>亲密</CS_Studio_Face_OverlaySemanticKey_lovin>
+    <CS_Studio_Face_OverlaySemanticKey_happy>快乐</CS_Studio_Face_OverlaySemanticKey_happy>
+    <CS_Studio_Face_OverlaySemanticKey_cheerful>愉快</CS_Studio_Face_OverlaySemanticKey_cheerful>
+    <CS_Studio_Face_OverlaySemanticKey_social_relax>社交放松</CS_Studio_Face_OverlaySemanticKey_social_relax>
+    <CS_Studio_Face_OverlaySemanticKey_scared>恐惧</CS_Studio_Face_OverlaySemanticKey_scared>
+    <CS_Studio_Face_OverlaySemanticKey_shock>震惊</CS_Studio_Face_OverlaySemanticKey_shock>
+    <CS_Studio_Face_OverlaySemanticKey_wait_combat>备战</CS_Studio_Face_OverlaySemanticKey_wait_combat>
+    <CS_Studio_Face_OverlaySemanticKey_attack_melee>近战攻击</CS_Studio_Face_OverlaySemanticKey_attack_melee>
+    <CS_Studio_Face_OverlaySemanticKey_attack_ranged>远程攻击</CS_Studio_Face_OverlaySemanticKey_attack_ranged>
+    <CS_Studio_Face_OverlaySemanticKey_pain>痛苦</CS_Studio_Face_OverlaySemanticKey_pain>
+    <CS_Studio_Face_OverlaySemanticKey_sad>悲伤</CS_Studio_Face_OverlaySemanticKey_sad>
+    <CS_Studio_Face_OverlaySemanticKey_hopeless>绝望</CS_Studio_Face_OverlaySemanticKey_hopeless>
+    <CS_Studio_Face_OverlaySemanticKey_dead>死亡</CS_Studio_Face_OverlaySemanticKey_dead>
+    <CS_Studio_Face_OverlaySemanticKey_gloomy>阴郁</CS_Studio_Face_OverlaySemanticKey_gloomy>
+    <CS_Studio_Face_OverlaySemanticKey_sleeping>睡眠</CS_Studio_Face_OverlaySemanticKey_sleeping>
     <CS_Studio_Face_OverlayRule_Title>Overlay 对应关系</CS_Studio_Face_OverlayRule_Title>
     <CS_Studio_Face_OverlayRule_Hint>配置“表情 → 情绪叠层状态”以及“情绪叠层状态 → OverlayId”的对应关系，替代原有硬编码映射。</CS_Studio_Face_OverlayRule_Hint>
     <CS_Studio_Face_OverlayRule_RoutingTitle>情绪状态到 OverlayId</CS_Studio_Face_OverlayRule_RoutingTitle>

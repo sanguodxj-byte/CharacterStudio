@@ -579,6 +579,7 @@ namespace CharacterStudio.Core
         public LidState currentLidState = LidState.Normal;
         public BrowState currentBrowState = BrowState.Normal;
         public EmotionOverlayState currentEmotionOverlayState = EmotionOverlayState.None;
+        public string currentOverlaySemanticKey = string.Empty;
         public EyeAnimationVariant eyeDirectionRuntimeVariant = EyeAnimationVariant.NeutralOpen;
         public PupilScaleVariant pupilScaleRuntimeVariant = PupilScaleVariant.Neutral;
 

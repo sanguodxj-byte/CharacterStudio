@@ -481,6 +481,17 @@ namespace CharacterStudio.UI
 
             ThingDef? parentDef = DefDatabase<ThingDef>.GetNamedSilentFail(equipment.parentThingDefName);
             ShaderTypeDef shader = DefDatabase<ShaderTypeDef>.GetNamedSilentFail(equipment.shaderDefName) ?? ShaderTypeDefOf.Cutout;
+            bool usesExternalTexture = CharacterStudio.Rendering.RuntimeAssetLoader.LooksLikeExternalTexturePath(texPath);
+            Texture2D? externalUiIcon = null;
+
+            if (usesExternalTexture)
+            {
+                externalUiIcon = CharacterStudio.Rendering.RuntimeAssetLoader.LoadTextureRaw(texPath);
+                if (externalUiIcon == null)
+                {
+                    Log.Warning($"[CharacterStudio] 测试生成装备的外部图标加载失败，将继续使用默认图形路径: {texPath}");
+                }
+            }
 
             ThingDef runtimeDef = new ThingDef
             {
@@ -502,11 +513,17 @@ namespace CharacterStudio.UI
 
             runtimeDef.graphicData = new GraphicData
             {
-                texPath = texPath,
+                texPath = usesExternalTexture ? string.Empty : texPath,
                 graphicClass = typeof(Graphic_Single),
                 shaderType = shader,
                 drawSize = Vector2.one
             };
+
+            if (externalUiIcon != null)
+            {
+                runtimeDef.uiIcon = externalUiIcon;
+                runtimeDef.uiIconPath = string.Empty;
+            }
 
             runtimeDef.thingCategories = equipment.thingCategories?
                 .Select(name => DefDatabase<ThingCategoryDef>.GetNamedSilentFail(name))

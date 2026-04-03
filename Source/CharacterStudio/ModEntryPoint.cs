@@ -115,6 +115,7 @@ namespace CharacterStudio
             ApplyPatch("WeaponRender", () => Rendering.Patch_WeaponRender.Apply(harmony));
             ApplyPatch("RaceLabel", () => Patches.Patch_RaceLabel.Apply(harmony));
             ApplyPatch("CharacterAttributeBuffStat", () => Patches.Patch_CharacterAttributeBuffStat.Apply(harmony));
+            ApplyPatch("AbilityTimeStop", () => Abilities.Patch_AbilityTimeStop.Apply(harmony));
 
             Log.Message("[CharacterStudio] 补丁应用流程完成");
         }

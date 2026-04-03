@@ -41,6 +41,8 @@ namespace CharacterStudio.UI
                 { "LowerLid", LayeredFacePartType.LowerLid },
                 { "LidLower", LayeredFacePartType.LowerLid },
                 { "LowerLids", LayeredFacePartType.LowerLid },
+                { "ReplacementEye", LayeredFacePartType.ReplacementEye },
+                { "ReplacementEyes", LayeredFacePartType.ReplacementEye },
                 { "Mouth", LayeredFacePartType.Mouth },
                 { "Hair", LayeredFacePartType.Hair },
             };
@@ -500,18 +502,18 @@ namespace CharacterStudio.UI
                 TryApplyFirstAvailableStem(LayeredFacePartType.Hair, ExpressionType.Neutral, new[] { "Hair_north" }, "north");
                 TryApplyFirstAvailableStem(LayeredFacePartType.Hair, ExpressionType.Neutral, new[] { "Hair" });
 
-                TryApplyFirstAvailableStem(LayeredFacePartType.Eye, ExpressionType.Blink, new[] { "Eye_blink" });
+                TryApplyFirstAvailableStem(LayeredFacePartType.ReplacementEye, ExpressionType.Blink, new[] { "Eye_blink" });
 
-                bool hasDeadEye = TryApplyFirstAvailableStem(LayeredFacePartType.Eye, ExpressionType.Dead, new[] { "Eye_death", "Eye_dead" });
-                TryApplyFirstAvailableStem(LayeredFacePartType.Eye, ExpressionType.Sleeping, new[] { "Eye_closed" });
+                bool hasDeadEye = TryApplyFirstAvailableStem(LayeredFacePartType.ReplacementEye, ExpressionType.Dead, new[] { "Eye_death", "Eye_dead" });
+                TryApplyFirstAvailableStem(LayeredFacePartType.ReplacementEye, ExpressionType.Sleeping, new[] { "Eye_closed" });
                 if (!hasDeadEye)
                 {
-                    TryApplyFirstAvailableStem(LayeredFacePartType.Eye, ExpressionType.Dead, new[] { "Eye_closed" });
+                    TryApplyFirstAvailableStem(LayeredFacePartType.ReplacementEye, ExpressionType.Dead, new[] { "Eye_closed" });
                 }
 
                 TryApplyExpressionGroup(
-                    LayeredFacePartType.Eye,
-                    new[] { ExpressionType.Happy, ExpressionType.Cheerful, ExpressionType.Lovin },
+                    LayeredFacePartType.ReplacementEye,
+                    new[] { ExpressionType.Happy, ExpressionType.Cheerful, ExpressionType.Lovin, ExpressionType.SocialRelax },
                     new[] { "Eye_closed_happy" });
 
                 TryApplyExpressionGroup(
@@ -1172,6 +1174,7 @@ namespace CharacterStudio.UI
                 case LayeredFacePartType.Eye:
                 case LayeredFacePartType.UpperLid:
                 case LayeredFacePartType.LowerLid:
+                case LayeredFacePartType.ReplacementEye:
                 case LayeredFacePartType.Mouth:
                 case LayeredFacePartType.Blush:
                 case LayeredFacePartType.Sweat:
@@ -1200,6 +1203,7 @@ namespace CharacterStudio.UI
                 case LayeredFacePartType.Eye:
                 case LayeredFacePartType.UpperLid:
                 case LayeredFacePartType.LowerLid:
+                case LayeredFacePartType.ReplacementEye:
                     return LayerRole.Lid;
                 case LayeredFacePartType.Pupil:
                     return LayerRole.Eye;
@@ -1236,6 +1240,8 @@ namespace CharacterStudio.UI
                     return 50.145f;
                 case LayeredFacePartType.LowerLid:
                     return 50.147f;
+                case LayeredFacePartType.ReplacementEye:
+                    return 50.149f;
                 case LayeredFacePartType.Brow:
                     return 50.16f;
                 case LayeredFacePartType.Mouth:

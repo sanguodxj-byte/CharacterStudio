@@ -13,8 +13,6 @@ namespace CharacterStudio.UI
     {
         private Vector2 attributesScrollPos;
         private string llmCharacterPrompt = string.Empty;
-        private Vector2 attributeBuffScrollPos;
-        private string attributeBuffSearchText = string.Empty;
         // LLM 生成状态（异步）
         private bool llmCharacterGenerating = false;
         private LlmGeneratedCharacterDesign? llmCharacterPendingResult = null;
@@ -22,26 +20,7 @@ namespace CharacterStudio.UI
 
         private void DrawAttributesPanel(Rect rect)
         {
-            Widgets.DrawBoxSolid(rect, UIHelper.PanelFillColor);
-            GUI.color = UIHelper.BorderColor;
-            Widgets.DrawBox(rect, 1);
-            GUI.color = Color.white;
-
-            Rect titleRect = new Rect(rect.x + Margin, rect.y + Margin, rect.width - Margin * 2, 26f);
-            Widgets.DrawBoxSolid(titleRect, UIHelper.PanelFillSoftColor);
-            Widgets.DrawBoxSolid(new Rect(titleRect.x, titleRect.yMax - 2f, titleRect.width, 2f), UIHelper.AccentSoftColor);
-            GUI.color = UIHelper.BorderColor;
-            Widgets.DrawBox(titleRect, 1);
-            GUI.color = Color.white;
-
-            GameFont oldFont = Text.Font;
-            Text.Font = GameFont.Tiny;
-            Text.Anchor = TextAnchor.MiddleLeft;
-            GUI.color = UIHelper.HeaderColor;
-            Widgets.Label(new Rect(titleRect.x + 8f, titleRect.y, titleRect.width - 16f, titleRect.height), "CS_Studio_Tab_Attributes".Translate());
-            GUI.color = Color.white;
-            Text.Anchor = TextAnchor.UpperLeft;
-            Text.Font = oldFont;
+            Rect titleRect = UIHelper.DrawPanelShell(rect, "CS_Studio_Tab_Attributes".Translate(), Margin);
 
             workingSkin.attributes ??= new CharacterAttributeProfile();
             CharacterAttributeProfile attributes = workingSkin.attributes;
@@ -50,38 +29,42 @@ namespace CharacterStudio.UI
             float contentY = titleRect.yMax + 8f;
             float contentHeight = rect.height - contentY + rect.y - Margin;
             Rect contentRect = new Rect(rect.x + Margin, contentY, rect.width - Margin * 2, contentHeight);
-            Widgets.DrawBoxSolid(contentRect, UIHelper.PanelFillSoftColor);
-            GUI.color = UIHelper.BorderColor;
-            Widgets.DrawBox(contentRect, 1);
-            GUI.color = Color.white;
+            UIHelper.DrawContentCard(contentRect);
 
-            Rect viewRect = new Rect(0f, 0f, contentRect.width - 20f, 1360f);
+            Rect viewRect = new Rect(0f, 0f, contentRect.width - 20f, 1560f);
             Widgets.BeginScrollView(contentRect.ContractedBy(2f), ref attributesScrollPos, viewRect);
 
             float y = 0f;
             float width = viewRect.width;
 
-            UIHelper.DrawSectionTitle(ref y, width, "CS_Attr_Section_Basic".Translate());
-            DrawTrackedPropertyField(ref y, width, "CS_Attr_Title".Translate(), ref attributes.title);
-            DrawTrackedMultilineField(ref y, width, "CS_Attr_BackstorySummary".Translate(), ref attributes.backstorySummary, 104f);
+            float basicBlockTop = y;
+            Rect basicRect = UIHelper.DrawSectionCard(ref y, width, "CS_Attr_Section_Basic".Translate(), 190f);
+            float basicY = basicRect.y;
+            DrawTrackedPropertyField(ref basicY, basicRect.width, "CS_Attr_Title".Translate(), ref attributes.title);
+            DrawTrackedMultilineField(ref basicY, basicRect.width, "CS_Attr_BackstorySummary".Translate(), ref attributes.backstorySummary, 104f);
 
-            UIHelper.DrawSectionTitle(ref y, width, "CS_Attr_Section_Stats".Translate());
-            DrawTrackedNumericField(ref y, width, "CS_Attr_BiologicalAge".Translate(), ref attributes.biologicalAge, 0f, 999f);
-            DrawTrackedNumericField(ref y, width, "CS_Attr_ChronologicalAge".Translate(), ref attributes.chronologicalAge, 0f, 9999f);
+            Rect statsRect = UIHelper.DrawSectionCard(ref y, width, "CS_Attr_Section_Stats".Translate(), 108f);
+            float statsY = statsRect.y;
+            DrawTrackedNumericField(ref statsY, statsRect.width, "CS_Attr_BiologicalAge".Translate(), ref attributes.biologicalAge, 0f, 999f);
+            DrawTrackedNumericField(ref statsY, statsRect.width, "CS_Attr_ChronologicalAge".Translate(), ref attributes.chronologicalAge, 0f, 9999f);
 
-            UIHelper.DrawSectionTitle(ref y, width, "CS_AttrBuff_Section".Translate());
-            DrawAttributeBuffEditor(ref y, width, statProfile);
+            Rect buffRect = UIHelper.DrawSectionCard(ref y, width, "CS_AttrBuff_Section".Translate(), 96f, accent: true);
+            float buffY = buffRect.y;
+            DrawAttributeBuffEntry(ref buffY, buffRect.width, statProfile);
 
-            Widgets.Label(new Rect(0f, y, width, 24f), "CS_LLM_CharacterPrompt".Translate());
-            Rect promptRect = new Rect(0f, y + 26f, width, 110f);
+            Rect llmRect = UIHelper.DrawSectionCard(ref y, width, "CS_Studio_Attributes_Assistant".Translate(), 210f);
+            float llmY = llmRect.y;
+            UIHelper.DrawInfoBanner(ref llmY, llmRect.width, "CS_Studio_Attributes_AssistantHint".Translate());
+            Widgets.Label(new Rect(0f, llmY, llmRect.width, 24f), "CS_LLM_CharacterPrompt".Translate());
+            Rect promptRect = new Rect(0f, llmY + 26f, llmRect.width, 86f);
             Widgets.DrawBoxSolid(promptRect, UIHelper.PanelFillColor);
             GUI.color = UIHelper.BorderColor;
             Widgets.DrawBox(promptRect, 1);
             GUI.color = Color.white;
             llmCharacterPrompt = Widgets.TextArea(promptRect.ContractedBy(4f), llmCharacterPrompt ?? string.Empty);
-            y += 144f;
+            llmY += 120f;
 
-            float buttonWidth = (width - 10f) / 2f;
+            float buttonWidth = (llmRect.width - 10f) / 2f;
 
             if (llmCharacterPendingResult != null)
             {
@@ -101,37 +84,15 @@ namespace CharacterStudio.UI
 
             GUI.enabled = !llmCharacterGenerating;
             string generateLabel = llmCharacterGenerating ? "CS_LLM_Generating".Translate() : "CS_LLM_GenerateCharacter".Translate();
-            Rect generateRect = new Rect(0f, y, buttonWidth, 28f);
-            Widgets.DrawBoxSolid(generateRect, llmCharacterGenerating ? UIHelper.PanelFillSoftColor : UIHelper.ActiveTabColor);
-            Widgets.DrawBoxSolid(new Rect(generateRect.x, generateRect.yMax - 2f, generateRect.width, 2f), llmCharacterGenerating ? UIHelper.AccentSoftColor : UIHelper.AccentColor);
-            GUI.color = Mouse.IsOver(generateRect) ? UIHelper.HoverOutlineColor : UIHelper.BorderColor;
-            Widgets.DrawBox(generateRect, 1);
-            GUI.color = llmCharacterGenerating ? UIHelper.SubtleColor : Color.white;
-            Text.Anchor = TextAnchor.MiddleCenter;
-            Text.Font = GameFont.Tiny;
-            Widgets.Label(generateRect, generateLabel);
-            GUI.color = Color.white;
-            Text.Anchor = TextAnchor.UpperLeft;
-            Text.Font = GameFont.Small;
-            if (Widgets.ButtonInvisible(generateRect))
+            Rect generateRect = new Rect(0f, llmY, buttonWidth, 28f);
+            if (UIHelper.DrawToolbarButton(generateRect, generateLabel, accent: !llmCharacterGenerating))
             {
                 GenerateCharacterFromPrompt();
             }
             GUI.enabled = true;
 
-            Rect settingsRect = new Rect(buttonWidth + 10f, y, buttonWidth, 28f);
-            Widgets.DrawBoxSolid(settingsRect, UIHelper.PanelFillSoftColor);
-            Widgets.DrawBoxSolid(new Rect(settingsRect.x, settingsRect.yMax - 2f, settingsRect.width, 2f), new Color(1f, 1f, 1f, 0.05f));
-            GUI.color = Mouse.IsOver(settingsRect) ? UIHelper.HoverOutlineColor : UIHelper.BorderColor;
-            Widgets.DrawBox(settingsRect, 1);
-            GUI.color = UIHelper.HeaderColor;
-            Text.Anchor = TextAnchor.MiddleCenter;
-            Text.Font = GameFont.Tiny;
-            Widgets.Label(settingsRect, "CS_LLM_OpenSettings".Translate());
-            GUI.color = Color.white;
-            Text.Anchor = TextAnchor.UpperLeft;
-            Text.Font = GameFont.Small;
-            if (Widgets.ButtonInvisible(settingsRect))
+            Rect settingsRect = new Rect(buttonWidth + 10f, llmY, buttonWidth, 28f);
+            if (UIHelper.DrawToolbarButton(settingsRect, "CS_LLM_OpenSettings".Translate()))
             {
                 OnOpenLlmSettings();
             }
@@ -181,209 +142,40 @@ namespace CharacterStudio.UI
             }
         }
 
-        private void DrawAttributeBuffEditor(ref float y, float width, CharacterStatModifierProfile profile)
+        private void DrawAttributeBuffEntry(ref float y, float width, CharacterStatModifierProfile profile)
         {
             profile.entries ??= new List<CharacterStatModifierEntry>();
 
-            float gap = 8f;
-            float buttonWidth = (width - gap * 2f) / 3f;
-            Rect toolbarRect = new Rect(0f, y, width, 28f);
-            if (Widgets.ButtonText(new Rect(toolbarRect.x, toolbarRect.y, buttonWidth, 24f), "CS_AttrBuff_AddCommon".Translate()))
-            {
-                ShowCommonStatSelectionMenu(profile);
-            }
-            if (Widgets.ButtonText(new Rect(toolbarRect.x + buttonWidth + gap, toolbarRect.y, buttonWidth, 24f), "CS_AttrBuff_AddAny".Translate()))
-            {
-                ShowAnyStatSelectionMenu(profile);
-            }
-            if (Widgets.ButtonText(new Rect(toolbarRect.x + (buttonWidth + gap) * 2f, toolbarRect.y, buttonWidth, 24f), "CS_AttrBuff_ClearAll".Translate()))
-            {
-                profile.entries.Clear();
-                isDirty = true;
-            }
-            y += 30f;
-
-            string newSearch = Widgets.TextEntryLabeled(new Rect(0f, y, width, 24f), "CS_AttrBuff_Search".Translate(), attributeBuffSearchText);
-            if (!string.Equals(newSearch, attributeBuffSearchText, StringComparison.Ordinal))
-            {
-                attributeBuffSearchText = newSearch;
-            }
-            y += 30f;
-
-            if (profile.entries.Count == 0)
-            {
-                GUI.color = UIHelper.SubtleColor;
-                Widgets.Label(new Rect(0f, y, width, 24f), "CS_AttrBuff_Empty".Translate());
-                GUI.color = Color.white;
-                y += 28f;
-                return;
-            }
-
-            float listHeight = Mathf.Clamp(profile.entries.Count * 66f + 6f, 120f, 360f);
-            Rect outerRect = new Rect(0f, y, width, listHeight);
-            Widgets.DrawBoxSolid(outerRect, UIHelper.PanelFillColor);
-            GUI.color = UIHelper.BorderColor;
-            Widgets.DrawBox(outerRect, 1);
-            GUI.color = Color.white;
-
-            Rect listView = new Rect(0f, 0f, outerRect.width - 16f, profile.entries.Count * 66f + 4f);
-            Widgets.BeginScrollView(outerRect.ContractedBy(2f), ref attributeBuffScrollPos, listView);
-
-            float rowY = 0f;
+            int totalCount = profile.entries.Count;
+            int enabledCount = 0;
             for (int i = 0; i < profile.entries.Count; i++)
             {
-                CharacterStatModifierEntry entry = profile.entries[i];
-                if (entry == null)
+                if (profile.entries[i]?.enabled == true)
                 {
-                    continue;
+                    enabledCount++;
                 }
-
-                Rect rowRect = new Rect(0f, rowY, listView.width, 62f);
-                Widgets.DrawBoxSolid(rowRect, i % 2 == 0 ? UIHelper.PanelFillSoftColor : UIHelper.PanelFillColor);
-
-                Rect enabledRect = new Rect(4f, rowY + 4f, 22f, 22f);
-                bool previousEnabled = entry.enabled;
-                Widgets.Checkbox(enabledRect.position, ref entry.enabled);
-                if (entry.enabled != previousEnabled)
-                {
-                    isDirty = true;
-                }
-
-                StatDef selectedStat = DefDatabase<StatDef>.GetNamedSilentFail(entry.statDefName);
-                string statLabel = CharacterStatModifierCatalog.GetDisplayLabel(selectedStat);
-                if (Widgets.ButtonText(new Rect(30f, rowY + 4f, 220f, 24f), statLabel))
-                {
-                    ShowStatSelectionMenu(profile, entry, includeAllUseful: true);
-                }
-
-                if (Widgets.ButtonText(new Rect(258f, rowY + 4f, 88f, 24f), CharacterStatModifierCatalog.GetModeLabel(entry.mode)))
-                {
-                    ToggleModifierMode(entry);
-                }
-
-                float beforeValue = entry.value;
-                UIHelper.DrawNumericField(ref rowY, listView.width - 120f, "CS_AttrBuff_Value".Translate(), ref entry.value, -100f, 100f, 80f);
-                rowY -= UIHelper.RowHeight;
-                if (Math.Abs(beforeValue - entry.value) > 0.0001f)
-                {
-                    isDirty = true;
-                }
-
-                string explain = entry.mode == CharacterStatModifierMode.Offset
-                    ? "CS_AttrBuff_Mode_Offset_Desc".Translate()
-                    : "CS_AttrBuff_Mode_Factor_Desc".Translate();
-                GUI.color = UIHelper.SubtleColor;
-                Widgets.Label(new Rect(30f, rowY + 32f, 360f, 24f), explain + "  " + "CS_AttrBuff_CurrentValue".Translate(CharacterStatModifierCatalog.FormatValuePreview(entry.mode, entry.value)));
-                GUI.color = Color.white;
-
-                if (Widgets.ButtonText(new Rect(listView.width - 74f, rowY + 4f, 70f, 24f), "CS_Studio_Btn_Delete".Translate()))
-                {
-                    profile.entries.RemoveAt(i);
-                    isDirty = true;
-                    CharacterAttributeBuffService.SyncAttributeBuff(targetPawn);
-                    break;
-                }
-
-                rowY += 66f;
             }
 
-            Widgets.EndScrollView();
-            y += listHeight + 8f;
+            GUI.color = UIHelper.SubtleColor;
+            Widgets.Label(new Rect(0f, y, width, 24f), totalCount == 0
+                ? "CS_AttrBuff_Empty".Translate()
+                : "已配置 {0} 项属性增益，启用 {1} 项".Formatted(totalCount, enabledCount));
+            GUI.color = Color.white;
+            y += 28f;
 
-            CharacterAttributeBuffService.SyncAttributeBuff(targetPawn);
-        }
-
-        private void ToggleModifierMode(CharacterStatModifierEntry entry)
-        {
-            if (entry == null)
+            Rect buttonRect = new Rect(0f, y, width, 28f);
+            if (UIHelper.DrawToolbarButton(buttonRect, totalCount == 0 ? "打开属性增益编辑器" : "管理属性增益 Buff", accent: true))
             {
-                return;
-            }
-
-            entry.mode = entry.mode == CharacterStatModifierMode.Offset
-                ? CharacterStatModifierMode.Factor
-                : CharacterStatModifierMode.Offset;
-            isDirty = true;
-        }
-
-        private void ShowCommonStatSelectionMenu(CharacterStatModifierProfile profile)
-        {
-            var options = new List<FloatMenuOption>();
-            foreach (string defName in CharacterStatModifierCatalog.CommonStatDefNames)
-            {
-                StatDef stat = DefDatabase<StatDef>.GetNamedSilentFail(defName);
-                if (stat == null)
-                {
-                    continue;
-                }
-
-                StatDef captured = stat;
-                options.Add(new FloatMenuOption(CharacterStatModifierCatalog.GetMenuLabel(captured), () => AddOrUpdateStatModifier(profile, captured)));
-            }
-            Find.WindowStack.Add(new FloatMenu(options));
-        }
-
-        private void ShowAnyStatSelectionMenu(CharacterStatModifierProfile profile)
-        {
-            ShowStatSelectionMenu(profile, null!, includeAllUseful: true);
-        }
-
-        private void ShowStatSelectionMenu(CharacterStatModifierProfile profile, CharacterStatModifierEntry existingEntry, bool includeAllUseful)
-        {
-            var options = new List<FloatMenuOption>();
-            string search = (attributeBuffSearchText ?? string.Empty).Trim().ToLowerInvariant();
-            foreach (StatDef stat in CharacterStatModifierCatalog.GetAvailableStatDefs())
-            {
-                if (!string.IsNullOrEmpty(search))
-                {
-                    string haystack = (CharacterStatModifierCatalog.GetDisplayLabel(stat) + " " + stat.defName + " " + CharacterStatModifierCatalog.GetCategoryLabel(stat))
-                        .ToLowerInvariant();
-                    if (!haystack.Contains(search))
+                Find.WindowStack.Add(new Dialog_AttributeBuffEditor(
+                    profile,
+                    targetPawn,
+                    () =>
                     {
-                        continue;
-                    }
-                }
-
-                StatDef captured = stat;
-                options.Add(new FloatMenuOption(CharacterStatModifierCatalog.GetMenuLabel(captured), () =>
-                {
-                    if (existingEntry == null)
-                    {
-                        AddOrUpdateStatModifier(profile, captured);
-                    }
-                    else
-                    {
-                        existingEntry.statDefName = captured.defName;
                         isDirty = true;
-                    }
-                }));
+                        CharacterAttributeBuffService.SyncAttributeBuff(targetPawn);
+                    }));
             }
-            Find.WindowStack.Add(new FloatMenu(options));
-        }
-
-        private void AddOrUpdateStatModifier(CharacterStatModifierProfile profile, StatDef stat)
-        {
-            if (profile == null || stat == null)
-            {
-                return;
-            }
-
-            CharacterStatModifierEntry existing = profile.entries.Find(e => e != null && string.Equals(e.statDefName, stat.defName, StringComparison.OrdinalIgnoreCase));
-            if (existing != null)
-            {
-                existing.enabled = true;
-                isDirty = true;
-                return;
-            }
-
-            profile.entries.Add(new CharacterStatModifierEntry
-            {
-                statDefName = stat.defName,
-                mode = CharacterStatModifierMode.Offset,
-                value = 0f,
-                enabled = true
-            });
-            isDirty = true;
+            y += 32f;
         }
 
         private void GenerateCharacterFromPrompt()

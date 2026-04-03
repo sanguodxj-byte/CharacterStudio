@@ -39,6 +39,9 @@
     <CS_Studio_Panel_MoveUp>上移</CS_Studio_Panel_MoveUp>
     <CS_Studio_Panel_Preview>预览</CS_Studio_Panel_Preview>
     <CS_Studio_Panel_RemoveLayer>移除图层</CS_Studio_Panel_RemoveLayer>
+    <CS_Studio_Preview_Summary>朝向：{0}  |  缩放：{1}x  |  自动流程：{2}</CS_Studio_Preview_Summary>
+    <CS_Studio_Preview_SummaryFlow_On>开启</CS_Studio_Preview_SummaryFlow_On>
+    <CS_Studio_Preview_SummaryFlow_Off>关闭</CS_Studio_Preview_SummaryFlow_Off>
     <CS_Studio_Preview_Channel_Brow>眉</CS_Studio_Preview_Channel_Brow>
     <CS_Studio_Preview_Channel_Emotion>情绪</CS_Studio_Preview_Channel_Emotion>
     <CS_Studio_Preview_Channel_Eye>眼</CS_Studio_Preview_Channel_Eye>
@@ -54,6 +57,8 @@
     <CS_Studio_Preview_SelectApparel>选择服装</CS_Studio_Preview_SelectApparel>
     <CS_Studio_Preview_ClearApparel>脱掉所有服装</CS_Studio_Preview_ClearApparel>
     <CS_Studio_Preview_Exp>表情</CS_Studio_Preview_Exp>
+    <CS_Studio_Preview_ExpressionContextHint>“表情”用于选择当前预览与编辑上下文，决定你正在检查哪一组与表情相关的面部资源。</CS_Studio_Preview_ExpressionContextHint>
+    <CS_Studio_Preview_ChannelContextHint>这组控件是预览覆写项，用来临时检查当前图层或面部配置在表情、视线、嘴型、眼睑、眉形和情绪状态下的表现。</CS_Studio_Preview_ChannelContextHint>
     <CS_Studio_Preview_Flow>AUTO</CS_Studio_Preview_Flow>
     <CS_Studio_Preview_FlowSpeedTooltip>播放速度基准。</CS_Studio_Preview_FlowSpeedTooltip>
     <CS_Studio_Preview_FlowStep_Empty>空流程</CS_Studio_Preview_FlowStep_Empty>
@@ -108,6 +113,41 @@
     <CS_Studio_Prop_Scale>缩放</CS_Studio_Prop_Scale>
     <CS_Studio_Prop_TexturePath>纹理路径</CS_Studio_Prop_TexturePath>
     <CS_Studio_Prop_Visible>可见</CS_Studio_Prop_Visible>
+    <CS_Studio_Properties_Summary_Node>当前正在编辑所选渲染节点。</CS_Studio_Properties_Summary_Node>
+    <CS_Studio_Properties_Summary_BaseSlot>当前正在编辑所选基础槽位。</CS_Studio_Properties_Summary_BaseSlot>
+    <CS_Studio_Properties_Summary_Equipment>当前正在编辑所选装备条目。</CS_Studio_Properties_Summary_Equipment>
+    <CS_Studio_Properties_Summary_Layer>当前正在编辑所选图层。</CS_Studio_Properties_Summary_Layer>
+    <CS_Studio_Performance_Title>Character Studio 性能统计</CS_Studio_Performance_Title>
+    <CS_Studio_Performance_EnableCapture>启用统计采集</CS_Studio_Performance_EnableCapture>
+    <CS_Studio_Performance_Reset>重置统计</CS_Studio_Performance_Reset>
+    <CS_Studio_Performance_Status_On>统计状态：已启用</CS_Studio_Performance_Status_On>
+    <CS_Studio_Performance_Status_Off>统计状态：已关闭（优化逻辑仍生效）</CS_Studio_Performance_Status_Off>
+    <CS_Studio_Performance_Bootstrap>Bootstrap 统计</CS_Studio_Performance_Bootstrap>
+    <CS_Studio_Performance_LoadedGameCalls>- LoadedGame 调用次数：{0}</CS_Studio_Performance_LoadedGameCalls>
+    <CS_Studio_Performance_StartedNewGameCalls>- StartedNewGame 调用次数：{0}</CS_Studio_Performance_StartedNewGameCalls>
+    <CS_Studio_Performance_FinalizeInitCalls>- FinalizeInit 调用次数：{0}</CS_Studio_Performance_FinalizeInitCalls>
+    <CS_Studio_Performance_PassesExecuted>- 实际执行 pass 次数：{0}</CS_Studio_Performance_PassesExecuted>
+    <CS_Studio_Performance_PassesSkipped>- 因世界签名未变化而跳过次数：{0}</CS_Studio_Performance_PassesSkipped>
+    <CS_Studio_Performance_MapsVisited>- 累计扫描地图数：{0}</CS_Studio_Performance_MapsVisited>
+    <CS_Studio_Performance_PawnsVisited>- 累计扫描 Pawn 数：{0}</CS_Studio_Performance_PawnsVisited>
+    <CS_Studio_Performance_CompsAdded>- 新增 CompPawnSkin 数：{0}</CS_Studio_Performance_CompsAdded>
+    <CS_Studio_Performance_DefaultSkinsApplied>- 应用默认皮肤次数：{0}</CS_Studio_Performance_DefaultSkinsApplied>
+    <CS_Studio_Performance_LoadoutsGranted>- 补发有效 Loadout 次数：{0}</CS_Studio_Performance_LoadoutsGranted>
+    <CS_Studio_Performance_LastEntryPoint>- 最近一次 bootstrap 入口：{0}</CS_Studio_Performance_LastEntryPoint>
+    <CS_Studio_Performance_LastSignature>- 最近一次世界签名：{0}</CS_Studio_Performance_LastSignature>
+    <CS_Studio_Performance_RenderRefresh>渲染刷新统计</CS_Studio_Performance_RenderRefresh>
+    <CS_Studio_Performance_RefreshRequests>- 刷新请求总数：{0}</CS_Studio_Performance_RefreshRequests>
+    <CS_Studio_Performance_RefreshDispatched>- 实际下发刷新数：{0}</CS_Studio_Performance_RefreshDispatched>
+    <CS_Studio_Performance_RefreshCoalesced>- 同 tick 合并次数：{0}</CS_Studio_Performance_RefreshCoalesced>
+    <CS_Studio_Performance_RefreshCoalescedRate>- 合并比例：{0}</CS_Studio_Performance_RefreshCoalescedRate>
+    <CS_Studio_Performance_LastRefreshTick>- 最近一次实际刷新 Tick：{0}</CS_Studio_Performance_LastRefreshTick>
+    <CS_Studio_Performance_LastRefreshTickNA>- 最近一次实际刷新 Tick：N/A</CS_Studio_Performance_LastRefreshTickNA>
+    <CS_Studio_Performance_Notes>说明</CS_Studio_Performance_Notes>
+    <CS_Studio_Performance_Notes_Bootstrap>- Bootstrap 优化将原本的多次全图扫描合并为单次扫描，并对相同世界状态做跳过。</CS_Studio_Performance_Notes_Bootstrap>
+    <CS_Studio_Performance_Notes_Render>- 渲染刷新优化会将同一 Pawn 在同一 Tick 内的重复 RequestRenderRefresh 合并为一次实际 dirty。</CS_Studio_Performance_Notes_Render>
+    <CS_Studio_Performance_Notes_Window>- 该窗口只负责统计与开关，不改变渲染语义与 Comp 生命周期。</CS_Studio_Performance_Notes_Window>
+    <CS_Studio_WeaponRender_SummaryCarry>携带贴图：{0}/{1}</CS_Studio_WeaponRender_SummaryCarry>
+    <CS_Studio_WeaponRender_SummaryOverride>渲染覆写：{0}/{1}</CS_Studio_WeaponRender_SummaryOverride>
     <CS_Studio_Runtime_ColorValue>R:{0} G:{1} B:{2} A:{3}</CS_Studio_Runtime_ColorValue>
     <CS_Studio_Runtime_RotationValue>{0}°</CS_Studio_Runtime_RotationValue>
     <CS_Studio_Status_Developing>功能开发中...</CS_Studio_Status_Developing>
@@ -115,6 +155,8 @@
     <CS_Studio_Status_Loading>预览加载中...</CS_Studio_Status_Loading>
     <CS_Studio_Status_Ready>就绪</CS_Studio_Status_Ready>
     <CS_Studio_Tab_BaseAppearance>基础槽位</CS_Studio_Tab_BaseAppearance>
+    <CS_Studio_Attributes_Assistant>辅助生成</CS_Studio_Attributes_Assistant>
+    <CS_Studio_Attributes_AssistantHint>可用提示词生成或微调轻量角色设定。应用到当前皮肤前，请先确认生成结果是否符合预期。</CS_Studio_Attributes_AssistantHint>
     <CS_Studio_Tab_Equipment>装备</CS_Studio_Tab_Equipment>
     <CS_Studio_Tab_Face>表情</CS_Studio_Tab_Face>
     <CS_Studio_Tab_Layers>图层</CS_Studio_Tab_Layers>
@@ -139,15 +181,38 @@
     <CS_Studio_Variant_DirectionalFacing_West>仅西向</CS_Studio_Variant_DirectionalFacing_West>
     <CS_Studio_Variant_DirectionalFacing_EastWest>仅东西向</CS_Studio_Variant_DirectionalFacing_EastWest>
     <CS_Studio_Variant_EyeRenderMode>眼睛渲染模式</CS_Studio_Variant_EyeRenderMode>
+    <CS_Studio_EyeRenderMode_TextureSwap>贴图切换</CS_Studio_EyeRenderMode_TextureSwap>
+    <CS_Studio_EyeRenderMode_UvOffset>UV 偏移</CS_Studio_EyeRenderMode_UvOffset>
     <CS_Studio_Variant_EyeUvMoveRange>眼睛 UV 移动范围</CS_Studio_Variant_EyeUvMoveRange>
     <CS_Studio_Variant_HiddenExpressions>隐藏表情</CS_Studio_Variant_HiddenExpressions>
     <CS_Studio_Variant_LayerRole>图层角色</CS_Studio_Variant_LayerRole>
     <CS_Studio_Variant_Logic>变体逻辑</CS_Studio_Variant_Logic>
+    <CS_Studio_Variant_SectionHint>这一组用于控制图层如何在不同预览上下文下匹配贴图变体，例如表情、朝向、视线方向、眨眼和帧序列。</CS_Studio_Variant_SectionHint>
     <CS_Studio_Variant_UseBlinkSuffix>使用眨眼后缀</CS_Studio_Variant_UseBlinkSuffix>
     <CS_Studio_Variant_UseDirectionalSuffix>使用朝向后缀</CS_Studio_Variant_UseDirectionalSuffix>
     <CS_Studio_Variant_UseExpressionSuffix>使用表情后缀</CS_Studio_Variant_UseExpressionSuffix>
     <CS_Studio_Variant_UseEyeDirectionSuffix>使用视线方向后缀</CS_Studio_Variant_UseEyeDirectionSuffix>
     <CS_Studio_Variant_VisibleExpressions>可见表情</CS_Studio_Variant_VisibleExpressions>
+    <CS_Studio_LayerRole_Decoration>装饰</CS_Studio_LayerRole_Decoration>
+    <CS_Studio_LayerRole_Eye>眼睛</CS_Studio_LayerRole_Eye>
+    <CS_Studio_LayerRole_Pupil>瞳孔</CS_Studio_LayerRole_Pupil>
+    <CS_Studio_LayerRole_Lid>眼睑</CS_Studio_LayerRole_Lid>
+    <CS_Studio_LayerRole_Brow>眉毛</CS_Studio_LayerRole_Brow>
+    <CS_Studio_LayerRole_Mouth>嘴部</CS_Studio_LayerRole_Mouth>
+    <CS_Studio_LayerRole_EmotionOverlay>情绪叠层</CS_Studio_LayerRole_EmotionOverlay>
+    <CS_Studio_VariantLogic_None>无</CS_Studio_VariantLogic_None>
+    <CS_Studio_VariantLogic_ByExpression>按表情</CS_Studio_VariantLogic_ByExpression>
+    <CS_Studio_VariantLogic_ByFacing>按朝向</CS_Studio_VariantLogic_ByFacing>
+    <CS_Studio_VariantLogic_ByEyeDirection>按视线方向</CS_Studio_VariantLogic_ByEyeDirection>
+    <CS_Studio_VariantLogic_ByBlink>按眨眼</CS_Studio_VariantLogic_ByBlink>
+    <CS_Studio_VariantLogic_Combined>组合匹配</CS_Studio_VariantLogic_Combined>
     <CS_Studio_Workflow_CompositeBaseLayerName>主体底图</CS_Studio_Workflow_CompositeBaseLayerName>
     <CS_Studio_Workflow_MechanoidStandardLayers>机械体分层工作流</CS_Studio_Workflow_MechanoidStandardLayers>
+    <CS_Studio_Anim_Brownian>布朗闲逛</CS_Studio_Anim_Brownian>
+    <CS_Studio_Anim_BrownianRadius>闲逛半径</CS_Studio_Anim_BrownianRadius>
+    <CS_Studio_Anim_BrownianJitter>随机扰动</CS_Studio_Anim_BrownianJitter>
+    <CS_Studio_Anim_BrownianDamping>阻尼</CS_Studio_Anim_BrownianDamping>
+    <CS_Studio_Anim_BrownianCombatRadius>战斗收拢半径</CS_Studio_Anim_BrownianCombatRadius>
+    <CS_Studio_Anim_BrownianRespectWalkability>遵守通行约束</CS_Studio_Anim_BrownianRespectWalkability>
+    <CS_Studio_Anim_BrownianStayInRoom>限制在当前房间</CS_Studio_Anim_BrownianStayInRoom>
 </LanguageData>

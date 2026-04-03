@@ -341,9 +341,11 @@ namespace CharacterStudio.UI
 
             if (DrawCollapsibleSection(ref y, width, "CS_Studio_Section_VariantsExpression".Translate(), "Variants"))
             {
+                DrawPropertyHint(ref y, width, "CS_Studio_Variant_SectionHint".Translate());
+
                 UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Variant_LayerRole".Translate(), layer.role,
                     (LayerRole[])Enum.GetValues(typeof(LayerRole)),
-                    option => option.ToString(),
+                    option => ($"CS_Studio_LayerRole_{option}").Translate(),
                     val =>
                     {
                         CaptureUndoSnapshot();
@@ -355,7 +357,7 @@ namespace CharacterStudio.UI
 
                 UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Variant_Logic".Translate(), layer.variantLogic,
                     (LayerVariantLogic[])Enum.GetValues(typeof(LayerVariantLogic)),
-                    option => option.ToString(),
+                    option => ($"CS_Studio_VariantLogic_{option}").Translate(),
                     val =>
                     {
                         CaptureUndoSnapshot();
@@ -494,7 +496,7 @@ namespace CharacterStudio.UI
         {
             UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Panel_Preview".Translate(), previewRotation.ToString());
 
-            UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Variant_Logic".Translate(), layer.variantLogic.ToString());
+            UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Variant_Logic".Translate(), ($"CS_Studio_VariantLogic_{layer.variantLogic}").Translate());
             UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Anim_Type".Translate(), GetLayerAnimationSummary(layer));
             UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Section_HideVanilla".Translate(), GetHiddenVanillaSummary());
         }
@@ -583,7 +585,7 @@ namespace CharacterStudio.UI
 
             UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Variant_EyeRenderMode".Translate(), layer.eyeRenderMode,
                 (EyeRenderMode[])Enum.GetValues(typeof(EyeRenderMode)),
-                option => option.ToString(),
+                option => ($"CS_Studio_EyeRenderMode_{option}").Translate(),
                 val =>
                 {
                     CaptureUndoSnapshot();
@@ -636,15 +638,18 @@ namespace CharacterStudio.UI
                 RefreshPreview();
             }
 
-            float amp = layer.animAmplitude;
-            UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_Amplitude".Translate(), ref amp, 1f, 45f);
-            if (Math.Abs(amp - layer.animAmplitude) > 0.0001f)
+            if (layer.animationType != LayerAnimationType.Brownian)
             {
-                CaptureUndoSnapshot();
-                layer.animAmplitude = amp;
-                ApplyToOtherSelectedLayers(l => l.animAmplitude = amp);
-                isDirty = true;
-                RefreshPreview();
+                float amp = layer.animAmplitude;
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_Amplitude".Translate(), ref amp, 1f, 45f);
+                if (Math.Abs(amp - layer.animAmplitude) > 0.0001f)
+                {
+                    CaptureUndoSnapshot();
+                    layer.animAmplitude = amp;
+                    ApplyToOtherSelectedLayers(l => l.animAmplitude = amp);
+                    isDirty = true;
+                    RefreshPreview();
+                }
             }
 
             if (layer.animationType == LayerAnimationType.Twitch)
@@ -713,6 +718,75 @@ namespace CharacterStudio.UI
                     RefreshPreview();
                 }
             }
+
+            if (layer.animationType == LayerAnimationType.Brownian)
+            {
+                float radius = layer.brownianRadius;
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_BrownianRadius".Translate(), ref radius, 0.02f, 0.6f, "F3");
+                if (Math.Abs(radius - layer.brownianRadius) > 0.0001f)
+                {
+                    CaptureUndoSnapshot();
+                    layer.brownianRadius = radius;
+                    ApplyToOtherSelectedLayers(l => l.brownianRadius = radius);
+                    isDirty = true;
+                    RefreshPreview();
+                }
+
+                float jitter = layer.brownianJitter;
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_BrownianJitter".Translate(), ref jitter, 0.001f, 0.05f, "F3");
+                if (Math.Abs(jitter - layer.brownianJitter) > 0.0001f)
+                {
+                    CaptureUndoSnapshot();
+                    layer.brownianJitter = jitter;
+                    ApplyToOtherSelectedLayers(l => l.brownianJitter = jitter);
+                    isDirty = true;
+                    RefreshPreview();
+                }
+
+                float damping = layer.brownianDamping;
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_BrownianDamping".Translate(), ref damping, 0.7f, 0.99f, "F3");
+                if (Math.Abs(damping - layer.brownianDamping) > 0.0001f)
+                {
+                    CaptureUndoSnapshot();
+                    layer.brownianDamping = damping;
+                    ApplyToOtherSelectedLayers(l => l.brownianDamping = damping);
+                    isDirty = true;
+                    RefreshPreview();
+                }
+
+                float combatRadius = layer.brownianCombatRadius;
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_BrownianCombatRadius".Translate(), ref combatRadius, 0.01f, 0.3f, "F3");
+                if (Math.Abs(combatRadius - layer.brownianCombatRadius) > 0.0001f)
+                {
+                    CaptureUndoSnapshot();
+                    layer.brownianCombatRadius = combatRadius;
+                    ApplyToOtherSelectedLayers(l => l.brownianCombatRadius = combatRadius);
+                    isDirty = true;
+                    RefreshPreview();
+                }
+
+                bool respectWalkability = layer.brownianRespectWalkability;
+                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Anim_BrownianRespectWalkability".Translate(), ref respectWalkability);
+                if (respectWalkability != layer.brownianRespectWalkability)
+                {
+                    CaptureUndoSnapshot();
+                    layer.brownianRespectWalkability = respectWalkability;
+                    ApplyToOtherSelectedLayers(l => l.brownianRespectWalkability = respectWalkability);
+                    isDirty = true;
+                    RefreshPreview();
+                }
+
+                bool stayInRoom = layer.brownianStayInRoom;
+                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Anim_BrownianStayInRoom".Translate(), ref stayInRoom);
+                if (stayInRoom != layer.brownianStayInRoom)
+                {
+                    CaptureUndoSnapshot();
+                    layer.brownianStayInRoom = stayInRoom;
+                    ApplyToOtherSelectedLayers(l => l.brownianStayInRoom = stayInRoom);
+                    isDirty = true;
+                    RefreshPreview();
+                }
+            }
         }
 
         private string GetLayerAnimationSummary(PawnLayerConfig layer)
@@ -721,6 +795,11 @@ namespace CharacterStudio.UI
             if (layer.animationType == LayerAnimationType.None)
             {
                 return translatedType;
+            }
+
+            if (layer.animationType == LayerAnimationType.Brownian)
+            {
+                return $"{translatedType} · R {layer.brownianRadius:F3}";
             }
 
             return $"{translatedType} · {layer.animFrequency:F2} / {layer.animAmplitude:F1}";

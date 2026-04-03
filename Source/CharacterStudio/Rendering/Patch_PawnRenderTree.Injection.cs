@@ -714,6 +714,7 @@ namespace CharacterStudio.Rendering
             yield return LayeredFacePartType.Pupil;
             yield return LayeredFacePartType.UpperLid;
             yield return LayeredFacePartType.LowerLid;
+            yield return LayeredFacePartType.ReplacementEye;
             yield return LayeredFacePartType.Brow;
             yield return LayeredFacePartType.Mouth;
             yield return LayeredFacePartType.Hair;
@@ -891,6 +892,7 @@ namespace CharacterStudio.Rendering
                 case LayeredFacePartType.Eye:
                 case LayeredFacePartType.UpperLid:
                 case LayeredFacePartType.LowerLid:
+                case LayeredFacePartType.ReplacementEye:
                 case LayeredFacePartType.Mouth:
                 case LayeredFacePartType.Blush:
                 case LayeredFacePartType.Sweat:
@@ -919,6 +921,7 @@ namespace CharacterStudio.Rendering
                 case LayeredFacePartType.Eye:
                 case LayeredFacePartType.UpperLid:
                 case LayeredFacePartType.LowerLid:
+                case LayeredFacePartType.ReplacementEye:
                     return LayerRole.Lid;
                 case LayeredFacePartType.Pupil:
                     return LayerRole.Eye;
@@ -955,6 +958,8 @@ namespace CharacterStudio.Rendering
                     return 0.136f;
                 case LayeredFacePartType.LowerLid:
                     return 0.138f;
+                case LayeredFacePartType.ReplacementEye:
+                    return 0.139f;
                 case LayeredFacePartType.Brow:
                     return 0.16f;
                 case LayeredFacePartType.Mouth:

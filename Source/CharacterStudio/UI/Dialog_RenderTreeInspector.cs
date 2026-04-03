@@ -36,17 +36,16 @@ namespace CharacterStudio.UI
 
         public override void DoWindowContents(Rect inRect)
         {
-            Text.Font = GameFont.Medium;
-            Widgets.Label(new Rect(0, 0, inRect.width, 30), "CS_Studio_Inspector_Title".Translate(pawn.Name.ToStringShort));
-            Text.Font = GameFont.Small;
+            Rect shellRect = new Rect(0f, 0f, inRect.width, inRect.height);
+            Rect titleRect = UIHelper.DrawPanelShell(shellRect, "CS_Studio_Inspector_Title".Translate(pawn.Name.ToStringShort), 0f);
 
-            float y = 40;
+            float y = titleRect.yMax + 8f;
 
-            if (Widgets.ButtonText(new Rect(0, y, 120, 30), "CS_Studio_Inspector_Refresh".Translate()))
+            if (UIHelper.DrawToolbarButton(new Rect(0f, y, 120f, 26f), "CS_Studio_Inspector_Refresh".Translate(), accent: true))
             {
                 RefreshTree();
             }
-            y += 35;
+            y += 34f;
 
             // 分割视图：左侧树状图，右侧详情
             float splitX = inRect.width * 0.4f;
@@ -54,9 +53,9 @@ namespace CharacterStudio.UI
             Rect detailRect = new Rect(splitX + 5, y, inRect.width - splitX - 5, inRect.height - y - 10);
 
             // 绘制左侧树
-            Widgets.DrawMenuSection(treeRect);
+            UIHelper.DrawContentCard(treeRect);
             float treeHeight = rootNode != null ? CalculateTreeHeight(rootNode) : 0f;
-            Widgets.BeginScrollView(treeRect, ref scrollPos, new Rect(0, 0, treeRect.width - 16, treeHeight));
+            Widgets.BeginScrollView(treeRect.ContractedBy(2f), ref scrollPos, new Rect(0, 0, treeRect.width - 20, treeHeight));
             
             if (rootNode != null)
             {
@@ -71,7 +70,7 @@ namespace CharacterStudio.UI
             Widgets.EndScrollView();
 
             // 绘制右侧详情
-            Widgets.DrawMenuSection(detailRect);
+            UIHelper.DrawContentCard(detailRect);
             if (selectedNode != null)
             {
                 DrawNodeDetails(detailRect.ContractedBy(10), selectedNode);

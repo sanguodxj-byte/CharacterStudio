@@ -152,6 +152,7 @@
     <CS_Studio_Face_Layered_Stats>{0} paths assigned across {2}/{3} part groups, for {1} expressions.</CS_Studio_Face_Layered_Stats>
     <CS_Studio_Face_Layered_Title>Layered Face Parts</CS_Studio_Face_Layered_Title>
     <CS_Studio_Face_LayeredPart_Base>Base Face</CS_Studio_Face_LayeredPart_Base>
+    <CS_Studio_Face_LayeredPart_ReplacementEye>Replacement Eye</CS_Studio_Face_LayeredPart_ReplacementEye>
     <CS_Studio_Face_LayeredPart_Blush>Blush</CS_Studio_Face_LayeredPart_Blush>
     <CS_Studio_Face_LayeredPart_Brow>Brow</CS_Studio_Face_LayeredPart_Brow>
     <CS_Studio_Face_LayeredPart_Eye>Eye</CS_Studio_Face_LayeredPart_Eye>
@@ -173,6 +174,26 @@
     <CS_Studio_Face_OverlayMapping_Suggested>Suggested {0}</CS_Studio_Face_OverlayMapping_Suggested>
     <CS_Studio_Face_OverlayMapping_Title>Overlay Mapping</CS_Studio_Face_OverlayMapping_Title>
     <CS_Studio_Face_OverlayMapping_Unmapped>Unmapped</CS_Studio_Face_OverlayMapping_Unmapped>
+    <CS_Studio_Face_OverlaySemantic_Blush>Blush</CS_Studio_Face_OverlaySemantic_Blush>
+    <CS_Studio_Face_OverlaySemantic_Tear>Tear</CS_Studio_Face_OverlaySemantic_Tear>
+    <CS_Studio_Face_OverlaySemantic_Sweat>Sweat</CS_Studio_Face_OverlaySemantic_Sweat>
+    <CS_Studio_Face_OverlaySemantic_Sleep>Sleep</CS_Studio_Face_OverlaySemantic_Sleep>
+    <CS_Studio_Face_OverlaySemantic_Gloomy>Gloomy</CS_Studio_Face_OverlaySemantic_Gloomy>
+    <CS_Studio_Face_OverlaySemanticKey_lovin>Lovin</CS_Studio_Face_OverlaySemanticKey_lovin>
+    <CS_Studio_Face_OverlaySemanticKey_happy>Happy</CS_Studio_Face_OverlaySemanticKey_happy>
+    <CS_Studio_Face_OverlaySemanticKey_cheerful>Cheerful</CS_Studio_Face_OverlaySemanticKey_cheerful>
+    <CS_Studio_Face_OverlaySemanticKey_social_relax>Social Relax</CS_Studio_Face_OverlaySemanticKey_social_relax>
+    <CS_Studio_Face_OverlaySemanticKey_scared>Scared</CS_Studio_Face_OverlaySemanticKey_scared>
+    <CS_Studio_Face_OverlaySemanticKey_shock>Shock</CS_Studio_Face_OverlaySemanticKey_shock>
+    <CS_Studio_Face_OverlaySemanticKey_wait_combat>Wait Combat</CS_Studio_Face_OverlaySemanticKey_wait_combat>
+    <CS_Studio_Face_OverlaySemanticKey_attack_melee>Melee Attack</CS_Studio_Face_OverlaySemanticKey_attack_melee>
+    <CS_Studio_Face_OverlaySemanticKey_attack_ranged>Ranged Attack</CS_Studio_Face_OverlaySemanticKey_attack_ranged>
+    <CS_Studio_Face_OverlaySemanticKey_pain>Pain</CS_Studio_Face_OverlaySemanticKey_pain>
+    <CS_Studio_Face_OverlaySemanticKey_sad>Sad</CS_Studio_Face_OverlaySemanticKey_sad>
+    <CS_Studio_Face_OverlaySemanticKey_hopeless>Hopeless</CS_Studio_Face_OverlaySemanticKey_hopeless>
+    <CS_Studio_Face_OverlaySemanticKey_dead>Dead</CS_Studio_Face_OverlaySemanticKey_dead>
+    <CS_Studio_Face_OverlaySemanticKey_gloomy>Gloomy</CS_Studio_Face_OverlaySemanticKey_gloomy>
+    <CS_Studio_Face_OverlaySemanticKey_sleeping>Sleeping</CS_Studio_Face_OverlaySemanticKey_sleeping>
     <CS_Studio_Face_OverlayRule_Title>Overlay Rule Mapping</CS_Studio_Face_OverlayRule_Title>
     <CS_Studio_Face_OverlayRule_Hint>Configure the mapping from expression to emotion overlay state, and from emotion overlay state to overlay id, instead of relying on hardcoded logic.</CS_Studio_Face_OverlayRule_Hint>
     <CS_Studio_Face_OverlayRule_RoutingTitle>Emotion State to OverlayId</CS_Studio_Face_OverlayRule_RoutingTitle>

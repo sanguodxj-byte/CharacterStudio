@@ -794,21 +794,7 @@ namespace CharacterStudio.UI
             Widgets.Label(new Rect(x, y + 4f, labelWidth, 24f), label);
 
             Rect buttonRect = new Rect(x + labelWidth, y, buttonWidth, 24f);
-            Widgets.DrawBoxSolid(buttonRect, UIHelper.PanelFillSoftColor);
-            Widgets.DrawBoxSolid(new Rect(buttonRect.x, buttonRect.yMax - 2f, buttonRect.width, 2f), new Color(1f, 1f, 1f, 0.05f));
-            GUI.color = Mouse.IsOver(buttonRect) ? UIHelper.HoverOutlineColor : UIHelper.BorderColor;
-            Widgets.DrawBox(buttonRect, 1);
-            GUI.color = Color.white;
-
-            Text.Anchor = TextAnchor.MiddleCenter;
-            Text.Font = GameFont.Tiny;
-            GUI.color = UIHelper.HeaderColor;
-            Widgets.Label(buttonRect, valueLabel);
-            GUI.color = Color.white;
-            Text.Anchor = TextAnchor.UpperLeft;
-            Text.Font = GameFont.Small;
-
-            if (Widgets.ButtonInvisible(buttonRect))
+            if (UIHelper.DrawToolbarButton(buttonRect, valueLabel))
             {
                 onClick();
             }
@@ -838,107 +824,59 @@ namespace CharacterStudio.UI
 
         private void DrawPreviewPanel(Rect rect)
         {
-            Widgets.DrawBoxSolid(rect, UIHelper.PanelFillColor);
-            GUI.color = UIHelper.BorderColor;
-            Widgets.DrawBox(rect, 1);
-            GUI.color = Color.white;
-
-            Rect titleRect = new Rect(rect.x + Margin, rect.y + Margin, rect.width - Margin * 2, 26f);
-            Widgets.DrawBoxSolid(titleRect, UIHelper.PanelFillSoftColor);
-            Widgets.DrawBoxSolid(new Rect(titleRect.x, titleRect.yMax - 2f, titleRect.width, 2f), UIHelper.AccentSoftColor);
-            GUI.color = UIHelper.BorderColor;
-            Widgets.DrawBox(titleRect, 1);
-            GUI.color = Color.white;
-
-            GameFont oldFont = Text.Font;
-            Text.Font = GameFont.Tiny;
-            Text.Anchor = TextAnchor.MiddleLeft;
-            GUI.color = UIHelper.HeaderColor;
-            Widgets.Label(new Rect(titleRect.x + 8f, titleRect.y, titleRect.width - 16f, titleRect.height), "CS_Studio_Panel_Preview".Translate());
-            GUI.color = Color.white;
-            Text.Anchor = TextAnchor.UpperLeft;
-            Text.Font = oldFont;
-
-            bool DrawPreviewToolbarButton(Rect buttonRect, string label, Action action, bool accent = false)
-            {
-                Widgets.DrawBoxSolid(buttonRect, accent ? UIHelper.ActiveTabColor : UIHelper.PanelFillSoftColor);
-                Widgets.DrawBoxSolid(new Rect(buttonRect.x, buttonRect.yMax - 2f, buttonRect.width, 2f), accent ? UIHelper.AccentColor : new Color(1f, 1f, 1f, 0.05f));
-                GUI.color = Mouse.IsOver(buttonRect) ? UIHelper.HoverOutlineColor : UIHelper.BorderColor;
-                Widgets.DrawBox(buttonRect, 1);
-                GUI.color = Color.white;
-
-                GameFont prevFont = Text.Font;
-                Text.Font = GameFont.Tiny;
-                Text.Anchor = TextAnchor.MiddleCenter;
-                GUI.color = accent ? Color.white : UIHelper.HeaderColor;
-                Widgets.Label(buttonRect, label);
-                GUI.color = Color.white;
-                Text.Anchor = TextAnchor.UpperLeft;
-                Text.Font = prevFont;
-
-                if (Widgets.ButtonInvisible(buttonRect))
-                {
-                    action();
-                    return true;
-                }
-
-                return false;
-            }
+            Rect titleRect = UIHelper.DrawPanelShell(rect, "CS_Studio_Panel_Preview".Translate(), Margin);
 
             float btnY = titleRect.yMax + 6f;
             float btnWidth = 40f;
             float btnHeight = Mathf.Max(ButtonHeight - 2f, 22f);
             float btnX = rect.x + Margin;
 
-            DrawPreviewToolbarButton(new Rect(btnX, btnY, btnWidth, btnHeight), "◀", () =>
+            if (UIHelper.DrawToolbarButton(new Rect(btnX, btnY, btnWidth, btnHeight), "◀", tooltip: "CS_Studio_Preview_RotateLeft".Translate()))
             {
                 previewRotation.Rotate(RotationDirection.Counterclockwise);
                 RefreshPreview();
-            });
+            }
             btnX += btnWidth + Margin;
 
-            DrawPreviewToolbarButton(new Rect(btnX, btnY, btnWidth, btnHeight), "▶", () =>
+            if (UIHelper.DrawToolbarButton(new Rect(btnX, btnY, btnWidth, btnHeight), "▶", tooltip: "CS_Studio_Preview_RotateRight".Translate()))
             {
                 previewRotation.Rotate(RotationDirection.Clockwise);
                 RefreshPreview();
-            });
+            }
             btnX += btnWidth + Margin * 2f;
 
-            DrawPreviewToolbarButton(new Rect(btnX, btnY, btnWidth, btnHeight), "-", () =>
+            if (UIHelper.DrawToolbarButton(new Rect(btnX, btnY, btnWidth, btnHeight), "-", tooltip: "CS_Studio_Preview_ZoomOut".Translate()))
             {
                 previewZoom = Mathf.Max(0.5f, previewZoom - 0.1f);
-            });
+            }
             btnX += btnWidth + Margin;
 
-            DrawPreviewToolbarButton(new Rect(btnX, btnY, btnWidth, btnHeight), "+", () =>
+            if (UIHelper.DrawToolbarButton(new Rect(btnX, btnY, btnWidth, btnHeight), "+", tooltip: "CS_Studio_Preview_ZoomIn".Translate()))
             {
                 previewZoom = Mathf.Min(2f, previewZoom + 0.1f);
-            });
+            }
             btnX += btnWidth + Margin;
 
-            DrawPreviewToolbarButton(new Rect(btnX, btnY, btnWidth + 20f, btnHeight), "↺", () =>
+            if (UIHelper.DrawToolbarButton(new Rect(btnX, btnY, btnWidth + 20f, btnHeight), "↺", tooltip: "CS_Studio_Preview_ResetView".Translate()))
             {
                 previewRotation = Rot4.South;
                 previewZoom = 1f;
                 RefreshPreview();
-            });
+            }
 
             float stripBtnX = btnX + btnWidth + 20f + Margin * 2f;
             if (mannequin != null)
             {
-                // 选择服装按钮
                 float apparelBtnWidth = 64f;
-                if (DrawPreviewToolbarButton(new Rect(stripBtnX, btnY, apparelBtnWidth, btnHeight), "CS_Studio_Preview_SelectApparel".Translate(), () =>
+                if (UIHelper.DrawToolbarButton(new Rect(stripBtnX, btnY, apparelBtnWidth, btnHeight), "CS_Studio_Preview_SelectApparel".Translate()))
                 {
                     OpenPreviewApparelMenu();
-                }))
-                {
                 }
             }
 
             float autoPlayWidth = 72f;
             Rect autoPlayRect = new Rect(rect.xMax - Margin - autoPlayWidth, btnY, autoPlayWidth, btnHeight);
-            DrawPreviewToolbarButton(autoPlayRect, (previewAutoPlayEnabled ? "▶ " : string.Empty) + "CS_Studio_Preview_Flow".Translate(), () =>
+            if (UIHelper.DrawToolbarButton(autoPlayRect, (previewAutoPlayEnabled ? "▶ " : string.Empty) + "CS_Studio_Preview_Flow".Translate(), previewAutoPlayEnabled))
             {
                 previewAutoPlayEnabled = !previewAutoPlayEnabled;
                 if (previewAutoPlayEnabled)
@@ -954,25 +892,29 @@ namespace CharacterStudio.UI
                     SyncPreviewOverridesToSkinComp();
                     RefreshPreview();
                 }
-            }, previewAutoPlayEnabled);
+            }
             TooltipHandler.TipRegion(autoPlayRect, "CS_Studio_Preview_FlowTooltip".Translate(GetExpressionTypeLabel(previewExpression)));
 
             float equipmentPreviewBtnWidth = 76f;
             Rect equipmentLoopRect = new Rect(autoPlayRect.x - Margin - equipmentPreviewBtnWidth, btnY, equipmentPreviewBtnWidth, btnHeight);
             bool canPreviewEquipmentAnimation = !string.IsNullOrWhiteSpace(GetSelectedEquipmentAnimationTriggerKey());
-            DrawPreviewToolbarButton(equipmentLoopRect,
+            if (UIHelper.DrawToolbarButton(equipmentLoopRect,
                 (previewEquipmentAnimationPlaying && previewEquipmentAnimationLoop ? "▶ " : string.Empty) + "CS_Studio_Equip_PreviewLoop".Translate(),
-                () => TogglePreviewEquipmentAnimation(loop: true),
-                previewEquipmentAnimationPlaying && previewEquipmentAnimationLoop);
+                previewEquipmentAnimationPlaying && previewEquipmentAnimationLoop))
+            {
+                TogglePreviewEquipmentAnimation(loop: true);
+            }
             TooltipHandler.TipRegion(equipmentLoopRect, canPreviewEquipmentAnimation
                 ? "CS_Studio_Equip_PreviewLoop_Hint".Translate()
                 : "CS_Studio_Equip_PreviewUnavailable_Hint".Translate());
 
             Rect equipmentPlayRect = new Rect(equipmentLoopRect.x - Margin - equipmentPreviewBtnWidth, btnY, equipmentPreviewBtnWidth, btnHeight);
-            DrawPreviewToolbarButton(equipmentPlayRect,
+            if (UIHelper.DrawToolbarButton(equipmentPlayRect,
                 (previewEquipmentAnimationPlaying && !previewEquipmentAnimationLoop ? "▶ " : string.Empty) + "CS_Studio_Equip_PreviewPlay".Translate(),
-                () => TogglePreviewEquipmentAnimation(loop: false),
-                previewEquipmentAnimationPlaying && !previewEquipmentAnimationLoop);
+                previewEquipmentAnimationPlaying && !previewEquipmentAnimationLoop))
+            {
+                TogglePreviewEquipmentAnimation(loop: false);
+            }
             TooltipHandler.TipRegion(equipmentPlayRect, canPreviewEquipmentAnimation
                 ? "CS_Studio_Equip_PreviewPlay_Hint".Translate()
                 : "CS_Studio_Equip_PreviewUnavailable_Hint".Translate());
@@ -981,28 +923,28 @@ namespace CharacterStudio.UI
             float presetButtonWidth = 64f;
             float presetX = rect.x + Margin;
 
-            DrawPreviewToolbarButton(new Rect(presetX, presetY, 56f, btnHeight), GetPreviewPresetLabel(PreviewFacePreset.Auto), () => ApplyPreviewPreset(PreviewFacePreset.Auto));
+            if (UIHelper.DrawToolbarButton(new Rect(presetX, presetY, 56f, btnHeight), GetPreviewPresetLabel(PreviewFacePreset.Auto))) ApplyPreviewPreset(PreviewFacePreset.Auto);
             presetX += 56f + Margin;
 
-            DrawPreviewToolbarButton(new Rect(presetX, presetY, presetButtonWidth, btnHeight), GetPreviewPresetLabel(PreviewFacePreset.Combat), () => ApplyPreviewPreset(PreviewFacePreset.Combat));
+            if (UIHelper.DrawToolbarButton(new Rect(presetX, presetY, presetButtonWidth, btnHeight), GetPreviewPresetLabel(PreviewFacePreset.Combat))) ApplyPreviewPreset(PreviewFacePreset.Combat);
             presetX += presetButtonWidth + Margin;
 
-            DrawPreviewToolbarButton(new Rect(presetX, presetY, presetButtonWidth, btnHeight), GetPreviewPresetLabel(PreviewFacePreset.Panic), () => ApplyPreviewPreset(PreviewFacePreset.Panic));
+            if (UIHelper.DrawToolbarButton(new Rect(presetX, presetY, presetButtonWidth, btnHeight), GetPreviewPresetLabel(PreviewFacePreset.Panic))) ApplyPreviewPreset(PreviewFacePreset.Panic);
             presetX += presetButtonWidth + Margin;
 
-            DrawPreviewToolbarButton(new Rect(presetX, presetY, presetButtonWidth, btnHeight), GetPreviewPresetLabel(PreviewFacePreset.Tired), () => ApplyPreviewPreset(PreviewFacePreset.Tired));
+            if (UIHelper.DrawToolbarButton(new Rect(presetX, presetY, presetButtonWidth, btnHeight), GetPreviewPresetLabel(PreviewFacePreset.Tired))) ApplyPreviewPreset(PreviewFacePreset.Tired);
             presetX += presetButtonWidth + Margin;
 
-            DrawPreviewToolbarButton(new Rect(presetX, presetY, 82f, btnHeight), GetPreviewPresetLabel(PreviewFacePreset.Depressed), () => ApplyPreviewPreset(PreviewFacePreset.Depressed));
+            if (UIHelper.DrawToolbarButton(new Rect(presetX, presetY, 82f, btnHeight), GetPreviewPresetLabel(PreviewFacePreset.Depressed))) ApplyPreviewPreset(PreviewFacePreset.Depressed);
             presetX += 82f + Margin;
 
-            DrawPreviewToolbarButton(new Rect(presetX, presetY, 78f, btnHeight), GetPreviewPresetLabel(PreviewFacePreset.Romance), () => ApplyPreviewPreset(PreviewFacePreset.Romance));
+            if (UIHelper.DrawToolbarButton(new Rect(presetX, presetY, 78f, btnHeight), GetPreviewPresetLabel(PreviewFacePreset.Romance))) ApplyPreviewPreset(PreviewFacePreset.Romance);
             presetX += 78f + Margin;
 
-            DrawPreviewToolbarButton(new Rect(presetX, presetY, 72f, btnHeight), GetPreviewPresetLabel(PreviewFacePreset.Downed), () => ApplyPreviewPreset(PreviewFacePreset.Downed));
+            if (UIHelper.DrawToolbarButton(new Rect(presetX, presetY, 72f, btnHeight), GetPreviewPresetLabel(PreviewFacePreset.Downed))) ApplyPreviewPreset(PreviewFacePreset.Downed);
             presetX += 72f + Margin;
 
-            DrawPreviewToolbarButton(new Rect(presetX, presetY, 56f, btnHeight), GetPreviewPresetLabel(PreviewFacePreset.Dead), () => ApplyPreviewPreset(PreviewFacePreset.Dead));
+            if (UIHelper.DrawToolbarButton(new Rect(presetX, presetY, 56f, btnHeight), GetPreviewPresetLabel(PreviewFacePreset.Dead))) ApplyPreviewPreset(PreviewFacePreset.Dead);
 
             // 表情 / 通道控制
             btnY = presetY + ButtonHeight + Margin;
@@ -1017,6 +959,7 @@ namespace CharacterStudio.UI
                     36f,
                     150f,
                     OpenPreviewExpressionMenu);
+                TooltipHandler.TipRegion(new Rect(rect.x + Margin, btnY, 190f, ButtonHeight), "CS_Studio_Preview_ExpressionContextHint".Translate());
 
                 DrawPreviewOverrideButton(
                     ref controlX,
@@ -1069,6 +1012,8 @@ namespace CharacterStudio.UI
                     96f,
                     OpenPreviewEmotionStateMenu);
 
+                TooltipHandler.TipRegion(new Rect(rect.x + Margin, btnY - (ButtonHeight + Margin) * 2f, 360f, ButtonHeight * 3f + Margin * 2f), "CS_Studio_Preview_ChannelContextHint".Translate());
+
                 btnY += ButtonHeight + Margin;
             }
 
@@ -1093,47 +1038,44 @@ namespace CharacterStudio.UI
 
             TooltipHandler.TipRegion(modeWrapRect, "CS_Studio_Preview_EditPerFacingTip".Translate());
 
-            // 预览区域
             float previewY = btnY + modeWrapRect.height + Margin;
             float previewHeight = rect.height - previewY + rect.y - Margin;
             Rect previewRect = new Rect(rect.x + Margin, previewY, rect.width - Margin * 2, previewHeight);
 
-            Widgets.DrawBoxSolid(previewRect, new Color(0.12f, 0.12f, 0.12f));
+            UIHelper.DrawContentCard(previewRect);
+            Rect previewInnerRect = previewRect.ContractedBy(6f);
+            Widgets.DrawBoxSolid(previewInnerRect, new Color(0.12f, 0.12f, 0.12f));
             GUI.color = UIHelper.BorderColor;
-            Widgets.DrawBox(previewRect, 1);
+            Widgets.DrawBox(previewInnerRect, 1);
             GUI.color = Color.white;
 
-            // 绘制 Mannequin
             if (mannequin != null)
             {
-                mannequin.DrawPreview(previewRect, previewRotation, previewZoom);
-                DrawWeaponPreviewOverlay(previewRect);
-                DrawReferenceGhostOverlay(previewRect);
-                DrawMapTileReferenceGrid(previewRect);
+                mannequin.DrawPreview(previewInnerRect, previewRotation, previewZoom);
+                DrawWeaponPreviewOverlay(previewInnerRect);
+                DrawReferenceGhostOverlay(previewInnerRect);
+                DrawMapTileReferenceGrid(previewInnerRect);
             }
             else
             {
-                // 占位文本
                 Text.Anchor = TextAnchor.MiddleCenter;
                 GUI.color = Color.gray;
-                Widgets.Label(previewRect, "CS_Studio_Status_Loading".Translate());
+                Widgets.Label(previewInnerRect, "CS_Studio_Status_Loading".Translate());
                 GUI.color = Color.white;
                 Text.Anchor = TextAnchor.UpperLeft;
             }
 
             if (targetPawn != null)
             {
-                TooltipHandler.TipRegion(previewRect, "CS_Studio_Preview_RefHint".Translate());
+                TooltipHandler.TipRegion(previewInnerRect, "CS_Studio_Preview_RefHint".Translate());
             }
 
-            DrawPreviewHintsOverlay(previewRect);
-            DrawSelectedEquipmentPivotOverlay(previewRect);
+            DrawPreviewHintsOverlay(previewInnerRect);
+            DrawSelectedEquipmentPivotOverlay(previewInnerRect);
 
-            // 处理交互输入
-            HandlePreviewInput(previewRect);
+            HandlePreviewInput(previewInnerRect);
 
-            // 绘制选中图层的高亮指示
-            DrawSelectedLayerHighlight(previewRect);
+            DrawSelectedLayerHighlight(previewInnerRect);
         }
 
         private void DrawReferenceGhostOverlay(Rect previewRect)

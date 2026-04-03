@@ -28,6 +28,7 @@ namespace CharacterStudio.Core
         Pupil,
         UpperLid,
         LowerLid,
+        ReplacementEye,
         Mouth,
         Blush,
         Sweat,
@@ -324,6 +325,7 @@ namespace CharacterStudio.Core
         public class ExpressionOverlayRule
         {
             public ExpressionType expression = ExpressionType.Neutral;
+            public string semanticKey = string.Empty;
             public string emotionState = nameof(EmotionOverlayState.None);
 
             public ExpressionOverlayRule Clone() => (ExpressionOverlayRule)MemberwiseClone();
@@ -331,10 +333,21 @@ namespace CharacterStudio.Core
 
         public class EmotionOverlayRule
         {
+            public string semanticKey = string.Empty;
+            public List<string> overlayIds = new List<string>();
             public string emotionState = nameof(EmotionOverlayState.None);
             public string overlayId = string.Empty;
 
-            public EmotionOverlayRule Clone() => (EmotionOverlayRule)MemberwiseClone();
+            public EmotionOverlayRule Clone()
+            {
+                return new EmotionOverlayRule
+                {
+                    semanticKey = semanticKey,
+                    overlayIds = overlayIds != null ? new List<string>(overlayIds) : new List<string>(),
+                    emotionState = emotionState,
+                    overlayId = overlayId
+                };
+            }
         }
 
         public class BrowMotionConfig
@@ -488,20 +501,21 @@ namespace CharacterStudio.Core
             {
                 expressionOverlayRules = new List<ExpressionOverlayRule>
                 {
-                    new ExpressionOverlayRule { expression = ExpressionType.Lovin, emotionState = nameof(EmotionOverlayState.Lovin) },
-                    new ExpressionOverlayRule { expression = ExpressionType.Happy, emotionState = nameof(EmotionOverlayState.Blush) },
-                    new ExpressionOverlayRule { expression = ExpressionType.Cheerful, emotionState = nameof(EmotionOverlayState.Blush) },
-                    new ExpressionOverlayRule { expression = ExpressionType.SocialRelax, emotionState = nameof(EmotionOverlayState.Blush) },
-                    new ExpressionOverlayRule { expression = ExpressionType.Scared, emotionState = nameof(EmotionOverlayState.Sweat) },
-                    new ExpressionOverlayRule { expression = ExpressionType.Shock, emotionState = nameof(EmotionOverlayState.Sweat) },
-                    new ExpressionOverlayRule { expression = ExpressionType.WaitCombat, emotionState = nameof(EmotionOverlayState.Sweat) },
-                    new ExpressionOverlayRule { expression = ExpressionType.AttackMelee, emotionState = nameof(EmotionOverlayState.Sweat) },
-                    new ExpressionOverlayRule { expression = ExpressionType.AttackRanged, emotionState = nameof(EmotionOverlayState.Sweat) },
-                    new ExpressionOverlayRule { expression = ExpressionType.Pain, emotionState = nameof(EmotionOverlayState.Tear) },
-                    new ExpressionOverlayRule { expression = ExpressionType.Sad, emotionState = nameof(EmotionOverlayState.Tear) },
-                    new ExpressionOverlayRule { expression = ExpressionType.Hopeless, emotionState = nameof(EmotionOverlayState.Tear) },
-                    new ExpressionOverlayRule { expression = ExpressionType.Dead, emotionState = nameof(EmotionOverlayState.Tear) },
-                    new ExpressionOverlayRule { expression = ExpressionType.Gloomy, emotionState = nameof(EmotionOverlayState.Gloomy) },
+                    new ExpressionOverlayRule { expression = ExpressionType.Lovin, semanticKey = "lovin", emotionState = nameof(EmotionOverlayState.Lovin) },
+                    new ExpressionOverlayRule { expression = ExpressionType.Happy, semanticKey = "happy", emotionState = nameof(EmotionOverlayState.Blush) },
+                    new ExpressionOverlayRule { expression = ExpressionType.Cheerful, semanticKey = "cheerful", emotionState = nameof(EmotionOverlayState.Blush) },
+                    new ExpressionOverlayRule { expression = ExpressionType.SocialRelax, semanticKey = "social_relax", emotionState = nameof(EmotionOverlayState.Blush) },
+                    new ExpressionOverlayRule { expression = ExpressionType.Scared, semanticKey = "scared", emotionState = nameof(EmotionOverlayState.Sweat) },
+                    new ExpressionOverlayRule { expression = ExpressionType.Shock, semanticKey = "shock", emotionState = nameof(EmotionOverlayState.Sweat) },
+                    new ExpressionOverlayRule { expression = ExpressionType.WaitCombat, semanticKey = "wait_combat", emotionState = nameof(EmotionOverlayState.Sweat) },
+                    new ExpressionOverlayRule { expression = ExpressionType.AttackMelee, semanticKey = "attack_melee", emotionState = nameof(EmotionOverlayState.Sweat) },
+                    new ExpressionOverlayRule { expression = ExpressionType.AttackRanged, semanticKey = "attack_ranged", emotionState = nameof(EmotionOverlayState.Sweat) },
+                    new ExpressionOverlayRule { expression = ExpressionType.Pain, semanticKey = "pain", emotionState = nameof(EmotionOverlayState.Tear) },
+                    new ExpressionOverlayRule { expression = ExpressionType.Sad, semanticKey = "sad", emotionState = nameof(EmotionOverlayState.Tear) },
+                    new ExpressionOverlayRule { expression = ExpressionType.Hopeless, semanticKey = "hopeless", emotionState = nameof(EmotionOverlayState.Tear) },
+                    new ExpressionOverlayRule { expression = ExpressionType.Dead, semanticKey = "dead", emotionState = nameof(EmotionOverlayState.Tear) },
+                    new ExpressionOverlayRule { expression = ExpressionType.Gloomy, semanticKey = "gloomy", emotionState = nameof(EmotionOverlayState.Gloomy) },
+                    new ExpressionOverlayRule { expression = ExpressionType.Sleeping, semanticKey = "sleeping", emotionState = nameof(EmotionOverlayState.None) },
                 };
             }
 
@@ -509,13 +523,109 @@ namespace CharacterStudio.Core
             {
                 emotionOverlayRules = new List<EmotionOverlayRule>
                 {
-                    new EmotionOverlayRule { emotionState = nameof(EmotionOverlayState.Lovin), overlayId = "Blush" },
-                    new EmotionOverlayRule { emotionState = nameof(EmotionOverlayState.Blush), overlayId = "Blush" },
-                    new EmotionOverlayRule { emotionState = nameof(EmotionOverlayState.Tear), overlayId = "Tear" },
-                    new EmotionOverlayRule { emotionState = nameof(EmotionOverlayState.Gloomy), overlayId = "Gloomy" },
-                    new EmotionOverlayRule { emotionState = nameof(EmotionOverlayState.Sweat), overlayId = "Sweat" },
+                    new EmotionOverlayRule { semanticKey = "lovin", emotionState = nameof(EmotionOverlayState.Lovin), overlayIds = new List<string> { "Blush" }, overlayId = "Blush" },
+                    new EmotionOverlayRule { semanticKey = "happy", emotionState = nameof(EmotionOverlayState.Blush), overlayIds = new List<string> { "Blush" }, overlayId = "Blush" },
+                    new EmotionOverlayRule { semanticKey = "cheerful", emotionState = nameof(EmotionOverlayState.Blush), overlayIds = new List<string> { "Blush" }, overlayId = "Blush" },
+                    new EmotionOverlayRule { semanticKey = "social_relax", emotionState = nameof(EmotionOverlayState.Blush), overlayIds = new List<string> { "Blush" }, overlayId = "Blush" },
+                    new EmotionOverlayRule { semanticKey = "scared", emotionState = nameof(EmotionOverlayState.Sweat), overlayIds = new List<string> { "Sweat" }, overlayId = "Sweat" },
+                    new EmotionOverlayRule { semanticKey = "shock", emotionState = nameof(EmotionOverlayState.Sweat), overlayIds = new List<string> { "Sweat" }, overlayId = "Sweat" },
+                    new EmotionOverlayRule { semanticKey = "wait_combat", emotionState = nameof(EmotionOverlayState.Sweat), overlayIds = new List<string> { "Sweat" }, overlayId = "Sweat" },
+                    new EmotionOverlayRule { semanticKey = "attack_melee", emotionState = nameof(EmotionOverlayState.Sweat), overlayIds = new List<string> { "Sweat" }, overlayId = "Sweat" },
+                    new EmotionOverlayRule { semanticKey = "attack_ranged", emotionState = nameof(EmotionOverlayState.Sweat), overlayIds = new List<string> { "Sweat" }, overlayId = "Sweat" },
+                    new EmotionOverlayRule { semanticKey = "pain", emotionState = nameof(EmotionOverlayState.Tear), overlayIds = new List<string> { "Tear" }, overlayId = "Tear" },
+                    new EmotionOverlayRule { semanticKey = "sad", emotionState = nameof(EmotionOverlayState.Tear), overlayIds = new List<string> { "Tear" }, overlayId = "Tear" },
+                    new EmotionOverlayRule { semanticKey = "hopeless", emotionState = nameof(EmotionOverlayState.Tear), overlayIds = new List<string> { "Tear" }, overlayId = "Tear" },
+                    new EmotionOverlayRule { semanticKey = "dead", emotionState = nameof(EmotionOverlayState.Tear), overlayIds = new List<string> { "Tear" }, overlayId = "Tear" },
+                    new EmotionOverlayRule { semanticKey = "gloomy", emotionState = nameof(EmotionOverlayState.Gloomy), overlayIds = new List<string> { "Gloomy" }, overlayId = "Gloomy" },
+                    new EmotionOverlayRule { semanticKey = "sleeping", emotionState = nameof(EmotionOverlayState.None), overlayIds = new List<string> { "Sleep" }, overlayId = "Sleep" },
                 };
             }
+
+            NormalizeOverlayRules();
+        }
+
+        public static string NormalizeOverlaySemanticKey(string? semanticKey)
+        {
+            if (string.IsNullOrWhiteSpace(semanticKey))
+                return string.Empty;
+
+            string normalized = semanticKey!.Trim().Replace('-', '_').Replace(' ', '_');
+            string[] segments = normalized
+                .Split(new[] { '_' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(segment => segment.Trim().ToLowerInvariant())
+                .Where(segment => !string.IsNullOrWhiteSpace(segment))
+                .ToArray();
+
+            return segments.Length == 0 ? string.Empty : string.Join("_", segments);
+        }
+
+        public static string MapLegacyEmotionStateToSemanticKey(string? emotionState)
+        {
+            if (string.IsNullOrWhiteSpace(emotionState))
+                return string.Empty;
+
+            return emotionState!.Trim().ToLowerInvariant() switch
+            {
+                "lovin" => "lovin",
+                "blush" => "happy",
+                "tear" => "sad",
+                "gloomy" => "gloomy",
+                "sweat" => "scared",
+                _ => string.Empty
+            };
+        }
+
+        private void NormalizeOverlayRules()
+        {
+            expressionOverlayRules ??= new List<ExpressionOverlayRule>();
+            emotionOverlayRules ??= new List<EmotionOverlayRule>();
+
+            foreach (ExpressionOverlayRule rule in expressionOverlayRules)
+            {
+                if (rule == null)
+                    continue;
+
+                if (string.IsNullOrWhiteSpace(rule.semanticKey))
+                    rule.semanticKey = MapLegacyEmotionStateToSemanticKey(rule.emotionState);
+
+                rule.semanticKey = NormalizeOverlaySemanticKey(rule.semanticKey);
+            }
+
+            foreach (EmotionOverlayRule rule in emotionOverlayRules)
+            {
+                if (rule == null)
+                    continue;
+
+                if (string.IsNullOrWhiteSpace(rule.semanticKey))
+                    rule.semanticKey = MapLegacyEmotionStateToSemanticKey(rule.emotionState);
+
+                rule.semanticKey = NormalizeOverlaySemanticKey(rule.semanticKey);
+                rule.overlayIds ??= new List<string>();
+
+                if (rule.overlayIds.Count == 0 && !string.IsNullOrWhiteSpace(rule.overlayId))
+                    rule.overlayIds.Add(rule.overlayId);
+
+                rule.overlayIds = rule.overlayIds
+                    .Select(NormalizeOverlayId)
+                    .Where(id => !string.IsNullOrWhiteSpace(id))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                rule.overlayId = rule.overlayIds.FirstOrDefault() ?? string.Empty;
+            }
+        }
+
+        public string ResolveOverlaySemanticKey(ExpressionType expression)
+        {
+            EnsureDefaultOverlayRules();
+            ExpressionOverlayRule? rule = expressionOverlayRules.FirstOrDefault(r => r.expression == expression);
+            if (rule == null)
+                return string.Empty;
+
+            if (!string.IsNullOrWhiteSpace(rule.semanticKey))
+                return NormalizeOverlaySemanticKey(rule.semanticKey);
+
+            return MapLegacyEmotionStateToSemanticKey(rule.emotionState);
         }
 
         public EmotionOverlayState ResolveEmotionOverlayState(ExpressionType expression)
@@ -530,14 +640,33 @@ namespace CharacterStudio.Core
                 : EmotionOverlayState.None;
         }
 
-        public string ResolveOverlayId(EmotionOverlayState emotionState, ExpressionType expression)
+        public List<string> ResolveOverlayIds(string? semanticKey, ExpressionType expression)
         {
             EnsureDefaultOverlayRules();
-            if (expression == ExpressionType.Sleeping)
-                return "Sleep";
 
-            EmotionOverlayRule? rule = emotionOverlayRules.FirstOrDefault(r => string.Equals(r.emotionState, emotionState.ToString(), StringComparison.OrdinalIgnoreCase));
-            return rule?.overlayId ?? string.Empty;
+            string normalizedSemanticKey = NormalizeOverlaySemanticKey(semanticKey);
+            if (string.IsNullOrWhiteSpace(normalizedSemanticKey))
+                normalizedSemanticKey = ResolveOverlaySemanticKey(expression);
+
+            if (string.IsNullOrWhiteSpace(normalizedSemanticKey))
+                return new List<string>();
+
+            return emotionOverlayRules
+                .Where(r => string.Equals(NormalizeOverlaySemanticKey(r.semanticKey), normalizedSemanticKey, StringComparison.OrdinalIgnoreCase))
+                .SelectMany(r => r.overlayIds ?? new List<string>())
+                .Select(NormalizeOverlayId)
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        public string ResolveOverlayId(EmotionOverlayState emotionState, ExpressionType expression)
+        {
+            string semanticKey = emotionState == EmotionOverlayState.None
+                ? ResolveOverlaySemanticKey(expression)
+                : MapLegacyEmotionStateToSemanticKey(emotionState.ToString());
+
+            return ResolveOverlayIds(semanticKey, expression).FirstOrDefault() ?? string.Empty;
         }
 
         public static bool IsOverlayPart(LayeredFacePartType partType)
@@ -559,6 +688,11 @@ namespace CharacterStudio.Core
                 default:
                     return false;
             }
+        }
+
+        public static bool IsReplacementEyePart(LayeredFacePartType partType)
+        {
+            return partType == LayeredFacePartType.ReplacementEye;
         }
 
         public static LayeredFacePartSide NormalizePartSide(LayeredFacePartType partType, LayeredFacePartSide side)

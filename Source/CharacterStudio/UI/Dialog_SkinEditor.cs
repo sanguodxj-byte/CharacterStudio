@@ -39,9 +39,18 @@ namespace CharacterStudio.UI
         private List<ModularAbilityDef> workingAbilities = new List<ModularAbilityDef>();
         private CharacterRenderFixPatch? workingRenderFixPatch;
         private bool layerModificationWorkflowActive = false;
-        private int selectedLayerIndex = -1;
+        private readonly SkinEditorSession session = new SkinEditorSession();
+        private int selectedLayerIndex
+        {
+            get => session.SelectedLayerIndex;
+            set => session.SelectedLayerIndex = value;
+        }
         private int selectedEquipmentIndex = -1;
-        private HashSet<int> selectedLayerIndices = new HashSet<int>();
+        private HashSet<int> selectedLayerIndices
+        {
+            get => session.SelectedLayerIndices;
+            set => session.SelectedLayerIndices = value ?? new HashSet<int>();
+        }
         private readonly EditorHistory editorHistory = new EditorHistory(100);
         private Vector2 layerScrollPos;
         private Vector2 propsScrollPos;
@@ -50,7 +59,11 @@ namespace CharacterStudio.UI
         private Vector2 equipmentScrollPos;
         private bool equipmentPivotEditMode = false;
         private bool isDraggingEquipmentPivot = false;
-        private bool isDirty = false;
+        private bool isDirty
+        {
+            get => session.IsDirty;
+            set => session.IsDirty = value;
+        }
         /// <summary>表情贴图路径内联编辑缓冲，每帧实时同步到 faceConfig</summary>
         private readonly Dictionary<ExpressionType, string> exprPathBuffer = new Dictionary<ExpressionType, string>();
         /// <summary>分层模式部件路径缓冲，key = "PartType|Expression"</summary>

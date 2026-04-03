@@ -332,6 +332,113 @@ namespace CharacterStudio.UI
         public static readonly Color ActiveTabColor = new Color(0.24f, 0.31f, 0.46f, 0.95f);
         public static readonly Color HoverOutlineColor = new Color(0.70f, 0.82f, 1f, 0.35f);
 
+        public static Rect DrawPanelShell(Rect rect, string title, float margin, float titleRightInset = 16f)
+        {
+            Widgets.DrawBoxSolid(rect, PanelFillColor);
+            GUI.color = BorderColor;
+            Widgets.DrawBox(rect, 1);
+            GUI.color = Color.white;
+
+            Rect titleRect = new Rect(rect.x + margin, rect.y + margin, rect.width - margin * 2f, 26f);
+            Widgets.DrawBoxSolid(titleRect, PanelFillSoftColor);
+            Widgets.DrawBoxSolid(new Rect(titleRect.x, titleRect.yMax - 2f, titleRect.width, 2f), AccentSoftColor);
+            GUI.color = BorderColor;
+            Widgets.DrawBox(titleRect, 1);
+            GUI.color = Color.white;
+
+            GameFont oldFont = Text.Font;
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.MiddleLeft;
+            GUI.color = HeaderColor;
+            Widgets.Label(new Rect(titleRect.x + 8f, titleRect.y, titleRect.width - titleRightInset, titleRect.height), title);
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = oldFont;
+            return titleRect;
+        }
+
+        public static Rect DrawContentCard(Rect rect)
+        {
+            Widgets.DrawBoxSolid(rect, PanelFillSoftColor);
+            GUI.color = BorderColor;
+            Widgets.DrawBox(rect, 1);
+            GUI.color = Color.white;
+            return rect;
+        }
+
+        public static Rect DrawSectionCard(ref float y, float width, string title, float height, bool accent = false)
+        {
+            Rect outerRect = new Rect(0f, y, width, height);
+            Widgets.DrawBoxSolid(outerRect, PanelFillColor);
+            GUI.color = BorderColor;
+            Widgets.DrawBox(outerRect, 1);
+            GUI.color = Color.white;
+
+            Rect titleRect = new Rect(outerRect.x + 6f, outerRect.y + 6f, outerRect.width - 12f, 22f);
+            Widgets.DrawBoxSolid(titleRect, accent ? new Color(AccentColor.r, AccentColor.g, AccentColor.b, 0.14f) : PanelFillSoftColor);
+            Widgets.DrawBoxSolid(new Rect(titleRect.x, titleRect.yMax - 2f, titleRect.width, 2f), accent ? AccentColor : AccentSoftColor);
+            GUI.color = BorderColor;
+            Widgets.DrawBox(titleRect, 1);
+            GUI.color = Color.white;
+
+            GameFont oldFont = Text.Font;
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.MiddleLeft;
+            GUI.color = HeaderColor;
+            Widgets.Label(new Rect(titleRect.x + 8f, titleRect.y, titleRect.width - 16f, titleRect.height), title);
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = oldFont;
+
+            y += height + 8f;
+            return new Rect(outerRect.x + 8f, outerRect.y + 34f, outerRect.width - 16f, outerRect.height - 42f);
+        }
+
+        public static bool DrawToolbarButton(Rect rect, string label, bool accent = false, string? tooltip = null)
+        {
+            Widgets.DrawBoxSolid(rect, accent ? ActiveTabColor : PanelFillSoftColor);
+            Widgets.DrawBoxSolid(new Rect(rect.x, rect.yMax - 2f, rect.width, 2f), accent ? AccentColor : new Color(1f, 1f, 1f, 0.05f));
+            GUI.color = Mouse.IsOver(rect) ? HoverOutlineColor : BorderColor;
+            Widgets.DrawBox(rect, 1);
+            GUI.color = Color.white;
+
+            GameFont oldFont = Text.Font;
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.MiddleCenter;
+            GUI.color = accent ? Color.white : HeaderColor;
+            Widgets.Label(rect, label);
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = oldFont;
+
+            if (!string.IsNullOrEmpty(tooltip))
+            {
+                TooltipHandler.TipRegion(rect, tooltip);
+            }
+
+            return Widgets.ButtonInvisible(rect);
+        }
+
+        public static void DrawInfoBanner(ref float y, float width, string text, bool accent = false)
+        {
+            Text.Font = GameFont.Tiny;
+            float textHeight = Text.CalcHeight(text, Mathf.Max(40f, width - 16f));
+            float bannerHeight = Mathf.Max(34f, textHeight + 12f);
+            Rect bannerRect = new Rect(0f, y, width, bannerHeight);
+            Widgets.DrawBoxSolid(
+                bannerRect,
+                accent
+                    ? new Color(AccentColor.r, AccentColor.g, AccentColor.b, 0.12f)
+                    : PanelFillSoftColor);
+            GUI.color = BorderColor;
+            Widgets.DrawBox(bannerRect, 1);
+            GUI.color = accent ? HeaderColor : SubtleColor;
+            Widgets.Label(new Rect(bannerRect.x + 8f, bannerRect.y + 4f, bannerRect.width - 16f, bannerRect.height - 8f), text);
+            GUI.color = Color.white;
+            Text.Font = GameFont.Small;
+            y += bannerHeight + 6f;
+        }
+
         /// <summary>
         /// 绘制带有标题和分隔线的章节标题
         /// </summary>

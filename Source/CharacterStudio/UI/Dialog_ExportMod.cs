@@ -72,19 +72,19 @@ namespace CharacterStudio.UI
 
         public override void DoWindowContents(Rect inRect)
         {
-            Text.Font = GameFont.Medium;
-            Widgets.Label(new Rect(0, 0, inRect.width, 30), "CS_Studio_Export_Title".Translate());
-            Text.Font = GameFont.Small;
+            Rect shellRect = new Rect(0f, 0f, inRect.width, inRect.height);
+            Rect titleRect = UIHelper.DrawPanelShell(shellRect, "CS_Studio_Export_Title".Translate(), 0f);
 
-            float y = 40;
+            float y = titleRect.yMax + 8f;
             float labelWidth = 120f;
             float fieldWidth = inRect.width - labelWidth - 20;
 
-            // 滚动区域
             Rect scrollRect = new Rect(0, y, inRect.width, inRect.height - y - 80);
             Rect viewRect = new Rect(0, 0, scrollRect.width - 16, 720);
 
-            Widgets.BeginScrollView(scrollRect, ref scrollPos, viewRect);
+            UIHelper.DrawContentCard(scrollRect);
+
+            Widgets.BeginScrollView(scrollRect.ContractedBy(2f), ref scrollPos, viewRect);
 
             float vy = 0;
 
@@ -201,13 +201,13 @@ namespace CharacterStudio.UI
             float btnY = inRect.height - 40;
 
             GUI.enabled = !isExporting && IsValidInput() && CanExportNow();
-            if (Widgets.ButtonText(new Rect(inRect.width / 2 - btnWidth - 10, btnY, btnWidth, 30), "CS_Studio_Export_Confirm".Translate()))
+            if (UIHelper.DrawToolbarButton(new Rect(inRect.width / 2 - btnWidth - 10, btnY, btnWidth, 30), "CS_Studio_Export_Confirm".Translate(), accent: true))
             {
                 OnExport();
             }
             GUI.enabled = true;
 
-            if (Widgets.ButtonText(new Rect(inRect.width / 2 + 10, btnY, btnWidth, 30), "CS_Studio_Export_Cancel".Translate()))
+            if (UIHelper.DrawToolbarButton(new Rect(inRect.width / 2 + 10, btnY, btnWidth, 30), "CS_Studio_Export_Cancel".Translate()))
             {
                 Close();
             }

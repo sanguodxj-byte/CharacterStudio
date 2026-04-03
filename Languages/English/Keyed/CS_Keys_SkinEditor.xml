@@ -46,6 +46,9 @@
     <CS_Studio_Panel_Preview>Preview</CS_Studio_Panel_Preview>
     <CS_Studio_Panel_Properties>Properties</CS_Studio_Panel_Properties>
     <CS_Studio_Panel_RemoveLayer>Remove Layer</CS_Studio_Panel_RemoveLayer>
+    <CS_Studio_Preview_Summary>Facing: {0}  |  Zoom: {1}x  |  Flow: {2}</CS_Studio_Preview_Summary>
+    <CS_Studio_Preview_SummaryFlow_On>On</CS_Studio_Preview_SummaryFlow_On>
+    <CS_Studio_Preview_SummaryFlow_Off>Off</CS_Studio_Preview_SummaryFlow_Off>
     <CS_Studio_Preview_Channel_Brow>Brow</CS_Studio_Preview_Channel_Brow>
     <CS_Studio_Preview_Channel_Emotion>Emotion</CS_Studio_Preview_Channel_Emotion>
     <CS_Studio_Preview_Channel_Eye>Eye</CS_Studio_Preview_Channel_Eye>
@@ -62,6 +65,8 @@
     <CS_Studio_Preview_EditPerFacing>Edit current facing only</CS_Studio_Preview_EditPerFacing>
     <CS_Studio_Preview_EditPerFacingTip>When enabled, preview dragging and arrow-key nudging only modify the offset data for the current facing. South edits base Offset, East/West edit East Offset, and North edits North Offset.</CS_Studio_Preview_EditPerFacingTip>
     <CS_Studio_Preview_Exp>Expression</CS_Studio_Preview_Exp>
+    <CS_Studio_Preview_ExpressionContextHint>Expression selects the current face context used for previewing and editing expression-linked assets.</CS_Studio_Preview_ExpressionContextHint>
+    <CS_Studio_Preview_ChannelContextHint>These controls are preview overrides. They let you inspect how the current layer or face setup reacts to expression, eye direction, mouth, lid, brow, and emotion states.</CS_Studio_Preview_ChannelContextHint>
     <CS_Studio_Preview_Flow>AUTO</CS_Studio_Preview_Flow>
     <CS_Studio_Preview_FlowSpeedTooltip>Playback speed baseline.</CS_Studio_Preview_FlowSpeedTooltip>
     <CS_Studio_Preview_FlowStep_Empty>Empty</CS_Studio_Preview_FlowStep_Empty>
@@ -123,6 +128,41 @@
     <CS_Studio_Prop_TexturePath>Texture Path</CS_Studio_Prop_TexturePath>
     <CS_Studio_Prop_Visible>Visible</CS_Studio_Prop_Visible>
     <CS_Studio_Prop_Worker>Worker</CS_Studio_Prop_Worker>
+    <CS_Studio_Properties_Summary_Node>Editing the selected render node.</CS_Studio_Properties_Summary_Node>
+    <CS_Studio_Properties_Summary_BaseSlot>Editing the selected base slot.</CS_Studio_Properties_Summary_BaseSlot>
+    <CS_Studio_Properties_Summary_Equipment>Editing the selected equipment entry.</CS_Studio_Properties_Summary_Equipment>
+    <CS_Studio_Properties_Summary_Layer>Editing the selected layer.</CS_Studio_Properties_Summary_Layer>
+    <CS_Studio_Performance_Title>Character Studio Performance Stats</CS_Studio_Performance_Title>
+    <CS_Studio_Performance_EnableCapture>Enable stats capture</CS_Studio_Performance_EnableCapture>
+    <CS_Studio_Performance_Reset>Reset Stats</CS_Studio_Performance_Reset>
+    <CS_Studio_Performance_Status_On>Stats status: enabled</CS_Studio_Performance_Status_On>
+    <CS_Studio_Performance_Status_Off>Stats status: disabled (optimizations still apply)</CS_Studio_Performance_Status_Off>
+    <CS_Studio_Performance_Bootstrap>Bootstrap Stats</CS_Studio_Performance_Bootstrap>
+    <CS_Studio_Performance_LoadedGameCalls>- LoadedGame calls: {0}</CS_Studio_Performance_LoadedGameCalls>
+    <CS_Studio_Performance_StartedNewGameCalls>- StartedNewGame calls: {0}</CS_Studio_Performance_StartedNewGameCalls>
+    <CS_Studio_Performance_FinalizeInitCalls>- FinalizeInit calls: {0}</CS_Studio_Performance_FinalizeInitCalls>
+    <CS_Studio_Performance_PassesExecuted>- Executed passes: {0}</CS_Studio_Performance_PassesExecuted>
+    <CS_Studio_Performance_PassesSkipped>- Skipped due to identical world signature: {0}</CS_Studio_Performance_PassesSkipped>
+    <CS_Studio_Performance_MapsVisited>- Total maps scanned: {0}</CS_Studio_Performance_MapsVisited>
+    <CS_Studio_Performance_PawnsVisited>- Total pawns scanned: {0}</CS_Studio_Performance_PawnsVisited>
+    <CS_Studio_Performance_CompsAdded>- CompPawnSkin added: {0}</CS_Studio_Performance_CompsAdded>
+    <CS_Studio_Performance_DefaultSkinsApplied>- Default skins applied: {0}</CS_Studio_Performance_DefaultSkinsApplied>
+    <CS_Studio_Performance_LoadoutsGranted>- Valid loadouts granted: {0}</CS_Studio_Performance_LoadoutsGranted>
+    <CS_Studio_Performance_LastEntryPoint>- Last bootstrap entry point: {0}</CS_Studio_Performance_LastEntryPoint>
+    <CS_Studio_Performance_LastSignature>- Last world signature: {0}</CS_Studio_Performance_LastSignature>
+    <CS_Studio_Performance_RenderRefresh>Render Refresh Stats</CS_Studio_Performance_RenderRefresh>
+    <CS_Studio_Performance_RefreshRequests>- Refresh requests: {0}</CS_Studio_Performance_RefreshRequests>
+    <CS_Studio_Performance_RefreshDispatched>- Refreshes dispatched: {0}</CS_Studio_Performance_RefreshDispatched>
+    <CS_Studio_Performance_RefreshCoalesced>- Same-tick merges: {0}</CS_Studio_Performance_RefreshCoalesced>
+    <CS_Studio_Performance_RefreshCoalescedRate>- Merge rate: {0}</CS_Studio_Performance_RefreshCoalescedRate>
+    <CS_Studio_Performance_LastRefreshTick>- Last actual refresh tick: {0}</CS_Studio_Performance_LastRefreshTick>
+    <CS_Studio_Performance_LastRefreshTickNA>- Last actual refresh tick: N/A</CS_Studio_Performance_LastRefreshTickNA>
+    <CS_Studio_Performance_Notes>Notes</CS_Studio_Performance_Notes>
+    <CS_Studio_Performance_Notes_Bootstrap>- Bootstrap optimization merges repeated full-map scans into a single pass and skips unchanged world states.</CS_Studio_Performance_Notes_Bootstrap>
+    <CS_Studio_Performance_Notes_Render>- Render refresh optimization merges repeated RequestRenderRefresh calls for the same pawn within one tick into one dirty dispatch.</CS_Studio_Performance_Notes_Render>
+    <CS_Studio_Performance_Notes_Window>- This window only controls stats and capture state; it does not change render semantics or Comp lifecycle.</CS_Studio_Performance_Notes_Window>
+    <CS_Studio_WeaponRender_SummaryCarry>Carry textures: {0}/{1}</CS_Studio_WeaponRender_SummaryCarry>
+    <CS_Studio_WeaponRender_SummaryOverride>Render overrides: {0}/{1}</CS_Studio_WeaponRender_SummaryOverride>
     <CS_Studio_Runtime_Color>Color:</CS_Studio_Runtime_Color>
     <CS_Studio_Runtime_ColorValue>R:{0} G:{1} B:{2} A:{3}</CS_Studio_Runtime_ColorValue>
     <CS_Studio_Runtime_Offset>Offset:</CS_Studio_Runtime_Offset>
@@ -134,6 +174,8 @@
     <CS_Studio_Status_Ready>READY</CS_Studio_Status_Ready>
     <CS_Studio_Status_UnsavedChanges>* Unsaved changes</CS_Studio_Status_UnsavedChanges>
     <CS_Studio_Tab_Attributes>Attributes</CS_Studio_Tab_Attributes>
+    <CS_Studio_Attributes_Assistant>Assistant</CS_Studio_Attributes_Assistant>
+    <CS_Studio_Attributes_AssistantHint>Use the prompt to generate or refine a lightweight character profile. Review the result before applying it to the current skin.</CS_Studio_Attributes_AssistantHint>
     <CS_Studio_Tab_BaseAppearance>Base Slots</CS_Studio_Tab_BaseAppearance>
     <CS_Studio_Tab_Equipment>Equipment</CS_Studio_Tab_Equipment>
     <CS_Studio_Tab_Face>Face</CS_Studio_Tab_Face>
@@ -159,21 +201,44 @@
     <CS_Studio_Variant_DirectionalFacing_West>West Only</CS_Studio_Variant_DirectionalFacing_West>
     <CS_Studio_Variant_DirectionalFacing_EastWest>East/West Only</CS_Studio_Variant_DirectionalFacing_EastWest>
     <CS_Studio_Variant_EyeRenderMode>Eye Render Mode</CS_Studio_Variant_EyeRenderMode>
+    <CS_Studio_EyeRenderMode_TextureSwap>Texture Swap</CS_Studio_EyeRenderMode_TextureSwap>
+    <CS_Studio_EyeRenderMode_UvOffset>UV Offset</CS_Studio_EyeRenderMode_UvOffset>
     <CS_Studio_Variant_EyeUvMoveRange>Eye UV Move Range</CS_Studio_Variant_EyeUvMoveRange>
     <CS_Studio_Variant_HiddenExpressions>Hidden Expressions</CS_Studio_Variant_HiddenExpressions>
     <CS_Studio_Variant_HideWhenMissing>Hide When Missing Variant</CS_Studio_Variant_HideWhenMissing>
     <CS_Studio_Variant_LayerRole>Layer Role</CS_Studio_Variant_LayerRole>
     <CS_Studio_Variant_Logic>Variant Logic</CS_Studio_Variant_Logic>
+    <CS_Studio_Variant_SectionHint>This section controls how the layer chooses texture variants under different preview contexts such as expression, facing, eye direction, blink, and frame sequence.</CS_Studio_Variant_SectionHint>
     <CS_Studio_Variant_UseBlinkSuffix>Use Blink Suffix</CS_Studio_Variant_UseBlinkSuffix>
     <CS_Studio_Variant_UseDirectionalSuffix>Use Directional Suffix</CS_Studio_Variant_UseDirectionalSuffix>
     <CS_Studio_Variant_UseExpressionSuffix>Use Expression Suffix</CS_Studio_Variant_UseExpressionSuffix>
     <CS_Studio_Variant_UseEyeDirectionSuffix>Use Eye Direction Suffix</CS_Studio_Variant_UseEyeDirectionSuffix>
     <CS_Studio_Variant_UseFrameSequence>Use Frame Sequence</CS_Studio_Variant_UseFrameSequence>
     <CS_Studio_Variant_VisibleExpressions>Visible Expressions</CS_Studio_Variant_VisibleExpressions>
+    <CS_Studio_LayerRole_Decoration>Decoration</CS_Studio_LayerRole_Decoration>
+    <CS_Studio_LayerRole_Eye>Eye</CS_Studio_LayerRole_Eye>
+    <CS_Studio_LayerRole_Pupil>Pupil</CS_Studio_LayerRole_Pupil>
+    <CS_Studio_LayerRole_Lid>Lid</CS_Studio_LayerRole_Lid>
+    <CS_Studio_LayerRole_Brow>Brow</CS_Studio_LayerRole_Brow>
+    <CS_Studio_LayerRole_Mouth>Mouth</CS_Studio_LayerRole_Mouth>
+    <CS_Studio_LayerRole_EmotionOverlay>Emotion Overlay</CS_Studio_LayerRole_EmotionOverlay>
+    <CS_Studio_VariantLogic_None>None</CS_Studio_VariantLogic_None>
+    <CS_Studio_VariantLogic_ByExpression>By Expression</CS_Studio_VariantLogic_ByExpression>
+    <CS_Studio_VariantLogic_ByFacing>By Facing</CS_Studio_VariantLogic_ByFacing>
+    <CS_Studio_VariantLogic_ByEyeDirection>By Eye Direction</CS_Studio_VariantLogic_ByEyeDirection>
+    <CS_Studio_VariantLogic_ByBlink>By Blink</CS_Studio_VariantLogic_ByBlink>
+    <CS_Studio_VariantLogic_Combined>Combined</CS_Studio_VariantLogic_Combined>
     <CS_Studio_Workflow_AnimalStandardLayers>Animal Layered Workflow</CS_Studio_Workflow_AnimalStandardLayers>
     <CS_Studio_Workflow_CompositeBase>Composite Base Workflow</CS_Studio_Workflow_CompositeBase>
     <CS_Studio_Workflow_CompositeBase_Hint>A single composite base contains body/head/hair but no apparel, headgear, or expressions; vanilla apparel and headgear render on top, while expressions should use transparent Head overlays.</CS_Studio_Workflow_CompositeBase_Hint>
     <CS_Studio_Workflow_CompositeBaseLayerName>Composite Base</CS_Studio_Workflow_CompositeBaseLayerName>
     <CS_Studio_Workflow_MechanoidStandardLayers>Mechanoid Layered Workflow</CS_Studio_Workflow_MechanoidStandardLayers>
     <CS_Studio_Workflow_StandardLayers>Standard Layered Workflow</CS_Studio_Workflow_StandardLayers>
+    <CS_Studio_Anim_Brownian>Brownian Wander</CS_Studio_Anim_Brownian>
+    <CS_Studio_Anim_BrownianRadius>Wander Radius</CS_Studio_Anim_BrownianRadius>
+    <CS_Studio_Anim_BrownianJitter>Random Jitter</CS_Studio_Anim_BrownianJitter>
+    <CS_Studio_Anim_BrownianDamping>Damping</CS_Studio_Anim_BrownianDamping>
+    <CS_Studio_Anim_BrownianCombatRadius>Combat Recall Radius</CS_Studio_Anim_BrownianCombatRadius>
+    <CS_Studio_Anim_BrownianRespectWalkability>Respect Walkability</CS_Studio_Anim_BrownianRespectWalkability>
+    <CS_Studio_Anim_BrownianStayInRoom>Stay In Current Room</CS_Studio_Anim_BrownianStayInRoom>
 </LanguageData>

@@ -1,5 +1,6 @@
 using System;
 using CharacterStudio.Core;
+using CharacterStudio.Design;
 using RimWorld;
 using Verse;
 
@@ -95,46 +96,42 @@ namespace CharacterStudio.UI
             mannequin = null;
         }
 
-        private void RefreshPreview()
+        internal MannequinManager? EditorMannequin => mannequin;
+
+        internal bool IsPreviewEquipmentAnimationPlaying => previewEquipmentAnimationPlaying;
+
+        internal bool EnsureMannequinReadyForRefresh()
         {
-            if (!EnsureMannequinReady())
-            {
-                return;
-            }
+            return EnsureMannequinReady();
+        }
 
-            var previewPlan = BuildApplicationPlan(null, true, "EditorPreview");
-            mannequin!.ApplyPlan(previewPlan);
-            if (!previewPlan.isValid)
-            {
-                string statusKey = string.IsNullOrWhiteSpace(previewPlan.statusMessage)
-                    ? "CS_Studio_Err_ApplyFailedCheckLog"
-                    : previewPlan.statusMessage;
-                ShowStatus(statusKey.Translate());
-                Log.Warning($"[CharacterStudio] 预览计划无效: source={previewPlan.source}, status={previewPlan.statusMessage ?? "<empty>"}");
-                return;
-            }
+        internal CharacterApplicationPlan BuildPreviewApplicationPlan()
+        {
+            return BuildApplicationPlan(null, true, "EditorPreview");
+        }
 
-            if (previewPlan.warnings != null && previewPlan.warnings.Count > 0)
-            {
-                ShowStatus(previewPlan.warnings[0].Translate());
-            }
+        internal void ShowPreviewStatus(string message)
+        {
+            ShowStatus(message);
+        }
 
-            var previewPawn = mannequin.CurrentPawn;
-            if (previewPawn == null)
-            {
-                Log.Warning("[CharacterStudio] 预览刷新后未取得人偶 Pawn，已跳过预览覆盖状态同步");
-                return;
-            }
+        internal string GetPreviewEquipmentAnimationTriggerKey()
+        {
+            return GetSelectedEquipmentAnimationTriggerKey();
+        }
 
-            CharacterStudio.Rendering.Patch_PawnRenderTree.ForceRebuildRenderTree(previewPawn);
+        internal int GetPreviewEquipmentAnimationDurationTicks()
+        {
+            return GetSelectedEquipmentAnimationDurationTicks();
+        }
 
-            var skinComp = previewPawn.GetComp<CompPawnSkin>();
-            if (skinComp == null)
-            {
-                Log.Warning($"[CharacterStudio] 预览人偶缺少 CompPawnSkin: {previewPawn.LabelShort}");
-                return;
-            }
+        internal void SetPreviewEquipmentAnimationTriggerKey(string value)
+        {
+            previewEquipmentAnimationTriggerKey = value;
+        }
 
+        internal void ApplyPreviewOverridesToSkinComp(CompPawnSkin skinComp)
+        {
             skinComp.SetPreviewExpressionOverride(previewExpressionOverrideEnabled ? previewExpression : null);
             skinComp.SetPreviewMouthState(previewMouthStateOverrideEnabled ? previewMouthState : null);
             skinComp.SetPreviewLidState(previewLidStateOverrideEnabled ? previewLidState : null);
@@ -142,24 +139,16 @@ namespace CharacterStudio.UI
             skinComp.SetPreviewEmotionOverlayState(previewEmotionStateOverrideEnabled ? previewEmotionState : null);
             skinComp.SetPreviewEyeDirection(previewEyeDirectionOverrideEnabled ? previewEyeDirection : null);
             skinComp.EnsureFaceRuntimeStateReadyForPreview();
+        }
 
-            string currentTriggerKey = GetSelectedEquipmentAnimationTriggerKey();
-            if (!previewEquipmentAnimationPlaying || string.IsNullOrWhiteSpace(currentTriggerKey))
-            {
-                skinComp.ClearEquipmentAnimationState();
-                previewEquipmentAnimationTriggerKey = string.Empty;
-            }
-            else
-            {
-                previewEquipmentAnimationTriggerKey = currentTriggerKey;
-                int durationTicks = GetSelectedEquipmentAnimationDurationTicks();
-                if (durationTicks > 0)
-                {
-                    ApplyPreviewEquipmentAnimationState(skinComp, currentTriggerKey, durationTicks);
-                }
-            }
+        internal void ApplyPreviewEquipmentAnimationToSkinComp(CompPawnSkin skinComp, string triggerKey, int durationTicks)
+        {
+            ApplyPreviewEquipmentAnimationState(skinComp, triggerKey, durationTicks);
+        }
 
-            skinComp.RequestRenderRefresh();
+        private void RefreshPreview()
+        {
+            SkinEditorPreviewRefresher.Refresh(this);
         }
 
         private void ShowStatus(string message)
