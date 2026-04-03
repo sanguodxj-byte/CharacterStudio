@@ -62,6 +62,11 @@ namespace CharacterStudio.UI
             {
                 return "CS_Ability_RuntimeComponentType_FlightOnlyFollowup_Short".Translate();
             }
+
+            if (type == AbilityRuntimeComponentType.TimeStop)
+            {
+                return "CS_Ability_RuntimeComponentType_TimeStop_Short".Translate();
+            }
             return ($"CS_Ability_RuntimeComponentType_{type}").Translate();
         }
     }

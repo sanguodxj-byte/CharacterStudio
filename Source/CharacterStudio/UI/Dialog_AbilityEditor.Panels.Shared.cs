@@ -421,6 +421,7 @@ namespace CharacterStudio.UI
                 AbilityRuntimeComponentType.HitCooldownRefund => 112f,
                 AbilityRuntimeComponentType.ProjectileSplit => 138f,
                 AbilityRuntimeComponentType.FlightState => 112f,
+                AbilityRuntimeComponentType.TimeStop => 86f,
                 _ => 64f
             };
         }
@@ -1241,6 +1242,27 @@ namespace CharacterStudio.UI
                     if (comp.suppressCombatActionsDuringFlightState != suppressCombat)
                     {
                         comp.suppressCombatActionsDuringFlightState = suppressCombat;
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                }
+                else if (comp.type == AbilityRuntimeComponentType.TimeStop)
+                {
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_TimeStopDurationTicks".Translate());
+                    string stopDuration = comp.timeStopDurationTicks.ToString();
+                    int timeStopDurationBefore = comp.timeStopDurationTicks;
+                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.timeStopDurationTicks, ref stopDuration, 1, 99999);
+                    if (comp.timeStopDurationTicks != timeStopDurationBefore)
+                    {
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_TimeStopFreezeVisuals".Translate());
+                    bool freezeVisuals = comp.freezeVisualsDuringTimeStop;
+                    Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref freezeVisuals, 24f, false);
+                    if (comp.freezeVisualsDuringTimeStop != freezeVisuals)
+                    {
+                        comp.freezeVisualsDuringTimeStop = freezeVisuals;
                         NotifyAbilityPreviewDirty(true);
                     }
                 }

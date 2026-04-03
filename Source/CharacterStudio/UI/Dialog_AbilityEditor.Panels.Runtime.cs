@@ -36,7 +36,8 @@ namespace CharacterStudio.UI
             AbilityRuntimeComponentType.FlightState,
             AbilityRuntimeComponentType.VanillaPawnFlyer,
             AbilityRuntimeComponentType.FlightOnlyFollowup,
-            AbilityRuntimeComponentType.FlightLandingBurst
+            AbilityRuntimeComponentType.FlightLandingBurst,
+            AbilityRuntimeComponentType.TimeStop
         };
 
         private static IEnumerable<AbilityRuntimeComponentType> GetRuntimeComponentLibraryTypes()
@@ -89,7 +90,8 @@ namespace CharacterStudio.UI
                 || type == AbilityRuntimeComponentType.FlightState
                 || type == AbilityRuntimeComponentType.VanillaPawnFlyer
                 || type == AbilityRuntimeComponentType.FlightOnlyFollowup
-                || type == AbilityRuntimeComponentType.FlightLandingBurst;
+                || type == AbilityRuntimeComponentType.FlightLandingBurst
+                || type == AbilityRuntimeComponentType.TimeStop;
         }
 
         private static string GetRuntimeComponentTypeDescription(AbilityRuntimeComponentType type)
@@ -123,6 +125,7 @@ namespace CharacterStudio.UI
                 AbilityRuntimeComponentType.FlightOnlyFollowup => "CS_Studio_Runtime_Desc_FlightOnlyFollowup".Translate(),
                 AbilityRuntimeComponentType.FlightLandingBurst => "CS_Studio_Runtime_Desc_FlightLandingBurst".Translate(),
                 AbilityRuntimeComponentType.ProjectileSplit => "CS_Studio_Runtime_Desc_ProjectileSplit".Translate(),
+                AbilityRuntimeComponentType.TimeStop => "CS_Studio_Runtime_Desc_TimeStop".Translate(),
                 _ => type.ToString()
             };
         }
@@ -281,6 +284,10 @@ namespace CharacterStudio.UI
                     config.affectCells = true;
                     config.knockbackTargets = false;
                     config.knockbackDistance = 1.5f;
+                    break;
+                case AbilityRuntimeComponentType.TimeStop:
+                    config.timeStopDurationTicks = 60;
+                    config.freezeVisualsDuringTimeStop = true;
                     break;
             }
 

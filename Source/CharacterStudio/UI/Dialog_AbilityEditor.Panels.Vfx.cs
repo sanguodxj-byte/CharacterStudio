@@ -60,7 +60,9 @@ namespace CharacterStudio.UI
 
         private static bool UsesCustomTextureSettings(AbilityVisualEffectConfig vfx)
         {
-            return vfx.UsesCustomTextureType;
+            return vfx.UsesCustomTextureType
+                || vfx.type == AbilityVisualEffectType.LineTexture
+                || vfx.type == AbilityVisualEffectType.WallTexture;
         }
  
         private static bool UsesPresetSource(AbilityVisualEffectConfig vfx)
@@ -75,15 +77,12 @@ namespace CharacterStudio.UI
 
         private static bool SupportsRuntimeVfxTrigger(AbilityVisualEffectTrigger trigger)
         {
-            return trigger == AbilityVisualEffectTrigger.OnTargetApply
-                || trigger == AbilityVisualEffectTrigger.OnCastFinish;
+            return true;
         }
 
         private static AbilityVisualEffectTrigger NormalizeEditorVfxTrigger(AbilityVisualEffectTrigger trigger)
         {
-            return SupportsRuntimeVfxTrigger(trigger)
-                ? trigger
-                : AbilityVisualEffectTrigger.OnTargetApply;
+            return trigger;
         }
 
         private static bool HasRegisteredPreset(string? presetDefName, IReadOnlyList<string> registeredPresetNames)
@@ -149,6 +148,11 @@ namespace CharacterStudio.UI
             if (UsesCustomTextureSettings(vfx))
             {
                 height += RowHeight * 5f;
+            }
+
+            if (vfx.type == AbilityVisualEffectType.LineTexture || vfx.type == AbilityVisualEffectType.WallTexture)
+            {
+                height += RowHeight * 3f;
             }
 
             height += RowHeight * 2f;
@@ -484,6 +488,86 @@ namespace CharacterStudio.UI
                 y += RowHeight;
             }
 
+            if (vfx.type == AbilityVisualEffectType.LineTexture || vfx.type == AbilityVisualEffectType.WallTexture)
+            {
+                DrawVfxDropdownRow(inner.x, y, labelW, fieldW, "CS_Studio_VFX_SpatialShort".Translate(), GetVfxSpatialModeLabel(vfx.spatialMode), () =>
+                {
+                    var options = new List<FloatMenuOption>();
+                    foreach (AbilityVisualSpatialMode spatialMode in Enum.GetValues(typeof(AbilityVisualSpatialMode)))
+                    {
+                        AbilityVisualSpatialMode captured = spatialMode;
+                        options.Add(new FloatMenuOption(GetVfxSpatialModeLabel(captured), () =>
+                        {
+                            vfx.spatialMode = captured;
+                            NotifyAbilityPreviewDirty(true);
+                        }));
+                    }
+                    Find.WindowStack.Add(new FloatMenu(options));
+                });
+                DrawVfxDropdownRow(rightX, y, labelW, fieldW, "CS_Studio_VFX_PathShort".Translate(), GetVfxPathModeLabel(vfx.pathMode), () =>
+                {
+                    var options = new List<FloatMenuOption>();
+                    foreach (AbilityVisualPathMode pathMode in Enum.GetValues(typeof(AbilityVisualPathMode)))
+                    {
+                        AbilityVisualPathMode captured = pathMode;
+                        options.Add(new FloatMenuOption(GetVfxPathModeLabel(captured), () =>
+                        {
+                            vfx.pathMode = captured;
+                            NotifyAbilityPreviewDirty(true);
+                        }));
+                    }
+                    Find.WindowStack.Add(new FloatMenu(options));
+                });
+                y += RowHeight;
+
+                DrawVfxDropdownRow(inner.x, y, labelW, fieldW, "CS_Studio_VFX_AnchorShort".Translate(), GetVfxAnchorModeLabel(vfx.anchorMode), () =>
+                {
+                    var options = new List<FloatMenuOption>();
+                    foreach (AbilityVisualAnchorMode anchorMode in Enum.GetValues(typeof(AbilityVisualAnchorMode)))
+                    {
+                        AbilityVisualAnchorMode captured = anchorMode;
+                        options.Add(new FloatMenuOption(GetVfxAnchorModeLabel(captured), () =>
+                        {
+                            vfx.anchorMode = captured;
+                            NotifyAbilityPreviewDirty(true);
+                        }));
+                    }
+                    Find.WindowStack.Add(new FloatMenu(options));
+                });
+                DrawVfxDropdownRow(rightX, y, labelW, fieldW, "CS_Studio_VFX_AnchorBShort".Translate(), GetVfxAnchorModeLabel(vfx.secondaryAnchorMode), () =>
+                {
+                    var options = new List<FloatMenuOption>();
+                    foreach (AbilityVisualAnchorMode anchorMode in Enum.GetValues(typeof(AbilityVisualAnchorMode)))
+                    {
+                        AbilityVisualAnchorMode captured = anchorMode;
+                        options.Add(new FloatMenuOption(GetVfxAnchorModeLabel(captured), () =>
+                        {
+                            vfx.secondaryAnchorMode = captured;
+                            NotifyAbilityPreviewDirty(true);
+                        }));
+                    }
+                    Find.WindowStack.Add(new FloatMenu(options));
+                });
+                y += RowHeight;
+
+                if (vfx.type == AbilityVisualEffectType.LineTexture)
+                {
+                    string lineWidthStr = vfx.lineWidth.ToString("F2");
+                    DrawNumberRow(y, inner.x, "CS_Studio_VFX_LineWidthShort".Translate(), ref vfx.lineWidth, ref lineWidthStr, 0.05f, 20f);
+                }
+                else
+                {
+                    string wallHeightStr = vfx.wallHeight.ToString("F2");
+                    DrawNumberRow(y, inner.x, "CS_Studio_VFX_WallHeightShort".Translate(), ref vfx.wallHeight, ref wallHeightStr, 0.05f, 30f);
+                    string wallThicknessStr = vfx.wallThickness.ToString("F2");
+                    DrawNumberRow(y, rightX, "CS_Studio_VFX_WallThicknessShort".Translate(), ref vfx.wallThickness, ref wallThicknessStr, 0.05f, 20f);
+                }
+
+                string segmentCountStr = vfx.segmentCount.ToString();
+                DrawIntRow(y, rightX, "CS_Studio_VFX_SegmentsShort".Translate(), ref vfx.segmentCount, ref segmentCountStr, 1, 512);
+                y += RowHeight;
+            }
+
             string repeatCountStr = vfx.repeatCount.ToString();
             DrawIntRow(y, inner.x, "CS_Studio_VFX_RepeatCountShort".Translate(), ref vfx.repeatCount, ref repeatCountStr, 1, 999);
             string repeatIntervalStr = vfx.repeatIntervalTicks.ToString();
@@ -622,6 +706,21 @@ namespace CharacterStudio.UI
         private static string GetVfxFacingModeLabel(AbilityVisualFacingMode facingMode)
         {
             return ($"CS_Studio_VFX_FacingMode_{facingMode}").Translate();
+        }
+
+        private static string GetVfxSpatialModeLabel(AbilityVisualSpatialMode spatialMode)
+        {
+            return ($"CS_Studio_VFX_SpatialMode_{spatialMode}").Translate();
+        }
+
+        private static string GetVfxAnchorModeLabel(AbilityVisualAnchorMode anchorMode)
+        {
+            return ($"CS_Studio_VFX_AnchorMode_{anchorMode}").Translate();
+        }
+
+        private static string GetVfxPathModeLabel(AbilityVisualPathMode pathMode)
+        {
+            return ($"CS_Studio_VFX_PathMode_{pathMode}").Translate();
         }
 
         private void DrawVfxDropdownRow(float x, float y, float labelW, float fieldW, string label, string value, Action onClick)

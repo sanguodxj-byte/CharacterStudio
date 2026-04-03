@@ -151,6 +151,13 @@ namespace CharacterStudio.UI
 
         private bool TryProcessViaVanillaCommand(Event ev)
         {
+            AbilityCarrierType normalizedCarrier = ModularAbilityDefExtensions.NormalizeCarrierType(modAbility.carrierType);
+            AbilityTargetType normalizedTarget = ModularAbilityDefExtensions.NormalizeTargetType(modAbility);
+            if (normalizedCarrier == AbilityCarrierType.Self || normalizedTarget == AbilityTargetType.Self)
+            {
+                return false;
+            }
+
             if (vanillaCommand == null || ReferenceEquals(vanillaCommand, this))
             {
                 return false;
@@ -312,6 +319,7 @@ namespace CharacterStudio.UI
         {
             if (pawn.Dead || pawn.Downed || pawn.InMentalState) return false;
             if (!pawn.Drafted) return false;
+            if (!AbilityTimeStopRuntimeController.CanPawnAct(pawn)) return false;
             if (runtimeDef == null) return false;
             if (!AbilityVanillaFlightUtility.CanUseFlightFollowup(pawn, modAbility, out _, out _)) return false;
             return pawn.abilities?.GetAbility(runtimeDef) != null;

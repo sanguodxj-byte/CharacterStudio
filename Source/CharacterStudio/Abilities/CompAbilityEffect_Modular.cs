@@ -95,6 +95,12 @@ namespace CharacterStudio.Abilities
         {
             base.Apply(target, dest);
 
+            TriggerVisualEffects(AbilityVisualEffectTrigger.OnCastStart, target);
+            if (parent?.def?.verbProperties?.warmupTime > 0f)
+            {
+                TriggerVisualEffects(AbilityVisualEffectTrigger.OnWarmup, target);
+            }
+
             AbilityRuntimeComponentConfig? jumpComponent = GetDeferredJumpComponent();
             if (jumpComponent != null)
             {
@@ -140,6 +146,8 @@ namespace CharacterStudio.Abilities
             LocalTargetInfo primaryCellTarget = ResolvePrimaryCellTarget(caster, target);
 
             float pendingBonusDamage = ResolveAndConsumeShieldBonusDamage(caster);
+
+            TriggerVisualEffects(AbilityVisualEffectTrigger.OnCastFinish, target);
 
             for (int i = 0; i < thingTargets.Count; i++)
             {
@@ -191,7 +199,7 @@ namespace CharacterStudio.Abilities
             }
 
             HandleRuntimeComponentsAtApply(target);
-            QueueVisualEffects(target);
+            TriggerVisualEffects(AbilityVisualEffectTrigger.OnTargetApply, target);
         }
 
         private ModularAbilityDef BuildRuntimeAbilitySnapshot()
@@ -367,6 +375,9 @@ namespace CharacterStudio.Abilities
                     case AbilityRuntimeComponentType.FlightLandingBurst:
                         skinComp.vanillaFlightPendingLandingBurst = true;
                         break;
+                    case AbilityRuntimeComponentType.TimeStop:
+                        AbilityTimeStopRuntimeController.ActivateForCaster(caster, component, nowTick);
+                        break;
                 }
             }
         }
@@ -402,65 +413,6 @@ namespace CharacterStudio.Abilities
                 {
                     PlayVfxSound(vfxConfig, target);
                     pendingVfxSounds.RemoveAt(i);
-                }
-            }
-        }
-
-        private void QueueVisualEffects(LocalTargetInfo target)
-        {
-            if (Props.visualEffects == null || Props.visualEffects.Count == 0)
-            {
-                return;
-            }
-
-            int nowTick = Find.TickManager?.TicksGame ?? 0;
-            foreach (var vfx in Props.visualEffects)
-            {
-                if (vfx == null || !vfx.enabled)
-                {
-                    continue;
-                }
-
-                AbilityVisualEffectTrigger runtimeTrigger = NormalizeRuntimeTrigger(vfx.trigger);
-                if (runtimeTrigger != vfx.trigger)
-                {
-                    LogRuntimeVfxWarningOnce(
-                        $"TriggerFallback:{vfx.trigger}",
-                        $"[CharacterStudio] VFX trigger '{vfx.trigger}' 当前未接入完整生命周期，运行时将回退为 '{runtimeTrigger}' 播放。");
-                }
-
-                if (!ShouldHandleTriggerAtApply(runtimeTrigger))
-                {
-                    continue;
-                }
-
-                int repeatCount = vfx.repeatCount <= 0 ? 1 : vfx.repeatCount;
-                int repeatIntervalTicks = vfx.repeatIntervalTicks < 0 ? 0 : vfx.repeatIntervalTicks;
-
-                for (int repeatIndex = 0; repeatIndex < repeatCount; repeatIndex++)
-                {
-                    int totalDelay = vfx.delayTicks + (repeatIndex * repeatIntervalTicks);
-                    if (totalDelay <= 0)
-                    {
-                        PlayVfx(vfx, target);
-                    }
-                    else
-                    {
-                        pendingVfx.Add((nowTick + totalDelay, vfx, target));
-                    }
-
-                    if (vfx.playSound && !string.IsNullOrWhiteSpace(vfx.soundDefName))
-                    {
-                        int soundDelay = totalDelay + Mathf.Max(0, vfx.soundDelayTicks);
-                        if (soundDelay <= 0)
-                        {
-                            PlayVfxSound(vfx, target);
-                        }
-                        else
-                        {
-                            pendingVfxSounds.Add((nowTick + soundDelay, vfx, target));
-                        }
-                    }
                 }
             }
         }
@@ -562,11 +514,13 @@ namespace CharacterStudio.Abilities
             while (skinComp.periodicPulseNextTick >= 0 && nowTick >= skinComp.periodicPulseNextTick && skinComp.periodicPulseNextTick <= skinComp.periodicPulseEndTick)
             {
                 ExecutePulse(caster);
+                TriggerVisualEffects(AbilityVisualEffectTrigger.OnDurationTick, new LocalTargetInfo(caster.Position));
                 skinComp.periodicPulseNextTick += interval;
             }
 
             if (skinComp.periodicPulseNextTick > skinComp.periodicPulseEndTick)
             {
+                TriggerVisualEffects(AbilityVisualEffectTrigger.OnExpire, new LocalTargetInfo(caster.Position));
                 skinComp.periodicPulseNextTick = -1;
                 skinComp.periodicPulseEndTick = -1;
             }
@@ -627,6 +581,64 @@ namespace CharacterStudio.Abilities
             skinComp.shieldRemainingDamage = 0f;
             skinComp.shieldExpireTick = -1;
             skinComp.shieldStoredHeal = 0f;
+            TriggerVisualEffects(AbilityVisualEffectTrigger.OnExpire, new LocalTargetInfo(caster.Position));
+        }
+
+        private void TriggerVisualEffects(AbilityVisualEffectTrigger trigger, LocalTargetInfo target)
+        {
+            QueueVisualEffectsForTrigger(trigger, target);
+        }
+
+        private void QueueVisualEffectsForTrigger(AbilityVisualEffectTrigger trigger, LocalTargetInfo target)
+        {
+            if (Props.visualEffects == null || Props.visualEffects.Count == 0)
+            {
+                return;
+            }
+
+            int nowTick = Find.TickManager?.TicksGame ?? 0;
+            foreach (var vfx in Props.visualEffects)
+            {
+                if (vfx == null || !vfx.enabled)
+                {
+                    continue;
+                }
+
+                AbilityVisualEffectTrigger runtimeTrigger = NormalizeRuntimeTrigger(vfx.trigger);
+                if (runtimeTrigger != trigger)
+                {
+                    continue;
+                }
+
+                int repeatCount = vfx.repeatCount <= 0 ? 1 : vfx.repeatCount;
+                int repeatIntervalTicks = vfx.repeatIntervalTicks < 0 ? 0 : vfx.repeatIntervalTicks;
+
+                for (int repeatIndex = 0; repeatIndex < repeatCount; repeatIndex++)
+                {
+                    int totalDelay = vfx.delayTicks + (repeatIndex * repeatIntervalTicks);
+                    if (totalDelay <= 0)
+                    {
+                        PlayVfx(vfx, target);
+                    }
+                    else
+                    {
+                        pendingVfx.Add((nowTick + totalDelay, vfx, target));
+                    }
+
+                    if (vfx.playSound && !string.IsNullOrWhiteSpace(vfx.soundDefName))
+                    {
+                        int soundDelay = totalDelay + Mathf.Max(0, vfx.soundDelayTicks);
+                        if (soundDelay <= 0)
+                        {
+                            PlayVfxSound(vfx, target);
+                        }
+                        else
+                        {
+                            pendingVfxSounds.Add((nowTick + soundDelay, vfx, target));
+                        }
+                    }
+                }
+            }
         }
 
         private static void ApplyShieldHeal(Pawn caster, float amount)
@@ -1184,22 +1196,9 @@ namespace CharacterStudio.Abilities
                 || effectType == AbilityEffectType.Terraform;
         }
 
-        private static bool ShouldHandleTriggerAtApply(AbilityVisualEffectTrigger trigger)
-        {
-            return trigger == AbilityVisualEffectTrigger.OnTargetApply
-                || trigger == AbilityVisualEffectTrigger.OnCastFinish;
-        }
-
         private static AbilityVisualEffectTrigger NormalizeRuntimeTrigger(AbilityVisualEffectTrigger trigger)
         {
-            return trigger switch
-            {
-                AbilityVisualEffectTrigger.OnCastStart => AbilityVisualEffectTrigger.OnTargetApply,
-                AbilityVisualEffectTrigger.OnWarmup => AbilityVisualEffectTrigger.OnTargetApply,
-                AbilityVisualEffectTrigger.OnDurationTick => AbilityVisualEffectTrigger.OnTargetApply,
-                AbilityVisualEffectTrigger.OnExpire => AbilityVisualEffectTrigger.OnTargetApply,
-                _ => trigger
-            };
+            return trigger;
         }
 
         private static void LogRuntimeVfxWarningOnce(string key, string message)
@@ -1263,6 +1262,12 @@ namespace CharacterStudio.Abilities
                     }
 
                     Log.Warning($"[CharacterStudio] 自定义贴图特效缺少有效贴图路径，已跳过播放。");
+                    return;
+                }
+
+                if ((vfx.type == AbilityVisualEffectType.LineTexture || vfx.type == AbilityVisualEffectType.WallTexture)
+                    && TryPlaySpatialTextureVfx(vfx, target, caster))
+                {
                     return;
                 }
 
@@ -1347,6 +1352,137 @@ namespace CharacterStudio.Abilities
             }
 
             return playedAny;
+        }
+
+        private static bool TryPlaySpatialTextureVfx(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster)
+        {
+            if (string.IsNullOrWhiteSpace(vfx.customTexturePath) || caster.Map == null)
+            {
+                return false;
+            }
+
+            if (!TryResolveSpatialAnchors(vfx, target, caster, out Vector3 start, out Vector3 end))
+            {
+                return false;
+            }
+
+            Vector3 delta = end - start;
+            delta.y = 0f;
+            float length = delta.magnitude;
+            if (length < 0.05f)
+            {
+                end = start + caster.Rotation.FacingCell.ToVector3() * 0.2f;
+                delta = end - start;
+                delta.y = 0f;
+                length = Mathf.Max(0.2f, delta.magnitude);
+            }
+
+            ThingDef moteDef = GetOrCreateCustomTextureMoteDef(
+                vfx.customTexturePath,
+                Mathf.Max(0.1f, vfx.drawSize),
+                Mathf.Max(1, vfx.displayDurationTicks));
+
+            int requestedSegments = Mathf.Max(1, vfx.segmentCount);
+            int segmentCount = vfx.tileByLength
+                ? Mathf.Max(requestedSegments, Mathf.CeilToInt(length / Mathf.Max(0.2f, vfx.drawSize)))
+                : requestedSegments;
+            float rotation = Mathf.Atan2(delta.x, delta.z) * Mathf.Rad2Deg + vfx.rotation;
+            Vector3 forward = delta.normalized;
+            if (forward == Vector3.zero)
+            {
+                forward = caster.Rotation.FacingCell.ToVector3();
+            }
+
+            bool playedAny = false;
+            for (int i = 0; i < segmentCount; i++)
+            {
+                if (vfx.revealBySegments && i > 0)
+                {
+                    // v1 runtime keeps immediate full spawn; editor/preview expose the field already.
+                }
+
+                float t = segmentCount == 1 ? 0.5f : (i + 0.5f) / segmentCount;
+                Vector3 spawnPos = Vector3.Lerp(start, end, t);
+                if (vfx.followGround)
+                {
+                    spawnPos = spawnPos.ToIntVec3().ToVector3Shifted();
+                }
+
+                MoteThrown? mote = ThingMaker.MakeThing(moteDef) as MoteThrown;
+                if (mote == null)
+                {
+                    continue;
+                }
+
+                float uniformScale = Mathf.Max(0.1f, vfx.scale);
+                float segmentLength = length / segmentCount;
+                float scaleX;
+                float scaleZ;
+                if (vfx.type == AbilityVisualEffectType.WallTexture)
+                {
+                    scaleX = Mathf.Max(0.1f, vfx.wallThickness) * uniformScale;
+                    scaleZ = Mathf.Max(0.1f, vfx.wallHeight) * uniformScale;
+                    spawnPos.y += Mathf.Max(0f, vfx.wallHeight) * 0.5f;
+                }
+                else
+                {
+                    scaleX = Mathf.Max(0.1f, vfx.lineWidth) * uniformScale;
+                    scaleZ = Mathf.Max(0.1f, segmentLength) * Mathf.Max(0.1f, vfx.textureScale.y) * uniformScale;
+                }
+
+                scaleX *= Mathf.Max(0.1f, vfx.textureScale.x);
+
+                mote.exactPosition = spawnPos;
+                mote.exactRotation = rotation;
+                mote.rotationRate = 0f;
+                mote.instanceColor = Color.white;
+                mote.linearScale = new Vector3(scaleX, 1f, scaleZ);
+                mote.SetVelocity(0f, 0f);
+                GenSpawn.Spawn(mote, spawnPos.ToIntVec3(), caster.Map, WipeMode.Vanish);
+                playedAny = true;
+            }
+
+            return playedAny;
+        }
+
+        private static bool TryResolveSpatialAnchors(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster, out Vector3 start, out Vector3 end)
+        {
+            start = ResolveSpatialAnchor(vfx.anchorMode, target, caster);
+            end = ResolveSpatialAnchor(vfx.secondaryAnchorMode, target, caster);
+
+            if (vfx.pathMode == AbilityVisualPathMode.DirectLineCasterToTarget)
+            {
+                start = ResolveSpatialAnchor(AbilityVisualAnchorMode.Caster, target, caster);
+                end = ResolveSpatialAnchor(AbilityVisualAnchorMode.Target, target, caster);
+            }
+
+            if ((end - start).sqrMagnitude < 0.0001f)
+            {
+                end = ResolveSpatialAnchor(AbilityVisualAnchorMode.Target, target, caster);
+            }
+
+            return true;
+        }
+
+        private static Vector3 ResolveSpatialAnchor(AbilityVisualAnchorMode anchorMode, LocalTargetInfo target, Pawn caster)
+        {
+            switch (anchorMode)
+            {
+                case AbilityVisualAnchorMode.Caster:
+                    return caster.DrawPos;
+                case AbilityVisualAnchorMode.TargetCell:
+                    return target.IsValid ? target.Cell.ToVector3Shifted() : caster.Position.ToVector3Shifted();
+                case AbilityVisualAnchorMode.AreaCenter:
+                    return target.IsValid ? target.Cell.ToVector3Shifted() : caster.DrawPos;
+                case AbilityVisualAnchorMode.Target:
+                default:
+                    if (target.HasThing)
+                    {
+                        return target.Thing.DrawPos;
+                    }
+
+                    return target.IsValid ? target.Cell.ToVector3Shifted() : caster.DrawPos;
+            }
         }
 
         private static IEnumerable<Vector3> ResolveVfxPositions(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster)

@@ -61,6 +61,11 @@ namespace CharacterStudio.UI
             public VisualEffectTarget previewTargetMode = VisualEffectTarget.Target;
             public Rect lastTextureRect;
             public float lastTextureRotation;
+            public AbilityVisualSpatialMode spatialMode = AbilityVisualSpatialMode.Point;
+            public Vector2 lineStartNormalized;
+            public Vector2 lineEndNormalized;
+            public float wallHeight;
+            public int segmentCount = 1;
         }
 
         private sealed class AbilityPreviewPlan
@@ -343,7 +348,12 @@ namespace CharacterStudio.UI
                 sourceVfx = vfx,
                 sourceVfxIndex = index,
                 repeatIndex = repeatIndex,
-                previewTargetMode = previewTargetMode
+                previewTargetMode = previewTargetMode,
+                spatialMode = vfx.spatialMode,
+                lineStartNormalized = abilityPreviewContext.casterPos,
+                lineEndNormalized = impactPos,
+                wallHeight = vfx.wallHeight,
+                segmentCount = Math.Max(1, vfx.segmentCount)
             });
         }
 
@@ -1149,6 +1159,7 @@ namespace CharacterStudio.UI
                     continue;
 
                 Vector2 pos = ResolvePreviewEventCanvasPosition(drawRect, evt);
+                DrawPreviewSpatialOverlay(drawRect, evt);
                 float pulse = 1f + 0.18f * Mathf.Sin((currentTick - evt.tick) * 0.35f);
                 float pulseRadius = Mathf.Max(6f, cellSize * 0.4f) * pulse;
                 DrawPreviewPulse(pos, pulseRadius, evt.color);
@@ -1643,6 +1654,44 @@ namespace CharacterStudio.UI
             GUI.color = new Color(color.r, color.g, color.b, 0.9f);
             Widgets.DrawBox(rect, 1);
             GUI.color = Color.white;
+        }
+
+        private void DrawPreviewSpatialOverlay(Rect drawRect, AbilityPreviewEvent evt)
+        {
+            if (evt.sourceVfx == null)
+            {
+                return;
+            }
+
+            if (evt.spatialMode == AbilityVisualSpatialMode.Point)
+            {
+                return;
+            }
+
+            Rect gridRect = GetPreviewGridRect(drawRect);
+            Vector2 start = ToCanvasPosition(gridRect, evt.lineStartNormalized);
+            Vector2 end = ToCanvasPosition(gridRect, evt.lineEndNormalized);
+            if (evt.spatialMode == AbilityVisualSpatialMode.Line)
+            {
+                Widgets.DrawLine(start, end, new Color(evt.color.r, evt.color.g, evt.color.b, 0.85f), Mathf.Max(2f, evt.sourceVfx.lineWidth * 6f));
+                return;
+            }
+
+            int segmentCount = Math.Max(1, evt.segmentCount);
+            Vector2 dir = end - start;
+            Vector2 normal = dir.sqrMagnitude > 0.001f ? new Vector2(-dir.y, dir.x).normalized : new Vector2(0f, -1f);
+            float wallPixelHeight = Mathf.Max(10f, evt.wallHeight * GetPreviewCellSize(drawRect));
+            for (int i = 0; i < segmentCount; i++)
+            {
+                float t = segmentCount == 1 ? 0.5f : (i + 0.5f) / segmentCount;
+                Vector2 center = Vector2.Lerp(start, end, t);
+                float width = Mathf.Max(6f, dir.magnitude / segmentCount);
+                Rect rect = new Rect(center.x - width * 0.5f, center.y - wallPixelHeight, width, wallPixelHeight);
+                Widgets.DrawBoxSolid(rect, new Color(evt.color.r, evt.color.g, evt.color.b, 0.20f));
+                GUI.color = new Color(evt.color.r, evt.color.g, evt.color.b, 0.9f);
+                Widgets.DrawBox(rect, 1);
+                GUI.color = Color.white;
+            }
         }
     }
 }

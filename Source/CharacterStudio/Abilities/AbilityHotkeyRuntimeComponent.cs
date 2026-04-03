@@ -110,6 +110,11 @@ namespace CharacterStudio.Abilities
                 return;
             }
 
+            if (!AbilityTimeStopRuntimeController.CanPawnAct(selectedPawn))
+            {
+                return;
+            }
+
             if (GUIUtility.keyboardControl != 0)
                 return;
 
@@ -212,12 +217,20 @@ namespace CharacterStudio.Abilities
                 if (windowsField?.GetValue(Find.WindowStack) is not List<Window> windows)
                     return false;
 
-                return windows.Any(w => w != null && (w.absorbInputAroundWindow || w.forcePause));
+                return windows.Any(w => w != null
+                    && !AllowsAbilityHotkeysWhileOpen(w)
+                    && (w.absorbInputAroundWindow || w.forcePause));
             }
             catch
             {
                 return false;
             }
+        }
+
+        private static bool AllowsAbilityHotkeysWhileOpen(Window window)
+        {
+            return window is Dialog_AbilityEditor
+                || window is Dialog_AbilityHotkeySettings;
         }
 
         private static ModularAbilityDef? ResolveAbilityByDefName(CharacterAbilityLoadout? loadout, string abilityDefName)
@@ -491,6 +504,12 @@ namespace CharacterStudio.Abilities
             anyRStackingActive = false;
             foreach (var pawn in allPawns)
             {
+                if (!AbilityTimeStopRuntimeController.CanPawnAct(pawn))
+                {
+                    LastBusyStanceByPawn.Remove(pawn);
+                    continue;
+                }
+
                 var comp = pawn.GetComp<CompPawnSkin>();
                 if (comp == null)
                 {
@@ -567,6 +586,7 @@ namespace CharacterStudio.Abilities
                 foreach (var pawn in map.mapPawns.AllPawnsSpawned)
                 {
                     if (pawn == null) continue;
+                    if (!AbilityTimeStopRuntimeController.CanPawnAct(pawn)) continue;
 
                     var comp = pawn.GetComp<CompPawnSkin>();
                     if (comp == null) continue;

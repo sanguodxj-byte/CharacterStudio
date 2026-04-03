@@ -28,7 +28,47 @@ namespace CharacterStudio.UI
             string initialPath = !string.IsNullOrWhiteSpace(lastImportedAbilityXmlPath)
                 ? lastImportedAbilityXmlPath
                 : (!string.IsNullOrWhiteSpace(lastExportedAbilityXmlPath) ? lastExportedAbilityXmlPath : GetDefaultAbilityExportFilePath());
-            Find.WindowStack.Add(new Dialog_AbilityXmlImport(initialPath, ImportAbilitiesFromXmlPath));
+
+            Find.WindowStack.Add(new Dialog_FileBrowser(GetAbilityImportBrowseStartPath(initialPath), selectedPath =>
+            {
+                string normalizedPath = selectedPath?.Trim().Trim('"') ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(normalizedPath))
+                {
+                    return;
+                }
+
+                Find.WindowStack.Add(new FloatMenu(new List<FloatMenuOption>
+                {
+                    new FloatMenuOption("CS_Studio_Ability_ImportReplace".Translate(), () => ImportAbilitiesFromXmlPath(normalizedPath, true)),
+                    new FloatMenuOption("CS_Studio_Ability_ImportAppend".Translate(), () => ImportAbilitiesFromXmlPath(normalizedPath, false)),
+                    new FloatMenuOption("CS_Studio_Btn_Cancel".Translate(), () => { })
+                }));
+            }, "*.xml"));
+        }
+
+        private static string GetAbilityImportBrowseStartPath(string initialPath)
+        {
+            if (string.IsNullOrWhiteSpace(initialPath))
+            {
+                return GetAbilityExportDir();
+            }
+
+            string normalizedPath = initialPath.Trim().Trim('"');
+            if (Directory.Exists(normalizedPath))
+            {
+                return normalizedPath;
+            }
+
+            if (File.Exists(normalizedPath))
+            {
+                string? directory = Path.GetDirectoryName(normalizedPath);
+                if (!string.IsNullOrWhiteSpace(directory) && Directory.Exists(directory))
+                {
+                    return directory;
+                }
+            }
+
+            return GetAbilityExportDir();
         }
 
         private void ExportAbilitiesToDefaultPath()

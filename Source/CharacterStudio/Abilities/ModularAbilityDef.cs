@@ -190,7 +190,8 @@ namespace CharacterStudio.Abilities
         FlightState,
         VanillaPawnFlyer,
         FlightOnlyFollowup,
-        FlightLandingBurst
+        FlightLandingBurst,
+        TimeStop
     }
 
     public enum AbilityRuntimeHotkeySlot
@@ -303,6 +304,8 @@ namespace CharacterStudio.Abilities
         public bool affectCells = true;
         public bool knockbackTargets = false;
         public float knockbackDistance = 1.5f;
+        public int timeStopDurationTicks = 60;
+        public bool freezeVisualsDuringTimeStop = true;
 
         public AbilityRuntimeComponentConfig Clone()
         {
@@ -381,6 +384,7 @@ namespace CharacterStudio.Abilities
             landingBurstRadius = AbilityEditorNormalizationUtility.ClampFloat(landingBurstRadius, 0.1f, 99f);
             landingBurstDamage = AbilityEditorNormalizationUtility.ClampFloat(landingBurstDamage, 0.01f, 99999f);
             knockbackDistance = AbilityEditorNormalizationUtility.ClampFloat(knockbackDistance, 0f, 99f);
+            timeStopDurationTicks = AbilityEditorNormalizationUtility.ClampInt(timeStopDurationTicks, 1, 99999);
         }
 
         public AbilityValidationResult Validate()
@@ -570,6 +574,10 @@ namespace CharacterStudio.Abilities
                     if (landingBurstDamage <= 0f)
                         result.AddError("CS_Ability_Validate_LandingBurstDamage".Translate());
                     break;
+                case AbilityRuntimeComponentType.TimeStop:
+                    if (timeStopDurationTicks <= 0)
+                        result.AddError("CS_Ability_Validate_TimeStopDurationTicks".Translate());
+                    break;
             }
 
             return result;
@@ -628,8 +636,31 @@ namespace CharacterStudio.Abilities
         FireGlow,
         Smoke,
         ExplosionEffect,
+        LineTexture,
+        WallTexture,
         Preset,
         CustomTexture
+    }
+
+    public enum AbilityVisualSpatialMode
+    {
+        Point,
+        Line,
+        Wall
+    }
+
+    public enum AbilityVisualAnchorMode
+    {
+        Caster,
+        Target,
+        TargetCell,
+        AreaCenter
+    }
+
+    public enum AbilityVisualPathMode
+    {
+        None,
+        DirectLineCasterToTarget
     }
 
     public enum VisualEffectTarget
@@ -672,6 +703,10 @@ namespace CharacterStudio.Abilities
     public class AbilityVisualEffectConfig
     {
         public AbilityVisualEffectType type = AbilityVisualEffectType.DustPuff;
+        public AbilityVisualSpatialMode spatialMode = AbilityVisualSpatialMode.Point;
+        public AbilityVisualAnchorMode anchorMode = AbilityVisualAnchorMode.Target;
+        public AbilityVisualAnchorMode secondaryAnchorMode = AbilityVisualAnchorMode.Target;
+        public AbilityVisualPathMode pathMode = AbilityVisualPathMode.None;
         public AbilityVisualEffectTextureSource textureSource = AbilityVisualEffectTextureSource.Vanilla;
         public AbilityVisualEffectSourceMode sourceMode = AbilityVisualEffectSourceMode.BuiltIn;
         public string presetDefName = string.Empty;
@@ -693,6 +728,14 @@ namespace CharacterStudio.Abilities
         public float heightOffset = 0f;
         public float rotation = 0f;
         public Vector2 textureScale = Vector2.one;
+        public float lineWidth = 0.35f;
+        public float wallHeight = 2.5f;
+        public float wallThickness = 0.2f;
+        public bool tileByLength = true;
+        public bool followGround = false;
+        public int segmentCount = 1;
+        public bool revealBySegments = false;
+        public int segmentRevealIntervalTicks = 3;
         public int repeatCount = 1;
         public int repeatIntervalTicks = 0;
         public Vector3 offset = Vector3.zero;
@@ -708,9 +751,36 @@ namespace CharacterStudio.Abilities
         public bool UsesBuiltInType => type != AbilityVisualEffectType.Preset && type != AbilityVisualEffectType.CustomTexture;
         public bool UsesPresetType => type == AbilityVisualEffectType.Preset;
         public bool UsesCustomTextureType => type == AbilityVisualEffectType.CustomTexture;
+        public bool UsesSpatialLine => type == AbilityVisualEffectType.LineTexture || spatialMode == AbilityVisualSpatialMode.Line;
+        public bool UsesSpatialWall => type == AbilityVisualEffectType.WallTexture || spatialMode == AbilityVisualSpatialMode.Wall;
+        public bool RequiresTexturePath => UsesCustomTextureType || type == AbilityVisualEffectType.LineTexture || type == AbilityVisualEffectType.WallTexture;
 
         public void NormalizeLegacyData()
         {
+            if (!System.Enum.IsDefined(typeof(AbilityVisualSpatialMode), spatialMode))
+            {
+                spatialMode = type == AbilityVisualEffectType.WallTexture
+                    ? AbilityVisualSpatialMode.Wall
+                    : type == AbilityVisualEffectType.LineTexture
+                        ? AbilityVisualSpatialMode.Line
+                        : AbilityVisualSpatialMode.Point;
+            }
+
+            if (!System.Enum.IsDefined(typeof(AbilityVisualAnchorMode), anchorMode))
+            {
+                anchorMode = AbilityVisualAnchorMode.Target;
+            }
+
+            if (!System.Enum.IsDefined(typeof(AbilityVisualAnchorMode), secondaryAnchorMode))
+            {
+                secondaryAnchorMode = AbilityVisualAnchorMode.Target;
+            }
+
+            if (!System.Enum.IsDefined(typeof(AbilityVisualPathMode), pathMode))
+            {
+                pathMode = AbilityVisualPathMode.None;
+            }
+
             if (!System.Enum.IsDefined(typeof(AbilityVisualFacingMode), facingMode))
             {
                 facingMode = useCasterFacing ? AbilityVisualFacingMode.CasterFacing : AbilityVisualFacingMode.None;
@@ -722,6 +792,43 @@ namespace CharacterStudio.Abilities
             }
 
             useCasterFacing = facingMode == AbilityVisualFacingMode.CasterFacing;
+
+            if (type == AbilityVisualEffectType.LineTexture)
+            {
+                spatialMode = AbilityVisualSpatialMode.Line;
+                if (pathMode == AbilityVisualPathMode.None)
+                {
+                    pathMode = AbilityVisualPathMode.DirectLineCasterToTarget;
+                }
+                if (anchorMode == AbilityVisualAnchorMode.Target)
+                {
+                    anchorMode = AbilityVisualAnchorMode.Caster;
+                }
+                if (secondaryAnchorMode == AbilityVisualAnchorMode.Caster)
+                {
+                    secondaryAnchorMode = AbilityVisualAnchorMode.Target;
+                }
+            }
+            else if (type == AbilityVisualEffectType.WallTexture)
+            {
+                spatialMode = AbilityVisualSpatialMode.Wall;
+                if (pathMode == AbilityVisualPathMode.None)
+                {
+                    pathMode = AbilityVisualPathMode.DirectLineCasterToTarget;
+                }
+                if (anchorMode == AbilityVisualAnchorMode.Target)
+                {
+                    anchorMode = AbilityVisualAnchorMode.Caster;
+                }
+                if (secondaryAnchorMode == AbilityVisualAnchorMode.Caster)
+                {
+                    secondaryAnchorMode = AbilityVisualAnchorMode.Target;
+                }
+            }
+            else if (spatialMode != AbilityVisualSpatialMode.Point)
+            {
+                spatialMode = AbilityVisualSpatialMode.Point;
+            }
 
             if (type == AbilityVisualEffectType.Preset || type == AbilityVisualEffectType.CustomTexture)
             {
@@ -777,8 +884,12 @@ namespace CharacterStudio.Abilities
             NormalizeLegacyData();
             trigger = trigger switch
             {
+                AbilityVisualEffectTrigger.OnCastStart => AbilityVisualEffectTrigger.OnCastStart,
+                AbilityVisualEffectTrigger.OnWarmup => AbilityVisualEffectTrigger.OnWarmup,
                 AbilityVisualEffectTrigger.OnCastFinish => AbilityVisualEffectTrigger.OnCastFinish,
                 AbilityVisualEffectTrigger.OnTargetApply => AbilityVisualEffectTrigger.OnTargetApply,
+                AbilityVisualEffectTrigger.OnDurationTick => AbilityVisualEffectTrigger.OnDurationTick,
+                AbilityVisualEffectTrigger.OnExpire => AbilityVisualEffectTrigger.OnExpire,
                 _ => AbilityVisualEffectTrigger.OnTargetApply
             };
             delayTicks = AbilityEditorNormalizationUtility.ClampInt(delayTicks, 0, 60000);
@@ -791,6 +902,11 @@ namespace CharacterStudio.Abilities
             textureScale = new Vector2(
                 AbilityEditorNormalizationUtility.ClampFloat(textureScale.x, 0.1f, 20f),
                 AbilityEditorNormalizationUtility.ClampFloat(textureScale.y, 0.1f, 20f));
+            lineWidth = AbilityEditorNormalizationUtility.ClampFloat(lineWidth, 0.05f, 20f);
+            wallHeight = AbilityEditorNormalizationUtility.ClampFloat(wallHeight, 0.05f, 30f);
+            wallThickness = AbilityEditorNormalizationUtility.ClampFloat(wallThickness, 0.05f, 20f);
+            segmentCount = AbilityEditorNormalizationUtility.ClampInt(segmentCount, 1, 512);
+            segmentRevealIntervalTicks = AbilityEditorNormalizationUtility.ClampInt(segmentRevealIntervalTicks, 0, 60000);
             repeatCount = AbilityEditorNormalizationUtility.ClampInt(repeatCount, 1, 999);
             repeatIntervalTicks = AbilityEditorNormalizationUtility.ClampInt(repeatIntervalTicks, 0, 60000);
             linkedPupilBrightnessOffset = AbilityEditorNormalizationUtility.ClampFloat(linkedPupilBrightnessOffset, -2f, 2f);
@@ -799,6 +915,60 @@ namespace CharacterStudio.Abilities
             soundVolume = AbilityEditorNormalizationUtility.ClampFloat(soundVolume, 0f, 4f);
             soundPitch = AbilityEditorNormalizationUtility.ClampFloat(soundPitch, 0.25f, 3f);
             SyncLegacyFields();
+        }
+
+        public AbilityValidationResult Validate()
+        {
+            var result = new AbilityValidationResult();
+            if (!enabled)
+            {
+                return result;
+            }
+
+            if (RequiresTexturePath && string.IsNullOrWhiteSpace(customTexturePath))
+            {
+                result.AddError("CS_Ability_Validate_VfxTexturePathRequired".Translate());
+            }
+
+            if (type == AbilityVisualEffectType.LineTexture && lineWidth <= 0f)
+            {
+                result.AddError("CS_Ability_Validate_VfxLineWidthPositive".Translate());
+            }
+
+            if (type == AbilityVisualEffectType.WallTexture)
+            {
+                if (wallHeight <= 0f)
+                {
+                    result.AddError("CS_Ability_Validate_VfxWallHeightPositive".Translate());
+                }
+
+                if (wallThickness <= 0f)
+                {
+                    result.AddError("CS_Ability_Validate_VfxWallThicknessPositive".Translate());
+                }
+            }
+
+            if (segmentCount <= 0)
+            {
+                result.AddError("CS_Ability_Validate_VfxSegmentCountPositive".Translate());
+            }
+
+            if (segmentRevealIntervalTicks < 0)
+            {
+                result.AddError("CS_Ability_Validate_VfxSegmentRevealNonNegative".Translate());
+            }
+
+            if (repeatCount <= 0)
+            {
+                result.AddError("CS_Ability_Validate_VfxRepeatCountPositive".Translate());
+            }
+
+            if (displayDurationTicks <= 0)
+            {
+                result.AddError("CS_Ability_Validate_VfxDurationPositive".Translate());
+            }
+
+            return result;
         }
     }
 
@@ -989,6 +1159,33 @@ namespace CharacterStudio.Abilities
                 }
 
                 AddRuntimeComponentConflictWarnings(ability.runtimeComponents, result);
+            }
+
+            if (ability.visualEffects != null)
+            {
+                for (int i = 0; i < ability.visualEffects.Count; i++)
+                {
+                    var vfx = ability.visualEffects[i];
+                    if (vfx == null)
+                    {
+                        result.AddWarning("CS_Ability_Validate_VfxNull".Translate(i + 1));
+                        continue;
+                    }
+
+                    var vfxResult = vfx.Validate();
+                    if (!vfxResult.IsValid)
+                    {
+                        foreach (var error in vfxResult.Errors)
+                        {
+                            result.AddError("CS_Ability_Validate_VfxIndexError".Translate(i + 1, error));
+                        }
+                    }
+
+                    foreach (var warning in vfxResult.Warnings)
+                    {
+                        result.AddWarning("CS_Ability_Validate_VfxIndexWarning".Translate(i + 1, warning));
+                    }
+                }
             }
 
             return result;
