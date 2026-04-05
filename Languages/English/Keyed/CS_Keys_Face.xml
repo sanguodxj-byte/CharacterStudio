@@ -52,13 +52,11 @@
     <CS_Studio_Face_EyeDir_Hint>Assign an overlay texture for each gaze direction. Missing directions fall back to Center automatically.</CS_Studio_Face_EyeDir_Hint>
     <CS_Studio_Face_EyeDir_Left>Left</CS_Studio_Face_EyeDir_Left>
     <CS_Studio_Face_EyeDir_Preview>Preview Direction</CS_Studio_Face_EyeDir_Preview>
-    <CS_Studio_Face_EyeDir_PupilMoveRange>Pupil UV Offset Range</CS_Studio_Face_EyeDir_PupilMoveRange>
     <CS_Studio_Face_EyeDir_Remove>Remove Eye Direction Config</CS_Studio_Face_EyeDir_Remove>
     <CS_Studio_Face_EyeDir_Right>Right</CS_Studio_Face_EyeDir_Right>
     <CS_Studio_Face_EyeDir_Title>Eye Direction Config</CS_Studio_Face_EyeDir_Title>
     <CS_Studio_Face_EyeDir_Up>Up</CS_Studio_Face_EyeDir_Up>
     <CS_Studio_Face_EyeDir_UpperLidMoveDown>Upper Lid Move Down</CS_Studio_Face_EyeDir_UpperLidMoveDown>
-    <CS_Studio_Face_EyeDir_UVModeHint>UV offset mode active: Left/Right/Up/Down textures not needed, direction is code-driven</CS_Studio_Face_EyeDir_UVModeHint>
     <CS_Studio_Face_Frames>frames</CS_Studio_Face_Frames>
     <CS_Studio_Face_HeadTexHint>Assign a full head texture for each expression, or click [+F] to add multiple frames for animation.</CS_Studio_Face_HeadTexHint>
     <CS_Studio_Face_Layered_Enable>Enable this layered part entry</CS_Studio_Face_Layered_Enable>
@@ -212,7 +210,11 @@
     <CS_Studio_Face_Workflow_LayeredDynamic_Desc>Layered workflow: configure named facial parts per expression. Runtime code drives positioning and fallback automatically.</CS_Studio_Face_Workflow_LayeredDynamic_Desc>
     <CS_Studio_Face_MotionSection_LidMotion>Lid Motion</CS_Studio_Face_MotionSection_LidMotion>
     <CS_Studio_Face_MotionSection_EyeMotion>Eye Motion</CS_Studio_Face_MotionSection_EyeMotion>
-    <CS_Studio_Face_MotionSection_PupilMotion>Pupil Motion</CS_Studio_Face_MotionSection_PupilMotion>
+    <CS_Studio_Face_MotionSection_PupilMotion>Pupil Procedural Motion</CS_Studio_Face_MotionSection_PupilMotion>
+    <CS_Studio_Face_PupilCore_Title>Core Four</CS_Studio_Face_PupilCore_Title>
+    <CS_Studio_Face_PupilCore_Hint>Start with these four values: they directly control how far the pupil looks left, right, up, and down.</CS_Studio_Face_PupilCore_Hint>
+    <CS_Studio_Face_PupilAdvanced_Title>Advanced Fine Tuning</CS_Studio_Face_PupilAdvanced_Title>
+    <CS_Studio_Face_PupilAdvanced_Hint>These values refine expression-specific offsets, easing, and scaling. Usually adjust them only after the core four feel correct.</CS_Studio_Face_PupilAdvanced_Hint>
     <CS_Studio_Face_MotionSection_BrowMotion>Brow Motion</CS_Studio_Face_MotionSection_BrowMotion>
     <CS_Studio_Face_MotionSection_MouthMotion>Mouth Motion</CS_Studio_Face_MotionSection_MouthMotion>
     <CS_Studio_Face_MotionSection_EmotionOverlayMotion>Emotion Overlay Motion</CS_Studio_Face_MotionSection_EmotionOverlayMotion>

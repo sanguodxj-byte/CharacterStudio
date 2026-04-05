@@ -26,6 +26,7 @@ namespace CharacterStudio.Design
         public Map? spawnMap;
         public IntVec3 desiredSpawnCell = IntVec3.Invalid;
         public CharacterSpawnSettings spawnSettings = new CharacterSpawnSettings();
+        public CharacterDefinition characterDefinition = new CharacterDefinition();
 
         public CharacterApplicationPlan Clone()
         {
@@ -44,7 +45,8 @@ namespace CharacterStudio.Design
                 spawnFaction = spawnFaction,
                 spawnMap = spawnMap,
                 desiredSpawnCell = desiredSpawnCell,
-                spawnSettings = spawnSettings?.Clone() ?? new CharacterSpawnSettings()
+                spawnSettings = spawnSettings?.Clone() ?? new CharacterSpawnSettings(),
+                characterDefinition = characterDefinition?.Clone() ?? new CharacterDefinition()
             };
         }
     }

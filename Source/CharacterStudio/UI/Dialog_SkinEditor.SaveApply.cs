@@ -62,6 +62,9 @@ namespace CharacterStudio.UI
                 savePlanSkin.RemoveApparelHidingData();
 
                 SkinSaver.SaveSkinDef(savePlanSkin, filePath);
+                string characterFilePath = Path.Combine(exportDir, (savePlanSkin.defName ?? workingSkin.defName ?? "CS_Character") + ".character.xml");
+                workingDocument.characterDefinition.EnsureDefaults(savePlanSkin.defName ?? workingSkin.defName ?? "CS_Character", ResolveSpawnRaceForCurrentDesign(savePlanSkin), savePlanSkin.attributes);
+                CharacterDefinitionXmlUtility.Save(workingDocument.characterDefinition, characterFilePath);
 
                 var registered = PawnSkinDefRegistry.RegisterOrReplace(savePlanSkin.Clone());
                 string? preferredRaceDefName = registered.targetRaces != null && registered.targetRaces.Count > 0
@@ -197,6 +200,7 @@ namespace CharacterStudio.UI
             Find.WindowStack.Add(new Dialog_SpawnCharacter(directSpawnSettings, settings =>
             {
                 directSpawnSettings = settings?.Clone() ?? new CharacterSpawnSettings();
+                directSpawnSettings.sourceMapForConditionCheck = Find.CurrentMap;
 
                 try
                 {
@@ -211,6 +215,9 @@ namespace CharacterStudio.UI
                     plan.spawnMap = Find.CurrentMap;
                     plan.desiredSpawnCell = CharacterSpawnUtility.ResolveSpawnOrigin(plan.spawnMap, targetPawn);
                     plan.spawnSettings = directSpawnSettings.Clone();
+                    plan.spawnSettings.sourceMapForConditionCheck = plan.spawnMap;
+                    plan.characterDefinition = workingDocument.characterDefinition?.Clone() ?? new CharacterDefinition();
+                    plan.characterDefinition.EnsureDefaults(runtimeSkin.defName ?? workingSkin.defName ?? "CS_Character", spawnRace, runtimeSkin.attributes);
 
                     if (CharacterApplicationExecutor.Execute(plan) && plan.targetPawn != null)
                     {

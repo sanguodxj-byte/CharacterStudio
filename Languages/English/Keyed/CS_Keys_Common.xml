@@ -97,10 +97,14 @@
     <CS_Studio_Ctx_ExpandChildren>Expand Children</CS_Studio_Ctx_ExpandChildren>
     <CS_Studio_Ctx_FromRenderTree>── Select from Render Tree ──</CS_Studio_Ctx_FromRenderTree>
     <CS_Studio_DefaultSkinLabel>New Skin</CS_Studio_DefaultSkinLabel>
+    <CS_Studio_DefName>DefName</CS_Studio_DefName>
     <CS_Studio_Delete>Delete</CS_Studio_Delete>
     <CS_Studio_Description>Description</CS_Studio_Description>
     <CS_Studio_EditorSubtitle>WYSIWYG Character Appearance Editor</CS_Studio_EditorSubtitle>
     <CS_Studio_EditorTitle>Character Skin Editor</CS_Studio_EditorTitle>
+    <CS_Studio_Gender_None>Any</CS_Studio_Gender_None>
+    <CS_Studio_Gender_Male>Male</CS_Studio_Gender_Male>
+    <CS_Studio_Gender_Female>Female</CS_Studio_Gender_Female>
     <CS_Studio_Err_ApplyFailedCheckLog>Apply failed, check the log</CS_Studio_Err_ApplyFailedCheckLog>
     <CS_Studio_Err_ApplyNoSkinComp>Apply failed: target pawn has no skin component</CS_Studio_Err_ApplyNoSkinComp>
     <CS_Studio_Err_DefNameEmpty>Error: DefName cannot be empty</CS_Studio_Err_DefNameEmpty>
@@ -178,17 +182,48 @@
     <CS_Studio_Msg_TreeRefreshed>Render tree refreshed</CS_Studio_Msg_TreeRefreshed>
     <CS_Studio_Msg_UndoSuccess>Undid last change</CS_Studio_Msg_UndoSuccess>
     <CS_Studio_Msg_UnsavedChanges>There are unsaved changes. Do you want to save?</CS_Studio_Msg_UnsavedChanges>
+    <CS_Studio_Manage>Manage</CS_Studio_Manage>
     <CS_Studio_None>(None)</CS_Studio_None>
     <CS_Studio_OpenEditor>Open Skin Editor</CS_Studio_OpenEditor>
     <CS_Studio_OpenPerformanceStats>Open Performance Stats</CS_Studio_OpenPerformanceStats>
-    <CS_Studio_SpawnedNewPawn>Generated new pawn: {0}</CS_Studio_SpawnedNewPawn>
-    <CS_Studio_SpawnedNewPawnButton>Generate Pawn</CS_Studio_SpawnedNewPawnButton>
-    <CS_Studio_SpawnedNewPawnLetter>New pawn generated: {0}</CS_Studio_SpawnedNewPawnLetter>
-    <CS_Studio_SpawnedNewPawnMessage>Generated new pawn from current design: {0}</CS_Studio_SpawnedNewPawnMessage>
+    <CS_Studio_Passion_None>None</CS_Studio_Passion_None>
+    <CS_Studio_Passion_Minor>Minor Passion</CS_Studio_Passion_Minor>
+    <CS_Studio_Passion_Major>Major Passion</CS_Studio_Passion_Major>
+    <CS_Studio_RenderFixPatchLabel>Layer Patch</CS_Studio_RenderFixPatchLabel>
+    <CS_Studio_SpawnedNewPawn>Character generated: {0}</CS_Studio_SpawnedNewPawn>
+    <CS_Studio_SpawnNewPawnButton>Generate Character</CS_Studio_SpawnNewPawnButton>
+    <CS_Studio_SpawnedNewPawnButton>Generate Character</CS_Studio_SpawnedNewPawnButton>
+    <CS_Studio_SpawnedNewPawnLetter>Character generated: {0}</CS_Studio_SpawnedNewPawnLetter>
+    <CS_Studio_SpawnedNewPawnMessage>Generated character from current design: {0}</CS_Studio_SpawnedNewPawnMessage>
     <CS_Studio_SpawnNewPawnConfirm>Generate</CS_Studio_SpawnNewPawnConfirm>
-    <CS_Studio_SpawnNewPawnSection>New Pawn Output</CS_Studio_SpawnNewPawnSection>
-    <CS_Studio_SpawnNewPawnTitle>Generate New Pawn</CS_Studio_SpawnNewPawnTitle>
+    <CS_Studio_SpawnNewPawnSection>Character Generation</CS_Studio_SpawnNewPawnSection>
+    <CS_Studio_SpawnNewPawnTitle>Generate Character</CS_Studio_SpawnNewPawnTitle>
+    <CS_Studio_SpawnEvent_MessageText>Event Text</CS_Studio_SpawnEvent_MessageText>
+    <CS_Studio_SpawnEvent_MessageText_Hint>Leave blank to use the default notification text. If filled, both message notifications and letter body text will prefer this content.</CS_Studio_SpawnEvent_MessageText_Hint>
+    <CS_Studio_SpawnEvent_LetterTitle>Letter Title</CS_Studio_SpawnEvent_LetterTitle>
+    <CS_Studio_SpawnEvent_LetterTitle_Hint>Only used for vanilla letter-style notifications. Leave blank to use the default title.</CS_Studio_SpawnEvent_LetterTitle_Hint>
     <CS_Studio_RaceDisplayName>Race Display Name</CS_Studio_RaceDisplayName>
+    <CS_Studio_CharacterDefinition_Title>Basic Character Properties</CS_Studio_CharacterDefinition_Title>
+    <CS_Studio_CharacterDefinition_Section>Character Definition</CS_Studio_CharacterDefinition_Section>
+    <CS_Studio_CharacterDefinition_Hint>Configure the actual pawn data separately from the visual skin. This data is used for direct pawn generation and exported character generation.</CS_Studio_CharacterDefinition_Hint>
+    <CS_Studio_CharacterDefinition_Open>Open Basic Properties</CS_Studio_CharacterDefinition_Open>
+    <CS_Studio_CharacterDefinition_OpenButton>Edit</CS_Studio_CharacterDefinition_OpenButton>
+    <CS_Studio_CharacterDefinition_InlineHintShort>Open the basic properties popup</CS_Studio_CharacterDefinition_InlineHintShort>
+    <CS_Studio_CharacterDefinition_InlineHint>Click the button to open the basic properties popup and edit identity, race, backstory, traits, skills, and starting apparel.</CS_Studio_CharacterDefinition_InlineHint>
+    <CS_Studio_CharacterDefinition_Basic>Basic Identity</CS_Studio_CharacterDefinition_Basic>
+    <CS_Studio_CharacterDefinition_Race>Race &amp; Body</CS_Studio_CharacterDefinition_Race>
+    <CS_Studio_CharacterDefinition_Backstory>Backstory</CS_Studio_CharacterDefinition_Backstory>
+    <CS_Studio_CharacterDefinition_Traits>Traits</CS_Studio_CharacterDefinition_Traits>
+    <CS_Studio_CharacterDefinition_Skills>Skills</CS_Studio_CharacterDefinition_Skills>
+    <CS_Studio_CharacterDefinition_Apparel>Starting Apparel</CS_Studio_CharacterDefinition_Apparel>
+    <CS_Studio_CharacterDefinition_Gender>Gender</CS_Studio_CharacterDefinition_Gender>
+    <CS_Studio_CharacterDefinition_BodyType>Body Type</CS_Studio_CharacterDefinition_BodyType>
+    <CS_Studio_CharacterDefinition_HeadType>Head Type</CS_Studio_CharacterDefinition_HeadType>
+    <CS_Studio_CharacterDefinition_Hair>Hair</CS_Studio_CharacterDefinition_Hair>
+    <CS_Studio_CharacterDefinition_Childhood>Childhood</CS_Studio_CharacterDefinition_Childhood>
+    <CS_Studio_CharacterDefinition_Adulthood>Adulthood</CS_Studio_CharacterDefinition_Adulthood>
+    <CS_Studio_CharacterDefinition_TraitsSummary>{0} traits configured</CS_Studio_CharacterDefinition_TraitsSummary>
+    <CS_Studio_CharacterDefinition_ApparelSummary>{0} apparel entries configured</CS_Studio_CharacterDefinition_ApparelSummary>
     <CS_Studio_Section_Advanced>Advanced</CS_Studio_Section_Advanced>
     <CS_Studio_Section_Animation>Animation Settings</CS_Studio_Section_Animation>
     <CS_Studio_Section_Base>Base</CS_Studio_Section_Base>
@@ -273,7 +308,7 @@
     <CS_Studio_Worker_Default>Default</CS_Studio_Worker_Default>
     <CS_Studio_Worker_FaceComponent>Face Component</CS_Studio_Worker_FaceComponent>
     <CS_Studio_XenotypeDefName>Bind Xenotype</CS_Studio_XenotypeDefName>
-    <CS_RoleCard_LetterLabel>Role card generated: {0}</CS_RoleCard_LetterLabel>
+    <CS_RoleCard_LetterLabel>Character generated: {0}</CS_RoleCard_LetterLabel>
     <CS_Summon_Success>Successfully summoned: {0}</CS_Summon_Success>
     <CS_Summon_Use>Summon {0}</CS_Summon_Use>
 </LanguageData>

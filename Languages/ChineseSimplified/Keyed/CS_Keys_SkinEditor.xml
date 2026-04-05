@@ -180,10 +180,6 @@
     <CS_Studio_Variant_DirectionalFacing_East>仅东向</CS_Studio_Variant_DirectionalFacing_East>
     <CS_Studio_Variant_DirectionalFacing_West>仅西向</CS_Studio_Variant_DirectionalFacing_West>
     <CS_Studio_Variant_DirectionalFacing_EastWest>仅东西向</CS_Studio_Variant_DirectionalFacing_EastWest>
-    <CS_Studio_Variant_EyeRenderMode>眼睛渲染模式</CS_Studio_Variant_EyeRenderMode>
-    <CS_Studio_EyeRenderMode_TextureSwap>贴图切换</CS_Studio_EyeRenderMode_TextureSwap>
-    <CS_Studio_EyeRenderMode_UvOffset>UV 偏移</CS_Studio_EyeRenderMode_UvOffset>
-    <CS_Studio_Variant_EyeUvMoveRange>眼睛 UV 移动范围</CS_Studio_Variant_EyeUvMoveRange>
     <CS_Studio_Variant_HiddenExpressions>隐藏表情</CS_Studio_Variant_HiddenExpressions>
     <CS_Studio_Variant_LayerRole>图层角色</CS_Studio_Variant_LayerRole>
     <CS_Studio_Variant_Logic>变体逻辑</CS_Studio_Variant_Logic>

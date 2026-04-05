@@ -43,7 +43,6 @@ namespace CharacterStudio.Core
         public readonly ExpressionType expression;
         public readonly float primaryWave;
         public readonly float slowWave;
-        public readonly EyeRenderMode eyeRenderMode;
 
         public FaceTransformContext(
             LayeredFacePartType partType,
@@ -61,8 +60,7 @@ namespace CharacterStudio.Core
             PupilScaleVariant pupilVariant,
             ExpressionType expression,
             float primaryWave,
-            float slowWave,
-            EyeRenderMode eyeRenderMode)
+            float slowWave)
         {
             this.partType = partType;
             this.side = side;
@@ -80,7 +78,6 @@ namespace CharacterStudio.Core
             this.expression = expression;
             this.primaryWave = primaryWave;
             this.slowWave = slowWave;
-            this.eyeRenderMode = eyeRenderMode;
         }
     }
 
@@ -309,9 +306,6 @@ namespace CharacterStudio.Core
 
             if (context.pupilVariant == PupilScaleVariant.BlinkHidden)
                 return FaceTransformResult.Hidden();
-
-            if (context.eyeRenderMode == EyeRenderMode.UvOffset)
-                return FaceTransformResult.Visible(0f, Vector3.zero, new Vector3(scale, 1f, scale));
 
             return FaceTransformResult.Visible(
                 context.primaryWave * motion.transformAngleWave,

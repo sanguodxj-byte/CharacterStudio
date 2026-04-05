@@ -21,7 +21,8 @@ namespace CharacterStudio.Design
                 targetPawn = targetPawn,
                 runtimeSkin = CharacterDesignCompiler.CompileRuntimeSkin(document),
                 isPreview = isPreview,
-                source = source ?? string.Empty
+                source = source ?? string.Empty,
+                characterDefinition = document?.characterDefinition?.Clone() ?? new CharacterDefinition()
             };
         }
     }

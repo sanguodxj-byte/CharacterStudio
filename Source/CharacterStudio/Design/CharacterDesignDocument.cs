@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using CharacterStudio.Core;
+using RimWorld;
+using Verse;
 
 namespace CharacterStudio.Design
 {
@@ -23,6 +25,7 @@ namespace CharacterStudio.Design
         public List<string> importedSources = new List<string>();
         public List<CharacterNodeRule> nodeRules = new List<CharacterNodeRule>();
         public PawnSkinDef runtimeSkin = new PawnSkinDef();
+        public CharacterDefinition characterDefinition = new CharacterDefinition();
 
         public CharacterDesignDocument Clone()
         {
@@ -39,7 +42,8 @@ namespace CharacterStudio.Design
                 lastSavedFilePath = lastSavedFilePath,
                 importedSources = new List<string>(importedSources ?? new List<string>()),
                 nodeRules = new List<CharacterNodeRule>((nodeRules ?? new List<CharacterNodeRule>()).ConvertAll(rule => rule?.Clone() ?? new CharacterNodeRule())),
-                runtimeSkin = runtimeSkin?.Clone() ?? new PawnSkinDef()
+                runtimeSkin = runtimeSkin?.Clone() ?? new PawnSkinDef(),
+                characterDefinition = characterDefinition?.Clone() ?? new CharacterDefinition()
             };
         }
 
@@ -51,6 +55,27 @@ namespace CharacterStudio.Design
             author = runtimeSkin.author ?? "";
             version = string.IsNullOrWhiteSpace(runtimeSkin.version) ? "1.0.0" : runtimeSkin.version;
             sourceSkinDefName = runtimeSkin.defName ?? "";
+            characterDefinition ??= new CharacterDefinition();
+            characterDefinition.EnsureDefaults(sourceSkinDefName, ResolvePreferredRace(), runtimeSkin.attributes);
+        }
+
+        private ThingDef? ResolvePreferredRace()
+        {
+            if (runtimeSkin?.targetRaces != null)
+            {
+                foreach (string raceDefName in runtimeSkin.targetRaces)
+                {
+                    ThingDef? raceDef = DefDatabase<ThingDef>.GetNamedSilentFail(raceDefName);
+                    if (raceDef != null)
+                    {
+                        return raceDef;
+                    }
+                }
+            }
+
+            return DefDatabase<ThingDef>.GetNamedSilentFail(preferredTargetRaceDefName)
+                ?? DefDatabase<ThingDef>.GetNamedSilentFail(preferredPreviewRaceDefName)
+                ?? ThingDefOf.Human;
         }
     }
 }

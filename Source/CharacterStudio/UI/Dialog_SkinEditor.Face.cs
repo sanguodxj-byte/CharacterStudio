@@ -1470,18 +1470,6 @@ namespace CharacterStudio.UI
             eyeCfg.lidMotion ??= new PawnEyeDirectionConfig.LidMotionConfig();
 
             y += 4f;
-            float pupilRange = eyeCfg.pupilMoveRange;
-            UIHelper.DrawPropertySlider(ref y, width,
-                "CS_Studio_Face_EyeDir_PupilMoveRange".Translate(),
-                ref pupilRange, 0f, 0.15f, "F3");
-            if (pupilRange != eyeCfg.pupilMoveRange)
-            {
-                eyeCfg.pupilMoveRange = pupilRange;
-                isDirty = true;
-                RefreshPreview();
-            }
-
-            y += 4f;
             float upperLidMoveDown = eyeCfg.upperLidMoveDown;
             UIHelper.DrawPropertySlider(ref y, width,
                 "CS_Studio_Face_EyeDir_UpperLidMoveDown".Translate(),
@@ -1500,56 +1488,41 @@ namespace CharacterStudio.UI
             }
 
             y += 4f;
-            if (eyeCfg.pupilMoveRange > 0f)
-            {
-                DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Center".Translate(),
-                    eyeCfg.texCenter, path =>
-                    {
-                        eyeCfg.texCenter = path;
-                        isDirty = true;
-                        RefreshPreview();
-                    });
-                UIHelper.DrawPropertyLabel(ref y, width,
-                    "CS_Studio_Face_EyeDir_UVModeHint".Translate(), "");
-            }
-            else
-            {
-                DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Center".Translate(),
-                    eyeCfg.texCenter, path =>
-                    {
-                        eyeCfg.texCenter = path;
-                        isDirty = true;
-                        RefreshPreview();
-                    });
-                DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Left".Translate(),
-                    eyeCfg.texLeft, path =>
-                    {
-                        eyeCfg.texLeft = path;
-                        isDirty = true;
-                        RefreshPreview();
-                    });
-                DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Right".Translate(),
-                    eyeCfg.texRight, path =>
-                    {
-                        eyeCfg.texRight = path;
-                        isDirty = true;
-                        RefreshPreview();
-                    });
-                DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Up".Translate(),
-                    eyeCfg.texUp, path =>
-                    {
-                        eyeCfg.texUp = path;
-                        isDirty = true;
-                        RefreshPreview();
-                    });
-                DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Down".Translate(),
-                    eyeCfg.texDown, path =>
-                    {
-                        eyeCfg.texDown = path;
-                        isDirty = true;
-                        RefreshPreview();
-                    });
-            }
+            DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Center".Translate(),
+                eyeCfg.texCenter, path =>
+                {
+                    eyeCfg.texCenter = path;
+                    isDirty = true;
+                    RefreshPreview();
+                });
+            DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Left".Translate(),
+                eyeCfg.texLeft, path =>
+                {
+                    eyeCfg.texLeft = path;
+                    isDirty = true;
+                    RefreshPreview();
+                });
+            DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Right".Translate(),
+                eyeCfg.texRight, path =>
+                {
+                    eyeCfg.texRight = path;
+                    isDirty = true;
+                    RefreshPreview();
+                });
+            DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Up".Translate(),
+                eyeCfg.texUp, path =>
+                {
+                    eyeCfg.texUp = path;
+                    isDirty = true;
+                    RefreshPreview();
+                });
+            DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Down".Translate(),
+                eyeCfg.texDown, path =>
+                {
+                    eyeCfg.texDown = path;
+                    isDirty = true;
+                    RefreshPreview();
+                });
 
             DrawEyeMotionConfigSection(ref y, width, eyeCfg.eyeMotion, eyeCfg.pupilMotion);
         }
@@ -1593,12 +1566,18 @@ namespace CharacterStudio.UI
 
             if (DrawCollapsibleFaceSectionHeader(ref y, width, "PupilMotion", GetFaceMotionSectionLabel("PupilMotion"), isSectionExpanded, toggleSectionExpanded))
             {
-            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_SideBiasX"), ref pupilMotion.sideBiasX, 0f, 0.01f, "F6");
-            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_SlowWaveOffsetZ"), ref pupilMotion.slowWaveOffsetZ, -0.01f, 0.01f, "F6");
+            UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_PupilCore_Title".Translate());
+            DrawPropertyHint(ref y, width, "CS_Studio_Face_PupilCore_Hint".Translate());
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DirLeftOffsetX"), ref pupilMotion.dirLeftOffsetX, -0.01f, 0.01f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DirRightOffsetX"), ref pupilMotion.dirRightOffsetX, -0.01f, 0.01f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DirUpOffsetZ"), ref pupilMotion.dirUpOffsetZ, -0.01f, 0.01f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DirDownOffsetZ"), ref pupilMotion.dirDownOffsetZ, -0.01f, 0.01f, "F6");
+
+            y += 4f;
+            UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_PupilAdvanced_Title".Translate());
+            DrawPropertyHint(ref y, width, "CS_Studio_Face_PupilAdvanced_Hint".Translate());
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_SideBiasX"), ref pupilMotion.sideBiasX, 0f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_SlowWaveOffsetZ"), ref pupilMotion.slowWaveOffsetZ, -0.01f, 0.01f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_NeutralSoftOffsetZ"), ref pupilMotion.neutralSoftOffsetZ, -0.01f, 0.01f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_NeutralLookDownOffsetZ"), ref pupilMotion.neutralLookDownOffsetZ, -0.01f, 0.01f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_NeutralGlanceWaveOffsetX"), ref pupilMotion.neutralGlanceWaveOffsetX, -0.01f, 0.01f, "F6");

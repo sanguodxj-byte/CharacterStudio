@@ -175,7 +175,6 @@ namespace CharacterStudio.Exporter
                         || skin.faceConfig.HasAnyExpression()
                         || skin.faceConfig.HasAnyLayeredPart()
                         || skin.faceConfig.eyeDirectionConfig?.HasAnyTex() == true
-                        || skin.faceConfig.eyeDirectionConfig?.pupilMoveRange != 0f
                         || skin.faceConfig.eyeDirectionConfig?.enabled == true)
                     ? GenerateFaceConfigXml(skin.faceConfig)
                     : null,
@@ -210,6 +209,7 @@ namespace CharacterStudio.Exporter
                     !string.IsNullOrWhiteSpace(equipment.description) ? new XElement("description", equipment.description) : null,
                     new XElement("enabled", equipment.enabled.ToString().ToLower()),
                     !string.IsNullOrWhiteSpace(equipment.slotTag) ? new XElement("slotTag", equipment.slotTag) : null,
+                    !string.IsNullOrWhiteSpace(equipment.exportGroupKey) ? new XElement("exportGroupKey", equipment.exportGroupKey) : null,
                     !string.IsNullOrWhiteSpace(equipment.thingDefName) ? new XElement("thingDefName", equipment.thingDefName) : null,
                     !string.IsNullOrWhiteSpace(equipment.parentThingDefName) ? new XElement("parentThingDefName", equipment.parentThingDefName) : null,
                     !string.IsNullOrWhiteSpace(equipment.previewTexPath) ? new XElement("previewTexPath", equipment.previewTexPath) : null,
@@ -219,12 +219,21 @@ namespace CharacterStudio.Exporter
                     !string.IsNullOrWhiteSpace(equipment.maskTexPath) ? new XElement("maskTexPath", equipment.maskTexPath) : null,
                     !string.IsNullOrWhiteSpace(equipment.shaderDefName) ? new XElement("shaderDefName", equipment.shaderDefName) : null,
                     equipment.useWornGraphicMask ? new XElement("useWornGraphicMask", equipment.useWornGraphicMask.ToString().ToLower()) : null,
+                    new XElement("allowCrafting", equipment.allowCrafting.ToString().ToLower()),
+                    !string.IsNullOrWhiteSpace(equipment.recipeDefName) ? new XElement("recipeDefName", equipment.recipeDefName) : null,
+                    !string.IsNullOrWhiteSpace(equipment.recipeWorkbenchDefName) ? new XElement("recipeWorkbenchDefName", equipment.recipeWorkbenchDefName) : null,
+                    Math.Abs(equipment.recipeWorkAmount - 1200f) > 0.0001f ? new XElement("recipeWorkAmount", equipment.recipeWorkAmount.ToString(System.Globalization.CultureInfo.InvariantCulture)) : null,
+                    equipment.recipeProductCount != 1 ? new XElement("recipeProductCount", equipment.recipeProductCount) : null,
+                    new XElement("allowTrading", equipment.allowTrading.ToString().ToLower()),
+                    Math.Abs(equipment.marketValue - 250f) > 0.0001f ? new XElement("marketValue", equipment.marketValue.ToString(System.Globalization.CultureInfo.InvariantCulture)) : null,
                     GenerateListElement("tags", equipment.tags),
+                    GenerateListElement("tradeTags", equipment.tradeTags),
                     GenerateListElement("abilityDefNames", equipment.abilityDefNames),
                     GenerateListElement("thingCategories", equipment.thingCategories),
                     GenerateListElement("bodyPartGroups", equipment.bodyPartGroups),
                     GenerateListElement("apparelLayers", equipment.apparelLayers),
                     GenerateListElement("apparelTags", equipment.apparelTags),
+                    GenerateEquipmentCostEntriesXml("recipeIngredients", equipment.recipeIngredients),
                     GenerateEquipmentStatEntriesXml("statBases", equipment.statBases),
                     GenerateEquipmentStatEntriesXml("equippedStatOffsets", equipment.equippedStatOffsets),
                     GenerateEquipmentRenderDataXml(equipment.renderData)
@@ -254,6 +263,30 @@ namespace CharacterStudio.Exporter
                 root.Add(new XElement("li",
                     new XElement("statDefName", entry.statDefName),
                     new XElement("value", entry.value.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                ));
+            }
+
+            return root.HasElements ? root : null;
+        }
+
+        private static XElement? GenerateEquipmentCostEntriesXml(string tagName, List<CharacterEquipmentCostEntry>? entries)
+        {
+            if (entries == null || entries.Count == 0)
+            {
+                return null;
+            }
+
+            var root = new XElement(tagName);
+            foreach (var entry in entries)
+            {
+                if (entry == null || string.IsNullOrWhiteSpace(entry.thingDefName) || entry.count <= 0)
+                {
+                    continue;
+                }
+
+                root.Add(new XElement("li",
+                    new XElement("thingDefName", entry.thingDefName),
+                    new XElement("count", entry.count)
                 ));
             }
 
@@ -641,8 +674,6 @@ namespace CharacterStudio.Exporter
                     layer.useBlinkSuffix ? new XElement("useBlinkSuffix", layer.useBlinkSuffix.ToString().ToLower()) : null,
                     layer.useFrameSequence ? new XElement("useFrameSequence", layer.useFrameSequence.ToString().ToLower()) : null,
                     layer.hideWhenMissingVariant ? new XElement("hideWhenMissingVariant", layer.hideWhenMissingVariant.ToString().ToLower()) : null,
-                    layer.eyeRenderMode != EyeRenderMode.TextureSwap ? new XElement("eyeRenderMode", layer.eyeRenderMode.ToString()) : null,
-                    layer.eyeUvMoveRange != 0f ? new XElement("eyeUvMoveRange", layer.eyeUvMoveRange.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)) : null,
                     GenerateStringArrayElement("visibleExpressions", layer.visibleExpressions),
                     GenerateStringArrayElement("hiddenExpressions", layer.hiddenExpressions),
 
@@ -759,10 +790,9 @@ namespace CharacterStudio.Exporter
                 if (layeredPartsEl.HasElements) element.Add(layeredPartsEl);
             }
 
-            // 序列化眼睛方向配置（支持 UV-only pupilMoveRange，无需依赖方向贴图）
+            // 序列化眼睛方向配置
             if (config.eyeDirectionConfig != null
                 && (config.eyeDirectionConfig.HasAnyTex()
-                    || config.eyeDirectionConfig.pupilMoveRange != 0f
                     || config.eyeDirectionConfig.upperLidMoveDown != 0.0044f
                     || config.eyeDirectionConfig.enabled))
             {
@@ -851,7 +881,6 @@ namespace CharacterStudio.Exporter
             if (!string.IsNullOrEmpty(eyeCfg.texRight))  el.Add(new XElement("texRight",  eyeCfg.texRight));
             if (!string.IsNullOrEmpty(eyeCfg.texUp))     el.Add(new XElement("texUp",     eyeCfg.texUp));
             if (!string.IsNullOrEmpty(eyeCfg.texDown))   el.Add(new XElement("texDown",   eyeCfg.texDown));
-            if (eyeCfg.pupilMoveRange != 0f)             el.Add(new XElement("pupilMoveRange", eyeCfg.pupilMoveRange.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)));
             if (!Mathf.Approximately(eyeCfg.upperLidMoveDown, 0.0044f))
                 el.Add(new XElement("upperLidMoveDown", eyeCfg.upperLidMoveDown.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)));
             el.Add(new XElement("lidMotion", DirectXmlToInnerElements(eyeCfg.lidMotion)));

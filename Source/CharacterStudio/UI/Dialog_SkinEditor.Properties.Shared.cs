@@ -217,5 +217,32 @@ namespace CharacterStudio.UI
                 .ToArray();
         }
 
+        private static CharacterEquipmentCostEntry[] ParseEquipmentCostEntries(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return Array.Empty<CharacterEquipmentCostEntry>();
+
+            return input
+                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(part => part.Trim())
+                .Where(part => !string.IsNullOrEmpty(part))
+                .Select(part =>
+                {
+                    string[] pair = part.Split(new[] { ':' }, 2, StringSplitOptions.RemoveEmptyEntries);
+                    string thingDefName = pair.Length > 0 ? pair[0].Trim() : string.Empty;
+                    int count = 1;
+                    if (pair.Length > 1)
+                        int.TryParse(pair[1].Trim(), out count);
+
+                    return new CharacterEquipmentCostEntry
+                    {
+                        thingDefName = thingDefName,
+                        count = Math.Max(1, count)
+                    };
+                })
+                .Where(entry => !string.IsNullOrWhiteSpace(entry.thingDefName))
+                .ToArray();
+        }
+
     }
 }

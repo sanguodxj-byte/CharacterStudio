@@ -183,7 +183,7 @@ namespace CharacterStudio.UI
                 Find.WindowStack.Add(new Dialog_MessageBox(
                     "CS_Studio_Warn_NoLayers".Translate(),
                     "CS_Studio_Btn_ContinueExport".Translate(),
-                    () => Find.WindowStack.Add(new Dialog_ExportMod(workingSkin, workingAbilities)),
+                    () => Find.WindowStack.Add(new Dialog_ExportMod(workingSkin, workingAbilities, workingDocument.characterDefinition)),
                     "CS_Studio_Btn_Cancel".Translate(),
                     null,
                     null,
@@ -203,7 +203,7 @@ namespace CharacterStudio.UI
             }
 
             SyncAbilitiesToSkin();
-            Find.WindowStack.Add(new Dialog_ExportMod(workingSkin, workingAbilities));
+            Find.WindowStack.Add(new Dialog_ExportMod(workingSkin, workingAbilities, workingDocument.characterDefinition));
         }
 
         private void OnOpenSkinFolder()

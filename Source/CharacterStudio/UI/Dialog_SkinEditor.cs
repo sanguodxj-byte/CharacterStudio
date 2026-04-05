@@ -79,8 +79,14 @@ namespace CharacterStudio.UI
         private float statusMessageTime = 0f;
         private CharacterSpawnSettings directSpawnSettings = new CharacterSpawnSettings
         {
+            sourceMapForConditionCheck = null,
+            arrivalDefName = "CS_SpawnArrival_DropPod",
             arrivalMode = Items.SummonArrivalMode.DropPod,
+            spawnEventDefName = "CS_SpawnEvent_PositiveLetter",
             spawnEvent = Items.SummonSpawnEventMode.PositiveLetter,
+            eventMessageText = string.Empty,
+            eventLetterTitle = string.Empty,
+            spawnAnimationDefName = "CS_SpawnAnimation_ExplosionEffect",
             spawnAnimation = Items.SummonSpawnAnimationMode.ExplosionEffect,
             spawnAnimationScale = 1f
         };
@@ -251,6 +257,7 @@ namespace CharacterStudio.UI
                 workingSkin.targetRaces = new List<string> { pawn.def.defName };
                 workingDocument.preferredPreviewRaceDefName = pawn.def.defName;
                 workingDocument.preferredTargetRaceDefName = pawn.def.defName;
+                workingDocument.characterDefinition.raceDefName = pawn.def.defName;
             }
 
             var comp = pawn?.GetComp<CompPawnSkin>();
@@ -302,6 +309,12 @@ namespace CharacterStudio.UI
                 preferredTargetRaceDefName = preferredRaceDefName ?? runtimeSkin.targetRaces.FirstOrDefault() ?? string.Empty
             };
             document.SyncMetadataFromRuntimeSkin();
+            document.characterDefinition.EnsureDefaults(
+                runtimeSkin.defName ?? "CS_Character",
+                DefDatabase<ThingDef>.GetNamedSilentFail(document.preferredTargetRaceDefName)
+                    ?? DefDatabase<ThingDef>.GetNamedSilentFail(document.preferredPreviewRaceDefName)
+                    ?? ThingDefOf.Human,
+                runtimeSkin.attributes);
             RebuildNodeRulesFromRuntimeSkin(document);
             return document;
         }

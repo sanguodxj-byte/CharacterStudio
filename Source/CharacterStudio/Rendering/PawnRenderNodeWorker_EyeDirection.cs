@@ -66,17 +66,12 @@ namespace CharacterStudio.Rendering
                     return false;
             }
 
-            // UV 偏移模式：仅需中心贴图存在即可绘制（方向由 UV 控制）
-            if (eyeData.useUvOffset)
-                return !string.IsNullOrEmpty(eyeData.texCenter);
-
             var dir = GetCurrentDirection(parms.pawn);
             return !string.IsNullOrEmpty(eyeData.GetTexPath(dir));
         }
 
         /// <summary>
         /// 根据当前眼睛方向返回覆盖贴图 Graphic。
-        /// UV 模式下始终使用 texCenter 贴图，方向感由 GetMaterialPropertyBlock 中的 UV 偏移实现。
         /// </summary>
         protected override Graphic? GetGraphic(PawnRenderNode node, PawnDrawParms parms)
         {
@@ -86,73 +81,11 @@ namespace CharacterStudio.Rendering
             Shader shader = node.ShaderFor(parms.pawn) ?? ShaderDatabase.Cutout!;
             Color nodeColor = node.Props?.color ?? Color.white;
 
-            // UV 偏移模式：始终用 Center 贴图，偏移由 MaterialPropertyBlock 驱动
-            if (eyeData.useUvOffset)
-            {
-                if (string.IsNullOrEmpty(eyeData.texCenter)) return null;
-                return GetOrBuildGraphic(eyeData.texCenter, shader, nodeColor);
-            }
-
             var dir = GetCurrentDirection(parms.pawn);
             string path = eyeData.GetTexPath(dir);
             if (string.IsNullOrEmpty(path)) return null;
 
             return GetOrBuildGraphic(path, shader, nodeColor);
-        }
-
-        /// <summary>
-        /// UV 偏移模式下，通过 _MainTex_ST 的偏移分量（.zw）驱动瞳孔偏移。
-        /// _MainTex_ST = (scaleX, scaleY, offsetX, offsetY)
-        ///
-        /// EyeDirection → UV offset 映射（Unity UV 坐标 x 向右、y 向上）：
-        ///   Left  → offset.x = +range（贴图右移 → 采样到瞳孔左侧区域）
-        ///   Right → offset.x = -range
-        ///   Up    → offset.y = -range（贴图下移 → 采样到瞳孔上侧区域）
-        ///   Down  → offset.y = +range
-        ///
-        /// 注意：仅对 pupilMoveRange > 0 时生效，否则走贴图替换路径（无需额外 MPB 操作）。
-        /// </summary>
-        public override MaterialPropertyBlock GetMaterialPropertyBlock(
-            PawnRenderNode node, Material material, PawnDrawParms parms)
-        {
-            var mpb = base.GetMaterialPropertyBlock(node, material, parms);
-
-            var eyeData = GetRuntimeEyeDirectionData(parms.pawn);
-            CompPawnSkin? skinComp = parms.pawn?.GetComp<CompPawnSkin>();
-            if (eyeData == null || !eyeData.enabled || !eyeData.useUvOffset || eyeData.uvMoveRange <= 0f)
-                return mpb;
-
-            float brightnessOffset = skinComp?.GetAbilityPupilBrightnessOffset() ?? 0f;
-            float contrastOffset = skinComp?.GetAbilityPupilContrastOffset() ?? 0f;
-            float r = eyeData.uvMoveRange;
-            var dir = GetCurrentDirection(parms.pawn);
-
-            float offsetX = 0f, offsetY = 0f;
-            switch (dir)
-            {
-                case EyeDirection.Left:  offsetX = +r; break;
-                case EyeDirection.Right: offsetX = -r; break;
-                case EyeDirection.Up:    offsetY = -r; break;
-                case EyeDirection.Down:  offsetY = +r; break;
-                // Center: 不偏移
-            }
-
-            if (parms.facing == Rot4.West)
-            {
-                offsetX = -offsetX;
-            }
-
-            // _MainTex_ST.xy = scale（保持 (1,1)），_MainTex_ST.zw = offset
-            int stID = Shader.PropertyToID("_MainTex_ST");
-            mpb.SetVector(stID, new Vector4(1f, 1f, offsetX, offsetY));
-
-            float tintScalar = Mathf.Clamp(1f + brightnessOffset + (contrastOffset * 0.5f), 0.2f, 3f);
-            int colorID = Shader.PropertyToID("_Color");
-            mpb.SetColor(colorID, new Color(tintScalar, tintScalar, tintScalar, 1f));
-            mpb.SetFloat(Shader.PropertyToID("_CS_PupilBrightnessOffset"), brightnessOffset);
-            mpb.SetFloat(Shader.PropertyToID("_CS_PupilContrastOffset"), contrastOffset);
-
-            return mpb;
         }
 
         // ─────────────────────────────────────────────

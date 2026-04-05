@@ -583,32 +583,6 @@ namespace CharacterStudio.UI
             DrawPropertyHint(ref y, width, "CS_Studio_Face_MovementDialog_LayerHint".Translate());
             UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Prop_LayerName".Translate(), string.IsNullOrWhiteSpace(layer.layerName) ? "CS_Studio_None".Translate() : layer.layerName);
 
-            UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Variant_EyeRenderMode".Translate(), layer.eyeRenderMode,
-                (EyeRenderMode[])Enum.GetValues(typeof(EyeRenderMode)),
-                option => ($"CS_Studio_EyeRenderMode_{option}").Translate(),
-                val =>
-                {
-                    CaptureUndoSnapshot();
-                    layer.eyeRenderMode = val;
-                    ApplyToOtherSelectedLayers(l => l.eyeRenderMode = val);
-                    isDirty = true;
-                    RefreshPreview();
-                });
-
-            if (layer.eyeRenderMode == EyeRenderMode.UvOffset)
-            {
-                float eyeUvMoveRange = layer.eyeUvMoveRange;
-                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Variant_EyeUvMoveRange".Translate(), ref eyeUvMoveRange, 0f, 0.2f, "F3");
-                if (Math.Abs(eyeUvMoveRange - layer.eyeUvMoveRange) > 0.0001f)
-                {
-                    CaptureUndoSnapshot();
-                    layer.eyeUvMoveRange = eyeUvMoveRange;
-                    ApplyToOtherSelectedLayers(l => l.eyeUvMoveRange = eyeUvMoveRange);
-                    isDirty = true;
-                    RefreshPreview();
-                }
-            }
-
             UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Section_Animation".Translate());
             UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Anim_Type".Translate(), layer.animationType,
                 (LayerAnimationType[])Enum.GetValues(typeof(LayerAnimationType)),

@@ -567,21 +567,21 @@ namespace CharacterStudio.UI
             Widgets.DrawBox(rect, 1);
             GUI.color = Color.white;
 
-            Rect iconRect = new Rect(rect.x + 7f, rect.y + 7f, 10f, 10f);
+            Rect iconRect = new Rect(rect.x + 7f, rect.y + 8f, 10f, 10f);
             DrawShieldIcon(iconRect, pulse, activateAlpha, breakAlpha);
 
-            Rect titleRect = new Rect(rect.x + 21f, rect.y + 5f, 46f, 12f);
+            Rect titleRect = new Rect(rect.x + 21f, rect.y + 3f, 46f, 18f);
             Text.Font = GameFont.Tiny;
             Text.Anchor = TextAnchor.UpperLeft;
             GUI.color = SoftText;
             Widgets.Label(titleRect, "CS_ShieldHud_Title".Translate());
 
-            Rect timerRect = new Rect(rect.xMax - 34f, rect.y + 5f, 27f, 12f);
+            Rect timerRect = new Rect(rect.xMax - 36f, rect.y + 3f, 29f, 18f);
             Text.Anchor = TextAnchor.UpperRight;
             GUI.color = ticksLeft > 0 ? FaintText : EmptyText;
             Widgets.Label(timerRect, ticksLeft > 0 ? $"{ticksLeft / 60f:0.0}s" : "--");
 
-            Rect currentRect = new Rect(rect.x + 7f, rect.y + 19f, 30f, 12f);
+            Rect currentRect = new Rect(rect.x + 7f, rect.y + 21f, 32f, 18f);
             Text.Font = GameFont.Tiny;
             Text.Anchor = TextAnchor.UpperLeft;
             float criticalPulse = criticalShield ? (0.76f + (pulse * 0.24f)) : 1f;
@@ -590,19 +590,19 @@ namespace CharacterStudio.UI
                 : EmptyText;
             Widgets.Label(currentRect, Mathf.CeilToInt(currentShield).ToString());
 
-            Rect totalRect = new Rect(rect.x + 34f, rect.y + 19f, rect.width - 41f, 12f);
+            Rect totalRect = new Rect(rect.x + 36f, rect.y + 21f, rect.width - 43f, 18f);
             Text.Font = GameFont.Tiny;
             Text.Anchor = TextAnchor.UpperLeft;
             GUI.color = FaintText;
             Widgets.Label(totalRect, totalShield > 0.001f ? $"/ {Mathf.CeilToInt(totalShield)}" : "/ --");
 
-            Rect statusRect = new Rect(rect.x + 7f, rect.y + 36f, rect.width - 14f, 10f);
+            Rect statusRect = new Rect(rect.x + 7f, rect.y + 40f, rect.width - 14f, 18f);
             Text.Font = GameFont.Tiny;
-            Text.Anchor = TextAnchor.MiddleLeft;
+            Text.Anchor = TextAnchor.UpperLeft;
             GUI.color = breakAlpha > 0.001f && currentShield <= 0.001f ? EmptyText : FaintText;
             Widgets.Label(statusRect, BuildStatusLabel(currentShield, storedShield, fillPercent, breakAlpha));
 
-            Rect barOuter = new Rect(rect.x + 7f, rect.y + 52f, rect.width - 14f, 8f);
+            Rect barOuter = new Rect(rect.x + 7f, rect.y + 60f, rect.width - 14f, 8f);
             Widgets.DrawBoxSolid(barOuter, BarBg);
 
             float fillWidth = Mathf.Max(0f, (barOuter.width - 2f) * fillPercent);
@@ -687,22 +687,25 @@ namespace CharacterStudio.UI
 
         private static void DrawShieldIcon(Rect rect, float pulse, float activateAlpha, float breakAlpha)
         {
-            Vector2 top = new Vector2(rect.center.x, rect.y);
-            Vector2 right = new Vector2(rect.xMax, rect.y + rect.height * 0.28f);
-            Vector2 bottomRight = new Vector2(rect.x + rect.width * 0.76f, rect.yMax);
-            Vector2 bottomLeft = new Vector2(rect.x + rect.width * 0.24f, rect.yMax);
-            Vector2 left = new Vector2(rect.x, rect.y + rect.height * 0.28f);
+            float inset = 1f;
+            Vector2 top = new Vector2(rect.center.x, rect.y + inset);
+            Vector2 upperRight = new Vector2(rect.x + rect.width * 0.80f, rect.y + rect.height * 0.24f);
+            Vector2 lowerRight = new Vector2(rect.x + rect.width * 0.68f, rect.y + rect.height * 0.88f);
+            Vector2 bottom = new Vector2(rect.center.x, rect.yMax - inset);
+            Vector2 lowerLeft = new Vector2(rect.x + rect.width * 0.32f, rect.y + rect.height * 0.88f);
+            Vector2 upperLeft = new Vector2(rect.x + rect.width * 0.20f, rect.y + rect.height * 0.24f);
 
             Color iconColor = Color.Lerp(Accent, BreakFlash, breakAlpha * 0.8f);
             iconColor.a = Mathf.Clamp01(0.80f + (pulse * 0.10f) + (activateAlpha * 0.12f));
 
-            Widgets.DrawLine(top, right, iconColor, 1.2f);
-            Widgets.DrawLine(right, bottomRight, iconColor, 1.2f);
-            Widgets.DrawLine(bottomRight, bottomLeft, iconColor, 1.2f);
-            Widgets.DrawLine(bottomLeft, left, iconColor, 1.2f);
-            Widgets.DrawLine(left, top, iconColor, 1.2f);
+            Widgets.DrawLine(top, upperRight, iconColor, 1.2f);
+            Widgets.DrawLine(upperRight, lowerRight, iconColor, 1.2f);
+            Widgets.DrawLine(lowerRight, bottom, iconColor, 1.2f);
+            Widgets.DrawLine(bottom, lowerLeft, iconColor, 1.2f);
+            Widgets.DrawLine(lowerLeft, upperLeft, iconColor, 1.2f);
+            Widgets.DrawLine(upperLeft, top, iconColor, 1.2f);
 
-            Rect coreRect = new Rect(rect.x + 2f, rect.y + 3f, rect.width - 4f, rect.height - 5f);
+            Rect coreRect = new Rect(rect.x + 2f, rect.y + 3f, rect.width - 4f, rect.height - 4f);
             Widgets.DrawBoxSolid(coreRect, new Color(0.3f, 0.72f, 1f, 0.08f + (pulse * 0.05f) + (activateAlpha * 0.08f)));
         }
 

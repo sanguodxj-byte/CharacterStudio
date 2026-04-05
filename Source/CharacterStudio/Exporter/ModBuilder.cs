@@ -6,6 +6,7 @@ using System.Xml.Linq;
 using CharacterStudio.Items;
 using CharacterStudio.Abilities;
 using CharacterStudio.Core;
+using RimWorld;
 using Verse;
 
 namespace CharacterStudio.Exporter
@@ -84,6 +85,7 @@ namespace CharacterStudio.Exporter
         public SummonSpawnAnimationMode RoleCardSpawnAnimation { get; set; } = SummonSpawnAnimationMode.ExplosionEffect;
         public float RoleCardSpawnAnimationScale { get; set; } = 1f;
         public SummonSpawnEventMode RoleCardSpawnEvent { get; set; } = SummonSpawnEventMode.PositiveLetter;
+        public CharacterDefinition CharacterDefinition { get; set; } = new CharacterDefinition();
 
         public bool AssetRightsConfirmed { get; set; } = false;
     }
@@ -162,6 +164,7 @@ namespace CharacterStudio.Exporter
                 RoleCardSpawnAnimation = config.RoleCardSpawnAnimation,
                 RoleCardSpawnAnimationScale = config.RoleCardSpawnAnimationScale,
                 RoleCardSpawnEvent = config.RoleCardSpawnEvent,
+                CharacterDefinition = config.CharacterDefinition?.Clone() ?? new CharacterDefinition(),
                 AssetRightsConfirmed = config.AssetRightsConfirmed
             };
         }
@@ -324,6 +327,8 @@ namespace CharacterStudio.Exporter
             }
 
             GenerateEquipmentThingDefXml(modPath, exportConfig);
+            GenerateEquipmentRecipeDefXml(modPath, exportConfig);
+            GenerateEquipmentBundleManifestXml(modPath, exportConfig);
 
             if (exportConfig.IncludeGeneDef && exportConfig.ExportAsGene)
             {
@@ -334,6 +339,8 @@ namespace CharacterStudio.Exporter
             {
                 GenerateUnitDefXml(modPath, exportConfig);
             }
+
+            GenerateCharacterDefinitionXml(modPath, exportConfig);
 
             if (exportConfig.IncludeAbilities && exportConfig.Abilities.Count > 0)
             {
@@ -434,6 +441,7 @@ namespace CharacterStudio.Exporter
             Directory.CreateDirectory(Path.Combine(modPath, "Defs", "AbilityDefs"));
             Directory.CreateDirectory(Path.Combine(modPath, "Defs", "GeneDefs"));
             Directory.CreateDirectory(Path.Combine(modPath, "Defs", "PawnKindDefs"));
+            Directory.CreateDirectory(Path.Combine(modPath, "Defs", "RecipeDefs"));
             Directory.CreateDirectory(Path.Combine(modPath, "Defs", "SkinDefs"));
             Directory.CreateDirectory(Path.Combine(modPath, "Defs", "ThingDef"));
             Directory.CreateDirectory(Path.Combine(modPath, "Textures"));
@@ -755,6 +763,55 @@ namespace CharacterStudio.Exporter
             Log.Message($"[CharacterStudio] 装备 ThingDef 已生成: {defsPath}");
         }
 
+        private void GenerateEquipmentRecipeDefXml(string modPath, ModExportConfig config)
+        {
+            var equipments = config.SkinDef?.equipments;
+            if (equipments == null || equipments.Count == 0)
+            {
+                return;
+            }
+
+            List<XElement> recipeDefs = equipments
+                .Where(equipment => equipment != null && equipment.enabled && equipment.allowCrafting)
+                .Select(ModExportXmlWriter.GenerateEquipmentRecipeDefXml)
+                .Where(element => element != null)
+                .Cast<XElement>()
+                .ToList();
+
+            if (recipeDefs.Count == 0)
+            {
+                return;
+            }
+
+            var doc = new XDocument(
+                new XDeclaration("1.0", "utf-8", null),
+                new XElement("Defs", recipeDefs));
+
+            string defsPath = Path.Combine(modPath, "Defs", "RecipeDefs", $"{SanitizeFileName(config.ModName)}_EquipmentRecipes.xml");
+            doc.Save(defsPath);
+
+            Log.Message($"[CharacterStudio] 装备 RecipeDef 已生成: {defsPath}");
+        }
+
+        private void GenerateEquipmentBundleManifestXml(string modPath, ModExportConfig config)
+        {
+            var equipments = config.SkinDef?.equipments;
+            if (equipments == null || equipments.Count == 0)
+                return;
+
+            bool hasBundleGroups = equipments.Any(equipment => equipment != null && equipment.enabled && !string.IsNullOrWhiteSpace(equipment.exportGroupKey));
+            if (!hasBundleGroups)
+                return;
+
+            var doc = ModExportXmlWriter.CreateEquipmentBundleManifestDocument(
+                equipments.Where(equipment => equipment != null && equipment.enabled).ToList());
+
+            string defsPath = Path.Combine(modPath, "Defs", "ThingDef", $"{SanitizeFileName(config.ModName)}_EquipmentBundles.xml");
+            doc.Save(defsPath);
+
+            Log.Message($"[CharacterStudio] 装备包清单已生成: {defsPath}");
+        }
+
         private XElement? GenerateBaseAppearanceXml(BaseAppearanceConfig? baseAppearance)
         {
             return ModExportXmlWriter.GenerateBaseAppearanceXml(baseAppearance);
@@ -860,6 +917,25 @@ namespace CharacterStudio.Exporter
             }
 
             Log.Message($"[CharacterStudio] 单位定义已生成: {unitDefsPath}");
+        }
+
+        private void GenerateCharacterDefinitionXml(string modPath, ModExportConfig config)
+        {
+            if (config.SkinDef == null)
+            {
+                return;
+            }
+
+            CharacterDefinition definition = config.CharacterDefinition?.Clone() ?? new CharacterDefinition();
+            ThingDef fallbackRace = config.SkinDef.targetRaces != null && config.SkinDef.targetRaces.Count > 0
+                ? DefDatabase<ThingDef>.GetNamedSilentFail(config.SkinDef.targetRaces[0]) ?? ThingDefOf.Human
+                : ThingDefOf.Human;
+            definition.EnsureDefaults(config.SkinDef.defName ?? SanitizeFileName(config.ModName), fallbackRace, config.SkinDef.attributes);
+
+            string safeName = SanitizeFileName(config.ModName);
+            string path = Path.Combine(modPath, "Defs", "PawnKindDefs", $"{safeName}_Character.xml");
+            CharacterDefinitionXmlUtility.Save(definition, path);
+            Log.Message($"[CharacterStudio] 角色定义已生成: {path}");
         }
 
         /// <summary>

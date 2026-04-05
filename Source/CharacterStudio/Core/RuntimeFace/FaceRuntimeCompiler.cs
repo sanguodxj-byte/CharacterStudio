@@ -265,8 +265,6 @@ namespace CharacterStudio.Core
 
             FaceEyeDirectionRuntimeData runtimeData = portraitTrack.eyeDirection;
             runtimeData.enabled = true;
-            runtimeData.useUvOffset = eyeCfg.pupilMoveRange > 0f;
-            runtimeData.uvMoveRange = Mathf.Max(0f, eyeCfg.pupilMoveRange);
             runtimeData.upperLidMoveDown = Mathf.Max(0f, eyeCfg.upperLidMoveDown);
 
             runtimeData.texCenter = eyeCfg.texCenter ?? string.Empty;
@@ -463,7 +461,6 @@ namespace CharacterStudio.Core
                 hash = CombineHash(hash, eyeConfig?.texRight);
                 hash = CombineHash(hash, eyeConfig?.texUp);
                 hash = CombineHash(hash, eyeConfig?.texDown);
-                hash = CombineHash(hash, eyeConfig?.pupilMoveRange ?? 0f);
                 hash = CombineHash(hash, eyeConfig?.upperLidMoveDown ?? 0f);
 
                 return (skin.version ?? "0") + "-" + hash.ToString("X8");

@@ -249,14 +249,8 @@ namespace CharacterStudio.Core
         /// <summary>当找不到任何可用变体时是否隐藏图层，而不是回退到基础图</summary>
         public bool hideWhenMissingVariant = false;
 
-        /// <summary>眼睛层的渲染模式</summary>
-        public EyeRenderMode eyeRenderMode = EyeRenderMode.TextureSwap;
-
-        /// <summary>眼球 UV 偏移范围（供后续 UvOffset 模式使用）</summary>
-        public float eyeUvMoveRange = 0f;
-
         /// <summary>
-        /// 指定可见的高层表情名称列表；为空表示不限制。
+         /// 指定可见的高层表情名称列表；为空表示不限制。
         /// 使用 <see cref="ExpressionType"/> 的名称进行匹配。
         /// </summary>
         public string[] visibleExpressions = Array.Empty<string>();
@@ -388,8 +382,6 @@ namespace CharacterStudio.Core
                 useBlinkSuffix = this.useBlinkSuffix,
                 useFrameSequence = this.useFrameSequence,
                 hideWhenMissingVariant = this.hideWhenMissingVariant,
-                eyeRenderMode = this.eyeRenderMode,
-                eyeUvMoveRange = this.eyeUvMoveRange,
                 visibleExpressions = (string[])this.visibleExpressions.Clone(),
                 hiddenExpressions = (string[])this.hiddenExpressions.Clone(),
                 animationType = this.animationType,
@@ -467,17 +459,8 @@ namespace CharacterStudio.Core
     }
 
     /// <summary>
-    /// 眼睛渲染模式
-    /// </summary>
-    public enum EyeRenderMode
-    {
-        TextureSwap,
-        UvOffset
-    }
-
-    /// <summary>
-    /// 图层动画类型
-    /// </summary>
+     /// 图层动画类型
+     /// </summary>
     public enum LayerAnimationType
     {
         /// <summary>无动画</summary>

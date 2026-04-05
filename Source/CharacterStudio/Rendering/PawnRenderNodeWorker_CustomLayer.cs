@@ -877,7 +877,6 @@ namespace CharacterStudio.Rendering
             bool hasReplacementEyeOverlay = HasActiveReplacementEye(customNode, pawn, skinComp);
             EyeAnimationVariant eyeVariant = skinComp.GetEffectiveEyeAnimationVariant();
             PupilScaleVariant pupilVariant = skinComp.GetEffectivePupilScaleVariant();
-            EyeRenderMode eyeRenderMode = customNode.config?.eyeRenderMode ?? EyeRenderMode.TextureSwap;
             var transformContext = new FaceTransformContext(
                 customNode.layeredFacePartType.Value,
                 customNode.layeredFacePartSide,
@@ -894,8 +893,7 @@ namespace CharacterStudio.Rendering
                 pupilVariant,
                 expression,
                 primaryWave,
-                slowWave,
-                eyeRenderMode);
+                slowWave);
 
             switch (customNode.layeredFacePartType.Value)
             {
@@ -1208,19 +1206,6 @@ namespace CharacterStudio.Rendering
             if (pupilVariant == PupilScaleVariant.BlinkHidden)
             {
                 HideProgrammaticFacePart(customNode);
-                return;
-            }
-
-            // UV Offset 模式下，瞳孔贴图本身已经通过眼球方向配置完成位移。
-            // 若这里再叠加程序化位置偏移，会在游戏内产生明显的双重位移，
-            // 表现为瞳孔大幅偏离预览位置。
-            if (customNode.config?.eyeRenderMode == EyeRenderMode.UvOffset)
-            {
-                SetProgrammaticFaceTransform(
-                    customNode,
-                    0f,
-                    Vector3.zero,
-                    new Vector3(scale, 1f, scale));
                 return;
             }
 
@@ -2142,44 +2127,6 @@ namespace CharacterStudio.Rendering
 
                 int stID = Shader.PropertyToID("_MainTex_ST");
                 matPropBlock.SetVector(stID, new Vector4(1f, 1f, 0f, 0f));
-
-                if (config.eyeRenderMode == EyeRenderMode.UvOffset)
-                {
-                    CompPawnSkin? skinComp = pawn?.TryGetComp<CompPawnSkin>();
-                    float range = config.eyeUvMoveRange > 0f
-                        ? config.eyeUvMoveRange
-                        : skinComp?.ActiveSkin?.faceConfig?.eyeDirectionConfig?.pupilMoveRange ?? 0f;
-
-                    if (range > 0f)
-                    {
-                        EyeDirection eyeDirection = skinComp?.CurEyeDirection ?? EyeDirection.Center;
-                        float offsetX = 0f;
-                        float offsetY = 0f;
-
-                        switch (eyeDirection)
-                        {
-                            case EyeDirection.Left:
-                                offsetX = +range;
-                                break;
-                            case EyeDirection.Right:
-                                offsetX = -range;
-                                break;
-                            case EyeDirection.Up:
-                                offsetY = -range;
-                                break;
-                            case EyeDirection.Down:
-                                offsetY = +range;
-                                break;
-                        }
-
-                        if (parms.facing == Rot4.West)
-                        {
-                            offsetX = -offsetX;
-                        }
-
-                        matPropBlock.SetVector(stID, new Vector4(1f, 1f, offsetX, offsetY));
-                    }
-                }
             }
             else
             {
@@ -2945,17 +2892,6 @@ namespace CharacterStudio.Rendering
 
 
 
-        private static bool ShouldUseUvOffsetPupil(PawnRenderNode_Custom customNode, LayeredFacePartType partType)
-        {
-            if (partType != LayeredFacePartType.Pupil)
-                return false;
-
-            PawnLayerConfig? config = customNode.config;
-            return config != null
-                && config.eyeRenderMode == EyeRenderMode.UvOffset
-                && config.eyeUvMoveRange > 0f;
-        }
-
         private string? TryResolveLayeredPairedPartVariantPath(
             PawnRenderNode_Custom customNode,
             Pawn pawn,
@@ -3020,16 +2956,6 @@ namespace CharacterStudio.Rendering
                 return null;
 
             PawnLayerConfig? config = customNode.config;
-            if (partType.Value == LayeredFacePartType.Pupil
-                && config != null
-                && config.eyeRenderMode == EyeRenderMode.UvOffset
-                && config.eyeUvMoveRange > 0f)
-            {
-                // 组合模式：保留 UV 偏移负责眼球朝向，
-                // 这里只跳过 channel(方向)后缀，不阻断后续的纹理替换/表情替换。
-                return null;
-            }
-
             LayerRole role = config?.role ?? GetLayerRoleForLayeredPart(partType.Value);
             string? channelState = skinComp.GetChannelStateSuffix(role);
             if (string.IsNullOrWhiteSpace(channelState))
@@ -3215,14 +3141,6 @@ namespace CharacterStudio.Rendering
             CompPawnSkin skinComp)
         {
             var results = new List<string>();
-
-            if (partType == LayeredFacePartType.Pupil
-                && config != null
-                && config.eyeRenderMode == EyeRenderMode.UvOffset
-                && config.eyeUvMoveRange > 0f)
-            {
-                return results;
-            }
 
             EyeDirection eyeDirection = skinComp.CurEyeDirection;
             switch (eyeDirection)

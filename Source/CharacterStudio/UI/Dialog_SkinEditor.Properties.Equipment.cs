@@ -134,6 +134,15 @@ namespace CharacterStudio.UI
                     MarkEquipmentDirty(false);
                 }
 
+                string exportGroupKey = equipment.exportGroupKey ?? string.Empty;
+                UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_ExportGroupKey".Translate(), ref exportGroupKey);
+                if (exportGroupKey != (equipment.exportGroupKey ?? string.Empty))
+                {
+                    CaptureUndoSnapshot();
+                    equipment.exportGroupKey = exportGroupKey;
+                    MarkEquipmentDirty(false);
+                }
+
                 string parentThingDefName = equipment.parentThingDefName ?? string.Empty;
                 UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_ParentThingDefName".Translate(), ref parentThingDefName);
                 if (parentThingDefName != (equipment.parentThingDefName ?? string.Empty))
@@ -324,6 +333,89 @@ namespace CharacterStudio.UI
                 {
                     CaptureUndoSnapshot();
                     equipment.apparelTags = ParseCommaSeparatedList(apparelTagsText).ToList();
+                    MarkEquipmentDirty(false);
+                }
+
+                bool allowCrafting = equipment.allowCrafting;
+                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Equip_AllowCrafting".Translate(), ref allowCrafting);
+                if (allowCrafting != equipment.allowCrafting)
+                {
+                    CaptureUndoSnapshot();
+                    equipment.allowCrafting = allowCrafting;
+                    MarkEquipmentDirty(false);
+                }
+
+                string recipeDefName = equipment.recipeDefName ?? string.Empty;
+                UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_RecipeDefName".Translate(), ref recipeDefName);
+                if (recipeDefName != (equipment.recipeDefName ?? string.Empty))
+                {
+                    CaptureUndoSnapshot();
+                    equipment.recipeDefName = recipeDefName;
+                    MarkEquipmentDirty(false);
+                }
+
+                string recipeWorkbenchDefName = equipment.recipeWorkbenchDefName ?? string.Empty;
+                UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_RecipeWorkbenchDefName".Translate(), ref recipeWorkbenchDefName);
+                if (recipeWorkbenchDefName != (equipment.recipeWorkbenchDefName ?? string.Empty))
+                {
+                    CaptureUndoSnapshot();
+                    equipment.recipeWorkbenchDefName = recipeWorkbenchDefName;
+                    MarkEquipmentDirty(false);
+                }
+
+                float recipeWorkAmount = equipment.recipeWorkAmount;
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Equip_RecipeWorkAmount".Translate(), ref recipeWorkAmount, 1f, 20000f, "F0");
+                if (Math.Abs(recipeWorkAmount - equipment.recipeWorkAmount) > 0.0001f)
+                {
+                    CaptureUndoSnapshot();
+                    equipment.recipeWorkAmount = recipeWorkAmount;
+                    MarkEquipmentDirty(false);
+                }
+
+                int recipeProductCount = equipment.recipeProductCount;
+                UIHelper.DrawNumericField(ref y, width, "CS_Studio_Equip_RecipeProductCount".Translate(), ref recipeProductCount, 1, 999);
+                if (recipeProductCount != equipment.recipeProductCount)
+                {
+                    CaptureUndoSnapshot();
+                    equipment.recipeProductCount = recipeProductCount;
+                    MarkEquipmentDirty(false);
+                }
+
+                string recipeIngredientsText = string.Join(", ", (equipment.recipeIngredients ?? new List<CharacterEquipmentCostEntry>()).Select(entry => $"{entry.thingDefName}:{entry.count}"));
+                UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_RecipeIngredients".Translate(), ref recipeIngredientsText);
+                string normalizedRecipeIngredientsText = string.Join(", ", (equipment.recipeIngredients ?? new List<CharacterEquipmentCostEntry>()).Select(entry => $"{entry.thingDefName}:{entry.count}"));
+                if (recipeIngredientsText != normalizedRecipeIngredientsText)
+                {
+                    CaptureUndoSnapshot();
+                    equipment.recipeIngredients = ParseEquipmentCostEntries(recipeIngredientsText).ToList();
+                    MarkEquipmentDirty(false);
+                }
+
+                bool allowTrading = equipment.allowTrading;
+                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Equip_AllowTrading".Translate(), ref allowTrading);
+                if (allowTrading != equipment.allowTrading)
+                {
+                    CaptureUndoSnapshot();
+                    equipment.allowTrading = allowTrading;
+                    MarkEquipmentDirty(false);
+                }
+
+                float marketValue = equipment.marketValue;
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Equip_MarketValue".Translate(), ref marketValue, 0.01f, 100000f, "F2");
+                if (Math.Abs(marketValue - equipment.marketValue) > 0.0001f)
+                {
+                    CaptureUndoSnapshot();
+                    equipment.marketValue = marketValue;
+                    MarkEquipmentDirty(false);
+                }
+
+                string tradeTagsText = string.Join(", ", equipment.tradeTags ?? new List<string>());
+                UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_TradeTags".Translate(), ref tradeTagsText);
+                string normalizedTradeTagsText = string.Join(", ", equipment.tradeTags ?? new List<string>());
+                if (tradeTagsText != normalizedTradeTagsText)
+                {
+                    CaptureUndoSnapshot();
+                    equipment.tradeTags = ParseCommaSeparatedList(tradeTagsText).ToList();
                     MarkEquipmentDirty(false);
                 }
             }

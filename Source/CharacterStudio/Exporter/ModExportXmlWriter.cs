@@ -98,6 +98,7 @@ namespace CharacterStudio.Exporter
                     !string.IsNullOrWhiteSpace(equipment.description) ? new XElement("description", equipment.description) : null,
                     new XElement("enabled", equipment.enabled.ToString().ToLower()),
                     !string.IsNullOrWhiteSpace(equipment.slotTag) ? new XElement("slotTag", equipment.slotTag) : null,
+                    !string.IsNullOrWhiteSpace(equipment.exportGroupKey) ? new XElement("exportGroupKey", equipment.exportGroupKey) : null,
                     !string.IsNullOrWhiteSpace(equipment.thingDefName) ? new XElement("thingDefName", equipment.thingDefName) : null,
                     !string.IsNullOrWhiteSpace(equipment.parentThingDefName) ? new XElement("parentThingDefName", equipment.parentThingDefName) : null,
                     !string.IsNullOrWhiteSpace(equipment.worldTexPath) ? new XElement("worldTexPath", equipment.worldTexPath) : null,
@@ -105,17 +106,26 @@ namespace CharacterStudio.Exporter
                     !string.IsNullOrWhiteSpace(equipment.maskTexPath) ? new XElement("maskTexPath", equipment.maskTexPath) : null,
                     !string.IsNullOrWhiteSpace(equipment.shaderDefName) ? new XElement("shaderDefName", equipment.shaderDefName) : null,
                     equipment.useWornGraphicMask ? new XElement("useWornGraphicMask", equipment.useWornGraphicMask.ToString().ToLower()) : null,
+                    new XElement("allowCrafting", equipment.allowCrafting.ToString().ToLower()),
+                    !string.IsNullOrWhiteSpace(equipment.recipeDefName) ? new XElement("recipeDefName", equipment.recipeDefName) : null,
+                    !string.IsNullOrWhiteSpace(equipment.recipeWorkbenchDefName) ? new XElement("recipeWorkbenchDefName", equipment.recipeWorkbenchDefName) : null,
+                    Math.Abs(equipment.recipeWorkAmount - 1200f) > 0.0001f ? new XElement("recipeWorkAmount", equipment.recipeWorkAmount.ToString(System.Globalization.CultureInfo.InvariantCulture)) : null,
+                    equipment.recipeProductCount != 1 ? new XElement("recipeProductCount", equipment.recipeProductCount) : null,
+                    new XElement("allowTrading", equipment.allowTrading.ToString().ToLower()),
+                    Math.Abs(equipment.marketValue - 250f) > 0.0001f ? new XElement("marketValue", equipment.marketValue.ToString(System.Globalization.CultureInfo.InvariantCulture)) : null,
                     !string.IsNullOrWhiteSpace(equipment.previewTexPath) ? new XElement("previewTexPath", equipment.previewTexPath) : null,
                     !string.IsNullOrWhiteSpace(equipment.sourceNote) ? new XElement("sourceNote", equipment.sourceNote) : null,
                     !string.IsNullOrWhiteSpace(equipment.flyerThingDefName) ? new XElement("flyerThingDefName", equipment.flyerThingDefName) : null,
                     !string.IsNullOrWhiteSpace(equipment.flyerClassName) ? new XElement("flyerClassName", equipment.flyerClassName) : null,
                     Math.Abs(equipment.flyerFlightSpeed - 22f) > 0.0001f ? new XElement("flyerFlightSpeed", equipment.flyerFlightSpeed.ToString(System.Globalization.CultureInfo.InvariantCulture)) : null,
                     GenerateStringListXml("tags", equipment.tags),
+                    GenerateStringListXml("tradeTags", equipment.tradeTags),
                     GenerateStringListXml("abilityDefNames", equipment.abilityDefNames),
                     GenerateStringListXml("thingCategories", equipment.thingCategories),
                     GenerateStringListXml("bodyPartGroups", equipment.bodyPartGroups),
                     GenerateStringListXml("apparelLayers", equipment.apparelLayers),
                     GenerateStringListXml("apparelTags", equipment.apparelTags),
+                    GenerateEquipmentCostEntriesXml("recipeIngredients", equipment.recipeIngredients),
                     GenerateEquipmentStatEntriesXml("statBases", equipment.statBases),
                     GenerateEquipmentStatEntriesXml("equippedStatOffsets", equipment.equippedStatOffsets),
                     GenerateEquipmentRenderDataXml(equipment.renderData)
@@ -145,6 +155,30 @@ namespace CharacterStudio.Exporter
                 root.Add(new XElement("li",
                     new XElement("statDefName", entry.statDefName),
                     new XElement("value", entry.value.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                ));
+            }
+
+            return root.HasElements ? root : null;
+        }
+
+        private static XElement? GenerateEquipmentCostEntriesXml(string tagName, List<CharacterEquipmentCostEntry>? entries)
+        {
+            if (entries == null || entries.Count == 0)
+            {
+                return null;
+            }
+
+            var root = new XElement(tagName);
+            foreach (var entry in entries)
+            {
+                if (entry == null || string.IsNullOrWhiteSpace(entry.thingDefName) || entry.count <= 0)
+                {
+                    continue;
+                }
+
+                root.Add(new XElement("li",
+                    new XElement("thingDefName", entry.thingDefName),
+                    new XElement("count", entry.count)
                 ));
             }
 
@@ -313,10 +347,6 @@ namespace CharacterStudio.Exporter
                 yield return new XElement("useFrameSequence", layer.useFrameSequence.ToString().ToLower());
             if (layer.hideWhenMissingVariant)
                 yield return new XElement("hideWhenMissingVariant", layer.hideWhenMissingVariant.ToString().ToLower());
-            if (layer.eyeRenderMode != EyeRenderMode.TextureSwap)
-                yield return new XElement("eyeRenderMode", layer.eyeRenderMode.ToString());
-            if (layer.eyeUvMoveRange != 0f)
-                yield return new XElement("eyeUvMoveRange", layer.eyeUvMoveRange.ToString("F4", System.Globalization.CultureInfo.InvariantCulture));
 
             var visibleExpressions = GenerateStringArrayXml("visibleExpressions", layer.visibleExpressions);
             if (visibleExpressions != null)
@@ -477,7 +507,6 @@ namespace CharacterStudio.Exporter
             // 序列化眼睛方向配置（嵌套在 faceConfig 内）
             if (config.eyeDirectionConfig != null
                 && (config.eyeDirectionConfig.HasAnyTex()
-                    || config.eyeDirectionConfig.pupilMoveRange != 0f
                     || config.eyeDirectionConfig.upperLidMoveDown != 0.0044f
                     || config.eyeDirectionConfig.enabled))
             {
@@ -877,7 +906,7 @@ namespace CharacterStudio.Exporter
                         GenerateTargetRacesXml(skin.targetRaces),
                         skin.applyAsDefaultForTargetRaces ? new XElement("applyAsDefaultForTargetRaces", "true") : null,
                         skin.defaultRacePriority != 0 ? new XElement("defaultRacePriority", skin.defaultRacePriority) : null,
-                        skin.faceConfig != null && (skin.faceConfig.enabled || skin.faceConfig.HasAnyExpression() || skin.faceConfig.HasAnyLayeredPart() || skin.faceConfig.eyeDirectionConfig?.HasAnyTex() == true || skin.faceConfig.eyeDirectionConfig?.pupilMoveRange != 0f || skin.faceConfig.eyeDirectionConfig?.upperLidMoveDown != 0.0044f || skin.faceConfig.eyeDirectionConfig?.enabled == true) ? GenerateFaceConfigXml(skin.faceConfig) : null,
+                        skin.faceConfig != null && (skin.faceConfig.enabled || skin.faceConfig.HasAnyExpression() || skin.faceConfig.HasAnyLayeredPart() || skin.faceConfig.eyeDirectionConfig?.HasAnyTex() == true || skin.faceConfig.eyeDirectionConfig?.upperLidMoveDown != 0.0044f || skin.faceConfig.eyeDirectionConfig?.enabled == true) ? GenerateFaceConfigXml(skin.faceConfig) : null,
                         skin.weaponRenderConfig != null && skin.weaponRenderConfig.enabled ? GenerateWeaponRenderConfigXml(skin.weaponRenderConfig) : null,
                         GenerateSkinAbilitiesXml(skin.abilities),
                         GenerateAbilityHotkeysXml(skin.abilityHotkeys)
@@ -934,15 +963,107 @@ namespace CharacterStudio.Exporter
                 new XElement("defName", resolvedThingDefName),
                 new XElement("label", equipment.GetDisplayLabel()),
                 !string.IsNullOrWhiteSpace(equipment.description) ? new XElement("description", equipment.description) : null,
+                new XElement("tradeability", equipment.allowTrading ? "All" : "None"),
                 GenerateEquipmentGraphicDataXml(equipment),
                 GenerateEquipmentThingCategoriesXml(equipment.thingCategories),
+                GenerateEquipmentTradeTagsXml(equipment.tradeTags),
                 GenerateEquipmentStatEntryContainerXml("statBases", equipment.statBases),
                 GenerateEquipmentStatEntryContainerXml("equippedStatOffsets", equipment.equippedStatOffsets),
                 GenerateEquipmentApparelXml(equipment),
                 GenerateEquipmentModExtensionsXml(equipment)
             );
 
+            XElement statBasesEl = thingDef.Element("statBases") ?? new XElement("statBases");
+            if (thingDef.Element("statBases") == null)
+                thingDef.Add(statBasesEl);
+            if (statBasesEl.Element("MarketValue") == null)
+            {
+                statBasesEl.Add(new XElement("MarketValue", equipment.marketValue.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            }
+
             return thingDef;
+        }
+
+        public static XElement? GenerateEquipmentRecipeDefXml(CharacterEquipmentDef? equipment)
+        {
+            if (equipment == null)
+                return null;
+
+            equipment.EnsureDefaults();
+            if (!equipment.allowCrafting)
+                return null;
+
+            string resolvedThingDefName = equipment.GetResolvedThingDefName();
+            string recipeDefName = string.IsNullOrWhiteSpace(equipment.recipeDefName)
+                ? $"Recipe_{resolvedThingDefName}"
+                : equipment.recipeDefName;
+
+            var recipeDef = new XElement("RecipeDef",
+                new XAttribute("ParentName", "MakeRecipeBase"),
+                new XElement("defName", recipeDefName),
+                new XElement("label", $"制作{equipment.GetDisplayLabel()}"),
+                new XElement("jobString", $"正在制作{equipment.GetDisplayLabel()}"),
+                new XElement("workAmount", equipment.recipeWorkAmount.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("products",
+                    new XElement("li",
+                        new XElement("thingDef", resolvedThingDefName),
+                        new XElement("count", equipment.recipeProductCount)
+                    )),
+                new XElement("recipeUsers",
+                    new XElement("li", string.IsNullOrWhiteSpace(equipment.recipeWorkbenchDefName) ? "TableMachining" : equipment.recipeWorkbenchDefName))
+            );
+
+            XElement? ingredients = GenerateEquipmentRecipeIngredientsXml(equipment.recipeIngredients);
+            if (ingredients != null)
+                recipeDef.Add(ingredients);
+
+            return recipeDef;
+        }
+
+        public static XDocument CreateEquipmentRecipeDefsDocument(List<CharacterEquipmentDef>? equipments)
+        {
+            var defsRoot = new XElement("Defs");
+
+            if (equipments != null)
+            {
+                foreach (var equipment in equipments)
+                {
+                    XElement? recipeDef = GenerateEquipmentRecipeDefXml(equipment);
+                    if (recipeDef != null)
+                    {
+                        defsRoot.Add(recipeDef);
+                    }
+                }
+            }
+
+            return new XDocument(
+                new XDeclaration("1.0", "utf-8", null),
+                defsRoot
+            );
+        }
+
+        public static XDocument CreateEquipmentBundleManifestDocument(List<CharacterEquipmentDef>? equipments)
+        {
+            var defsRoot = new XElement("Defs");
+            if (equipments == null)
+                return new XDocument(new XDeclaration("1.0", "utf-8", null), defsRoot);
+
+            foreach (var group in equipments
+                .Where(equipment => equipment != null && equipment.enabled && !string.IsNullOrWhiteSpace(equipment.exportGroupKey))
+                .GroupBy(equipment => equipment.exportGroupKey, StringComparer.OrdinalIgnoreCase))
+            {
+                var manifest = new XElement("CharacterStudioEquipmentBundleDef",
+                    new XElement("defName", $"CS_EquipBundle_{group.Key}"),
+                    new XElement("label", group.Key),
+                    new XElement("equipmentThingDefs",
+                        group.Select(item => new XElement("li", item.GetResolvedThingDefName()))),
+                    new XElement("startingApparelDefNames",
+                        group.Select(item => new XElement("li", item.GetResolvedThingDefName()))));
+
+                defsRoot.Add(manifest);
+            }
+
+            return new XDocument(new XDeclaration("1.0", "utf-8", null), defsRoot);
         }
 
         public static XElement? GenerateEquipmentFlyerThingDefXml(CharacterEquipmentDef? equipment)
@@ -1000,6 +1121,32 @@ namespace CharacterStudio.Exporter
         private static XElement? GenerateEquipmentThingCategoriesXml(List<string>? categories)
         {
             return GenerateStringListXml("thingCategories", categories);
+        }
+
+        private static XElement? GenerateEquipmentTradeTagsXml(List<string>? tradeTags)
+        {
+            return GenerateStringListXml("tradeTags", tradeTags);
+        }
+
+        private static XElement? GenerateEquipmentRecipeIngredientsXml(List<CharacterEquipmentCostEntry>? entries)
+        {
+            if (entries == null || entries.Count == 0)
+                return null;
+
+            var ingredients = new XElement("ingredients");
+            foreach (CharacterEquipmentCostEntry entry in entries)
+            {
+                if (entry == null || string.IsNullOrWhiteSpace(entry.thingDefName) || entry.count <= 0)
+                    continue;
+
+                ingredients.Add(new XElement("li",
+                    new XElement("filter",
+                        new XElement("thingDefs",
+                            new XElement("li", entry.thingDefName))),
+                    new XElement("count", entry.count)));
+            }
+
+            return ingredients.HasElements ? ingredients : null;
         }
 
         private static XElement GenerateEquipmentApparelXml(CharacterEquipmentDef equipment)
@@ -1071,6 +1218,32 @@ namespace CharacterStudio.Exporter
                     !string.IsNullOrWhiteSpace(renderExtension.flyerThingDefName) ? new XElement("flyerThingDefName", renderExtension.flyerThingDefName) : null,
                     !string.IsNullOrWhiteSpace(renderExtension.flyerClassName) ? new XElement("flyerClassName", renderExtension.flyerClassName) : null,
                     Math.Abs(renderExtension.flyerFlightSpeed - 1f) > 0.0001f ? new XElement("flyerFlightSpeed", renderExtension.flyerFlightSpeed.ToString(System.Globalization.CultureInfo.InvariantCulture)) : null,
+                    renderExtension.useTriggeredLocalAnimation ? new XElement("useTriggeredLocalAnimation", renderExtension.useTriggeredLocalAnimation.ToString().ToLower()) : null,
+                    !string.IsNullOrWhiteSpace(renderExtension.triggerAbilityDefName) ? new XElement("triggerAbilityDefName", renderExtension.triggerAbilityDefName) : null,
+                    !string.IsNullOrWhiteSpace(renderExtension.animationGroupKey) ? new XElement("animationGroupKey", renderExtension.animationGroupKey) : null,
+                    renderExtension.triggeredAnimationRole != EquipmentTriggeredAnimationRole.MovablePart ? new XElement("triggeredAnimationRole", renderExtension.triggeredAnimationRole.ToString()) : null,
+                    renderExtension.triggeredDeployAngle != 45f ? new XElement("triggeredDeployAngle", renderExtension.triggeredDeployAngle.ToString(System.Globalization.CultureInfo.InvariantCulture)) : null,
+                    renderExtension.triggeredReturnAngle != 0f ? new XElement("triggeredReturnAngle", renderExtension.triggeredReturnAngle.ToString(System.Globalization.CultureInfo.InvariantCulture)) : null,
+                    renderExtension.triggeredDeployTicks != 12 ? new XElement("triggeredDeployTicks", renderExtension.triggeredDeployTicks) : null,
+                    renderExtension.triggeredHoldTicks != 24 ? new XElement("triggeredHoldTicks", renderExtension.triggeredHoldTicks) : null,
+                    renderExtension.triggeredReturnTicks != 12 ? new XElement("triggeredReturnTicks", renderExtension.triggeredReturnTicks) : null,
+                    renderExtension.triggeredPivotOffset != Vector2.zero ? new XElement("triggeredPivotOffset", FormatVector2(renderExtension.triggeredPivotOffset)) : null,
+                    renderExtension.triggeredUseVfxVisibility ? new XElement("triggeredUseVfxVisibility", renderExtension.triggeredUseVfxVisibility.ToString().ToLower()) : null,
+                    !string.IsNullOrWhiteSpace(renderExtension.triggeredIdleTexPath) ? new XElement("triggeredIdleTexPath", renderExtension.triggeredIdleTexPath) : null,
+                    !string.IsNullOrWhiteSpace(renderExtension.triggeredDeployTexPath) ? new XElement("triggeredDeployTexPath", renderExtension.triggeredDeployTexPath) : null,
+                    !string.IsNullOrWhiteSpace(renderExtension.triggeredHoldTexPath) ? new XElement("triggeredHoldTexPath", renderExtension.triggeredHoldTexPath) : null,
+                    !string.IsNullOrWhiteSpace(renderExtension.triggeredReturnTexPath) ? new XElement("triggeredReturnTexPath", renderExtension.triggeredReturnTexPath) : null,
+                    !string.IsNullOrWhiteSpace(renderExtension.triggeredIdleMaskTexPath) ? new XElement("triggeredIdleMaskTexPath", renderExtension.triggeredIdleMaskTexPath) : null,
+                    !string.IsNullOrWhiteSpace(renderExtension.triggeredDeployMaskTexPath) ? new XElement("triggeredDeployMaskTexPath", renderExtension.triggeredDeployMaskTexPath) : null,
+                    !string.IsNullOrWhiteSpace(renderExtension.triggeredHoldMaskTexPath) ? new XElement("triggeredHoldMaskTexPath", renderExtension.triggeredHoldMaskTexPath) : null,
+                    !string.IsNullOrWhiteSpace(renderExtension.triggeredReturnMaskTexPath) ? new XElement("triggeredReturnMaskTexPath", renderExtension.triggeredReturnMaskTexPath) : null,
+                    !renderExtension.triggeredVisibleDuringDeploy ? new XElement("triggeredVisibleDuringDeploy", renderExtension.triggeredVisibleDuringDeploy.ToString().ToLower()) : null,
+                    !renderExtension.triggeredVisibleDuringHold ? new XElement("triggeredVisibleDuringHold", renderExtension.triggeredVisibleDuringHold.ToString().ToLower()) : null,
+                    !renderExtension.triggeredVisibleDuringReturn ? new XElement("triggeredVisibleDuringReturn", renderExtension.triggeredVisibleDuringReturn.ToString().ToLower()) : null,
+                    !renderExtension.triggeredVisibleOutsideCycle ? new XElement("triggeredVisibleOutsideCycle", renderExtension.triggeredVisibleOutsideCycle.ToString().ToLower()) : null,
+                    GenerateEquipmentTriggeredAnimationOverrideXml("triggeredAnimationSouth", renderExtension.triggeredAnimationSouth),
+                    GenerateEquipmentTriggeredAnimationOverrideXml("triggeredAnimationEastWest", renderExtension.triggeredAnimationEastWest),
+                    GenerateEquipmentTriggeredAnimationOverrideXml("triggeredAnimationNorth", renderExtension.triggeredAnimationNorth),
                     GenerateStringListXml("abilityDefNames", renderExtension.abilityDefNames)
                 )
             );
@@ -1122,10 +1295,17 @@ namespace CharacterStudio.Exporter
 
         public static XElement CreatePawnKindDefElement(string pawnKindName, ModExportConfig config, string skinDefName)
         {
+            string? raceDefName = config.CharacterDefinition?.raceDefName;
+            if (string.IsNullOrWhiteSpace(raceDefName) && config.SkinDef?.targetRaces != null && config.SkinDef.targetRaces.Count > 0)
+            {
+                raceDefName = config.SkinDef.targetRaces[0];
+            }
+            raceDefName = string.IsNullOrWhiteSpace(raceDefName) ? "Human" : raceDefName;
+
             var pawnKindDef = new XElement("PawnKindDef",
                 new XElement("defName", pawnKindName),
                 new XElement("label", config.ModName),
-                new XElement("race", "Human"),
+                new XElement("race", raceDefName),
                 new XElement("combatPower", 100),
                 new XElement("defaultFactionType", "PlayerColony")
             );
@@ -1185,8 +1365,8 @@ namespace CharacterStudio.Exporter
                 defsRoot.Add(
                     new XElement("ThingDef", new XAttribute("ParentName", "ResourceBase"),
                         new XElement("defName", thingDefName),
-                        new XElement("label", $"Role card: {config.ModName}"),
-                        new XElement("description", $"Use this role card to generate {config.ModName} on the map."),
+                        new XElement("label", $"Character: {config.ModName}"),
+                        new XElement("description", $"Use this item to generate {config.ModName} on the map."),
                         new XElement("graphicData",
                             new XElement("texPath", "Things/Item/Resource/UnfinishedComponent"),
                             new XElement("graphicClass", "Graphic_Single")
@@ -1201,10 +1381,12 @@ namespace CharacterStudio.Exporter
                         new XElement("comps",
                             new XElement("li", new XAttribute("Class", "CompProperties_Usable"),
                                 new XElement("useJob", "UseItem"),
-                                new XElement("useLabel", "Generate Role Card")
+                                new XElement("useLabel", "Generate Character")
                             ),
                             new XElement("li", new XAttribute("Class", "CharacterStudio.Items.CompProperties_SummonCharacter"),
                                 new XElement("pawnKind", pawnKindName),
+                                new XElement("skinDefName", skinDefName),
+                                new XElement("characterDefFileName", $"{safeName}_Character.xml"),
                                 new XElement("arrivalMode", config.RoleCardArrivalMode.ToString()),
                                 new XElement("spawnEvent", config.RoleCardSpawnEvent.ToString()),
                                 new XElement("spawnAnimation", config.RoleCardSpawnAnimation.ToString()),
@@ -1345,7 +1527,6 @@ namespace CharacterStudio.Exporter
             if (!string.IsNullOrEmpty(eyeCfg.texRight))  el.Add(new XElement("texRight",  eyeCfg.texRight));
             if (!string.IsNullOrEmpty(eyeCfg.texUp))     el.Add(new XElement("texUp",     eyeCfg.texUp));
             if (!string.IsNullOrEmpty(eyeCfg.texDown))   el.Add(new XElement("texDown",   eyeCfg.texDown));
-            if (eyeCfg.pupilMoveRange != 0f)             el.Add(new XElement("pupilMoveRange", eyeCfg.pupilMoveRange.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)));
             if (!Mathf.Approximately(eyeCfg.upperLidMoveDown, 0.0044f))
                 el.Add(new XElement("upperLidMoveDown", eyeCfg.upperLidMoveDown.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)));
             el.Add(new XElement("lidMotion",

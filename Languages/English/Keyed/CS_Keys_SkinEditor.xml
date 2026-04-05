@@ -200,10 +200,6 @@
     <CS_Studio_Variant_DirectionalFacing_East>East Only</CS_Studio_Variant_DirectionalFacing_East>
     <CS_Studio_Variant_DirectionalFacing_West>West Only</CS_Studio_Variant_DirectionalFacing_West>
     <CS_Studio_Variant_DirectionalFacing_EastWest>East/West Only</CS_Studio_Variant_DirectionalFacing_EastWest>
-    <CS_Studio_Variant_EyeRenderMode>Eye Render Mode</CS_Studio_Variant_EyeRenderMode>
-    <CS_Studio_EyeRenderMode_TextureSwap>Texture Swap</CS_Studio_EyeRenderMode_TextureSwap>
-    <CS_Studio_EyeRenderMode_UvOffset>UV Offset</CS_Studio_EyeRenderMode_UvOffset>
-    <CS_Studio_Variant_EyeUvMoveRange>Eye UV Move Range</CS_Studio_Variant_EyeUvMoveRange>
     <CS_Studio_Variant_HiddenExpressions>Hidden Expressions</CS_Studio_Variant_HiddenExpressions>
     <CS_Studio_Variant_HideWhenMissing>Hide When Missing Variant</CS_Studio_Variant_HideWhenMissing>
     <CS_Studio_Variant_LayerRole>Layer Role</CS_Studio_Variant_LayerRole>

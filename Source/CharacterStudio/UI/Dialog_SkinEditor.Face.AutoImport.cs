@@ -844,8 +844,6 @@ namespace CharacterStudio.UI
                 return;
             }
 
-            float pupilMoveRange = fc.eyeDirectionConfig?.pupilMoveRange ?? 0f;
-
             var logicalLayers = fc.layeredParts
                 .Where(part => part != null
                     && part.partType != LayeredFacePartType.Base
@@ -915,7 +913,6 @@ namespace CharacterStudio.UI
                             entry.NormalizedOverlayId,
                             entry.TexturePath,
                             entry.OverlayOrder,
-                            pupilMoveRange,
                             entry.Side);
                 })
                 .ToList();
@@ -1094,13 +1091,8 @@ namespace CharacterStudio.UI
             string normalizedOverlayId,
             string texturePath,
             int overlayOrder,
-            float pupilMoveRange,
             LayeredFacePartSide side = LayeredFacePartSide.None)
         {
-            EyeRenderMode eyeRenderMode = displayPartType == LayeredFacePartType.Pupil && pupilMoveRange > 0f
-                ? EyeRenderMode.UvOffset
-                : EyeRenderMode.TextureSwap;
-
             PawnLayerConfig layer = existingLayer?.Clone() ?? new PawnLayerConfig
             {
                 anchorTag = "Head",
@@ -1124,15 +1116,13 @@ namespace CharacterStudio.UI
             layer.texPath = texturePath;
             layer.workerClass = typeof(CharacterStudio.Rendering.PawnRenderNodeWorker_CustomLayer);
             layer.role = GetLayeredFaceDefaultRole(displayPartType);
-            layer.variantLogic = GetLayeredFaceDefaultVariantLogic(displayPartType, eyeRenderMode);
+            layer.variantLogic = GetLayeredFaceDefaultVariantLogic(displayPartType);
             layer.useDirectionalSuffix = true;
             layer.useExpressionSuffix = false;
             layer.useEyeDirectionSuffix = false;
             layer.useBlinkSuffix = false;
             layer.useFrameSequence = false;
             layer.hideWhenMissingVariant = false;
-            layer.eyeRenderMode = eyeRenderMode;
-            layer.eyeUvMoveRange = 0f;
 
             if (existingLayer == null)
             {
@@ -1170,7 +1160,7 @@ namespace CharacterStudio.UI
             return $"[Face] {displayPartType}{overlayLabel}{sideLabel}";
         }
 
-        private static LayerVariantLogic GetLayeredFaceDefaultVariantLogic(LayeredFacePartType partType, EyeRenderMode eyeRenderMode)
+        private static LayerVariantLogic GetLayeredFaceDefaultVariantLogic(LayeredFacePartType partType)
         {
             switch (partType)
             {
@@ -1186,9 +1176,7 @@ namespace CharacterStudio.UI
                 case LayeredFacePartType.Overlay:
                     return LayerVariantLogic.ChannelState;
                 case LayeredFacePartType.Pupil:
-                    return eyeRenderMode == EyeRenderMode.UvOffset
-                        ? LayerVariantLogic.None
-                        : LayerVariantLogic.EyeDirectionOnly;
+                    return LayerVariantLogic.EyeDirectionOnly;
                 case LayeredFacePartType.Hair:
                     return LayerVariantLogic.ChannelState;
                 default:
@@ -1372,11 +1360,6 @@ namespace CharacterStudio.UI
             fc.eyeDirectionConfig.texRight = string.Empty;
             fc.eyeDirectionConfig.texUp = string.Empty;
             fc.eyeDirectionConfig.texDown = string.Empty;
-
-            if (fc.eyeDirectionConfig.pupilMoveRange <= 0f)
-            {
-                fc.eyeDirectionConfig.pupilMoveRange = 0.035f;
-            }
         }
 
         private static void NormalizeImportedPairedLayeredFaceParts(PawnFaceConfig fc)

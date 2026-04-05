@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using CharacterStudio.Core;
 using CharacterStudio.Introspection;
@@ -121,6 +122,7 @@ namespace CharacterStudio.UI
             }
 
             ReplaceWorkingSkin(skinDef.Clone(), skinDef.defName, skinDef.targetRaces.FirstOrDefault(), syncAbilities: true);
+            LoadCharacterDefinitionForImportedSkin(skinDef);
 
             var previewRace = ResolvePreferredPreviewRace(workingSkin);
             SyncPreviewRace(previewRace, null);
@@ -132,6 +134,27 @@ namespace CharacterStudio.UI
             ShowImportMissingTextureWarning(
                 workingSkin.label ?? workingSkin.defName,
                 CollectMissingExternalTexturesForImport(skinDef));
+        }
+
+        private void LoadCharacterDefinitionForImportedSkin(PawnSkinDef skinDef)
+        {
+            if (skinDef == null || workingDocument == null)
+            {
+                return;
+            }
+
+            string skinDir = Path.Combine(GenFilePaths.ConfigFolderPath, "CharacterStudio", "Skins");
+            string characterFilePath = Path.Combine(skinDir, $"{skinDef.defName}.character.xml");
+            CharacterDefinition? loaded = CharacterDefinitionXmlUtility.Load(characterFilePath);
+            if (loaded != null)
+            {
+                workingDocument.characterDefinition = loaded;
+            }
+            else
+            {
+                workingDocument.characterDefinition ??= new CharacterDefinition();
+                workingDocument.characterDefinition.EnsureDefaults(skinDef.defName ?? "CS_Character", ResolvePreferredPreviewRace(workingSkin), workingSkin.attributes);
+            }
         }
 
         private void DoImportFromPawn(

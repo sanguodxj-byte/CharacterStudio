@@ -50,18 +50,16 @@
     <CS_Studio_Face_EyeDir_Left>向左</CS_Studio_Face_EyeDir_Left>
     <CS_Studio_Face_EyeDir_Hint>为每个视线方向指定贴图；缺失的方向会自动回退到正视。</CS_Studio_Face_EyeDir_Hint>
     <CS_Studio_Face_EyeDir_Preview>预览方向</CS_Studio_Face_EyeDir_Preview>
-    <CS_Studio_Face_EyeDir_PupilMoveRange>瞳孔 UV 偏移范围</CS_Studio_Face_EyeDir_PupilMoveRange>
     <CS_Studio_Face_EyeDir_Remove>移除眼睛方向配置</CS_Studio_Face_EyeDir_Remove>
     <CS_Studio_Face_EyeDir_Right>向右</CS_Studio_Face_EyeDir_Right>
     <CS_Studio_Face_EyeDir_Title>眼睛方向配置</CS_Studio_Face_EyeDir_Title>
     <CS_Studio_Face_EyeDir_Up>向上</CS_Studio_Face_EyeDir_Up>
     <CS_Studio_Face_EyeDir_UpperLidMoveDown>上眼睑下移量</CS_Studio_Face_EyeDir_UpperLidMoveDown>
-    <CS_Studio_Face_EyeDir_UVModeHint>当前使用 UV 偏移模式：无需额外提供左/右/上/下贴图，方向由代码驱动。</CS_Studio_Face_EyeDir_UVModeHint>
     <CS_Studio_Face_Layered_MotionAmplitude>动画位移幅度</CS_Studio_Face_Layered_MotionAmplitude>
     <CS_Studio_Face_MovementDialog_FaceHint>MotionAmplitude 会直接驱动程序动画偏移，可结合这里的预览控制实时观察面部变化。</CS_Studio_Face_MovementDialog_FaceHint>
     <CS_Studio_Face_MovementDialog_FaceSection>面部运动参数</CS_Studio_Face_MovementDialog_FaceSection>
     <CS_Studio_Face_MovementDialog_FullFaceHint>整脸切换模式主要依赖贴图替换，但仍可在这里调整眼球朝向与眼睑运动参数。</CS_Studio_Face_MovementDialog_FullFaceHint>
-    <CS_Studio_Face_MovementDialog_LayerHint>调整当前选中图层的表情联动、UV 偏移和动画参数。</CS_Studio_Face_MovementDialog_LayerHint>
+    <CS_Studio_Face_MovementDialog_LayerHint>调整当前选中图层的表情联动与动画参数。</CS_Studio_Face_MovementDialog_LayerHint>
     <CS_Studio_Face_MovementDialog_LayerSection>图层运动参数</CS_Studio_Face_MovementDialog_LayerSection>
     <CS_Studio_Face_MovementDialog_NoFaceConfig>当前皮肤尚未创建 FaceConfig。请先在左侧 Face 面板启用面部系统。</CS_Studio_Face_MovementDialog_NoFaceConfig>
     <CS_Studio_Face_MovementDialog_NoLayerSelected>请先在 Layers 面板选中一个图层，再调整其表情联动与动画参数。</CS_Studio_Face_MovementDialog_NoLayerSelected>
@@ -216,7 +214,11 @@
     <CS_Studio_Face_Workflow_LayeredDynamic>分层动态 (Layered)</CS_Studio_Face_Workflow_LayeredDynamic>
     <CS_Studio_Face_MotionSection_LidMotion>眼睑运动参数</CS_Studio_Face_MotionSection_LidMotion>
     <CS_Studio_Face_MotionSection_EyeMotion>眼球运动参数</CS_Studio_Face_MotionSection_EyeMotion>
-    <CS_Studio_Face_MotionSection_PupilMotion>瞳孔运动参数</CS_Studio_Face_MotionSection_PupilMotion>
+    <CS_Studio_Face_MotionSection_PupilMotion>瞳孔程序控制</CS_Studio_Face_MotionSection_PupilMotion>
+    <CS_Studio_Face_PupilCore_Title>核心四项</CS_Studio_Face_PupilCore_Title>
+    <CS_Studio_Face_PupilCore_Hint>先调这四项：它们直接决定瞳孔向左 / 向右 / 向上 / 向下看的偏移距离。</CS_Studio_Face_PupilCore_Hint>
+    <CS_Studio_Face_PupilAdvanced_Title>高级细调</CS_Studio_Face_PupilAdvanced_Title>
+    <CS_Studio_Face_PupilAdvanced_Hint>以下参数用于不同表情、缓动与缩放细节；一般只在核心四项调好后再继续微调。</CS_Studio_Face_PupilAdvanced_Hint>
     <CS_Studio_Face_MotionSection_BrowMotion>眉毛运动参数</CS_Studio_Face_MotionSection_BrowMotion>
     <CS_Studio_Face_MotionSection_MouthMotion>嘴部运动参数</CS_Studio_Face_MotionSection_MouthMotion>
     <CS_Studio_Face_MotionSection_EmotionOverlayMotion>情绪叠层运动参数</CS_Studio_Face_MotionSection_EmotionOverlayMotion>
@@ -245,28 +247,28 @@
     <CS_Studio_Face_Motion_Eye_SlowWaveOffsetZ>眼球缓动纵向偏移</CS_Studio_Face_Motion_Eye_SlowWaveOffsetZ>
     <CS_Studio_Face_Motion_Eye_ScaleXBase>眼球横向缩放基值</CS_Studio_Face_Motion_Eye_ScaleXBase>
     <CS_Studio_Face_Motion_Eye_ScaleXWaveAmplitude>眼球横向缩放波幅</CS_Studio_Face_Motion_Eye_ScaleXWaveAmplitude>
-    <CS_Studio_Face_Motion_Pupil_SideBiasX>瞳孔左右基准偏移</CS_Studio_Face_Motion_Pupil_SideBiasX>
-    <CS_Studio_Face_Motion_Pupil_SlowWaveOffsetZ>瞳孔缓动纵向偏移</CS_Studio_Face_Motion_Pupil_SlowWaveOffsetZ>
-    <CS_Studio_Face_Motion_Pupil_DirLeftOffsetX>瞳孔左视横向偏移</CS_Studio_Face_Motion_Pupil_DirLeftOffsetX>
-    <CS_Studio_Face_Motion_Pupil_DirRightOffsetX>瞳孔右视横向偏移</CS_Studio_Face_Motion_Pupil_DirRightOffsetX>
-    <CS_Studio_Face_Motion_Pupil_DirUpOffsetZ>瞳孔上视纵向偏移</CS_Studio_Face_Motion_Pupil_DirUpOffsetZ>
-    <CS_Studio_Face_Motion_Pupil_DirDownOffsetZ>瞳孔下视纵向偏移</CS_Studio_Face_Motion_Pupil_DirDownOffsetZ>
-    <CS_Studio_Face_Motion_Pupil_NeutralSoftOffsetZ>瞳孔柔和中立纵向偏移</CS_Studio_Face_Motion_Pupil_NeutralSoftOffsetZ>
-    <CS_Studio_Face_Motion_Pupil_NeutralLookDownOffsetZ>瞳孔低视中立纵向偏移</CS_Studio_Face_Motion_Pupil_NeutralLookDownOffsetZ>
-    <CS_Studio_Face_Motion_Pupil_NeutralGlanceWaveOffsetX>瞳孔侧瞥波动横向偏移</CS_Studio_Face_Motion_Pupil_NeutralGlanceWaveOffsetX>
-    <CS_Studio_Face_Motion_Pupil_NeutralGlanceSideOffsetX>瞳孔侧瞥侧向偏移</CS_Studio_Face_Motion_Pupil_NeutralGlanceSideOffsetX>
-    <CS_Studio_Face_Motion_Pupil_WorkFocusDownOffsetZ>瞳孔专注下视纵向偏移</CS_Studio_Face_Motion_Pupil_WorkFocusDownOffsetZ>
-    <CS_Studio_Face_Motion_Pupil_WorkFocusUpOffsetZ>瞳孔专注上视纵向偏移</CS_Studio_Face_Motion_Pupil_WorkFocusUpOffsetZ>
-    <CS_Studio_Face_Motion_Pupil_HappyOpenOffsetZ>瞳孔开心张眼纵向偏移</CS_Studio_Face_Motion_Pupil_HappyOpenOffsetZ>
-    <CS_Studio_Face_Motion_Pupil_ShockWideOffsetZ>瞳孔震惊张大纵向偏移</CS_Studio_Face_Motion_Pupil_ShockWideOffsetZ>
-    <CS_Studio_Face_Motion_Pupil_ScaredWideOffsetZ>瞳孔恐惧张大纵向偏移</CS_Studio_Face_Motion_Pupil_ScaredWideOffsetZ>
-    <CS_Studio_Face_Motion_Pupil_ScaredWideWaveOffsetX>瞳孔恐惧张大波动横向偏移</CS_Studio_Face_Motion_Pupil_ScaredWideWaveOffsetX>
-    <CS_Studio_Face_Motion_Pupil_ScaredWideSideOffsetX>瞳孔恐惧张大侧向偏移</CS_Studio_Face_Motion_Pupil_ScaredWideSideOffsetX>
-    <CS_Studio_Face_Motion_Pupil_ScaredFlinchOffsetZ>瞳孔恐惧退缩纵向偏移</CS_Studio_Face_Motion_Pupil_ScaredFlinchOffsetZ>
-    <CS_Studio_Face_Motion_Pupil_ScaredFlinchWaveOffsetX>瞳孔恐惧退缩波动横向偏移</CS_Studio_Face_Motion_Pupil_ScaredFlinchWaveOffsetX>
-    <CS_Studio_Face_Motion_Pupil_ScaredFlinchSideOffsetX>瞳孔恐惧退缩侧向偏移</CS_Studio_Face_Motion_Pupil_ScaredFlinchSideOffsetX>
+    <CS_Studio_Face_Motion_Pupil_SideBiasX>瞳孔左右基础偏移</CS_Studio_Face_Motion_Pupil_SideBiasX>
+    <CS_Studio_Face_Motion_Pupil_SlowWaveOffsetZ>瞳孔缓动上下偏移</CS_Studio_Face_Motion_Pupil_SlowWaveOffsetZ>
+    <CS_Studio_Face_Motion_Pupil_DirLeftOffsetX>瞳孔左看偏移（X）</CS_Studio_Face_Motion_Pupil_DirLeftOffsetX>
+    <CS_Studio_Face_Motion_Pupil_DirRightOffsetX>瞳孔右看偏移（X）</CS_Studio_Face_Motion_Pupil_DirRightOffsetX>
+    <CS_Studio_Face_Motion_Pupil_DirUpOffsetZ>瞳孔上看偏移（Z）</CS_Studio_Face_Motion_Pupil_DirUpOffsetZ>
+    <CS_Studio_Face_Motion_Pupil_DirDownOffsetZ>瞳孔下看偏移（Z）</CS_Studio_Face_Motion_Pupil_DirDownOffsetZ>
+    <CS_Studio_Face_Motion_Pupil_NeutralSoftOffsetZ>瞳孔中立柔和偏移（Z）</CS_Studio_Face_Motion_Pupil_NeutralSoftOffsetZ>
+    <CS_Studio_Face_Motion_Pupil_NeutralLookDownOffsetZ>瞳孔中立低视偏移（Z）</CS_Studio_Face_Motion_Pupil_NeutralLookDownOffsetZ>
+    <CS_Studio_Face_Motion_Pupil_NeutralGlanceWaveOffsetX>瞳孔侧瞥波动偏移（X）</CS_Studio_Face_Motion_Pupil_NeutralGlanceWaveOffsetX>
+    <CS_Studio_Face_Motion_Pupil_NeutralGlanceSideOffsetX>瞳孔侧瞥侧向偏移（X）</CS_Studio_Face_Motion_Pupil_NeutralGlanceSideOffsetX>
+    <CS_Studio_Face_Motion_Pupil_WorkFocusDownOffsetZ>瞳孔专注下看偏移（Z）</CS_Studio_Face_Motion_Pupil_WorkFocusDownOffsetZ>
+    <CS_Studio_Face_Motion_Pupil_WorkFocusUpOffsetZ>瞳孔专注上看偏移（Z）</CS_Studio_Face_Motion_Pupil_WorkFocusUpOffsetZ>
+    <CS_Studio_Face_Motion_Pupil_HappyOpenOffsetZ>瞳孔开心张眼偏移（Z）</CS_Studio_Face_Motion_Pupil_HappyOpenOffsetZ>
+    <CS_Studio_Face_Motion_Pupil_ShockWideOffsetZ>瞳孔震惊张大偏移（Z）</CS_Studio_Face_Motion_Pupil_ShockWideOffsetZ>
+    <CS_Studio_Face_Motion_Pupil_ScaredWideOffsetZ>瞳孔恐惧张大偏移（Z）</CS_Studio_Face_Motion_Pupil_ScaredWideOffsetZ>
+    <CS_Studio_Face_Motion_Pupil_ScaredWideWaveOffsetX>瞳孔恐惧张大波动偏移（X）</CS_Studio_Face_Motion_Pupil_ScaredWideWaveOffsetX>
+    <CS_Studio_Face_Motion_Pupil_ScaredWideSideOffsetX>瞳孔恐惧张大侧向偏移（X）</CS_Studio_Face_Motion_Pupil_ScaredWideSideOffsetX>
+    <CS_Studio_Face_Motion_Pupil_ScaredFlinchOffsetZ>瞳孔恐惧退缩偏移（Z）</CS_Studio_Face_Motion_Pupil_ScaredFlinchOffsetZ>
+    <CS_Studio_Face_Motion_Pupil_ScaredFlinchWaveOffsetX>瞳孔恐惧退缩波动偏移（X）</CS_Studio_Face_Motion_Pupil_ScaredFlinchWaveOffsetX>
+    <CS_Studio_Face_Motion_Pupil_ScaredFlinchSideOffsetX>瞳孔恐惧退缩侧向偏移（X）</CS_Studio_Face_Motion_Pupil_ScaredFlinchSideOffsetX>
     <CS_Studio_Face_Motion_Pupil_TransformAngleWave>瞳孔角度波动</CS_Studio_Face_Motion_Pupil_TransformAngleWave>
-    <CS_Studio_Face_Motion_Pupil_FinalWaveOffsetX>瞳孔最终波动横向偏移</CS_Studio_Face_Motion_Pupil_FinalWaveOffsetX>
+    <CS_Studio_Face_Motion_Pupil_FinalWaveOffsetX>瞳孔最终波动偏移（X）</CS_Studio_Face_Motion_Pupil_FinalWaveOffsetX>
     <CS_Studio_Face_Motion_Pupil_FocusScaleBase>瞳孔专注缩放基值</CS_Studio_Face_Motion_Pupil_FocusScaleBase>
     <CS_Studio_Face_Motion_Pupil_DilatedScaleBase>瞳孔放大缩放基值</CS_Studio_Face_Motion_Pupil_DilatedScaleBase>
     <CS_Studio_Face_Motion_Pupil_DilatedMaxScaleBase>瞳孔最大放大缩放基值</CS_Studio_Face_Motion_Pupil_DilatedMaxScaleBase>

@@ -277,8 +277,6 @@ namespace CharacterStudio.Core
     public sealed class FaceEyeDirectionRuntimeData
     {
         public bool enabled = false;
-        public bool useUvOffset = false;
-        public float uvMoveRange = 0f;
         public float upperLidMoveDown = 0.0044f;
 
         public string texCenter = string.Empty;
@@ -318,8 +316,6 @@ namespace CharacterStudio.Core
             return new FaceEyeDirectionRuntimeData
             {
                 enabled = enabled,
-                useUvOffset = useUvOffset,
-                uvMoveRange = uvMoveRange,
                 upperLidMoveDown = upperLidMoveDown,
                 texCenter = texCenter ?? string.Empty,
                 texLeft = texLeft ?? string.Empty,

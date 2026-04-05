@@ -118,10 +118,14 @@
     <CS_Studio_Ctx_ExpandChildren>展开子节点</CS_Studio_Ctx_ExpandChildren>
     <CS_Studio_Ctx_FromRenderTree>── 从渲染树选择 ──</CS_Studio_Ctx_FromRenderTree>
     <CS_Studio_DefaultSkinLabel>新皮肤</CS_Studio_DefaultSkinLabel>
+    <CS_Studio_DefName>DefName</CS_Studio_DefName>
     <CS_Studio_Delete>删除</CS_Studio_Delete>
     <CS_Studio_Description>描述</CS_Studio_Description>
     <CS_Studio_EditorSubtitle>所见即所得的角色外观编辑</CS_Studio_EditorSubtitle>
     <CS_Studio_EditorTitle>角色皮肤编辑器</CS_Studio_EditorTitle>
+    <CS_Studio_Gender_None>不限</CS_Studio_Gender_None>
+    <CS_Studio_Gender_Male>男性</CS_Studio_Gender_Male>
+    <CS_Studio_Gender_Female>女性</CS_Studio_Gender_Female>
     <CS_Studio_Err_ApplyFailedCheckLog>应用失败，请查看日志</CS_Studio_Err_ApplyFailedCheckLog>
     <CS_Studio_Err_ApplyNoSkinComp>应用失败：目标角色缺少皮肤组件</CS_Studio_Err_ApplyNoSkinComp>
     <CS_Studio_Err_DefNameEmpty>错误: DefName 不能为空</CS_Studio_Err_DefNameEmpty>
@@ -142,9 +146,7 @@
     <CS_Studio_Face_ConvertToStatic>转换为静态贴图</CS_Studio_Face_ConvertToStatic>
     <CS_Studio_Face_EyeDir_Auto>自动（运行时推断）</CS_Studio_Face_EyeDir_Auto>
     <CS_Studio_Face_EyeDir_Hint>为每个注视方向指定覆盖贴图，渲染时自动叠加在头部之上。未配置方向自动回退到 Center。</CS_Studio_Face_EyeDir_Hint>
-    <CS_Studio_Face_EyeDir_PupilMoveRange>瞳孔偏移量（UV 模式）</CS_Studio_Face_EyeDir_PupilMoveRange>
     <CS_Studio_Face_EyeDir_UpperLidMoveDown>上眼睑下移量</CS_Studio_Face_EyeDir_UpperLidMoveDown>
-    <CS_Studio_Face_EyeDir_UVModeHint>UV 偏移模式已启用：无需 Left/Right/Up/Down 贴图，方向感由代码驱动</CS_Studio_Face_EyeDir_UVModeHint>
     <CS_Studio_Face_Frames>帧</CS_Studio_Face_Frames>
     <CS_Studio_Face_HeadTexHint>为每种表情指定整张头部贴图路径，或点击 [+F] 添加多帧实现帧动画。</CS_Studio_Face_HeadTexHint>
     <CS_Studio_Face_Layered_Enable>启用该分层部件条目</CS_Studio_Face_Layered_Enable>
@@ -227,16 +229,26 @@
     <CS_Studio_Msg_TreeRefreshed>渲染树已刷新</CS_Studio_Msg_TreeRefreshed>
     <CS_Studio_Msg_UndoSuccess>已撤销上次改动</CS_Studio_Msg_UndoSuccess>
     <CS_Studio_Msg_UnsavedChanges>有未保存的更改，是否保存？</CS_Studio_Msg_UnsavedChanges>
+    <CS_Studio_Manage>管理</CS_Studio_Manage>
     <CS_Studio_Node_RuntimeData>运行时数据（只读）</CS_Studio_Node_RuntimeData>
     <CS_Studio_OpenEditor>打开皮肤编辑器</CS_Studio_OpenEditor>
     <CS_Studio_OpenPerformanceStats>打开性能统计</CS_Studio_OpenPerformanceStats>
-    <CS_Studio_SpawnedNewPawn>已生成新角色：{0}</CS_Studio_SpawnedNewPawn>
-    <CS_Studio_SpawnedNewPawnButton>生成新角色</CS_Studio_SpawnedNewPawnButton>
-    <CS_Studio_SpawnedNewPawnLetter>已生成新角色：{0}</CS_Studio_SpawnedNewPawnLetter>
-    <CS_Studio_SpawnedNewPawnMessage>已根据当前设计生成新角色：{0}</CS_Studio_SpawnedNewPawnMessage>
+    <CS_Studio_Passion_None>无热情</CS_Studio_Passion_None>
+    <CS_Studio_Passion_Minor>小热情</CS_Studio_Passion_Minor>
+    <CS_Studio_Passion_Major>大热情</CS_Studio_Passion_Major>
+    <CS_Studio_RenderFixPatchLabel>图层修改补丁</CS_Studio_RenderFixPatchLabel>
+    <CS_Studio_SpawnedNewPawn>已生成角色：{0}</CS_Studio_SpawnedNewPawn>
+    <CS_Studio_SpawnNewPawnButton>生成角色</CS_Studio_SpawnNewPawnButton>
+    <CS_Studio_SpawnedNewPawnButton>生成角色</CS_Studio_SpawnedNewPawnButton>
+    <CS_Studio_SpawnedNewPawnLetter>已生成角色：{0}</CS_Studio_SpawnedNewPawnLetter>
+    <CS_Studio_SpawnedNewPawnMessage>已根据当前设计生成角色：{0}</CS_Studio_SpawnedNewPawnMessage>
     <CS_Studio_SpawnNewPawnConfirm>生成</CS_Studio_SpawnNewPawnConfirm>
-    <CS_Studio_SpawnNewPawnSection>新角色输出</CS_Studio_SpawnNewPawnSection>
-    <CS_Studio_SpawnNewPawnTitle>生成新角色</CS_Studio_SpawnNewPawnTitle>
+    <CS_Studio_SpawnNewPawnSection>角色生成</CS_Studio_SpawnNewPawnSection>
+    <CS_Studio_SpawnNewPawnTitle>生成角色</CS_Studio_SpawnNewPawnTitle>
+    <CS_Studio_SpawnEvent_MessageText>事件文本</CS_Studio_SpawnEvent_MessageText>
+    <CS_Studio_SpawnEvent_MessageText_Hint>留空时使用默认提示文本。填写后，消息提示与信封正文都会优先使用这里的内容。</CS_Studio_SpawnEvent_MessageText_Hint>
+    <CS_Studio_SpawnEvent_LetterTitle>信封标题</CS_Studio_SpawnEvent_LetterTitle>
+    <CS_Studio_SpawnEvent_LetterTitle_Hint>仅对原版信封提示生效。留空时使用默认标题。</CS_Studio_SpawnEvent_LetterTitle_Hint>
     <CS_Studio_Panel_CustomLayers>自定义图层</CS_Studio_Panel_CustomLayers>
     <CS_Studio_Panel_Layers>渲染树</CS_Studio_Panel_Layers>
     <CS_Studio_Panel_Properties>属性</CS_Studio_Panel_Properties>
@@ -251,6 +263,27 @@
     <CS_Studio_Prop_ShowNode>显示此节点</CS_Studio_Prop_ShowNode>
     <CS_Studio_Prop_Worker>渲染工作器</CS_Studio_Prop_Worker>
     <CS_Studio_RaceDisplayName>种族显示名</CS_Studio_RaceDisplayName>
+    <CS_Studio_CharacterDefinition_Title>基础角色属性</CS_Studio_CharacterDefinition_Title>
+    <CS_Studio_CharacterDefinition_Section>角色定义</CS_Studio_CharacterDefinition_Section>
+    <CS_Studio_CharacterDefinition_Hint>在视觉皮肤之外，单独配置实际角色数据。该数据会用于当前模组内生成新角色，以及导出的角色生成。</CS_Studio_CharacterDefinition_Hint>
+    <CS_Studio_CharacterDefinition_Open>打开基础属性</CS_Studio_CharacterDefinition_Open>
+    <CS_Studio_CharacterDefinition_OpenButton>编辑</CS_Studio_CharacterDefinition_OpenButton>
+    <CS_Studio_CharacterDefinition_InlineHintShort>打开基础属性弹窗</CS_Studio_CharacterDefinition_InlineHintShort>
+    <CS_Studio_CharacterDefinition_InlineHint>点击按钮打开基础属性弹窗，编辑角色身份、种族、背景、特性、技能与起始服装。</CS_Studio_CharacterDefinition_InlineHint>
+    <CS_Studio_CharacterDefinition_Basic>基础身份</CS_Studio_CharacterDefinition_Basic>
+    <CS_Studio_CharacterDefinition_Race>种族与身体</CS_Studio_CharacterDefinition_Race>
+    <CS_Studio_CharacterDefinition_Backstory>背景故事</CS_Studio_CharacterDefinition_Backstory>
+    <CS_Studio_CharacterDefinition_Traits>特性</CS_Studio_CharacterDefinition_Traits>
+    <CS_Studio_CharacterDefinition_Skills>技能</CS_Studio_CharacterDefinition_Skills>
+    <CS_Studio_CharacterDefinition_Apparel>起始服装</CS_Studio_CharacterDefinition_Apparel>
+    <CS_Studio_CharacterDefinition_Gender>性别</CS_Studio_CharacterDefinition_Gender>
+    <CS_Studio_CharacterDefinition_BodyType>体型</CS_Studio_CharacterDefinition_BodyType>
+    <CS_Studio_CharacterDefinition_HeadType>头型</CS_Studio_CharacterDefinition_HeadType>
+    <CS_Studio_CharacterDefinition_Hair>发型</CS_Studio_CharacterDefinition_Hair>
+    <CS_Studio_CharacterDefinition_Childhood>童年背景</CS_Studio_CharacterDefinition_Childhood>
+    <CS_Studio_CharacterDefinition_Adulthood>成年背景</CS_Studio_CharacterDefinition_Adulthood>
+    <CS_Studio_CharacterDefinition_TraitsSummary>已配置 {0} 条特性</CS_Studio_CharacterDefinition_TraitsSummary>
+    <CS_Studio_CharacterDefinition_ApparelSummary>已配置 {0} 条起始服装</CS_Studio_CharacterDefinition_ApparelSummary>
     <CS_Studio_Section_Advanced>高级设置</CS_Studio_Section_Advanced>
     <CS_Studio_Section_Animation>动画设置</CS_Studio_Section_Animation>
     <CS_Studio_Section_Base>基本设置</CS_Studio_Section_Base>
@@ -347,7 +380,7 @@
     <CS_Studio_Workflow_CompositeBase_Hint>一张主体底图包含 body/head/hair，不含服装头饰表情；服装头饰由原版装备覆盖，表情建议使用 Head 透明覆盖层。</CS_Studio_Workflow_CompositeBase_Hint>
     <CS_Studio_Workflow_StandardLayers>标准分层工作流</CS_Studio_Workflow_StandardLayers>
     <CS_Studio_XenotypeDefName>绑定 Xenotype</CS_Studio_XenotypeDefName>
-    <CS_RoleCard_LetterLabel>角色卡已生成：{0}</CS_RoleCard_LetterLabel>
+    <CS_RoleCard_LetterLabel>角色已生成：{0}</CS_RoleCard_LetterLabel>
     <CS_Summon_Success>成功召唤：{0}</CS_Summon_Success>
     <CS_Summon_Use>召唤 {0}</CS_Summon_Use>
 </LanguageData>

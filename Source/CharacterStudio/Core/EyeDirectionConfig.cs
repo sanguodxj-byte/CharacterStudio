@@ -204,20 +204,7 @@ namespace CharacterStudio.Core
         public string texDown = "";
 
         /// <summary>
-        /// UV 偏移幅度（用于代码驱动瞳孔偏移，0 = 关闭，使用贴图替换方案）
-        /// 取值范围建议 0.02 ~ 0.10（超出1会采样到纹理外部）。
-        /// 正值 = 开启程序驱动：无需 texLeft/Right/Up/Down 贴图，
-        /// 在同一张眼睛贴图上通过偏移 UV 采样坐标模拟瞳孔移动。
-        /// 偏移方向映射：
-        ///   Left  → UV.x += range（采样左侧，瞳孔偏左）
-        ///   Right → UV.x -= range（采样右侧，瞳孔偏右）
-        ///   Up    → UV.y -= range（采样上侧，瞳孔偏上）
-        ///   Down  → UV.y += range（采样下侧，瞳孔偏下）
-        /// </summary>
-        public float pupilMoveRange = 0f;
-
-        /// <summary>
-        /// 分层模式下，上眼睑在触发替换式眼部表情时的下移量。
+         /// 分层模式下，上眼睑在触发替换式眼部表情时的下移量。
         /// 0 = 不额外移动；建议值 0.002 ~ 0.008。
         /// 仅影响 LayeredDynamic 中的 UpperLid 程序位移。
         /// </summary>
@@ -279,7 +266,6 @@ namespace CharacterStudio.Core
             texRight         = this.texRight,
             texUp            = this.texUp,
             texDown          = this.texDown,
-            pupilMoveRange   = this.pupilMoveRange,
             upperLidMoveDown = this.upperLidMoveDown,
             lidMotion        = this.lidMotion?.Clone() ?? new LidMotionConfig(),
             eyeMotion        = this.eyeMotion?.Clone() ?? new EyeMotionConfig(),

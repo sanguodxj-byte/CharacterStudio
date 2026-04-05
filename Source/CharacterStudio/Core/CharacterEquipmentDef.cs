@@ -63,6 +63,9 @@ namespace CharacterStudio.Core
         /// <summary>标签列表，供分类与检索使用。</summary>
         public List<string> tags = new List<string>();
 
+        /// <summary>导出分组键；同组装备可视为一个导出包。</summary>
+        public string exportGroupKey = "";
+
         /// <summary>
         /// 绑定到该装备的技能 defName 列表。
         /// 这些技能定义实际来自 PawnSkinDef.abilities 共享技能池。
@@ -92,6 +95,33 @@ namespace CharacterStudio.Core
 
         /// <summary>服装 tags（apparel.tags）。</summary>
         public List<string> apparelTags = new List<string>();
+
+        /// <summary>贸易标签（tradeTags）。</summary>
+        public List<string> tradeTags = new List<string>();
+
+        /// <summary>是否允许通过制作获得。</summary>
+        public bool allowCrafting = false;
+
+        /// <summary>配方 Def 名称。</summary>
+        public string recipeDefName = "";
+
+        /// <summary>工作台 ThingDef 名称。</summary>
+        public string recipeWorkbenchDefName = "TableMachining";
+
+        /// <summary>制作工时。</summary>
+        public float recipeWorkAmount = 1200f;
+
+        /// <summary>每次制作产量。</summary>
+        public int recipeProductCount = 1;
+
+        /// <summary>制作原料列表。</summary>
+        public List<CharacterEquipmentCostEntry> recipeIngredients = new List<CharacterEquipmentCostEntry>();
+
+        /// <summary>是否允许参与交易/购买。</summary>
+        public bool allowTrading = true;
+
+        /// <summary>市场价值。</summary>
+        public float marketValue = 250f;
 
         /// <summary>是否使用穿戴蒙版。</summary>
         public bool useWornGraphicMask = false;
@@ -173,6 +203,7 @@ namespace CharacterStudio.Core
                 flyerClassName = flyerClassName,
                 flyerFlightSpeed = flyerFlightSpeed,
                 tags = tags != null ? new List<string>(tags) : new List<string>(),
+                exportGroupKey = exportGroupKey,
                 abilityDefNames = abilityDefNames != null
                     ? new List<string>(abilityDefNames)
                     : new List<string>(),
@@ -184,6 +215,15 @@ namespace CharacterStudio.Core
                 bodyPartGroups = bodyPartGroups != null ? new List<string>(bodyPartGroups) : new List<string>(),
                 apparelLayers = apparelLayers != null ? new List<string>(apparelLayers) : new List<string>(),
                 apparelTags = apparelTags != null ? new List<string>(apparelTags) : new List<string>(),
+                tradeTags = tradeTags != null ? new List<string>(tradeTags) : new List<string>(),
+                allowCrafting = allowCrafting,
+                recipeDefName = recipeDefName,
+                recipeWorkbenchDefName = recipeWorkbenchDefName,
+                recipeWorkAmount = recipeWorkAmount,
+                recipeProductCount = recipeProductCount,
+                recipeIngredients = CloneCostEntries(recipeIngredients),
+                allowTrading = allowTrading,
+                marketValue = marketValue,
                 useWornGraphicMask = useWornGraphicMask,
                 statBases = CloneStatEntries(statBases),
                 equippedStatOffsets = CloneStatEntries(equippedStatOffsets),
@@ -202,15 +242,23 @@ namespace CharacterStudio.Core
             shaderDefName = string.IsNullOrWhiteSpace(shaderDefName) ? "Cutout" : shaderDefName;
 
             tags ??= new List<string>();
+            exportGroupKey = exportGroupKey?.Trim() ?? string.Empty;
             abilityDefNames ??= new List<string>();
             thingCategories ??= new List<string>();
             bodyPartGroups ??= new List<string>();
             apparelLayers ??= new List<string>();
             apparelTags ??= new List<string>();
+            tradeTags ??= new List<string>();
             statBases ??= new List<CharacterEquipmentStatEntry>();
             equippedStatOffsets ??= new List<CharacterEquipmentStatEntry>();
+            recipeIngredients ??= new List<CharacterEquipmentCostEntry>();
             renderData ??= CharacterEquipmentRenderData.CreateDefault();
             flyerThingDefName ??= string.Empty;
+            recipeDefName ??= string.Empty;
+            recipeWorkbenchDefName = string.IsNullOrWhiteSpace(recipeWorkbenchDefName) ? "TableMachining" : recipeWorkbenchDefName;
+            recipeWorkAmount = Math.Max(1f, recipeWorkAmount);
+            recipeProductCount = Math.Max(1, recipeProductCount);
+            marketValue = Math.Max(0.01f, marketValue);
             flyerClassName = string.IsNullOrWhiteSpace(flyerClassName)
                 ? "CharacterStudio.Abilities.CharacterStudioPawnFlyer_Default"
                 : flyerClassName.Trim();
@@ -251,6 +299,8 @@ namespace CharacterStudio.Core
             {
                 apparelLayers.Add("OnSkin");
             }
+
+            NormalizeCostEntries(recipeIngredients);
 
             renderData.EnsureDefaults(GetDisplayLabel(), wornTexPath, maskTexPath, shaderDefName);
             NormalizeStatEntries(statBases);
@@ -316,6 +366,21 @@ namespace CharacterStudio.Core
             return result;
         }
 
+        private static List<CharacterEquipmentCostEntry> CloneCostEntries(List<CharacterEquipmentCostEntry>? entries)
+        {
+            var result = new List<CharacterEquipmentCostEntry>();
+            if (entries == null)
+                return result;
+
+            foreach (var entry in entries)
+            {
+                if (entry != null)
+                    result.Add(entry.Clone());
+            }
+
+            return result;
+        }
+
         private static void NormalizeStatEntries(List<CharacterEquipmentStatEntry>? entries)
         {
             if (entries == null)
@@ -336,6 +401,46 @@ namespace CharacterStudio.Core
                     entries.RemoveAt(i);
                 }
             }
+        }
+
+        private static void NormalizeCostEntries(List<CharacterEquipmentCostEntry>? entries)
+        {
+            if (entries == null)
+                return;
+
+            for (int i = entries.Count - 1; i >= 0; i--)
+            {
+                var entry = entries[i];
+                if (entry == null)
+                {
+                    entries.RemoveAt(i);
+                    continue;
+                }
+
+                entry.thingDefName = entry.thingDefName?.Trim() ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(entry.thingDefName) || entry.count <= 0)
+                {
+                    entries.RemoveAt(i);
+                    continue;
+                }
+
+                entry.count = Math.Max(1, entry.count);
+            }
+        }
+    }
+
+    public class CharacterEquipmentCostEntry
+    {
+        public string thingDefName = "";
+        public int count = 1;
+
+        public CharacterEquipmentCostEntry Clone()
+        {
+            return new CharacterEquipmentCostEntry
+            {
+                thingDefName = thingDefName,
+                count = count
+            };
         }
     }
 

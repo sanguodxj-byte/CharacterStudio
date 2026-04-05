@@ -26,6 +26,7 @@ namespace CharacterStudio.UI
         private string outputPath = "";
         private string statusMessage = "";
         private bool isExporting = false;
+        private CharacterDefinition characterDefinition = new CharacterDefinition();
 
         // 导出模式
         private ExportMode exportMode = ExportMode.CosmeticPack;
@@ -55,10 +56,11 @@ namespace CharacterStudio.UI
 
         public override Vector2 InitialSize => new Vector2(580f, 680f);
 
-        public Dialog_ExportMod(PawnSkinDef skin, List<ModularAbilityDef>? abilityList = null)
+        public Dialog_ExportMod(PawnSkinDef skin, List<ModularAbilityDef>? abilityList = null, CharacterDefinition? characterDefinition = null)
         {
             this.skinDef = skin;
             this.abilities = abilityList ?? new List<ModularAbilityDef>();
+            this.characterDefinition = characterDefinition?.Clone() ?? new CharacterDefinition();
             this.doCloseX = true;
             this.doCloseButton = false;
             this.draggable = true;
@@ -73,6 +75,10 @@ namespace CharacterStudio.UI
 
             // 默认输出到 RimWorld Mods 目录
             outputPath = GetDefaultOutputPath();
+            this.characterDefinition.EnsureDefaults(
+                skin.defName ?? "CS_Character",
+                skin.targetRaces != null && skin.targetRaces.Count > 0 ? DefDatabase<ThingDef>.GetNamedSilentFail(skin.targetRaces[0]) : ThingDefOf.Human,
+                skin.attributes);
         }
 
         public override void DoWindowContents(Rect inRect)
@@ -420,6 +426,7 @@ namespace CharacterStudio.UI
                             RoleCardSpawnEvent = roleCardSpawnEvent,
                             RoleCardSpawnAnimation = roleCardSpawnAnimation,
                             RoleCardSpawnAnimationScale = roleCardSpawnAnimationScale,
+                            CharacterDefinition = characterDefinition.Clone(),
                             AssetRightsConfirmed = assetRightsConfirmed
                         };
 

@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using CharacterStudio.Core;
 using CharacterStudio.Items;
 using RimWorld;
@@ -10,20 +12,24 @@ namespace CharacterStudio.UI
     public sealed class Dialog_SpawnCharacter : Window
     {
         private readonly Action<CharacterSpawnSettings> onConfirm;
-        private SummonArrivalMode arrivalMode;
-        private SummonSpawnEventMode spawnEvent;
-        private SummonSpawnAnimationMode spawnAnimation;
+        private CharacterSpawnArrivalDef? arrivalDef;
+        private CharacterSpawnEventDef? spawnEventDef;
+        private CharacterSpawnAnimationDef? spawnAnimationDef;
+        private string eventMessageText = string.Empty;
+        private string eventLetterTitle = string.Empty;
         private float spawnAnimationScale;
 
-        public override Vector2 InitialSize => new Vector2(460f, 320f);
+        public override Vector2 InitialSize => new Vector2(520f, 440f);
 
         public Dialog_SpawnCharacter(CharacterSpawnSettings? initialSettings, Action<CharacterSpawnSettings> onConfirm)
         {
             this.onConfirm = onConfirm ?? throw new ArgumentNullException(nameof(onConfirm));
             CharacterSpawnSettings settings = initialSettings?.Clone() ?? new CharacterSpawnSettings();
-            arrivalMode = settings.arrivalMode;
-            spawnEvent = settings.spawnEvent;
-            spawnAnimation = settings.spawnAnimation;
+            arrivalDef = CharacterSpawnUtility.ResolveArrivalDef(settings);
+            spawnEventDef = CharacterSpawnUtility.ResolveSpawnEventDef(settings);
+            spawnAnimationDef = CharacterSpawnUtility.ResolveSpawnAnimationDef(settings);
+            eventMessageText = settings.eventMessageText ?? string.Empty;
+            eventLetterTitle = settings.eventLetterTitle ?? string.Empty;
             spawnAnimationScale = settings.spawnAnimationScale;
             doCloseX = true;
             absorbInputAroundWindow = true;
@@ -31,29 +37,100 @@ namespace CharacterStudio.UI
             draggable = true;
         }
 
+        private static List<CharacterSpawnArrivalDef> GetArrivalOptions()
+        {
+            return DefDatabase<CharacterSpawnArrivalDef>.AllDefsListForReading
+                .Where(def => def != null && def.enabled)
+                .OrderBy(def => def.sortOrder)
+                .ThenBy(def => def.label ?? def.defName)
+                .ToList();
+        }
+
+        private static List<CharacterSpawnEventDef> GetSpawnEventOptions()
+        {
+            return DefDatabase<CharacterSpawnEventDef>.AllDefsListForReading
+                .Where(def => def != null && def.enabled)
+                .OrderBy(def => def.sortOrder)
+                .ThenBy(def => def.label ?? def.defName)
+                .ToList();
+        }
+
+        private static List<CharacterSpawnAnimationDef> GetSpawnAnimationOptions()
+        {
+            return DefDatabase<CharacterSpawnAnimationDef>.AllDefsListForReading
+                .Where(def => def != null && def.enabled)
+                .OrderBy(def => def.sortOrder)
+                .ThenBy(def => def.label ?? def.defName)
+                .ToList();
+        }
+
         public override void DoWindowContents(Rect inRect)
         {
             Rect shellRect = new Rect(0f, 0f, inRect.width, inRect.height);
-            Rect titleRect = UIHelper.DrawPanelShell(shellRect, "CS_Studio_SpawnNewPawnTitle".Translate(), 0f);
+            Widgets.DrawBoxSolid(shellRect, UIHelper.PanelFillColor);
+            GUI.color = UIHelper.BorderColor;
+            Widgets.DrawBox(shellRect, 1);
+            GUI.color = Color.white;
 
-            float y = titleRect.yMax + 8f;
+            float y = 8f;
             float width = inRect.width;
+            CharacterSpawnSettings currentSettings = new CharacterSpawnSettings
+            {
+                sourceMapForConditionCheck = Find.CurrentMap,
+                arrivalDefName = arrivalDef?.defName ?? string.Empty,
+                arrivalMode = arrivalDef?.mode ?? SummonArrivalMode.Standing,
+                spawnEventDefName = spawnEventDef?.defName ?? string.Empty,
+                spawnEvent = spawnEventDef?.mode ?? SummonSpawnEventMode.Message,
+                eventMessageText = eventMessageText,
+                eventLetterTitle = eventLetterTitle,
+                spawnAnimationDefName = spawnAnimationDef?.defName ?? string.Empty,
+                spawnAnimation = spawnAnimationDef?.mode ?? SummonSpawnAnimationMode.None,
+                spawnAnimationScale = spawnAnimationScale
+            };
+
+            List<CharacterSpawnArrivalDef> arrivalOptions = GetArrivalOptions()
+                .Where(def => CharacterSpawnUtility.AreConditionsSatisfied(currentSettings.sourceMapForConditionCheck, def.requiredConditions))
+                .ToList();
+            List<CharacterSpawnEventDef> eventOptions = GetSpawnEventOptions()
+                .Where(def => CharacterSpawnUtility.AreConditionsSatisfied(currentSettings.sourceMapForConditionCheck, def.requiredConditions))
+                .ToList();
+            List<CharacterSpawnAnimationDef> animationOptions = GetSpawnAnimationOptions()
+                .Where(def => CharacterSpawnUtility.AreConditionsSatisfied(currentSettings.sourceMapForConditionCheck, def.requiredConditions))
+                .ToList();
+
+            arrivalDef ??= arrivalOptions.FirstOrDefault();
+            spawnEventDef ??= eventOptions.FirstOrDefault();
+            spawnAnimationDef ??= animationOptions.FirstOrDefault();
 
             UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_SpawnNewPawnSection".Translate());
-            UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Export_RoleCardArrival".Translate(), arrivalMode,
-                (SummonArrivalMode[])Enum.GetValues(typeof(SummonArrivalMode)),
-                mode => $"CS_Studio_Export_RoleCardArrival_{mode}".Translate(),
-                val => arrivalMode = val);
-            UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Export_RoleCardEvent".Translate(), spawnEvent,
-                (SummonSpawnEventMode[])Enum.GetValues(typeof(SummonSpawnEventMode)),
-                mode => $"CS_Studio_Export_RoleCardEvent_{mode}".Translate(),
-                val => spawnEvent = val);
-            UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Export_RoleCardAnimation".Translate(), spawnAnimation,
-                (SummonSpawnAnimationMode[])Enum.GetValues(typeof(SummonSpawnAnimationMode)),
-                mode => $"CS_Studio_Export_RoleCardAnimation_{mode}".Translate(),
-                val => spawnAnimation = val);
+            DrawDefSelector(ref y, width, "CS_Studio_Export_RoleCardArrival".Translate(), arrivalDef, arrivalOptions, def =>
+            {
+                arrivalDef = def;
+            });
+            DrawConditionHint(ref y, width, arrivalDef);
 
-            if (spawnAnimation != SummonSpawnAnimationMode.None)
+            DrawDefSelector(ref y, width, "CS_Studio_Export_RoleCardEvent".Translate(), spawnEventDef, eventOptions, def =>
+            {
+                spawnEventDef = def;
+            });
+            DrawConditionHint(ref y, width, spawnEventDef);
+
+            UIHelper.DrawPropertyField(ref y, width, "CS_Studio_SpawnEvent_MessageText".Translate(), ref eventMessageText,
+                "CS_Studio_SpawnEvent_MessageText_Hint".Translate());
+            if ((spawnEventDef?.mode ?? SummonSpawnEventMode.None) == SummonSpawnEventMode.PositiveLetter)
+            {
+                UIHelper.DrawPropertyField(ref y, width, "CS_Studio_SpawnEvent_LetterTitle".Translate(), ref eventLetterTitle,
+                    "CS_Studio_SpawnEvent_LetterTitle_Hint".Translate());
+            }
+
+            DrawDefSelector(ref y, width, "CS_Studio_Export_RoleCardAnimation".Translate(), spawnAnimationDef, animationOptions, def =>
+            {
+                spawnAnimationDef = def;
+                spawnAnimationScale = spawnAnimationDef?.defaultScale ?? 1f;
+            });
+            DrawConditionHint(ref y, width, spawnAnimationDef);
+
+            if ((spawnAnimationDef?.mode ?? SummonSpawnAnimationMode.None) != SummonSpawnAnimationMode.None)
             {
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Export_RoleCardAnimationScale".Translate(), ref spawnAnimationScale, 0.1f, 5f, "F2");
             }
@@ -62,11 +139,21 @@ namespace CharacterStudio.UI
             float btnY = inRect.height - 40f;
             if (UIHelper.DrawToolbarButton(new Rect(inRect.width / 2f - btnWidth - 8f, btnY, btnWidth, 28f), "CS_Studio_SpawnNewPawnConfirm".Translate(), accent: true))
             {
+                CharacterSpawnArrivalDef resolvedArrival = arrivalDef ?? arrivalOptions.FirstOrDefault();
+                CharacterSpawnEventDef resolvedEvent = spawnEventDef ?? eventOptions.FirstOrDefault();
+                CharacterSpawnAnimationDef resolvedAnimation = spawnAnimationDef ?? animationOptions.FirstOrDefault();
+
                 onConfirm(new CharacterSpawnSettings
                 {
-                    arrivalMode = arrivalMode,
-                    spawnEvent = spawnEvent,
-                    spawnAnimation = spawnAnimation,
+                    sourceMapForConditionCheck = Find.CurrentMap,
+                    arrivalDefName = resolvedArrival?.defName ?? string.Empty,
+                    arrivalMode = resolvedArrival?.mode ?? SummonArrivalMode.Standing,
+                    spawnEventDefName = resolvedEvent?.defName ?? string.Empty,
+                    spawnEvent = resolvedEvent?.mode ?? SummonSpawnEventMode.Message,
+                    eventMessageText = eventMessageText,
+                    eventLetterTitle = eventLetterTitle,
+                    spawnAnimationDefName = resolvedAnimation?.defName ?? string.Empty,
+                    spawnAnimation = resolvedAnimation?.mode ?? SummonSpawnAnimationMode.None,
                     spawnAnimationScale = spawnAnimationScale
                 });
                 Close();
@@ -76,6 +163,42 @@ namespace CharacterStudio.UI
             {
                 Close();
             }
+        }
+
+        private static void DrawConditionHint(ref float y, float width, CharacterSpawnOptionDef? optionDef)
+        {
+            string description = CharacterSpawnUtility.DescribeConditions(optionDef);
+            if (string.IsNullOrWhiteSpace(description))
+                return;
+
+            UIHelper.DrawInfoBanner(ref y, width, description, accent: true);
+        }
+
+        private static void DrawDefSelector<TDef>(ref float y, float width, string label, TDef? currentDef, List<TDef> options, Action<TDef> onSelected)
+            where TDef : CharacterSpawnOptionDef
+        {
+            Rect rowRect = new Rect(0f, y, width, UIHelper.RowHeight);
+            float actualLabelWidth = Mathf.Max(UIHelper.LabelWidth, Text.CalcSize(label).x + 10f);
+            Widgets.Label(new Rect(rowRect.x, rowRect.y, actualLabelWidth, 24f), label);
+
+            Rect buttonRect = new Rect(rowRect.x + actualLabelWidth, rowRect.y, rowRect.width - actualLabelWidth, 24f);
+            string currentLabel = currentDef?.GetDisplayLabel() ?? "CS_Studio_None".Translate().ToString();
+            string tooltip = currentDef != null
+                ? $"{currentDef.GetDisplayLabel()}\n{currentDef.defName}\n{CharacterSpawnUtility.DescribeConditions(currentDef)}".Trim()
+                : "CS_Studio_None".Translate().ToString();
+
+            if (UIHelper.DrawSelectionButton(buttonRect, currentLabel))
+            {
+                Find.WindowStack.Add(new Dialog_DefBrowser<TDef>(
+                    label,
+                    options,
+                    onSelected,
+                    def => def.GetDisplayLabel(),
+                    def => CharacterSpawnUtility.DescribeConditions(def)));
+            }
+
+            TooltipHandler.TipRegion(buttonRect, tooltip);
+            y += UIHelper.RowHeight;
         }
     }
 }

@@ -87,6 +87,7 @@ namespace CharacterStudio.Design
             IntVec3 origin = plan.desiredSpawnCell.IsValid
                 ? plan.desiredSpawnCell
                 : CharacterSpawnUtility.ResolveSpawnOrigin(map, plan.targetPawn);
+            (plan.spawnSettings ??= new CharacterSpawnSettings()).sourceMapForConditionCheck = map;
             if (!CharacterSpawnUtility.TryFindSpawnCell(map, origin, 6, out IntVec3 spawnCell))
             {
                 plan.isValid = false;
@@ -95,6 +96,7 @@ namespace CharacterStudio.Design
             }
 
             CharacterSpawnUtility.SpawnPawnWithSettings(pawn, map, spawnCell, plan.spawnSettings ?? new CharacterSpawnSettings());
+            CharacterDefinitionApplier.ApplyToPawn(pawn, plan.characterDefinition);
 
             if (!PawnSkinRuntimeUtility.ApplySkinToPawn(
                 pawn,

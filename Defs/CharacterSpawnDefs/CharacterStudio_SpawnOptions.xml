@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <CharacterStudio.Core.CharacterSpawnArrivalDef>
+    <defName>CS_SpawnArrival_Standing</defName>
+    <labelKey>CS_Studio_Export_RoleCardArrival_Standing</labelKey>
+    <mode>Standing</mode>
+    <sortOrder>0</sortOrder>
+  </CharacterStudio.Core.CharacterSpawnArrivalDef>
+
+  <CharacterStudio.Core.CharacterSpawnArrivalDef>
+    <defName>CS_SpawnArrival_DropPod</defName>
+    <labelKey>CS_Studio_Export_RoleCardArrival_DropPod</labelKey>
+    <mode>DropPod</mode>
+    <sortOrder>10</sortOrder>
+  </CharacterStudio.Core.CharacterSpawnArrivalDef>
+
+  <CharacterStudio.Core.CharacterSpawnArrivalDef>
+    <defName>CS_SpawnArrival_DropPod_SpecialItem</defName>
+    <label>空投舱降落（需殖民地库存含特殊物品）</label>
+    <mode>DropPod</mode>
+    <sortOrder>15</sortOrder>
+    <requiredConditions>
+      <li>
+        <matchMode>SpecificThingDef</matchMode>
+        <thingDefName>PsychicShockLance</thingDefName>
+        <minCount>1</minCount>
+        <countStackCount>false</countStackCount>
+      </li>
+    </requiredConditions>
+  </CharacterStudio.Core.CharacterSpawnArrivalDef>
+
+  <CharacterStudio.Core.CharacterSpawnEventDef>
+    <defName>CS_SpawnEvent_None</defName>
+    <labelKey>CS_Studio_Export_RoleCardEvent_None</labelKey>
+    <mode>None</mode>
+    <sortOrder>0</sortOrder>
+  </CharacterStudio.Core.CharacterSpawnEventDef>
+
+  <CharacterStudio.Core.CharacterSpawnEventDef>
+    <defName>CS_SpawnEvent_Message</defName>
+    <labelKey>CS_Studio_Export_RoleCardEvent_Message</labelKey>
+    <mode>Message</mode>
+    <sortOrder>10</sortOrder>
+  </CharacterStudio.Core.CharacterSpawnEventDef>
+
+  <CharacterStudio.Core.CharacterSpawnEventDef>
+    <defName>CS_SpawnEvent_PositiveLetter</defName>
+    <labelKey>CS_Studio_Export_RoleCardEvent_PositiveLetter</labelKey>
+    <mode>PositiveLetter</mode>
+    <sortOrder>20</sortOrder>
+  </CharacterStudio.Core.CharacterSpawnEventDef>
+
+  <CharacterStudio.Core.CharacterSpawnEventDef>
+    <defName>CS_SpawnEvent_PositiveLetter_LavishMeal5</defName>
+    <label>正面来信（需殖民地库存 5 份豪华餐）</label>
+    <mode>PositiveLetter</mode>
+    <sortOrder>25</sortOrder>
+    <requiredConditions>
+      <li>
+        <matchMode>FoodType</matchMode>
+        <foodType>MealLavish</foodType>
+        <minCount>5</minCount>
+        <countStackCount>true</countStackCount>
+      </li>
+    </requiredConditions>
+  </CharacterStudio.Core.CharacterSpawnEventDef>
+
+  <CharacterStudio.Core.CharacterSpawnEventDef>
+    <defName>CS_SpawnEvent_Message_SpecialItem</defName>
+    <label>消息提示（需殖民地库存含特殊物品）</label>
+    <mode>Message</mode>
+    <sortOrder>15</sortOrder>
+    <requiredConditions>
+      <li>
+        <matchMode>SpecificThingDef</matchMode>
+        <thingDefName>PsychicShockLance</thingDefName>
+        <minCount>1</minCount>
+        <countStackCount>false</countStackCount>
+      </li>
+    </requiredConditions>
+  </CharacterStudio.Core.CharacterSpawnEventDef>
+
+  <CharacterStudio.Core.CharacterSpawnEventDef>
+    <defName>CS_SpawnEvent_Message_SilverTradeTag</defName>
+    <label>消息提示（需殖民地库存含银币类贸易标签）</label>
+    <mode>Message</mode>
+    <sortOrder>16</sortOrder>
+    <requiredConditions>
+      <li>
+        <matchMode>TradeTag</matchMode>
+        <tradeTag>Silver</tradeTag>
+        <minCount>100</minCount>
+        <countStackCount>true</countStackCount>
+      </li>
+    </requiredConditions>
+  </CharacterStudio.Core.CharacterSpawnEventDef>
+
+  <CharacterStudio.Core.CharacterSpawnEventDef>
+    <defName>CS_SpawnEvent_Message_RawFoodCategory</defName>
+    <label>消息提示（需殖民地库存含原料食物分类）</label>
+    <mode>Message</mode>
+    <sortOrder>17</sortOrder>
+    <requiredConditions>
+      <li>
+        <matchMode>ThingCategory</matchMode>
+        <categoryDefName>Foods</categoryDefName>
+        <minCount>5</minCount>
+        <countStackCount>true</countStackCount>
+      </li>
+    </requiredConditions>
+  </CharacterStudio.Core.CharacterSpawnEventDef>
+
+  <CharacterStudio.Core.CharacterSpawnAnimationDef>
+    <defName>CS_SpawnAnimation_None</defName>
+    <labelKey>CS_Studio_Export_RoleCardAnimation_None</labelKey>
+    <mode>None</mode>
+    <defaultScale>1.0</defaultScale>
+    <sortOrder>0</sortOrder>
+  </CharacterStudio.Core.CharacterSpawnAnimationDef>
+
+  <CharacterStudio.Core.CharacterSpawnAnimationDef>
+    <defName>CS_SpawnAnimation_DustPuff</defName>
+    <labelKey>CS_Studio_Export_RoleCardAnimation_DustPuff</labelKey>
+    <mode>DustPuff</mode>
+    <defaultScale>1.0</defaultScale>
+    <sortOrder>10</sortOrder>
+  </CharacterStudio.Core.CharacterSpawnAnimationDef>
+
+  <CharacterStudio.Core.CharacterSpawnAnimationDef>
+    <defName>CS_SpawnAnimation_MicroSparks</defName>
+    <labelKey>CS_Studio_Export_RoleCardAnimation_MicroSparks</labelKey>
+    <mode>MicroSparks</mode>
+    <defaultScale>1.0</defaultScale>
+    <sortOrder>20</sortOrder>
+  </CharacterStudio.Core.CharacterSpawnAnimationDef>
+
+  <CharacterStudio.Core.CharacterSpawnAnimationDef>
+    <defName>CS_SpawnAnimation_LightningGlow</defName>
+    <labelKey>CS_Studio_Export_RoleCardAnimation_LightningGlow</labelKey>
+    <mode>LightningGlow</mode>
+    <defaultScale>1.0</defaultScale>
+    <sortOrder>30</sortOrder>
+  </CharacterStudio.Core.CharacterSpawnAnimationDef>
+
+  <CharacterStudio.Core.CharacterSpawnAnimationDef>
+    <defName>CS_SpawnAnimation_FireGlow</defName>
+    <labelKey>CS_Studio_Export_RoleCardAnimation_FireGlow</labelKey>
+    <mode>FireGlow</mode>
+    <defaultScale>1.0</defaultScale>
+    <sortOrder>40</sortOrder>
+  </CharacterStudio.Core.CharacterSpawnAnimationDef>
+
+  <CharacterStudio.Core.CharacterSpawnAnimationDef>
+    <defName>CS_SpawnAnimation_Smoke</defName>
+    <labelKey>CS_Studio_Export_RoleCardAnimation_Smoke</labelKey>
+    <mode>Smoke</mode>
+    <defaultScale>1.0</defaultScale>
+    <sortOrder>50</sortOrder>
+  </CharacterStudio.Core.CharacterSpawnAnimationDef>
+
+  <CharacterStudio.Core.CharacterSpawnAnimationDef>
+    <defName>CS_SpawnAnimation_Smoke_AnyFoodOrSilver</defName>
+    <label>烟雾（满足其一：殖民地库存食物或银币标签）</label>
+    <mode>Smoke</mode>
+    <defaultScale>1.0</defaultScale>
+    <sortOrder>55</sortOrder>
+    <conditionLogic>Any</conditionLogic>
+    <requiredConditions>
+      <li>
+        <matchMode>ThingCategory</matchMode>
+        <categoryDefName>Foods</categoryDefName>
+        <minCount>5</minCount>
+        <countStackCount>true</countStackCount>
+      </li>
+      <li>
+        <matchMode>TradeTag</matchMode>
+        <tradeTag>Silver</tradeTag>
+        <minCount>100</minCount>
+        <countStackCount>true</countStackCount>
+      </li>
+    </requiredConditions>
+  </CharacterStudio.Core.CharacterSpawnAnimationDef>
+
+  <CharacterStudio.Core.CharacterSpawnAnimationDef>
+    <defName>CS_SpawnAnimation_ExplosionEffect</defName>
+    <labelKey>CS_Studio_Export_RoleCardAnimation_ExplosionEffect</labelKey>
+    <mode>ExplosionEffect</mode>
+    <defaultScale>1.0</defaultScale>
+    <sortOrder>60</sortOrder>
+  </CharacterStudio.Core.CharacterSpawnAnimationDef>
+
+  <CharacterStudio.Core.CharacterSpawnAnimationDef>
+    <defName>CS_SpawnAnimation_ExplosionEffect_NotLavishMeal</defName>
+    <label>爆裂特效（殖民地库存必须不满足：5 份豪华餐）</label>
+    <mode>ExplosionEffect</mode>
+    <defaultScale>1.0</defaultScale>
+    <sortOrder>65</sortOrder>
+    <conditionLogic>Not</conditionLogic>
+    <requiredConditions>
+      <li>
+        <matchMode>FoodType</matchMode>
+        <foodType>MealLavish</foodType>
+        <minCount>5</minCount>
+        <countStackCount>true</countStackCount>
+      </li>
+    </requiredConditions>
+  </CharacterStudio.Core.CharacterSpawnAnimationDef>
+
+</Defs>

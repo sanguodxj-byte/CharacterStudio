@@ -279,7 +279,7 @@ namespace CharacterStudio.UI
             GUI.color = Color.white;
 
             string skinLabel = layerModificationWorkflowActive
-                ? (workingRenderFixPatch?.label ?? "图层修改补丁")
+                ? (workingRenderFixPatch?.label ?? "CS_Studio_RenderFixPatchLabel".Translate().ToString())
                 : (workingSkin.label ?? workingSkin.defName);
             if (isDirty)
             {

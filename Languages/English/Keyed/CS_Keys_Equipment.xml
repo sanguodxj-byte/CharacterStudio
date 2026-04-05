@@ -9,6 +9,8 @@
     <CS_Studio_Equip_ApparelLayers>Apparel Layers</CS_Studio_Equip_ApparelLayers>
     <CS_Studio_Equip_ApparelMask>Apparel Mask</CS_Studio_Equip_ApparelMask>
     <CS_Studio_Equip_ApparelTags>Apparel Tags</CS_Studio_Equip_ApparelTags>
+    <CS_Studio_Equip_AllowCrafting>Allow Crafting</CS_Studio_Equip_AllowCrafting>
+    <CS_Studio_Equip_AllowTrading>Allow Trading/Purchase</CS_Studio_Equip_AllowTrading>
     <CS_Studio_Equip_BodyPartGroups>Body Part Groups</CS_Studio_Equip_BodyPartGroups>
     <CS_Studio_Equip_BoundAbilities>Bound abilities</CS_Studio_Equip_BoundAbilities>
     <CS_Studio_Equip_Btn_Abilities>Abilities</CS_Studio_Equip_Btn_Abilities>
@@ -19,6 +21,7 @@
     <CS_Studio_Equip_DefaultCopyDefName>Equipment_Copy</CS_Studio_Equip_DefaultCopyDefName>
     <CS_Studio_Equip_DefaultPresetDefName>Aircraft_Preset</CS_Studio_Equip_DefaultPresetDefName>
     <CS_Studio_Equip_DefName>Equipment DefName</CS_Studio_Equip_DefName>
+    <CS_Studio_Equip_ExportGroupKey>Export Group Key</CS_Studio_Equip_ExportGroupKey>
     <CS_Studio_Equip_DefName_Hint>Use only letters, numbers, and underscores. This value is used as the XML DefName when exporting.</CS_Studio_Equip_DefName_Hint>
     <CS_Studio_Equip_DefName_Invalid>DefName may only contain letters, numbers, and underscores.</CS_Studio_Equip_DefName_Invalid>
     <CS_Studio_Equip_DefaultLabel>Equipment {0}</CS_Studio_Equip_DefaultLabel>
@@ -62,6 +65,11 @@
     <CS_Studio_Equip_PreviewLoop>Loop Preview</CS_Studio_Equip_PreviewLoop>
     <CS_Studio_Equip_PreviewLoop_Hint>Loop the selected equipment's triggered animation preview.</CS_Studio_Equip_PreviewLoop_Hint>
     <CS_Studio_Equip_PreviewUnavailable_Hint>The selected equipment does not have a previewable triggered animation configured.</CS_Studio_Equip_PreviewUnavailable_Hint>
+    <CS_Studio_Equip_RecipeDefName>Recipe DefName</CS_Studio_Equip_RecipeDefName>
+    <CS_Studio_Equip_RecipeWorkbenchDefName>Recipe Workbench Def</CS_Studio_Equip_RecipeWorkbenchDefName>
+    <CS_Studio_Equip_RecipeWorkAmount>Recipe Work Amount</CS_Studio_Equip_RecipeWorkAmount>
+    <CS_Studio_Equip_RecipeProductCount>Recipe Product Count</CS_Studio_Equip_RecipeProductCount>
+    <CS_Studio_Equip_RecipeIngredients>Recipe Ingredients (ThingDef:Count)</CS_Studio_Equip_RecipeIngredients>
     <CS_Studio_Equip_RotationEastOffset>Rotation East Offset</CS_Studio_Equip_RotationEastOffset>
     <CS_Studio_Equip_RotationNorthOffset>Rotation North Offset</CS_Studio_Equip_RotationNorthOffset>
     <CS_Studio_Equip_ScaleX>Scale X</CS_Studio_Equip_ScaleX>
@@ -85,7 +93,9 @@
     <CS_Studio_Equip_SlotTag>Slot Tag</CS_Studio_Equip_SlotTag>
     <CS_Studio_Equip_SlotTag_Hint>Logical slot identifier for this equipment entry, such as WeaponBack, Hairpin, or Cape.</CS_Studio_Equip_SlotTag_Hint>
     <CS_Studio_Equip_SourceNote>Source Note</CS_Studio_Equip_SourceNote>
+    <CS_Studio_Equip_TradeTags>Trade Tags</CS_Studio_Equip_TradeTags>
     <CS_Studio_Equip_ThingCategories>Thing Categories</CS_Studio_Equip_ThingCategories>
+    <CS_Studio_Equip_MarketValue>Market Value</CS_Studio_Equip_MarketValue>
     <CS_Studio_Equip_TriggeredAbilityDefName>Triggered Ability DefName</CS_Studio_Equip_TriggeredAbilityDefName>
     <CS_Studio_Equip_TriggeredAbilityDefName_Hint>Enter a specific ability defName here. If left empty, the equipment will use the state/group key below.</CS_Studio_Equip_TriggeredAbilityDefName_Hint>
     <CS_Studio_Equip_TriggeredAbilityDefName_Raw>Triggered Ability DefName (Raw)</CS_Studio_Equip_TriggeredAbilityDefName_Raw>

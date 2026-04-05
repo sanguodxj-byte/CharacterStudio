@@ -59,6 +59,32 @@ namespace CharacterStudio.Core
         public string flyerThingDefName = string.Empty;
         public string flyerClassName = string.Empty;
         public float flyerFlightSpeed = 1f;
+        public bool useTriggeredLocalAnimation = false;
+        public string triggerAbilityDefName = string.Empty;
+        public string animationGroupKey = string.Empty;
+        public EquipmentTriggeredAnimationRole triggeredAnimationRole = EquipmentTriggeredAnimationRole.MovablePart;
+        public float triggeredDeployAngle = 45f;
+        public float triggeredReturnAngle = 0f;
+        public int triggeredDeployTicks = 12;
+        public int triggeredHoldTicks = 24;
+        public int triggeredReturnTicks = 12;
+        public Vector2 triggeredPivotOffset = Vector2.zero;
+        public bool triggeredUseVfxVisibility = false;
+        public string triggeredIdleTexPath = string.Empty;
+        public string triggeredDeployTexPath = string.Empty;
+        public string triggeredHoldTexPath = string.Empty;
+        public string triggeredReturnTexPath = string.Empty;
+        public string triggeredIdleMaskTexPath = string.Empty;
+        public string triggeredDeployMaskTexPath = string.Empty;
+        public string triggeredHoldMaskTexPath = string.Empty;
+        public string triggeredReturnMaskTexPath = string.Empty;
+        public bool triggeredVisibleDuringDeploy = true;
+        public bool triggeredVisibleDuringHold = true;
+        public bool triggeredVisibleDuringReturn = true;
+        public bool triggeredVisibleOutsideCycle = true;
+        public EquipmentTriggeredAnimationOverride? triggeredAnimationSouth;
+        public EquipmentTriggeredAnimationOverride? triggeredAnimationEastWest;
+        public EquipmentTriggeredAnimationOverride? triggeredAnimationNorth;
 
         /// <summary>
         /// 预留字段：导出后的装备仍可附带能力绑定信息。
@@ -81,6 +107,22 @@ namespace CharacterStudio.Core
             flyerThingDefName ??= string.Empty;
             flyerClassName ??= string.Empty;
             flyerFlightSpeed = Mathf.Max(0.05f, flyerFlightSpeed);
+            triggerAbilityDefName ??= string.Empty;
+            animationGroupKey ??= string.Empty;
+            triggeredIdleTexPath ??= string.Empty;
+            triggeredDeployTexPath ??= string.Empty;
+            triggeredHoldTexPath ??= string.Empty;
+            triggeredReturnTexPath ??= string.Empty;
+            triggeredIdleMaskTexPath ??= string.Empty;
+            triggeredDeployMaskTexPath ??= string.Empty;
+            triggeredHoldMaskTexPath ??= string.Empty;
+            triggeredReturnMaskTexPath ??= string.Empty;
+            triggeredDeployTicks = Mathf.Max(1, triggeredDeployTicks);
+            triggeredHoldTicks = Mathf.Max(0, triggeredHoldTicks);
+            triggeredReturnTicks = Mathf.Max(1, triggeredReturnTicks);
+            triggeredAnimationSouth?.EnsureDefaults(label, triggerAbilityDefName, animationGroupKey);
+            triggeredAnimationEastWest?.EnsureDefaults(label, triggerAbilityDefName, animationGroupKey);
+            triggeredAnimationNorth?.EnsureDefaults(label, triggerAbilityDefName, animationGroupKey);
         }
 
         public bool HasRenderableTexture()
@@ -156,6 +198,32 @@ namespace CharacterStudio.Core
                 flyerThingDefName = equipment.flyerThingDefName ?? string.Empty,
                 flyerClassName = equipment.flyerClassName ?? string.Empty,
                 flyerFlightSpeed = equipment.flyerFlightSpeed,
+                useTriggeredLocalAnimation = renderData.useTriggeredLocalAnimation,
+                triggerAbilityDefName = renderData.triggerAbilityDefName,
+                animationGroupKey = renderData.animationGroupKey,
+                triggeredAnimationRole = renderData.triggeredAnimationRole,
+                triggeredDeployAngle = renderData.triggeredDeployAngle,
+                triggeredReturnAngle = renderData.triggeredReturnAngle,
+                triggeredDeployTicks = renderData.triggeredDeployTicks,
+                triggeredHoldTicks = renderData.triggeredHoldTicks,
+                triggeredReturnTicks = renderData.triggeredReturnTicks,
+                triggeredPivotOffset = renderData.triggeredPivotOffset,
+                triggeredUseVfxVisibility = renderData.triggeredUseVfxVisibility,
+                triggeredIdleTexPath = renderData.triggeredIdleTexPath,
+                triggeredDeployTexPath = renderData.triggeredDeployTexPath,
+                triggeredHoldTexPath = renderData.triggeredHoldTexPath,
+                triggeredReturnTexPath = renderData.triggeredReturnTexPath,
+                triggeredIdleMaskTexPath = renderData.triggeredIdleMaskTexPath,
+                triggeredDeployMaskTexPath = renderData.triggeredDeployMaskTexPath,
+                triggeredHoldMaskTexPath = renderData.triggeredHoldMaskTexPath,
+                triggeredReturnMaskTexPath = renderData.triggeredReturnMaskTexPath,
+                triggeredVisibleDuringDeploy = renderData.triggeredVisibleDuringDeploy,
+                triggeredVisibleDuringHold = renderData.triggeredVisibleDuringHold,
+                triggeredVisibleDuringReturn = renderData.triggeredVisibleDuringReturn,
+                triggeredVisibleOutsideCycle = renderData.triggeredVisibleOutsideCycle,
+                triggeredAnimationSouth = renderData.triggeredAnimationSouth?.Clone(),
+                triggeredAnimationEastWest = renderData.triggeredAnimationEastWest?.Clone(),
+                triggeredAnimationNorth = renderData.triggeredAnimationNorth?.Clone(),
                 abilityDefNames = equipment.abilityDefNames != null
                     ? new List<string>(equipment.abilityDefNames)
                     : new List<string>()

@@ -769,7 +769,7 @@ namespace CharacterStudio.UI
 
         private static string GetDefaultEquipmentExportFilePath()
         {
-            return Path.Combine(GetEquipmentExportDir(), "EquipmentEditor_Export.xml");
+            return Path.Combine(GetEquipmentExportDir(), "EquipmentEditor_FormalDefs.xml");
         }
 
         private void OpenEquipmentImportXmlDialog()
@@ -818,7 +818,18 @@ namespace CharacterStudio.UI
                 }
 
                 selected.EnsureDefaults();
-                CreateEquipmentsDocument(new List<CharacterEquipmentDef> { selected }).Save(exportPath);
+                List<CharacterEquipmentDef> exportEquipments = ResolveExportEquipmentGroup(selected);
+                CreateEquipmentsDocument(exportEquipments).Save(exportPath);
+
+                XDocument recipeDoc = ModExportXmlWriter.CreateEquipmentRecipeDefsDocument(exportEquipments);
+                recipeDoc.Save(Path.Combine(exportDir, "EquipmentEditor_FormalDefs_Recipes.xml"));
+
+                XDocument bundleDoc = ModExportXmlWriter.CreateEquipmentBundleManifestDocument(exportEquipments);
+                if (bundleDoc.Root != null && bundleDoc.Root.HasElements)
+                {
+                    bundleDoc.Save(Path.Combine(exportDir, "EquipmentEditor_FormalDefs_Bundles.xml"));
+                }
+
                 lastExportedEquipmentXmlPath = exportPath;
                 ShowStatus("CS_Studio_Equip_Exported".Translate(exportPath));
             }
@@ -831,17 +842,22 @@ namespace CharacterStudio.UI
 
         private static XDocument CreateEquipmentsDocument(List<CharacterEquipmentDef> equipmentList)
         {
-            var defs = new XElement("Defs");
-            var skinRoot = new XElement("CharacterEquipmentExportDef",
-                new XElement("schemaVersion", "1.0"));
-            var equipmentsEl = ModExportXmlWriter.GenerateEquipmentsXml(equipmentList);
-            if (equipmentsEl != null)
+            return ModExportXmlWriter.CreateEquipmentThingDefsDocument(equipmentList);
+        }
+
+        private List<CharacterEquipmentDef> ResolveExportEquipmentGroup(CharacterEquipmentDef selected)
+        {
+            workingSkin.equipments ??= new List<CharacterEquipmentDef>();
+
+            if (string.IsNullOrWhiteSpace(selected.exportGroupKey))
             {
-                skinRoot.Add(equipmentsEl);
+                return new List<CharacterEquipmentDef> { selected };
             }
 
-            defs.Add(skinRoot);
-            return new XDocument(defs);
+            return workingSkin.equipments
+                .Where(equipment => equipment != null && equipment.enabled && string.Equals(equipment.exportGroupKey, selected.exportGroupKey, StringComparison.OrdinalIgnoreCase))
+                .Select(equipment => equipment.Clone())
+                .ToList();
         }
 
         private void ImportEquipmentsFromXmlPath(string xmlPath, bool replaceExisting)
@@ -1015,6 +1031,17 @@ namespace CharacterStudio.UI
                 {
                     result.Add(equipment);
                 }
+
+                return;
+            }
+
+            if (string.Equals(node.Name, "ThingDef", StringComparison.OrdinalIgnoreCase))
+            {
+                CharacterEquipmentDef? formalEquipment = ParseFormalThingDefNode(node);
+                if (formalEquipment != null)
+                {
+                    result.Add(formalEquipment);
+                }
             }
         }
 
@@ -1038,6 +1065,108 @@ namespace CharacterStudio.UI
             catch (Exception ex)
             {
                 Log.Warning($"[CharacterStudio] 解析装备 XML 失败: {ex.Message}");
+                return null;
+            }
+        }
+
+        private static CharacterEquipmentDef? ParseFormalThingDefNode(XmlNode node)
+        {
+            try
+            {
+                XmlNode? defNameNode = FindEquipmentChildNode(node, "defName");
+                if (defNameNode == null || string.IsNullOrWhiteSpace(defNameNode.InnerText))
+                    return null;
+
+                XmlNode? extensionNode = FindEquipmentRenderExtensionNode(node);
+                if (extensionNode == null)
+                    return null;
+
+                var extension = DirectXmlToObject.ObjectFromXml<DefModExtension_EquipmentRender>(extensionNode, true);
+                if (extension == null)
+                    return null;
+
+                extension.EnsureDefaults();
+
+                var equipment = new CharacterEquipmentDef
+                {
+                    defName = extension.equipmentDefName,
+                    thingDefName = defNameNode.InnerText.Trim(),
+                    label = FindEquipmentChildNode(node, "label")?.InnerText?.Trim() ?? extension.label,
+                    description = FindEquipmentChildNode(node, "description")?.InnerText?.Trim() ?? string.Empty,
+                    slotTag = extension.slotTag,
+                    worldTexPath = FindEquipmentChildNode(FindEquipmentChildNode(node, "graphicData"), "texPath")?.InnerText?.Trim() ?? extension.texPath,
+                    wornTexPath = FindEquipmentChildNode(FindEquipmentChildNode(node, "apparel"), "wornGraphicPath")?.InnerText?.Trim() ?? extension.texPath,
+                    maskTexPath = extension.maskTexPath,
+                    shaderDefName = extension.shaderDefName,
+                    exportGroupKey = string.Empty,
+                    flyerThingDefName = extension.flyerThingDefName,
+                    flyerClassName = extension.flyerClassName,
+                    flyerFlightSpeed = extension.flyerFlightSpeed,
+                    abilityDefNames = extension.abilityDefNames != null ? new List<string>(extension.abilityDefNames) : new List<string>(),
+                    renderData = new CharacterEquipmentRenderData
+                    {
+                        layerName = string.IsNullOrWhiteSpace(extension.label) ? defNameNode.InnerText.Trim() : extension.label,
+                        texPath = extension.texPath,
+                        maskTexPath = extension.maskTexPath,
+                        anchorTag = extension.anchorTag,
+                        anchorPath = extension.anchorPath,
+                        shaderDefName = extension.shaderDefName,
+                        directionalFacing = extension.directionalFacing,
+                        offset = extension.offset,
+                        offsetEast = extension.offsetEast,
+                        offsetNorth = extension.offsetNorth,
+                        scale = extension.scale,
+                        scaleEastMultiplier = extension.scaleEastMultiplier,
+                        scaleNorthMultiplier = extension.scaleNorthMultiplier,
+                        rotation = extension.rotation,
+                        rotationEastOffset = extension.rotationEastOffset,
+                        rotationNorthOffset = extension.rotationNorthOffset,
+                        drawOrder = extension.drawOrder,
+                        flipHorizontal = extension.flipHorizontal,
+                        visible = extension.visible,
+                        colorSource = extension.colorSource,
+                        customColor = extension.customColor,
+                        colorTwoSource = extension.colorTwoSource,
+                        customColorTwo = extension.customColorTwo,
+                        useTriggeredLocalAnimation = extension.useTriggeredLocalAnimation,
+                        triggerAbilityDefName = extension.triggerAbilityDefName,
+                        animationGroupKey = extension.animationGroupKey,
+                        triggeredAnimationRole = extension.triggeredAnimationRole,
+                        triggeredDeployAngle = extension.triggeredDeployAngle,
+                        triggeredReturnAngle = extension.triggeredReturnAngle,
+                        triggeredDeployTicks = extension.triggeredDeployTicks,
+                        triggeredHoldTicks = extension.triggeredHoldTicks,
+                        triggeredReturnTicks = extension.triggeredReturnTicks,
+                        triggeredPivotOffset = extension.triggeredPivotOffset,
+                        triggeredUseVfxVisibility = extension.triggeredUseVfxVisibility,
+                        triggeredIdleTexPath = extension.triggeredIdleTexPath,
+                        triggeredDeployTexPath = extension.triggeredDeployTexPath,
+                        triggeredHoldTexPath = extension.triggeredHoldTexPath,
+                        triggeredReturnTexPath = extension.triggeredReturnTexPath,
+                        triggeredIdleMaskTexPath = extension.triggeredIdleMaskTexPath,
+                        triggeredDeployMaskTexPath = extension.triggeredDeployMaskTexPath,
+                        triggeredHoldMaskTexPath = extension.triggeredHoldMaskTexPath,
+                        triggeredReturnMaskTexPath = extension.triggeredReturnMaskTexPath,
+                        triggeredVisibleDuringDeploy = extension.triggeredVisibleDuringDeploy,
+                        triggeredVisibleDuringHold = extension.triggeredVisibleDuringHold,
+                        triggeredVisibleDuringReturn = extension.triggeredVisibleDuringReturn,
+                        triggeredVisibleOutsideCycle = extension.triggeredVisibleOutsideCycle,
+                        triggeredAnimationSouth = extension.triggeredAnimationSouth?.Clone(),
+                        triggeredAnimationEastWest = extension.triggeredAnimationEastWest?.Clone(),
+                        triggeredAnimationNorth = extension.triggeredAnimationNorth?.Clone()
+                    }
+                };
+
+                equipment.EnsureDefaults();
+                if (string.IsNullOrWhiteSpace(equipment.defName))
+                    equipment.defName = equipment.thingDefName;
+                if (string.IsNullOrWhiteSpace(equipment.label))
+                    equipment.label = equipment.defName;
+                return equipment;
+            }
+            catch (Exception ex)
+            {
+                Log.Warning($"[CharacterStudio] 解析正式装备 ThingDef 失败: {ex.Message}");
                 return null;
             }
         }
@@ -1167,6 +1296,24 @@ namespace CharacterStudio.UI
                 {
                     return child;
                 }
+            }
+
+            return null;
+        }
+
+        private static XmlNode? FindEquipmentRenderExtensionNode(XmlNode thingDefNode)
+        {
+            XmlNode? modExtensionsNode = FindEquipmentChildNode(thingDefNode, "modExtensions");
+            if (modExtensionsNode == null)
+                return null;
+
+            foreach (XmlNode child in modExtensionsNode.ChildNodes)
+            {
+                if (child.NodeType != XmlNodeType.Element)
+                    continue;
+
+                if (string.Equals(child.Attributes?["Class"]?.Value, "CharacterStudio.Core.DefModExtension_EquipmentRender", StringComparison.OrdinalIgnoreCase))
+                    return child;
             }
 
             return null;

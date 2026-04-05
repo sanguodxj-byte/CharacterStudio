@@ -760,7 +760,6 @@ namespace CharacterStudio.Rendering
             int overlayOrder = 0,
             LayeredFacePartSide side = LayeredFacePartSide.None)
         {
-            float pupilMoveRange = faceConfig.eyeDirectionConfig?.pupilMoveRange ?? 0f;
             string normalizedOverlayId = PawnFaceConfig.NormalizeOverlayId(overlayId);
             
             // 修正：在标签之间添加空格，以匹配编辑器和 VanillaImportUtility 生成图层名称的惯例。
@@ -787,8 +786,6 @@ namespace CharacterStudio.Rendering
                     layer != null
                     && string.Equals(layer.layerName?.Trim(), fallbackLayerName.Trim(), StringComparison.OrdinalIgnoreCase));
             }
-
-            EyeRenderMode defaultEyeRenderMode = EyeRenderMode.TextureSwap;
 
             PawnLayerConfig resolvedLayer = editableLayer?.Clone() ?? new PawnLayerConfig();
             resolvedLayer.layerName = layerName;
@@ -837,18 +834,15 @@ namespace CharacterStudio.Rendering
                 resolvedLayer.drawOrder = Math.Min(resolvedLayer.drawOrder, defaultDrawOrder);
             }
 
-            resolvedLayer.eyeRenderMode = editableLayer?.eyeRenderMode ?? defaultEyeRenderMode;
-            resolvedLayer.variantLogic = GetResolvedLayeredFaceVariantLogic(editableLayer, displayPartType, resolvedLayer.eyeRenderMode);
-            resolvedLayer.eyeUvMoveRange = 0f;
+            resolvedLayer.variantLogic = GetResolvedLayeredFaceVariantLogic(editableLayer, displayPartType);
             return resolvedLayer;
         }
 
         private static LayerVariantLogic GetResolvedLayeredFaceVariantLogic(
             PawnLayerConfig? editableLayer,
-            LayeredFacePartType partType,
-            EyeRenderMode eyeRenderMode)
+            LayeredFacePartType partType)
         {
-            LayerVariantLogic defaultVariantLogic = GetLayeredFaceVariantLogic(partType, eyeRenderMode);
+            LayerVariantLogic defaultVariantLogic = GetLayeredFaceVariantLogic(partType);
             if (editableLayer == null)
                 return defaultVariantLogic;
 
@@ -891,7 +885,7 @@ namespace CharacterStudio.Rendering
             return true;
         }
 
-        private static LayerVariantLogic GetLayeredFaceVariantLogic(LayeredFacePartType partType, EyeRenderMode eyeRenderMode)
+        private static LayerVariantLogic GetLayeredFaceVariantLogic(LayeredFacePartType partType)
         {
             switch (partType)
             {
@@ -907,9 +901,7 @@ namespace CharacterStudio.Rendering
                 case LayeredFacePartType.Overlay:
                     return LayerVariantLogic.ChannelState;
                 case LayeredFacePartType.Pupil:
-                    return eyeRenderMode == EyeRenderMode.UvOffset
-                        ? LayerVariantLogic.None
-                        : LayerVariantLogic.EyeDirectionOnly;
+                    return LayerVariantLogic.EyeDirectionOnly;
                 case LayeredFacePartType.Hair:
                     return LayerVariantLogic.ChannelState;
                 default:

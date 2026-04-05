@@ -38,8 +38,9 @@ namespace CharacterStudio.UI
             float width = viewRect.width;
 
             float basicBlockTop = y;
-            Rect basicRect = UIHelper.DrawSectionCard(ref y, width, "CS_Attr_Section_Basic".Translate(), 190f);
+            Rect basicRect = UIHelper.DrawSectionCard(ref y, width, "CS_Attr_Section_Basic".Translate(), 218f);
             float basicY = basicRect.y;
+            UIHelper.DrawPropertyFieldWithButton(ref basicY, basicRect.width, "CS_Studio_CharacterDefinition_Title".Translate(), "CS_Studio_CharacterDefinition_InlineHintShort".Translate(), OpenCharacterDefinitionDialog, "CS_Studio_CharacterDefinition_OpenButton".Translate());
             DrawTrackedPropertyField(ref basicY, basicRect.width, "CS_Attr_Title".Translate(), ref attributes.title);
             DrawTrackedMultilineField(ref basicY, basicRect.width, "CS_Attr_BackstorySummary".Translate(), ref attributes.backstorySummary, 104f);
 
@@ -240,6 +241,21 @@ namespace CharacterStudio.UI
             }
 
             SyncAbilitiesToSkin();
+        }
+
+        private void OpenCharacterDefinitionDialog()
+        {
+            workingDocument.characterDefinition ??= new CharacterDefinition();
+            workingDocument.characterDefinition.EnsureDefaults(
+                workingSkin.defName ?? "CS_Character",
+                ResolveSpawnRaceForCurrentDesign(BuildRuntimeSkinForExecution()),
+                workingSkin.attributes);
+
+            Find.WindowStack.Add(new Dialog_CharacterDefinition(workingDocument.characterDefinition, () =>
+            {
+                isDirty = true;
+                RefreshPreview();
+            }));
         }
 
         private void MergeGeneratedCharacterAttributes(CharacterAttributeProfile current, CharacterAttributeProfile? incoming)
