@@ -4,6 +4,7 @@ using System.Linq;
 using System.Xml.Linq;
 using CharacterStudio.Abilities;
 using CharacterStudio.Core;
+using CharacterStudio.Items;
 using UnityEngine;
 
 namespace CharacterStudio.Exporter
@@ -1184,8 +1185,8 @@ namespace CharacterStudio.Exporter
                 defsRoot.Add(
                     new XElement("ThingDef", new XAttribute("ParentName", "ResourceBase"),
                         new XElement("defName", thingDefName),
-                        new XElement("label", $"Summon: {config.ModName}"),
-                        new XElement("description", $"Use to summon {config.ModName}."),
+                        new XElement("label", $"Role card: {config.ModName}"),
+                        new XElement("description", $"Use this role card to generate {config.ModName} on the map."),
                         new XElement("graphicData",
                             new XElement("texPath", "Things/Item/Resource/UnfinishedComponent"),
                             new XElement("graphicClass", "Graphic_Single")
@@ -1200,11 +1201,14 @@ namespace CharacterStudio.Exporter
                         new XElement("comps",
                             new XElement("li", new XAttribute("Class", "CompProperties_Usable"),
                                 new XElement("useJob", "UseItem"),
-                                new XElement("useLabel", "Summon")
+                                new XElement("useLabel", "Generate Role Card")
                             ),
                             new XElement("li", new XAttribute("Class", "CharacterStudio.Items.CompProperties_SummonCharacter"),
                                 new XElement("pawnKind", pawnKindName),
-                                new XElement("arrivalMode", "DropPod")
+                                new XElement("arrivalMode", config.RoleCardArrivalMode.ToString()),
+                                new XElement("spawnEvent", config.RoleCardSpawnEvent.ToString()),
+                                new XElement("spawnAnimation", config.RoleCardSpawnAnimation.ToString()),
+                                new XElement("spawnAnimationScale", config.RoleCardSpawnAnimationScale.ToString(System.Globalization.CultureInfo.InvariantCulture))
                             )
                         )
                     )

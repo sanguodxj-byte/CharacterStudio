@@ -35,6 +35,8 @@
     <CS_Ability_RuntimeComponentType_PeriodicPulse>Periodic Pulse</CS_Ability_RuntimeComponentType_PeriodicPulse>
     <CS_Ability_RuntimeComponentType_KillRefresh>Kill Refresh</CS_Ability_RuntimeComponentType_KillRefresh>
     <CS_Ability_RuntimeComponentType_ShieldAbsorb>Shield Absorb</CS_Ability_RuntimeComponentType_ShieldAbsorb>
+    <CS_Ability_RuntimeComponentType_AttachedShieldVisual>Attached Shield Visual</CS_Ability_RuntimeComponentType_AttachedShieldVisual>
+    <CS_Ability_RuntimeComponentType_ProjectileInterceptorShield>Projectile Interceptor Shield</CS_Ability_RuntimeComponentType_ProjectileInterceptorShield>
     <CS_Ability_RuntimeComponentType_ChainBounce>Chain Bounce</CS_Ability_RuntimeComponentType_ChainBounce>
     <CS_Ability_RuntimeComponentType_ExecuteBonusDamage>Execute Bonus</CS_Ability_RuntimeComponentType_ExecuteBonusDamage>
     <CS_Ability_RuntimeComponentType_MissingHealthBonusDamage>Missing Health Bonus</CS_Ability_RuntimeComponentType_MissingHealthBonusDamage>
@@ -83,6 +85,8 @@
     <CS_Studio_Runtime_Desc_PeriodicPulse>Repeatedly emit pulse effects during a short duration.</CS_Studio_Runtime_Desc_PeriodicPulse>
     <CS_Studio_Runtime_Desc_KillRefresh>Refresh part of a hotkey cooldown when this ability kills a target.</CS_Studio_Runtime_Desc_KillRefresh>
     <CS_Studio_Runtime_Desc_ShieldAbsorb>Absorb incoming damage, then convert stored value into heal or bonus damage.</CS_Studio_Runtime_Desc_ShieldAbsorb>
+    <CS_Studio_Runtime_Desc_AttachedShieldVisual>Spawn a persistent shield visual that follows the caster.</CS_Studio_Runtime_Desc_AttachedShieldVisual>
+    <CS_Studio_Runtime_Desc_ProjectileInterceptorShield>Spawn a caster-following shield that uses vanilla projectile interception.</CS_Studio_Runtime_Desc_ProjectileInterceptorShield>
     <CS_Studio_Runtime_Desc_ChainBounce>Make the effect bounce across nearby enemy targets.</CS_Studio_Runtime_Desc_ChainBounce>
     <CS_Studio_Runtime_Desc_ExecuteBonusDamage>Deal extra damage to low-health targets.</CS_Studio_Runtime_Desc_ExecuteBonusDamage>
     <CS_Studio_Runtime_Desc_MissingHealthBonusDamage>Deal scaling extra damage based on target missing health.</CS_Studio_Runtime_Desc_MissingHealthBonusDamage>

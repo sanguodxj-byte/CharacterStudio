@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CharacterStudio.Core;
 using Verse;
+using RimWorld;
 
 namespace CharacterStudio.Design
 {
@@ -14,10 +15,17 @@ namespace CharacterStudio.Design
         public Pawn? targetPawn;
         public PawnSkinDef runtimeSkin = new PawnSkinDef();
         public bool isPreview;
+        public bool spawnAsNewPawn;
         public string source = "";
         public bool isValid = true;
         public string statusMessage = "";
         public List<string> warnings = new List<string>();
+        public PawnKindDef? spawnPawnKind;
+        public ThingDef? spawnRaceDef;
+        public Faction? spawnFaction;
+        public Map? spawnMap;
+        public IntVec3 desiredSpawnCell = IntVec3.Invalid;
+        public CharacterSpawnSettings spawnSettings = new CharacterSpawnSettings();
 
         public CharacterApplicationPlan Clone()
         {
@@ -26,10 +34,17 @@ namespace CharacterStudio.Design
                 targetPawn = targetPawn,
                 runtimeSkin = runtimeSkin?.Clone() ?? new PawnSkinDef(),
                 isPreview = isPreview,
+                spawnAsNewPawn = spawnAsNewPawn,
                 source = source ?? string.Empty,
                 isValid = isValid,
                 statusMessage = statusMessage ?? string.Empty,
-                warnings = new List<string>(warnings ?? new List<string>())
+                warnings = new List<string>(warnings ?? new List<string>()),
+                spawnPawnKind = spawnPawnKind,
+                spawnRaceDef = spawnRaceDef,
+                spawnFaction = spawnFaction,
+                spawnMap = spawnMap,
+                desiredSpawnCell = desiredSpawnCell,
+                spawnSettings = spawnSettings?.Clone() ?? new CharacterSpawnSettings()
             };
         }
     }

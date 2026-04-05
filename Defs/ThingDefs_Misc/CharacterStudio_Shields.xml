@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <ThingDef ParentName="BulletShieldPsychic">
+    <defName>CS_AttachedShieldVisual</defName>
+    <label>attached shield visual</label>
+    <thingClass>ThingWithComps</thingClass>
+    <graphicData>
+      <graphicClass>Graphic_Single</graphicClass>
+      <texPath>Things/Ethereal/PsychicShieldRipples</texPath>
+      <shaderType>BulletShieldPsychic</shaderType>
+      <color>(180, 231, 237)</color>
+      <drawSize>5.2</drawSize>
+      <shaderParameters>
+        <_PulseInterval>0.5</_PulseInterval>
+        <_DistortionScale>0.45</_DistortionScale>
+        <_DistortionIntensity>0.12</_DistortionIntensity>
+        <_MinAlpha>0.08</_MinAlpha>
+        <_MaxAlpha>0.24</_MaxAlpha>
+        <_DistortionTex>/Things/Mote/SmokeTiled</_DistortionTex>
+      </shaderParameters>
+    </graphicData>
+    <comps>
+      <li Class="CompProperties_DestroyAfterDelay">
+        <delayTicks>240</delayTicks>
+      </li>
+    </comps>
+  </ThingDef>
+
+  <ThingDef ParentName="BuildingBase">
+    <defName>CS_ProjectileInterceptorShield</defName>
+    <label>projectile interceptor shield</label>
+    <thingClass>ThingWithComps</thingClass>
+    <category>PsychicEmitter</category>
+    <tickerType>Normal</tickerType>
+    <drawerType>RealtimeOnly</drawerType>
+    <drawOffscreen>true</drawOffscreen>
+    <useHitPoints>false</useHitPoints>
+    <selectable>false</selectable>
+    <graphicData>
+      <texPath>Things/Ethereal/PsychicShieldRipples</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <shaderType>BulletShieldPsychic</shaderType>
+      <color>(180, 231, 237)</color>
+      <drawSize>5.8</drawSize>
+      <shaderParameters>
+        <_PulseInterval>0.5</_PulseInterval>
+        <_DistortionScale>0.5</_DistortionScale>
+        <_DistortionIntensity>0.15</_DistortionIntensity>
+        <_MinAlpha>0.1</_MinAlpha>
+        <_MaxAlpha>0.3</_MaxAlpha>
+        <_DistortionTex>/Things/Mote/SmokeTiled</_DistortionTex>
+      </shaderParameters>
+    </graphicData>
+    <comps>
+      <li Class="RimWorld.CompProperties_ProjectileInterceptor">
+        <radius>2.9</radius>
+        <maxHitPoints>60</maxHitPoints>
+        <rechargeTickDelay>180</rechargeTickDelay>
+        <rechargeTicks>240</rechargeTicks>
+        <interceptGroundProjectiles>true</interceptGroundProjectiles>
+        <interceptAirProjectiles>true</interceptAirProjectiles>
+        <useHitPoints>true</useHitPoints>
+        <alwaysInterceptNonHostile>false</alwaysInterceptNonHostile>
+        <interceptOutgoingProjectiles>true</interceptOutgoingProjectiles>
+        <interceptEffect>Interceptor_BlockedProjectilePsychic</interceptEffect>
+        <minAlpha>0.2</minAlpha>
+        <color>(0.4, 0.4, 0.4)</color>
+      </li>
+      <li Class="CompProperties_DestroyAfterDelay">
+        <delayTicks>240</delayTicks>
+      </li>
+    </comps>
+  </ThingDef>
+</Defs>

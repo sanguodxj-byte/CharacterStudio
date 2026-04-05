@@ -32,6 +32,35 @@
     <CS_Ability_Validate_ShieldDurationTicks>Shield duration must be greater than 0 ticks.</CS_Ability_Validate_ShieldDurationTicks>
     <CS_Ability_Validate_ShieldMaxDamage>Shield max damage must be greater than 0.</CS_Ability_Validate_ShieldMaxDamage>
     <CS_Ability_Validate_ShieldRatios>Shield heal ratio and bonus damage ratio cannot be negative.</CS_Ability_Validate_ShieldRatios>
+    <CS_Ability_Validate_AttachedShieldVisualScale>Attached shield visual scale must be greater than 0.</CS_Ability_Validate_AttachedShieldVisualScale>
+    <CS_Ability_Validate_ProjectileInterceptorThingDef>Projectile interceptor shield requires a ThingDef name.</CS_Ability_Validate_ProjectileInterceptorThingDef>
+    <CS_Ability_Validate_ProjectileInterceptorDuration>Projectile interceptor shield duration must be greater than 0 ticks.</CS_Ability_Validate_ProjectileInterceptorDuration>
+    <CS_Studio_Runtime_ShieldVisualScale>Shield Visual Scale</CS_Studio_Runtime_ShieldVisualScale>
+    <CS_Studio_Runtime_ShieldVisualHeightOffset>Shield Visual Height Offset</CS_Studio_Runtime_ShieldVisualHeightOffset>
+    <CS_Studio_Runtime_ShieldInterceptorThingDef>Interceptor Shield ThingDef</CS_Studio_Runtime_ShieldInterceptorThingDef>
+    <CS_Studio_Runtime_ShieldInterceptorDuration>Interceptor Duration (Ticks)</CS_Studio_Runtime_ShieldInterceptorDuration>
+    <CS_Studio_Runtime_VanillaFlyerThingDef>Flyer ThingDef</CS_Studio_Runtime_VanillaFlyerThingDef>
+    <CS_Studio_Runtime_FlyerWarmupTicks>Flyer Warmup (Ticks)</CS_Studio_Runtime_FlyerWarmupTicks>
+    <CS_Studio_Runtime_LaunchFromCasterPosition>Launch From Caster Position</CS_Studio_Runtime_LaunchFromCasterPosition>
+    <CS_Studio_Runtime_RequireValidTargetCell>Require Valid Target Cell</CS_Studio_Runtime_RequireValidTargetCell>
+    <CS_Studio_Runtime_StoreTargetForFollowup>Store Target For Followup</CS_Studio_Runtime_StoreTargetForFollowup>
+    <CS_Studio_Runtime_EnableFlightOnlyWindow>Enable Flight-only Window</CS_Studio_Runtime_EnableFlightOnlyWindow>
+    <CS_Studio_Runtime_FlightOnlyWindowTicks>Flight-only Window (Ticks)</CS_Studio_Runtime_FlightOnlyWindowTicks>
+    <CS_Studio_Runtime_FlightOnlyAbility>Flight Followup Ability</CS_Studio_Runtime_FlightOnlyAbility>
+    <CS_Studio_Runtime_HideCasterDuringTakeoff>Hide Caster During Takeoff</CS_Studio_Runtime_HideCasterDuringTakeoff>
+    <CS_Studio_Runtime_AutoExpireFlightMarkerOnLanding>Auto Expire Flight Marker On Landing</CS_Studio_Runtime_AutoExpireFlightMarkerOnLanding>
+    <CS_Studio_Runtime_RequiredFlightSourceAbility>Required Flight Source Ability</CS_Studio_Runtime_RequiredFlightSourceAbility>
+    <CS_Studio_Runtime_RequireReservedTargetCell>Require Reserved Target Cell</CS_Studio_Runtime_RequireReservedTargetCell>
+    <CS_Studio_Runtime_ConsumeFlightStateOnCast>Consume Flight State On Cast</CS_Studio_Runtime_ConsumeFlightStateOnCast>
+    <CS_Studio_Runtime_OnlyUseDuringFlightWindow>Only Use During Flight Window</CS_Studio_Runtime_OnlyUseDuringFlightWindow>
+    <CS_Studio_Runtime_LandingBurstRadius>Landing Burst Radius</CS_Studio_Runtime_LandingBurstRadius>
+    <CS_Studio_Runtime_LandingBurstDamage>Landing Burst Damage</CS_Studio_Runtime_LandingBurstDamage>
+    <CS_Studio_Runtime_LandingEffecterDefName>Landing EffecterDef</CS_Studio_Runtime_LandingEffecterDefName>
+    <CS_Studio_Runtime_LandingSoundDefName>Landing SoundDef</CS_Studio_Runtime_LandingSoundDefName>
+    <CS_Studio_Runtime_LandingAffectBuildings>Affect Buildings</CS_Studio_Runtime_LandingAffectBuildings>
+    <CS_Studio_Runtime_LandingAffectCells>Affect Cells</CS_Studio_Runtime_LandingAffectCells>
+    <CS_Studio_Runtime_LandingKnockbackTargets>Knockback Targets</CS_Studio_Runtime_LandingKnockbackTargets>
+    <CS_Studio_Runtime_LandingKnockbackDistance>Knockback Distance</CS_Studio_Runtime_LandingKnockbackDistance>
     <CS_Ability_Validate_SlowFieldDurationTicks>Slow field duration must be greater than 0 ticks.</CS_Ability_Validate_SlowFieldDurationTicks>
     <CS_Ability_Validate_SlowFieldHediffDefName>Slow field must specify a HediffDefName.</CS_Ability_Validate_SlowFieldHediffDefName>
     <CS_Ability_Validate_SlowFieldRadius>Slow field radius must be greater than 0.</CS_Ability_Validate_SlowFieldRadius>
@@ -454,6 +483,15 @@
     <CS_Studio_Panel_CollapseAll>Collapse All</CS_Studio_Panel_CollapseAll>
     <CS_Studio_Panel_ExpandAll>Expand All</CS_Studio_Panel_ExpandAll>
     <CS_Studio_Panel_RefreshTree>Refresh Tree</CS_Studio_Panel_RefreshTree>
+    <CS_ShieldHud_Title>Shield</CS_ShieldHud_Title>
+    <CS_ShieldHud_Status_Active>active</CS_ShieldHud_Status_Active>
+    <CS_ShieldHud_Status_Low>low integrity</CS_ShieldHud_Status_Low>
+    <CS_ShieldHud_Status_Depleted>depleted</CS_ShieldHud_Status_Depleted>
+    <CS_ShieldHud_Status_Stored>+{0} reserve</CS_ShieldHud_Status_Stored>
+    <CS_ShieldHud_Tooltip_Current>Current</CS_ShieldHud_Tooltip_Current>
+    <CS_ShieldHud_Tooltip_Capacity>Capacity</CS_ShieldHud_Tooltip_Capacity>
+    <CS_ShieldHud_Tooltip_Stored>Stored</CS_ShieldHud_Tooltip_Stored>
+    <CS_ShieldHud_Tooltip_Remaining>Remaining</CS_ShieldHud_Tooltip_Remaining>
     <CS_Studio_Section_Rendering>Rendering</CS_Studio_Section_Rendering>
     <CS_Studio_Section_SkinBase>Skin Base</CS_Studio_Section_SkinBase>
     <CS_Studio_Section_Targets>Targets</CS_Studio_Section_Targets>

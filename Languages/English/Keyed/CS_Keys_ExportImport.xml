@@ -33,7 +33,7 @@
     <CS_Studio_Export_IncludeGeneDef>Include Gene Definition</CS_Studio_Export_IncludeGeneDef>
     <CS_Studio_Export_IncludePawnKind>Include PawnKind Definition</CS_Studio_Export_IncludePawnKind>
     <CS_Studio_Export_IncludeSkinDef>Include Skin Definition</CS_Studio_Export_IncludeSkinDef>
-    <CS_Studio_Export_IncludeSummonItem>Include Summon Item</CS_Studio_Export_IncludeSummonItem>
+    <CS_Studio_Export_IncludeSummonItem>Include Role Card Item</CS_Studio_Export_IncludeSummonItem>
     <CS_Studio_Export_LocalFiles>Local Files</CS_Studio_Export_LocalFiles>
     <CS_Studio_Export_ModName>Mod Name</CS_Studio_Export_ModName>
     <CS_Studio_Export_ModuleOptions>Module Options</CS_Studio_Export_ModuleOptions>
@@ -41,6 +41,23 @@
     <CS_Studio_Export_OutputSettings>Output Settings</CS_Studio_Export_OutputSettings>
     <CS_Studio_Export_OverlayMode>Overlay Mode</CS_Studio_Export_OverlayMode>
     <CS_Studio_Export_OverlayMode_Desc>Does not hide vanilla appearance, only adds layers (for accessories like glasses, scars, etc.)</CS_Studio_Export_OverlayMode_Desc>
+    <CS_Studio_Export_RoleCardAnimation>Role Card Spawn Animation</CS_Studio_Export_RoleCardAnimation>
+    <CS_Studio_Export_RoleCardAnimationScale>Role Card Animation Scale</CS_Studio_Export_RoleCardAnimationScale>
+    <CS_Studio_Export_RoleCardAnimation_None>None</CS_Studio_Export_RoleCardAnimation_None>
+    <CS_Studio_Export_RoleCardAnimation_DustPuff>Dust Puff</CS_Studio_Export_RoleCardAnimation_DustPuff>
+    <CS_Studio_Export_RoleCardAnimation_MicroSparks>Micro Sparks</CS_Studio_Export_RoleCardAnimation_MicroSparks>
+    <CS_Studio_Export_RoleCardAnimation_LightningGlow>Lightning Glow</CS_Studio_Export_RoleCardAnimation_LightningGlow>
+    <CS_Studio_Export_RoleCardAnimation_FireGlow>Fire Glow</CS_Studio_Export_RoleCardAnimation_FireGlow>
+    <CS_Studio_Export_RoleCardAnimation_Smoke>Smoke</CS_Studio_Export_RoleCardAnimation_Smoke>
+    <CS_Studio_Export_RoleCardAnimation_ExplosionEffect>Explosion Effect</CS_Studio_Export_RoleCardAnimation_ExplosionEffect>
+    <CS_Studio_Export_RoleCardArrival>Role Card Arrival Mode</CS_Studio_Export_RoleCardArrival>
+    <CS_Studio_Export_RoleCardArrival_Standing>Spawn Directly</CS_Studio_Export_RoleCardArrival_Standing>
+    <CS_Studio_Export_RoleCardArrival_DropPod>Drop Pod</CS_Studio_Export_RoleCardArrival_DropPod>
+    <CS_Studio_Export_RoleCardEvent>Role Card Spawn Event</CS_Studio_Export_RoleCardEvent>
+    <CS_Studio_Export_RoleCardEvent_None>None</CS_Studio_Export_RoleCardEvent_None>
+    <CS_Studio_Export_RoleCardEvent_Message>Positive Message</CS_Studio_Export_RoleCardEvent_Message>
+    <CS_Studio_Export_RoleCardEvent_PositiveLetter>Positive Letter</CS_Studio_Export_RoleCardEvent_PositiveLetter>
+    <CS_Studio_Export_RoleCardOptions>Role Card Options</CS_Studio_Export_RoleCardOptions>
     <CS_Studio_Export_PathHint>Please manually copy the mod export path here.\n\nDefault RimWorld Mods folder:\n{0}</CS_Studio_Export_PathHint>
     <CS_Studio_Export_PreviewAssets>Preview Asset Sources</CS_Studio_Export_PreviewAssets>
     <CS_Studio_Export_Status_Exporting>Exporting...</CS_Studio_Export_Status_Exporting>

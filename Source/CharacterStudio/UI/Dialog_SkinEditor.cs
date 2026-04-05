@@ -77,6 +77,13 @@ namespace CharacterStudio.UI
         private EditorTab currentTab = EditorTab.BaseAppearance;
         private string statusMessage = "";
         private float statusMessageTime = 0f;
+        private CharacterSpawnSettings directSpawnSettings = new CharacterSpawnSettings
+        {
+            arrivalMode = Items.SummonArrivalMode.DropPod,
+            spawnEvent = Items.SummonSpawnEventMode.PositiveLetter,
+            spawnAnimation = Items.SummonSpawnAnimationMode.ExplosionEffect,
+            spawnAnimationScale = 1f
+        };
 
         private enum NewSkinWorkflow { StandardLayers, CompositeBase, AnimalStandardLayers, MechanoidStandardLayers }
 

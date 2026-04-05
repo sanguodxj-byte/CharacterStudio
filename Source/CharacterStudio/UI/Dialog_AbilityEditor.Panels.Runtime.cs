@@ -19,6 +19,8 @@ namespace CharacterStudio.UI
             AbilityRuntimeComponentType.PeriodicPulse,
             AbilityRuntimeComponentType.KillRefresh,
             AbilityRuntimeComponentType.ShieldAbsorb,
+            AbilityRuntimeComponentType.AttachedShieldVisual,
+            AbilityRuntimeComponentType.ProjectileInterceptorShield,
             AbilityRuntimeComponentType.ChainBounce,
             AbilityRuntimeComponentType.ExecuteBonusDamage,
             AbilityRuntimeComponentType.MissingHealthBonusDamage,
@@ -84,6 +86,8 @@ namespace CharacterStudio.UI
                 || type == AbilityRuntimeComponentType.KillRefresh
                 || type == AbilityRuntimeComponentType.PeriodicPulse
                 || type == AbilityRuntimeComponentType.ShieldAbsorb
+                || type == AbilityRuntimeComponentType.AttachedShieldVisual
+                || type == AbilityRuntimeComponentType.ProjectileInterceptorShield
                 || type == AbilityRuntimeComponentType.MarkDetonation
                 || type == AbilityRuntimeComponentType.ComboStacks
                 || type == AbilityRuntimeComponentType.DashEmpoweredStrike
@@ -107,6 +111,8 @@ namespace CharacterStudio.UI
                 AbilityRuntimeComponentType.PeriodicPulse => "CS_Studio_Runtime_Desc_PeriodicPulse".Translate(),
                 AbilityRuntimeComponentType.KillRefresh => "CS_Studio_Runtime_Desc_KillRefresh".Translate(),
                 AbilityRuntimeComponentType.ShieldAbsorb => "CS_Studio_Runtime_Desc_ShieldAbsorb".Translate(),
+                AbilityRuntimeComponentType.AttachedShieldVisual => "CS_Studio_Runtime_Desc_AttachedShieldVisual".Translate(),
+                AbilityRuntimeComponentType.ProjectileInterceptorShield => "CS_Studio_Runtime_Desc_ProjectileInterceptorShield".Translate(),
                 AbilityRuntimeComponentType.ChainBounce => "CS_Studio_Runtime_Desc_ChainBounce".Translate(),
                 AbilityRuntimeComponentType.ExecuteBonusDamage => "CS_Studio_Runtime_Desc_ExecuteBonusDamage".Translate(),
                 AbilityRuntimeComponentType.MissingHealthBonusDamage => "CS_Studio_Runtime_Desc_MissingHealthBonusDamage".Translate(),
@@ -186,6 +192,14 @@ namespace CharacterStudio.UI
                     config.shieldDurationTicks = 240f;
                     config.shieldHealRatio = 0.5f;
                     config.shieldBonusDamageRatio = 0.25f;
+                    break;
+                case AbilityRuntimeComponentType.AttachedShieldVisual:
+                    config.shieldVisualScale = 1.35f;
+                    config.shieldVisualHeightOffset = 0f;
+                    break;
+                case AbilityRuntimeComponentType.ProjectileInterceptorShield:
+                    config.shieldInterceptorThingDefName = "CS_ProjectileInterceptorShield";
+                    config.shieldInterceptorDurationTicks = 240;
                     break;
                 case AbilityRuntimeComponentType.ChainBounce:
                     config.maxBounceCount = 4;

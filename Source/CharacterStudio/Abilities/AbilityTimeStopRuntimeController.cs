@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
+using CharacterStudio.Core;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -455,8 +456,7 @@ namespace CharacterStudio.Abilities
 
         private static void ReleaseCasterForTimeStop(Pawn caster)
         {
-            caster.stances?.CancelBusyStanceSoft();
-            caster.jobs?.EndCurrentJob(Verse.AI.JobCondition.InterruptForced, true, true);
+            caster.stances?.CancelBusyStanceHard();
         }
     }
 
@@ -505,6 +505,9 @@ namespace CharacterStudio.Abilities
             PatchPrefix(harmony, typeof(Pawn), nameof(Pawn.TickRare), nameof(Pawn_TickRare_Prefix));
             PatchPrefix(harmony, typeof(Map), nameof(Map.MapPreTick), nameof(Map_MapPreTick_Prefix));
             PatchPrefix(harmony, typeof(Map), nameof(Map.MapPostTick), nameof(Map_MapPostTick_Prefix));
+            PatchPrefix(harmony,
+                AccessTools.PropertyGetter(typeof(Pawn_StanceTracker), nameof(Pawn_StanceTracker.FullBodyBusy)),
+                nameof(Pawn_StanceTracker_FullBodyBusy_Prefix));
             PatchPrefix(harmony, typeof(FleckManager), nameof(FleckManager.FleckManagerUpdate), nameof(FleckManager_Update_Prefix));
             PatchPrefix(harmony, typeof(Mote), nameof(Mote.RealtimeUpdate), nameof(Mote_RealtimeUpdate_Prefix));
             PatchPrefix(harmony, typeof(PostTickVisuals), nameof(PostTickVisuals.ProcessPostTickVisuals), nameof(PostTickVisuals_ProcessPostTickVisuals_Prefix));
@@ -579,6 +582,30 @@ namespace CharacterStudio.Abilities
         public static bool Map_MapPostTick_Prefix(Map __instance)
         {
             return !AbilityTimeStopRuntimeController.ShouldSkipMapTick(__instance);
+        }
+
+        public static bool Pawn_StanceTracker_FullBodyBusy_Prefix(Pawn_StanceTracker __instance, ref bool __result)
+        {
+            Pawn? pawn = __instance?.pawn;
+            if (__instance == null)
+            {
+                return true;
+            }
+
+            CompPawnSkin? skinComp = pawn?.GetComp<CompPawnSkin>();
+            if (skinComp != null && skinComp.IsForcedMoveBusy())
+            {
+                __result = true;
+                return false;
+            }
+
+            if (!AbilityTimeStopRuntimeController.CanPawnAct(pawn))
+            {
+                __result = true;
+                return false;
+            }
+
+            return true;
         }
 
         public static bool FleckManager_Update_Prefix(FleckManager __instance)

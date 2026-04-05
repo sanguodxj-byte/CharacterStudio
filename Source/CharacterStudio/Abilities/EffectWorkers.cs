@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CharacterStudio.Core;
 using RimWorld;
 using Verse;
 
@@ -143,6 +144,7 @@ namespace CharacterStudio.Abilities
         public override void Apply(AbilityEffectConfig config, LocalTargetInfo target, Pawn caster)
         {
             if (target.Thing is not Pawn targetPawn) return;
+            if (targetPawn == caster) return;
 
             switch (config.controlMode)
             {
@@ -177,14 +179,20 @@ namespace CharacterStudio.Abilities
         {
             if (caster.Map == null || distance <= 0) return;
 
-            IntVec3 direction = targetPawn.Position - caster.Position;
-            if (direction == IntVec3.Zero)
-                direction = caster.Rotation.FacingCell;
-
-            direction = new IntVec3(Math.Sign(direction.x), 0, Math.Sign(direction.z));
+            IntVec3 direction = ResolveForcedMoveDirection(targetPawn.Position, caster.Position, caster.Rotation.FacingCell);
 
             if (!pushAway)
                 direction = new IntVec3(-direction.x, 0, -direction.z);
+
+            if (direction == IntVec3.Zero)
+                return;
+
+            CompPawnSkin? skinComp = targetPawn.GetComp<CompPawnSkin>();
+            if (skinComp != null)
+            {
+                skinComp.BeginForcedMove(direction, distance);
+                return;
+            }
 
             IntVec3 bestCell = targetPawn.Position;
             for (int i = 0; i < distance; i++)
@@ -196,7 +204,38 @@ namespace CharacterStudio.Abilities
             }
 
             if (bestCell != targetPawn.Position)
+            {
                 targetPawn.Position = bestCell;
+                targetPawn.Notify_Teleported(true, false);
+            }
+        }
+
+        internal static IntVec3 ResolveForcedMoveDirection(IntVec3 targetCell, IntVec3 sourceCell, IntVec3 fallbackFacing)
+        {
+            IntVec3 delta = targetCell - sourceCell;
+            if (delta == IntVec3.Zero)
+            {
+                delta = fallbackFacing;
+            }
+
+            int absX = Math.Abs(delta.x);
+            int absZ = Math.Abs(delta.z);
+            if (absX == 0 && absZ == 0)
+            {
+                return IntVec3.Zero;
+            }
+
+            if (absX > absZ)
+            {
+                return new IntVec3(Math.Sign(delta.x), 0, 0);
+            }
+
+            if (absZ > absX)
+            {
+                return new IntVec3(0, 0, Math.Sign(delta.z));
+            }
+
+            return new IntVec3(Math.Sign(delta.x), 0, Math.Sign(delta.z));
         }
 
         /// <summary>

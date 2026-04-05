@@ -65,6 +65,16 @@ namespace CharacterStudio.Abilities
 
             try
             {
+                Map launchMap = caster.MapHeld;
+                IntVec3 launchCell = caster.PositionHeld;
+                Vector3? startVec = component.launchFromCasterPosition ? caster.TrueCenter() : (Vector3?)null;
+
+                if (launchMap == null)
+                {
+                    failureReason = "launch map is null before flyer creation";
+                    return false;
+                }
+
                 PawnFlyer? flyer = PawnFlyer.MakeFlyer(
                     flyerDef,
                     caster,
@@ -72,7 +82,7 @@ namespace CharacterStudio.Abilities
                     flightEffecterDef: null,
                     landingSound: null,
                     flyWithCarriedThing: false,
-                    overrideStartVec: component.launchFromCasterPosition ? caster.TrueCenter() : (Vector3?)null,
+                    overrideStartVec: startVec,
                     triggeringAbility: null,
                     target: target) as PawnFlyer;
 
@@ -90,8 +100,7 @@ namespace CharacterStudio.Abilities
                 }
 
                 csFlyer.InitializeFlight(caster, destination, sourceAbilityDefName, component);
-                Map launchMap = caster.MapHeld;
-                GenSpawn.Spawn(csFlyer, caster.PositionHeld, launchMap, WipeMode.Vanish);
+                GenSpawn.Spawn(csFlyer, launchCell, launchMap, WipeMode.Vanish);
 
                 if (!csFlyer.Spawned || csFlyer.Map != launchMap)
                 {
@@ -101,7 +110,7 @@ namespace CharacterStudio.Abilities
                     {
                         IntVec3 fallbackCell = destination.IsValid && destination.InBounds(launchMap) && destination.Standable(launchMap)
                             ? destination
-                            : (caster.PositionHeld.IsValid && caster.PositionHeld.InBounds(launchMap) ? caster.PositionHeld : IntVec3.Invalid);
+                            : (launchCell.IsValid && launchCell.InBounds(launchMap) ? launchCell : IntVec3.Invalid);
 
                         if (!fallbackCell.IsValid)
                         {
@@ -244,6 +253,26 @@ namespace CharacterStudio.Abilities
             }
 
             return true;
+        }
+
+        public static bool ShouldBlockStandardAbilityAccessDuringFlight(Pawn? pawn, ModularAbilityDef? ability)
+        {
+            if (pawn == null || ability == null)
+            {
+                return false;
+            }
+
+            CompPawnSkin? skinComp = pawn.GetComp<CompPawnSkin>();
+            if (skinComp?.isInVanillaFlight != true)
+            {
+                return false;
+            }
+
+            bool hasFlightOnlyFollowup = ability.runtimeComponents?.Any(component => component != null
+                && component.enabled
+                && component.type == AbilityRuntimeComponentType.FlightOnlyFollowup) == true;
+
+            return !hasFlightOnlyFollowup;
         }
 
         public static LocalTargetInfo ResolveFollowupTarget(Pawn? pawn, ModularAbilityDef? ability, LocalTargetInfo fallbackTarget)
@@ -446,16 +475,17 @@ namespace CharacterStudio.Abilities
             }
 
             int steps = Mathf.Max(1, Mathf.RoundToInt(knockbackDistance));
-            IntVec3 direction = targetPawn.Position - sourcePawn.Position;
-            if (direction == IntVec3.Zero)
-            {
-                direction = targetPawn.Position - sourcePawn.Position;
-            }
-
-            direction = new IntVec3(Math.Sign(direction.x), 0, Math.Sign(direction.z));
+            IntVec3 direction = EffectWorker_Control.ResolveForcedMoveDirection(targetPawn.Position, sourcePawn.Position, sourcePawn.Rotation.FacingCell);
             if (direction == IntVec3.Zero)
             {
                 direction = sourcePawn.Rotation.FacingCell;
+            }
+
+            CompPawnSkin? skinComp = targetPawn.GetComp<CompPawnSkin>();
+            if (skinComp != null)
+            {
+                skinComp.BeginForcedMove(direction, steps);
+                return;
             }
 
             IntVec3 bestCell = targetPawn.Position;
@@ -473,6 +503,7 @@ namespace CharacterStudio.Abilities
             if (bestCell != targetPawn.Position)
             {
                 targetPawn.Position = bestCell;
+                targetPawn.Notify_Teleported(true, false);
             }
         }
 
@@ -514,6 +545,7 @@ namespace CharacterStudio.Abilities
             this.sourceComponent = component;
             this.launchTick = Find.TickManager?.TicksGame ?? 0;
             this.cachedFlightDurationTicks = ResolveFlightDurationTicks();
+            this.ticksFlightTime = this.cachedFlightDurationTicks;
 
             if (component.hideCasterDuringTakeoff)
             {
@@ -522,7 +554,19 @@ namespace CharacterStudio.Abilities
 
             if (component.flyerWarmupTicks > 0)
             {
-                this.launchTick += component.flyerWarmupTicks;
+                this.ticksFlightTime += component.flyerWarmupTicks;
+                this.cachedFlightDurationTicks += component.flyerWarmupTicks;
+            }
+        }
+
+        public override void SpawnSetup(Map map, bool respawningAfterLoad)
+        {
+            base.SpawnSetup(map, respawningAfterLoad);
+
+            this.ticksFlightTime = Math.Max(1, this.cachedFlightDurationTicks);
+            if (this.ticksFlying > this.ticksFlightTime)
+            {
+                this.ticksFlying = this.ticksFlightTime;
             }
         }
 
@@ -553,6 +597,24 @@ namespace CharacterStudio.Abilities
             try
             {
                 base.RespawnPawn();
+
+                if (pawn != null && (pawn.Map == null || !pawn.Spawned))
+                {
+                    Map? map = this.Map ?? this.MapHeld;
+                    if (map != null)
+                    {
+                        IntVec3 fallbackCell = landingCell.IsValid && landingCell.InBounds(map) && landingCell.Standable(map)
+                            ? landingCell
+                            : CellFinder.StandableCellNear(this.PositionHeld.IsValid ? this.PositionHeld : map.Center, map, 6);
+
+                        if (fallbackCell.IsValid)
+                        {
+                            GenSpawn.Spawn(pawn, fallbackCell, map, WipeMode.Vanish);
+                            pawn.Notify_Teleported(true, true);
+                        }
+                    }
+                }
+
                 AbilityVanillaFlightUtility.TryApplyLandingBurst(pawn, landingCell, abilityDefName);
             }
             finally

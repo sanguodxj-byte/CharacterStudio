@@ -355,7 +355,11 @@ namespace CharacterStudio.UI
             Find.WindowStack.Add(new Dialog_FaceMovementSettings(this));
         }
 
-        internal void DrawFaceMovementDialogContents(ref float y, float width)
+        internal void DrawFaceMovementDialogContents(
+            ref float y,
+            float width,
+            Func<string, bool>? isSectionExpanded = null,
+            Action<string>? toggleSectionExpanded = null)
         {
             PawnFaceConfig? fc = workingSkin.faceConfig;
             if (fc == null)
@@ -366,7 +370,7 @@ namespace CharacterStudio.UI
 
             if (fc.workflowMode == FaceWorkflowMode.LayeredDynamic)
             {
-                DrawLayeredPartMotionSection(fc, ref y, width);
+                DrawLayeredPartMotionSection(fc, ref y, width, isSectionExpanded, toggleSectionExpanded);
             }
             else
             {
@@ -388,7 +392,11 @@ namespace CharacterStudio.UI
             DrawSelectedLayerExpressionMovementSection(ref y, width, workingSkin.layers[selectedLayerIndex]);
         }
 
-        internal void DrawFaceRuntimeTuningDialogContents(ref float y, float width)
+        internal void DrawFaceRuntimeTuningDialogContents(
+            ref float y,
+            float width,
+            Func<string, bool>? isSectionExpanded = null,
+            Action<string>? toggleSectionExpanded = null)
         {
             PawnFaceConfig? fc = workingSkin.faceConfig;
             if (fc == null)
@@ -396,8 +404,7 @@ namespace CharacterStudio.UI
                 return;
             }
 
-            DrawOverlayMappingSection(ref y, width, fc);
-            DrawFaceTuningSections(ref y, width, fc);
+            DrawFaceTuningSections(ref y, width, fc, isSectionExpanded, toggleSectionExpanded);
         }
 
         private void DrawOverlayMappingSection(ref float y, float width, PawnFaceConfig fc)
@@ -1337,10 +1344,15 @@ namespace CharacterStudio.UI
             }
         }
 
-        private void DrawLayeredPartMotionSection(PawnFaceConfig fc, ref float y, float width)
+        private void DrawLayeredPartMotionSection(
+            PawnFaceConfig fc,
+            ref float y,
+            float width,
+            Func<string, bool>? isSectionExpanded = null,
+            Action<string>? toggleSectionExpanded = null)
         {
-            UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_MovementDialog_FaceSection".Translate());
-            DrawPropertyHint(ref y, width, "CS_Studio_Face_MovementDialog_FaceHint".Translate());
+            if (!DrawCollapsibleFaceSectionHeader(ref y, width, "FaceSection", "CS_Studio_Face_MovementDialog_FaceSection".Translate(), isSectionExpanded, toggleSectionExpanded))
+                return;
 
             UIHelper.DrawPropertyFieldWithButton(
                 ref y,
@@ -1378,6 +1390,8 @@ namespace CharacterStudio.UI
                     }
                 }
             }
+
+            y += 4f;
         }
 
         private void DrawLayeredPartMotionEditorGroup(PawnFaceConfig fc, ref float y, float width, LayeredFacePartType partType)
@@ -1540,10 +1554,16 @@ namespace CharacterStudio.UI
             DrawEyeMotionConfigSection(ref y, width, eyeCfg.eyeMotion, eyeCfg.pupilMotion);
         }
 
-        private void DrawEyeMotionConfigSection(ref float y, float width, PawnEyeDirectionConfig.EyeMotionConfig eyeMotion, PawnEyeDirectionConfig.PupilMotionConfig pupilMotion)
+        private void DrawEyeMotionConfigSection(
+            ref float y,
+            float width,
+            PawnEyeDirectionConfig.EyeMotionConfig eyeMotion,
+            PawnEyeDirectionConfig.PupilMotionConfig pupilMotion,
+            Func<string, bool>? isSectionExpanded = null,
+            Action<string>? toggleSectionExpanded = null)
         {
-            y += 6f;
-            UIHelper.DrawSectionTitle(ref y, width, GetFaceMotionSectionLabel("EyeMotion"));
+            if (DrawCollapsibleFaceSectionHeader(ref y, width, "EyeMotion", GetFaceMotionSectionLabel("EyeMotion"), isSectionExpanded, toggleSectionExpanded))
+            {
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Eye_SideBiasX"), ref eyeMotion.sideBiasX, 0f, 0.01f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Eye_PrimaryWaveOffsetZ"), ref eyeMotion.primaryWaveOffsetZ, -0.01f, 0.01f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Eye_DirLeftOffsetX"), ref eyeMotion.dirLeftOffsetX, -0.01f, 0.01f, "F6");
@@ -1568,9 +1588,11 @@ namespace CharacterStudio.UI
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Eye_SlowWaveOffsetZ"), ref eyeMotion.slowWaveOffsetZ, -0.01f, 0.01f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Eye_ScaleXBase"), ref eyeMotion.scaleXBase, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Eye_ScaleXWaveAmplitude"), ref eyeMotion.scaleXWaveAmplitude, 0f, 1f, "F4");
+            y += 4f;
+            }
 
-            y += 6f;
-            UIHelper.DrawSectionTitle(ref y, width, GetFaceMotionSectionLabel("PupilMotion"));
+            if (DrawCollapsibleFaceSectionHeader(ref y, width, "PupilMotion", GetFaceMotionSectionLabel("PupilMotion"), isSectionExpanded, toggleSectionExpanded))
+            {
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_SideBiasX"), ref pupilMotion.sideBiasX, 0f, 0.01f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_SlowWaveOffsetZ"), ref pupilMotion.slowWaveOffsetZ, -0.01f, 0.01f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DirLeftOffsetX"), ref pupilMotion.dirLeftOffsetX, -0.01f, 0.01f, "F6");
@@ -1597,9 +1619,58 @@ namespace CharacterStudio.UI
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DilatedScaleBase"), ref pupilMotion.dilatedScaleBase, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DilatedMaxScaleBase"), ref pupilMotion.dilatedMaxScaleBase, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_ScaredPulseScaleBase"), ref pupilMotion.scaredPulseScaleBase, 0f, 3f, "F4");
+            y += 4f;
+            }
         }
 
-        private void DrawFaceTuningSections(ref float y, float width, PawnFaceConfig fc)
+        private bool DrawCollapsibleFaceSectionHeader(ref float y, float width, string sectionKey, string title, Func<string, bool>? isSectionExpanded, Action<string>? toggleSectionExpanded)
+        {
+            bool expanded = isSectionExpanded?.Invoke(sectionKey) ?? true;
+            int itemCount = GetFaceSectionItemCount(sectionKey);
+            Rect rect = new Rect(0f, y + 4f, width, 22f);
+            Widgets.DrawBoxSolid(rect, UIHelper.PanelFillSoftColor);
+            Widgets.DrawBoxSolid(new Rect(rect.x, rect.yMax - 1f, rect.width, 1f), UIHelper.AccentSoftColor);
+            GUI.color = UIHelper.BorderColor;
+            Widgets.DrawBox(rect, 1);
+            GUI.color = Color.white;
+
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.MiddleLeft;
+            GUI.color = UIHelper.HeaderColor;
+            string titleWithCount = itemCount > 0 ? $"{title} ({itemCount})" : title;
+            Widgets.Label(new Rect(rect.x + 8f, rect.y, rect.width - 32f, rect.height), (expanded ? "▼ " : "▶ ") + titleWithCount);
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = GameFont.Small;
+
+            if (Widgets.ButtonInvisible(rect))
+                toggleSectionExpanded?.Invoke(sectionKey);
+
+            y += 26f;
+            return expanded;
+        }
+
+        private static int GetFaceSectionItemCount(string sectionKey)
+        {
+            return sectionKey switch
+            {
+                "FaceSection" => 2,
+                "EyeMotion" => 22,
+                "PupilMotion" => 26,
+                "LidMotion" => 58,
+                "BrowMotion" => 13,
+                "MouthMotion" => 31,
+                "EmotionOverlayMotion" => 17,
+                _ => 0
+            };
+        }
+
+        private void DrawFaceTuningSections(
+            ref float y,
+            float width,
+            PawnFaceConfig fc,
+            Func<string, bool>? isSectionExpanded = null,
+            Action<string>? toggleSectionExpanded = null)
         {
             fc.browMotion ??= new PawnFaceConfig.BrowMotionConfig();
             fc.mouthMotion ??= new PawnFaceConfig.MouthMotionConfig();
@@ -1607,8 +1678,8 @@ namespace CharacterStudio.UI
             PawnEyeDirectionConfig eyeCfg = fc.eyeDirectionConfig ??= new PawnEyeDirectionConfig();
             eyeCfg.lidMotion ??= new PawnEyeDirectionConfig.LidMotionConfig();
 
-            y += 6f;
-            UIHelper.DrawSectionTitle(ref y, width, GetFaceMotionSectionLabel("LidMotion"));
+            if (DrawCollapsibleFaceSectionHeader(ref y, width, "LidMotion", GetFaceMotionSectionLabel("LidMotion"), isSectionExpanded, toggleSectionExpanded))
+            {
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperSideBiasX".Translate(), ref eyeCfg.lidMotion.upperSideBiasX, -0.01f, 0.01f, "F6");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperBlinkScaleX".Translate(), ref eyeCfg.lidMotion.upperBlinkScaleX, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperBlinkScaleZ".Translate(), ref eyeCfg.lidMotion.upperBlinkScaleZ, 0f, 3f, "F4");
@@ -1669,9 +1740,11 @@ namespace CharacterStudio.UI
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericDefaultSlowWaveOffset".Translate(), ref eyeCfg.lidMotion.genericDefaultSlowWaveOffset, -0.02f, 0.02f, "F6");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericDefaultScaleZBase".Translate(), ref eyeCfg.lidMotion.genericDefaultScaleZBase, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Lid_GenericDefaultScaleZWaveAmplitude"), ref eyeCfg.lidMotion.genericDefaultScaleZWaveAmplitude, 0f, 1f, "F4");
+            y += 4f;
+            }
 
-            y += 6f;
-            UIHelper.DrawSectionTitle(ref y, width, GetFaceMotionSectionLabel("BrowMotion"));
+            if (DrawCollapsibleFaceSectionHeader(ref y, width, "BrowMotion", GetFaceMotionSectionLabel("BrowMotion"), isSectionExpanded, toggleSectionExpanded))
+            {
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_AngryAngleBase"), ref fc.browMotion.angryAngleBase, -20f, 20f, "F3");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_AngryAngleWave"), ref fc.browMotion.angryAngleWave, -5f, 5f, "F3");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_AngryOffsetZBase"), ref fc.browMotion.angryOffsetZBase, -0.02f, 0.02f, "F6");
@@ -1691,9 +1764,11 @@ namespace CharacterStudio.UI
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_HappyScaleX"), ref fc.browMotion.happyScaleX, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_HappyScaleZ"), ref fc.browMotion.happyScaleZ, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_DefaultSlowWaveOffsetZ"), ref fc.browMotion.defaultSlowWaveOffsetZ, -0.02f, 0.02f, "F6");
+            y += 4f;
+            }
 
-            y += 6f;
-            UIHelper.DrawSectionTitle(ref y, width, GetFaceMotionSectionLabel("MouthMotion"));
+            if (DrawCollapsibleFaceSectionHeader(ref y, width, "MouthMotion", GetFaceMotionSectionLabel("MouthMotion"), isSectionExpanded, toggleSectionExpanded))
+            {
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_SmileAngleWave"), ref fc.mouthMotion.smileAngleWave, -5f, 5f, "F3");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_SmileOffsetZBase"), ref fc.mouthMotion.smileOffsetZBase, -0.02f, 0.02f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_SmilePrimaryWaveOffsetZ"), ref fc.mouthMotion.smilePrimaryWaveOffsetZ, -0.02f, 0.02f, "F6");
@@ -1728,9 +1803,11 @@ namespace CharacterStudio.UI
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_ShockScaredScaleZBase"), ref fc.mouthMotion.shockScaredScaleZBase, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_ShockScaredScaleZWave"), ref fc.mouthMotion.shockScaredScaleZWave, 0f, 1f, "F4");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_DefaultSlowWaveOffsetZ"), ref fc.mouthMotion.defaultSlowWaveOffsetZ, -0.02f, 0.02f, "F6");
+            y += 4f;
+            }
 
-            y += 6f;
-            UIHelper.DrawSectionTitle(ref y, width, GetFaceMotionSectionLabel("EmotionOverlayMotion"));
+            if (DrawCollapsibleFaceSectionHeader(ref y, width, "EmotionOverlayMotion", GetFaceMotionSectionLabel("EmotionOverlayMotion"), isSectionExpanded, toggleSectionExpanded))
+            {
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Emotion_BlushPulseBase"), ref fc.emotionOverlayMotion.blushPulseBase, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Emotion_BlushPulseWave"), ref fc.emotionOverlayMotion.blushPulseWave, 0f, 1f, "F4");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Emotion_BlushOffsetZBase"), ref fc.emotionOverlayMotion.blushOffsetZBase, -0.02f, 0.02f, "F6");
@@ -1748,12 +1825,33 @@ namespace CharacterStudio.UI
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Emotion_SweatOffsetXWave"), ref fc.emotionOverlayMotion.sweatOffsetXWave, -0.02f, 0.02f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Emotion_SweatOffsetZBase"), ref fc.emotionOverlayMotion.sweatOffsetZBase, -0.02f, 0.02f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Emotion_SweatSlowWaveOffsetZ"), ref fc.emotionOverlayMotion.sweatSlowWaveOffsetZ, -0.02f, 0.02f, "F6");
+            y += 4f;
+            }
         }
 
         private void DrawFloatProperty(ref float y, float width, string label, ref float value, float min, float max, string format)
         {
-            float edited = value;
-            UIHelper.DrawPropertySlider(ref y, width, label, ref edited, min, max, format);
+            const float compactRowHeight = 22f;
+            Rect rect = new Rect(0f, y, width, compactRowHeight);
+
+            Text.Font = GameFont.Tiny;
+            float actualLabelWidth = Mathf.Max(116f, Text.CalcSize(label).x + 8f);
+            Widgets.Label(new Rect(rect.x, rect.y + 2f, actualLabelWidth, 18f), label);
+
+            float inputWidth = 58f;
+            float sliderWidth = Mathf.Max(40f, rect.width - actualLabelWidth - inputWidth - 5f);
+            int decimals = GetDecimalsFromNumericFormatInternal(format);
+
+            float sliderValueBefore = Mathf.Clamp(value, min, max);
+            float edited = Widgets.HorizontalSlider(new Rect(rect.x + actualLabelWidth, rect.y + 3f, sliderWidth, 14f), sliderValueBefore, min, max);
+            if (Math.Abs(edited - sliderValueBefore) > 0.0001f)
+                edited = QuantizeFloatInternal(edited, decimals);
+
+            string buffer = edited.ToString(string.IsNullOrWhiteSpace(format) ? "F2" : format, System.Globalization.CultureInfo.InvariantCulture);
+            Rect inputRect = new Rect(rect.x + actualLabelWidth + sliderWidth + 5f, rect.y, inputWidth, 20f);
+            UIHelper.TextFieldNumeric(inputRect, ref edited, ref buffer, min, max, format, label);
+            edited = QuantizeFloatInternal(edited, decimals);
+
             if (!Mathf.Approximately(edited, value))
             {
                 value = edited;
@@ -1761,6 +1859,29 @@ namespace CharacterStudio.UI
                 isDirty = true;
                 RefreshPreview();
             }
+
+            Text.Font = GameFont.Small;
+            y += compactRowHeight;
+        }
+
+        private static int GetDecimalsFromNumericFormatInternal(string format)
+        {
+            if (string.IsNullOrWhiteSpace(format) || format.Length < 2)
+                return 2;
+
+            char prefix = char.ToUpperInvariant(format[0]);
+            if (prefix != 'F' && prefix != 'N')
+                return 2;
+
+            return int.TryParse(format.Substring(1), out int decimals)
+                ? Mathf.Clamp(decimals, 0, 6)
+                : 2;
+        }
+
+        private static float QuantizeFloatInternal(float value, int decimals)
+        {
+            float multiplier = Mathf.Pow(10f, Mathf.Clamp(decimals, 0, 6));
+            return Mathf.Round(value * multiplier) / multiplier;
         }
 
         // ─────────────────────────────────────────────

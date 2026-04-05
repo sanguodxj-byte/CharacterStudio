@@ -141,7 +141,7 @@ namespace CharacterStudio.Rendering
                 float flightBaseHeight = skinComp.flightStateHeightFactor * liftFactor;
                 baseOffset.y += flightBaseHeight + skinComp.GetFlightHoverOffset();
             }
-            
+
             // 侧面朝向（East或West）应用 offsetEast
             if (facing == Rot4.East || facing == Rot4.West)
             {
@@ -1740,19 +1740,145 @@ namespace CharacterStudio.Rendering
             if (string.IsNullOrWhiteSpace(normalizedOverlayId))
                 return string.Empty;
 
-            // 仅允许显式分组后的 overlay 参与语义激活。
-            // 通用 "Overlay" 节点不再根据 Happy/Scared/Sad 等语义自动解析到 Blush/Tear/Sweat。
-            // 这样用户只有在明确把资源分到具体 overlayId（如 Blush/Tear/Sweat/Gloomy/Sleep）后，
-            // 对应表情语义才会驱动该 overlay 显示。
-            if (string.Equals(normalizedOverlayId, "Overlay", StringComparison.OrdinalIgnoreCase))
+            return normalizedOverlayId;
+        }
+
+        private static bool IsGenericOverlayGroupId(string? overlayId)
+        {
+            return string.IsNullOrWhiteSpace(overlayId)
+                || string.Equals(PawnFaceConfig.NormalizeOverlayId(overlayId), "Overlay", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private bool IsOverlayAllowedByExplicitRules(string activeOverlayId, List<string> explicitOverlayIds)
+        {
+            if (explicitOverlayIds.Count == 0)
+                return IsGenericOverlayGroupId(activeOverlayId);
+
+            if (IsGenericOverlayGroupId(activeOverlayId))
+            {
+                return explicitOverlayIds.Any(id =>
+                    string.Equals(PawnFaceConfig.NormalizeOverlayId(id), "Overlay", StringComparison.OrdinalIgnoreCase));
+            }
+
+            string normalizedActiveOverlayId = PawnFaceConfig.NormalizeOverlayId(activeOverlayId);
+            return explicitOverlayIds.Any(id =>
+                string.Equals(PawnFaceConfig.NormalizeOverlayId(id), normalizedActiveOverlayId, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool IsEmotionOverlayVisualPart(LayeredFacePartType partType)
+        {
+            return partType == LayeredFacePartType.Blush
+                || partType == LayeredFacePartType.Tear
+                || partType == LayeredFacePartType.Sweat
+                || partType == LayeredFacePartType.Overlay;
+        }
+
+        private string ResolveActiveEmotionOverlayId(PawnRenderNode_Custom customNode, Pawn? pawn = null)
+        {
+            if (!customNode.layeredFacePartType.HasValue)
                 return string.Empty;
 
-            return normalizedOverlayId;
+            switch (customNode.layeredFacePartType.Value)
+            {
+                case LayeredFacePartType.Blush:
+                    return PawnFaceConfig.NormalizeOverlayId("Blush");
+                case LayeredFacePartType.Tear:
+                    return PawnFaceConfig.NormalizeOverlayId("Tear");
+                case LayeredFacePartType.Sweat:
+                    return PawnFaceConfig.NormalizeOverlayId("Sweat");
+                case LayeredFacePartType.Overlay:
+                    return GetEffectiveLayeredOverlayId(customNode, pawn);
+                default:
+                    return string.Empty;
+            }
+        }
+
+        private string ResolveExplicitOverlaySemanticKey(PawnFaceConfig faceConfig, ExpressionType expression)
+        {
+            if (faceConfig.expressionOverlayRules == null || faceConfig.expressionOverlayRules.Count == 0)
+                return string.Empty;
+
+            PawnFaceConfig.ExpressionOverlayRule? rule = faceConfig.expressionOverlayRules
+                .FirstOrDefault(r => r != null && r.expression == expression);
+            if (rule == null)
+                return string.Empty;
+
+            if (!string.IsNullOrWhiteSpace(rule.semanticKey))
+                return PawnFaceConfig.NormalizeOverlaySemanticKey(rule.semanticKey);
+
+            return PawnFaceConfig.MapLegacyEmotionStateToSemanticKey(rule.emotionState);
+        }
+
+        private List<string> ResolveExplicitOverlayIds(PawnFaceConfig faceConfig, string? semanticKey, ExpressionType expression)
+        {
+            if (faceConfig.emotionOverlayRules == null || faceConfig.emotionOverlayRules.Count == 0)
+                return new List<string>();
+
+            string normalizedSemanticKey = PawnFaceConfig.NormalizeOverlaySemanticKey(semanticKey);
+            if (string.IsNullOrWhiteSpace(normalizedSemanticKey))
+                normalizedSemanticKey = ResolveExplicitOverlaySemanticKey(faceConfig, expression);
+
+            if (string.IsNullOrWhiteSpace(normalizedSemanticKey))
+                return new List<string>();
+
+            return faceConfig.emotionOverlayRules
+                .Where(rule =>
+                {
+                    if (rule == null)
+                        return false;
+
+                    string ruleSemanticKey = !string.IsNullOrWhiteSpace(rule.semanticKey)
+                        ? PawnFaceConfig.NormalizeOverlaySemanticKey(rule.semanticKey)
+                        : PawnFaceConfig.MapLegacyEmotionStateToSemanticKey(rule.emotionState);
+                    return string.Equals(ruleSemanticKey, normalizedSemanticKey, StringComparison.OrdinalIgnoreCase);
+                })
+                .SelectMany(rule =>
+                {
+                    if (rule == null)
+                        return Enumerable.Empty<string>();
+
+                    if (rule.overlayIds != null && rule.overlayIds.Count > 0)
+                        return rule.overlayIds;
+
+                    return string.IsNullOrWhiteSpace(rule.overlayId)
+                        ? Enumerable.Empty<string>()
+                        : new[] { rule.overlayId };
+                })
+                .Select(PawnFaceConfig.NormalizeOverlayId)
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private bool ShouldSuppressEmotionOverlayRendering(PawnRenderNode_Custom customNode, Pawn? pawn)
+        {
+            if (pawn == null || !customNode.layeredFacePartType.HasValue)
+                return false;
+
+            LayeredFacePartType partType = customNode.layeredFacePartType.Value;
+            if (!IsEmotionOverlayVisualPart(partType))
+                return false;
+
+            CompPawnSkin? skinComp = pawn.TryGetComp<CompPawnSkin>();
+            PawnFaceConfig? faceConfig = skinComp?.ActiveSkin?.faceConfig;
+            if (faceConfig == null || !faceConfig.enabled)
+                return false;
+
+            ExpressionType expression = skinComp?.GetEffectiveExpression()
+                ?? (TryGetFallbackExpression(pawn) ?? ExpressionType.Neutral);
+            string activeOverlayId = ResolveActiveEmotionOverlayId(customNode, pawn);
+
+            string semanticKey = ResolveExplicitOverlaySemanticKey(faceConfig, expression);
+            if (string.IsNullOrWhiteSpace(semanticKey))
+                return true;
+
+            List<string> explicitOverlayIds = ResolveExplicitOverlayIds(faceConfig, semanticKey, expression);
+            return !IsOverlayAllowedByExplicitRules(activeOverlayId, explicitOverlayIds);
         }
 
         private bool IsOverlayActiveForCurrentSemantic(PawnRenderNode_Custom customNode, Pawn pawn, CompPawnSkin skinComp)
         {
-            string overlayId = GetEffectiveLayeredOverlayId(customNode, pawn);
+            string overlayId = ResolveActiveEmotionOverlayId(customNode, pawn);
             if (string.IsNullOrWhiteSpace(overlayId))
                 return false;
 
@@ -1760,8 +1886,13 @@ namespace CharacterStudio.Rendering
             if (faceConfig == null)
                 return false;
 
-            List<string> activeOverlayIds = faceConfig.ResolveOverlayIds(skinComp.GetEffectiveOverlaySemanticKey(), skinComp.GetEffectiveExpression());
-            return activeOverlayIds.Any(id => string.Equals(PawnFaceConfig.NormalizeOverlayId(id), overlayId, StringComparison.OrdinalIgnoreCase));
+            ExpressionType expression = skinComp.GetEffectiveExpression();
+            string semanticKey = ResolveExplicitOverlaySemanticKey(faceConfig, expression);
+            if (string.IsNullOrWhiteSpace(semanticKey))
+                return false;
+
+            List<string> activeOverlayIds = ResolveExplicitOverlayIds(faceConfig, semanticKey, expression);
+            return IsOverlayAllowedByExplicitRules(overlayId, activeOverlayIds);
         }
 
         private string ResolveSemanticOverlayId(PawnFaceConfig? faceConfig, EmotionOverlayState emotionState, ExpressionType expression)
@@ -2077,6 +2208,10 @@ namespace CharacterStudio.Rendering
             if (node is PawnRenderNode_Custom customNode && customNode.config != null)
             {
                 PawnLayerConfig config = customNode.config;
+
+                if (ShouldSuppressEmotionOverlayRendering(customNode, parms.pawn))
+                    return null;
+
                 string? layeredBasePath = ResolveLayeredFacePartBasePath(customNode, parms.pawn, parms.facing);
                 if (customNode.layeredFacePartType.HasValue
                     && parms.facing == Rot4.North

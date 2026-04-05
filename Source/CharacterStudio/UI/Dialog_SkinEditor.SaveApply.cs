@@ -179,5 +179,84 @@ namespace CharacterStudio.UI
                 ShowStatus("CS_Studio_Err_ApplyFailedCheckLog".Translate());
             }
         }
+
+        private void OnSpawnNewPawn()
+        {
+            if (Find.CurrentMap == null)
+            {
+                ShowStatus("CS_Studio_Err_NoMap".Translate());
+                return;
+            }
+
+            if (workingSkin == null)
+            {
+                ShowStatus("CS_Studio_Err_ApplyFailedCheckLog".Translate());
+                return;
+            }
+
+            Find.WindowStack.Add(new Dialog_SpawnCharacter(directSpawnSettings, settings =>
+            {
+                directSpawnSettings = settings?.Clone() ?? new CharacterSpawnSettings();
+
+                try
+                {
+                    PawnSkinDef runtimeSkin = BuildRuntimeSkinForExecution();
+                    ThingDef spawnRace = ResolveSpawnRaceForCurrentDesign(runtimeSkin);
+                    CharacterApplicationPlan plan = BuildApplicationPlan(null, false, "SpawnNewPawnFromEditor");
+                    plan.runtimeSkin = runtimeSkin;
+                    plan.spawnAsNewPawn = true;
+                    plan.spawnRaceDef = spawnRace;
+                    plan.spawnPawnKind = CharacterSpawnUtility.ResolvePawnKindForRace(spawnRace);
+                    plan.spawnFaction = Faction.OfPlayer;
+                    plan.spawnMap = Find.CurrentMap;
+                    plan.desiredSpawnCell = CharacterSpawnUtility.ResolveSpawnOrigin(plan.spawnMap, targetPawn);
+                    plan.spawnSettings = directSpawnSettings.Clone();
+
+                    if (CharacterApplicationExecutor.Execute(plan) && plan.targetPawn != null)
+                    {
+                        targetPawn = plan.targetPawn;
+                        if (workingDocument != null)
+                        {
+                            workingDocument.preferredPreviewRaceDefName = targetPawn.def.defName;
+                            workingDocument.preferredTargetRaceDefName = targetPawn.def.defName;
+                        }
+
+                        RefreshRenderTree();
+                        ShowStatus("CS_Studio_SpawnedNewPawn".Translate(targetPawn.LabelShort));
+                    }
+                    else
+                    {
+                        string statusKey = string.IsNullOrWhiteSpace(plan.statusMessage)
+                            ? "CS_Studio_Err_ApplyFailedCheckLog"
+                            : plan.statusMessage;
+                        ShowStatus(statusKey.Translate());
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"[CharacterStudio] 生成新角色失败: {ex}");
+                    ShowStatus("CS_Studio_Err_ApplyFailedCheckLog".Translate());
+                }
+            }));
+        }
+
+        private ThingDef ResolveSpawnRaceForCurrentDesign(PawnSkinDef runtimeSkin)
+        {
+            if (runtimeSkin?.targetRaces != null)
+            {
+                foreach (string raceDefName in runtimeSkin.targetRaces)
+                {
+                    ThingDef? raceDef = DefDatabase<ThingDef>.GetNamedSilentFail(raceDefName);
+                    if (raceDef?.race != null)
+                    {
+                        return raceDef;
+                    }
+                }
+            }
+
+            return targetPawn?.def
+                ?? mannequin?.CurrentPawn?.def
+                ?? ThingDefOf.Human;
+        }
     }
 }

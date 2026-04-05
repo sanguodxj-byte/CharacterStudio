@@ -105,7 +105,7 @@ namespace CharacterStudio.Core
                 LayeredFacePartType.LowerLid => EvaluateLowerLid(context, lidMotion),
                 LayeredFacePartType.ReplacementEye => EvaluateReplacementEye(context),
                 LayeredFacePartType.Mouth => EvaluateMouth(context, mouthMotion),
-                LayeredFacePartType.Hair => EvaluateHair(),
+                LayeredFacePartType.Hair => EvaluateHair(context),
                 LayeredFacePartType.Blush => EvaluateBlush(context, emotionOverlayMotion),
                 LayeredFacePartType.Tear => EvaluateTear(context, emotionOverlayMotion),
                 LayeredFacePartType.Sweat => EvaluateSweat(context, emotionOverlayMotion),
@@ -424,8 +424,23 @@ namespace CharacterStudio.Core
             };
         }
 
-        private static FaceTransformResult EvaluateHair()
-            => FaceTransformResult.Visible(0f, Vector3.zero, Vector3.one);
+        private static FaceTransformResult EvaluateHair(FaceTransformContext context)
+        {
+            string overlayId = PawnFaceConfig.NormalizeOverlayId(context.overlayId);
+
+            // 后发节点会挂到 Body 父节点，而其它分层面部/头发节点普遍跟随 Head 体系做程序化起伏。
+            // 若后发完全不参与这类纵向位移，就会在上下动画时与前发/面部层产生明显撕裂。
+            // 这里仅为 back 组补一个轻微、稳定的慢波位移，避免扩大到其它 Hair 组的表现风险。
+            if (overlayId.Equals("back", System.StringComparison.OrdinalIgnoreCase))
+            {
+                return FaceTransformResult.Visible(
+                    0f,
+                    new Vector3(0f, 0f, context.slowWave * 0.0006f),
+                    Vector3.one);
+            }
+
+            return FaceTransformResult.Visible(0f, Vector3.zero, Vector3.one);
+        }
 
         private static FaceTransformResult EvaluateBlush(FaceTransformContext context, PawnFaceConfig.EmotionOverlayMotionConfig motion)
         {

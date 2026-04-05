@@ -35,6 +35,8 @@
     <CS_Ability_RuntimeComponentType_PeriodicPulse>周期脉冲</CS_Ability_RuntimeComponentType_PeriodicPulse>
     <CS_Ability_RuntimeComponentType_KillRefresh>击杀刷新</CS_Ability_RuntimeComponentType_KillRefresh>
     <CS_Ability_RuntimeComponentType_ShieldAbsorb>护盾吸收</CS_Ability_RuntimeComponentType_ShieldAbsorb>
+    <CS_Ability_RuntimeComponentType_AttachedShieldVisual>附着护盾视觉</CS_Ability_RuntimeComponentType_AttachedShieldVisual>
+    <CS_Ability_RuntimeComponentType_ProjectileInterceptorShield>拦截护盾</CS_Ability_RuntimeComponentType_ProjectileInterceptorShield>
     <CS_Ability_RuntimeComponentType_ChainBounce>连锁弹跳</CS_Ability_RuntimeComponentType_ChainBounce>
     <CS_Ability_RuntimeComponentType_ExecuteBonusDamage>斩杀增伤</CS_Ability_RuntimeComponentType_ExecuteBonusDamage>
     <CS_Ability_RuntimeComponentType_MissingHealthBonusDamage>损血增伤</CS_Ability_RuntimeComponentType_MissingHealthBonusDamage>
@@ -83,6 +85,8 @@
     <CS_Studio_Runtime_Desc_PeriodicPulse>在短时间内周期性释放脉冲效果。</CS_Studio_Runtime_Desc_PeriodicPulse>
     <CS_Studio_Runtime_Desc_KillRefresh>击杀目标后返还部分指定热键冷却。</CS_Studio_Runtime_Desc_KillRefresh>
     <CS_Studio_Runtime_Desc_ShieldAbsorb>吸收伤害，并把储存值转换为治疗或额外伤害。</CS_Studio_Runtime_Desc_ShieldAbsorb>
+    <CS_Studio_Runtime_Desc_AttachedShieldVisual>生成一个跟随施法者移动的持续护盾视觉。</CS_Studio_Runtime_Desc_AttachedShieldVisual>
+    <CS_Studio_Runtime_Desc_ProjectileInterceptorShield>生成一个使用原版投射物拦截机制的跟随护盾。</CS_Studio_Runtime_Desc_ProjectileInterceptorShield>
     <CS_Studio_Runtime_Desc_ChainBounce>让效果在附近敌人之间连锁弹跳。</CS_Studio_Runtime_Desc_ChainBounce>
     <CS_Studio_Runtime_Desc_ExecuteBonusDamage>对低血量目标造成额外伤害。</CS_Studio_Runtime_Desc_ExecuteBonusDamage>
     <CS_Studio_Runtime_Desc_MissingHealthBonusDamage>根据目标已损失生命值比例提高伤害。</CS_Studio_Runtime_Desc_MissingHealthBonusDamage>

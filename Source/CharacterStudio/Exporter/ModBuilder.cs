@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
+using CharacterStudio.Items;
 using CharacterStudio.Abilities;
 using CharacterStudio.Core;
 using Verse;
@@ -79,6 +80,11 @@ namespace CharacterStudio.Exporter
         public bool IncludeAbilities { get; set; } = false;
         public bool CopyTextures { get; set; } = true;
 
+        public SummonArrivalMode RoleCardArrivalMode { get; set; } = SummonArrivalMode.DropPod;
+        public SummonSpawnAnimationMode RoleCardSpawnAnimation { get; set; } = SummonSpawnAnimationMode.ExplosionEffect;
+        public float RoleCardSpawnAnimationScale { get; set; } = 1f;
+        public SummonSpawnEventMode RoleCardSpawnEvent { get; set; } = SummonSpawnEventMode.PositiveLetter;
+
         public bool AssetRightsConfirmed { get; set; } = false;
     }
 
@@ -152,6 +158,10 @@ namespace CharacterStudio.Exporter
                 IncludeSummonItem = config.IncludeSummonItem,
                 IncludeAbilities = config.IncludeAbilities,
                 CopyTextures = config.CopyTextures,
+                RoleCardArrivalMode = config.RoleCardArrivalMode,
+                RoleCardSpawnAnimation = config.RoleCardSpawnAnimation,
+                RoleCardSpawnAnimationScale = config.RoleCardSpawnAnimationScale,
+                RoleCardSpawnEvent = config.RoleCardSpawnEvent,
                 AssetRightsConfirmed = config.AssetRightsConfirmed
             };
         }

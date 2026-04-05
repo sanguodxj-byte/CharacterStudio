@@ -1294,6 +1294,12 @@ namespace CharacterStudio.Core
             public int shieldExpireTick = -1;
             public float shieldStoredHeal = 0f;
             public float shieldStoredBonusDamage = 0f;
+            public int attachedShieldVisualExpireTick = -1;
+            public float attachedShieldVisualScale = 1f;
+            public float attachedShieldVisualHeightOffset = 0f;
+            public string attachedShieldVisualThingId = string.Empty;
+            public int projectileInterceptorShieldExpireTick = -1;
+            public string projectileInterceptorShieldThingId = string.Empty;
             public int offensiveMarkExpireTick = -1;
             public int offensiveMarkStacks = 0;
             public int offensiveComboExpireTick = -1;
@@ -1319,6 +1325,17 @@ namespace CharacterStudio.Core
             public ExpressionType? abilityExpressionOverride = null;
             public float abilityPupilBrightnessOffset = 0f;
             public float abilityPupilContrastOffset = 0f;
+            public bool forcedMoveActive = false;
+            public IntVec3 forcedMoveStartCell = IntVec3.Invalid;
+            public IntVec3 forcedMoveCurrentCell = IntVec3.Invalid;
+            public IntVec3 forcedMoveNextCell = IntVec3.Invalid;
+            public int forcedMoveStepStartTick = -1;
+            public int forcedMoveStepDurationTicks = 4;
+            public int forcedMoveQueuedSteps = 0;
+            public int forcedMoveDirectionX = 0;
+            public int forcedMoveDirectionZ = 0;
+            public int forcedMoveBusyUntilTick = -1;
+            public bool forcedMoveCollisionTriggered = false;
 
             public void ExposeData()
             {
@@ -1359,6 +1376,12 @@ namespace CharacterStudio.Core
                 Scribe_Values.Look(ref shieldExpireTick, "shieldExpireTick", -1);
                 Scribe_Values.Look(ref shieldStoredHeal, "shieldStoredHeal", 0f);
                 Scribe_Values.Look(ref shieldStoredBonusDamage, "shieldStoredBonusDamage", 0f);
+                Scribe_Values.Look(ref attachedShieldVisualExpireTick, "attachedShieldVisualExpireTick", -1);
+                Scribe_Values.Look(ref attachedShieldVisualScale, "attachedShieldVisualScale", 1f);
+                Scribe_Values.Look(ref attachedShieldVisualHeightOffset, "attachedShieldVisualHeightOffset", 0f);
+                Scribe_Values.Look(ref attachedShieldVisualThingId, "attachedShieldVisualThingId", string.Empty);
+                Scribe_Values.Look(ref projectileInterceptorShieldExpireTick, "projectileInterceptorShieldExpireTick", -1);
+                Scribe_Values.Look(ref projectileInterceptorShieldThingId, "projectileInterceptorShieldThingId", string.Empty);
                 Scribe_Values.Look(ref offensiveMarkExpireTick, "offensiveMarkExpireTick", -1);
                 Scribe_Values.Look(ref offensiveMarkStacks, "offensiveMarkStacks", 0);
                 Scribe_Values.Look(ref offensiveComboExpireTick, "offensiveComboExpireTick", -1);
@@ -1375,6 +1398,17 @@ namespace CharacterStudio.Core
                 Scribe_Values.Look(ref abilityExpressionOverride, "abilityExpressionOverride");
                 Scribe_Values.Look(ref abilityPupilBrightnessOffset, "abilityPupilBrightnessOffset", 0f);
                 Scribe_Values.Look(ref abilityPupilContrastOffset, "abilityPupilContrastOffset", 0f);
+                Scribe_Values.Look(ref forcedMoveActive, "forcedMoveActive", false);
+                Scribe_Values.Look(ref forcedMoveStartCell, "forcedMoveStartCell", IntVec3.Invalid);
+                Scribe_Values.Look(ref forcedMoveCurrentCell, "forcedMoveCurrentCell", IntVec3.Invalid);
+                Scribe_Values.Look(ref forcedMoveNextCell, "forcedMoveNextCell", IntVec3.Invalid);
+                Scribe_Values.Look(ref forcedMoveStepStartTick, "forcedMoveStepStartTick", -1);
+                Scribe_Values.Look(ref forcedMoveStepDurationTicks, "forcedMoveStepDurationTicks", 4);
+                Scribe_Values.Look(ref forcedMoveQueuedSteps, "forcedMoveQueuedSteps", 0);
+                Scribe_Values.Look(ref forcedMoveDirectionX, "forcedMoveDirectionX", 0);
+                Scribe_Values.Look(ref forcedMoveDirectionZ, "forcedMoveDirectionZ", 0);
+                Scribe_Values.Look(ref forcedMoveBusyUntilTick, "forcedMoveBusyUntilTick", -1);
+                Scribe_Values.Look(ref forcedMoveCollisionTriggered, "forcedMoveCollisionTriggered", false);
             }
 
             public void Normalize()
@@ -1439,6 +1473,29 @@ namespace CharacterStudio.Core
                 if (abilityExpressionOverrideExpireTick < -1)
                 {
                     abilityExpressionOverrideExpireTick = -1;
+                }
+
+                if (attachedShieldVisualScale <= 0f)
+                {
+                    attachedShieldVisualScale = 1f;
+                }
+
+                attachedShieldVisualThingId ??= string.Empty;
+                projectileInterceptorShieldThingId ??= string.Empty;
+
+                if (forcedMoveStepDurationTicks <= 0)
+                {
+                    forcedMoveStepDurationTicks = 4;
+                }
+
+                if (forcedMoveQueuedSteps < 0)
+                {
+                    forcedMoveQueuedSteps = 0;
+                }
+
+                if (forcedMoveBusyUntilTick < -1)
+                {
+                    forcedMoveBusyUntilTick = -1;
                 }
 
                 triggeredEquipmentAnimationAbilityDefName ??= string.Empty;

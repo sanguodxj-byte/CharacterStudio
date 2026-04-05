@@ -694,6 +694,11 @@ namespace CharacterStudio.Abilities
                 return false;
             }
 
+            if (AbilityVanillaFlightUtility.ShouldBlockStandardAbilityAccessDuringFlight(caster, ability))
+            {
+                return false;
+            }
+
             var runtimeDef = AbilityGrantUtility.GetRuntimeAbilityDef(ability.defName);
             var runtimeAbility = runtimeDef != null ? caster.abilities?.GetAbility(runtimeDef) : null;
             if (runtimeAbility != null)

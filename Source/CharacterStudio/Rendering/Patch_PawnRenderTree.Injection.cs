@@ -817,7 +817,14 @@ namespace CharacterStudio.Rendering
             // 绝对信任用户设置的 drawOrder，除非它为 0（表示用户未修改或希望使用默认高度映射）。
             if (editableLayer != null && editableLayer.drawOrder != 0f)
             {
-                resolvedLayer.drawOrder = editableLayer.drawOrder;
+                if (TryMigrateLegacyOverlayDrawOrder(partType, editableLayer.drawOrder, overlayOrder, normalizedOverlayId, out float migratedDrawOrder))
+                {
+                    resolvedLayer.drawOrder = migratedDrawOrder;
+                }
+                else
+                {
+                    resolvedLayer.drawOrder = editableLayer.drawOrder;
+                }
             }
             else
             {
@@ -965,6 +972,37 @@ namespace CharacterStudio.Rendering
                 case LayeredFacePartType.Mouth:
                     return 0.18f;
                 case LayeredFacePartType.Blush:
+                    return 0.142f;
+                case LayeredFacePartType.Tear:
+                    return 0.144f;
+                case LayeredFacePartType.Sweat:
+                    return 0.146f;
+                case LayeredFacePartType.Overlay:
+                {
+                    switch (PawnFaceConfig.GetOverlayKind(overlayId))
+                    {
+                        case LayeredOverlayKind.Blush:
+                            return 0.142f;
+                        case LayeredOverlayKind.Tear:
+                            return 0.144f;
+                        case LayeredOverlayKind.Sweat:
+                            return 0.146f;
+                        case LayeredOverlayKind.Sleep:
+                            return 0.148f;
+                        default:
+                            return 0.149f + Math.Min(4, Math.Max(0, overlayOrder - 4)) * 0.0002f;
+                    }
+                }
+                default:
+                    return 0.20f;
+            }
+        }
+
+        private static float GetLegacyLayeredFaceDrawOrder(LayeredFacePartType partType, int overlayOrder = 0, string overlayId = "")
+        {
+            switch (partType)
+            {
+                case LayeredFacePartType.Blush:
                     return 0.146f;
                 case LayeredFacePartType.Tear:
                     return 0.148f;
@@ -987,8 +1025,102 @@ namespace CharacterStudio.Rendering
                     }
                 }
                 default:
-                    return 0.20f;
+                    return GetLayeredFaceDrawOrder(partType, overlayOrder, overlayId);
             }
+        }
+
+        private static float GetEditableOverlayDrawOrder(LayeredFacePartType partType, int overlayOrder = 0, string overlayId = "")
+        {
+            switch (partType)
+            {
+                case LayeredFacePartType.Blush:
+                    return 50.142f;
+                case LayeredFacePartType.Tear:
+                    return 50.144f;
+                case LayeredFacePartType.Sweat:
+                    return 50.146f;
+                case LayeredFacePartType.Overlay:
+                    switch (PawnFaceConfig.GetOverlayKind(overlayId))
+                    {
+                        case LayeredOverlayKind.Blush:
+                            return 50.142f;
+                        case LayeredOverlayKind.Tear:
+                            return 50.144f;
+                        case LayeredOverlayKind.Sweat:
+                            return 50.146f;
+                        case LayeredOverlayKind.Sleep:
+                            return 50.148f;
+                        default:
+                            return 50.149f + Math.Min(4, Math.Max(0, overlayOrder - 4)) * 0.0002f;
+                    }
+                default:
+                    return GetLayeredFaceDrawOrder(partType, overlayOrder, overlayId);
+            }
+        }
+
+        private static float GetLegacyEditableOverlayDrawOrder(LayeredFacePartType partType, int overlayOrder = 0, string overlayId = "")
+        {
+            switch (partType)
+            {
+                case LayeredFacePartType.Blush:
+                    return 50.22f;
+                case LayeredFacePartType.Tear:
+                    return 50.24f;
+                case LayeredFacePartType.Sweat:
+                    return 50.26f;
+                case LayeredFacePartType.Overlay:
+                    switch (PawnFaceConfig.GetOverlayKind(overlayId))
+                    {
+                        case LayeredOverlayKind.Blush:
+                            return 50.22f;
+                        case LayeredOverlayKind.Tear:
+                            return 50.24f;
+                        case LayeredOverlayKind.Sweat:
+                            return 50.26f;
+                        case LayeredOverlayKind.Sleep:
+                            return 50.28f;
+                        default:
+                            return 50.30f + Math.Max(0, overlayOrder - 4) * 0.002f;
+                    }
+                default:
+                    return GetEditableOverlayDrawOrder(partType, overlayOrder, overlayId);
+            }
+        }
+
+        private static bool IsOverlayVisualPart(LayeredFacePartType partType)
+        {
+            return partType == LayeredFacePartType.Blush
+                || partType == LayeredFacePartType.Tear
+                || partType == LayeredFacePartType.Sweat
+                || partType == LayeredFacePartType.Overlay;
+        }
+
+        private static bool TryMigrateLegacyOverlayDrawOrder(
+            LayeredFacePartType partType,
+            float currentDrawOrder,
+            int overlayOrder,
+            string overlayId,
+            out float migratedDrawOrder)
+        {
+            migratedDrawOrder = currentDrawOrder;
+            if (!IsOverlayVisualPart(partType))
+                return false;
+
+            float legacyEditableDrawOrder = GetLegacyEditableOverlayDrawOrder(partType, overlayOrder, overlayId);
+            if (Mathf.Abs(currentDrawOrder - legacyEditableDrawOrder) <= 0.0001f)
+            {
+                migratedDrawOrder = GetEditableOverlayDrawOrder(partType, overlayOrder, overlayId);
+                return true;
+            }
+
+            float legacyRuntimeDrawOrder = GetLegacyLayeredFaceDrawOrder(partType, overlayOrder, overlayId);
+            if (Mathf.Abs(currentDrawOrder - legacyRuntimeDrawOrder) <= 0.0001f)
+            {
+                migratedDrawOrder = GetLayeredFaceDrawOrder(partType, overlayOrder, overlayId);
+                return true;
+            }
+
+            return false;
         }
 
         // ─────────────────────────────────────────────

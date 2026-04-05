@@ -89,7 +89,9 @@ namespace CharacterStudio.UI
             float y = inner.y;
 
             float actionButtonsWidth = 100f;
-            Widgets.Label(new Rect(inner.x, y, Mathf.Max(100f, inner.width - actionButtonsWidth - 4f), 24f), GetEffectTypeLabel(effect.type));
+            if (DrawSelectionFieldButton(new Rect(inner.x, y, Mathf.Max(100f, inner.width - actionButtonsWidth - 4f), 24f), GetEffectTypeLabel(effect.type), () => ShowEffectTypeSelector(effect)))
+            {
+            }
             if (DrawCompactIconButton(new Rect(inner.x + inner.width - 100f, y, 30f, 24f), "↑", () => SwapEffects(index, index - 1)))
             {
             }
@@ -428,6 +430,61 @@ namespace CharacterStudio.UI
                 }));
             }
             Find.WindowStack.Add(new FloatMenu(options));
+        }
+
+        private void ShowEffectTypeSelector(AbilityEffectConfig effect)
+        {
+            var options = new List<FloatMenuOption>();
+            foreach (AbilityEffectType type in Enum.GetValues(typeof(AbilityEffectType)))
+            {
+                AbilityEffectType localType = type;
+                options.Add(new FloatMenuOption(GetEffectTypeLabel(localType), () => ApplyEffectType(effect, localType)));
+            }
+            Find.WindowStack.Add(new FloatMenu(options));
+        }
+
+        private void ApplyEffectType(AbilityEffectConfig effect, AbilityEffectType type)
+        {
+            if (effect.type == type)
+            {
+                return;
+            }
+
+            effect.type = type;
+            effect.amount = 0f;
+            effect.duration = 0f;
+            effect.chance = 1f;
+            effect.damageDef = null;
+            effect.hediffDef = null;
+            effect.summonKind = null;
+            effect.summonCount = 1;
+            effect.summonFactionDef = null;
+            effect.controlMode = ControlEffectMode.Stun;
+            effect.controlMoveDistance = 3;
+            effect.terraformMode = TerraformEffectMode.CleanFilth;
+            effect.terraformThingDef = null;
+            effect.terraformTerrainDef = null;
+            effect.terraformSpawnCount = 1;
+            effect.canHurtSelf = false;
+
+            AbilityEffectConfig defaults = CreateDefaultEffectConfig(type);
+            effect.amount = defaults.amount;
+            effect.duration = defaults.duration;
+            effect.chance = defaults.chance;
+            effect.damageDef = defaults.damageDef;
+            effect.hediffDef = defaults.hediffDef;
+            effect.summonKind = defaults.summonKind;
+            effect.summonCount = defaults.summonCount;
+            effect.summonFactionDef = defaults.summonFactionDef;
+            effect.controlMode = defaults.controlMode;
+            effect.controlMoveDistance = defaults.controlMoveDistance;
+            effect.terraformMode = defaults.terraformMode;
+            effect.terraformThingDef = defaults.terraformThingDef;
+            effect.terraformTerrainDef = defaults.terraformTerrainDef;
+            effect.terraformSpawnCount = defaults.terraformSpawnCount;
+            effect.canHurtSelf = defaults.canHurtSelf;
+
+            NotifyAbilityPreviewDirty(true);
         }
 
         private void ShowTerraformModeSelector(AbilityEffectConfig effect)

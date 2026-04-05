@@ -230,6 +230,13 @@
     <CS_Studio_Node_RuntimeData>运行时数据（只读）</CS_Studio_Node_RuntimeData>
     <CS_Studio_OpenEditor>打开皮肤编辑器</CS_Studio_OpenEditor>
     <CS_Studio_OpenPerformanceStats>打开性能统计</CS_Studio_OpenPerformanceStats>
+    <CS_Studio_SpawnedNewPawn>已生成新角色：{0}</CS_Studio_SpawnedNewPawn>
+    <CS_Studio_SpawnedNewPawnButton>生成新角色</CS_Studio_SpawnedNewPawnButton>
+    <CS_Studio_SpawnedNewPawnLetter>已生成新角色：{0}</CS_Studio_SpawnedNewPawnLetter>
+    <CS_Studio_SpawnedNewPawnMessage>已根据当前设计生成新角色：{0}</CS_Studio_SpawnedNewPawnMessage>
+    <CS_Studio_SpawnNewPawnConfirm>生成</CS_Studio_SpawnNewPawnConfirm>
+    <CS_Studio_SpawnNewPawnSection>新角色输出</CS_Studio_SpawnNewPawnSection>
+    <CS_Studio_SpawnNewPawnTitle>生成新角色</CS_Studio_SpawnNewPawnTitle>
     <CS_Studio_Panel_CustomLayers>自定义图层</CS_Studio_Panel_CustomLayers>
     <CS_Studio_Panel_Layers>渲染树</CS_Studio_Panel_Layers>
     <CS_Studio_Panel_Properties>属性</CS_Studio_Panel_Properties>
@@ -340,6 +347,7 @@
     <CS_Studio_Workflow_CompositeBase_Hint>一张主体底图包含 body/head/hair，不含服装头饰表情；服装头饰由原版装备覆盖，表情建议使用 Head 透明覆盖层。</CS_Studio_Workflow_CompositeBase_Hint>
     <CS_Studio_Workflow_StandardLayers>标准分层工作流</CS_Studio_Workflow_StandardLayers>
     <CS_Studio_XenotypeDefName>绑定 Xenotype</CS_Studio_XenotypeDefName>
+    <CS_RoleCard_LetterLabel>角色卡已生成：{0}</CS_RoleCard_LetterLabel>
     <CS_Summon_Success>成功召唤：{0}</CS_Summon_Success>
     <CS_Summon_Use>召唤 {0}</CS_Summon_Use>
 </LanguageData>

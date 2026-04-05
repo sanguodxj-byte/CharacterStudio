@@ -1,6 +1,6 @@
 using System;
-using System.Collections.Generic;
 using RimWorld;
+using CharacterStudio.Core;
 using Verse;
 
 namespace CharacterStudio.Items
@@ -17,80 +17,54 @@ namespace CharacterStudio.Items
         {
             base.DoEffect(usedBy);
 
+            if (usedBy == null || usedBy.Map == null)
+            {
+                Log.Error("[CharacterStudio] 召唤失败：使用者或地图为空");
+                return;
+            }
+
             if (Props.pawnKind == null)
             {
                 Log.Error("[CharacterStudio] 召唤失败：PawnKind 为空");
                 return;
             }
 
-            // 生成 Pawn
-            PawnGenerationRequest request = new PawnGenerationRequest(
-                Props.pawnKind,
-                Props.isHostile ? Faction.OfAncientsHostile : Faction.OfPlayer,
-                PawnGenerationContext.NonPlayer,
-                tile: -1,
-                forceGenerateNewPawn: true,
-                allowDead: false,
-                allowDowned: false,
-                canGeneratePawnRelations: false,
-                mustBeCapableOfViolence: true,
-                colonistRelationChanceFactor: 0f,
-                forceAddFreeWarmLayerIfNeeded: false,
-                allowGay: true,
-                allowPregnant: false,
-                allowFood: false,
-                allowAddictions: false
-            );
-
-            Pawn pawn = PawnGenerator.GeneratePawn(request);
+            Faction spawnFaction = Props.isHostile
+                ? (Faction.OfAncientsHostile ?? Faction.OfPlayer)
+                : Faction.OfPlayer;
+            Pawn? pawn = CharacterSpawnUtility.GeneratePawn(Props.pawnKind, spawnFaction);
             if (pawn == null)
             {
                 Log.Error("[CharacterStudio] 召唤失败：生成 Pawn 失败");
                 return;
             }
 
+            if (!Props.isHostile && pawn.Faction != Faction.OfPlayer)
+            {
+                pawn.SetFaction(Faction.OfPlayer);
+            }
+
             // 生成位置 - 寻找附近可用位置
             IntVec3 loc = usedBy.Position;
             Map map = usedBy.Map;
-            
-            if (!loc.Standable(map))
+            CharacterSpawnSettings spawnSettings = new CharacterSpawnSettings
             {
-                // 尝试在附近找到可站立的位置
-                if (!CellFinder.TryFindRandomCellNear(usedBy.Position, map, 5,
-                    (IntVec3 c) => c.Standable(map) && !c.Fogged(map), out loc))
-                {
-                    loc = usedBy.Position; // 回退到原位置
-                }
-            }
-            
-            // 召唤方式
-            if (Props.arrivalMode == SummonArrivalMode.DropPod)
-            {
-                SpawnViaDropPod(pawn, loc, map);
-            }
-            else
-            {
-                GenSpawn.Spawn(pawn, loc, map, WipeMode.Vanish);
-            }
+                arrivalMode = Props.arrivalMode,
+                spawnAnimation = Props.spawnAnimation,
+                spawnAnimationScale = Props.spawnAnimationScale,
+                spawnEvent = Props.spawnEvent
+            };
 
-            // 发送消息
-            Messages.Message("CS_Summon_Success".Translate(pawn.LabelShort), pawn, MessageTypeDefOf.PositiveEvent, true);
-        }
-
-        /// <summary>
-        /// 通过空投仓生成角色
-        /// </summary>
-        private void SpawnViaDropPod(Pawn pawn, IntVec3 loc, Map map)
-        {
-            // 创建空投仓信息
-            // 使用 RimWorld.ActiveTransporterInfo (1.5+ 版本中替代了 ActiveDropPodInfo)
-            var dropPodInfo = new ActiveTransporterInfo();
-            dropPodInfo.innerContainer.TryAdd(pawn);
-            dropPodInfo.openDelay = 60; // 1秒后打开
-            dropPodInfo.leaveSlag = false;
+            CharacterSpawnUtility.TryFindSpawnCell(map, usedBy.Position, 5, out loc);
             
-            // 生成空投仓
-            DropPodUtility.MakeDropPodAt(loc, map, dropPodInfo);
+            CharacterSpawnUtility.SpawnPawnWithSettings(pawn, map, loc, spawnSettings);
+            CharacterSpawnUtility.SendSpawnEvent(
+                spawnSettings,
+                pawn,
+                map,
+                loc,
+                "CS_Summon_Success".Translate(pawn.LabelShort),
+                "CS_RoleCard_LetterLabel".Translate(pawn.LabelShort));
         }
     }
 
@@ -100,11 +74,32 @@ namespace CharacterStudio.Items
         DropPod
     }
 
+    public enum SummonSpawnAnimationMode
+    {
+        None,
+        DustPuff,
+        MicroSparks,
+        LightningGlow,
+        FireGlow,
+        Smoke,
+        ExplosionEffect
+    }
+
+    public enum SummonSpawnEventMode
+    {
+        None,
+        Message,
+        PositiveLetter
+    }
+
     public class CompProperties_SummonCharacter : CompProperties_UseEffect
     {
         public PawnKindDef? pawnKind;
         public bool isHostile = false;
         public SummonArrivalMode arrivalMode = SummonArrivalMode.Standing;
+        public SummonSpawnAnimationMode spawnAnimation = SummonSpawnAnimationMode.None;
+        public float spawnAnimationScale = 1f;
+        public SummonSpawnEventMode spawnEvent = SummonSpawnEventMode.Message;
 
         public CompProperties_SummonCharacter()
         {

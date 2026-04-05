@@ -32,6 +32,35 @@
     <CS_Ability_Validate_ShieldDurationTicks>护盾持续时间必须大于 0 tick</CS_Ability_Validate_ShieldDurationTicks>
     <CS_Ability_Validate_ShieldMaxDamage>护盾吸收上限必须大于 0</CS_Ability_Validate_ShieldMaxDamage>
     <CS_Ability_Validate_ShieldRatios>护盾治疗转换和增伤转换比例不能为负数</CS_Ability_Validate_ShieldRatios>
+    <CS_Ability_Validate_AttachedShieldVisualScale>附着护盾视觉缩放必须大于 0</CS_Ability_Validate_AttachedShieldVisualScale>
+    <CS_Ability_Validate_ProjectileInterceptorThingDef>拦截护盾必须填写 ThingDef 名称</CS_Ability_Validate_ProjectileInterceptorThingDef>
+    <CS_Ability_Validate_ProjectileInterceptorDuration>拦截护盾持续时间必须大于 0 tick</CS_Ability_Validate_ProjectileInterceptorDuration>
+    <CS_Studio_Runtime_ShieldVisualScale>护盾视觉缩放</CS_Studio_Runtime_ShieldVisualScale>
+    <CS_Studio_Runtime_ShieldVisualHeightOffset>护盾视觉高度偏移</CS_Studio_Runtime_ShieldVisualHeightOffset>
+    <CS_Studio_Runtime_ShieldInterceptorThingDef>拦截护盾 ThingDef</CS_Studio_Runtime_ShieldInterceptorThingDef>
+    <CS_Studio_Runtime_ShieldInterceptorDuration>拦截持续时间(Tick)</CS_Studio_Runtime_ShieldInterceptorDuration>
+    <CS_Studio_Runtime_VanillaFlyerThingDef>飞行器 ThingDef</CS_Studio_Runtime_VanillaFlyerThingDef>
+    <CS_Studio_Runtime_FlyerWarmupTicks>飞行预热(Tick)</CS_Studio_Runtime_FlyerWarmupTicks>
+    <CS_Studio_Runtime_LaunchFromCasterPosition>从施法者位置起飞</CS_Studio_Runtime_LaunchFromCasterPosition>
+    <CS_Studio_Runtime_RequireValidTargetCell>要求目标格有效</CS_Studio_Runtime_RequireValidTargetCell>
+    <CS_Studio_Runtime_StoreTargetForFollowup>为后续技能保留目标格</CS_Studio_Runtime_StoreTargetForFollowup>
+    <CS_Studio_Runtime_EnableFlightOnlyWindow>启用飞行后续窗口</CS_Studio_Runtime_EnableFlightOnlyWindow>
+    <CS_Studio_Runtime_FlightOnlyWindowTicks>飞行后续窗口(Tick)</CS_Studio_Runtime_FlightOnlyWindowTicks>
+    <CS_Studio_Runtime_FlightOnlyAbility>飞行后续技能</CS_Studio_Runtime_FlightOnlyAbility>
+    <CS_Studio_Runtime_HideCasterDuringTakeoff>起飞时隐藏施法者</CS_Studio_Runtime_HideCasterDuringTakeoff>
+    <CS_Studio_Runtime_AutoExpireFlightMarkerOnLanding>落地时自动清除飞行标记</CS_Studio_Runtime_AutoExpireFlightMarkerOnLanding>
+    <CS_Studio_Runtime_RequiredFlightSourceAbility>要求来源飞行技能</CS_Studio_Runtime_RequiredFlightSourceAbility>
+    <CS_Studio_Runtime_RequireReservedTargetCell>要求使用保留目标格</CS_Studio_Runtime_RequireReservedTargetCell>
+    <CS_Studio_Runtime_ConsumeFlightStateOnCast>施放后消耗飞行状态</CS_Studio_Runtime_ConsumeFlightStateOnCast>
+    <CS_Studio_Runtime_OnlyUseDuringFlightWindow>仅飞行窗口可用</CS_Studio_Runtime_OnlyUseDuringFlightWindow>
+    <CS_Studio_Runtime_LandingBurstRadius>落地爆发半径</CS_Studio_Runtime_LandingBurstRadius>
+    <CS_Studio_Runtime_LandingBurstDamage>落地爆发伤害</CS_Studio_Runtime_LandingBurstDamage>
+    <CS_Studio_Runtime_LandingEffecterDefName>落地特效 EffecterDef</CS_Studio_Runtime_LandingEffecterDefName>
+    <CS_Studio_Runtime_LandingSoundDefName>落地声音 SoundDef</CS_Studio_Runtime_LandingSoundDefName>
+    <CS_Studio_Runtime_LandingAffectBuildings>影响建筑</CS_Studio_Runtime_LandingAffectBuildings>
+    <CS_Studio_Runtime_LandingAffectCells>影响地格</CS_Studio_Runtime_LandingAffectCells>
+    <CS_Studio_Runtime_LandingKnockbackTargets>击退目标</CS_Studio_Runtime_LandingKnockbackTargets>
+    <CS_Studio_Runtime_LandingKnockbackDistance>击退距离</CS_Studio_Runtime_LandingKnockbackDistance>
     <CS_Ability_Validate_SlowFieldDurationTicks>减速场持续时间必须大于 0 tick</CS_Ability_Validate_SlowFieldDurationTicks>
     <CS_Ability_Validate_SlowFieldHediffDefName>减速场必须指定 HediffDefName</CS_Ability_Validate_SlowFieldHediffDefName>
     <CS_Ability_Validate_SlowFieldRadius>减速场半径必须大于 0</CS_Ability_Validate_SlowFieldRadius>
@@ -464,6 +493,15 @@
     <CS_Studio_Panel_CollapseAll>全部折叠</CS_Studio_Panel_CollapseAll>
     <CS_Studio_Panel_ExpandAll>全部展开</CS_Studio_Panel_ExpandAll>
     <CS_Studio_Panel_RefreshTree>刷新树</CS_Studio_Panel_RefreshTree>
+    <CS_ShieldHud_Title>护盾</CS_ShieldHud_Title>
+    <CS_ShieldHud_Status_Active>生效中</CS_ShieldHud_Status_Active>
+    <CS_ShieldHud_Status_Low>护盾脆弱</CS_ShieldHud_Status_Low>
+    <CS_ShieldHud_Status_Depleted>护盾破裂</CS_ShieldHud_Status_Depleted>
+    <CS_ShieldHud_Status_Stored>+{0} 储能</CS_ShieldHud_Status_Stored>
+    <CS_ShieldHud_Tooltip_Current>当前值</CS_ShieldHud_Tooltip_Current>
+    <CS_ShieldHud_Tooltip_Capacity>总容量</CS_ShieldHud_Tooltip_Capacity>
+    <CS_ShieldHud_Tooltip_Stored>已储存</CS_ShieldHud_Tooltip_Stored>
+    <CS_ShieldHud_Tooltip_Remaining>剩余时间</CS_ShieldHud_Tooltip_Remaining>
     <CS_Studio_Runtime_Color>颜色</CS_Studio_Runtime_Color>
     <CS_Studio_Runtime_Offset>偏移</CS_Studio_Runtime_Offset>
     <CS_Studio_Runtime_Rotation>旋转</CS_Studio_Runtime_Rotation>

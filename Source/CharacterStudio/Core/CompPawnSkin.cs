@@ -219,6 +219,42 @@ namespace CharacterStudio.Core
             set => abilityRuntimeState.shieldStoredBonusDamage = value;
         }
 
+        public int attachedShieldVisualExpireTick
+        {
+            get => abilityRuntimeState.attachedShieldVisualExpireTick;
+            set => abilityRuntimeState.attachedShieldVisualExpireTick = value;
+        }
+
+        public float attachedShieldVisualScale
+        {
+            get => abilityRuntimeState.attachedShieldVisualScale;
+            set => abilityRuntimeState.attachedShieldVisualScale = value;
+        }
+
+        public float attachedShieldVisualHeightOffset
+        {
+            get => abilityRuntimeState.attachedShieldVisualHeightOffset;
+            set => abilityRuntimeState.attachedShieldVisualHeightOffset = value;
+        }
+
+        public string attachedShieldVisualThingId
+        {
+            get => abilityRuntimeState.attachedShieldVisualThingId;
+            set => abilityRuntimeState.attachedShieldVisualThingId = value ?? string.Empty;
+        }
+
+        public int projectileInterceptorShieldExpireTick
+        {
+            get => abilityRuntimeState.projectileInterceptorShieldExpireTick;
+            set => abilityRuntimeState.projectileInterceptorShieldExpireTick = value;
+        }
+
+        public string projectileInterceptorShieldThingId
+        {
+            get => abilityRuntimeState.projectileInterceptorShieldThingId;
+            set => abilityRuntimeState.projectileInterceptorShieldThingId = value ?? string.Empty;
+        }
+
         public int offensiveMarkExpireTick
         {
             get => abilityRuntimeState.offensiveMarkExpireTick;
@@ -271,6 +307,18 @@ namespace CharacterStudio.Core
         {
             int now = AbilityTimeStopRuntimeController.ResolveVisualTickForPawn(Pawn, Find.TickManager?.TicksGame ?? 0);
             return flightStateExpireTick >= now;
+        }
+
+        public bool IsAttachedShieldVisualActive()
+        {
+            int now = AbilityTimeStopRuntimeController.ResolveVisualTickForPawn(Pawn, Find.TickManager?.TicksGame ?? 0);
+            return attachedShieldVisualExpireTick >= now && !string.IsNullOrWhiteSpace(attachedShieldVisualThingId);
+        }
+
+        public bool IsProjectileInterceptorShieldActive()
+        {
+            int now = Find.TickManager?.TicksGame ?? 0;
+            return projectileInterceptorShieldExpireTick >= now && !string.IsNullOrWhiteSpace(projectileInterceptorShieldThingId);
         }
 
         public string triggeredEquipmentAnimationAbilityDefName
@@ -431,6 +479,72 @@ namespace CharacterStudio.Core
             set => abilityRuntimeState.abilityPupilContrastOffset = value;
         }
 
+        public bool forcedMoveActive
+        {
+            get => abilityRuntimeState.forcedMoveActive;
+            set => abilityRuntimeState.forcedMoveActive = value;
+        }
+
+        public IntVec3 forcedMoveStartCell
+        {
+            get => abilityRuntimeState.forcedMoveStartCell;
+            set => abilityRuntimeState.forcedMoveStartCell = value;
+        }
+
+        public IntVec3 forcedMoveCurrentCell
+        {
+            get => abilityRuntimeState.forcedMoveCurrentCell;
+            set => abilityRuntimeState.forcedMoveCurrentCell = value;
+        }
+
+        public IntVec3 forcedMoveNextCell
+        {
+            get => abilityRuntimeState.forcedMoveNextCell;
+            set => abilityRuntimeState.forcedMoveNextCell = value;
+        }
+
+        public int forcedMoveStepStartTick
+        {
+            get => abilityRuntimeState.forcedMoveStepStartTick;
+            set => abilityRuntimeState.forcedMoveStepStartTick = value;
+        }
+
+        public int forcedMoveStepDurationTicks
+        {
+            get => abilityRuntimeState.forcedMoveStepDurationTicks;
+            set => abilityRuntimeState.forcedMoveStepDurationTicks = value;
+        }
+
+        public int forcedMoveQueuedSteps
+        {
+            get => abilityRuntimeState.forcedMoveQueuedSteps;
+            set => abilityRuntimeState.forcedMoveQueuedSteps = value;
+        }
+
+        public int forcedMoveDirectionX
+        {
+            get => abilityRuntimeState.forcedMoveDirectionX;
+            set => abilityRuntimeState.forcedMoveDirectionX = value;
+        }
+
+        public int forcedMoveDirectionZ
+        {
+            get => abilityRuntimeState.forcedMoveDirectionZ;
+            set => abilityRuntimeState.forcedMoveDirectionZ = value;
+        }
+
+        public int forcedMoveBusyUntilTick
+        {
+            get => abilityRuntimeState.forcedMoveBusyUntilTick;
+            set => abilityRuntimeState.forcedMoveBusyUntilTick = value;
+        }
+
+        public bool forcedMoveCollisionTriggered
+        {
+            get => abilityRuntimeState.forcedMoveCollisionTriggered;
+            set => abilityRuntimeState.forcedMoveCollisionTriggered = value;
+        }
+
         public Pawn? Pawn => parent as Pawn;
 
         public override void CompTick()
@@ -439,6 +553,7 @@ namespace CharacterStudio.Core
             Pawn? pawn = Pawn;
             if (pawn == null || !pawn.Spawned) return;
 
+            TickForcedMove(pawn);
             FaceRuntimeRefreshCoordinator.FlushDeferredRefresh(this);
             TickAbilityFaceOverride();
 
@@ -446,6 +561,250 @@ namespace CharacterStudio.Core
             {
                 FaceRuntimeTickCoordinator.Tick(this, pawn);
             }
+        }
+
+        public void BeginForcedMove(IntVec3 direction, int steps, int stepDurationTicks = 4)
+        {
+            Pawn? pawn = Pawn;
+            if (pawn?.Map == null || !pawn.Spawned || steps <= 0)
+            {
+                return;
+            }
+
+            int dirX = Math.Sign(direction.x);
+            int dirZ = Math.Sign(direction.z);
+            if (dirX == 0 && dirZ == 0)
+            {
+                return;
+            }
+
+            forcedMoveActive = true;
+            forcedMoveDirectionX = dirX;
+            forcedMoveDirectionZ = dirZ;
+            forcedMoveQueuedSteps = Math.Max(1, steps);
+            forcedMoveStepDurationTicks = Math.Max(2, stepDurationTicks);
+            forcedMoveCurrentCell = pawn.Position;
+            forcedMoveStartCell = pawn.Position;
+            forcedMoveCollisionTriggered = false;
+            forcedMoveNextCell = ResolveNextForcedMoveCell(pawn, forcedMoveCurrentCell);
+            forcedMoveStepStartTick = Find.TickManager?.TicksGame ?? 0;
+            forcedMoveBusyUntilTick = forcedMoveStepStartTick + (forcedMoveQueuedSteps * forcedMoveStepDurationTicks) + 6;
+
+            if (pawn.stances?.stunner != null)
+            {
+                pawn.stances.stunner.StunFor(Math.Max(2, forcedMoveStepDurationTicks), pawn, false);
+            }
+
+            if (!forcedMoveNextCell.IsValid || forcedMoveNextCell == forcedMoveCurrentCell)
+            {
+                TriggerForcedMoveCollisionFeedback(pawn, pawn.Position, blockedImmediately: true);
+                ClearForcedMoveState();
+                return;
+            }
+
+            RequestRenderRefresh();
+        }
+
+        public Vector3 GetForcedMoveVisualOffset()
+        {
+            Pawn? pawn = Pawn;
+            if (pawn == null || !forcedMoveActive || !forcedMoveCurrentCell.IsValid || !forcedMoveNextCell.IsValid)
+            {
+                return Vector3.zero;
+            }
+
+            int now = Find.TickManager?.TicksGame ?? 0;
+            int duration = Math.Max(1, forcedMoveStepDurationTicks);
+            float t = Mathf.Clamp01((now - forcedMoveStepStartTick) / (float)duration);
+            float eased = Mathf.SmoothStep(0f, 1f, t);
+            IntVec3 delta = forcedMoveNextCell - forcedMoveCurrentCell;
+            return new Vector3(delta.x * eased, 0f, delta.z * eased);
+        }
+
+        private void TickForcedMove(Pawn pawn)
+        {
+            if (!forcedMoveActive)
+            {
+                return;
+            }
+
+            if (pawn.Map == null || !pawn.Spawned)
+            {
+                ClearForcedMoveState();
+                return;
+            }
+
+            if (!forcedMoveCurrentCell.IsValid)
+            {
+                forcedMoveCurrentCell = pawn.Position;
+            }
+
+            if (!forcedMoveNextCell.IsValid || forcedMoveNextCell == forcedMoveCurrentCell)
+            {
+                forcedMoveNextCell = ResolveNextForcedMoveCell(pawn, forcedMoveCurrentCell);
+                if (!forcedMoveNextCell.IsValid || forcedMoveNextCell == forcedMoveCurrentCell)
+                {
+                    TriggerForcedMoveCollisionFeedback(pawn, forcedMoveCurrentCell, blockedImmediately: true);
+                    ClearForcedMoveState();
+                    return;
+                }
+                forcedMoveStepStartTick = Find.TickManager?.TicksGame ?? 0;
+            }
+
+            int now = Find.TickManager?.TicksGame ?? 0;
+            if (now - forcedMoveStepStartTick < Math.Max(1, forcedMoveStepDurationTicks))
+            {
+                return;
+            }
+
+            pawn.Position = forcedMoveNextCell;
+            pawn.Notify_Teleported(true, false);
+
+            forcedMoveCurrentCell = forcedMoveNextCell;
+            forcedMoveQueuedSteps--;
+
+            if (forcedMoveQueuedSteps <= 0)
+            {
+                ClearForcedMoveState();
+                return;
+            }
+
+            forcedMoveStartCell = forcedMoveCurrentCell;
+            forcedMoveNextCell = ResolveNextForcedMoveCell(pawn, forcedMoveCurrentCell);
+            forcedMoveStepStartTick = now;
+            forcedMoveBusyUntilTick = Math.Max(forcedMoveBusyUntilTick, now + forcedMoveStepDurationTicks + 4);
+
+            if (!forcedMoveNextCell.IsValid || forcedMoveNextCell == forcedMoveCurrentCell)
+            {
+                TriggerForcedMoveCollisionFeedback(pawn, forcedMoveCurrentCell, blockedImmediately: false);
+                ClearForcedMoveState();
+                return;
+            }
+
+            RequestRenderRefresh();
+        }
+
+        private IntVec3 ResolveNextForcedMoveCell(Pawn pawn, IntVec3 origin)
+        {
+            Map? map = pawn.Map;
+            if (map == null)
+            {
+                return origin;
+            }
+
+            IntVec3 next = origin + new IntVec3(forcedMoveDirectionX, 0, forcedMoveDirectionZ);
+            if (!next.InBounds(map) || !next.Standable(map))
+            {
+                return origin;
+            }
+
+            return next;
+        }
+
+        private void ClearForcedMoveState()
+        {
+            forcedMoveActive = false;
+            forcedMoveQueuedSteps = 0;
+            forcedMoveDirectionX = 0;
+            forcedMoveDirectionZ = 0;
+            forcedMoveBusyUntilTick = -1;
+            forcedMoveCollisionTriggered = false;
+            forcedMoveStartCell = IntVec3.Invalid;
+            forcedMoveCurrentCell = IntVec3.Invalid;
+            forcedMoveNextCell = IntVec3.Invalid;
+            forcedMoveStepStartTick = -1;
+        }
+
+        public bool IsForcedMoveBusy()
+        {
+            int now = Find.TickManager?.TicksGame ?? 0;
+            return forcedMoveActive || forcedMoveBusyUntilTick >= now;
+        }
+
+        private void TriggerForcedMoveCollisionFeedback(Pawn pawn, IntVec3 collisionCell, bool blockedImmediately)
+        {
+            if (forcedMoveCollisionTriggered || pawn.Map == null)
+            {
+                return;
+            }
+
+            forcedMoveCollisionTriggered = true;
+            float dustScale = blockedImmediately ? 1.6f : 1.1f;
+            FleckMaker.ThrowDustPuff(collisionCell, pawn.Map, dustScale);
+            FleckMaker.ThrowMicroSparks(pawn.DrawPos, pawn.Map);
+
+            if (pawn.stances?.stunner != null)
+            {
+                pawn.stances.stunner.StunFor(blockedImmediately ? 12 : 8, pawn, false);
+            }
+
+            forcedMoveBusyUntilTick = Math.Max(forcedMoveBusyUntilTick, (Find.TickManager?.TicksGame ?? 0) + (blockedImmediately ? 12 : 8));
+            RequestRenderRefresh();
+        }
+
+        public override void PostPreApplyDamage(ref DamageInfo dinfo, out bool absorbed)
+        {
+            base.PostPreApplyDamage(ref dinfo, out absorbed);
+
+            absorbed = TryAbsorbShieldDamage(ref dinfo);
+        }
+
+        private bool TryAbsorbShieldDamage(ref DamageInfo dinfo)
+        {
+            if (shieldRemainingDamage <= 0f)
+            {
+                return false;
+            }
+
+            int now = Find.TickManager?.TicksGame ?? 0;
+            if (shieldExpireTick < now)
+            {
+                shieldRemainingDamage = 0f;
+                shieldExpireTick = -1;
+                shieldStoredHeal = 0f;
+                shieldStoredBonusDamage = 0f;
+                return false;
+            }
+
+            float incomingDamage = Mathf.Max(0f, dinfo.Amount);
+            if (incomingDamage <= 0.001f)
+            {
+                return false;
+            }
+
+            float absorbedDamage = Mathf.Min(shieldRemainingDamage, incomingDamage);
+            if (absorbedDamage <= 0.001f)
+            {
+                return false;
+            }
+
+            shieldRemainingDamage -= absorbedDamage;
+            shieldStoredHeal += absorbedDamage;
+            shieldStoredBonusDamage += absorbedDamage;
+
+            float remainingDamage = incomingDamage - absorbedDamage;
+            if (remainingDamage <= 0.001f)
+            {
+                return true;
+            }
+
+            dinfo = new DamageInfo(
+                dinfo.Def,
+                remainingDamage,
+                dinfo.ArmorPenetrationInt,
+                dinfo.Angle,
+                dinfo.Instigator,
+                dinfo.HitPart,
+                dinfo.Weapon,
+                dinfo.Category,
+                dinfo.IntendedTarget,
+                dinfo.InstigatorGuilty,
+                dinfo.SpawnFilth,
+                dinfo.WeaponQuality,
+                dinfo.CheckForJobOverride,
+                dinfo.PreventCascade);
+
+            return false;
         }
 
         public void ApplyAbilityFaceOverride(ExpressionType? expression, int durationTicks, float pupilBrightnessOffset, float pupilContrastOffset)

@@ -1,5 +1,6 @@
 using UnityEngine;
 using Verse;
+using System.Collections.Generic;
 
 namespace CharacterStudio.UI
 {
@@ -7,9 +8,15 @@ namespace CharacterStudio.UI
     {
         private readonly Dialog_SkinEditor owner;
         private Vector2 scrollPos;
-        private float viewHeight = 1600f;
+        private float viewHeight = 1200f;
+        private readonly HashSet<string> expandedSections = new HashSet<string>
+        {
+            "FaceSection",
+            "LidMotion",
+            "EyeMotion"
+        };
 
-        public override Vector2 InitialSize => new Vector2(560f, 760f);
+        public override Vector2 InitialSize => new Vector2(540f, 700f);
 
         public Dialog_FaceMovementSettings(Dialog_SkinEditor owner)
         {
@@ -51,8 +58,7 @@ namespace CharacterStudio.UI
 
             float y = 0f;
             float width = viewRect.width;
-            DrawDialogSummary(ref y, width);
-            owner.DrawFaceRuntimeTuningDialogContents(ref y, width);
+            owner.DrawFaceRuntimeTuningDialogContents(ref y, width, IsSectionExpanded, ToggleSectionExpanded);
 
             viewHeight = Mathf.Max(y + 12f, contentRect.height - 4f);
             Widgets.EndScrollView();
@@ -65,21 +71,18 @@ namespace CharacterStudio.UI
             }
         }
 
-        private void DrawDialogSummary(ref float y, float width)
+        private bool IsSectionExpanded(string sectionKey)
         {
-            UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_MovementDialog_Title".Translate());
+            return expandedSections.Contains(sectionKey ?? string.Empty);
+        }
 
-            Text.Font = GameFont.Tiny;
-            float bannerHeight = Mathf.Max(42f, Text.CalcHeight("CS_Studio_Face_MovementDialog_Summary".Translate(), width - 16f) + 12f);
-            Rect bannerRect = new Rect(0f, y, width, bannerHeight);
-            Widgets.DrawBoxSolid(bannerRect, UIHelper.PanelFillSoftColor);
-            GUI.color = UIHelper.BorderColor;
-            Widgets.DrawBox(bannerRect, 1);
-            GUI.color = UIHelper.SubtleColor;
-            Widgets.Label(new Rect(bannerRect.x + 8f, bannerRect.y + 4f, bannerRect.width - 16f, bannerRect.height - 8f), "CS_Studio_Face_MovementDialog_Summary".Translate());
-            GUI.color = Color.white;
-            Text.Font = GameFont.Small;
-            y += bannerHeight + 6f;
+        private void ToggleSectionExpanded(string sectionKey)
+        {
+            if (string.IsNullOrWhiteSpace(sectionKey))
+                return;
+
+            if (!expandedSections.Add(sectionKey))
+                expandedSections.Remove(sectionKey);
         }
     }
 }

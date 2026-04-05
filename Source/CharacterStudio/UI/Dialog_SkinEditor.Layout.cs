@@ -226,6 +226,7 @@ namespace CharacterStudio.UI
                 DrawButton("CS_Studio_File_New".Translate(), OnNewSkin);
                 DrawButton("CS_Studio_File_Save".Translate(), OnSaveSkin, isDirty);
                 DrawButton("CS_Studio_Btn_Apply".Translate(), OnApplyToTargetPawn, true);
+                DrawButton("CS_Studio_SpawnNewPawnButton".Translate(), OnSpawnNewPawn, true);
                 DrawButton("CS_Studio_File_OpenSkinFolder".Translate(), OnOpenSkinFolder);
                 DrawButton("CS_Studio_File_Export".Translate(), OnExportMod);
             }

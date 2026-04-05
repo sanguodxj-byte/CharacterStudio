@@ -173,6 +173,8 @@ namespace CharacterStudio.Abilities
         PeriodicPulse,
         KillRefresh,
         ShieldAbsorb,
+        AttachedShieldVisual,
+        ProjectileInterceptorShield,
         ChainBounce,
         ExecuteBonusDamage,
         FullHealthBonusDamage,
@@ -239,6 +241,10 @@ namespace CharacterStudio.Abilities
         public float shieldDurationTicks = 240f;
         public float shieldHealRatio = 0.5f;
         public float shieldBonusDamageRatio = 0.25f;
+        public float shieldVisualScale = 1f;
+        public float shieldVisualHeightOffset = 0f;
+        public string shieldInterceptorThingDefName = string.Empty;
+        public int shieldInterceptorDurationTicks = 240;
         public int maxBounceCount = 4;
         public float bounceRange = 6f;
         public float bounceDamageFalloff = 0.2f;
@@ -344,9 +350,13 @@ namespace CharacterStudio.Abilities
             shieldDurationTicks = AbilityEditorNormalizationUtility.ClampFloat(shieldDurationTicks, 1f, 99999f);
             shieldHealRatio = AbilityEditorNormalizationUtility.ClampFloat(shieldHealRatio, 0f, 10f);
             shieldBonusDamageRatio = AbilityEditorNormalizationUtility.ClampFloat(shieldBonusDamageRatio, 0f, 10f);
+            shieldVisualScale = AbilityEditorNormalizationUtility.ClampFloat(shieldVisualScale, 0.1f, 10f);
+            shieldVisualHeightOffset = AbilityEditorNormalizationUtility.ClampFloat(shieldVisualHeightOffset, -5f, 5f);
+            shieldInterceptorThingDefName = AbilityEditorNormalizationUtility.TrimOrEmpty(shieldInterceptorThingDefName);
+            shieldInterceptorDurationTicks = AbilityEditorNormalizationUtility.ClampInt(shieldInterceptorDurationTicks, 1, 99999);
             maxBounceCount = AbilityEditorNormalizationUtility.ClampInt(maxBounceCount, 1, 99);
             bounceRange = AbilityEditorNormalizationUtility.ClampFloat(bounceRange, 0.1f, 99f);
-            bounceDamageFalloff = AbilityEditorNormalizationUtility.ClampFloat(bounceDamageFalloff, 0f, 0.95f);
+            bounceDamageFalloff = AbilityEditorNormalizationUtility.ClampFloat(bounceDamageFalloff, -0.95f, 0.95f);
             executeThresholdPercent = AbilityEditorNormalizationUtility.ClampFloat(executeThresholdPercent, 0.01f, 0.99f);
             executeBonusDamageScale = AbilityEditorNormalizationUtility.ClampFloat(executeBonusDamageScale, 0.01f, 10f);
             fullHealthThresholdPercent = AbilityEditorNormalizationUtility.ClampFloat(fullHealthThresholdPercent, 0.01f, 1f);
@@ -449,6 +459,16 @@ namespace CharacterStudio.Abilities
                         result.AddError("CS_Ability_Validate_ShieldDurationTicks".Translate());
                     if (shieldHealRatio < 0f || shieldBonusDamageRatio < 0f)
                         result.AddError("CS_Ability_Validate_ShieldRatios".Translate());
+                    break;
+                case AbilityRuntimeComponentType.AttachedShieldVisual:
+                    if (shieldVisualScale <= 0f)
+                        result.AddError("CS_Ability_Validate_AttachedShieldVisualScale".Translate());
+                    break;
+                case AbilityRuntimeComponentType.ProjectileInterceptorShield:
+                    if (string.IsNullOrWhiteSpace(shieldInterceptorThingDefName))
+                        result.AddError("CS_Ability_Validate_ProjectileInterceptorThingDef".Translate());
+                    if (shieldInterceptorDurationTicks <= 0)
+                        result.AddError("CS_Ability_Validate_ProjectileInterceptorDuration".Translate());
                     break;
                 case AbilityRuntimeComponentType.ChainBounce:
                     if (maxBounceCount <= 0)

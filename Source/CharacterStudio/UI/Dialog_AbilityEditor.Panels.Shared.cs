@@ -406,6 +406,8 @@ namespace CharacterStudio.UI
                 AbilityRuntimeComponentType.PeriodicPulse => 112f,
                 AbilityRuntimeComponentType.KillRefresh => 112f,
                 AbilityRuntimeComponentType.ShieldAbsorb => 164f,
+                AbilityRuntimeComponentType.AttachedShieldVisual => 112f,
+                AbilityRuntimeComponentType.ProjectileInterceptorShield => 112f,
                 AbilityRuntimeComponentType.ChainBounce => 112f,
                 AbilityRuntimeComponentType.ExecuteBonusDamage => 112f,
                 AbilityRuntimeComponentType.MissingHealthBonusDamage => 112f,
@@ -421,6 +423,9 @@ namespace CharacterStudio.UI
                 AbilityRuntimeComponentType.HitCooldownRefund => 112f,
                 AbilityRuntimeComponentType.ProjectileSplit => 138f,
                 AbilityRuntimeComponentType.FlightState => 112f,
+                AbilityRuntimeComponentType.VanillaPawnFlyer => 320f,
+                AbilityRuntimeComponentType.FlightOnlyFollowup => 216f,
+                AbilityRuntimeComponentType.FlightLandingBurst => 242f,
                 AbilityRuntimeComponentType.TimeStop => 86f,
                 _ => 64f
             };
@@ -826,6 +831,69 @@ namespace CharacterStudio.UI
                         NotifyAbilityPreviewDirty(true);
                     }
                 }
+                else if (comp.type == AbilityRuntimeComponentType.AttachedShieldVisual)
+                {
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_ShieldVisualScale".Translate());
+                    string visualScale = comp.shieldVisualScale.ToString();
+                    float visualScaleBefore = comp.shieldVisualScale;
+                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.shieldVisualScale, ref visualScale, 0.1f, 10f);
+                    if (Math.Abs(comp.shieldVisualScale - visualScaleBefore) > 0.001f)
+                    {
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_ShieldVisualHeightOffset".Translate());
+                    string visualHeight = comp.shieldVisualHeightOffset.ToString();
+                    float visualHeightBefore = comp.shieldVisualHeightOffset;
+                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.shieldVisualHeightOffset, ref visualHeight, -5f, 5f);
+                    if (Math.Abs(comp.shieldVisualHeightOffset - visualHeightBefore) > 0.001f)
+                    {
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_ShieldDuration".Translate());
+                    string attachedDuration = comp.shieldDurationTicks.ToString();
+                    float attachedDurationBefore = comp.shieldDurationTicks;
+                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.shieldDurationTicks, ref attachedDuration, 1f, 99999f);
+                    if (Math.Abs(comp.shieldDurationTicks - attachedDurationBefore) > 0.001f)
+                    {
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                }
+                else if (comp.type == AbilityRuntimeComponentType.ProjectileInterceptorShield)
+                {
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_ShieldInterceptorThingDef".Translate());
+                    string interceptorThingDefName = comp.shieldInterceptorThingDefName ?? string.Empty;
+                    string interceptorThingDefBefore = interceptorThingDefName;
+                    interceptorThingDefName = Widgets.TextField(new Rect(inner.x + labelW, rowY, valueW, 24f), interceptorThingDefName);
+                    if (!string.Equals(interceptorThingDefBefore, interceptorThingDefName, StringComparison.Ordinal))
+                    {
+                        comp.shieldInterceptorThingDefName = interceptorThingDefName;
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_ShieldInterceptorDuration".Translate());
+                    string interceptorDuration = comp.shieldInterceptorDurationTicks.ToString();
+                    int interceptorDurationBefore = comp.shieldInterceptorDurationTicks;
+                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.shieldInterceptorDurationTicks, ref interceptorDuration, 1, 99999);
+                    if (comp.shieldInterceptorDurationTicks != interceptorDurationBefore)
+                    {
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_ShieldVisualScale".Translate());
+                    string interceptorScale = comp.shieldVisualScale.ToString();
+                    float interceptorScaleBefore = comp.shieldVisualScale;
+                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.shieldVisualScale, ref interceptorScale, 0.1f, 10f);
+                    if (Math.Abs(comp.shieldVisualScale - interceptorScaleBefore) > 0.001f)
+                    {
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                }
                 else if (comp.type == AbilityRuntimeComponentType.ChainBounce)
                 {
                     Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_ChainBounceCount".Translate());
@@ -851,7 +919,7 @@ namespace CharacterStudio.UI
                     Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_ChainBounceFalloff".Translate());
                     string falloff = comp.bounceDamageFalloff.ToString();
                     float falloffBefore = comp.bounceDamageFalloff;
-                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.bounceDamageFalloff, ref falloff, 0f, 0.95f);
+                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.bounceDamageFalloff, ref falloff, -0.95f, 0.95f);
                     if (Math.Abs(comp.bounceDamageFalloff - falloffBefore) > 0.001f)
                     {
                         NotifyAbilityPreviewDirty(true);
@@ -1242,6 +1310,244 @@ namespace CharacterStudio.UI
                     if (comp.suppressCombatActionsDuringFlightState != suppressCombat)
                     {
                         comp.suppressCombatActionsDuringFlightState = suppressCombat;
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                }
+                else if (comp.type == AbilityRuntimeComponentType.VanillaPawnFlyer)
+                {
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_VanillaFlyerThingDef".Translate());
+                    string flyerThingDefName = comp.flyerThingDefName ?? string.Empty;
+                    string flyerThingDefBefore = flyerThingDefName;
+                    flyerThingDefName = Widgets.TextField(new Rect(inner.x + labelW, rowY, valueW, 24f), flyerThingDefName);
+                    if (!string.Equals(flyerThingDefBefore, flyerThingDefName, StringComparison.Ordinal))
+                    {
+                        comp.flyerThingDefName = flyerThingDefName;
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_FlyerWarmupTicks".Translate());
+                    string flyerWarmup = comp.flyerWarmupTicks.ToString();
+                    int flyerWarmupBefore = comp.flyerWarmupTicks;
+                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.flyerWarmupTicks, ref flyerWarmup, 0, 99999);
+                    if (comp.flyerWarmupTicks != flyerWarmupBefore)
+                    {
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_FlightDurationTicks".Translate());
+                    string vanillaFlightDuration = comp.flightDurationTicks.ToString();
+                    int vanillaFlightDurationBefore = comp.flightDurationTicks;
+                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.flightDurationTicks, ref vanillaFlightDuration, 1, 99999);
+                    if (comp.flightDurationTicks != vanillaFlightDurationBefore)
+                    {
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_LaunchFromCasterPosition".Translate());
+                    bool launchFromCaster = comp.launchFromCasterPosition;
+                    Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref launchFromCaster, 24f, false);
+                    if (comp.launchFromCasterPosition != launchFromCaster)
+                    {
+                        comp.launchFromCasterPosition = launchFromCaster;
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_RequireValidTargetCell".Translate());
+                    bool requireValidTargetCell = comp.requireValidTargetCell;
+                    Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref requireValidTargetCell, 24f, false);
+                    if (comp.requireValidTargetCell != requireValidTargetCell)
+                    {
+                        comp.requireValidTargetCell = requireValidTargetCell;
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_StoreTargetForFollowup".Translate());
+                    bool storeTargetForFollowup = comp.storeTargetForFollowup;
+                    Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref storeTargetForFollowup, 24f, false);
+                    if (comp.storeTargetForFollowup != storeTargetForFollowup)
+                    {
+                        comp.storeTargetForFollowup = storeTargetForFollowup;
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_EnableFlightOnlyWindow".Translate());
+                    bool enableFlightOnlyWindow = comp.enableFlightOnlyWindow;
+                    Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref enableFlightOnlyWindow, 24f, false);
+                    if (comp.enableFlightOnlyWindow != enableFlightOnlyWindow)
+                    {
+                        comp.enableFlightOnlyWindow = enableFlightOnlyWindow;
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_FlightOnlyWindowTicks".Translate());
+                    string flightWindowTicks = comp.flightOnlyWindowTicks.ToString();
+                    int flightWindowTicksBefore = comp.flightOnlyWindowTicks;
+                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.flightOnlyWindowTicks, ref flightWindowTicks, 1, 99999);
+                    if (comp.flightOnlyWindowTicks != flightWindowTicksBefore)
+                    {
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_FlightOnlyAbility".Translate());
+                    string flightOnlyAbilityLabel = string.IsNullOrWhiteSpace(comp.flightOnlyAbilityDefName)
+                        ? "CS_Studio_None".Translate()
+                        : comp.flightOnlyAbilityDefName;
+                    if (DrawSelectionFieldButton(new Rect(inner.x + labelW, rowY, valueW, 24f), flightOnlyAbilityLabel, () => ShowAbilityDefSelectorForRuntime(comp)))
+                    {
+                    }
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_HideCasterDuringTakeoff".Translate());
+                    bool hideCasterDuringTakeoff = comp.hideCasterDuringTakeoff;
+                    Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref hideCasterDuringTakeoff, 24f, false);
+                    if (comp.hideCasterDuringTakeoff != hideCasterDuringTakeoff)
+                    {
+                        comp.hideCasterDuringTakeoff = hideCasterDuringTakeoff;
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_AutoExpireFlightMarkerOnLanding".Translate());
+                    bool autoExpireFlightMarker = comp.autoExpireFlightMarkerOnLanding;
+                    Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref autoExpireFlightMarker, 24f, false);
+                    if (comp.autoExpireFlightMarkerOnLanding != autoExpireFlightMarker)
+                    {
+                        comp.autoExpireFlightMarkerOnLanding = autoExpireFlightMarker;
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                }
+                else if (comp.type == AbilityRuntimeComponentType.FlightOnlyFollowup)
+                {
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_RequiredFlightSourceAbility".Translate());
+                    string requiredSourceAbilityLabel = string.IsNullOrWhiteSpace(comp.requiredFlightSourceAbilityDefName)
+                        ? "CS_Studio_None".Translate()
+                        : comp.requiredFlightSourceAbilityDefName;
+                    if (DrawSelectionFieldButton(new Rect(inner.x + labelW, rowY, valueW, 24f), requiredSourceAbilityLabel, () => ShowAbilityDefSelectorForRuntime(comp)))
+                    {
+                    }
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_RequireReservedTargetCell".Translate());
+                    bool requireReservedTargetCell = comp.requireReservedTargetCell;
+                    Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref requireReservedTargetCell, 24f, false);
+                    if (comp.requireReservedTargetCell != requireReservedTargetCell)
+                    {
+                        comp.requireReservedTargetCell = requireReservedTargetCell;
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_ConsumeFlightStateOnCast".Translate());
+                    bool consumeFlightStateOnCast = comp.consumeFlightStateOnCast;
+                    Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref consumeFlightStateOnCast, 24f, false);
+                    if (comp.consumeFlightStateOnCast != consumeFlightStateOnCast)
+                    {
+                        comp.consumeFlightStateOnCast = consumeFlightStateOnCast;
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_OnlyUseDuringFlightWindow".Translate());
+                    bool onlyUseDuringFlightWindow = comp.onlyUseDuringFlightWindow;
+                    Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref onlyUseDuringFlightWindow, 24f, false);
+                    if (comp.onlyUseDuringFlightWindow != onlyUseDuringFlightWindow)
+                    {
+                        comp.onlyUseDuringFlightWindow = onlyUseDuringFlightWindow;
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                }
+                else if (comp.type == AbilityRuntimeComponentType.FlightLandingBurst)
+                {
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_LandingBurstRadius".Translate());
+                    string landingBurstRadius = comp.landingBurstRadius.ToString();
+                    float landingBurstRadiusBefore = comp.landingBurstRadius;
+                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.landingBurstRadius, ref landingBurstRadius, 0.1f, 99f);
+                    if (Math.Abs(comp.landingBurstRadius - landingBurstRadiusBefore) > 0.001f)
+                    {
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_LandingBurstDamage".Translate());
+                    string landingBurstDamage = comp.landingBurstDamage.ToString();
+                    float landingBurstDamageBefore = comp.landingBurstDamage;
+                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, (valueW - 6f) / 2f, 24f), ref comp.landingBurstDamage, ref landingBurstDamage, 0.01f, 99999f);
+                    if (Math.Abs(comp.landingBurstDamage - landingBurstDamageBefore) > 0.001f)
+                    {
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    if (DrawSelectionFieldButton(new Rect(inner.x + labelW + (valueW - 6f) / 2f + 6f, rowY, (valueW - 6f) / 2f, 24f),
+                        comp.landingBurstDamageDef?.label ?? "CS_Studio_None".Translate(), () => ShowDamageDefSelectorForRuntime(comp)))
+                    {
+                    }
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_LandingEffecterDefName".Translate());
+                    string landingEffecterDefName = comp.landingEffecterDefName ?? string.Empty;
+                    string landingEffecterDefNameBefore = landingEffecterDefName;
+                    landingEffecterDefName = Widgets.TextField(new Rect(inner.x + labelW, rowY, valueW, 24f), landingEffecterDefName);
+                    if (!string.Equals(landingEffecterDefNameBefore, landingEffecterDefName, StringComparison.Ordinal))
+                    {
+                        comp.landingEffecterDefName = landingEffecterDefName;
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_LandingSoundDefName".Translate());
+                    string landingSoundDefName = comp.landingSoundDefName ?? string.Empty;
+                    string landingSoundDefNameBefore = landingSoundDefName;
+                    landingSoundDefName = Widgets.TextField(new Rect(inner.x + labelW, rowY, valueW, 24f), landingSoundDefName);
+                    if (!string.Equals(landingSoundDefNameBefore, landingSoundDefName, StringComparison.Ordinal))
+                    {
+                        comp.landingSoundDefName = landingSoundDefName;
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_LandingAffectBuildings".Translate());
+                    bool affectBuildings = comp.affectBuildings;
+                    Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref affectBuildings, 24f, false);
+                    if (comp.affectBuildings != affectBuildings)
+                    {
+                        comp.affectBuildings = affectBuildings;
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_LandingAffectCells".Translate());
+                    bool affectCells = comp.affectCells;
+                    Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref affectCells, 24f, false);
+                    if (comp.affectCells != affectCells)
+                    {
+                        comp.affectCells = affectCells;
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_LandingKnockbackTargets".Translate());
+                    bool knockbackTargets = comp.knockbackTargets;
+                    Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref knockbackTargets, 24f, false);
+                    if (comp.knockbackTargets != knockbackTargets)
+                    {
+                        comp.knockbackTargets = knockbackTargets;
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_LandingKnockbackDistance".Translate());
+                    string landingKnockbackDistance = comp.knockbackDistance.ToString();
+                    float landingKnockbackDistanceBefore = comp.knockbackDistance;
+                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.knockbackDistance, ref landingKnockbackDistance, 0f, 99f);
+                    if (Math.Abs(comp.knockbackDistance - landingKnockbackDistanceBefore) > 0.001f)
+                    {
                         NotifyAbilityPreviewDirty(true);
                     }
                 }

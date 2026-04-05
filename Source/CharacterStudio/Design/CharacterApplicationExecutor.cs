@@ -1,4 +1,6 @@
 using CharacterStudio.Core;
+using RimWorld;
+using Verse;
 
 namespace CharacterStudio.Design
 {
@@ -16,7 +18,7 @@ namespace CharacterStudio.Design
                 return false;
             }
 
-            if (plan.targetPawn == null)
+            if (!plan.spawnAsNewPawn && plan.targetPawn == null)
             {
                 plan.isValid = false;
                 plan.statusMessage = "CS_Studio_Msg_TargetPawnRequired";
@@ -37,6 +39,11 @@ namespace CharacterStudio.Design
                 ? "CS_Studio_Msg_PreviewApplied"
                 : "CS_Studio_Msg_AppliedToPawn";
 
+            if (plan.spawnAsNewPawn)
+            {
+                return TrySpawnAsNewPawn(plan);
+            }
+
             if (!PawnSkinRuntimeUtility.ApplySkinToPawn(
                 plan.targetPawn,
                 plan.runtimeSkin,
@@ -49,6 +56,68 @@ namespace CharacterStudio.Design
                 return false;
             }
 
+            return true;
+        }
+
+        private static bool TrySpawnAsNewPawn(CharacterApplicationPlan plan)
+        {
+            Map? map = plan.spawnMap;
+            if (map == null)
+            {
+                plan.isValid = false;
+                plan.statusMessage = "CS_Studio_Err_NoMap";
+                return false;
+            }
+
+            PawnKindDef pawnKind = plan.spawnPawnKind ?? CharacterSpawnUtility.ResolvePawnKindForRace(plan.spawnRaceDef ?? ThingDefOf.Human);
+            Faction faction = plan.spawnFaction ?? Faction.OfPlayer;
+            Pawn? pawn = CharacterSpawnUtility.GeneratePawn(pawnKind, faction);
+            if (pawn == null)
+            {
+                plan.isValid = false;
+                plan.statusMessage = "CS_Studio_Err_ApplyFailedCheckLog";
+                return false;
+            }
+
+            if (pawn.Faction != faction)
+            {
+                pawn.SetFaction(faction);
+            }
+
+            IntVec3 origin = plan.desiredSpawnCell.IsValid
+                ? plan.desiredSpawnCell
+                : CharacterSpawnUtility.ResolveSpawnOrigin(map, plan.targetPawn);
+            if (!CharacterSpawnUtility.TryFindSpawnCell(map, origin, 6, out IntVec3 spawnCell))
+            {
+                plan.isValid = false;
+                plan.statusMessage = "CS_Studio_Err_ApplyFailedCheckLog";
+                return false;
+            }
+
+            CharacterSpawnUtility.SpawnPawnWithSettings(pawn, map, spawnCell, plan.spawnSettings ?? new CharacterSpawnSettings());
+
+            if (!PawnSkinRuntimeUtility.ApplySkinToPawn(
+                pawn,
+                plan.runtimeSkin,
+                fromDefaultRaceBinding: false,
+                previewMode: false,
+                applicationSource: plan.source ?? string.Empty))
+            {
+                pawn.Destroy(DestroyMode.Vanish);
+                plan.isValid = false;
+                plan.statusMessage = "CS_Studio_Err_ApplyNoSkinComp";
+                return false;
+            }
+
+            plan.targetPawn = pawn;
+            plan.statusMessage = "CS_Studio_SpawnedNewPawn";
+            CharacterSpawnUtility.SendSpawnEvent(
+                plan.spawnSettings ?? new CharacterSpawnSettings(),
+                pawn,
+                map,
+                spawnCell,
+                "CS_Studio_SpawnedNewPawnMessage".Translate(pawn.LabelShort),
+                "CS_Studio_SpawnedNewPawnLetter".Translate(pawn.LabelShort));
             return true;
         }
     }

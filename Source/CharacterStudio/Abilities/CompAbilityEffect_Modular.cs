@@ -83,13 +83,13 @@ namespace CharacterStudio.Abilities
             targetPawn.TakeDamage(new DamageInfo(damageDef ?? DamageDefOf.Bomb, amount, 0f, -1f, caster));
         }
 
-        // 延迟视觉特效队列：(触发时间tick, 特效配置, 目标)
-        private readonly List<(int triggerTick, AbilityVisualEffectConfig vfxConfig, LocalTargetInfo target)> pendingVfx
-            = new List<(int, AbilityVisualEffectConfig, LocalTargetInfo)>();
+        // 延迟视觉特效队列：(触发时间tick, 特效配置, 目标, 视觉源点覆盖)
+        private readonly List<(int triggerTick, AbilityVisualEffectConfig vfxConfig, LocalTargetInfo target, Vector3? sourceOverride)> pendingVfx
+            = new List<(int, AbilityVisualEffectConfig, LocalTargetInfo, Vector3?)>();
 
-        // 延迟声音队列：(触发时间tick, 特效配置, 目标)
-        private readonly List<(int triggerTick, AbilityVisualEffectConfig vfxConfig, LocalTargetInfo target)> pendingVfxSounds
-            = new List<(int, AbilityVisualEffectConfig, LocalTargetInfo)>();
+        // 延迟声音队列：(触发时间tick, 特效配置, 目标, 视觉源点覆盖)
+        private readonly List<(int triggerTick, AbilityVisualEffectConfig vfxConfig, LocalTargetInfo target, Vector3? sourceOverride)> pendingVfxSounds
+            = new List<(int, AbilityVisualEffectConfig, LocalTargetInfo, Vector3?)>();
 
         public override void Apply(LocalTargetInfo target, LocalTargetInfo dest)
         {
@@ -339,6 +339,12 @@ namespace CharacterStudio.Abilities
                     case AbilityRuntimeComponentType.ShieldAbsorb:
                         ArmShieldAbsorb(component, skinComp, nowTick);
                         break;
+                    case AbilityRuntimeComponentType.AttachedShieldVisual:
+                        ArmAttachedShieldVisual(component, skinComp, nowTick);
+                        break;
+                    case AbilityRuntimeComponentType.ProjectileInterceptorShield:
+                        ArmProjectileInterceptorShield(component, caster, skinComp, nowTick);
+                        break;
                     case AbilityRuntimeComponentType.ChainBounce:
                         TriggerChainBounce(component, caster, target);
                         break;
@@ -394,24 +400,25 @@ namespace CharacterStudio.Abilities
             {
                 TickPeriodicPulse(caster, skinComp, nowTick);
                 TickShieldAbsorb(caster, skinComp, nowTick);
+                TickProjectileInterceptorShield(caster, skinComp, nowTick);
             }
 
             for (int i = pendingVfx.Count - 1; i >= 0; i--)
             {
-                var (triggerTick, vfxConfig, target) = pendingVfx[i];
+                var (triggerTick, vfxConfig, target, sourceOverride) = pendingVfx[i];
                 if (nowTick >= triggerTick)
                 {
-                    PlayVfx(vfxConfig, target);
+                    PlayVfx(vfxConfig, target, sourceOverride);
                     pendingVfx.RemoveAt(i);
                 }
             }
 
             for (int i = pendingVfxSounds.Count - 1; i >= 0; i--)
             {
-                var (triggerTick, vfxConfig, target) = pendingVfxSounds[i];
+                var (triggerTick, vfxConfig, target, sourceOverride) = pendingVfxSounds[i];
                 if (nowTick >= triggerTick)
                 {
-                    PlayVfxSound(vfxConfig, target);
+                    PlayVfxSound(vfxConfig, target, sourceOverride);
                     pendingVfxSounds.RemoveAt(i);
                 }
             }
@@ -566,6 +573,62 @@ namespace CharacterStudio.Abilities
             skinComp.shieldStoredBonusDamage = 0f;
         }
 
+        private static void ArmAttachedShieldVisual(AbilityRuntimeComponentConfig component, CompPawnSkin skinComp, int nowTick)
+        {
+            Pawn? caster = skinComp.Pawn;
+            if (caster?.Map == null)
+            {
+                return;
+            }
+
+            ThingDef? visualDef = DefDatabase<ThingDef>.GetNamedSilentFail("CS_AttachedShieldVisual");
+            if (visualDef == null)
+            {
+                Log.Warning("[CharacterStudio] AttachedShieldVisual missing thingDef: CS_AttachedShieldVisual");
+                return;
+            }
+
+            Thing visualThing = ThingMaker.MakeThing(visualDef);
+            GenSpawn.Spawn(visualThing, caster.Position, caster.Map, WipeMode.Vanish);
+
+            int duration = Mathf.Max(1, Mathf.RoundToInt(component.shieldDurationTicks));
+            skinComp.attachedShieldVisualExpireTick = nowTick + duration;
+            skinComp.attachedShieldVisualScale = Mathf.Max(0.1f, component.shieldVisualScale);
+            skinComp.attachedShieldVisualHeightOffset = component.shieldVisualHeightOffset;
+            skinComp.attachedShieldVisualThingId = visualThing.ThingID;
+            skinComp.RequestRenderRefresh();
+        }
+
+        private static void ArmProjectileInterceptorShield(AbilityRuntimeComponentConfig component, Pawn caster, CompPawnSkin skinComp, int nowTick)
+        {
+            if (caster.Map == null || string.IsNullOrWhiteSpace(component.shieldInterceptorThingDefName))
+            {
+                return;
+            }
+
+            ThingDef? shieldDef = DefDatabase<ThingDef>.GetNamedSilentFail(component.shieldInterceptorThingDefName);
+            if (shieldDef == null)
+            {
+                Log.Warning($"[CharacterStudio] ProjectileInterceptorShield missing thingDef: {component.shieldInterceptorThingDefName}");
+                return;
+            }
+
+            Thing thing = ThingMaker.MakeThing(shieldDef);
+            if (thing == null)
+            {
+                return;
+            }
+
+            GenSpawn.Spawn(thing, caster.Position, caster.Map, WipeMode.Vanish);
+            if (thing.TryGetComp<CompProjectileInterceptor>() is CompProjectileInterceptor interceptor)
+            {
+                interceptor.Activate();
+            }
+
+            skinComp.projectileInterceptorShieldThingId = thing.ThingID;
+            skinComp.projectileInterceptorShieldExpireTick = nowTick + Mathf.Max(1, component.shieldInterceptorDurationTicks);
+        }
+
         private void TickShieldAbsorb(Pawn caster, CompPawnSkin skinComp, int nowTick)
         {
             if (skinComp.shieldExpireTick < 0 || nowTick <= skinComp.shieldExpireTick)
@@ -573,23 +636,106 @@ namespace CharacterStudio.Abilities
                 return;
             }
 
+            AbilityRuntimeComponentConfig? shieldComponent = Props.runtimeComponents?.FirstOrDefault(c => c != null && c.enabled && c.type == AbilityRuntimeComponentType.ShieldAbsorb);
+
             if (skinComp.shieldStoredHeal > 0f)
             {
                 ApplyShieldHeal(caster, skinComp.shieldStoredHeal);
             }
 
+            if (shieldComponent != null)
+            {
+                TriggerShieldExpiryBurst(caster, skinComp, shieldComponent);
+            }
+
             skinComp.shieldRemainingDamage = 0f;
             skinComp.shieldExpireTick = -1;
             skinComp.shieldStoredHeal = 0f;
+            skinComp.shieldStoredBonusDamage = 0f;
             TriggerVisualEffects(AbilityVisualEffectTrigger.OnExpire, new LocalTargetInfo(caster.Position));
         }
 
-        private void TriggerVisualEffects(AbilityVisualEffectTrigger trigger, LocalTargetInfo target)
+        private static void TickProjectileInterceptorShield(Pawn caster, CompPawnSkin skinComp, int nowTick)
         {
-            QueueVisualEffectsForTrigger(trigger, target);
+            TickAttachedShieldVisual(caster, skinComp, nowTick);
+
+            if (skinComp.projectileInterceptorShieldExpireTick < 0)
+            {
+                return;
+            }
+
+            Thing? activeThing = FindThingById(caster.MapHeld, skinComp.projectileInterceptorShieldThingId);
+            if (activeThing != null && activeThing.Position != caster.Position)
+            {
+                activeThing.Position = caster.Position;
+            }
+
+            if (nowTick <= skinComp.projectileInterceptorShieldExpireTick)
+            {
+                return;
+            }
+
+            Thing? shieldThing = FindThingById(caster.MapHeld, skinComp.projectileInterceptorShieldThingId);
+            if (shieldThing != null && !shieldThing.Destroyed)
+            {
+                shieldThing.Destroy(DestroyMode.Vanish);
+            }
+
+            skinComp.projectileInterceptorShieldExpireTick = -1;
+            skinComp.projectileInterceptorShieldThingId = string.Empty;
         }
 
-        private void QueueVisualEffectsForTrigger(AbilityVisualEffectTrigger trigger, LocalTargetInfo target)
+        private static void TickAttachedShieldVisual(Pawn caster, CompPawnSkin skinComp, int nowTick)
+        {
+            if (skinComp.attachedShieldVisualExpireTick < 0)
+            {
+                return;
+            }
+
+            Thing? visualThing = FindThingById(caster.MapHeld, skinComp.attachedShieldVisualThingId);
+            if (visualThing != null && visualThing.Position != caster.Position)
+            {
+                visualThing.Position = caster.Position;
+            }
+
+            if (nowTick <= skinComp.attachedShieldVisualExpireTick)
+            {
+                return;
+            }
+
+            if (visualThing != null && !visualThing.Destroyed)
+            {
+                visualThing.Destroy(DestroyMode.Vanish);
+            }
+
+            skinComp.attachedShieldVisualExpireTick = -1;
+            skinComp.attachedShieldVisualThingId = string.Empty;
+        }
+
+        private static Thing? FindThingById(Map? map, string thingId)
+        {
+            if (map == null || string.IsNullOrWhiteSpace(thingId))
+            {
+                return null;
+            }
+
+            foreach (Thing thing in map.listerThings.AllThings)
+            {
+                if (string.Equals(thing.ThingID, thingId, StringComparison.OrdinalIgnoreCase))
+                {
+                    return thing;
+                }
+            }
+
+            return null;
+        }
+
+        private void TriggerVisualEffects(AbilityVisualEffectTrigger trigger, LocalTargetInfo target, Vector3? sourceOverride = null)
+        {
+            QueueVisualEffectsForTrigger(trigger, target, sourceOverride);
+        }
+
+        private void QueueVisualEffectsForTrigger(AbilityVisualEffectTrigger trigger, LocalTargetInfo target, Vector3? sourceOverride = null)
         {
             if (Props.visualEffects == null || Props.visualEffects.Count == 0)
             {
@@ -618,11 +764,11 @@ namespace CharacterStudio.Abilities
                     int totalDelay = vfx.delayTicks + (repeatIndex * repeatIntervalTicks);
                     if (totalDelay <= 0)
                     {
-                        PlayVfx(vfx, target);
+                        PlayVfx(vfx, target, sourceOverride);
                     }
                     else
                     {
-                        pendingVfx.Add((nowTick + totalDelay, vfx, target));
+                        pendingVfx.Add((nowTick + totalDelay, vfx, target, sourceOverride));
                     }
 
                     if (vfx.playSound && !string.IsNullOrWhiteSpace(vfx.soundDefName))
@@ -630,11 +776,11 @@ namespace CharacterStudio.Abilities
                         int soundDelay = totalDelay + Mathf.Max(0, vfx.soundDelayTicks);
                         if (soundDelay <= 0)
                         {
-                            PlayVfxSound(vfx, target);
+                            PlayVfxSound(vfx, target, sourceOverride);
                         }
                         else
                         {
-                            pendingVfxSounds.Add((nowTick + soundDelay, vfx, target));
+                            pendingVfxSounds.Add((nowTick + soundDelay, vfx, target, sourceOverride));
                         }
                     }
                 }
@@ -690,6 +836,41 @@ namespace CharacterStudio.Abilities
             return bonus;
         }
 
+        private void TriggerShieldExpiryBurst(Pawn caster, CompPawnSkin skinComp, AbilityRuntimeComponentConfig component)
+        {
+            if (caster.Map == null)
+            {
+                return;
+            }
+
+            float storedDamage = skinComp.shieldStoredBonusDamage;
+            float burstDamage = storedDamage * Mathf.Max(0f, component.shieldBonusDamageRatio);
+            if (burstDamage <= 0.001f)
+            {
+                return;
+            }
+
+            const float burstRadius = 2.4f;
+
+            IEnumerable<IntVec3> cells = GenRadial.RadialCellsAround(caster.Position, burstRadius, true);
+            foreach (IntVec3 cell in cells)
+            {
+                if (!cell.InBounds(caster.Map))
+                {
+                    continue;
+                }
+
+                List<Thing> things = cell.GetThingList(caster.Map);
+                for (int i = 0; i < things.Count; i++)
+                {
+                    if (things[i] is Pawn pawn && pawn != caster && pawn.Faction != caster.Faction)
+                    {
+                        ApplyDirectDamageToPawn(caster, pawn, DamageDefOf.Bomb, burstDamage, allowSelfDamage: false);
+                    }
+                }
+            }
+        }
+
         private void TriggerChainBounce(AbilityRuntimeComponentConfig component, Pawn caster, LocalTargetInfo target)
         {
             if (caster.Map == null || Props.effects == null || !target.HasThing)
@@ -708,7 +889,7 @@ namespace CharacterStudio.Abilities
             float damageScale = 1f;
             int maxBounceCount = Mathf.Max(0, component.maxBounceCount);
             float range = Mathf.Max(0.1f, component.bounceRange);
-            float falloff = Mathf.Clamp01(component.bounceDamageFalloff);
+            float falloff = Mathf.Clamp(component.bounceDamageFalloff, -0.95f, 0.95f);
 
             for (int bounceIndex = 0; bounceIndex < maxBounceCount; bounceIndex++)
             {
@@ -718,7 +899,8 @@ namespace CharacterStudio.Abilities
                     break;
                 }
 
-                damageScale *= Mathf.Max(0f, 1f - falloff);
+                damageScale *= Mathf.Max(0.01f, 1f - falloff);
+                Vector3 bounceSource = currentThing.DrawPos;
                 ApplyConfiguredEffectsToTarget(
                     new LocalTargetInfo(nextPawn),
                     caster,
@@ -728,6 +910,7 @@ namespace CharacterStudio.Abilities
                     includeEntityEffects: true,
                     includePrimaryCellEffects: false,
                     includeAreaCellEffects: false);
+                TriggerVisualEffects(AbilityVisualEffectTrigger.OnTargetApply, new LocalTargetInfo(nextPawn), bounceSource);
                 hitThings.Add(nextPawn);
                 currentThing = nextPawn;
             }
@@ -1231,7 +1414,7 @@ namespace CharacterStudio.Abilities
             return false;
         }
 
-        private void PlayVfx(AbilityVisualEffectConfig vfx, LocalTargetInfo target)
+        private void PlayVfx(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Vector3? sourceOverride = null)
         {
             var caster = parent?.pawn;
             if (caster == null || caster.Map == null) return;
@@ -1256,7 +1439,7 @@ namespace CharacterStudio.Abilities
 
                 if (vfx.UsesCustomTextureType)
                 {
-                    if (TryPlayCustomTextureVfx(vfx, target, caster))
+                    if (TryPlayCustomTextureVfx(vfx, target, caster, sourceOverride))
                     {
                         return;
                     }
@@ -1266,7 +1449,7 @@ namespace CharacterStudio.Abilities
                 }
 
                 if ((vfx.type == AbilityVisualEffectType.LineTexture || vfx.type == AbilityVisualEffectType.WallTexture)
-                    && TryPlaySpatialTextureVfx(vfx, target, caster))
+                    && TryPlaySpatialTextureVfx(vfx, target, caster, sourceOverride))
                 {
                     return;
                 }
@@ -1277,7 +1460,7 @@ namespace CharacterStudio.Abilities
                 }
 
                 VisualEffectWorker worker = VisualEffectWorkerFactory.GetWorker(runtimeVfxType);
-                worker.Play(vfx, target, caster);
+                worker.Play(vfx, CreateRuntimeVfxTarget(vfx, target, caster, sourceOverride), caster);
             }
             catch (Exception ex)
             {
@@ -1285,7 +1468,7 @@ namespace CharacterStudio.Abilities
             }
         }
 
-        private void PlayVfxSound(AbilityVisualEffectConfig vfx, LocalTargetInfo target)
+        private void PlayVfxSound(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Vector3? sourceOverride = null)
         {
             Pawn? caster = parent?.pawn;
             if (caster?.Map == null || string.IsNullOrWhiteSpace(vfx.soundDefName))
@@ -1302,7 +1485,7 @@ namespace CharacterStudio.Abilities
                     return;
                 }
 
-                foreach (Vector3 soundPos in ResolveVfxPositions(vfx, target, caster))
+                foreach (Vector3 soundPos in ResolveVfxPositions(vfx, target, caster, sourceOverride))
                 {
                     SoundInfo soundInfo = SoundInfo.InMap(new TargetInfo(soundPos.ToIntVec3(), caster.Map, false), MaintenanceType.None);
                     soundInfo.volumeFactor = Mathf.Max(0f, vfx.soundVolume);
@@ -1316,7 +1499,7 @@ namespace CharacterStudio.Abilities
             }
         }
 
-        private static bool TryPlayCustomTextureVfx(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster)
+        private static bool TryPlayCustomTextureVfx(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster, Vector3? sourceOverride = null)
         {
             if (string.IsNullOrWhiteSpace(vfx.customTexturePath) || caster.Map == null)
             {
@@ -1333,7 +1516,7 @@ namespace CharacterStudio.Abilities
             float scaleZ = Mathf.Max(0.1f, vfx.textureScale.y) * uniformScale;
             bool playedAny = false;
 
-            foreach (Vector3 spawnPos in ResolveVfxPositions(vfx, target, caster))
+            foreach (Vector3 spawnPos in ResolveVfxPositions(vfx, target, caster, sourceOverride))
             {
                 MoteThrown? mote = ThingMaker.MakeThing(moteDef) as MoteThrown;
                 if (mote == null)
@@ -1342,7 +1525,7 @@ namespace CharacterStudio.Abilities
                 }
 
                 mote.exactPosition = spawnPos;
-                mote.exactRotation = ResolveVfxRotation(vfx, target, caster);
+                mote.exactRotation = ResolveVfxRotation(vfx, target, caster, sourceOverride);
                 mote.rotationRate = 0f;
                 mote.instanceColor = Color.white;
                 mote.linearScale = new Vector3(scaleX, 1f, scaleZ);
@@ -1354,14 +1537,14 @@ namespace CharacterStudio.Abilities
             return playedAny;
         }
 
-        private static bool TryPlaySpatialTextureVfx(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster)
+        private static bool TryPlaySpatialTextureVfx(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster, Vector3? sourceOverride = null)
         {
             if (string.IsNullOrWhiteSpace(vfx.customTexturePath) || caster.Map == null)
             {
                 return false;
             }
 
-            if (!TryResolveSpatialAnchors(vfx, target, caster, out Vector3 start, out Vector3 end))
+            if (!TryResolveSpatialAnchors(vfx, target, caster, sourceOverride, out Vector3 start, out Vector3 end))
             {
                 return false;
             }
@@ -1445,31 +1628,31 @@ namespace CharacterStudio.Abilities
             return playedAny;
         }
 
-        private static bool TryResolveSpatialAnchors(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster, out Vector3 start, out Vector3 end)
+        private static bool TryResolveSpatialAnchors(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster, Vector3? sourceOverride, out Vector3 start, out Vector3 end)
         {
-            start = ResolveSpatialAnchor(vfx.anchorMode, target, caster);
-            end = ResolveSpatialAnchor(vfx.secondaryAnchorMode, target, caster);
+            start = ResolveSpatialAnchor(vfx.anchorMode, target, caster, sourceOverride);
+            end = ResolveSpatialAnchor(vfx.secondaryAnchorMode, target, caster, sourceOverride);
 
             if (vfx.pathMode == AbilityVisualPathMode.DirectLineCasterToTarget)
             {
-                start = ResolveSpatialAnchor(AbilityVisualAnchorMode.Caster, target, caster);
-                end = ResolveSpatialAnchor(AbilityVisualAnchorMode.Target, target, caster);
+                start = ResolveSpatialAnchor(AbilityVisualAnchorMode.Caster, target, caster, sourceOverride);
+                end = ResolveSpatialAnchor(AbilityVisualAnchorMode.Target, target, caster, sourceOverride);
             }
 
             if ((end - start).sqrMagnitude < 0.0001f)
             {
-                end = ResolveSpatialAnchor(AbilityVisualAnchorMode.Target, target, caster);
+                end = ResolveSpatialAnchor(AbilityVisualAnchorMode.Target, target, caster, sourceOverride);
             }
 
             return true;
         }
 
-        private static Vector3 ResolveSpatialAnchor(AbilityVisualAnchorMode anchorMode, LocalTargetInfo target, Pawn caster)
+        private static Vector3 ResolveSpatialAnchor(AbilityVisualAnchorMode anchorMode, LocalTargetInfo target, Pawn caster, Vector3? sourceOverride = null)
         {
             switch (anchorMode)
             {
                 case AbilityVisualAnchorMode.Caster:
-                    return caster.DrawPos;
+                    return sourceOverride ?? caster.DrawPos;
                 case AbilityVisualAnchorMode.TargetCell:
                     return target.IsValid ? target.Cell.ToVector3Shifted() : caster.Position.ToVector3Shifted();
                 case AbilityVisualAnchorMode.AreaCenter:
@@ -1485,14 +1668,14 @@ namespace CharacterStudio.Abilities
             }
         }
 
-        private static IEnumerable<Vector3> ResolveVfxPositions(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster)
+        private static IEnumerable<Vector3> ResolveVfxPositions(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster, Vector3? sourceOverride = null)
         {
             if (vfx.target == VisualEffectTarget.Both)
             {
-                Vector3 casterPos = ResolveVfxPosition(vfx, target, caster, VisualEffectTarget.Caster);
+                Vector3 casterPos = ResolveVfxPosition(vfx, target, caster, VisualEffectTarget.Caster, sourceOverride);
                 yield return casterPos;
 
-                Vector3 targetPos = ResolveVfxPosition(vfx, target, caster, VisualEffectTarget.Target);
+                Vector3 targetPos = ResolveVfxPosition(vfx, target, caster, VisualEffectTarget.Target, sourceOverride);
                 if ((targetPos - casterPos).sqrMagnitude > 0.0001f)
                 {
                     yield return targetPos;
@@ -1501,24 +1684,24 @@ namespace CharacterStudio.Abilities
                 yield break;
             }
 
-            yield return ResolveVfxPosition(vfx, target, caster, vfx.target);
+            yield return ResolveVfxPosition(vfx, target, caster, vfx.target, sourceOverride);
         }
 
-        private static Vector3 ResolveVfxPosition(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster)
+        private static Vector3 ResolveVfxPosition(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster, Vector3? sourceOverride = null)
         {
             VisualEffectTarget resolvedTarget = vfx.target == VisualEffectTarget.Both
                 ? VisualEffectTarget.Caster
                 : vfx.target;
-            return ResolveVfxPosition(vfx, target, caster, resolvedTarget);
+            return ResolveVfxPosition(vfx, target, caster, resolvedTarget, sourceOverride);
         }
 
-        private static Vector3 ResolveVfxPosition(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster, VisualEffectTarget targetMode)
+        private static Vector3 ResolveVfxPosition(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster, VisualEffectTarget targetMode, Vector3? sourceOverride = null)
         {
             Vector3 pos;
             switch (targetMode)
             {
                 case VisualEffectTarget.Caster:
-                    pos = caster.DrawPos;
+                    pos = sourceOverride ?? caster.DrawPos;
                     break;
                 case VisualEffectTarget.Target:
                     if (target.HasThing)
@@ -1543,7 +1726,7 @@ namespace CharacterStudio.Abilities
             pos += vfx.offset;
             pos.y += vfx.heightOffset;
 
-            if (!TryResolveFacingBasis(vfx, target, caster, out Vector3 forward, out Vector3 right))
+            if (!TryResolveFacingBasis(vfx, target, caster, sourceOverride, out Vector3 forward, out Vector3 right))
             {
                 return pos;
             }
@@ -1551,14 +1734,14 @@ namespace CharacterStudio.Abilities
             return pos + forward * vfx.forwardOffset + right * vfx.sideOffset;
         }
 
-        private static float ResolveVfxRotation(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster)
+        private static float ResolveVfxRotation(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster, Vector3? sourceOverride = null)
         {
-            return vfx.rotation + ResolveAutoFacingAngle(vfx, target, caster);
+            return vfx.rotation + ResolveAutoFacingAngle(vfx, target, caster, sourceOverride);
         }
 
-        private static float ResolveAutoFacingAngle(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster)
+        private static float ResolveAutoFacingAngle(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster, Vector3? sourceOverride = null)
         {
-            if (!TryResolveFacingBasis(vfx, target, caster, out Vector3 forward, out _))
+            if (!TryResolveFacingBasis(vfx, target, caster, sourceOverride, out Vector3 forward, out _))
             {
                 return 0f;
             }
@@ -1571,7 +1754,7 @@ namespace CharacterStudio.Abilities
             return forward.z >= 0f ? 0f : 180f;
         }
 
-        private static bool TryResolveFacingBasis(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster, out Vector3 forward, out Vector3 right)
+        private static bool TryResolveFacingBasis(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster, Vector3? sourceOverride, out Vector3 forward, out Vector3 right)
         {
             AbilityVisualFacingMode facingMode = ResolveFacingMode(vfx);
             if (facingMode == AbilityVisualFacingMode.None)
@@ -1582,7 +1765,7 @@ namespace CharacterStudio.Abilities
             }
 
             IntVec3 forwardCell = facingMode == AbilityVisualFacingMode.CastDirection
-                ? ResolveCastDirectionCell(target, caster)
+                ? ResolveCastDirectionCell(target, caster, sourceOverride)
                 : caster.Rotation.FacingCell;
 
             if (forwardCell == IntVec3.Zero)
@@ -1616,9 +1799,9 @@ namespace CharacterStudio.Abilities
             return facingMode;
         }
 
-        private static IntVec3 ResolveCastDirectionCell(LocalTargetInfo target, Pawn caster)
+        private static IntVec3 ResolveCastDirectionCell(LocalTargetInfo target, Pawn caster, Vector3? sourceOverride = null)
         {
-            IntVec3 origin = caster.Position;
+            IntVec3 origin = sourceOverride?.ToIntVec3() ?? caster.Position;
             IntVec3 destination = target.IsValid ? target.Cell : origin + caster.Rotation.FacingCell;
             IntVec3 delta = destination - origin;
             if (delta == IntVec3.Zero)
@@ -1632,6 +1815,16 @@ namespace CharacterStudio.Abilities
             }
 
             return delta.z >= 0 ? IntVec3.North : IntVec3.South;
+        }
+
+        private static LocalTargetInfo CreateRuntimeVfxTarget(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster, Vector3? sourceOverride)
+        {
+            if (!sourceOverride.HasValue || vfx.target != VisualEffectTarget.Caster)
+            {
+                return target;
+            }
+
+            return new LocalTargetInfo(sourceOverride.Value.ToIntVec3());
         }
 
         private static ThingDef GetOrCreateCustomTextureMoteDef(string texturePath, float drawSize, int displayDurationTicks)

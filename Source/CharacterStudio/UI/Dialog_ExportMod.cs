@@ -6,6 +6,7 @@ using RimWorld;
 using CharacterStudio.Abilities;
 using CharacterStudio.Core;
 using CharacterStudio.Exporter;
+using CharacterStudio.Items;
 using UnityEngine;
 using Verse;
 
@@ -41,6 +42,10 @@ namespace CharacterStudio.UI
         private bool includeSummonItem = false;
         private bool includeAbilities = false;
         private bool copyTextures = true;
+        private SummonArrivalMode roleCardArrivalMode = SummonArrivalMode.DropPod;
+        private SummonSpawnEventMode roleCardSpawnEvent = SummonSpawnEventMode.PositiveLetter;
+        private SummonSpawnAnimationMode roleCardSpawnAnimation = SummonSpawnAnimationMode.ExplosionEffect;
+        private float roleCardSpawnAnimationScale = 1f;
         private bool assetRightsConfirmed = false;
         private bool exportWarningAcknowledged = false;
         private float assetRightsConfirmStartTime = -1f;
@@ -146,6 +151,27 @@ namespace CharacterStudio.UI
                     canExportAbilities
                         ? "CS_Studio_Export_ModuleAbilitiesHint".Translate()
                         : "CS_Studio_Export_ModuleAbilitiesEmptyHint".Translate());
+
+                if (includeSummonItem)
+                {
+                    UIHelper.DrawSectionTitle(ref vy, width, "CS_Studio_Export_RoleCardOptions".Translate());
+                    UIHelper.DrawPropertyDropdown(ref vy, width, "CS_Studio_Export_RoleCardArrival".Translate(), roleCardArrivalMode,
+                        (SummonArrivalMode[])Enum.GetValues(typeof(SummonArrivalMode)),
+                        mode => $"CS_Studio_Export_RoleCardArrival_{mode}".Translate(),
+                        val => roleCardArrivalMode = val);
+                    UIHelper.DrawPropertyDropdown(ref vy, width, "CS_Studio_Export_RoleCardEvent".Translate(), roleCardSpawnEvent,
+                        (SummonSpawnEventMode[])Enum.GetValues(typeof(SummonSpawnEventMode)),
+                        mode => $"CS_Studio_Export_RoleCardEvent_{mode}".Translate(),
+                        val => roleCardSpawnEvent = val);
+                    UIHelper.DrawPropertyDropdown(ref vy, width, "CS_Studio_Export_RoleCardAnimation".Translate(), roleCardSpawnAnimation,
+                        (SummonSpawnAnimationMode[])Enum.GetValues(typeof(SummonSpawnAnimationMode)),
+                        mode => $"CS_Studio_Export_RoleCardAnimation_{mode}".Translate(),
+                        val => roleCardSpawnAnimation = val);
+                    if (roleCardSpawnAnimation != SummonSpawnAnimationMode.None)
+                    {
+                        UIHelper.DrawPropertySlider(ref vy, width, "CS_Studio_Export_RoleCardAnimationScale".Translate(), ref roleCardSpawnAnimationScale, 0.1f, 5f, "F2");
+                    }
+                }
             }
 
             UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Export_CopyTextures".Translate(), ref copyTextures);
@@ -390,6 +416,10 @@ namespace CharacterStudio.UI
                             IncludeSummonItem = includeSummonItem,
                             IncludeAbilities = includeAbilities,
                             CopyTextures = copyTextures,
+                            RoleCardArrivalMode = roleCardArrivalMode,
+                            RoleCardSpawnEvent = roleCardSpawnEvent,
+                            RoleCardSpawnAnimation = roleCardSpawnAnimation,
+                            RoleCardSpawnAnimationScale = roleCardSpawnAnimationScale,
                             AssetRightsConfirmed = assetRightsConfirmed
                         };
 

@@ -181,6 +181,13 @@
     <CS_Studio_None>(None)</CS_Studio_None>
     <CS_Studio_OpenEditor>Open Skin Editor</CS_Studio_OpenEditor>
     <CS_Studio_OpenPerformanceStats>Open Performance Stats</CS_Studio_OpenPerformanceStats>
+    <CS_Studio_SpawnedNewPawn>Generated new pawn: {0}</CS_Studio_SpawnedNewPawn>
+    <CS_Studio_SpawnedNewPawnButton>Generate Pawn</CS_Studio_SpawnedNewPawnButton>
+    <CS_Studio_SpawnedNewPawnLetter>New pawn generated: {0}</CS_Studio_SpawnedNewPawnLetter>
+    <CS_Studio_SpawnedNewPawnMessage>Generated new pawn from current design: {0}</CS_Studio_SpawnedNewPawnMessage>
+    <CS_Studio_SpawnNewPawnConfirm>Generate</CS_Studio_SpawnNewPawnConfirm>
+    <CS_Studio_SpawnNewPawnSection>New Pawn Output</CS_Studio_SpawnNewPawnSection>
+    <CS_Studio_SpawnNewPawnTitle>Generate New Pawn</CS_Studio_SpawnNewPawnTitle>
     <CS_Studio_RaceDisplayName>Race Display Name</CS_Studio_RaceDisplayName>
     <CS_Studio_Section_Advanced>Advanced</CS_Studio_Section_Advanced>
     <CS_Studio_Section_Animation>Animation Settings</CS_Studio_Section_Animation>
@@ -266,6 +273,7 @@
     <CS_Studio_Worker_Default>Default</CS_Studio_Worker_Default>
     <CS_Studio_Worker_FaceComponent>Face Component</CS_Studio_Worker_FaceComponent>
     <CS_Studio_XenotypeDefName>Bind Xenotype</CS_Studio_XenotypeDefName>
+    <CS_RoleCard_LetterLabel>Role card generated: {0}</CS_RoleCard_LetterLabel>
     <CS_Summon_Success>Successfully summoned: {0}</CS_Summon_Success>
     <CS_Summon_Use>Summon {0}</CS_Summon_Use>
 </LanguageData>

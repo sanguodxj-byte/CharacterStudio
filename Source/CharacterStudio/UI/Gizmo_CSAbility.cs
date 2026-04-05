@@ -114,6 +114,15 @@ namespace CharacterStudio.UI
         {
             base.ProcessInput(ev);
 
+            if (AbilityVanillaFlightUtility.ShouldBlockStandardAbilityAccessDuringFlight(pawn, modAbility))
+            {
+                Messages.Message(
+                    "[CharacterStudio] Flight-only continuation required.",
+                    MessageTypeDefOf.RejectInput,
+                    false);
+                return;
+            }
+
             if (TryProcessViaVanillaCommand(ev))
             {
                 return;
@@ -151,6 +160,11 @@ namespace CharacterStudio.UI
 
         private bool TryProcessViaVanillaCommand(Event ev)
         {
+            if (AbilityVanillaFlightUtility.ShouldBlockStandardAbilityAccessDuringFlight(pawn, modAbility))
+            {
+                return false;
+            }
+
             AbilityCarrierType normalizedCarrier = ModularAbilityDefExtensions.NormalizeCarrierType(modAbility.carrierType);
             AbilityTargetType normalizedTarget = ModularAbilityDefExtensions.NormalizeTargetType(modAbility);
             if (normalizedCarrier == AbilityCarrierType.Self || normalizedTarget == AbilityTargetType.Self)
@@ -320,6 +334,7 @@ namespace CharacterStudio.UI
             if (pawn.Dead || pawn.Downed || pawn.InMentalState) return false;
             if (!pawn.Drafted) return false;
             if (!AbilityTimeStopRuntimeController.CanPawnAct(pawn)) return false;
+            if (AbilityVanillaFlightUtility.ShouldBlockStandardAbilityAccessDuringFlight(pawn, modAbility)) return false;
             if (runtimeDef == null) return false;
             if (!AbilityVanillaFlightUtility.CanUseFlightFollowup(pawn, modAbility, out _, out _)) return false;
             return pawn.abilities?.GetAbility(runtimeDef) != null;
@@ -436,6 +451,298 @@ namespace CharacterStudio.UI
         }
     }
 
+    public class Gizmo_CSShieldStatus : Gizmo
+    {
+        private readonly Pawn pawn;
+
+        private const float ShieldHudWidth = 118f;
+        private const float LowShieldThreshold = 0.22f;
+        private const float CriticalShieldThreshold = 0.08f;
+        private const int ActivatePulseTicks = 24;
+        private const int BreakFlashTicks = 28;
+
+        private static readonly Dictionary<int, ShieldHudFxState> shieldHudFxByPawn = new Dictionary<int, ShieldHudFxState>();
+
+        private static readonly Color PanelBg = new Color(0.05f, 0.07f, 0.11f, 0.92f);
+        private static readonly Color PanelInset = new Color(0.11f, 0.18f, 0.28f, 0.20f);
+        private static readonly Color BorderIdle = new Color(0.34f, 0.56f, 0.78f, 0.58f);
+        private static readonly Color BorderActive = new Color(0.56f, 0.80f, 1.00f, 0.78f);
+        private static readonly Color BarBg = new Color(0.08f, 0.12f, 0.18f, 0.95f);
+        private static readonly Color BarFill = new Color(0.30f, 0.68f, 1.00f, 0.95f);
+        private static readonly Color BarGlow = new Color(0.72f, 0.90f, 1.00f, 0.18f);
+        private static readonly Color Accent = new Color(0.72f, 0.90f, 1.00f, 0.95f);
+        private static readonly Color SoftText = new Color(0.84f, 0.91f, 1.00f, 0.92f);
+        private static readonly Color FaintText = new Color(0.62f, 0.72f, 0.84f, 0.90f);
+        private static readonly Color EmptyText = new Color(0.56f, 0.64f, 0.74f, 0.88f);
+        private static readonly Color BreakFlash = new Color(0.95f, 0.99f, 1.00f, 1.00f);
+
+        private struct ShieldHudFxState
+        {
+            public float lastShield;
+            public int lastSeenTick;
+            public int activatePulseUntilTick;
+            public int breakFlashUntilTick;
+        }
+
+        public Gizmo_CSShieldStatus(Pawn pawn)
+        {
+            this.pawn = pawn;
+            Order = 9f;
+        }
+
+        public override float GetWidth(float maxWidth) => ShieldHudWidth;
+
+        public override GizmoResult GizmoOnGUI(Vector2 topLeft, float maxWidth, GizmoRenderParms parms)
+        {
+            Rect outerRect = new Rect(topLeft.x, topLeft.y, GetWidth(maxWidth), 75f);
+            CompPawnSkin? skin = pawn.GetComp<CompPawnSkin>();
+            float currentShield = Mathf.Max(0f, skin?.shieldRemainingDamage ?? 0f);
+            float storedShield = Mathf.Max(0f, skin?.shieldStoredHeal ?? 0f);
+            float totalShield = Mathf.Max(currentShield, currentShield + storedShield);
+            float fillPercent = totalShield > 0.001f ? Mathf.Clamp01(currentShield / totalShield) : 0f;
+            int nowTick = Find.TickManager?.TicksGame ?? 0;
+            int expireTick = skin?.shieldExpireTick ?? -1;
+            int ticksLeft = expireTick > nowTick ? expireTick - nowTick : 0;
+            ShieldHudFxState fxState = UpdateAndGetFxState(pawn, currentShield, nowTick);
+            float activateAlpha = fxState.activatePulseUntilTick > nowTick
+                ? Mathf.Clamp01((fxState.activatePulseUntilTick - nowTick) / (float)ActivatePulseTicks)
+                : 0f;
+            float breakAlpha = fxState.breakFlashUntilTick > nowTick
+                ? Mathf.Clamp01((fxState.breakFlashUntilTick - nowTick) / (float)BreakFlashTicks)
+                : 0f;
+            float pulseSpeed = fillPercent < LowShieldThreshold ? 8f : 11f;
+            float pulse = 0.5f + (0.5f * Mathf.Sin((nowTick + pawn.thingIDNumber * 13f) / pulseSpeed));
+            bool lowShield = currentShield > 0.001f && fillPercent < LowShieldThreshold;
+            bool criticalShield = currentShield > 0.001f && fillPercent < CriticalShieldThreshold;
+
+            DrawPanel(outerRect, fillPercent, currentShield, totalShield, storedShield, ticksLeft, pulse, activateAlpha, breakAlpha, lowShield, criticalShield);
+            TooltipHandler.TipRegion(outerRect, BuildTooltip(currentShield, totalShield, storedShield, ticksLeft));
+
+            return Mouse.IsOver(outerRect)
+                ? new GizmoResult(GizmoState.Mouseover)
+                : new GizmoResult(GizmoState.Clear);
+        }
+
+        public static bool ShouldKeepVisibleForFeedback(Pawn pawn, float currentShield, int nowTick)
+        {
+            ShieldHudFxState state = UpdateAndGetFxState(pawn, currentShield, nowTick);
+            return state.breakFlashUntilTick > nowTick;
+        }
+
+        private static ShieldHudFxState UpdateAndGetFxState(Pawn pawn, float currentShield, int nowTick)
+        {
+            int pawnId = pawn.thingIDNumber;
+            ShieldHudFxState state = shieldHudFxByPawn.TryGetValue(pawnId, out ShieldHudFxState existing)
+                ? existing
+                : default;
+
+            if (state.lastShield <= 0.001f && currentShield > 0.001f)
+            {
+                state.activatePulseUntilTick = nowTick + ActivatePulseTicks;
+            }
+
+            if (state.lastShield > 0.001f && currentShield <= 0.001f)
+            {
+                state.breakFlashUntilTick = nowTick + BreakFlashTicks;
+            }
+
+            state.lastShield = currentShield;
+            state.lastSeenTick = nowTick;
+            shieldHudFxByPawn[pawnId] = state;
+            return state;
+        }
+
+        private static void DrawPanel(Rect rect, float fillPercent, float currentShield, float totalShield, float storedShield, int ticksLeft, float pulse, float activateAlpha, float breakAlpha, bool lowShield, bool criticalShield)
+        {
+            Widgets.DrawBoxSolid(rect, PanelBg);
+
+            float headerGlowAlpha = 0.04f + (pulse * 0.05f) + (activateAlpha * 0.16f);
+            Rect glowRect = new Rect(rect.x + 1f, rect.y + 1f, rect.width - 2f, 11f);
+            Widgets.DrawBoxSolid(glowRect, new Color(0.22f, 0.48f, 0.82f, headerGlowAlpha));
+
+            Rect insetRect = new Rect(rect.x + 1f, rect.y + 1f, rect.width - 2f, rect.height - 2f);
+            Widgets.DrawBoxSolid(insetRect, PanelInset);
+
+            GUI.color = GetBorderColor(pulse, activateAlpha, breakAlpha, lowShield);
+            Widgets.DrawBox(rect, 1);
+            GUI.color = Color.white;
+
+            Rect iconRect = new Rect(rect.x + 7f, rect.y + 7f, 10f, 10f);
+            DrawShieldIcon(iconRect, pulse, activateAlpha, breakAlpha);
+
+            Rect titleRect = new Rect(rect.x + 21f, rect.y + 5f, 46f, 12f);
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.UpperLeft;
+            GUI.color = SoftText;
+            Widgets.Label(titleRect, "CS_ShieldHud_Title".Translate());
+
+            Rect timerRect = new Rect(rect.xMax - 34f, rect.y + 5f, 27f, 12f);
+            Text.Anchor = TextAnchor.UpperRight;
+            GUI.color = ticksLeft > 0 ? FaintText : EmptyText;
+            Widgets.Label(timerRect, ticksLeft > 0 ? $"{ticksLeft / 60f:0.0}s" : "--");
+
+            Rect currentRect = new Rect(rect.x + 7f, rect.y + 19f, 30f, 12f);
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.UpperLeft;
+            float criticalPulse = criticalShield ? (0.76f + (pulse * 0.24f)) : 1f;
+            GUI.color = currentShield > 0.001f
+                ? new Color(1f, 1f, 1f, criticalPulse)
+                : EmptyText;
+            Widgets.Label(currentRect, Mathf.CeilToInt(currentShield).ToString());
+
+            Rect totalRect = new Rect(rect.x + 34f, rect.y + 19f, rect.width - 41f, 12f);
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.UpperLeft;
+            GUI.color = FaintText;
+            Widgets.Label(totalRect, totalShield > 0.001f ? $"/ {Mathf.CeilToInt(totalShield)}" : "/ --");
+
+            Rect statusRect = new Rect(rect.x + 7f, rect.y + 36f, rect.width - 14f, 10f);
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.MiddleLeft;
+            GUI.color = breakAlpha > 0.001f && currentShield <= 0.001f ? EmptyText : FaintText;
+            Widgets.Label(statusRect, BuildStatusLabel(currentShield, storedShield, fillPercent, breakAlpha));
+
+            Rect barOuter = new Rect(rect.x + 7f, rect.y + 52f, rect.width - 14f, 8f);
+            Widgets.DrawBoxSolid(barOuter, BarBg);
+
+            float fillWidth = Mathf.Max(0f, (barOuter.width - 2f) * fillPercent);
+            Rect fillRect = new Rect(barOuter.x + 1f, barOuter.y + 1f, fillWidth, barOuter.height - 2f);
+            if (fillRect.width > 0.5f)
+            {
+                Color fillColor = GetMeterFillColor(pulse, activateAlpha, breakAlpha, lowShield, criticalShield);
+                Widgets.DrawBoxSolid(fillRect, fillColor);
+
+                Rect shineRect = new Rect(fillRect.x, fillRect.y, fillRect.width, Mathf.Min(2f, fillRect.height));
+                Widgets.DrawBoxSolid(shineRect, new Color(1f, 1f, 1f, 0.10f + (pulse * 0.08f) + (activateAlpha * 0.06f)));
+
+                Rect glowFillRect = new Rect(fillRect.x, fillRect.y, fillRect.width, Mathf.Min(4f, fillRect.height));
+                Widgets.DrawBoxSolid(glowFillRect, new Color(BarGlow.r, BarGlow.g, BarGlow.b, BarGlow.a + (activateAlpha * 0.10f)));
+
+                Rect edgeRect = new Rect(fillRect.xMax - 2f, fillRect.y, 2f, fillRect.height);
+                Widgets.DrawBoxSolid(edgeRect, new Color(0.92f, 0.98f, 1f, 0.25f + (pulse * 0.10f)));
+            }
+
+            GUI.color = new Color(0.8f, 0.94f, 1f, 0.85f);
+            Widgets.DrawBox(barOuter, 1);
+            GUI.color = Color.white;
+
+            DrawBreakFlash(rect, barOuter, iconRect, breakAlpha);
+
+            Text.Font = GameFont.Small;
+            Text.Anchor = TextAnchor.UpperLeft;
+            GUI.color = Color.white;
+        }
+
+        private static string BuildStatusLabel(float currentShield, float storedShield, float fillPercent, float breakAlpha)
+        {
+            if (breakAlpha > 0.001f && currentShield <= 0.001f)
+            {
+                return "CS_ShieldHud_Status_Depleted".Translate();
+            }
+
+            if (storedShield > 0.001f)
+            {
+                return "CS_ShieldHud_Status_Stored".Translate(Mathf.CeilToInt(storedShield));
+            }
+
+            if (currentShield > 0.001f && fillPercent < LowShieldThreshold)
+            {
+                return "CS_ShieldHud_Status_Low".Translate();
+            }
+
+            return "CS_ShieldHud_Status_Active".Translate();
+        }
+
+        private static Color GetBorderColor(float pulse, float activateAlpha, float breakAlpha, bool lowShield)
+        {
+            Color borderColor = Color.Lerp(BorderIdle, BorderActive, 0.28f + (pulse * 0.32f) + (activateAlpha * 0.30f));
+            if (lowShield)
+            {
+                borderColor = Color.Lerp(borderColor, new Color(0.9f, 0.96f, 1f, borderColor.a), 0.18f + (pulse * 0.16f));
+            }
+            if (breakAlpha > 0.001f)
+            {
+                borderColor = Color.Lerp(borderColor, BreakFlash, breakAlpha);
+            }
+            return borderColor;
+        }
+
+        private static Color GetMeterFillColor(float pulse, float activateAlpha, float breakAlpha, bool lowShield, bool criticalShield)
+        {
+            Color fillColor = Color.Lerp(BarFill, new Color(0.56f, 0.84f, 1f, 0.96f), (pulse * 0.10f) + (activateAlpha * 0.18f));
+            if (lowShield)
+            {
+                fillColor = Color.Lerp(fillColor, new Color(0.84f, 0.93f, 1f, 0.96f), 0.22f + (pulse * 0.14f));
+            }
+            if (criticalShield)
+            {
+                fillColor = Color.Lerp(fillColor, new Color(0.95f, 0.99f, 1f, 0.98f), 0.16f + (pulse * 0.20f));
+            }
+            if (breakAlpha > 0.001f)
+            {
+                fillColor = Color.Lerp(fillColor, BreakFlash, breakAlpha);
+            }
+            return fillColor;
+        }
+
+        private static void DrawShieldIcon(Rect rect, float pulse, float activateAlpha, float breakAlpha)
+        {
+            Vector2 top = new Vector2(rect.center.x, rect.y);
+            Vector2 right = new Vector2(rect.xMax, rect.y + rect.height * 0.28f);
+            Vector2 bottomRight = new Vector2(rect.x + rect.width * 0.76f, rect.yMax);
+            Vector2 bottomLeft = new Vector2(rect.x + rect.width * 0.24f, rect.yMax);
+            Vector2 left = new Vector2(rect.x, rect.y + rect.height * 0.28f);
+
+            Color iconColor = Color.Lerp(Accent, BreakFlash, breakAlpha * 0.8f);
+            iconColor.a = Mathf.Clamp01(0.80f + (pulse * 0.10f) + (activateAlpha * 0.12f));
+
+            Widgets.DrawLine(top, right, iconColor, 1.2f);
+            Widgets.DrawLine(right, bottomRight, iconColor, 1.2f);
+            Widgets.DrawLine(bottomRight, bottomLeft, iconColor, 1.2f);
+            Widgets.DrawLine(bottomLeft, left, iconColor, 1.2f);
+            Widgets.DrawLine(left, top, iconColor, 1.2f);
+
+            Rect coreRect = new Rect(rect.x + 2f, rect.y + 3f, rect.width - 4f, rect.height - 5f);
+            Widgets.DrawBoxSolid(coreRect, new Color(0.3f, 0.72f, 1f, 0.08f + (pulse * 0.05f) + (activateAlpha * 0.08f)));
+        }
+
+        private static void DrawBreakFlash(Rect rect, Rect barOuter, Rect iconRect, float breakAlpha)
+        {
+            if (breakAlpha <= 0.001f)
+            {
+                return;
+            }
+
+            Rect overlayRect = new Rect(rect.x + 1f, rect.y + 1f, rect.width - 2f, rect.height - 2f);
+            Widgets.DrawBoxSolid(overlayRect, new Color(0.96f, 0.99f, 1f, breakAlpha * 0.16f));
+
+            Rect flashBarRect = new Rect(barOuter.x + 1f, barOuter.y + 1f, barOuter.width - 2f, barOuter.height - 2f);
+            Widgets.DrawBoxSolid(flashBarRect, new Color(0.96f, 0.99f, 1f, breakAlpha * 0.35f));
+
+            Color shardColor = new Color(1f, 1f, 1f, breakAlpha * 0.70f);
+            Widgets.DrawLine(new Vector2(iconRect.x + 1f, iconRect.yMax - 2f), new Vector2(iconRect.xMax - 1f, iconRect.y + 2f), shardColor, 1.1f);
+            Widgets.DrawLine(new Vector2(iconRect.x + 3f, iconRect.center.y), new Vector2(iconRect.xMax - 1f, iconRect.yMax - 2f), shardColor, 0.9f);
+        }
+
+        private static string BuildTooltip(float currentShield, float totalShield, float storedShield, int ticksLeft)
+        {
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            sb.AppendLine($"<b>{"CS_ShieldHud_Title".Translate()}</b>");
+            sb.AppendLine($"{"CS_ShieldHud_Tooltip_Current".Translate()}: {currentShield:0.#}");
+            sb.AppendLine($"{"CS_ShieldHud_Tooltip_Capacity".Translate()}: {totalShield:0.#}");
+            if (storedShield > 0.001f)
+            {
+                sb.AppendLine($"{"CS_ShieldHud_Tooltip_Stored".Translate()}: {storedShield:0.#}");
+            }
+            if (ticksLeft > 0)
+            {
+                sb.AppendLine($"{"CS_ShieldHud_Tooltip_Remaining".Translate()}: {ticksLeft / 60f:0.0}s");
+            }
+
+            return sb.ToString().TrimEnd();
+        }
+    }
+
     /// <summary>
     /// Harmony 补丁：为持有 CS 皮肤且皮肤含技能的 Pawn 注入技能 Gizmo
     /// </summary>
@@ -502,9 +809,15 @@ namespace CharacterStudio.UI
             var visibleSlots = AbilityLoadoutRuntimeUtility.EnumerateVisibleAbilitySlots(__instance)
                 .Where(entry => entry != null && !string.IsNullOrWhiteSpace(entry.abilityDefName))
                 .ToList();
+            bool showShieldHud = ShouldShowShieldHud(__instance);
 
             if (visibleSlots.Count == 0)
             {
+                if (showShieldHud)
+                {
+                    list.Add(new Gizmo_CSShieldStatus(__instance));
+                    __result = list;
+                }
                 return;
             }
 
@@ -521,6 +834,11 @@ namespace CharacterStudio.UI
                 new Dictionary<string, Gizmo>(vanillaCommandsByAbility, System.StringComparer.OrdinalIgnoreCase);
 
             list.RemoveAll(gizmo => TryGetVanillaCSAbilityDefName(gizmo, out _));
+
+            if (showShieldHud)
+            {
+                list.Add(new Gizmo_CSShieldStatus(__instance));
+            }
 
             foreach (var entry in visibleSlots)
             {
@@ -548,6 +866,31 @@ namespace CharacterStudio.UI
             }
 
             __result = list;
+        }
+
+        private static bool ShouldShowShieldHud(Pawn pawn)
+        {
+            CompPawnSkin? skin = pawn.GetComp<CompPawnSkin>();
+            if (skin == null)
+            {
+                return false;
+            }
+
+            int now = Find.TickManager?.TicksGame ?? 0;
+            float currentShield = Mathf.Max(0f, skin.shieldRemainingDamage);
+            if (currentShield > 0.001f)
+            {
+                Gizmo_CSShieldStatus.ShouldKeepVisibleForFeedback(pawn, currentShield, now);
+                return true;
+            }
+
+            if (skin.shieldExpireTick >= now && (skin.shieldStoredHeal > 0.001f || skin.shieldStoredBonusDamage > 0.001f))
+            {
+                Gizmo_CSShieldStatus.ShouldKeepVisibleForFeedback(pawn, currentShield, now);
+                return true;
+            }
+
+            return Gizmo_CSShieldStatus.ShouldKeepVisibleForFeedback(pawn, currentShield, now);
         }
 
         private static bool TryGetVanillaCSAbilityDefName(Gizmo gizmo, out string defName)
