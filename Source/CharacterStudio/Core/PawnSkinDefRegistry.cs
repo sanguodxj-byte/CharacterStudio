@@ -20,6 +20,8 @@ namespace CharacterStudio.Core
         public static event Action<PawnSkinDef, bool>? RuntimeSkinRegisteredGlobal;
 
         private static readonly Dictionary<string, PawnSkinDef> runtimeDefsByName = new Dictionary<string, PawnSkinDef>();
+        private static readonly HashSet<string> loggedInvalidSkinXmlFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private static readonly HashSet<string> loggedSkinXmlWarnings = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private static bool loaded;
         private static bool loading;
 
@@ -124,7 +126,7 @@ namespace CharacterStudio.Core
                     }
                     catch (Exception ex)
                     {
-                        Log.Error($"[CharacterStudio] 加载皮肤 XML 失败: {file}, {ex}");
+                        LogSkinXmlWarningOnce(file, $"[CharacterStudio] 加载皮肤 XML 失败，已跳过: {file}, {ex.Message}");
                     }
                 }
 
@@ -163,36 +165,70 @@ namespace CharacterStudio.Core
 
         private static PawnSkinDef? LoadSkinDefFromFile(string file)
         {
-            var xml = new XmlDocument();
-            xml.Load(file);
-
-            var root = xml.DocumentElement;
-            if (root == null || !root.Name.Equals("Defs", StringComparison.OrdinalIgnoreCase))
+            try
             {
-                Log.Warning($"[CharacterStudio] 皮肤文件不是 Defs 根节点: {file}");
+                var xml = new XmlDocument();
+                xml.Load(file);
+
+                var root = xml.DocumentElement;
+                if (root == null || !root.Name.Equals("Defs", StringComparison.OrdinalIgnoreCase))
+                {
+                    LogSkinXmlWarningOnce(file, $"[CharacterStudio] 皮肤文件根节点不是 Defs，已跳过: {file}");
+                    return null;
+                }
+
+                XmlNode? defNode = null;
+                foreach (XmlNode child in root.ChildNodes)
+                {
+                    if (child.NodeType != XmlNodeType.Element) continue;
+                    if (child.Name == nameof(PawnSkinDef) || child.Name == typeof(PawnSkinDef).FullName)
+                    {
+                        defNode = child;
+                        break;
+                    }
+                }
+
+                if (defNode == null)
+                {
+                    LogSkinXmlWarningOnce(file, $"[CharacterStudio] 皮肤文件缺少 PawnSkinDef 节点，已跳过: {file}");
+                    return null;
+                }
+
+                var def = DirectXmlToObject.ObjectFromXml<PawnSkinDef>(defNode, true);
+                if (def == null)
+                {
+                    LogSkinXmlWarningOnce(file, $"[CharacterStudio] 皮肤 XML 解析结果为空，已跳过: {file}");
+                    return null;
+                }
+
+                RestoreStatModifiersFromXml(defNode, def);
+                EnsureDefIdentity(def);
+                return def;
+            }
+            catch (Exception ex)
+            {
+                LogSkinXmlWarningOnce(file, $"[CharacterStudio] 解析皮肤 XML 失败，已跳过: {file}, {ex.Message}");
                 return null;
             }
+        }
 
-            XmlNode? defNode = null;
-            foreach (XmlNode child in root.ChildNodes)
+        private static void LogSkinXmlWarningOnce(string filePath, string message)
+        {
+            string key = filePath ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(key))
             {
-                if (child.NodeType != XmlNodeType.Element) continue;
-                if (child.Name == nameof(PawnSkinDef) || child.Name == typeof(PawnSkinDef).FullName)
+                return;
+            }
+
+            lock (loggedSkinXmlWarnings)
+            {
+                if (!loggedSkinXmlWarnings.Add(key))
                 {
-                    defNode = child;
-                    break;
+                    return;
                 }
             }
 
-            if (defNode == null)
-            {
-                return null;
-            }
-
-            var def = DirectXmlToObject.ObjectFromXml<PawnSkinDef>(defNode, true);
-            RestoreStatModifiersFromXml(defNode, def);
-            EnsureDefIdentity(def);
-            return def;
+            Log.Warning(message);
         }
 
         private static void RestoreStatModifiersFromXml(XmlNode defNode, PawnSkinDef def)

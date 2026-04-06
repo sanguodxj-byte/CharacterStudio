@@ -18,6 +18,8 @@ namespace CharacterStudio.Introspection
     /// </summary>
     public static partial class RenderTreeParser
     {
+        private static readonly HashSet<string> captureFailureWarnings = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         // ─────────────────────────────────────────────
         // 线程检测
         // ─────────────────────────────────────────────
@@ -98,7 +100,14 @@ namespace CharacterStudio.Introspection
             }
             catch (Exception ex)
             {
-                Log.Error($"[CharacterStudio] RenderTreeParser.Capture failed for {pawn.LabelShort}: {ex}");
+                string pawnKey = pawn?.ThingID ?? pawn?.LabelShort ?? "<null-pawn>";
+                lock (captureFailureWarnings)
+                {
+                    if (captureFailureWarnings.Add(pawnKey))
+                    {
+                        Log.Warning($"[CharacterStudio] RenderTreeParser.Capture failed, 已回退为空结果: {pawn?.LabelShort ?? "<null>"}, {ex.Message}");
+                    }
+                }
                 return null;
             }
         }

@@ -30,6 +30,8 @@ namespace CharacterStudio.Core
     /// </summary>
     public static class VanillaImportUtility
     {
+        private static readonly HashSet<string> importFailureWarnings = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         private static readonly HashSet<string> ExcludedLabels = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase)
         {
             "blank", "babyswaddled", "婴儿襁褓", "swaddled"
@@ -159,7 +161,14 @@ namespace CharacterStudio.Core
             }
             catch (Exception ex)
             {
-                Log.Error($"[CharacterStudio] 导入图层时发生错误: {ex}");
+                string warningKey = pawn?.ThingID ?? pawn?.LabelShort ?? "<null-pawn>";
+                lock (importFailureWarnings)
+                {
+                    if (importFailureWarnings.Add(warningKey))
+                    {
+                        Log.Warning($"[CharacterStudio] 导入图层时发生错误，已保留部分结果: {pawn?.LabelShort ?? "<null>"}, {ex.Message}");
+                    }
+                }
                 return result;
             }
         }

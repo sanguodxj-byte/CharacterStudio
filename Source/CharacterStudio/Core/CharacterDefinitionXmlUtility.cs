@@ -54,46 +54,55 @@ namespace CharacterStudio.Core
                 return null;
             }
 
-            XDocument document = XDocument.Load(filePath);
-            XElement? root = document.Root;
-            if (root == null || !string.Equals(root.Name.LocalName, "CharacterDefinition", StringComparison.OrdinalIgnoreCase))
+            try
             {
+                XDocument document = XDocument.Load(filePath);
+                XElement? root = document.Root;
+                if (root == null || !string.Equals(root.Name.LocalName, "CharacterDefinition", StringComparison.OrdinalIgnoreCase))
+                {
+                    Log.Warning($"[CharacterStudio] CharacterDefinition XML 根节点无效，已跳过: {filePath}");
+                    return null;
+                }
+
+                CharacterDefinition definition = new CharacterDefinition
+                {
+                    defName = root.Element("defName")?.Value ?? string.Empty,
+                    displayName = root.Element("displayName")?.Value ?? string.Empty,
+                    raceDefName = root.Element("raceDefName")?.Value ?? ThingDefOf.Human.defName,
+                    xenotypeDefName = root.Element("xenotypeDefName")?.Value ?? string.Empty,
+                    bodyTypeDefName = root.Element("bodyTypeDefName")?.Value ?? string.Empty,
+                    headTypeDefName = root.Element("headTypeDefName")?.Value ?? string.Empty,
+                    hairDefName = root.Element("hairDefName")?.Value ?? string.Empty,
+                    childhoodBackstoryDefName = root.Element("childhoodBackstoryDefName")?.Value ?? string.Empty,
+                    adulthoodBackstoryDefName = root.Element("adulthoodBackstoryDefName")?.Value ?? string.Empty,
+                    traitDefNames = ParseStringList(root.Element("traitDefNames")),
+                    startingApparelDefNames = ParseStringList(root.Element("startingApparelDefNames")),
+                    skills = ParseSkills(root.Element("skills"))
+                };
+
+                if (Enum.TryParse(root.Element("gender")?.Value ?? string.Empty, true, out Gender parsedGender))
+                {
+                    definition.gender = parsedGender;
+                }
+
+                if (float.TryParse(root.Element("biologicalAge")?.Value ?? string.Empty, NumberStyles.Float, CultureInfo.InvariantCulture, out float biologicalAge))
+                {
+                    definition.biologicalAge = biologicalAge;
+                }
+
+                if (float.TryParse(root.Element("chronologicalAge")?.Value ?? string.Empty, NumberStyles.Float, CultureInfo.InvariantCulture, out float chronologicalAge))
+                {
+                    definition.chronologicalAge = chronologicalAge;
+                }
+
+                definition.EnsureDefaults(definition.defName, DefDatabase<ThingDef>.GetNamedSilentFail(definition.raceDefName) ?? ThingDefOf.Human, null);
+                return definition;
+            }
+            catch (Exception ex)
+            {
+                Log.Warning($"[CharacterStudio] CharacterDefinition XML 加载失败，已跳过: {filePath}, {ex.Message}");
                 return null;
             }
-
-            CharacterDefinition definition = new CharacterDefinition
-            {
-                defName = root.Element("defName")?.Value ?? string.Empty,
-                displayName = root.Element("displayName")?.Value ?? string.Empty,
-                raceDefName = root.Element("raceDefName")?.Value ?? ThingDefOf.Human.defName,
-                xenotypeDefName = root.Element("xenotypeDefName")?.Value ?? string.Empty,
-                bodyTypeDefName = root.Element("bodyTypeDefName")?.Value ?? string.Empty,
-                headTypeDefName = root.Element("headTypeDefName")?.Value ?? string.Empty,
-                hairDefName = root.Element("hairDefName")?.Value ?? string.Empty,
-                childhoodBackstoryDefName = root.Element("childhoodBackstoryDefName")?.Value ?? string.Empty,
-                adulthoodBackstoryDefName = root.Element("adulthoodBackstoryDefName")?.Value ?? string.Empty,
-                traitDefNames = ParseStringList(root.Element("traitDefNames")),
-                startingApparelDefNames = ParseStringList(root.Element("startingApparelDefNames")),
-                skills = ParseSkills(root.Element("skills"))
-            };
-
-            if (Enum.TryParse(root.Element("gender")?.Value ?? string.Empty, true, out Gender parsedGender))
-            {
-                definition.gender = parsedGender;
-            }
-
-            if (float.TryParse(root.Element("biologicalAge")?.Value ?? string.Empty, NumberStyles.Float, CultureInfo.InvariantCulture, out float biologicalAge))
-            {
-                definition.biologicalAge = biologicalAge;
-            }
-
-            if (float.TryParse(root.Element("chronologicalAge")?.Value ?? string.Empty, NumberStyles.Float, CultureInfo.InvariantCulture, out float chronologicalAge))
-            {
-                definition.chronologicalAge = chronologicalAge;
-            }
-
-            definition.EnsureDefaults(definition.defName, DefDatabase<ThingDef>.GetNamedSilentFail(definition.raceDefName) ?? ThingDefOf.Human, null);
-            return definition;
         }
 
         private static XElement? BuildStringList(string name, IEnumerable<string>? values)
