@@ -53,11 +53,6 @@ namespace CharacterStudio.UI
 
         private static string GetRuntimeComponentTypeLabel(AbilityRuntimeComponentType type)
         {
-            if (type == AbilityRuntimeComponentType.VanillaPawnFlyer)
-            {
-                return "CS_Ability_RuntimeComponentType_VanillaPawnFlyer_Short".Translate();
-            }
-
             if (type == AbilityRuntimeComponentType.FlightOnlyFollowup)
             {
                 return "CS_Ability_RuntimeComponentType_FlightOnlyFollowup_Short".Translate();

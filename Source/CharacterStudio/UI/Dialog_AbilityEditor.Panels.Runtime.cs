@@ -36,7 +36,6 @@ namespace CharacterStudio.UI
             AbilityRuntimeComponentType.HitCooldownRefund,
             AbilityRuntimeComponentType.ProjectileSplit,
             AbilityRuntimeComponentType.FlightState,
-            AbilityRuntimeComponentType.VanillaPawnFlyer,
             AbilityRuntimeComponentType.FlightOnlyFollowup,
             AbilityRuntimeComponentType.FlightLandingBurst,
             AbilityRuntimeComponentType.TimeStop
@@ -92,7 +91,6 @@ namespace CharacterStudio.UI
                 || type == AbilityRuntimeComponentType.ComboStacks
                 || type == AbilityRuntimeComponentType.DashEmpoweredStrike
                 || type == AbilityRuntimeComponentType.FlightState
-                || type == AbilityRuntimeComponentType.VanillaPawnFlyer
                 || type == AbilityRuntimeComponentType.FlightOnlyFollowup
                 || type == AbilityRuntimeComponentType.FlightLandingBurst
                 || type == AbilityRuntimeComponentType.TimeStop;
@@ -127,7 +125,6 @@ namespace CharacterStudio.UI
                 AbilityRuntimeComponentType.HitHeal => "CS_Studio_Runtime_Desc_HitHeal".Translate(),
                 AbilityRuntimeComponentType.HitCooldownRefund => "CS_Studio_Runtime_Desc_HitCooldownRefund".Translate(),
                 AbilityRuntimeComponentType.FlightState => "CS_Studio_Runtime_Desc_FlightState".Translate(),
-                AbilityRuntimeComponentType.VanillaPawnFlyer => "CS_Studio_Runtime_Desc_VanillaPawnFlyer".Translate(),
                 AbilityRuntimeComponentType.FlightOnlyFollowup => "CS_Studio_Runtime_Desc_FlightOnlyFollowup".Translate(),
                 AbilityRuntimeComponentType.FlightLandingBurst => "CS_Studio_Runtime_Desc_FlightLandingBurst".Translate(),
                 AbilityRuntimeComponentType.ProjectileSplit => "CS_Studio_Runtime_Desc_ProjectileSplit".Translate(),
@@ -266,21 +263,10 @@ namespace CharacterStudio.UI
                     config.splitSearchRange = 5f;
                     break;
                 case AbilityRuntimeComponentType.FlightState:
+                case AbilityRuntimeComponentType.VanillaPawnFlyer:
                     config.flightDurationTicks = 180;
                     config.flightHeightFactor = 0.35f;
                     config.suppressCombatActionsDuringFlightState = true;
-                    break;
-                case AbilityRuntimeComponentType.VanillaPawnFlyer:
-                    config.flyerThingDefName = "CS_PawnJumper_Default";
-                    config.flyerWarmupTicks = 0;
-                    config.launchFromCasterPosition = true;
-                    config.requireValidTargetCell = true;
-                    config.storeTargetForFollowup = true;
-                    config.enableFlightOnlyWindow = false;
-                    config.flightOnlyWindowTicks = 180;
-                    config.flightOnlyAbilityDefName = string.Empty;
-                    config.hideCasterDuringTakeoff = true;
-                    config.autoExpireFlightMarkerOnLanding = true;
                     break;
                 case AbilityRuntimeComponentType.FlightOnlyFollowup:
                     config.requiredFlightSourceAbilityDefName = string.Empty;
