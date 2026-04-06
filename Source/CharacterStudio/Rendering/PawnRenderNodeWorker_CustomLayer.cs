@@ -22,6 +22,7 @@ namespace CharacterStudio.Rendering
         private static readonly System.Collections.Generic.HashSet<int> _loggedScaleFallbackNodes = new System.Collections.Generic.HashSet<int>();
         private static readonly Dictionary<string, bool> textureExistsCache = new Dictionary<string, bool>(StringComparer.Ordinal);
         private static readonly Dictionary<string, int> frameSequenceCountCache = new Dictionary<string, int>(StringComparer.Ordinal);
+        private static readonly HashSet<string> missingExternalTextureWarnings = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private const float ProgrammaticFaceFadeInStep = 0.12f;
         private const float ProgrammaticFaceFadeOutStep = 0.08f;
         private const float ProgrammaticFaceAlphaSnapThreshold = 0.01f;
@@ -841,14 +842,16 @@ namespace CharacterStudio.Rendering
             if (skinComp == null)
                 return;
 
-            if (ShouldHideLayeredEyePartForReplacement(customNode, pawn, skinComp))
+            ExpressionType expression = skinComp.GetEffectiveExpression();
+
+            if (ShouldHideLayeredEyePartForReplacement(customNode, pawn, skinComp, expression))
             {
                 HideProgrammaticFacePart(customNode);
                 UpdateProgrammaticFaceAlpha(customNode);
                 return;
             }
 
-            if (ShouldHideUpperLidAtBlinkEndpoint(customNode, skinComp))
+            if (ShouldHideUpperLidAtBlinkEndpoint(customNode, skinComp, expression))
             {
                 HideProgrammaticFacePart(customNode);
                 UpdateProgrammaticFaceAlpha(customNode);
@@ -865,7 +868,6 @@ namespace CharacterStudio.Rendering
             float timeSec = currentTick / 60f;
             float primaryWave = Mathf.Sin(timeSec * 2.25f + phase);
             float slowWave = Mathf.Sin(timeSec * 0.9f + phase * 0.5f);
-            ExpressionType expression = skinComp.GetEffectiveExpression();
             EyeDirection eyeDirection = skinComp.CurEyeDirection;
             LidState lidState = skinComp.GetEffectiveLidState();
             BrowState browState = skinComp.GetEffectiveBrowState();
@@ -877,6 +879,7 @@ namespace CharacterStudio.Rendering
             bool hasReplacementEyeOverlay = HasActiveReplacementEye(customNode, pawn, skinComp);
             EyeAnimationVariant eyeVariant = skinComp.GetEffectiveEyeAnimationVariant();
             PupilScaleVariant pupilVariant = skinComp.GetEffectivePupilScaleVariant();
+            Vector2 gazeOffset = skinComp.CurrentFaceRuntimeState.gazeOffset;
             var transformContext = new FaceTransformContext(
                 customNode.layeredFacePartType.Value,
                 customNode.layeredFacePartSide,
@@ -892,6 +895,7 @@ namespace CharacterStudio.Rendering
                 eyeVariant,
                 pupilVariant,
                 expression,
+                gazeOffset,
                 primaryWave,
                 slowWave);
 
@@ -1575,6 +1579,7 @@ namespace CharacterStudio.Rendering
         {
             Pawn? pawn = customNode.tree?.pawn;
             CompPawnSkin? skinComp = pawn?.TryGetComp<CompPawnSkin>();
+            const float defaultUpperLidMoveDown = 0.0044f;
 
             // 预览面板中 LidState 可单独覆盖，但并不会强制启用 eyeDirectionConfig。
             // 之前这里优先读取编译态 portraitTrack.eyeDirection.upperLidMoveDown，
@@ -1586,12 +1591,12 @@ namespace CharacterStudio.Rendering
 
             FaceEyeDirectionRuntimeData? eyeData = skinComp?.CurrentFaceRuntimeCompiledData?.portraitTrack?.eyeDirection;
             if (eyeData?.enabled == true)
-                return Mathf.Max(configuredMoveDown, eyeData.upperLidMoveDown);
+                return Mathf.Max(defaultUpperLidMoveDown, configuredMoveDown, eyeData.upperLidMoveDown);
 
-            return configuredMoveDown;
+            return configuredMoveDown > 0f ? configuredMoveDown : defaultUpperLidMoveDown;
         }
 
-        private bool ShouldHideLayeredEyePartForReplacement(PawnRenderNode_Custom customNode, Pawn pawn, CompPawnSkin skinComp)
+        private bool ShouldHideLayeredEyePartForReplacement(PawnRenderNode_Custom customNode, Pawn pawn, CompPawnSkin skinComp, ExpressionType expression)
         {
             LayeredFacePartType? partType = customNode.layeredFacePartType;
             if (!partType.HasValue)
@@ -1611,6 +1616,9 @@ namespace CharacterStudio.Rendering
             if (!HasActiveReplacementEye(customNode, pawn, skinComp))
                 return false;
 
+            if (expression == ExpressionType.Blink)
+                return false;
+
             if (skinComp.IsBlinkActive())
             {
                 BlinkPhase blinkPhase = skinComp.GetBlinkPhase();
@@ -1618,18 +1626,19 @@ namespace CharacterStudio.Rendering
                     || blinkPhase == BlinkPhase.ShowReplacementEye
                     || blinkPhase == BlinkPhase.RestoreBaseEyeParts;
             }
-
-            ExpressionType expression = skinComp.GetEffectiveExpression();
             return expression == ExpressionType.Dead;
         }
 
-        private bool ShouldHideUpperLidAtBlinkEndpoint(PawnRenderNode_Custom customNode, CompPawnSkin skinComp)
+        private bool ShouldHideUpperLidAtBlinkEndpoint(PawnRenderNode_Custom customNode, CompPawnSkin skinComp, ExpressionType expression)
         {
             if (customNode.layeredFacePartType != LayeredFacePartType.UpperLid)
                 return false;
 
             Pawn? pawn = customNode.tree?.pawn;
             if (pawn == null || !HasActiveReplacementEye(customNode, pawn, skinComp))
+                return false;
+
+            if (expression == ExpressionType.Blink)
                 return false;
 
             if (!skinComp.IsBlinkActive())
@@ -1937,6 +1946,12 @@ namespace CharacterStudio.Rendering
                         return;
                     }
 
+                    if (expression == ExpressionType.Blink)
+                    {
+                        HideProgrammaticFacePart(customNode);
+                        return;
+                    }
+
                     if (skinComp.IsBlinkActive())
                     {
                         BlinkPhase blinkPhase = skinComp.GetBlinkPhase();
@@ -2203,7 +2218,7 @@ namespace CharacterStudio.Rendering
                 bool externalExists = RuntimeAssetLoader.ExternalTextureExists(resolvedTexPath, out string resolvedExternalPath);
                 if (!externalExists)
                 {
-                    Log.Error($"[CharacterStudio] 外部纹理文件不存在: {resolvedTexPath}");
+                    LogMissingExternalTextureWarningOnce(resolvedTexPath);
                 }
 
                 Shader shader = node.ShaderFor(parms.pawn);
@@ -2235,7 +2250,9 @@ namespace CharacterStudio.Rendering
                 if (graphic.IsInitializedSuccessfully)
                 {
                     externalGraphicCache[cacheKey] = graphic;
+                    return graphic;
                 }
+
                 return graphic;
             }
 
@@ -2698,9 +2715,7 @@ namespace CharacterStudio.Rendering
 
                     if (expr == ExpressionType.Blink)
                     {
-                        string blinkPath = AppendVariantToken(nonNullBasePath, "Blink");
-                        if (TextureExists(blinkPath))
-                            return blinkPath;
+                        return nonNullBasePath;
                     }
 
                     return nonNullBasePath;
@@ -2829,7 +2844,7 @@ namespace CharacterStudio.Rendering
                     || partType == LayeredFacePartType.Pupil
                     || partType == LayeredFacePartType.UpperLid
                     || partType == LayeredFacePartType.LowerLid)
-                && (expression == ExpressionType.Blink
+                && (((partType != LayeredFacePartType.Eye && partType != LayeredFacePartType.Pupil) && expression == ExpressionType.Blink)
                     || expression == ExpressionType.Sleeping
                     || expression == ExpressionType.Dead))
             {
@@ -3032,6 +3047,9 @@ namespace CharacterStudio.Rendering
 
             if (expression != ExpressionType.Blink || skinComp == null || !skinComp.IsBlinkActive())
                 return false;
+
+            if (partType == LayeredFacePartType.Eye || partType == LayeredFacePartType.Pupil)
+                return true;
 
             return skinComp.GetBlinkPhase() != BlinkPhase.ShowReplacementEye;
         }
@@ -3473,6 +3491,25 @@ namespace CharacterStudio.Rendering
 
             textureExistsCache[path] = exists;
             return exists;
+        }
+
+        private static void LogMissingExternalTextureWarningOnce(string path)
+        {
+            string key = path?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return;
+            }
+
+            lock (missingExternalTextureWarnings)
+            {
+                if (!missingExternalTextureWarnings.Add(key))
+                {
+                    return;
+                }
+            }
+
+            Log.Warning($"[CharacterStudio] 外部纹理缺失，已回退透明占位: {path}");
         }
 
         private bool IsTriggeredEquipmentLayerVisible(PawnRenderNode_Custom customNode, Pawn? pawn)

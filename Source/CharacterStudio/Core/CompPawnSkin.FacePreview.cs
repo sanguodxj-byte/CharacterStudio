@@ -107,6 +107,47 @@ namespace CharacterStudio.Core
             }
         }
 
+        public void AdvancePreviewFaceAnimationTicks(int ticks)
+        {
+            if (ticks <= 0)
+            {
+                return;
+            }
+
+            if (!FaceRuntimeActivationGuard.CanProcessFaceRuntime(this, Pawn))
+            {
+                return;
+            }
+
+            EnsureFaceRuntimeStateReadyForPreview();
+
+            bool blinkStateChanged = false;
+            for (int i = 0; i < ticks; i++)
+            {
+                faceExpressionState.AdvanceAnimTick();
+                if (!faceExpressionState.IsBlinkActive)
+                {
+                    continue;
+                }
+
+                BlinkPhase phaseBeforeTick = faceExpressionState.blinkPhase;
+                int phaseTickBeforeAdvance = faceExpressionState.blinkPhaseTick;
+                bool finishedBlink = faceExpressionState.ConsumeBlinkTick();
+                blinkStateChanged |= finishedBlink
+                    || phaseBeforeTick != faceExpressionState.blinkPhase
+                    || phaseTickBeforeAdvance != faceExpressionState.blinkPhaseTick;
+            }
+
+            UpdateAnimatedExpressionFrame();
+            UpdateEyeAnimationVariant();
+            UpdateGlobalFaceDriveState();
+
+            if (blinkStateChanged)
+            {
+                RequestRenderRefresh();
+            }
+        }
+
         private void UpdateBlinkLogic()
         {
             if (previewOverrides.PreviewExpression.HasValue) return;
@@ -461,7 +502,11 @@ namespace CharacterStudio.Core
                 case EyeDirection.Down: targetGaze = new Vector2(0f, -1f); break;
             }
 
+            float blinkDrivenLidClosure = runtimeState.blinkEased;
             runtimeState.gazeOffset = Vector2.Lerp(runtimeState.gazeOffset, targetGaze, 0.3f);
+            runtimeState.gazeOffset = Vector2.ClampMagnitude(
+                runtimeState.gazeOffset + new Vector2(0f, blinkDrivenLidClosure),
+                1f);
             runtimeState.breathingPulse = Mathf.Sin((tick + pawnSeed) * 0.0418f);
         }
 

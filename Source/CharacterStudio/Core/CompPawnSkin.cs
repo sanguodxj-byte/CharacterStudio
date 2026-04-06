@@ -305,6 +305,11 @@ namespace CharacterStudio.Core
 
         public bool IsFlightStateActive()
         {
+            if (Pawn?.flight?.Flying == true)
+            {
+                return false;
+            }
+
             int now = AbilityTimeStopRuntimeController.ResolveVisualTickForPawn(Pawn, Find.TickManager?.TicksGame ?? 0);
             return flightStateExpireTick >= now;
         }
