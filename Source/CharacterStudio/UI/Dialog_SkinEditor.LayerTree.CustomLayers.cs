@@ -40,13 +40,14 @@ namespace CharacterStudio.UI
             if (Widgets.ButtonText(visRect, visIcon, false))
             {
                 bool newVisible = !layer.visible;
-                layer.visible = newVisible;
-                if (selectedLayerIndices.Contains(index))
+                MutateWithUndo(() =>
                 {
-                    ApplyToOtherSelectedLayers(index, l => l.visible = newVisible);
-                }
-                isDirty = true;
-                RefreshPreview();
+                    layer.visible = newVisible;
+                    if (selectedLayerIndices.Contains(index))
+                    {
+                        ApplyToOtherSelectedLayers(index, l => l.visible = newVisible);
+                    }
+                });
             }
             GUI.color = Color.white;
 
@@ -88,15 +89,15 @@ namespace CharacterStudio.UI
 
             options.Add(new FloatMenuOption("CS_Studio_Ctx_CopyLayer".Translate(), () =>
             {
-                CaptureUndoSnapshot();
-                var copy = layer.Clone();
-                copy.layerName += " (Copy)";
-                workingSkin.layers.Insert(index + 1, copy);
-                selectedLayerIndex = index + 1;
-                selectedLayerIndices.Clear();
-                selectedLayerIndices.Add(selectedLayerIndex);
-                isDirty = true;
-                RefreshPreview();
+                MutateWithUndo(() =>
+                {
+                    var copy = layer.Clone();
+                    copy.layerName += " (Copy)";
+                    workingSkin.layers.Insert(index + 1, copy);
+                    selectedLayerIndex = index + 1;
+                    selectedLayerIndices.Clear();
+                    selectedLayerIndices.Add(selectedLayerIndex);
+                });
             }));
 
             if (index > 0)

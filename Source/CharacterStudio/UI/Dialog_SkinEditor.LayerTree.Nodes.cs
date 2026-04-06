@@ -161,13 +161,18 @@ namespace CharacterStudio.UI
                         anchorPath = node.uniqueNodePath,
                         anchorTag = node.tagDefName ?? "Body"
                     };
-                    workingSkin.layers.Add(newLayer);
-                    AppendAttachNodeRule(node, newLayer);
-                    selectedLayerIndex = workingSkin.layers.Count - 1;
-                    selectedNodePath = "";
-                    isDirty = true;
-                    RefreshPreview();
-                    ShowStatus("CS_Studio_Msg_Appended".Translate(node.uniqueNodePath, "1"));
+
+                    MutateWithUndo(() =>
+                    {
+                        workingSkin.layers.Add(newLayer);
+                        AppendAttachNodeRule(node, newLayer);
+                        UIHelper.ClearNumericFieldFocusAndBuffers();
+                        selectedLayerIndex = workingSkin.layers.Count - 1;
+                        selectedLayerIndices.Clear();
+                        selectedLayerIndices.Add(selectedLayerIndex);
+                        selectedNodePath = "";
+                        selectedBaseSlotType = null;
+                    }, refreshPreview: true, refreshRenderTree: true, statusMessage: "CS_Studio_Msg_Appended".Translate(node.uniqueNodePath, "1"));
                 }));
             }
 
