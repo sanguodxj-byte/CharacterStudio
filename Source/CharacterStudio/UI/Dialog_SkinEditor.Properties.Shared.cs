@@ -95,9 +95,11 @@ namespace CharacterStudio.UI
             {
                 new FloatMenuOption("CS_Studio_None".Translate(), () =>
                 {
-                    CaptureUndoSnapshot();
-                    equipment.thingDefName = string.Empty;
-                    onChanged();
+                    MutateWithUndo(() =>
+                    {
+                        equipment.thingDefName = string.Empty;
+                        onChanged();
+                    });
                 })
             };
 
@@ -111,9 +113,11 @@ namespace CharacterStudio.UI
                 string label = string.IsNullOrWhiteSpace(localDef.label) ? localDef.defName : localDef.label;
                 options.Add(new FloatMenuOption($"{label} [{localDef.defName}]", () =>
                 {
-                    CaptureUndoSnapshot();
-                    equipment.thingDefName = localDef.defName;
-                    onChanged();
+                    MutateWithUndo(() =>
+                    {
+                        equipment.thingDefName = localDef.defName;
+                        onChanged();
+                    });
                 }));
             }
 
@@ -155,9 +159,11 @@ namespace CharacterStudio.UI
             {
                 new FloatMenuOption("CS_Studio_None".Translate(), () =>
                 {
-                    CaptureUndoSnapshot();
-                    renderData.triggerAbilityDefName = string.Empty;
-                    onChanged();
+                    MutateWithUndo(() =>
+                    {
+                        renderData.triggerAbilityDefName = string.Empty;
+                        onChanged();
+                    });
                 })
             };
 
@@ -174,9 +180,11 @@ namespace CharacterStudio.UI
                 string displayName = string.IsNullOrWhiteSpace(localAbility.label) ? localAbility.defName : localAbility.label;
                 options.Add(new FloatMenuOption($"{displayName} ({localAbility.defName})", () =>
                 {
-                    CaptureUndoSnapshot();
-                    renderData.triggerAbilityDefName = localAbility.defName;
-                    onChanged();
+                    MutateWithUndo(() =>
+                    {
+                        renderData.triggerAbilityDefName = localAbility.defName;
+                        onChanged();
+                    });
                 }));
             }
 
@@ -194,10 +202,12 @@ namespace CharacterStudio.UI
                 string label = key.CanTranslate() ? key.Translate() : localShader;
                 options.Add(new FloatMenuOption(label, () =>
                 {
-                    CaptureUndoSnapshot();
-                    equipment.shaderDefName = localShader;
-                    equipment.renderData.shaderDefName = localShader;
-                    onChanged();
+                    MutateWithUndo(() =>
+                    {
+                        equipment.shaderDefName = localShader;
+                        equipment.renderData.shaderDefName = localShader;
+                        onChanged();
+                    });
                 }));
             }
 
