@@ -85,8 +85,7 @@ namespace CharacterStudio.UI
 
                 if (TryAutoPopulateFullFaceExpressionsFromBase(fc, path))
                 {
-                    isDirty = true;
-                    RefreshPreview();
+                    return;
                 }
             }));
         }
@@ -129,6 +128,9 @@ namespace CharacterStudio.UI
         {
             try
             {
+                if (undoMutationDepth == 0)
+                    CaptureUndoSnapshot();
+
                 List<string> files = Directory.EnumerateFiles(directoryPath)
                     .Where(IsSupportedLayeredFaceTextureFile)
                     .OrderBy(Path.GetFileNameWithoutExtension, StringComparer.OrdinalIgnoreCase)
@@ -175,7 +177,7 @@ namespace CharacterStudio.UI
                 SyncLayeredFacePartsToEditableLayers(fc);
                 workingSkin.hideVanillaHead = false;
                 ForceResetPreviewMannequin();
-                RefreshRenderTree();
+                FinalizeMutatedEditorState(refreshPreview: true, refreshRenderTree: true);
 
                 ShowFullFaceAutoImportSummary(directoryPath, selectedBasePath, matchedExpressionPaths, ignoredFiles);
             }
@@ -280,6 +282,9 @@ namespace CharacterStudio.UI
 
             try
             {
+                if (undoMutationDepth == 0)
+                    CaptureUndoSnapshot();
+
                 PawnFaceConfig importedFaceConfig = fc.Clone();
                 importedFaceConfig.layeredParts.Clear();
                 importedFaceConfig.expressions.Clear();
@@ -616,9 +621,7 @@ namespace CharacterStudio.UI
                 workingSkin.hideVanillaHead = hasLayeredFaceBase;
 
                 ForceResetPreviewMannequin();
-                isDirty = true;
-                RefreshPreview();
-                RefreshRenderTree();
+                FinalizeMutatedEditorState(refreshPreview: true, refreshRenderTree: true);
 
                 ShowLayeredFaceAutoImportSummary(
                     directoryPath,

@@ -634,11 +634,16 @@ namespace CharacterStudio.UI
             if (previewFaceAnimationPlaying && previewFaceAnimationLoop == loop)
             {
                 previewFaceAnimationPlaying = false;
+                previewFaceAnimationLoop = false;
+                previewFaceAnimationLastRealtime = -1f;
+                previewFaceAnimationElapsedTicks = 0f;
                 return;
             }
 
             previewFaceAnimationPlaying = true;
             previewFaceAnimationLoop = loop;
+            previewFaceAnimationLastRealtime = -1f;
+            previewFaceAnimationElapsedTicks = 0f;
             
             var skinComp = mannequin?.CurrentPawn?.GetComp<CompPawnSkin>();
             skinComp?.TriggerBlink();
@@ -647,27 +652,62 @@ namespace CharacterStudio.UI
 
         private void UpdatePreviewFaceAnimation()
         {
-            if (!previewFaceAnimationPlaying)
-            {
-                return;
-            }
-
             var skinComp = mannequin?.CurrentPawn?.GetComp<CompPawnSkin>();
             if (skinComp == null)
             {
+                previewFaceAnimationLastRealtime = -1f;
+                previewFaceAnimationElapsedTicks = 0f;
                 return;
             }
 
-            if (!skinComp.IsBlinkActive())
+            bool blinkActive = skinComp.IsBlinkActive();
+            if (!previewFaceAnimationPlaying && !blinkActive)
             {
-                if (previewFaceAnimationLoop)
+                previewFaceAnimationLastRealtime = -1f;
+                previewFaceAnimationElapsedTicks = 0f;
+                return;
+            }
+
+            float nowRealtime = Time.realtimeSinceStartup;
+            if (previewFaceAnimationLastRealtime < 0f)
+            {
+                previewFaceAnimationLastRealtime = nowRealtime;
+            }
+            else
+            {
+                float deltaRealtime = nowRealtime - previewFaceAnimationLastRealtime;
+                if (deltaRealtime > 0f)
                 {
-                    skinComp.TriggerBlink();
+                    previewFaceAnimationLastRealtime = nowRealtime;
+                    previewFaceAnimationElapsedTicks += deltaRealtime * 60f;
+
+                    int ticksToAdvance = Mathf.FloorToInt(previewFaceAnimationElapsedTicks);
+                    if (ticksToAdvance > 0)
+                    {
+                        previewFaceAnimationElapsedTicks -= ticksToAdvance;
+                        skinComp.AdvancePreviewFaceAnimationTicks(ticksToAdvance);
+                    }
                 }
-                else
-                {
-                    previewFaceAnimationPlaying = false;
-                }
+            }
+
+            if (skinComp.IsBlinkActive())
+            {
+                return;
+            }
+
+            previewFaceAnimationElapsedTicks = 0f;
+            if (previewFaceAnimationPlaying && previewFaceAnimationLoop)
+            {
+                skinComp.TriggerBlink();
+                previewFaceAnimationLastRealtime = Time.realtimeSinceStartup;
+                return;
+            }
+
+            if (previewFaceAnimationPlaying)
+            {
+                previewFaceAnimationPlaying = false;
+                previewFaceAnimationLoop = false;
+                previewFaceAnimationLastRealtime = -1f;
             }
         }
 

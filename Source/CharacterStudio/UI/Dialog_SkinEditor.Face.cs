@@ -260,9 +260,11 @@ namespace CharacterStudio.UI
             {
                 if (Widgets.ButtonText(new Rect(0f, y, width, 28f), "CS_Studio_Face_Create".Translate()))
                 {
-                    workingSkin.faceConfig = new PawnFaceConfig();
-                    isDirty = true;
-                    RefreshPreview();
+                    MutateWithUndo(() =>
+                    {
+                        workingSkin.faceConfig = new PawnFaceConfig();
+                        RebuildEditorBuffersFromWorkingState();
+                    });
                 }
 
                 y += 36f;
@@ -274,9 +276,7 @@ namespace CharacterStudio.UI
             UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Face_Enable".Translate(), ref enabled);
             if (enabled != fc.enabled)
             {
-                fc.enabled = enabled;
-                isDirty = true;
-                RefreshPreview();
+                MutateWithUndo(() => fc.enabled = enabled);
             }
 
             UIHelper.DrawPropertyFieldWithButton(
@@ -404,7 +404,23 @@ namespace CharacterStudio.UI
                 return;
             }
 
+            PawnEyeDirectionConfig eyeCfg = fc.eyeDirectionConfig ??= new PawnEyeDirectionConfig();
+            eyeCfg.pupilMotion ??= new PawnEyeDirectionConfig.PupilMotionConfig();
+
+            DrawPupilOffsetCoreSection(ref y, width, eyeCfg.pupilMotion);
+
             DrawFaceTuningSections(ref y, width, fc, isSectionExpanded, toggleSectionExpanded);
+        }
+
+        private void DrawPupilOffsetCoreSection(ref float y, float width, PawnEyeDirectionConfig.PupilMotionConfig pupilMotion)
+        {
+            UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_PupilCore_Title".Translate());
+            DrawPropertyHint(ref y, width, "CS_Studio_Face_PupilCore_Hint".Translate());
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DirLeftOffsetX"), ref pupilMotion.dirLeftOffsetX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DirRightOffsetX"), ref pupilMotion.dirRightOffsetX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DirUpOffsetZ"), ref pupilMotion.dirUpOffsetZ, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DirDownOffsetZ"), ref pupilMotion.dirDownOffsetZ, -0.01f, 0.01f, "F6");
+            y += 4f;
         }
 
         private void DrawOverlayMappingSection(ref float y, float width, PawnFaceConfig fc)
@@ -425,9 +441,7 @@ namespace CharacterStudio.UI
                         string localSemanticKey = semanticKey;
                         options.Add(new FloatMenuOption(GetOverlaySemanticKeyLabel(localSemanticKey), () =>
                         {
-                            rule.semanticKey = localSemanticKey;
-                            isDirty = true;
-                            RefreshPreview();
+                            MutateWithUndo(() => rule.semanticKey = localSemanticKey);
                         }));
                     }
 
@@ -444,13 +458,11 @@ namespace CharacterStudio.UI
                     ExpressionType localExpression = expression;
                     options.Add(new FloatMenuOption(GetExpressionTypeLabel(localExpression), () =>
                     {
-                        fc.expressionOverlayRules.Add(new PawnFaceConfig.ExpressionOverlayRule
+                        MutateWithUndo(() => fc.expressionOverlayRules.Add(new PawnFaceConfig.ExpressionOverlayRule
                         {
                             expression = localExpression,
                             semanticKey = PawnFaceConfig.NormalizeOverlaySemanticKey(localExpression.ToString())
-                        });
-                        isDirty = true;
-                        RefreshPreview();
+                        }));
                     }));
                 }
 
@@ -460,7 +472,7 @@ namespace CharacterStudio.UI
 
             y += 4f;
             UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_OverlayRule_RoutingTitle".Translate());
-            DrawPropertyHint(ref y, width, "按扫描到的 overlay 纹理配置它会响应哪些语义；没有纹理绑定的语义不会生效。");
+            DrawPropertyHint(ref y, width, "为扫描到的 overlay 纹理指定 happy、sleep 等表情语义；界面会同步显示这些语义当前关联到哪些表情。没有语义绑定的 overlay 不会响应表情。");
             DrawScannedOverlaySemanticSection(fc, ref y, width);
             y += 4f;
         }
@@ -519,11 +531,15 @@ namespace CharacterStudio.UI
         {
             string mappedOverlayId = GetMappedOverlayIdForPath(fc, candidate.FilePath);
             List<string> activeSemanticKeys = GetSemanticKeysForOverlayId(fc, mappedOverlayId);
+            List<ExpressionType> linkedExpressions = GetExpressionsForSemanticKeys(fc, activeSemanticKeys);
             string displayLabel = activeSemanticKeys.Count == 0
-                ? "未激活语义"
+                ? "未配置表情语义"
                 : string.Join(" / ", activeSemanticKeys.Select(GetOverlaySemanticKeyLabel));
+            string expressionLabel = linkedExpressions.Count == 0
+                ? "未关联表情"
+                : string.Join(" / ", linkedExpressions.Select(GetExpressionTypeLabel));
 
-            Rect rowRect = new Rect(0f, y, width, 22f);
+            Rect rowRect = new Rect(0f, y, width, 38f);
             Widgets.DrawBoxSolid(rowRect, UIHelper.AlternatingRowColor);
             GUI.color = UIHelper.BorderColor;
             Widgets.DrawBox(rowRect, 1);
@@ -531,17 +547,36 @@ namespace CharacterStudio.UI
 
             Text.Font = GameFont.Tiny;
             Text.Anchor = TextAnchor.MiddleLeft;
-            Widgets.Label(new Rect(6f, y, Mathf.Max(60f, width - 140f), 22f), candidate.FileName);
+            Widgets.Label(new Rect(6f, y + 1f, Mathf.Max(60f, width - 140f), 18f), candidate.FileName);
+            GUI.color = UIHelper.SubtleColor;
+            Widgets.Label(new Rect(6f, y + 19f, Mathf.Max(60f, width - 140f), 18f), expressionLabel);
+            GUI.color = Color.white;
             Text.Anchor = TextAnchor.UpperLeft;
             Text.Font = GameFont.Small;
 
-            Rect buttonRect = new Rect(width - 132f, y + 1f, 128f, 20f);
+            Rect buttonRect = new Rect(width - 132f, y + 9f, 128f, 20f);
             if (UIHelper.DrawSelectionButton(buttonRect, displayLabel))
             {
                 OpenScannedOverlaySemanticMenu(fc, candidate, mappedOverlayId, activeSemanticKeys);
             }
 
-            y += 23f;
+            TooltipHandler.TipRegion(rowRect, $"{candidate.FileName}\n语义: {displayLabel}\n表情: {expressionLabel}");
+
+            y += 39f;
+        }
+
+        private List<ExpressionType> GetExpressionsForSemanticKeys(PawnFaceConfig fc, IEnumerable<string> semanticKeys)
+        {
+            HashSet<string> normalizedKeys = new HashSet<string>(semanticKeys.Select(PawnFaceConfig.NormalizeOverlaySemanticKey), StringComparer.OrdinalIgnoreCase);
+            if (normalizedKeys.Count == 0)
+                return new List<ExpressionType>();
+
+            return fc.expressionOverlayRules
+                .Where(rule => normalizedKeys.Contains(PawnFaceConfig.NormalizeOverlaySemanticKey(rule.semanticKey)))
+                .Select(rule => rule.expression)
+                .Distinct()
+                .OrderBy(expression => expression.ToString(), StringComparer.OrdinalIgnoreCase)
+                .ToList();
         }
 
         private List<string> GetSemanticKeysForOverlayId(PawnFaceConfig fc, string overlayId)
@@ -574,9 +609,7 @@ namespace CharacterStudio.UI
             {
                 new FloatMenuOption("清空全部语义", () =>
                 {
-                    ApplySemanticSelectionForOverlay(fc, resolvedOverlayId, null, false, candidate.FilePath);
-                    isDirty = true;
-                    RefreshPreview();
+                    MutateWithUndo(() => ApplySemanticSelectionForOverlay(fc, resolvedOverlayId, null, false, candidate.FilePath));
                 })
             };
 
@@ -587,9 +620,7 @@ namespace CharacterStudio.UI
                 string label = (enabled ? "[√] " : "[ ] ") + GetOverlaySemanticKeyLabel(localSemanticKey);
                 options.Add(new FloatMenuOption(label, () =>
                 {
-                    ApplySemanticSelectionForOverlay(fc, resolvedOverlayId, localSemanticKey, !enabled, candidate.FilePath);
-                    isDirty = true;
-                    RefreshPreview();
+                    MutateWithUndo(() => ApplySemanticSelectionForOverlay(fc, resolvedOverlayId, localSemanticKey, !enabled, candidate.FilePath));
                 }));
             }
 
@@ -634,6 +665,32 @@ namespace CharacterStudio.UI
                     rule.overlayIds.Add(normalizedOverlayId);
 
                 rule.overlayId = rule.overlayIds.FirstOrDefault() ?? string.Empty;
+
+                EnsureExpressionOverlayRuleExists(fc, normalizedSemanticKey);
+            }
+        }
+
+        private void EnsureExpressionOverlayRuleExists(PawnFaceConfig fc, string normalizedSemanticKey)
+        {
+            if (string.IsNullOrWhiteSpace(normalizedSemanticKey))
+                return;
+
+            foreach (ExpressionType expression in Enum.GetValues(typeof(ExpressionType)))
+            {
+                string expressionKey = PawnFaceConfig.NormalizeOverlaySemanticKey(expression.ToString());
+                if (!string.Equals(expressionKey, normalizedSemanticKey, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                if (!fc.expressionOverlayRules.Any(rule => rule.expression == expression))
+                {
+                    fc.expressionOverlayRules.Add(new PawnFaceConfig.ExpressionOverlayRule
+                    {
+                        expression = expression,
+                        semanticKey = normalizedSemanticKey
+                    });
+                }
+
+                return;
             }
         }
 
@@ -654,11 +711,12 @@ namespace CharacterStudio.UI
                 {
                     if (fc.workflowMode != localMode)
                     {
-                        fc.workflowMode = localMode;
-                        ForceResetPreviewMannequin();
-                        isDirty = true;
-                        RefreshPreview();
-                        RefreshRenderTree();
+                        MutateWithUndo(() =>
+                        {
+                            fc.workflowMode = localMode;
+                            ForceResetPreviewMannequin();
+                            RebuildEditorBuffersFromWorkingState();
+                        }, refreshPreview: true, refreshRenderTree: true);
                     }
                 }));
             }
@@ -724,15 +782,16 @@ namespace CharacterStudio.UI
             int currentOrder = fc.GetOverlayOrder(currentId, partType);
             int targetOrder = fc.GetOverlayOrder(targetId, partType);
 
-            fc.SetOverlayOrder(currentId, targetOrder, partType);
-            fc.SetOverlayOrder(targetId, currentOrder, partType);
-            fc.NormalizeOverlayOrders();
-            layeredPartPathBuffer.Clear();
-            FaceRuntimeCompiler.ClearCache();
-            PawnRenderNodeWorker_FaceComponent.ClearCache();
-            PawnRenderNodeWorker_CustomLayer.ClearExternalGraphicCache();
-            isDirty = true;
-            RefreshPreview();
+            MutateWithUndo(() =>
+            {
+                fc.SetOverlayOrder(currentId, targetOrder, partType);
+                fc.SetOverlayOrder(targetId, currentOrder, partType);
+                fc.NormalizeOverlayOrders();
+                layeredPartPathBuffer.Clear();
+                FaceRuntimeCompiler.ClearCache();
+                PawnRenderNodeWorker_FaceComponent.ClearCache();
+                PawnRenderNodeWorker_CustomLayer.ClearExternalGraphicCache();
+            });
         }
 
         private void DrawScannedOverlayMappingSection(PawnFaceConfig fc, ref float y, float width)
@@ -881,10 +940,11 @@ namespace CharacterStudio.UI
             {
                 new FloatMenuOption("未映射", () =>
                 {
-                    ClearOverlayAssignmentsForPath(fc, candidate.FilePath);
-                    layeredPartPathBuffer.Clear();
-                    isDirty = true;
-                    RefreshPreview();
+                    MutateWithUndo(() =>
+                    {
+                        ClearOverlayAssignmentsForPath(fc, candidate.FilePath);
+                        layeredPartPathBuffer.Clear();
+                    });
                 })
             };
 
@@ -903,11 +963,12 @@ namespace CharacterStudio.UI
                 string localOverlayId = overlayId;
                 options.Add(new FloatMenuOption(GetOverlaySemanticLabel(localOverlayId), () =>
                 {
-                    ClearOverlayAssignmentsForPath(fc, candidate.FilePath);
-                    fc.SetLayeredPart(LayeredFacePartType.Overlay, ExpressionType.Neutral, candidate.FilePath, localOverlayId, fc.GetOverlayOrder(localOverlayId));
-                    layeredPartPathBuffer.Clear();
-                    isDirty = true;
-                    RefreshPreview();
+                    MutateWithUndo(() =>
+                    {
+                        ClearOverlayAssignmentsForPath(fc, candidate.FilePath);
+                        fc.SetLayeredPart(LayeredFacePartType.Overlay, ExpressionType.Neutral, candidate.FilePath, localOverlayId, fc.GetOverlayOrder(localOverlayId));
+                        layeredPartPathBuffer.Clear();
+                    });
                 }));
             }
 
@@ -1025,28 +1086,28 @@ namespace CharacterStudio.UI
 
             if (newEnabled != enabled)
             {
-                if (existing != null)
+                MutateWithUndo(() =>
                 {
-                    existing.enabled = newEnabled;
-                }
-                else if (newEnabled && !string.IsNullOrWhiteSpace(actualPath))
-                {
-                    if (isOverlay)
+                    if (existing != null)
                     {
-                        fc.SetLayeredPart(partType, expression, actualPath, resolvedOverlayId, fc.GetOverlayOrder(resolvedOverlayId));
+                        existing.enabled = newEnabled;
                     }
-                    else if (normalizedSide != LayeredFacePartSide.None)
+                    else if (newEnabled && !string.IsNullOrWhiteSpace(actualPath))
                     {
-                        fc.SetLayeredPart(partType, expression, actualPath, normalizedSide);
+                        if (isOverlay)
+                        {
+                            fc.SetLayeredPart(partType, expression, actualPath, resolvedOverlayId, fc.GetOverlayOrder(resolvedOverlayId));
+                        }
+                        else if (normalizedSide != LayeredFacePartSide.None)
+                        {
+                            fc.SetLayeredPart(partType, expression, actualPath, normalizedSide);
+                        }
+                        else
+                        {
+                            fc.SetLayeredPart(partType, expression, actualPath);
+                        }
                     }
-                    else
-                    {
-                        fc.SetLayeredPart(partType, expression, actualPath);
-                    }
-                }
-
-                isDirty = true;
-                RefreshPreview();
+                });
                 existing = isOverlay
                     ? fc.GetLayeredPartConfig(partType, expression, resolvedOverlayId)
                     : fc.GetLayeredPartConfig(partType, expression, normalizedSide);
@@ -1063,36 +1124,40 @@ namespace CharacterStudio.UI
             string newBufferPath = Widgets.TextField(new Rect(pathX, y + 2f, pathWidth, 20f), bufferPath);
             if (!ArePathStringsEquivalent(newBufferPath, bufferPath))
             {
-                layeredPartPathBuffer[bufferKey] = newBufferPath;
+                MutateWithUndo(() =>
+                {
+                    layeredPartPathBuffer[bufferKey] = newBufferPath;
 
-                if (isOverlay)
-                {
-                    fc.SetLayeredPart(partType, expression, newBufferPath, resolvedOverlayId, fc.GetOverlayOrder(resolvedOverlayId));
-                }
-                else if (normalizedSide != LayeredFacePartSide.None)
-                {
-                    fc.SetLayeredPart(partType, expression, newBufferPath, normalizedSide);
-                }
-                else
-                {
-                    fc.SetLayeredPart(partType, expression, newBufferPath);
-                }
+                    if (isOverlay)
+                    {
+                        fc.SetLayeredPart(partType, expression, newBufferPath, resolvedOverlayId, fc.GetOverlayOrder(resolvedOverlayId));
+                    }
+                    else if (normalizedSide != LayeredFacePartSide.None)
+                    {
+                        fc.SetLayeredPart(partType, expression, newBufferPath, normalizedSide);
+                    }
+                    else
+                    {
+                        fc.SetLayeredPart(partType, expression, newBufferPath);
+                    }
 
+                    LayeredFacePartConfig? changedPart = isOverlay
+                        ? fc.GetLayeredPartConfig(partType, expression, resolvedOverlayId)
+                        : fc.GetLayeredPartConfig(partType, expression, normalizedSide);
+                    if (changedPart != null)
+                    {
+                        changedPart.enabled = !string.IsNullOrWhiteSpace(newBufferPath) && (existing?.enabled ?? true);
+                    }
+
+                    TryAutoPopulateLayeredFacePartsFromBase(fc, partType, expression, newBufferPath);
+
+                    FaceRuntimeCompiler.ClearCache();
+                    PawnRenderNodeWorker_FaceComponent.ClearCache();
+                    PawnRenderNodeWorker_CustomLayer.ClearExternalGraphicCache();
+                });
                 LayeredFacePartConfig? changedPart = isOverlay
                     ? fc.GetLayeredPartConfig(partType, expression, resolvedOverlayId)
                     : fc.GetLayeredPartConfig(partType, expression, normalizedSide);
-                if (changedPart != null)
-                {
-                    changedPart.enabled = !string.IsNullOrWhiteSpace(newBufferPath) && (existing?.enabled ?? true);
-                }
-
-                TryAutoPopulateLayeredFacePartsFromBase(fc, partType, expression, newBufferPath);
-
-                FaceRuntimeCompiler.ClearCache();
-                PawnRenderNodeWorker_FaceComponent.ClearCache();
-                PawnRenderNodeWorker_CustomLayer.ClearExternalGraphicCache();
-                isDirty = true;
-                RefreshPreview();
                 existing = changedPart;
                 actualPath = changedPart?.texPath ?? string.Empty;
             }
@@ -1106,35 +1171,36 @@ namespace CharacterStudio.UI
                 string browsePath = actualPath;
                 Find.WindowStack.Add(new Dialog_FileBrowser(browsePath, path =>
                 {
-                    if (isOverlay)
+                    MutateWithUndo(() =>
                     {
-                        fc.SetLayeredPart(partType, expression, path ?? string.Empty, resolvedOverlayId, fc.GetOverlayOrder(resolvedOverlayId));
-                    }
-                    else if (normalizedSide != LayeredFacePartSide.None)
-                    {
-                        fc.SetLayeredPart(partType, expression, path ?? string.Empty, normalizedSide);
-                    }
-                    else
-                    {
-                        fc.SetLayeredPart(partType, expression, path ?? string.Empty);
-                    }
+                        if (isOverlay)
+                        {
+                            fc.SetLayeredPart(partType, expression, path ?? string.Empty, resolvedOverlayId, fc.GetOverlayOrder(resolvedOverlayId));
+                        }
+                        else if (normalizedSide != LayeredFacePartSide.None)
+                        {
+                            fc.SetLayeredPart(partType, expression, path ?? string.Empty, normalizedSide);
+                        }
+                        else
+                        {
+                            fc.SetLayeredPart(partType, expression, path ?? string.Empty);
+                        }
 
-                    LayeredFacePartConfig? changedPart = isOverlay
-                        ? fc.GetLayeredPartConfig(partType, expression, resolvedOverlayId)
-                        : fc.GetLayeredPartConfig(partType, expression, normalizedSide);
-                    if (changedPart != null)
-                    {
-                        changedPart.enabled = !string.IsNullOrWhiteSpace(path);
-                    }
-                    layeredPartPathBuffer[bufferKey] = path ?? string.Empty;
+                        LayeredFacePartConfig? changedPart = isOverlay
+                            ? fc.GetLayeredPartConfig(partType, expression, resolvedOverlayId)
+                            : fc.GetLayeredPartConfig(partType, expression, normalizedSide);
+                        if (changedPart != null)
+                        {
+                            changedPart.enabled = !string.IsNullOrWhiteSpace(path);
+                        }
+                        layeredPartPathBuffer[bufferKey] = path ?? string.Empty;
 
-                    TryAutoPopulateLayeredFacePartsFromBase(fc, partType, expression, path);
+                        TryAutoPopulateLayeredFacePartsFromBase(fc, partType, expression, path);
 
-                    FaceRuntimeCompiler.ClearCache();
-                    PawnRenderNodeWorker_FaceComponent.ClearCache();
-                    PawnRenderNodeWorker_CustomLayer.ClearExternalGraphicCache();
-                    isDirty = true;
-                    RefreshPreview();
+                        FaceRuntimeCompiler.ClearCache();
+                        PawnRenderNodeWorker_FaceComponent.ClearCache();
+                        PawnRenderNodeWorker_CustomLayer.ClearExternalGraphicCache();
+                    });
                 }));
             }))
             {
@@ -1142,25 +1208,26 @@ namespace CharacterStudio.UI
 
             if (UIHelper.DrawDangerButton(new Rect(width - 28f, y + 1f, 24f, 22f), tooltip: "CS_Studio_Clear".Translate(), onClick: () =>
             {
-                if (isOverlay)
+                MutateWithUndo(() =>
                 {
-                    fc.RemoveLayeredPart(partType, expression, resolvedOverlayId);
-                }
-                else if (normalizedSide != LayeredFacePartSide.None)
-                {
-                    fc.RemoveLayeredPart(partType, expression, normalizedSide);
-                }
-                else
-                {
-                    fc.RemoveLayeredPart(partType, expression);
-                }
+                    if (isOverlay)
+                    {
+                        fc.RemoveLayeredPart(partType, expression, resolvedOverlayId);
+                    }
+                    else if (normalizedSide != LayeredFacePartSide.None)
+                    {
+                        fc.RemoveLayeredPart(partType, expression, normalizedSide);
+                    }
+                    else
+                    {
+                        fc.RemoveLayeredPart(partType, expression);
+                    }
 
-                layeredPartPathBuffer[bufferKey] = string.Empty;
-                FaceRuntimeCompiler.ClearCache();
-                PawnRenderNodeWorker_FaceComponent.ClearCache();
-                PawnRenderNodeWorker_CustomLayer.ClearExternalGraphicCache();
-                isDirty = true;
-                RefreshPreview();
+                    layeredPartPathBuffer[bufferKey] = string.Empty;
+                    FaceRuntimeCompiler.ClearCache();
+                    PawnRenderNodeWorker_FaceComponent.ClearCache();
+                    PawnRenderNodeWorker_CustomLayer.ClearExternalGraphicCache();
+                });
                 existing = null;
                 actualPath = string.Empty;
             }))
@@ -1208,20 +1275,21 @@ namespace CharacterStudio.UI
                 string browsePath = actualPath;
                 Find.WindowStack.Add(new Dialog_FileBrowser(browsePath, path =>
                 {
-                    fc.SetLayeredPart(partType, expression, path ?? string.Empty, overlayId, fc.GetOverlayOrder(overlayId, partType));
-
-                    LayeredFacePartConfig? changedPart = fc.GetLayeredPartConfig(partType, expression, overlayId);
-                    if (changedPart != null)
+                    MutateWithUndo(() =>
                     {
-                        changedPart.enabled = !string.IsNullOrWhiteSpace(path);
-                    }
+                        fc.SetLayeredPart(partType, expression, path ?? string.Empty, overlayId, fc.GetOverlayOrder(overlayId, partType));
 
-                    layeredPartPathBuffer.Clear();
-                    FaceRuntimeCompiler.ClearCache();
-                    PawnRenderNodeWorker_FaceComponent.ClearCache();
-                    PawnRenderNodeWorker_CustomLayer.ClearExternalGraphicCache();
-                    isDirty = true;
-                    RefreshPreview();
+                        LayeredFacePartConfig? changedPart = fc.GetLayeredPartConfig(partType, expression, overlayId);
+                        if (changedPart != null)
+                        {
+                            changedPart.enabled = !string.IsNullOrWhiteSpace(path);
+                        }
+
+                        layeredPartPathBuffer.Clear();
+                        FaceRuntimeCompiler.ClearCache();
+                        PawnRenderNodeWorker_FaceComponent.ClearCache();
+                        PawnRenderNodeWorker_CustomLayer.ClearExternalGraphicCache();
+                    });
                 }));
             }))
             {
@@ -1229,13 +1297,14 @@ namespace CharacterStudio.UI
 
             if (UIHelper.DrawDangerButton(new Rect(width - 22f, y, 20f, 20f), tooltip: "CS_Studio_Clear".Translate(), onClick: () =>
             {
-                fc.RemoveLayeredPart(partType, expression, overlayId);
-                layeredPartPathBuffer.Clear();
-                FaceRuntimeCompiler.ClearCache();
-                PawnRenderNodeWorker_FaceComponent.ClearCache();
-                PawnRenderNodeWorker_CustomLayer.ClearExternalGraphicCache();
-                isDirty = true;
-                RefreshPreview();
+                MutateWithUndo(() =>
+                {
+                    fc.RemoveLayeredPart(partType, expression, overlayId);
+                    layeredPartPathBuffer.Clear();
+                    FaceRuntimeCompiler.ClearCache();
+                    PawnRenderNodeWorker_FaceComponent.ClearCache();
+                    PawnRenderNodeWorker_CustomLayer.ClearExternalGraphicCache();
+                });
             }))
             {
             }
@@ -1296,9 +1365,7 @@ namespace CharacterStudio.UI
             {
                 if (Widgets.ButtonText(new Rect(0f, y, width, 28f), "CS_Studio_Face_EyeDir_Create".Translate()))
                 {
-                    fc.eyeDirectionConfig = new PawnEyeDirectionConfig();
-                    isDirty = true;
-                    RefreshPreview();
+                    MutateWithUndo(() => fc.eyeDirectionConfig = new PawnEyeDirectionConfig());
                 }
 
                 y += 36f;
@@ -1311,9 +1378,7 @@ namespace CharacterStudio.UI
                 UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Face_EyeDir_Enable".Translate(), ref eyeEnabled);
                 if (eyeEnabled != eyeCfg.enabled)
                 {
-                    eyeCfg.enabled = eyeEnabled;
-                    isDirty = true;
-                    RefreshPreview();
+                    MutateWithUndo(() => eyeCfg.enabled = eyeEnabled);
                 }
 
                 if (eyeEnabled)
@@ -1335,9 +1400,7 @@ namespace CharacterStudio.UI
                 GUI.color = new Color(1f, 0.4f, 0.4f);
                 if (Widgets.ButtonText(new Rect(0f, y, width, 24f), "CS_Studio_Face_EyeDir_Remove".Translate()))
                 {
-                    fc.eyeDirectionConfig = null;
-                    isDirty = true;
-                    RefreshPreview();
+                    MutateWithUndo(() => fc.eyeDirectionConfig = null);
                 }
                 GUI.color = Color.white;
                 y += 28f;
@@ -1453,11 +1516,12 @@ namespace CharacterStudio.UI
                 ref motionAmplitude, 0f, 0.01f, "F4", 20f);
             if (!Mathf.Approximately(motionAmplitude, editablePart.motionAmplitude))
             {
-                editablePart.motionAmplitude = motionAmplitude;
-                editablePart.anchorCorrection = Vector2.zero;
-                FaceRuntimeCompiler.ClearCache();
-                isDirty = true;
-                RefreshPreview();
+                MutateWithUndo(() =>
+                {
+                    editablePart.motionAmplitude = motionAmplitude;
+                    editablePart.anchorCorrection = Vector2.zero;
+                    FaceRuntimeCompiler.ClearCache();
+                });
             }
 
             y += 4f;
@@ -1476,9 +1540,7 @@ namespace CharacterStudio.UI
                 ref upperLidMoveDown, 0f, 0.02f, "F4");
             if (upperLidMoveDown != eyeCfg.upperLidMoveDown)
             {
-                eyeCfg.upperLidMoveDown = upperLidMoveDown;
-                isDirty = true;
-                RefreshPreview();
+                MutateWithUndo(() => eyeCfg.upperLidMoveDown = upperLidMoveDown);
             }
 
             if (!includeTextureRows)
@@ -1491,37 +1553,27 @@ namespace CharacterStudio.UI
             DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Center".Translate(),
                 eyeCfg.texCenter, path =>
                 {
-                    eyeCfg.texCenter = path;
-                    isDirty = true;
-                    RefreshPreview();
+                    MutateWithUndo(() => eyeCfg.texCenter = path);
                 });
             DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Left".Translate(),
                 eyeCfg.texLeft, path =>
                 {
-                    eyeCfg.texLeft = path;
-                    isDirty = true;
-                    RefreshPreview();
+                    MutateWithUndo(() => eyeCfg.texLeft = path);
                 });
             DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Right".Translate(),
                 eyeCfg.texRight, path =>
                 {
-                    eyeCfg.texRight = path;
-                    isDirty = true;
-                    RefreshPreview();
+                    MutateWithUndo(() => eyeCfg.texRight = path);
                 });
             DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Up".Translate(),
                 eyeCfg.texUp, path =>
                 {
-                    eyeCfg.texUp = path;
-                    isDirty = true;
-                    RefreshPreview();
+                    MutateWithUndo(() => eyeCfg.texUp = path);
                 });
             DrawEyeDirTexRow(ref y, width, "CS_Studio_Face_EyeDir_Down".Translate(),
                 eyeCfg.texDown, path =>
                 {
-                    eyeCfg.texDown = path;
-                    isDirty = true;
-                    RefreshPreview();
+                    MutateWithUndo(() => eyeCfg.texDown = path);
                 });
 
             DrawEyeMotionConfigSection(ref y, width, eyeCfg.eyeMotion, eyeCfg.pupilMotion);
@@ -1566,14 +1618,6 @@ namespace CharacterStudio.UI
 
             if (DrawCollapsibleFaceSectionHeader(ref y, width, "PupilMotion", GetFaceMotionSectionLabel("PupilMotion"), isSectionExpanded, toggleSectionExpanded))
             {
-            UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_PupilCore_Title".Translate());
-            DrawPropertyHint(ref y, width, "CS_Studio_Face_PupilCore_Hint".Translate());
-            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DirLeftOffsetX"), ref pupilMotion.dirLeftOffsetX, -0.01f, 0.01f, "F6");
-            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DirRightOffsetX"), ref pupilMotion.dirRightOffsetX, -0.01f, 0.01f, "F6");
-            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DirUpOffsetZ"), ref pupilMotion.dirUpOffsetZ, -0.01f, 0.01f, "F6");
-            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DirDownOffsetZ"), ref pupilMotion.dirDownOffsetZ, -0.01f, 0.01f, "F6");
-
-            y += 4f;
             UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_PupilAdvanced_Title".Translate());
             DrawPropertyHint(ref y, width, "CS_Studio_Face_PupilAdvanced_Hint".Translate());
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_SideBiasX"), ref pupilMotion.sideBiasX, 0f, 0.01f, "F6");
@@ -1833,10 +1877,7 @@ namespace CharacterStudio.UI
 
             if (!Mathf.Approximately(edited, value))
             {
-                value = edited;
-                FaceRuntimeCompiler.ClearCache();
-                isDirty = true;
-                RefreshPreview();
+                MutateFloatWithUndo(ref value, edited, () => FaceRuntimeCompiler.ClearCache());
             }
 
             Text.Font = GameFont.Small;
