@@ -269,53 +269,51 @@ namespace CharacterStudio.UI
             var targets = GetSelectedLayerTargets();
             if (targets.Count > 0)
             {
-                CaptureUndoSnapshot();
-                foreach (int idx in targets)
+                MutateWithUndo(() =>
                 {
-                    var layer = workingSkin.layers[idx];
-                    layer.offset = Vector3.zero;
-                    layer.offsetEast = Vector3.zero;
-                    layer.offsetNorth = Vector3.zero;
-                    layer.scale = Vector2.one;
-                    layer.rotation = 0f;
-                }
-                isDirty = true;
-                RefreshPreview();
-                ShowStatus("CS_Studio_Msg_ParametersReset".Translate());
+                    foreach (int idx in targets)
+                    {
+                        var layer = workingSkin.layers[idx];
+                        layer.offset = Vector3.zero;
+                        layer.offsetEast = Vector3.zero;
+                        layer.offsetNorth = Vector3.zero;
+                        layer.scale = Vector2.one;
+                        layer.rotation = 0f;
+                    }
+                }, statusMessage: "CS_Studio_Msg_ParametersReset".Translate());
             }
             else if (selectedBaseSlotType != null)
             {
-                CaptureUndoSnapshot();
-                workingSkin.baseAppearance ??= new BaseAppearanceConfig();
-                var slot = workingSkin.baseAppearance.GetSlot(selectedBaseSlotType.Value);
-                slot.offset = Vector3.zero;
-                slot.offsetEast = Vector3.zero;
-                slot.offsetNorth = Vector3.zero;
-                slot.scale = Vector2.one;
-                slot.rotation = 0f;
-                isDirty = true;
-                RefreshPreview();
-                ShowStatus("CS_Studio_Msg_ParametersReset".Translate());
+                MutateWithUndo(() =>
+                {
+                    workingSkin.baseAppearance ??= new BaseAppearanceConfig();
+                    var slot = workingSkin.baseAppearance.GetSlot(selectedBaseSlotType.Value);
+                    slot.offset = Vector3.zero;
+                    slot.offsetEast = Vector3.zero;
+                    slot.offsetNorth = Vector3.zero;
+                    slot.scale = Vector2.one;
+                    slot.rotation = 0f;
+                }, statusMessage: "CS_Studio_Msg_ParametersReset".Translate());
             }
         }
 
         private void OnAddLayer()
         {
-            CaptureUndoSnapshot();
             var newLayer = new PawnLayerConfig
             {
                 layerName = GetDefaultLayerLabel(workingSkin.layers.Count),
                 anchorTag = "Head"
             };
-            workingSkin.layers.Add(newLayer);
-            selectedLayerIndex = workingSkin.layers.Count - 1;
-            selectedLayerIndices.Clear();
-            selectedLayerIndices.Add(selectedLayerIndex);
-            selectedNodePath = "";
-            selectedBaseSlotType = null;
-            currentTab = EditorTab.Layers;
-            isDirty = true;
-            RefreshPreview();
+            MutateWithUndo(() =>
+            {
+                workingSkin.layers.Add(newLayer);
+                selectedLayerIndex = workingSkin.layers.Count - 1;
+                selectedLayerIndices.Clear();
+                selectedLayerIndices.Add(selectedLayerIndex);
+                selectedNodePath = "";
+                selectedBaseSlotType = null;
+                currentTab = EditorTab.Layers;
+            });
         }
 
         private void OnRemoveLayer()
@@ -356,15 +354,15 @@ namespace CharacterStudio.UI
                 return false;
             }
 
-            CaptureUndoSnapshot();
-            var layer = workingSkin.layers[selectedLayerIndex];
-            workingSkin.layers.RemoveAt(selectedLayerIndex);
-            workingSkin.layers.Insert(selectedLayerIndex - 1, layer);
-            selectedLayerIndex--;
-            selectedLayerIndices.Clear();
-            selectedLayerIndices.Add(selectedLayerIndex);
-            isDirty = true;
-            RefreshPreview();
+            MutateWithUndo(() =>
+            {
+                var layer = workingSkin.layers[selectedLayerIndex];
+                workingSkin.layers.RemoveAt(selectedLayerIndex);
+                workingSkin.layers.Insert(selectedLayerIndex - 1, layer);
+                selectedLayerIndex--;
+                selectedLayerIndices.Clear();
+                selectedLayerIndices.Add(selectedLayerIndex);
+            });
             return true;
         }
 
@@ -375,15 +373,15 @@ namespace CharacterStudio.UI
                 return false;
             }
 
-            CaptureUndoSnapshot();
-            var layer = workingSkin.layers[selectedLayerIndex];
-            workingSkin.layers.RemoveAt(selectedLayerIndex);
-            workingSkin.layers.Insert(selectedLayerIndex + 1, layer);
-            selectedLayerIndex++;
-            selectedLayerIndices.Clear();
-            selectedLayerIndices.Add(selectedLayerIndex);
-            isDirty = true;
-            RefreshPreview();
+            MutateWithUndo(() =>
+            {
+                var layer = workingSkin.layers[selectedLayerIndex];
+                workingSkin.layers.RemoveAt(selectedLayerIndex);
+                workingSkin.layers.Insert(selectedLayerIndex + 1, layer);
+                selectedLayerIndex++;
+                selectedLayerIndices.Clear();
+                selectedLayerIndices.Add(selectedLayerIndex);
+            });
             return true;
         }
 
@@ -414,15 +412,15 @@ namespace CharacterStudio.UI
 
             options.Add(new FloatMenuOption("CS_Studio_Panel_Duplicate".Translate(), () =>
             {
-                CaptureUndoSnapshot();
-                var layer = workingSkin.layers[selectedLayerIndex].Clone();
-                layer.layerName += " (Copy)";
-                workingSkin.layers.Insert(selectedLayerIndex + 1, layer);
-                selectedLayerIndex++;
-                selectedLayerIndices.Clear();
-                selectedLayerIndices.Add(selectedLayerIndex);
-                isDirty = true;
-                RefreshPreview();
+                MutateWithUndo(() =>
+                {
+                    var layer = workingSkin.layers[selectedLayerIndex].Clone();
+                    layer.layerName += " (Copy)";
+                    workingSkin.layers.Insert(selectedLayerIndex + 1, layer);
+                    selectedLayerIndex++;
+                    selectedLayerIndices.Clear();
+                    selectedLayerIndices.Add(selectedLayerIndex);
+                });
             }));
 
             if (options.Any())
@@ -435,11 +433,12 @@ namespace CharacterStudio.UI
         {
             Find.WindowStack.Add(new Dialog_FileBrowser(layer.texPath, path =>
             {
-                layer.texPath = path;
-                TrySyncEditableFaceLayerTextureToFaceConfig(layer);
-                isDirty = true;
-                RefreshPreview();
-                RefreshRenderTree();
+                MutateWithUndo(() =>
+                {
+                    layer.texPath = path;
+                    TrySyncEditableFaceLayerTextureToFaceConfig(layer);
+                    RebuildEditorBuffersFromWorkingState();
+                }, refreshPreview: true, refreshRenderTree: true);
             }));
         }
 
@@ -459,15 +458,15 @@ namespace CharacterStudio.UI
                 {
                     options.Add(new FloatMenuOption(tag, () =>
                     {
-                        if (workingSkin.hiddenTags == null)
+                        MutateWithUndo(() =>
                         {
-                            workingSkin.hiddenTags = new List<string>();
-                        }
-                        workingSkin.hiddenTags.Add(tag);
-                        isDirty = true;
-                        RefreshPreview();
-                        RefreshRenderTree();
-                        ShowStatus("CS_Studio_Msg_AddedHiddenTag".Translate(tag));
+                            if (workingSkin.hiddenTags == null)
+                            {
+                                workingSkin.hiddenTags = new List<string>();
+                            }
+
+                            workingSkin.hiddenTags.Add(tag);
+                        }, refreshPreview: true, refreshRenderTree: true, statusMessage: "CS_Studio_Msg_AddedHiddenTag".Translate(tag));
                     }));
                 }
             }
@@ -515,15 +514,15 @@ namespace CharacterStudio.UI
                     var tagName = snapshot.tagDefName;
                     options.Add(new FloatMenuOption($"{tagName} ({snapshot.workerClass})", () =>
                     {
-                        if (workingSkin.hiddenTags == null)
+                        MutateWithUndo(() =>
                         {
-                            workingSkin.hiddenTags = new List<string>();
-                        }
-                        workingSkin.hiddenTags.Add(tagName);
-                        isDirty = true;
-                        RefreshPreview();
-                        RefreshRenderTree();
-                        ShowStatus("CS_Studio_Msg_TagAdded".Translate(tagName));
+                            if (workingSkin.hiddenTags == null)
+                            {
+                                workingSkin.hiddenTags = new List<string>();
+                            }
+
+                            workingSkin.hiddenTags.Add(tagName);
+                        }, refreshPreview: true, refreshRenderTree: true, statusMessage: "CS_Studio_Msg_TagAdded".Translate(tagName));
                     }));
                 }
             }

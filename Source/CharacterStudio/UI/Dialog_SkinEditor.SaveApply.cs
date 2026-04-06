@@ -244,7 +244,7 @@ namespace CharacterStudio.UI
                     Log.Error($"[CharacterStudio] 生成新角色失败: {ex}");
                     ShowStatus("CS_Studio_Err_ApplyFailedCheckLog".Translate());
                 }
-            }));
+            }, isBusy => suspendHeavyPreviewWork = isBusy));
         }
 
         private ThingDef ResolveSpawnRaceForCurrentDesign(PawnSkinDef runtimeSkin)

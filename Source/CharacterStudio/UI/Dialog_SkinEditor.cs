@@ -52,6 +52,7 @@ namespace CharacterStudio.UI
             set => session.SelectedLayerIndices = value ?? new HashSet<int>();
         }
         private readonly EditorHistory editorHistory = new EditorHistory(100);
+        private int undoMutationDepth = 0;
         private Vector2 layerScrollPos;
         private Vector2 propsScrollPos;
         private Vector2 faceScrollPos;
@@ -77,6 +78,7 @@ namespace CharacterStudio.UI
         private EditorTab currentTab = EditorTab.BaseAppearance;
         private string statusMessage = "";
         private float statusMessageTime = 0f;
+        private bool suspendHeavyPreviewWork = false;
         private CharacterSpawnSettings directSpawnSettings = new CharacterSpawnSettings
         {
             sourceMapForConditionCheck = null,
@@ -170,6 +172,8 @@ namespace CharacterStudio.UI
 
         private bool previewFaceAnimationPlaying = false;
         private bool previewFaceAnimationLoop = false;
+        private float previewFaceAnimationLastRealtime = -1f;
+        private float previewFaceAnimationElapsedTicks = 0f;
 
         private bool previewEquipmentAnimationPlaying = false;
         private bool previewEquipmentAnimationLoop = false;
@@ -450,36 +454,36 @@ namespace CharacterStudio.UI
 
         private void ToggleNodeVisibilityInSkin(RenderNodeSnapshot node)
         {
-            bool hidden;
-            if (workingSkin.hiddenPaths.Contains(node.uniqueNodePath))
+            MutateWithUndo(() =>
             {
-                workingSkin.hiddenPaths.Remove(node.uniqueNodePath);
-#pragma warning disable CS0618
-                if (!string.IsNullOrEmpty(node.tagDefName))
+                bool hidden;
+                if (workingSkin.hiddenPaths.Contains(node.uniqueNodePath))
                 {
-                    workingSkin.hiddenTags.Remove(node.tagDefName);
-                }
-#pragma warning restore CS0618
-                hidden = false;
-                ShowStatus("CS_Studio_Msg_Shown".Translate(node.uniqueNodePath));
-            }
-            else
-            {
-                workingSkin.hiddenPaths.Add(node.uniqueNodePath);
+                    workingSkin.hiddenPaths.Remove(node.uniqueNodePath);
 #pragma warning disable CS0618
-                if (!string.IsNullOrEmpty(node.tagDefName) && !workingSkin.hiddenTags.Contains(node.tagDefName))
-                {
-                    workingSkin.hiddenTags.Add(node.tagDefName);
-                }
+                    if (!string.IsNullOrEmpty(node.tagDefName))
+                    {
+                        workingSkin.hiddenTags.Remove(node.tagDefName);
+                    }
 #pragma warning restore CS0618
-                hidden = true;
-                ShowStatus("CS_Studio_Msg_Hidden".Translate(node.uniqueNodePath));
-            }
+                    hidden = false;
+                    ShowStatus("CS_Studio_Msg_Shown".Translate(node.uniqueNodePath));
+                }
+                else
+                {
+                    workingSkin.hiddenPaths.Add(node.uniqueNodePath);
+#pragma warning disable CS0618
+                    if (!string.IsNullOrEmpty(node.tagDefName) && !workingSkin.hiddenTags.Contains(node.tagDefName))
+                    {
+                        workingSkin.hiddenTags.Add(node.tagDefName);
+                    }
+#pragma warning restore CS0618
+                    hidden = true;
+                    ShowStatus("CS_Studio_Msg_Hidden".Translate(node.uniqueNodePath));
+                }
 
-            UpsertHideNodeRule(node, hidden);
-            isDirty = true;
-            RefreshPreview();
-            RefreshRenderTree();
+                UpsertHideNodeRule(node, hidden);
+            }, refreshPreview: true, refreshRenderTree: true);
         }
 
         private void ToggleNodeVisibilityInPatch(RenderNodeSnapshot node)
@@ -494,23 +498,24 @@ namespace CharacterStudio.UI
                 EnterLayerModificationWorkflow(targetPawn);
             }
 
-            workingRenderFixPatch ??= new CharacterRenderFixPatch();
-            workingRenderFixPatch.hideNodePaths ??= new List<string>();
-
-            if (workingRenderFixPatch.hideNodePaths.Contains(node.uniqueNodePath))
+            MutateWithUndo(() =>
             {
-                workingRenderFixPatch.hideNodePaths.Remove(node.uniqueNodePath);
-                ShowStatus($"已从图层修改补丁中显示节点：{node.uniqueNodePath}");
-            }
-            else
-            {
-                workingRenderFixPatch.hideNodePaths.Add(node.uniqueNodePath);
-                ShowStatus($"已加入图层修改补丁隐藏节点：{node.uniqueNodePath}");
-            }
+                workingRenderFixPatch ??= new CharacterRenderFixPatch();
+                workingRenderFixPatch.hideNodePaths ??= new List<string>();
 
-            workingRenderFixPatch.Normalize();
-            RefreshPreview();
-            RefreshRenderTree();
+                if (workingRenderFixPatch.hideNodePaths.Contains(node.uniqueNodePath))
+                {
+                    workingRenderFixPatch.hideNodePaths.Remove(node.uniqueNodePath);
+                    ShowStatus($"已从图层修改补丁中显示节点：{node.uniqueNodePath}");
+                }
+                else
+                {
+                    workingRenderFixPatch.hideNodePaths.Add(node.uniqueNodePath);
+                    ShowStatus($"已加入图层修改补丁隐藏节点：{node.uniqueNodePath}");
+                }
+
+                workingRenderFixPatch.Normalize();
+            }, refreshPreview: true, refreshRenderTree: true);
         }
 
         private float GetNodePatchDrawOrderOffset(string nodePath)

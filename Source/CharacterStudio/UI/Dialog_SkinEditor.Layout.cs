@@ -16,10 +16,15 @@ namespace CharacterStudio.UI
         {
             try
             {
+                bool skipHeavyPreviewWork = suspendHeavyPreviewWork;
+
                 // 更新热加载
-                mannequin?.Update();
-                UpdatePreviewAutoPlay();
-                UpdatePreviewFaceAnimation();
+                if (!skipHeavyPreviewWork)
+                {
+                    mannequin?.Update();
+                    UpdatePreviewAutoPlay();
+                    UpdatePreviewFaceAnimation();
+                }
 
                 // 在任何 IMGUI 控件绘制前读取 F 键状态，避免 TextField 焦点拦截
                 isHoldingReferenceGhost = Input.GetKey(ReferenceGhostHotkey);
@@ -82,7 +87,17 @@ namespace CharacterStudio.UI
                 // 绘制中间预览面板
                 float centerWidth = inRect.width - LeftPanelWidth - RightPanelWidth - Margin * 2;
                 Rect centerRect = new Rect(LeftPanelWidth + Margin, contentY, centerWidth, contentHeight);
-                DrawPreviewPanel(centerRect);
+                if (!skipHeavyPreviewWork)
+                {
+                    DrawPreviewPanel(centerRect);
+                }
+                else
+                {
+                    Widgets.DrawBoxSolid(centerRect, UIHelper.PanelFillColor);
+                    GUI.color = UIHelper.BorderColor;
+                    Widgets.DrawBox(centerRect, 1);
+                    GUI.color = Color.white;
+                }
 
                 // 绘制右侧属性面板
                 Rect rightRect = new Rect(inRect.width - RightPanelWidth, contentY, RightPanelWidth, contentHeight);
