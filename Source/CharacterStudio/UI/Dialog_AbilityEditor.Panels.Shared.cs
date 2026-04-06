@@ -423,7 +423,6 @@ namespace CharacterStudio.UI
                 AbilityRuntimeComponentType.HitCooldownRefund => 112f,
                 AbilityRuntimeComponentType.ProjectileSplit => 138f,
                 AbilityRuntimeComponentType.FlightState => 112f,
-                AbilityRuntimeComponentType.VanillaPawnFlyer => 320f,
                 AbilityRuntimeComponentType.FlightOnlyFollowup => 216f,
                 AbilityRuntimeComponentType.FlightLandingBurst => 242f,
                 AbilityRuntimeComponentType.TimeStop => 86f,
@@ -1310,117 +1309,6 @@ namespace CharacterStudio.UI
                     if (comp.suppressCombatActionsDuringFlightState != suppressCombat)
                     {
                         comp.suppressCombatActionsDuringFlightState = suppressCombat;
-                        NotifyAbilityPreviewDirty(true);
-                    }
-                }
-                else if (comp.type == AbilityRuntimeComponentType.VanillaPawnFlyer)
-                {
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_VanillaFlyerThingDef".Translate());
-                    string flyerThingDefName = comp.flyerThingDefName ?? string.Empty;
-                    string flyerThingDefBefore = flyerThingDefName;
-                    flyerThingDefName = Widgets.TextField(new Rect(inner.x + labelW, rowY, valueW, 24f), flyerThingDefName);
-                    if (!string.Equals(flyerThingDefBefore, flyerThingDefName, StringComparison.Ordinal))
-                    {
-                        comp.flyerThingDefName = flyerThingDefName;
-                        NotifyAbilityPreviewDirty(true);
-                    }
-                    rowY += 26f;
-
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_FlyerWarmupTicks".Translate());
-                    string flyerWarmup = comp.flyerWarmupTicks.ToString();
-                    int flyerWarmupBefore = comp.flyerWarmupTicks;
-                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.flyerWarmupTicks, ref flyerWarmup, 0, 99999);
-                    if (comp.flyerWarmupTicks != flyerWarmupBefore)
-                    {
-                        NotifyAbilityPreviewDirty(true);
-                    }
-                    rowY += 26f;
-
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_FlightDurationTicks".Translate());
-                    string vanillaFlightDuration = comp.flightDurationTicks.ToString();
-                    int vanillaFlightDurationBefore = comp.flightDurationTicks;
-                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.flightDurationTicks, ref vanillaFlightDuration, 1, 99999);
-                    if (comp.flightDurationTicks != vanillaFlightDurationBefore)
-                    {
-                        NotifyAbilityPreviewDirty(true);
-                    }
-                    rowY += 26f;
-
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_LaunchFromCasterPosition".Translate());
-                    bool launchFromCaster = comp.launchFromCasterPosition;
-                    Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref launchFromCaster, 24f, false);
-                    if (comp.launchFromCasterPosition != launchFromCaster)
-                    {
-                        comp.launchFromCasterPosition = launchFromCaster;
-                        NotifyAbilityPreviewDirty(true);
-                    }
-                    rowY += 26f;
-
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_RequireValidTargetCell".Translate());
-                    bool requireValidTargetCell = comp.requireValidTargetCell;
-                    Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref requireValidTargetCell, 24f, false);
-                    if (comp.requireValidTargetCell != requireValidTargetCell)
-                    {
-                        comp.requireValidTargetCell = requireValidTargetCell;
-                        NotifyAbilityPreviewDirty(true);
-                    }
-                    rowY += 26f;
-
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_StoreTargetForFollowup".Translate());
-                    bool storeTargetForFollowup = comp.storeTargetForFollowup;
-                    Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref storeTargetForFollowup, 24f, false);
-                    if (comp.storeTargetForFollowup != storeTargetForFollowup)
-                    {
-                        comp.storeTargetForFollowup = storeTargetForFollowup;
-                        NotifyAbilityPreviewDirty(true);
-                    }
-                    rowY += 26f;
-
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_EnableFlightOnlyWindow".Translate());
-                    bool enableFlightOnlyWindow = comp.enableFlightOnlyWindow;
-                    Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref enableFlightOnlyWindow, 24f, false);
-                    if (comp.enableFlightOnlyWindow != enableFlightOnlyWindow)
-                    {
-                        comp.enableFlightOnlyWindow = enableFlightOnlyWindow;
-                        NotifyAbilityPreviewDirty(true);
-                    }
-                    rowY += 26f;
-
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_FlightOnlyWindowTicks".Translate());
-                    string flightWindowTicks = comp.flightOnlyWindowTicks.ToString();
-                    int flightWindowTicksBefore = comp.flightOnlyWindowTicks;
-                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.flightOnlyWindowTicks, ref flightWindowTicks, 1, 99999);
-                    if (comp.flightOnlyWindowTicks != flightWindowTicksBefore)
-                    {
-                        NotifyAbilityPreviewDirty(true);
-                    }
-                    rowY += 26f;
-
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_FlightOnlyAbility".Translate());
-                    string flightOnlyAbilityLabel = string.IsNullOrWhiteSpace(comp.flightOnlyAbilityDefName)
-                        ? "CS_Studio_None".Translate()
-                        : comp.flightOnlyAbilityDefName;
-                    if (DrawSelectionFieldButton(new Rect(inner.x + labelW, rowY, valueW, 24f), flightOnlyAbilityLabel, () => ShowAbilityDefSelectorForRuntime(comp)))
-                    {
-                    }
-                    rowY += 26f;
-
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_HideCasterDuringTakeoff".Translate());
-                    bool hideCasterDuringTakeoff = comp.hideCasterDuringTakeoff;
-                    Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref hideCasterDuringTakeoff, 24f, false);
-                    if (comp.hideCasterDuringTakeoff != hideCasterDuringTakeoff)
-                    {
-                        comp.hideCasterDuringTakeoff = hideCasterDuringTakeoff;
-                        NotifyAbilityPreviewDirty(true);
-                    }
-                    rowY += 26f;
-
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_AutoExpireFlightMarkerOnLanding".Translate());
-                    bool autoExpireFlightMarker = comp.autoExpireFlightMarkerOnLanding;
-                    Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref autoExpireFlightMarker, 24f, false);
-                    if (comp.autoExpireFlightMarkerOnLanding != autoExpireFlightMarker)
-                    {
-                        comp.autoExpireFlightMarkerOnLanding = autoExpireFlightMarker;
                         NotifyAbilityPreviewDirty(true);
                     }
                 }

@@ -901,7 +901,10 @@ namespace CharacterStudio.UI
                         component.flightHeightFactor.ToString("0.##"),
                         (component.suppressCombatActionsDuringFlightState ? "CS_Studio_UI_On" : "CS_Studio_UI_Off").Translate());
                 case AbilityRuntimeComponentType.VanillaPawnFlyer:
-                    return $"{GetRuntimeComponentTypeLabel(component.type)} · {component.flyerThingDefName} · {component.flightOnlyWindowTicks}t";
+                    return "CS_Studio_Ability_PreviewRuntimeFlightState".Translate(
+                        component.flightDurationTicks.ToString(),
+                        component.flightHeightFactor.ToString("0.##"),
+                        (component.suppressCombatActionsDuringFlightState ? "CS_Studio_UI_On" : "CS_Studio_UI_Off").Translate());
                 case AbilityRuntimeComponentType.FlightOnlyFollowup:
                     string followupModeLabel = component.onlyUseDuringFlightWindow
                         ? "CS_Studio_Ability_PreviewRuntimeFlightOnlyStateWindow".Translate()
