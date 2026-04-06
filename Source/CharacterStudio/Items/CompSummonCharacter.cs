@@ -94,15 +94,16 @@ namespace CharacterStudio.Items
                 ? $"Skin_{safeName}"
                 : Props.skinDefName;
             PawnSkinDef? skin = DefDatabase<PawnSkinDef>.GetNamedSilentFail(skinDefName) ?? PawnSkinDefRegistry.TryGet(skinDefName);
-            if (skin != null)
-            {
-                PawnSkinRuntimeUtility.ApplySkinToPawn(pawn, skin.Clone(), fromDefaultRaceBinding: false, previewMode: false, applicationSource: "RoleCardSummon");
-            }
 
             CharacterDefinition? characterDefinition = TryLoadExportedCharacterDefinition(safeName, Props.characterDefFileName, skin);
             if (characterDefinition != null)
             {
                 CharacterDefinitionApplier.ApplyToPawn(pawn, characterDefinition);
+            }
+
+            if (skin != null)
+            {
+                PawnSkinRuntimeUtility.ApplySkinToPawn(pawn, skin.Clone(), fromDefaultRaceBinding: false, previewMode: false, applicationSource: "RoleCardSummon");
             }
         }
 
