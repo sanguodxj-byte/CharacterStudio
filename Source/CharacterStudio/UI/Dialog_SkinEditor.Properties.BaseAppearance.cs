@@ -24,6 +24,11 @@ namespace CharacterStudio.UI
             float y = 0f;
             float width = viewRect.width;
 
+            void MutateBaseSlotWithUndo(Action mutation, bool refreshRenderTree = false)
+            {
+                MutateWithUndo(mutation, refreshPreview: true, refreshRenderTree: refreshRenderTree);
+            }
+
             bool DrawPathFieldWithBrowser(ref float rowY, string label, ref string value, Action browseAction)
             {
                 Rect rowRect = new Rect(0f, rowY, width, UIHelper.RowHeight);
@@ -56,16 +61,6 @@ namespace CharacterStudio.UI
 
                 rowY += UIHelper.RowHeight;
                 return changed;
-            }
-
-            void MarkBaseSlotDirty(bool refreshRenderTree = true)
-            {
-                isDirty = true;
-                RefreshPreview();
-                if (refreshRenderTree)
-                {
-                    RefreshRenderTree();
-                }
             }
 
             RenderNodeSnapshot? FindSuggestedBaseSlotSnapshot(BaseAppearanceSlotType targetSlotType)
@@ -121,9 +116,9 @@ namespace CharacterStudio.UI
                 if (snapshot != null)
                 {
                     Vector2 snapshotScale = Vector2.one;
-                    if (snapshot.runtimeDataValid)
-                    {
-                        snapshotScale = new Vector2(snapshot.runtimeScale.x, snapshot.runtimeScale.z);
+                if (snapshot.runtimeDataValid)
+                {
+                    snapshotScale = new Vector2(snapshot.runtimeScale.x, snapshot.runtimeScale.z);
                         if (Mathf.Abs(snapshotScale.x - 1f) < 0.05f && Mathf.Abs(snapshotScale.y - 1f) < 0.05f &&
                             snapshot.graphicDrawSize != Vector2.zero && snapshot.graphicDrawSize != Vector2.one &&
                             snapshot.graphicDrawSize.x < 5f && snapshot.graphicDrawSize.y < 5f)
@@ -131,22 +126,27 @@ namespace CharacterStudio.UI
                             snapshotScale = snapshot.graphicDrawSize;
                         }
 
-                        if (targetSlot.offset != snapshot.runtimeOffset)
+                        // BaseAppearance 槽位（Body / Head / Hair / Beard）最终会被转成 synthetic layer。
+                        // 这些结构性节点原本的侧向/北向位移已经体现在原版 Worker 的运行时逻辑里，
+                        // 若在导入纹理时再把 runtimeOffset/runtimeOffsetEast/runtimeOffsetNorth 抄进槽位，
+                        // synthetic layer 渲染时会再次套用，导致 East/West 出现整头重复偏移。
+                        // 因此这里主动清零导入时的自动位移归一化，只保留缩放归一化。
+                        if (targetSlot.offset != Vector3.zero)
                         {
-                            targetSlot.offset = snapshot.runtimeOffset;
+                            targetSlot.offset = Vector3.zero;
                             changed = true;
                         }
-                        if (targetSlot.offsetEast != snapshot.runtimeOffsetEast)
+                        if (targetSlot.offsetEast != Vector3.zero)
                         {
-                            targetSlot.offsetEast = snapshot.runtimeOffsetEast;
+                            targetSlot.offsetEast = Vector3.zero;
                             changed = true;
                         }
-                        if (targetSlot.offsetNorth != snapshot.runtimeOffsetNorth)
+                        if (targetSlot.offsetNorth != Vector3.zero)
                         {
-                            targetSlot.offsetNorth = snapshot.runtimeOffsetNorth;
+                            targetSlot.offsetNorth = Vector3.zero;
                             changed = true;
                         }
-                    }
+                }
 
                     if (snapshotScale.x > 0.001f && snapshotScale.y > 0.001f && targetSlot.scale != snapshotScale)
                     {
@@ -182,57 +182,44 @@ namespace CharacterStudio.UI
                 UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_BaseSlot_Enable".Translate(), ref enabled);
                 if (enabled != slot.enabled)
                 {
-                    CaptureUndoSnapshot();
-                    slot.enabled = enabled;
-                    isDirty = true;
-                    RefreshPreview();
-                    RefreshRenderTree();
+                    MutateWithUndo(() => slot.enabled = enabled, refreshPreview: true, refreshRenderTree: true);
                 }
 
                 string texPath = slot.texPath ?? string.Empty;
                 if (DrawPathFieldWithBrowser(ref y, "CS_Studio_Prop_TexturePath".Translate(), ref texPath, () =>
                     Find.WindowStack.Add(new Dialog_FileBrowser(slot.texPath ?? string.Empty, path =>
                     {
-                        CaptureUndoSnapshot();
-                        slot.texPath = path ?? string.Empty;
-                        slot.enabled = !string.IsNullOrWhiteSpace(slot.texPath);
-                        TryAutoNormalizeBaseSlotTexture(slot, slotType, slot.texPath);
-                        MarkBaseSlotDirty();
+                        MutateWithUndo(() =>
+                        {
+                            slot.texPath = path ?? string.Empty;
+                            slot.enabled = !string.IsNullOrWhiteSpace(slot.texPath);
+                            TryAutoNormalizeBaseSlotTexture(slot, slotType, slot.texPath);
+                        }, refreshPreview: true, refreshRenderTree: true);
                     }))))
                 {
-                    CaptureUndoSnapshot();
-                    slot.texPath = texPath;
-                    slot.enabled = !string.IsNullOrWhiteSpace(texPath);
-                    TryAutoNormalizeBaseSlotTexture(slot, slotType, slot.texPath);
-                    MarkBaseSlotDirty();
+                    MutateWithUndo(() =>
+                    {
+                        slot.texPath = texPath;
+                        slot.enabled = !string.IsNullOrWhiteSpace(texPath);
+                        TryAutoNormalizeBaseSlotTexture(slot, slotType, slot.texPath);
+                    }, refreshPreview: true, refreshRenderTree: true);
                 }
 
                 string maskPath = slot.maskTexPath ?? string.Empty;
                 if (DrawPathFieldWithBrowser(ref y, "CS_Studio_BaseSlot_MaskTexture".Translate(), ref maskPath, () =>
                     Find.WindowStack.Add(new Dialog_FileBrowser(slot.maskTexPath ?? string.Empty, path =>
                     {
-                        CaptureUndoSnapshot();
-                        slot.maskTexPath = path ?? string.Empty;
-                        isDirty = true;
-                        RefreshPreview();
-                        RefreshRenderTree();
+                        MutateWithUndo(() => slot.maskTexPath = path ?? string.Empty, refreshPreview: true, refreshRenderTree: true);
                     }))))
                 {
-                    CaptureUndoSnapshot();
-                    slot.maskTexPath = maskPath;
-                    isDirty = true;
-                    RefreshPreview();
-                    RefreshRenderTree();
+                    MutateWithUndo(() => slot.maskTexPath = maskPath, refreshPreview: true, refreshRenderTree: true);
                 }
 
                 string shaderDefName = slot.shaderDefName ?? string.Empty;
                 UIHelper.DrawPropertyField(ref y, width, "CS_Studio_BaseSlot_Shader".Translate(), ref shaderDefName);
                 if (shaderDefName != (slot.shaderDefName ?? string.Empty))
                 {
-                    CaptureUndoSnapshot();
-                    slot.shaderDefName = shaderDefName;
-                    isDirty = true;
-                    RefreshPreview();
+                    MutateWithUndo(() => slot.shaderDefName = shaderDefName, refreshPreview: true, refreshRenderTree: false);
                 }
 
                 string anchorTag = BaseAppearanceUtility.GetAnchorTag(slotType);
@@ -247,30 +234,33 @@ namespace CharacterStudio.UI
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_OffsetX".Translate(), ref ox, -1f, 1f, "F3");
                 if (Math.Abs(ox - editableOffset.x) > 0.0001f)
                 {
-                    editableOffset.x = ox;
-                    SetEditableOffsetForPreview(slot, editableOffset);
-                    isDirty = true;
-                    RefreshPreview();
+                    MutateBaseSlotWithUndo(() =>
+                    {
+                        editableOffset.x = ox;
+                        SetEditableOffsetForPreview(slot, editableOffset);
+                    });
                 }
 
                 float oy = editableOffset.y;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_OffsetYHeight".Translate(), ref oy, -1f, 1f, "F3");
                 if (Math.Abs(oy - editableOffset.y) > 0.0001f)
                 {
-                    editableOffset.y = oy;
-                    SetEditableOffsetForPreview(slot, editableOffset);
-                    isDirty = true;
-                    RefreshPreview();
+                    MutateBaseSlotWithUndo(() =>
+                    {
+                        editableOffset.y = oy;
+                        SetEditableOffsetForPreview(slot, editableOffset);
+                    });
                 }
 
                 float oz = editableOffset.z;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_OffsetZ".Translate(), ref oz, -1f, 1f, "F3");
                 if (Math.Abs(oz - editableOffset.z) > 0.0001f)
                 {
-                    editableOffset.z = oz;
-                    SetEditableOffsetForPreview(slot, editableOffset);
-                    isDirty = true;
-                    RefreshPreview();
+                    MutateBaseSlotWithUndo(() =>
+                    {
+                        editableOffset.z = oz;
+                        SetEditableOffsetForPreview(slot, editableOffset);
+                    });
                 }
             }
 
@@ -280,27 +270,21 @@ namespace CharacterStudio.UI
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_OffsetX".Translate(), ref ex, -1f, 1f, "F3");
                 if (Math.Abs(ex - slot.offsetEast.x) > 0.0001f)
                 {
-                    slot.offsetEast.x = ex;
-                    isDirty = true;
-                    RefreshPreview();
+                    MutateBaseSlotWithUndo(() => slot.offsetEast.x = ex);
                 }
 
                 float ey = slot.offsetEast.y;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_OffsetY".Translate(), ref ey, -1f, 1f, "F3");
                 if (Math.Abs(ey - slot.offsetEast.y) > 0.0001f)
                 {
-                    slot.offsetEast.y = ey;
-                    isDirty = true;
-                    RefreshPreview();
+                    MutateBaseSlotWithUndo(() => slot.offsetEast.y = ey);
                 }
 
                 float ez = slot.offsetEast.z;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_OffsetZ".Translate(), ref ez, -1f, 1f, "F3");
                 if (Math.Abs(ez - slot.offsetEast.z) > 0.0001f)
                 {
-                    slot.offsetEast.z = ez;
-                    isDirty = true;
-                    RefreshPreview();
+                    MutateBaseSlotWithUndo(() => slot.offsetEast.z = ez);
                 }
             }
 
@@ -310,27 +294,21 @@ namespace CharacterStudio.UI
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_OffsetX".Translate(), ref nx, -1f, 1f, "F3");
                 if (Math.Abs(nx - slot.offsetNorth.x) > 0.0001f)
                 {
-                    slot.offsetNorth.x = nx;
-                    isDirty = true;
-                    RefreshPreview();
+                    MutateBaseSlotWithUndo(() => slot.offsetNorth.x = nx);
                 }
 
                 float ny = slot.offsetNorth.y;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_OffsetY".Translate(), ref ny, -1f, 1f, "F3");
                 if (Math.Abs(ny - slot.offsetNorth.y) > 0.0001f)
                 {
-                    slot.offsetNorth.y = ny;
-                    isDirty = true;
-                    RefreshPreview();
+                    MutateBaseSlotWithUndo(() => slot.offsetNorth.y = ny);
                 }
 
                 float nz = slot.offsetNorth.z;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_OffsetZ".Translate(), ref nz, -1f, 1f, "F3");
                 if (Math.Abs(nz - slot.offsetNorth.z) > 0.0001f)
                 {
-                    slot.offsetNorth.z = nz;
-                    isDirty = true;
-                    RefreshPreview();
+                    MutateBaseSlotWithUndo(() => slot.offsetNorth.z = nz);
                 }
             }
 
@@ -342,27 +320,21 @@ namespace CharacterStudio.UI
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Transform_GlobalScaleX".Translate(), ref scaleX, 0.1f, 3f, "F3");
                 if (Math.Abs(scaleX - slot.scale.x) > 0.0001f)
                 {
-                    slot.scale.x = scaleX;
-                    isDirty = true;
-                    RefreshPreview();
+                    MutateBaseSlotWithUndo(() => slot.scale.x = scaleX);
                 }
 
                 float scaleY = slot.scale.y;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Transform_GlobalScaleY".Translate(), ref scaleY, 0.1f, 3f, "F3");
                 if (Math.Abs(scaleY - slot.scale.y) > 0.0001f)
                 {
-                    slot.scale.y = scaleY;
-                    isDirty = true;
-                    RefreshPreview();
+                    MutateBaseSlotWithUndo(() => slot.scale.y = scaleY);
                 }
 
                 float baseRotation = slot.rotation;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Transform_BaseRotation".Translate(), ref baseRotation, -180f, 180f, "F0");
                 if (Math.Abs(baseRotation - slot.rotation) > 0.0001f)
                 {
-                    slot.rotation = baseRotation;
-                    isDirty = true;
-                    RefreshPreview();
+                    MutateBaseSlotWithUndo(() => slot.rotation = baseRotation);
                 }
 
                 float currentScaleX = GetEditableSlotScaleForPreview(slot).x;
@@ -378,9 +350,7 @@ namespace CharacterStudio.UI
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_BaseSlot_DrawOrderOffset".Translate(), ref drawOrderOffset, -50f, 50f, "F0");
                 if (Math.Abs(drawOrderOffset - slot.drawOrderOffset) > 0.0001f)
                 {
-                    slot.drawOrderOffset = drawOrderOffset;
-                    isDirty = true;
-                    RefreshPreview();
+                    MutateBaseSlotWithUndo(() => slot.drawOrderOffset = drawOrderOffset);
                 }
 
                 float slotBaseLayer = BaseAppearanceUtility.GetBaseDrawOrder(slotType);
@@ -391,9 +361,7 @@ namespace CharacterStudio.UI
                 UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Prop_FlipHorizontal".Translate(), ref flip);
                 if (flip != slot.flipHorizontal)
                 {
-                    slot.flipHorizontal = flip;
-                    isDirty = true;
-                    RefreshPreview();
+                    MutateBaseSlotWithUndo(() => slot.flipHorizontal = flip);
                 }
             }
 
@@ -406,9 +374,7 @@ namespace CharacterStudio.UI
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Transform_RotationOffset".Translate(), ref eastRotationOffset, -180f, 180f, "F0");
                 if (Math.Abs(eastRotationOffset - slot.rotationEastOffset) > 0.0001f)
                 {
-                    slot.rotationEastOffset = eastRotationOffset;
-                    isDirty = true;
-                    RefreshPreview();
+                    MutateBaseSlotWithUndo(() => slot.rotationEastOffset = eastRotationOffset);
                 }
             }
 
@@ -419,18 +385,14 @@ namespace CharacterStudio.UI
                     option => option.ToString(),
                     val =>
                     {
-                        slot.colorSource = val;
-                        isDirty = true;
-                        RefreshPreview();
+                        MutateBaseSlotWithUndo(() => slot.colorSource = val);
                     });
 
                 if (slot.colorSource == LayerColorSource.Fixed)
                 {
                     UIHelper.DrawPropertyColor(ref y, width, "CS_Studio_BaseSlot_PrimaryColor".Translate(), slot.customColor, col =>
                     {
-                        slot.customColor = col;
-                        isDirty = true;
-                        RefreshPreview();
+                        MutateBaseSlotWithUndo(() => slot.customColor = col);
                     });
                 }
 
@@ -439,18 +401,14 @@ namespace CharacterStudio.UI
                     option => option.ToString(),
                     val =>
                     {
-                        slot.colorTwoSource = val;
-                        isDirty = true;
-                        RefreshPreview();
+                        MutateBaseSlotWithUndo(() => slot.colorTwoSource = val);
                     });
 
                 if (slot.colorTwoSource == LayerColorSource.Fixed)
                 {
                     UIHelper.DrawPropertyColor(ref y, width, "CS_Studio_BaseSlot_SecondaryColor".Translate(), slot.customColorTwo, col =>
                     {
-                        slot.customColorTwo = col;
-                        isDirty = true;
-                        RefreshPreview();
+                        MutateBaseSlotWithUndo(() => slot.customColorTwo = col);
                     });
                 }
             }

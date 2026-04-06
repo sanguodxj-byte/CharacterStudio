@@ -112,11 +112,8 @@ namespace CharacterStudio.UI
             GUI.color = enabled ? Color.white : Color.gray;
             if (Widgets.ButtonText(toggleRect, enabled ? "◉" : "◯", false))
             {
-                CaptureUndoSnapshot();
-                slot.enabled = !slot.enabled;
-                isDirty = true;
-                RefreshPreview();
-                RefreshRenderTree();
+                bool newEnabled = !slot.enabled;
+                MutateWithUndo(() => slot.enabled = newEnabled, refreshPreview: true, refreshRenderTree: true);
             }
             GUI.color = Color.white;
 
