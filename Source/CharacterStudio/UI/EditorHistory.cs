@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CharacterStudio.Core;
 using CharacterStudio.Design;
 
 namespace CharacterStudio.UI
@@ -14,12 +15,30 @@ namespace CharacterStudio.UI
             public CharacterDesignDocument Document { get; }
             public int SelectedLayerIndex { get; }
             public HashSet<int> SelectedLayerIndices { get; }
+            public int SelectedEquipmentIndex { get; }
+            public string SelectedNodePath { get; }
+            public BaseAppearanceSlotType? SelectedBaseSlotType { get; }
+            public bool LayerModificationWorkflowActive { get; }
+            public CharacterRenderFixPatch? WorkingRenderFixPatch { get; }
 
-            public Snapshot(CharacterDesignDocument document, int selectedLayerIndex, HashSet<int> selectedLayerIndices)
+            public Snapshot(
+                CharacterDesignDocument document,
+                int selectedLayerIndex,
+                HashSet<int> selectedLayerIndices,
+                int selectedEquipmentIndex,
+                string selectedNodePath,
+                BaseAppearanceSlotType? selectedBaseSlotType,
+                bool layerModificationWorkflowActive,
+                CharacterRenderFixPatch? workingRenderFixPatch)
             {
                 Document = document.Clone();
                 SelectedLayerIndex = selectedLayerIndex;
                 SelectedLayerIndices = new HashSet<int>(selectedLayerIndices);
+                SelectedEquipmentIndex = selectedEquipmentIndex;
+                SelectedNodePath = selectedNodePath ?? string.Empty;
+                SelectedBaseSlotType = selectedBaseSlotType;
+                LayerModificationWorkflowActive = layerModificationWorkflowActive;
+                WorkingRenderFixPatch = workingRenderFixPatch?.Clone();
             }
         }
 
@@ -38,14 +57,39 @@ namespace CharacterStudio.UI
             redoStack.Clear();
         }
 
-        public void PushUndo(CharacterDesignDocument currentDocument, int selectedLayerIndex, HashSet<int> selectedLayerIndices)
+        public void PushUndo(
+            CharacterDesignDocument currentDocument,
+            int selectedLayerIndex,
+            HashSet<int> selectedLayerIndices,
+            int selectedEquipmentIndex,
+            string selectedNodePath,
+            BaseAppearanceSlotType? selectedBaseSlotType,
+            bool layerModificationWorkflowActive,
+            CharacterRenderFixPatch? workingRenderFixPatch)
         {
-            undoStack.Push(new Snapshot(currentDocument, selectedLayerIndex, selectedLayerIndices));
+            undoStack.Push(new Snapshot(
+                currentDocument,
+                selectedLayerIndex,
+                selectedLayerIndices,
+                selectedEquipmentIndex,
+                selectedNodePath,
+                selectedBaseSlotType,
+                layerModificationWorkflowActive,
+                workingRenderFixPatch));
             TrimUndoDepth();
             redoStack.Clear();
         }
 
-        public bool TryUndo(CharacterDesignDocument currentDocument, int selectedLayerIndex, HashSet<int> selectedLayerIndices, out Snapshot? snapshot)
+        public bool TryUndo(
+            CharacterDesignDocument currentDocument,
+            int selectedLayerIndex,
+            HashSet<int> selectedLayerIndices,
+            int selectedEquipmentIndex,
+            string selectedNodePath,
+            BaseAppearanceSlotType? selectedBaseSlotType,
+            bool layerModificationWorkflowActive,
+            CharacterRenderFixPatch? workingRenderFixPatch,
+            out Snapshot? snapshot)
         {
             if (undoStack.Count == 0)
             {
@@ -53,12 +97,29 @@ namespace CharacterStudio.UI
                 return false;
             }
 
-            redoStack.Push(new Snapshot(currentDocument, selectedLayerIndex, selectedLayerIndices));
+            redoStack.Push(new Snapshot(
+                currentDocument,
+                selectedLayerIndex,
+                selectedLayerIndices,
+                selectedEquipmentIndex,
+                selectedNodePath,
+                selectedBaseSlotType,
+                layerModificationWorkflowActive,
+                workingRenderFixPatch));
             snapshot = undoStack.Pop();
             return true;
         }
 
-        public bool TryRedo(CharacterDesignDocument currentDocument, int selectedLayerIndex, HashSet<int> selectedLayerIndices, out Snapshot? snapshot)
+        public bool TryRedo(
+            CharacterDesignDocument currentDocument,
+            int selectedLayerIndex,
+            HashSet<int> selectedLayerIndices,
+            int selectedEquipmentIndex,
+            string selectedNodePath,
+            BaseAppearanceSlotType? selectedBaseSlotType,
+            bool layerModificationWorkflowActive,
+            CharacterRenderFixPatch? workingRenderFixPatch,
+            out Snapshot? snapshot)
         {
             if (redoStack.Count == 0)
             {
@@ -66,7 +127,15 @@ namespace CharacterStudio.UI
                 return false;
             }
 
-            undoStack.Push(new Snapshot(currentDocument, selectedLayerIndex, selectedLayerIndices));
+            undoStack.Push(new Snapshot(
+                currentDocument,
+                selectedLayerIndex,
+                selectedLayerIndices,
+                selectedEquipmentIndex,
+                selectedNodePath,
+                selectedBaseSlotType,
+                layerModificationWorkflowActive,
+                workingRenderFixPatch));
             snapshot = redoStack.Pop();
             return true;
         }

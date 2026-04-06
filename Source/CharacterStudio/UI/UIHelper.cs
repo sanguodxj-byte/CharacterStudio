@@ -231,6 +231,12 @@ namespace CharacterStudio.UI
             }
         }
 
+        public static void ClearNumericFieldFocusAndBuffers()
+        {
+            GUI.FocusControl(null);
+            NumericTextBuffers.Clear();
+        }
+
         private static string SanitizeNumericText(string value)
         {
             if (string.IsNullOrEmpty(value))

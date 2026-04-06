@@ -81,14 +81,129 @@ namespace CharacterStudio.UI
         private void CaptureUndoSnapshot()
         {
             SyncWorkingDocumentFromWorkingSkin();
-            editorHistory.PushUndo(workingDocument, selectedLayerIndex, selectedLayerIndices);
+            editorHistory.PushUndo(
+                workingDocument,
+                selectedLayerIndex,
+                selectedLayerIndices,
+                selectedEquipmentIndex,
+                selectedNodePath,
+                selectedBaseSlotType,
+                layerModificationWorkflowActive,
+                workingRenderFixPatch);
+        }
+
+        private void RebuildEditorBuffersFromWorkingState()
+        {
+            if (workingSkin?.faceConfig != null)
+            {
+                RebuildFaceImportBuffers(workingSkin.faceConfig);
+            }
+            else
+            {
+                layeredPartPathBuffer.Clear();
+                exprPathBuffer.Clear();
+            }
+
+            UIHelper.ClearNumericFieldFocusAndBuffers();
+        }
+
+        private void FinalizeMutatedEditorState(bool refreshPreview = true, bool refreshRenderTree = false, string? statusMessage = null)
+        {
+            isDirty = true;
+
+            if (refreshPreview)
+                RefreshPreview();
+
+            if (refreshRenderTree)
+                RefreshRenderTree();
+
+            if (!string.IsNullOrWhiteSpace(statusMessage))
+                ShowStatus(statusMessage!);
+        }
+
+        private void MutateWithUndo(Action mutation, bool refreshPreview = true, bool refreshRenderTree = false, string? statusMessage = null)
+        {
+            if (mutation == null)
+                return;
+
+            bool isOutermostMutation = undoMutationDepth == 0;
+
+            if (isOutermostMutation)
+                CaptureUndoSnapshot();
+
+            undoMutationDepth++;
+            try
+            {
+                mutation();
+            }
+            finally
+            {
+                undoMutationDepth--;
+            }
+
+            if (isOutermostMutation)
+                FinalizeMutatedEditorState(refreshPreview, refreshRenderTree, statusMessage);
+        }
+
+        private void MutateFloatWithUndo(ref float target, float newValue, Action? onMutated = null, bool refreshPreview = true, bool refreshRenderTree = false, string? statusMessage = null)
+        {
+            bool isOutermostMutation = undoMutationDepth == 0;
+
+            if (isOutermostMutation)
+                CaptureUndoSnapshot();
+
+            undoMutationDepth++;
+            try
+            {
+                target = newValue;
+                onMutated?.Invoke();
+            }
+            finally
+            {
+                undoMutationDepth--;
+            }
+
+            if (isOutermostMutation)
+                FinalizeMutatedEditorState(refreshPreview, refreshRenderTree, statusMessage);
+        }
+
+        private void MutateRefWithUndo<T>(ref T target, T newValue, Action? onMutated = null, bool refreshPreview = true, bool refreshRenderTree = false, string? statusMessage = null)
+        {
+            bool isOutermostMutation = undoMutationDepth == 0;
+
+            if (isOutermostMutation)
+                CaptureUndoSnapshot();
+
+            undoMutationDepth++;
+            try
+            {
+                target = newValue;
+                onMutated?.Invoke();
+            }
+            finally
+            {
+                undoMutationDepth--;
+            }
+
+            if (isOutermostMutation)
+                FinalizeMutatedEditorState(refreshPreview, refreshRenderTree, statusMessage);
         }
 
         private void ApplyUndoSnapshot()
         {
             SyncWorkingDocumentFromWorkingSkin();
 
-            if (!editorHistory.TryUndo(workingDocument, selectedLayerIndex, selectedLayerIndices, out var snapshot) || snapshot == null)
+            if (!editorHistory.TryUndo(
+                    workingDocument,
+                    selectedLayerIndex,
+                    selectedLayerIndices,
+                    selectedEquipmentIndex,
+                    selectedNodePath,
+                    selectedBaseSlotType,
+                    layerModificationWorkflowActive,
+                    workingRenderFixPatch,
+                    out var snapshot)
+                || snapshot == null)
             {
                 ShowStatus("CS_Studio_Msg_NothingToUndo".Translate());
                 return;
@@ -99,11 +214,15 @@ namespace CharacterStudio.UI
             SyncAbilitiesFromSkin();
             selectedLayerIndex = snapshot.SelectedLayerIndex;
             selectedLayerIndices = new HashSet<int>(snapshot.SelectedLayerIndices);
+            selectedEquipmentIndex = snapshot.SelectedEquipmentIndex;
+            selectedNodePath = snapshot.SelectedNodePath ?? string.Empty;
+            selectedBaseSlotType = snapshot.SelectedBaseSlotType;
+            layerModificationWorkflowActive = snapshot.LayerModificationWorkflowActive;
+            workingRenderFixPatch = snapshot.WorkingRenderFixPatch?.Clone();
 
             SanitizeLayerSelection();
-            isDirty = true;
-            RefreshPreview();
-            RefreshRenderTree();
+            RebuildEditorBuffersFromWorkingState();
+            FinalizeMutatedEditorState(refreshPreview: true, refreshRenderTree: true);
             ShowStatus("CS_Studio_Msg_UndoSuccess".Translate());
         }
 
@@ -111,7 +230,17 @@ namespace CharacterStudio.UI
         {
             SyncWorkingDocumentFromWorkingSkin();
 
-            if (!editorHistory.TryRedo(workingDocument, selectedLayerIndex, selectedLayerIndices, out var snapshot) || snapshot == null)
+            if (!editorHistory.TryRedo(
+                    workingDocument,
+                    selectedLayerIndex,
+                    selectedLayerIndices,
+                    selectedEquipmentIndex,
+                    selectedNodePath,
+                    selectedBaseSlotType,
+                    layerModificationWorkflowActive,
+                    workingRenderFixPatch,
+                    out var snapshot)
+                || snapshot == null)
             {
                 ShowStatus("CS_Studio_Msg_NothingToRedo".Translate());
                 return;
@@ -122,11 +251,15 @@ namespace CharacterStudio.UI
             SyncAbilitiesFromSkin();
             selectedLayerIndex = snapshot.SelectedLayerIndex;
             selectedLayerIndices = new HashSet<int>(snapshot.SelectedLayerIndices);
+            selectedEquipmentIndex = snapshot.SelectedEquipmentIndex;
+            selectedNodePath = snapshot.SelectedNodePath ?? string.Empty;
+            selectedBaseSlotType = snapshot.SelectedBaseSlotType;
+            layerModificationWorkflowActive = snapshot.LayerModificationWorkflowActive;
+            workingRenderFixPatch = snapshot.WorkingRenderFixPatch?.Clone();
 
             SanitizeLayerSelection();
-            isDirty = true;
-            RefreshPreview();
-            RefreshRenderTree();
+            RebuildEditorBuffersFromWorkingState();
+            FinalizeMutatedEditorState(refreshPreview: true, refreshRenderTree: true);
             ShowStatus("CS_Studio_Msg_RedoSuccess".Translate());
         }
 
@@ -165,6 +298,8 @@ namespace CharacterStudio.UI
             {
                 return;
             }
+
+            UIHelper.ClearNumericFieldFocusAndBuffers();
 
             var evt = Event.current;
             bool shift = evt.shift;
@@ -264,37 +399,36 @@ namespace CharacterStudio.UI
                 return false;
             }
 
-            CaptureUndoSnapshot();
-
-            List<PawnLayerConfig> removedLayers = targets
-                .Where(index => index >= 0 && index < workingSkin.layers.Count)
-                .Select(index => workingSkin.layers[index])
-                .ToList();
-
-            foreach (PawnLayerConfig removedLayer in removedLayers)
+            MutateWithUndo(() =>
             {
-                TryRemoveEditableFaceLayerFromFaceConfig(removedLayer);
-            }
+                List<PawnLayerConfig> removedLayers = targets
+                    .Where(index => index >= 0 && index < workingSkin.layers.Count)
+                    .Select(index => workingSkin.layers[index])
+                    .ToList();
 
-            foreach (int index in targets.OrderByDescending(i => i))
-            {
-                workingSkin.layers.RemoveAt(index);
-            }
+                foreach (PawnLayerConfig removedLayer in removedLayers)
+                {
+                    TryRemoveEditableFaceLayerFromFaceConfig(removedLayer);
+                }
 
-            selectedLayerIndices.Clear();
-            if (workingSkin.layers.Count == 0)
-            {
-                selectedLayerIndex = -1;
-            }
-            else
-            {
-                selectedLayerIndex = Mathf.Clamp(targets.Min(), 0, workingSkin.layers.Count - 1);
-                selectedLayerIndices.Add(selectedLayerIndex);
-            }
+                foreach (int index in targets.OrderByDescending(i => i))
+                {
+                    workingSkin.layers.RemoveAt(index);
+                }
 
-            SanitizeLayerSelection();
-            isDirty = true;
-            RefreshPreview();
+                selectedLayerIndices.Clear();
+                if (workingSkin.layers.Count == 0)
+                {
+                    selectedLayerIndex = -1;
+                }
+                else
+                {
+                    selectedLayerIndex = Mathf.Clamp(targets.Min(), 0, workingSkin.layers.Count - 1);
+                    selectedLayerIndices.Add(selectedLayerIndex);
+                }
+
+                SanitizeLayerSelection();
+            });
             return true;
         }
 
@@ -308,24 +442,27 @@ namespace CharacterStudio.UI
 
             uniformScale = Mathf.Clamp(uniformScale, 0.1f, 3f);
 
-            if (captureUndo)
-            {
-                CaptureUndoSnapshot();
-            }
-
             int changed = 0;
-            foreach (int idx in targets)
+            Action apply = () =>
             {
-                var layer = workingSkin.layers[idx];
-                var desired = new Vector2(uniformScale, uniformScale);
-                if (layer.scale != desired)
+                foreach (int idx in targets)
                 {
-                    layer.scale = desired;
-                    changed++;
+                    var layer = workingSkin.layers[idx];
+                    var desired = new Vector2(uniformScale, uniformScale);
+                    if (layer.scale != desired)
+                    {
+                        layer.scale = desired;
+                        changed++;
+                    }
                 }
-            }
+            };
 
-            if (changed > 0)
+            if (captureUndo)
+                MutateWithUndo(apply);
+            else
+                apply();
+
+            if (changed > 0 && !captureUndo)
             {
                 isDirty = true;
                 RefreshPreview();
@@ -342,23 +479,26 @@ namespace CharacterStudio.UI
                 return 0;
             }
 
-            if (captureUndo)
-            {
-                CaptureUndoSnapshot();
-            }
-
             int changed = 0;
-            foreach (int idx in targets)
+            Action apply = () =>
             {
-                var layer = workingSkin.layers[idx];
-                if (Mathf.Abs(layer.drawOrder - drawOrder) > 0.0001f)
+                foreach (int idx in targets)
                 {
-                    layer.drawOrder = drawOrder;
-                    changed++;
+                    var layer = workingSkin.layers[idx];
+                    if (Mathf.Abs(layer.drawOrder - drawOrder) > 0.0001f)
+                    {
+                        layer.drawOrder = drawOrder;
+                        changed++;
+                    }
                 }
-            }
+            };
 
-            if (changed > 0)
+            if (captureUndo)
+                MutateWithUndo(apply);
+            else
+                apply();
+
+            if (changed > 0 && !captureUndo)
             {
                 isDirty = true;
                 RefreshPreview();
@@ -375,23 +515,26 @@ namespace CharacterStudio.UI
                 return 0;
             }
 
-            if (captureUndo)
-            {
-                CaptureUndoSnapshot();
-            }
-
             int changed = 0;
-            foreach (int idx in targets)
+            Action apply = () =>
             {
-                var layer = workingSkin.layers[idx];
-                if (layer.visible != visible)
+                foreach (int idx in targets)
                 {
-                    layer.visible = visible;
-                    changed++;
+                    var layer = workingSkin.layers[idx];
+                    if (layer.visible != visible)
+                    {
+                        layer.visible = visible;
+                        changed++;
+                    }
                 }
-            }
+            };
 
-            if (changed > 0)
+            if (captureUndo)
+                MutateWithUndo(apply);
+            else
+                apply();
+
+            if (changed > 0 && !captureUndo)
             {
                 isDirty = true;
                 RefreshPreview();
@@ -413,48 +556,51 @@ namespace CharacterStudio.UI
                 return 0;
             }
 
-            if (captureUndo)
-            {
-                CaptureUndoSnapshot();
-            }
-
             int changed = 0;
-            foreach (int idx in targets)
+            Action apply = () =>
             {
-                var layer = workingSkin.layers[idx];
-                bool layerChanged = false;
-
-                if (layer.colorSource != colorOneSource)
+                foreach (int idx in targets)
                 {
-                    layer.colorSource = colorOneSource;
-                    layerChanged = true;
-                }
+                    var layer = workingSkin.layers[idx];
+                    bool layerChanged = false;
 
-                if (layer.customColor != colorOne)
-                {
-                    layer.customColor = colorOne;
-                    layerChanged = true;
-                }
+                    if (layer.colorSource != colorOneSource)
+                    {
+                        layer.colorSource = colorOneSource;
+                        layerChanged = true;
+                    }
 
-                if (layer.colorTwoSource != colorTwoSource)
-                {
-                    layer.colorTwoSource = colorTwoSource;
-                    layerChanged = true;
-                }
+                    if (layer.customColor != colorOne)
+                    {
+                        layer.customColor = colorOne;
+                        layerChanged = true;
+                    }
 
-                if (layer.customColorTwo != colorTwo)
-                {
-                    layer.customColorTwo = colorTwo;
-                    layerChanged = true;
-                }
+                    if (layer.colorTwoSource != colorTwoSource)
+                    {
+                        layer.colorTwoSource = colorTwoSource;
+                        layerChanged = true;
+                    }
 
-                if (layerChanged)
-                {
-                    changed++;
-                }
-            }
+                    if (layer.customColorTwo != colorTwo)
+                    {
+                        layer.customColorTwo = colorTwo;
+                        layerChanged = true;
+                    }
 
-            if (changed > 0)
+                    if (layerChanged)
+                    {
+                        changed++;
+                    }
+                }
+            };
+
+            if (captureUndo)
+                MutateWithUndo(apply);
+            else
+                apply();
+
+            if (changed > 0 && !captureUndo)
             {
                 isDirty = true;
                 RefreshPreview();
