@@ -195,17 +195,16 @@ namespace CharacterStudio.Abilities
                 return false;
             }
 
-            if (!skinComp.isInVanillaFlight)
+            if (!pawn.Flying)
             {
-                failureReason = "pawn is not in vanilla flight";
+                failureReason = "pawn is not flying";
                 return false;
             }
 
             int nowTick = Find.TickManager?.TicksGame ?? 0;
             if (skinComp.vanillaFlightExpireTick >= 0 && nowTick > skinComp.vanillaFlightExpireTick)
             {
-                failureReason = "vanilla flight state expired";
-                ClearVanillaFlightState(pawn);
+                failureReason = "flight session expired";
                 return false;
             }
 
@@ -257,22 +256,7 @@ namespace CharacterStudio.Abilities
 
         public static bool ShouldBlockStandardAbilityAccessDuringFlight(Pawn? pawn, ModularAbilityDef? ability)
         {
-            if (pawn == null || ability == null)
-            {
-                return false;
-            }
-
-            CompPawnSkin? skinComp = pawn.GetComp<CompPawnSkin>();
-            if (skinComp?.isInVanillaFlight != true)
-            {
-                return false;
-            }
-
-            bool hasFlightOnlyFollowup = ability.runtimeComponents?.Any(component => component != null
-                && component.enabled
-                && component.type == AbilityRuntimeComponentType.FlightOnlyFollowup) == true;
-
-            return !hasFlightOnlyFollowup;
+            return false;
         }
 
         public static LocalTargetInfo ResolveFollowupTarget(Pawn? pawn, ModularAbilityDef? ability, LocalTargetInfo fallbackTarget)
@@ -614,6 +598,8 @@ namespace CharacterStudio.Abilities
                         }
                     }
                 }
+
+                pawn?.stances?.CancelBusyStanceHard();
 
                 AbilityVanillaFlightUtility.TryApplyLandingBurst(pawn, landingCell, abilityDefName);
             }

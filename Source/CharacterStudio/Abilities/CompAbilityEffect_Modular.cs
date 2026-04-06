@@ -359,23 +359,38 @@ namespace CharacterStudio.Abilities
                         skinComp.flightStateExpireTick = nowTick + Mathf.Max(1, component.flightDurationTicks);
                         skinComp.flightStateHeightFactor = Mathf.Max(0f, component.flightHeightFactor);
                         skinComp.suppressCombatActionsDuringFlightState = component.suppressCombatActionsDuringFlightState;
+                        skinComp.isInVanillaFlight = true;
+                        skinComp.vanillaFlightStartTick = nowTick;
+                        skinComp.vanillaFlightExpireTick = skinComp.flightStateExpireTick;
+                        skinComp.vanillaFlightSourceAbilityDefName = parent?.def?.defName ?? string.Empty;
+                        skinComp.vanillaFlightFollowupAbilityDefName = component.flightOnlyAbilityDefName?.Trim() ?? string.Empty;
+                        skinComp.vanillaFlightReservedTargetCell = target.IsValid ? target.Cell : caster.Position;
+                        skinComp.vanillaFlightHasReservedTargetCell = target.IsValid;
+                        skinComp.vanillaFlightFollowupWindowEndTick = skinComp.flightStateExpireTick;
+                        caster.flight?.StartFlying();
                         skinComp.TriggerEquipmentAnimationState("FlightState", nowTick, component.flightDurationTicks);
                         break;
                     case AbilityRuntimeComponentType.VanillaPawnFlyer:
-                        if (!AbilityVanillaFlightUtility.TryLaunchPawnFlyer(
-                            caster,
-                            target,
-                            component,
-                            parent?.def?.defName ?? string.Empty,
-                            out string failureReason))
-                        {
-                            Log.Warning($"[CharacterStudio] VanillaPawnFlyer launch failed: {failureReason}");
-                        }
+                        skinComp.flightStateStartTick = nowTick;
+                        skinComp.flightStateExpireTick = nowTick + Mathf.Max(1, component.flightDurationTicks);
+                        skinComp.flightStateHeightFactor = Mathf.Max(0f, component.flightHeightFactor);
+                        skinComp.suppressCombatActionsDuringFlightState = component.suppressCombatActionsDuringFlightState;
+                        skinComp.isInVanillaFlight = true;
+                        skinComp.vanillaFlightStartTick = nowTick;
+                        skinComp.vanillaFlightExpireTick = skinComp.flightStateExpireTick;
+                        skinComp.vanillaFlightSourceAbilityDefName = parent?.def?.defName ?? string.Empty;
+                        skinComp.vanillaFlightFollowupAbilityDefName = component.flightOnlyAbilityDefName?.Trim() ?? string.Empty;
+                        skinComp.vanillaFlightReservedTargetCell = target.IsValid ? target.Cell : caster.Position;
+                        skinComp.vanillaFlightHasReservedTargetCell = target.IsValid;
+                        skinComp.vanillaFlightFollowupWindowEndTick = skinComp.flightStateExpireTick;
+                        caster.flight?.StartFlying();
+                        skinComp.TriggerEquipmentAnimationState("FlightState", nowTick, component.flightDurationTicks);
                         break;
                     case AbilityRuntimeComponentType.FlightOnlyFollowup:
-                        if (skinComp.isInVanillaFlight && component.consumeFlightStateOnCast)
+                        if (caster.Flying && component.consumeFlightStateOnCast)
                         {
-                            AbilityVanillaFlightUtility.ClearVanillaFlightState(caster);
+                            skinComp.flightStateExpireTick = nowTick;
+                            caster.flight?.ForceLand();
                         }
                         break;
                     case AbilityRuntimeComponentType.FlightLandingBurst:
@@ -398,6 +413,7 @@ namespace CharacterStudio.Abilities
 
             if (caster != null && skinComp != null)
             {
+                TickFlightState(caster, skinComp, nowTick);
                 TickPeriodicPulse(caster, skinComp, nowTick);
                 TickShieldAbsorb(caster, skinComp, nowTick);
                 TickProjectileInterceptorShield(caster, skinComp, nowTick);
@@ -683,6 +699,35 @@ namespace CharacterStudio.Abilities
 
             skinComp.projectileInterceptorShieldExpireTick = -1;
             skinComp.projectileInterceptorShieldThingId = string.Empty;
+        }
+
+        private static void TickFlightState(Pawn caster, CompPawnSkin skinComp, int nowTick)
+        {
+            if (skinComp.flightStateExpireTick < 0 && !skinComp.isInVanillaFlight)
+            {
+                return;
+            }
+
+            if (caster.Flying)
+            {
+                if (skinComp.flightStateExpireTick >= 0 && nowTick > skinComp.flightStateExpireTick)
+                {
+                    caster.flight?.ForceLand();
+                }
+                return;
+            }
+
+            if (skinComp.vanillaFlightPendingLandingBurst)
+            {
+                AbilityVanillaFlightUtility.TryApplyLandingBurst(caster, caster.Position, skinComp.vanillaFlightSourceAbilityDefName);
+            }
+
+            skinComp.flightStateExpireTick = -1;
+            skinComp.flightStateHeightFactor = 0f;
+            skinComp.suppressCombatActionsDuringFlightState = false;
+            skinComp.ClearEquipmentAnimationState("FlightState");
+            AbilityVanillaFlightUtility.ClearVanillaFlightState(caster);
+            skinComp.RequestRenderRefresh();
         }
 
         private static void TickAttachedShieldVisual(Pawn caster, CompPawnSkin skinComp, int nowTick)

@@ -567,20 +567,13 @@ namespace CharacterStudio.Abilities
                         result.AddError("CS_Ability_Validate_SplitSearchRange".Translate());
                     break;
                 case AbilityRuntimeComponentType.FlightState:
+                case AbilityRuntimeComponentType.VanillaPawnFlyer:
                     if (flightDurationTicks <= 0)
                         result.AddError("CS_Ability_Validate_FlightDurationTicks".Translate());
                     if (flightHeightFactor < 0f)
                         result.AddError("CS_Ability_Validate_FlightHeightFactor".Translate());
                     if (flightHeightFactor > 5f)
                         result.AddWarning("CS_Ability_Validate_FlightHeightFactorWarning".Translate());
-                    break;
-                case AbilityRuntimeComponentType.VanillaPawnFlyer:
-                    if (string.IsNullOrWhiteSpace(flyerThingDefName))
-                        result.AddError("CS_Ability_Validate_VanillaFlyerThingDefRequired".Translate());
-                    if (flightDurationTicks <= 0)
-                        result.AddError("CS_Ability_Validate_FlightDurationTicks".Translate());
-                    if (enableFlightOnlyWindow && flightOnlyWindowTicks <= 0)
-                        result.AddError("CS_Ability_Validate_VanillaFlightWindowTicks".Translate());
                     break;
                 case AbilityRuntimeComponentType.FlightOnlyFollowup:
                     if (onlyUseDuringFlightWindow && string.IsNullOrWhiteSpace(requiredFlightSourceAbilityDefName))
