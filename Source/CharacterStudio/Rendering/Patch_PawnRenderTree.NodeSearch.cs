@@ -10,6 +10,8 @@ namespace CharacterStudio.Rendering
 {
     public static partial class Patch_PawnRenderTree
     {
+        private static readonly HashSet<string> nodePathParseWarnings = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         // ─────────────────────────────────────────────
         // NodePath 路径解析与节点查找
         // ─────────────────────────────────────────────
@@ -50,7 +52,13 @@ namespace CharacterStudio.Rendering
             }
             catch (Exception ex)
             {
-                Log.Error($"[CharacterStudio] 解析路径 '{path}' 时出错: {ex.Message}");
+                lock (nodePathParseWarnings)
+                {
+                    if (nodePathParseWarnings.Add(path))
+                    {
+                        Log.Warning($"[CharacterStudio] NodePath 解析失败，已跳过该路径: {path}, {ex.Message}");
+                    }
+                }
                 return null;
             }
         }

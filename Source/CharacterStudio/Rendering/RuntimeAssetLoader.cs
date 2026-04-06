@@ -39,6 +39,7 @@ namespace CharacterStudio.Rendering
         private static readonly HashSet<string> nonMainThreadLoadWarnings = new HashSet<string>();
         private static readonly HashSet<string> missingFileWarnings = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private static readonly HashSet<string> textureLoadFailureErrors = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private static readonly HashSet<string> materialCreationWarnings = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private static readonly Dictionary<string, byte[]> pendingTextureBytes = new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase);
         private static readonly HashSet<string> pendingTextureReadRequests = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private static readonly HashSet<string> pendingTextureReadFailures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -452,7 +453,11 @@ namespace CharacterStudio.Rendering
             }
             catch (Exception ex)
             {
-                Log.Error($"[CharacterStudio] 创建材质时出错: {ex}");
+                string textureName = texture?.name ?? "<null>";
+                LogWarningOnce(
+                    materialCreationWarnings,
+                    textureName,
+                    $"[CharacterStudio] 创建材质失败，已回退为空材质: {textureName}, {ex.Message}");
                 return null;
             }
         }

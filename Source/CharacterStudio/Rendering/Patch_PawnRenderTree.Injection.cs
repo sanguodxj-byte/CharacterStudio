@@ -10,6 +10,8 @@ namespace CharacterStudio.Rendering
 {
     public static partial class Patch_PawnRenderTree
     {
+        private static readonly HashSet<string> layerInjectionWarnings = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         // ─────────────────────────────────────────────
         // 公共刷新 / 重建入口
         // ─────────────────────────────────────────────
@@ -231,7 +233,14 @@ namespace CharacterStudio.Rendering
                 }
                 catch (Exception ex)
                 {
-                    Log.Error($"[CharacterStudio] 注入图层 {layer.layerName} 时出错: {ex}");
+                    string warningKey = $"{layer.layerName}|{layer.anchorPath}|{layer.anchorTag}";
+                    lock (layerInjectionWarnings)
+                    {
+                        if (layerInjectionWarnings.Add(warningKey))
+                        {
+                            Log.Warning($"[CharacterStudio] 注入图层失败，已跳过该图层: {layer.layerName}, {ex.Message}");
+                        }
+                    }
                 }
             }
 
@@ -325,6 +334,8 @@ namespace CharacterStudio.Rendering
                     || layer.texPath.StartsWith("/", StringComparison.Ordinal)
                     || System.IO.File.Exists(layer.texPath));
 
+            bool isBaseSyntheticLayer = BaseAppearanceUtility.IsBaseSyntheticLayer(layer);
+
             // 如果节点设置了非默认的绘制顺序或偏移/缩放，或者 workerClass 是空的，
             // 强制使用 PawnRenderNodeWorker_CustomLayer。
             // 否则，原版 Worker (如 PawnRenderNodeWorker_Hair) 会无视 drawOrder 属性。
@@ -349,7 +360,7 @@ namespace CharacterStudio.Rendering
                 baseLayer    = layer.drawOrder,
                 flipGraphic  = layer.flipHorizontal,
                 rotDrawMode  = layer.rotDrawMode,
-                drawSize     = layer.scale,
+                drawSize     = isBaseSyntheticLayer ? Vector2.one : layer.scale,
                 debugLabel   = layer.layerName
             };
 
