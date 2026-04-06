@@ -221,26 +221,29 @@ namespace CharacterStudio.UI
                 return;
             }
 
-            workingSkin.defName = string.IsNullOrWhiteSpace(design.suggestedDefName) ? workingSkin.defName : design.suggestedDefName;
-            workingSkin.label = string.IsNullOrWhiteSpace(design.suggestedLabel) ? workingSkin.label : design.suggestedLabel;
-            workingSkin.description = string.IsNullOrWhiteSpace(design.suggestedDescription) ? workingSkin.description : design.suggestedDescription;
-
-            workingSkin.attributes ??= new CharacterAttributeProfile();
-            MergeGeneratedCharacterAttributes(workingSkin.attributes, design.attributes);
-
-            workingAbilities.Clear();
-            if (design.abilities != null)
+            MutateWithUndo(() =>
             {
-                foreach (var ability in design.abilities)
+                workingSkin.defName = string.IsNullOrWhiteSpace(design.suggestedDefName) ? workingSkin.defName : design.suggestedDefName;
+                workingSkin.label = string.IsNullOrWhiteSpace(design.suggestedLabel) ? workingSkin.label : design.suggestedLabel;
+                workingSkin.description = string.IsNullOrWhiteSpace(design.suggestedDescription) ? workingSkin.description : design.suggestedDescription;
+
+                workingSkin.attributes ??= new CharacterAttributeProfile();
+                MergeGeneratedCharacterAttributes(workingSkin.attributes, design.attributes);
+
+                workingAbilities.Clear();
+                if (design.abilities != null)
                 {
-                    if (ability != null)
+                    foreach (var ability in design.abilities)
                     {
-                        workingAbilities.Add(ability);
+                        if (ability != null)
+                        {
+                            workingAbilities.Add(ability);
+                        }
                     }
                 }
-            }
 
-            SyncAbilitiesToSkin();
+                SyncAbilitiesToSkin();
+            }, refreshPreview: true, refreshRenderTree: true);
         }
 
         private void OpenCharacterDefinitionDialog()

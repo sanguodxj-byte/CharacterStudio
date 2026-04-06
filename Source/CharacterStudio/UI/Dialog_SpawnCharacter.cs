@@ -12,18 +12,25 @@ namespace CharacterStudio.UI
     public sealed class Dialog_SpawnCharacter : Window
     {
         private readonly Action<CharacterSpawnSettings> onConfirm;
+        private readonly Action<bool>? onBusyStateChanged;
         private CharacterSpawnArrivalDef? arrivalDef;
         private CharacterSpawnEventDef? spawnEventDef;
         private CharacterSpawnAnimationDef? spawnAnimationDef;
         private string eventMessageText = string.Empty;
         private string eventLetterTitle = string.Empty;
         private float spawnAnimationScale;
+        private Map? cachedMap;
+        private int cachedMapThingCount = -1;
+        private List<CharacterSpawnArrivalDef> cachedArrivalOptions = new List<CharacterSpawnArrivalDef>();
+        private List<CharacterSpawnEventDef> cachedEventOptions = new List<CharacterSpawnEventDef>();
+        private List<CharacterSpawnAnimationDef> cachedAnimationOptions = new List<CharacterSpawnAnimationDef>();
 
         public override Vector2 InitialSize => new Vector2(520f, 440f);
 
-        public Dialog_SpawnCharacter(CharacterSpawnSettings? initialSettings, Action<CharacterSpawnSettings> onConfirm)
+        public Dialog_SpawnCharacter(CharacterSpawnSettings? initialSettings, Action<CharacterSpawnSettings> onConfirm, Action<bool>? onBusyStateChanged = null)
         {
             this.onConfirm = onConfirm ?? throw new ArgumentNullException(nameof(onConfirm));
+            this.onBusyStateChanged = onBusyStateChanged;
             CharacterSpawnSettings settings = initialSettings?.Clone() ?? new CharacterSpawnSettings();
             arrivalDef = CharacterSpawnUtility.ResolveArrivalDef(settings);
             spawnEventDef = CharacterSpawnUtility.ResolveSpawnEventDef(settings);
@@ -35,6 +42,19 @@ namespace CharacterStudio.UI
             absorbInputAroundWindow = true;
             closeOnClickedOutside = false;
             draggable = true;
+        }
+
+        public override void PreOpen()
+        {
+            base.PreOpen();
+            onBusyStateChanged?.Invoke(true);
+            RefreshCachedOptions(force: true);
+        }
+
+        public override void PreClose()
+        {
+            onBusyStateChanged?.Invoke(false);
+            base.PreClose();
         }
 
         private static List<CharacterSpawnArrivalDef> GetArrivalOptions()
@@ -74,29 +94,11 @@ namespace CharacterStudio.UI
 
             float y = 8f;
             float width = inRect.width;
-            CharacterSpawnSettings currentSettings = new CharacterSpawnSettings
-            {
-                sourceMapForConditionCheck = Find.CurrentMap,
-                arrivalDefName = arrivalDef?.defName ?? string.Empty,
-                arrivalMode = arrivalDef?.mode ?? SummonArrivalMode.Standing,
-                spawnEventDefName = spawnEventDef?.defName ?? string.Empty,
-                spawnEvent = spawnEventDef?.mode ?? SummonSpawnEventMode.Message,
-                eventMessageText = eventMessageText,
-                eventLetterTitle = eventLetterTitle,
-                spawnAnimationDefName = spawnAnimationDef?.defName ?? string.Empty,
-                spawnAnimation = spawnAnimationDef?.mode ?? SummonSpawnAnimationMode.None,
-                spawnAnimationScale = spawnAnimationScale
-            };
+            RefreshCachedOptions(force: false);
 
-            List<CharacterSpawnArrivalDef> arrivalOptions = GetArrivalOptions()
-                .Where(def => CharacterSpawnUtility.AreConditionsSatisfied(currentSettings.sourceMapForConditionCheck, def.requiredConditions))
-                .ToList();
-            List<CharacterSpawnEventDef> eventOptions = GetSpawnEventOptions()
-                .Where(def => CharacterSpawnUtility.AreConditionsSatisfied(currentSettings.sourceMapForConditionCheck, def.requiredConditions))
-                .ToList();
-            List<CharacterSpawnAnimationDef> animationOptions = GetSpawnAnimationOptions()
-                .Where(def => CharacterSpawnUtility.AreConditionsSatisfied(currentSettings.sourceMapForConditionCheck, def.requiredConditions))
-                .ToList();
+            List<CharacterSpawnArrivalDef> arrivalOptions = cachedArrivalOptions;
+            List<CharacterSpawnEventDef> eventOptions = cachedEventOptions;
+            List<CharacterSpawnAnimationDef> animationOptions = cachedAnimationOptions;
 
             arrivalDef ??= arrivalOptions.FirstOrDefault();
             spawnEventDef ??= eventOptions.FirstOrDefault();
@@ -163,6 +165,30 @@ namespace CharacterStudio.UI
             {
                 Close();
             }
+        }
+
+        private void RefreshCachedOptions(bool force)
+        {
+            Map? currentMap = Find.CurrentMap;
+            int currentThingCount = currentMap?.listerThings?.AllThings?.Count ?? -1;
+            bool mapChanged = currentMap != cachedMap || currentThingCount != cachedMapThingCount;
+            if (!force && !mapChanged)
+            {
+                return;
+            }
+
+            cachedMap = currentMap;
+            cachedMapThingCount = currentThingCount;
+
+            cachedArrivalOptions = GetArrivalOptions()
+                .Where(def => CharacterSpawnUtility.AreConditionsSatisfied(currentMap, def.requiredConditions))
+                .ToList();
+            cachedEventOptions = GetSpawnEventOptions()
+                .Where(def => CharacterSpawnUtility.AreConditionsSatisfied(currentMap, def.requiredConditions))
+                .ToList();
+            cachedAnimationOptions = GetSpawnAnimationOptions()
+                .Where(def => CharacterSpawnUtility.AreConditionsSatisfied(currentMap, def.requiredConditions))
+                .ToList();
         }
 
         private static void DrawConditionHint(ref float y, float width, CharacterSpawnOptionDef? optionDef)

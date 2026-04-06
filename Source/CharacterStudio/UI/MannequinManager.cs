@@ -414,11 +414,49 @@ namespace CharacterStudio.UI
 
             try
             {
-                // 查找与当前种族匹配的 PawnKindDef
-                // 对于 HAR 种族，需要找到其对应的 PawnKindDef 而非使用 Colonist
-                PawnKindDef kindDef = FindPawnKindForRace(currentRace);
-                
-                // 创建生成请求
+                mannequinPawn = TryGenerateMannequinPawn(currentRace) ?? TryGenerateMannequinPawn(ThingDefOf.Human);
+
+                if (mannequinPawn != null)
+                {
+                    // 应用手动选择的服装（覆盖随机生成的）
+                    if (manualApparelDefs.Count > 0)
+                    {
+                        ReapplyManualApparel();
+                    }
+                    else
+                    {
+                        // 如果没有手动设置过，则清空随机生成的衣服（保持纯净预览）
+                        var randomApparel = mannequinPawn.apparel.WornApparel.ToList();
+                        foreach (var a in randomApparel) mannequinPawn.apparel.Remove(a);
+                    }
+
+                    // 确保渲染器初始化
+                    mannequinPawn.Drawer.renderer.SetAllGraphicsDirty();
+                    
+                    Log.Message("[CharacterStudio] 人偶创建成功");
+                }
+                else
+                {
+                    Log.Warning($"[CharacterStudio] 人偶创建失败，已跳过预览初始化: {currentRace.defName}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warning($"[CharacterStudio] 创建人偶失败，预览已降级为空状态: {ex.Message}");
+                mannequinPawn = null;
+            }
+        }
+
+        private Pawn? TryGenerateMannequinPawn(ThingDef? raceDef)
+        {
+            if (raceDef == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                PawnKindDef kindDef = FindPawnKindForRace(raceDef);
                 var request = new PawnGenerationRequest(
                     kind: kindDef,
                     faction: null,
@@ -456,32 +494,18 @@ namespace CharacterStudio.UI
                     fixedTitle: null
                 );
 
-                // 生成 Pawn
-                mannequinPawn = PawnGenerator.GeneratePawn(request);
-
-                if (mannequinPawn != null)
+                Pawn? pawn = PawnGenerator.GeneratePawn(request);
+                if (pawn == null)
                 {
-                    // 应用手动选择的服装（覆盖随机生成的）
-                    if (manualApparelDefs.Count > 0)
-                    {
-                        ReapplyManualApparel();
-                    }
-                    else
-                    {
-                        // 如果没有手动设置过，则清空随机生成的衣服（保持纯净预览）
-                        var randomApparel = mannequinPawn.apparel.WornApparel.ToList();
-                        foreach (var a in randomApparel) mannequinPawn.apparel.Remove(a);
-                    }
-
-                    // 确保渲染器初始化
-                    mannequinPawn.Drawer.renderer.SetAllGraphicsDirty();
-                    
-                    Log.Message("[CharacterStudio] 人偶创建成功");
+                    Log.Warning($"[CharacterStudio] 生成预览人偶返回空值，已跳过: {raceDef.defName}");
                 }
+
+                return pawn;
             }
             catch (Exception ex)
             {
-                Log.Error($"[CharacterStudio] 创建人偶失败: {ex}");
+                Log.Warning($"[CharacterStudio] 生成预览人偶失败，已尝试回退: race={raceDef.defName}, {ex.Message}");
+                return null;
             }
         }
 
