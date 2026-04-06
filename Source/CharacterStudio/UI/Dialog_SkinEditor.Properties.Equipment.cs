@@ -42,6 +42,11 @@ namespace CharacterStudio.UI
             float y = 0f;
             float width = viewRect.width;
 
+            void MutateEquipmentWithUndo(Action mutation, bool refreshRenderTree = true)
+            {
+                MutateWithUndo(mutation, refreshPreview: true, refreshRenderTree: refreshRenderTree);
+            }
+
             bool DrawPathFieldWithBrowser(ref float rowY, string label, ref string value, Action browseAction)
             {
                 Rect rowRect = new Rect(0f, rowY, width, UIHelper.RowHeight);
@@ -76,14 +81,9 @@ namespace CharacterStudio.UI
                 return changed;
             }
 
-            void MarkEquipmentDirty(bool refreshRenderTree = true)
+            void MarkEquipmentDirty(bool refreshRenderTree = true, string? statusMessage = null)
             {
-                isDirty = true;
-                RefreshPreview();
-                if (refreshRenderTree)
-                {
-                    RefreshRenderTree();
-                }
+                FinalizeMutatedEditorState(refreshPreview: true, refreshRenderTree: refreshRenderTree, statusMessage: statusMessage);
             }
 
             if (DrawCollapsibleSection(ref y, width, "CS_Studio_Equip_Section_Base".Translate(), "EquipmentBase"))
@@ -92,87 +92,70 @@ namespace CharacterStudio.UI
                 UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_BaseSlot_Enable".Translate(), ref enabled);
                 if (enabled != equipment.enabled)
                 {
-                    CaptureUndoSnapshot();
-                    equipment.enabled = enabled;
-                    MarkEquipmentDirty();
+                    MutateWithUndo(() => equipment.enabled = enabled, refreshPreview: true, refreshRenderTree: true);
                 }
 
                 string defName = equipment.defName ?? string.Empty;
                 UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_DefName".Translate(), ref defName);
                 if (defName != (equipment.defName ?? string.Empty))
                 {
-                    CaptureUndoSnapshot();
-                    equipment.defName = defName;
-                    MarkEquipmentDirty(false);
+                    MutateWithUndo(() => equipment.defName = defName, refreshPreview: true, refreshRenderTree: false);
                 }
 
                 string label = equipment.label ?? string.Empty;
                 UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Label".Translate(), ref label);
                 if (label != (equipment.label ?? string.Empty))
                 {
-                    CaptureUndoSnapshot();
-                    equipment.label = label;
-                    renderData.layerName = string.IsNullOrWhiteSpace(renderData.layerName) ? label : renderData.layerName;
-                    MarkEquipmentDirty(false);
+                    MutateWithUndo(() =>
+                    {
+                        equipment.label = label;
+                        renderData.layerName = string.IsNullOrWhiteSpace(renderData.layerName) ? label : renderData.layerName;
+                    }, refreshPreview: true, refreshRenderTree: false);
                 }
 
                 string slotTag = equipment.slotTag ?? string.Empty;
                 UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_SlotTag".Translate(), ref slotTag);
                 if (slotTag != (equipment.slotTag ?? string.Empty))
                 {
-                    CaptureUndoSnapshot();
-                    equipment.slotTag = slotTag;
-                    MarkEquipmentDirty();
+                    MutateWithUndo(() => equipment.slotTag = slotTag, refreshPreview: true, refreshRenderTree: true);
                 }
 
                 string thingDefName = equipment.thingDefName ?? string.Empty;
                 UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_LinkedThingDef".Translate(), ref thingDefName);
                 if (thingDefName != (equipment.thingDefName ?? string.Empty))
                 {
-                    CaptureUndoSnapshot();
-                    equipment.thingDefName = thingDefName;
-                    MarkEquipmentDirty(false);
+                    MutateWithUndo(() => equipment.thingDefName = thingDefName, refreshPreview: true, refreshRenderTree: false);
                 }
 
                 string exportGroupKey = equipment.exportGroupKey ?? string.Empty;
                 UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_ExportGroupKey".Translate(), ref exportGroupKey);
                 if (exportGroupKey != (equipment.exportGroupKey ?? string.Empty))
                 {
-                    CaptureUndoSnapshot();
-                    equipment.exportGroupKey = exportGroupKey;
-                    MarkEquipmentDirty(false);
+                    MutateWithUndo(() => equipment.exportGroupKey = exportGroupKey, refreshPreview: true, refreshRenderTree: false);
                 }
 
                 string parentThingDefName = equipment.parentThingDefName ?? string.Empty;
                 UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_ParentThingDefName".Translate(), ref parentThingDefName);
                 if (parentThingDefName != (equipment.parentThingDefName ?? string.Empty))
                 {
-                    CaptureUndoSnapshot();
-                    equipment.parentThingDefName = string.IsNullOrWhiteSpace(parentThingDefName) ? CharacterEquipmentDef.DefaultParentThingDefName : parentThingDefName;
-                    MarkEquipmentDirty(false);
+                    MutateWithUndo(() => equipment.parentThingDefName = string.IsNullOrWhiteSpace(parentThingDefName) ? CharacterEquipmentDef.DefaultParentThingDefName : parentThingDefName, refreshPreview: true, refreshRenderTree: false);
                 }
 
                 string previewTexPath = equipment.previewTexPath ?? string.Empty;
                 if (DrawPathFieldWithBrowser(ref y, "CS_Studio_Equip_PreviewTexture".Translate(), ref previewTexPath, () =>
                     Find.WindowStack.Add(new Dialog_FileBrowser(equipment.previewTexPath ?? string.Empty, path =>
                     {
-                        CaptureUndoSnapshot();
-                        equipment.previewTexPath = path ?? string.Empty;
-                        MarkEquipmentDirty(false);
+                        MutateWithUndo(() => equipment.previewTexPath = path ?? string.Empty, refreshPreview: true, refreshRenderTree: false);
                     }))))
                 {
-                    CaptureUndoSnapshot();
-                    equipment.previewTexPath = previewTexPath;
-                    MarkEquipmentDirty(false);
+                    MutateWithUndo(() => equipment.previewTexPath = previewTexPath, refreshPreview: true, refreshRenderTree: false);
                 }
 
                 string sourceNote = equipment.sourceNote ?? string.Empty;
                 UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_SourceNote".Translate(), ref sourceNote);
                 if (sourceNote != (equipment.sourceNote ?? string.Empty))
                 {
-                    CaptureUndoSnapshot();
-                    equipment.sourceNote = sourceNote;
-                    MarkEquipmentDirty(false);
+                    MutateWithUndo(() => equipment.sourceNote = sourceNote, refreshPreview: true, refreshRenderTree: false);
                 }
 
                 string tagsText = string.Join(", ", equipment.tags ?? new List<string>());
@@ -180,9 +163,7 @@ namespace CharacterStudio.UI
                 string normalizedTagsText = string.Join(", ", equipment.tags ?? new List<string>());
                 if (tagsText != normalizedTagsText)
                 {
-                    CaptureUndoSnapshot();
-                    equipment.tags = ParseCommaSeparatedList(tagsText).ToList();
-                    MarkEquipmentDirty(false);
+                    MutateWithUndo(() => equipment.tags = ParseCommaSeparatedList(tagsText).ToList(), refreshPreview: true, refreshRenderTree: false);
                 }
             }
 
@@ -217,20 +198,20 @@ namespace CharacterStudio.UI
                         UIHelper.DrawPropertyCheckbox(ref y, width, $"{ability.label ?? ability.defName} [{ability.defName}]", ref newBound);
                         if (newBound != bound)
                         {
-                            CaptureUndoSnapshot();
-                            if (newBound)
+                            MutateWithUndo(() =>
                             {
-                                if (!equipment.abilityDefNames.Contains(ability.defName))
+                                if (newBound)
                                 {
-                                    equipment.abilityDefNames.Add(ability.defName);
+                                    if (!equipment.abilityDefNames.Contains(ability.defName))
+                                    {
+                                        equipment.abilityDefNames.Add(ability.defName);
+                                    }
                                 }
-                            }
-                            else
-                            {
-                                equipment.abilityDefNames.RemoveAll(x => string.Equals(x, ability.defName, StringComparison.OrdinalIgnoreCase));
-                            }
-
-                            MarkEquipmentDirty(false);
+                                else
+                                {
+                                    equipment.abilityDefNames.RemoveAll(x => string.Equals(x, ability.defName, StringComparison.OrdinalIgnoreCase));
+                                }
+                            }, refreshPreview: true, refreshRenderTree: false);
                         }
                     }
                 }
@@ -242,42 +223,30 @@ namespace CharacterStudio.UI
                 if (DrawPathFieldWithBrowser(ref y, "CS_Studio_Equip_WorldTexPath".Translate(), ref worldTexPath, () =>
                     Find.WindowStack.Add(new Dialog_FileBrowser(equipment.worldTexPath ?? string.Empty, path =>
                     {
-                        CaptureUndoSnapshot();
-                        equipment.worldTexPath = path ?? string.Empty;
-                        MarkEquipmentDirty(false);
+                        MutateEquipmentWithUndo(() => equipment.worldTexPath = path ?? string.Empty, refreshRenderTree: false);
                     }))))
                 {
-                    CaptureUndoSnapshot();
-                    equipment.worldTexPath = worldTexPath;
-                    MarkEquipmentDirty(false);
+                    MutateEquipmentWithUndo(() => equipment.worldTexPath = worldTexPath, refreshRenderTree: false);
                 }
 
                 string wornTexPath = equipment.wornTexPath ?? string.Empty;
                 if (DrawPathFieldWithBrowser(ref y, "CS_Studio_Equip_WornTexPath".Translate(), ref wornTexPath, () =>
                     Find.WindowStack.Add(new Dialog_FileBrowser(equipment.wornTexPath ?? string.Empty, path =>
                     {
-                        CaptureUndoSnapshot();
-                        equipment.wornTexPath = path ?? string.Empty;
-                        MarkEquipmentDirty(false);
+                        MutateEquipmentWithUndo(() => equipment.wornTexPath = path ?? string.Empty, refreshRenderTree: false);
                     }))))
                 {
-                    CaptureUndoSnapshot();
-                    equipment.wornTexPath = wornTexPath;
-                    MarkEquipmentDirty(false);
+                    MutateEquipmentWithUndo(() => equipment.wornTexPath = wornTexPath, refreshRenderTree: false);
                 }
 
                 string equipmentMaskTexPath = equipment.maskTexPath ?? string.Empty;
                 if (DrawPathFieldWithBrowser(ref y, "CS_Studio_Equip_ApparelMask".Translate(), ref equipmentMaskTexPath, () =>
                     Find.WindowStack.Add(new Dialog_FileBrowser(equipment.maskTexPath ?? string.Empty, path =>
                     {
-                        CaptureUndoSnapshot();
-                        equipment.maskTexPath = path ?? string.Empty;
-                        MarkEquipmentDirty(false);
+                        MutateEquipmentWithUndo(() => equipment.maskTexPath = path ?? string.Empty, refreshRenderTree: false);
                     }))))
                 {
-                    CaptureUndoSnapshot();
-                    equipment.maskTexPath = equipmentMaskTexPath;
-                    MarkEquipmentDirty(false);
+                    MutateEquipmentWithUndo(() => equipment.maskTexPath = equipmentMaskTexPath, refreshRenderTree: false);
                 }
 
                 DrawSelectionPropertyButton(
@@ -291,9 +260,7 @@ namespace CharacterStudio.UI
                 UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Equip_UseWornGraphicMask".Translate(), ref useWornGraphicMask);
                 if (useWornGraphicMask != equipment.useWornGraphicMask)
                 {
-                    CaptureUndoSnapshot();
-                    equipment.useWornGraphicMask = useWornGraphicMask;
-                    MarkEquipmentDirty(false);
+                    MutateEquipmentWithUndo(() => equipment.useWornGraphicMask = useWornGraphicMask, refreshRenderTree: false);
                 }
 
                 string thingCategoriesText = string.Join(", ", equipment.thingCategories ?? new List<string>());
@@ -301,9 +268,7 @@ namespace CharacterStudio.UI
                 string normalizedThingCategoriesText = string.Join(", ", equipment.thingCategories ?? new List<string>());
                 if (thingCategoriesText != normalizedThingCategoriesText)
                 {
-                    CaptureUndoSnapshot();
-                    equipment.thingCategories = ParseCommaSeparatedList(thingCategoriesText).ToList();
-                    MarkEquipmentDirty(false);
+                    MutateEquipmentWithUndo(() => equipment.thingCategories = ParseCommaSeparatedList(thingCategoriesText).ToList(), refreshRenderTree: false);
                 }
 
                 string bodyPartGroupsText = string.Join(", ", equipment.bodyPartGroups ?? new List<string>());
@@ -311,9 +276,7 @@ namespace CharacterStudio.UI
                 string normalizedBodyPartGroupsText = string.Join(", ", equipment.bodyPartGroups ?? new List<string>());
                 if (bodyPartGroupsText != normalizedBodyPartGroupsText)
                 {
-                    CaptureUndoSnapshot();
-                    equipment.bodyPartGroups = ParseCommaSeparatedList(bodyPartGroupsText).ToList();
-                    MarkEquipmentDirty(false);
+                    MutateEquipmentWithUndo(() => equipment.bodyPartGroups = ParseCommaSeparatedList(bodyPartGroupsText).ToList(), refreshRenderTree: false);
                 }
 
                 string apparelLayersText = string.Join(", ", equipment.apparelLayers ?? new List<string>());
@@ -321,9 +284,7 @@ namespace CharacterStudio.UI
                 string normalizedApparelLayersText = string.Join(", ", equipment.apparelLayers ?? new List<string>());
                 if (apparelLayersText != normalizedApparelLayersText)
                 {
-                    CaptureUndoSnapshot();
-                    equipment.apparelLayers = ParseCommaSeparatedList(apparelLayersText).ToList();
-                    MarkEquipmentDirty(false);
+                    MutateEquipmentWithUndo(() => equipment.apparelLayers = ParseCommaSeparatedList(apparelLayersText).ToList(), refreshRenderTree: false);
                 }
 
                 string apparelTagsText = string.Join(", ", equipment.apparelTags ?? new List<string>());
@@ -331,54 +292,42 @@ namespace CharacterStudio.UI
                 string normalizedApparelTagsText = string.Join(", ", equipment.apparelTags ?? new List<string>());
                 if (apparelTagsText != normalizedApparelTagsText)
                 {
-                    CaptureUndoSnapshot();
-                    equipment.apparelTags = ParseCommaSeparatedList(apparelTagsText).ToList();
-                    MarkEquipmentDirty(false);
+                    MutateEquipmentWithUndo(() => equipment.apparelTags = ParseCommaSeparatedList(apparelTagsText).ToList(), refreshRenderTree: false);
                 }
 
                 bool allowCrafting = equipment.allowCrafting;
                 UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Equip_AllowCrafting".Translate(), ref allowCrafting);
                 if (allowCrafting != equipment.allowCrafting)
                 {
-                    CaptureUndoSnapshot();
-                    equipment.allowCrafting = allowCrafting;
-                    MarkEquipmentDirty(false);
+                    MutateEquipmentWithUndo(() => equipment.allowCrafting = allowCrafting, refreshRenderTree: false);
                 }
 
                 string recipeDefName = equipment.recipeDefName ?? string.Empty;
                 UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_RecipeDefName".Translate(), ref recipeDefName);
                 if (recipeDefName != (equipment.recipeDefName ?? string.Empty))
                 {
-                    CaptureUndoSnapshot();
-                    equipment.recipeDefName = recipeDefName;
-                    MarkEquipmentDirty(false);
+                    MutateEquipmentWithUndo(() => equipment.recipeDefName = recipeDefName, refreshRenderTree: false);
                 }
 
                 string recipeWorkbenchDefName = equipment.recipeWorkbenchDefName ?? string.Empty;
                 UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_RecipeWorkbenchDefName".Translate(), ref recipeWorkbenchDefName);
                 if (recipeWorkbenchDefName != (equipment.recipeWorkbenchDefName ?? string.Empty))
                 {
-                    CaptureUndoSnapshot();
-                    equipment.recipeWorkbenchDefName = recipeWorkbenchDefName;
-                    MarkEquipmentDirty(false);
+                    MutateEquipmentWithUndo(() => equipment.recipeWorkbenchDefName = recipeWorkbenchDefName, refreshRenderTree: false);
                 }
 
                 float recipeWorkAmount = equipment.recipeWorkAmount;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Equip_RecipeWorkAmount".Translate(), ref recipeWorkAmount, 1f, 20000f, "F0");
                 if (Math.Abs(recipeWorkAmount - equipment.recipeWorkAmount) > 0.0001f)
                 {
-                    CaptureUndoSnapshot();
-                    equipment.recipeWorkAmount = recipeWorkAmount;
-                    MarkEquipmentDirty(false);
+                    MutateEquipmentWithUndo(() => equipment.recipeWorkAmount = recipeWorkAmount, refreshRenderTree: false);
                 }
 
                 int recipeProductCount = equipment.recipeProductCount;
                 UIHelper.DrawNumericField(ref y, width, "CS_Studio_Equip_RecipeProductCount".Translate(), ref recipeProductCount, 1, 999);
                 if (recipeProductCount != equipment.recipeProductCount)
                 {
-                    CaptureUndoSnapshot();
-                    equipment.recipeProductCount = recipeProductCount;
-                    MarkEquipmentDirty(false);
+                    MutateEquipmentWithUndo(() => equipment.recipeProductCount = recipeProductCount, refreshRenderTree: false);
                 }
 
                 string recipeIngredientsText = string.Join(", ", (equipment.recipeIngredients ?? new List<CharacterEquipmentCostEntry>()).Select(entry => $"{entry.thingDefName}:{entry.count}"));
@@ -386,27 +335,21 @@ namespace CharacterStudio.UI
                 string normalizedRecipeIngredientsText = string.Join(", ", (equipment.recipeIngredients ?? new List<CharacterEquipmentCostEntry>()).Select(entry => $"{entry.thingDefName}:{entry.count}"));
                 if (recipeIngredientsText != normalizedRecipeIngredientsText)
                 {
-                    CaptureUndoSnapshot();
-                    equipment.recipeIngredients = ParseEquipmentCostEntries(recipeIngredientsText).ToList();
-                    MarkEquipmentDirty(false);
+                    MutateEquipmentWithUndo(() => equipment.recipeIngredients = ParseEquipmentCostEntries(recipeIngredientsText).ToList(), refreshRenderTree: false);
                 }
 
                 bool allowTrading = equipment.allowTrading;
                 UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Equip_AllowTrading".Translate(), ref allowTrading);
                 if (allowTrading != equipment.allowTrading)
                 {
-                    CaptureUndoSnapshot();
-                    equipment.allowTrading = allowTrading;
-                    MarkEquipmentDirty(false);
+                    MutateEquipmentWithUndo(() => equipment.allowTrading = allowTrading, refreshRenderTree: false);
                 }
 
                 float marketValue = equipment.marketValue;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Equip_MarketValue".Translate(), ref marketValue, 0.01f, 100000f, "F2");
                 if (Math.Abs(marketValue - equipment.marketValue) > 0.0001f)
                 {
-                    CaptureUndoSnapshot();
-                    equipment.marketValue = marketValue;
-                    MarkEquipmentDirty(false);
+                    MutateEquipmentWithUndo(() => equipment.marketValue = marketValue, refreshRenderTree: false);
                 }
 
                 string tradeTagsText = string.Join(", ", equipment.tradeTags ?? new List<string>());
@@ -414,9 +357,7 @@ namespace CharacterStudio.UI
                 string normalizedTradeTagsText = string.Join(", ", equipment.tradeTags ?? new List<string>());
                 if (tradeTagsText != normalizedTradeTagsText)
                 {
-                    CaptureUndoSnapshot();
-                    equipment.tradeTags = ParseCommaSeparatedList(tradeTagsText).ToList();
-                    MarkEquipmentDirty(false);
+                    MutateEquipmentWithUndo(() => equipment.tradeTags = ParseCommaSeparatedList(tradeTagsText).ToList(), refreshRenderTree: false);
                 }
             }
 
@@ -821,9 +762,9 @@ namespace CharacterStudio.UI
                     UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Equip_TriggeredAnimation_UseVfxVisibility".Translate(), ref useVfxVisibility);
                     if (useVfxVisibility != renderData.triggeredUseVfxVisibility) { CaptureUndoSnapshot(); renderData.triggeredUseVfxVisibility = useVfxVisibility; MarkEquipmentDirty(); }
 
-                    DrawTriggeredAnimationOverrideSection(ref y, width, "South Override", ref renderData.triggeredAnimationSouth, MarkEquipmentDirty);
-                    DrawTriggeredAnimationOverrideSection(ref y, width, "East/West Override", ref renderData.triggeredAnimationEastWest, MarkEquipmentDirty);
-                    DrawTriggeredAnimationOverrideSection(ref y, width, "North Override", ref renderData.triggeredAnimationNorth, MarkEquipmentDirty);
+                    DrawTriggeredAnimationOverrideSection(ref y, width, "South Override", ref renderData.triggeredAnimationSouth, refreshRenderTree => MarkEquipmentDirty(refreshRenderTree));
+                    DrawTriggeredAnimationOverrideSection(ref y, width, "East/West Override", ref renderData.triggeredAnimationEastWest, refreshRenderTree => MarkEquipmentDirty(refreshRenderTree));
+                    DrawTriggeredAnimationOverrideSection(ref y, width, "North Override", ref renderData.triggeredAnimationNorth, refreshRenderTree => MarkEquipmentDirty(refreshRenderTree));
                 }
             }
 

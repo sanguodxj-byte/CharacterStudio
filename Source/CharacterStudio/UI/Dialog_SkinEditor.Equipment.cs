@@ -168,11 +168,8 @@ namespace CharacterStudio.UI
             GUI.color = equipment.enabled ? Color.white : Color.gray;
             if (Widgets.ButtonText(toggleRect, toggleIcon, false))
             {
-                CaptureUndoSnapshot();
-                equipment.enabled = !equipment.enabled;
-                isDirty = true;
-                RefreshPreview();
-                RefreshRenderTree();
+                bool newEnabled = !equipment.enabled;
+                MutateWithUndo(() => equipment.enabled = newEnabled, refreshPreview: true, refreshRenderTree: true);
             }
 
             Rect deleteRect = new Rect(width - 28f, y + 5f, 24f, 22f);
@@ -296,16 +293,14 @@ namespace CharacterStudio.UI
                 return;
             }
 
-            CaptureUndoSnapshot();
             workingSkin.equipments ??= new List<CharacterEquipmentDef>();
 
             var equipment = CreateDefaultEquipment(workingSkin.equipments.Count);
-            workingSkin.equipments.Add(equipment);
-            SelectEquipment(workingSkin.equipments.Count - 1);
-
-            isDirty = true;
-            RefreshPreview();
-            RefreshRenderTree();
+            MutateWithUndo(() =>
+            {
+                workingSkin.equipments.Add(equipment);
+                SelectEquipment(workingSkin.equipments.Count - 1);
+            }, refreshPreview: true, refreshRenderTree: true);
             ShowStatus("CS_Studio_Equip_Added".Translate(equipment.GetDisplayLabel()));
         }
 
@@ -327,8 +322,6 @@ namespace CharacterStudio.UI
                 return;
             }
 
-            CaptureUndoSnapshot();
-
             var duplicate = sourceEquipment.Clone();
             duplicate.defName = BuildUniqueEquipmentDefName(
                 string.IsNullOrWhiteSpace(duplicate.defName) ? "CS_Studio_Equip_DefaultCopyDefName".Translate().ToString() : duplicate.defName + "_Copy",
@@ -338,12 +331,11 @@ namespace CharacterStudio.UI
                 : "CS_Studio_Equip_Label_Copy".Translate(duplicate.label).ToString();
             duplicate.EnsureDefaults();
 
-            workingSkin.equipments.Insert(selectedEquipmentIndex + 1, duplicate);
-            SelectEquipment(selectedEquipmentIndex + 1);
-
-            isDirty = true;
-            RefreshPreview();
-            RefreshRenderTree();
+            MutateWithUndo(() =>
+            {
+                workingSkin.equipments.Insert(selectedEquipmentIndex + 1, duplicate);
+                SelectEquipment(selectedEquipmentIndex + 1);
+            }, refreshPreview: true, refreshRenderTree: true);
             ShowStatus("CS_Studio_Equip_Duplicated".Translate(duplicate.GetDisplayLabel()));
         }
 
@@ -365,23 +357,20 @@ namespace CharacterStudio.UI
                 return;
             }
 
-            CaptureUndoSnapshot();
-
             string removedLabel = selected.GetDisplayLabel();
-            workingSkin.equipments.RemoveAt(selectedEquipmentIndex);
-
-            if (workingSkin.equipments.Count == 0)
+            MutateWithUndo(() =>
             {
-                selectedEquipmentIndex = -1;
-            }
-            else
-            {
-                selectedEquipmentIndex = Mathf.Clamp(selectedEquipmentIndex, 0, workingSkin.equipments.Count - 1);
-            }
+                workingSkin.equipments.RemoveAt(selectedEquipmentIndex);
 
-            isDirty = true;
-            RefreshPreview();
-            RefreshRenderTree();
+                if (workingSkin.equipments.Count == 0)
+                {
+                    selectedEquipmentIndex = -1;
+                }
+                else
+                {
+                    selectedEquipmentIndex = Mathf.Clamp(selectedEquipmentIndex, 0, workingSkin.equipments.Count - 1);
+                }
+            }, refreshPreview: true, refreshRenderTree: true);
             ShowStatus("CS_Studio_Equip_Deleted".Translate(removedLabel));
         }
 
@@ -620,7 +609,6 @@ namespace CharacterStudio.UI
                 return;
             }
 
-            CaptureUndoSnapshot();
             workingSkin.equipments ??= new List<CharacterEquipmentDef>();
 
             var usedDefNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -692,12 +680,12 @@ namespace CharacterStudio.UI
                     visibleOutsideCycle: false)
             };
 
-            workingSkin.equipments.AddRange(presets);
-            SelectEquipment(Mathf.Max(0, workingSkin.equipments.Count - presets.Count));
-            currentTab = EditorTab.Equipment;
-            isDirty = true;
-            RefreshPreview();
-            RefreshRenderTree();
+            MutateWithUndo(() =>
+            {
+                workingSkin.equipments.AddRange(presets);
+                SelectEquipment(Mathf.Max(0, workingSkin.equipments.Count - presets.Count));
+                currentTab = EditorTab.Equipment;
+            }, refreshPreview: true, refreshRenderTree: true);
             ShowStatus("CS_Studio_Equip_PresetAdded".Translate());
         }
 
@@ -896,40 +884,37 @@ namespace CharacterStudio.UI
                     return;
                 }
 
-                CaptureUndoSnapshot();
-
                 workingSkin.equipments ??= new List<CharacterEquipmentDef>();
-                if (replaceExisting)
+                MutateWithUndo(() =>
                 {
-                    workingSkin.equipments.Clear();
-                }
-
-                NormalizeImportedEquipmentDefNames(importedEquipments, workingSkin.equipments);
-                foreach (var imported in importedEquipments)
-                {
-                    if (imported == null)
+                    if (replaceExisting)
                     {
-                        continue;
+                        workingSkin.equipments.Clear();
                     }
 
-                    imported.EnsureDefaults();
-                    workingSkin.equipments.Add(imported.Clone());
-                }
+                    NormalizeImportedEquipmentDefNames(importedEquipments, workingSkin.equipments);
+                    foreach (var imported in importedEquipments)
+                    {
+                        if (imported == null)
+                        {
+                            continue;
+                        }
 
-                lastImportedEquipmentXmlPath = normalizedPath;
+                        imported.EnsureDefaults();
+                        workingSkin.equipments.Add(imported.Clone());
+                    }
 
-                if (workingSkin.equipments.Count > 0)
-                {
-                    SelectEquipment(replaceExisting ? 0 : workingSkin.equipments.Count - importedEquipments.Count);
-                }
-                else
-                {
-                    selectedEquipmentIndex = -1;
-                }
+                    lastImportedEquipmentXmlPath = normalizedPath;
 
-                isDirty = true;
-                RefreshPreview();
-                RefreshRenderTree();
+                    if (workingSkin.equipments.Count > 0)
+                    {
+                        SelectEquipment(replaceExisting ? 0 : workingSkin.equipments.Count - importedEquipments.Count);
+                    }
+                    else
+                    {
+                        selectedEquipmentIndex = -1;
+                    }
+                }, refreshPreview: true, refreshRenderTree: true);
 
                 string sourceLabel = Path.GetFileName(normalizedPath);
                 ShowStatus(replaceExisting

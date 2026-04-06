@@ -62,14 +62,6 @@ namespace CharacterStudio.UI
                 return changed;
             }
 
-            void MarkWeaponVisualDirty()
-            {
-                isDirty = true;
-                RefreshPreview();
-                if (targetPawn != null)
-                    RefreshRenderTree();
-            }
-
             UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Section_WeaponCarryVisual".Translate());
 
             WeaponCarryVisualConfig carrySnapshot = carry.Clone();
@@ -79,9 +71,7 @@ namespace CharacterStudio.UI
             UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_WeaponCarry_Enable".Translate(), ref carryEnabled);
             if (carryEnabled != carry.enabled)
             {
-                CaptureUndoSnapshot();
-                carry.enabled = carryEnabled;
-                MarkWeaponVisualDirty();
+                MutateWithUndo(() => carry.enabled = carryEnabled, refreshPreview: true, refreshRenderTree: targetPawn != null);
             }
 
             UIHelper.DrawPropertyDropdown(ref y, width,
@@ -103,44 +93,37 @@ namespace CharacterStudio.UI
                 option => option,
                 value =>
                 {
-                    carry.anchorTag = value;
-                    MarkWeaponVisualDirty();
+                    MutateWithUndo(() => carry.anchorTag = value, refreshPreview: true, refreshRenderTree: targetPawn != null);
                 });
 
             string texUndrafted = carry.texUndrafted ?? string.Empty;
             if (DrawPathFieldWithBrowser(ref y, "CS_Studio_WeaponCarry_TexUndrafted".Translate(), ref texUndrafted, () =>
                 Find.WindowStack.Add(new Dialog_FileBrowser(carry.texUndrafted ?? string.Empty, path =>
                 {
-                    carry.texUndrafted = path ?? string.Empty;
-                    MarkWeaponVisualDirty();
+                    MutateWithUndo(() => carry.texUndrafted = path ?? string.Empty, refreshPreview: true, refreshRenderTree: targetPawn != null);
                 }))))
             {
-                carry.texUndrafted = texUndrafted;
-                MarkWeaponVisualDirty();
+                MutateWithUndo(() => carry.texUndrafted = texUndrafted, refreshPreview: true, refreshRenderTree: targetPawn != null);
             }
 
             string texDrafted = carry.texDrafted ?? string.Empty;
             if (DrawPathFieldWithBrowser(ref y, "CS_Studio_WeaponCarry_TexDrafted".Translate(), ref texDrafted, () =>
                 Find.WindowStack.Add(new Dialog_FileBrowser(carry.texDrafted ?? string.Empty, path =>
                 {
-                    carry.texDrafted = path ?? string.Empty;
-                    MarkWeaponVisualDirty();
+                    MutateWithUndo(() => carry.texDrafted = path ?? string.Empty, refreshPreview: true, refreshRenderTree: targetPawn != null);
                 }))))
             {
-                carry.texDrafted = texDrafted;
-                MarkWeaponVisualDirty();
+                MutateWithUndo(() => carry.texDrafted = texDrafted, refreshPreview: true, refreshRenderTree: targetPawn != null);
             }
 
             string texCasting = carry.texCasting ?? string.Empty;
             if (DrawPathFieldWithBrowser(ref y, "CS_Studio_WeaponCarry_TexCasting".Translate(), ref texCasting, () =>
                 Find.WindowStack.Add(new Dialog_FileBrowser(carry.texCasting ?? string.Empty, path =>
                 {
-                    carry.texCasting = path ?? string.Empty;
-                    MarkWeaponVisualDirty();
+                    MutateWithUndo(() => carry.texCasting = path ?? string.Empty, refreshPreview: true, refreshRenderTree: targetPawn != null);
                 }))))
             {
-                carry.texCasting = texCasting;
-                MarkWeaponVisualDirty();
+                MutateWithUndo(() => carry.texCasting = texCasting, refreshPreview: true, refreshRenderTree: targetPawn != null);
             }
 
             Text.Font = GameFont.Tiny;
@@ -171,19 +154,12 @@ namespace CharacterStudio.UI
 
             if (UIHelper.DrawToolbarButton(new Rect(0f, y, 140f, 24f), "CS_Studio_WeaponCarry_Reset".Translate()))
             {
-                CaptureUndoSnapshot();
-                weaponOverride.carryVisual = new WeaponCarryVisualConfig { enabled = true, anchorTag = carry.anchorTag };
-                MarkWeaponVisualDirty();
+                MutateWithUndo(() => weaponOverride.carryVisual = new WeaponCarryVisualConfig { enabled = true, anchorTag = carry.anchorTag }, refreshPreview: true, refreshRenderTree: targetPawn != null);
             }
             y += 32f;
 
             if (!AreCarryVisualConfigsEqual(carrySnapshot, carry))
-            {
-                isDirty = true;
-                RefreshPreview();
-                if (targetPawn != null)
-                    RefreshRenderTree();
-            }
+                FinalizeMutatedEditorState(refreshPreview: true, refreshRenderTree: targetPawn != null);
 
             UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Section_WeaponRender".Translate());
 
@@ -203,10 +179,7 @@ namespace CharacterStudio.UI
             UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_WeaponRender_Enable".Translate(), ref overrideEnabled);
             if (overrideEnabled != weaponOverride.enabled)
             {
-                CaptureUndoSnapshot();
-                weaponOverride.enabled = overrideEnabled;
-                isDirty = true;
-                RefreshPreview();
+                MutateWithUndo(() => weaponOverride.enabled = overrideEnabled, refreshPreview: true, refreshRenderTree: false);
             }
 
             UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_WeaponRender_ApplyOffHand".Translate(), ref weaponOverride.applyToOffHand);
@@ -217,12 +190,7 @@ namespace CharacterStudio.UI
             UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_WeaponRender_OffsetZ".Translate(), ref weaponOverride.offset.z, -2f, 2f, "F3");
 
             if (!AreWeaponRenderConfigsEqual(weaponOverrideSnapshot, weaponOverride))
-            {
-                isDirty = true;
-                RefreshPreview();
-                if (targetPawn != null)
-                    RefreshRenderTree();
-            }
+                FinalizeMutatedEditorState(refreshPreview: true, refreshRenderTree: targetPawn != null);
 
             viewRect.height = Mathf.Max(y + 10f, contentRect.height - 4f);
             Widgets.EndScrollView();
