@@ -321,15 +321,6 @@ namespace CharacterStudio.UI
                     includeAbilities = abilities.Count > 0;
                     copyTextures = true;
                     break;
-                case ExportMode.PluginOnly:
-                    includeSkinDef = true;
-                    exportAsGene = false;
-                    includeGeneDef = false;
-                    includePawnKind = false;
-                    includeSummonItem = false;
-                    includeAbilities = false;
-                    copyTextures = false;
-                    break;
             }
 
             NormalizeModuleSelectionForUi();

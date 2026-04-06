@@ -19,9 +19,7 @@ namespace CharacterStudio.Exporter
         /// <summary>完整角色包（PawnKind + Abilities + AI + Item）</summary>
         FullUnit,
         /// <summary>化妆品包（仅皮肤 + 纹理）</summary>
-        CosmeticPack,
-        /// <summary>插件模式（仅皮肤定义，不含纹理复制）</summary>
-        PluginOnly
+        CosmeticPack
     }
 
     /// <summary>
@@ -401,15 +399,6 @@ namespace CharacterStudio.Exporter
                     {
                         config.IncludePawnKind = true;
                     }
-                    break;
-
-                case ExportMode.PluginOnly:
-                    config.IncludeGeneDef = false;
-                    config.IncludePawnKind = false;
-                    config.IncludeSummonItem = false;
-                    config.IncludeAbilities = false;
-                    config.CopyTextures = false;
-                    config.IncludeSkinDef = true;
                     break;
             }
         }
