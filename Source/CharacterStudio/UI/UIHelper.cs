@@ -751,7 +751,7 @@ namespace CharacterStudio.UI
         /// <summary>
         /// 绘制下拉选择框
         /// </summary>
-        public static void DrawPropertyDropdown<T>(ref float y, float width, string label, T currentValue, IEnumerable<T> options, Func<T, string> labelMaker, Action<T> onSelect, float labelWidth = LabelWidth)
+        public static void DrawPropertyDropdown<T>(ref float y, float width, string label, T currentValue, IEnumerable<T> options, Func<T, string> labelMaker, Action<T> onSelect, float labelWidth = LabelWidth, string? tooltip = null)
         {
             Rect rect = new Rect(0, y, width, RowHeight);
             
@@ -769,6 +769,11 @@ namespace CharacterStudio.UI
                     menuOptions.Add(new FloatMenuOption(labelMaker(localOpt), () => onSelect(localOpt)));
                 }
                 Find.WindowStack.Add(new FloatMenu(menuOptions));
+            }
+
+            if (!string.IsNullOrEmpty(tooltip))
+            {
+                TooltipHandler.TipRegion(rect, tooltip);
             }
 
             y += RowHeight;

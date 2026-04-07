@@ -201,6 +201,7 @@ namespace CharacterStudio.Core
                 CharacterSpawnConditionMatchMode.ThingCategory => $"{minCount}× 分类 {condition.categoryDefName}",
                 CharacterSpawnConditionMatchMode.TradeTag => $"{minCount}× 标签 {condition.tradeTag}",
                 CharacterSpawnConditionMatchMode.FoodType => $"{minCount}× 食物类型 {condition.foodType}",
+                CharacterSpawnConditionMatchMode.FoodPreferability => $"{minCount}× 食物等级 {condition.foodPreferability}",
                 _ => condition.GetDisplayLabel()
             };
         }
@@ -226,6 +227,12 @@ namespace CharacterStudio.Core
 
                 case CharacterSpawnConditionMatchMode.FoodType:
                     return def.IsIngestible && def.ingestible != null && (def.ingestible.foodType & condition.foodType) != 0;
+
+                case CharacterSpawnConditionMatchMode.FoodPreferability:
+                    return def.IsIngestible
+                        && def.ingestible != null
+                        && condition.foodPreferability != FoodPreferability.Undefined
+                        && def.ingestible.preferability == condition.foodPreferability;
 
                 default:
                     return false;

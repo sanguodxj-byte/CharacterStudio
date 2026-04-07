@@ -218,8 +218,6 @@ namespace CharacterStudio.Design
                 yield return hotkeys.eAbilityDefName;
             if (!string.IsNullOrWhiteSpace(hotkeys.rAbilityDefName))
                 yield return hotkeys.rAbilityDefName;
-            if (!string.IsNullOrWhiteSpace(hotkeys.wComboAbilityDefName))
-                yield return hotkeys.wComboAbilityDefName;
         }
 
         private static List<ModularAbilityDef> CloneAbilities(IEnumerable<ModularAbilityDef>? abilities)

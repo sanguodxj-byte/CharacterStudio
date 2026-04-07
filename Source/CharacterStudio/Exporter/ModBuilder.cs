@@ -84,6 +84,7 @@ namespace CharacterStudio.Exporter
         public float RoleCardSpawnAnimationScale { get; set; } = 1f;
         public SummonSpawnEventMode RoleCardSpawnEvent { get; set; } = SummonSpawnEventMode.PositiveLetter;
         public CharacterDefinition CharacterDefinition { get; set; } = new CharacterDefinition();
+        public bool IncludeRuntimeTriggers { get; set; } = false;
 
         public bool AssetRightsConfirmed { get; set; } = false;
     }
@@ -163,6 +164,7 @@ namespace CharacterStudio.Exporter
                 RoleCardSpawnAnimationScale = config.RoleCardSpawnAnimationScale,
                 RoleCardSpawnEvent = config.RoleCardSpawnEvent,
                 CharacterDefinition = config.CharacterDefinition?.Clone() ?? new CharacterDefinition(),
+                IncludeRuntimeTriggers = config.IncludeRuntimeTriggers,
                 AssetRightsConfirmed = config.AssetRightsConfirmed
             };
         }
@@ -340,6 +342,11 @@ namespace CharacterStudio.Exporter
 
             GenerateCharacterDefinitionXml(modPath, exportConfig);
 
+            if (exportConfig.IncludeRuntimeTriggers)
+            {
+                GenerateRuntimeTriggerXml(modPath, exportConfig);
+            }
+
             if (exportConfig.IncludeAbilities && exportConfig.Abilities.Count > 0)
             {
                 GenerateAbilityDefXml(modPath, exportConfig);
@@ -378,6 +385,12 @@ namespace CharacterStudio.Exporter
 
             if (config.IncludePawnKind || config.IncludeGeneDef)
             {
+                config.IncludeSkinDef = true;
+            }
+
+            if (config.IncludeRuntimeTriggers)
+            {
+                config.IncludePawnKind = true;
                 config.IncludeSkinDef = true;
             }
 
@@ -428,8 +441,10 @@ namespace CharacterStudio.Exporter
             Directory.CreateDirectory(Path.Combine(modPath, "About"));
             Directory.CreateDirectory(Path.Combine(modPath, "Defs"));
             Directory.CreateDirectory(Path.Combine(modPath, "Defs", "AbilityDefs"));
+            Directory.CreateDirectory(Path.Combine(modPath, "Defs", "CharacterTriggers"));
             Directory.CreateDirectory(Path.Combine(modPath, "Defs", "GeneDefs"));
             Directory.CreateDirectory(Path.Combine(modPath, "Defs", "PawnKindDefs"));
+            Directory.CreateDirectory(Path.Combine(modPath, "Defs", "SpawnProfileDefs"));
             Directory.CreateDirectory(Path.Combine(modPath, "Defs", "RecipeDefs"));
             Directory.CreateDirectory(Path.Combine(modPath, "Defs", "SkinDefs"));
             Directory.CreateDirectory(Path.Combine(modPath, "Defs", "ThingDef"));
@@ -925,6 +940,62 @@ namespace CharacterStudio.Exporter
             string path = Path.Combine(modPath, "Defs", "PawnKindDefs", $"{safeName}_Character.xml");
             CharacterDefinitionXmlUtility.Save(definition, path);
             Log.Message($"[CharacterStudio] 角色定义已生成: {path}");
+        }
+
+        private void GenerateRuntimeTriggerXml(string modPath, ModExportConfig config)
+        {
+            if (config.SkinDef == null || config.CharacterDefinition == null)
+            {
+                return;
+            }
+
+            List<CharacterRuntimeTriggerDef> triggers = config.CharacterDefinition.runtimeTriggers?
+                .Where(static trigger => trigger != null)
+                .Select(static trigger => trigger.Clone())
+                .ToList() ?? new List<CharacterRuntimeTriggerDef>();
+            if (triggers.Count == 0)
+            {
+                return;
+            }
+
+            string ownerCharacterDefName = config.CharacterDefinition.defName;
+            if (string.IsNullOrWhiteSpace(ownerCharacterDefName))
+            {
+                ownerCharacterDefName = config.SkinDef.defName ?? SanitizeFileName(config.ModName);
+            }
+
+            CharacterSpawnProfileDef profile = new CharacterSpawnProfileDef
+            {
+                defName = CharacterSpawnProfileRegistry.GetDefaultProfileDefName(ownerCharacterDefName),
+                label = config.CharacterDefinition.displayName,
+                description = config.Description,
+                ownerCharacterDefName = ownerCharacterDefName,
+                skinDefName = config.SkinDef.defName ?? string.Empty,
+                raceDefName = config.CharacterDefinition.raceDefName,
+                characterDefinition = config.CharacterDefinition.Clone(),
+                forcePlayerFaction = true
+            };
+            profile.characterDefinition.runtimeTriggers?.Clear();
+
+            for (int i = 0; i < triggers.Count; i++)
+            {
+                CharacterRuntimeTriggerDef trigger = triggers[i];
+                if (string.IsNullOrWhiteSpace(trigger.defName))
+                {
+                    trigger.defName = CharacterRuntimeTriggerRegistry.GetDefaultTriggerDefName(ownerCharacterDefName, i + 1);
+                }
+
+                trigger.ownerCharacterDefName = ownerCharacterDefName;
+                trigger.spawnProfileDefName = profile.defName;
+            }
+
+            string safeName = SanitizeFileName(config.ModName);
+            string profilePath = Path.Combine(modPath, "Defs", "SpawnProfileDefs", $"{safeName}_SpawnProfiles.xml");
+            string triggerPath = Path.Combine(modPath, "Defs", "CharacterTriggers", $"{safeName}_RuntimeTriggers.xml");
+            CharacterRuntimeTriggerXmlUtility.SaveSpawnProfiles(new[] { profile }, profilePath);
+            CharacterRuntimeTriggerXmlUtility.SaveRuntimeTriggers(triggers, triggerPath);
+            Log.Message($"[CharacterStudio] 运行时角色配置已生成: {profilePath}");
+            Log.Message($"[CharacterStudio] 运行时触发器已生成: {triggerPath}");
         }
 
         /// <summary>

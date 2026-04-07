@@ -40,6 +40,8 @@ namespace CharacterStudio
 
             // 加载运行时皮肤定义
             PawnSkinDefRegistry.LoadFromConfig();
+            CharacterSpawnProfileRegistry.LoadFromConfig();
+            CharacterRuntimeTriggerRegistry.LoadFromConfig();
 
             // 预热运行时技能 Def，确保旧存档中的 CS_RT_* AbilityDef 引用在读档期即可被解析
             Abilities.AbilityGrantUtility.WarmupAllRuntimeAbilityDefs();
@@ -110,8 +112,11 @@ namespace CharacterStudio
             }
 
             ApplyPatch("PawnRenderTree", () => Patch_PawnRenderTree.Apply(harmony));
+            ApplyPatch("GameComponentBootstrap", () => Patches.Patch_GameComponentBootstrap.Apply(harmony));
             ApplyPatch("PawnGizmos", () => UI.Patch_PawnGizmos.Apply(harmony));
             ApplyPatch("AbilityGizmos", () => UI.Patch_AbilityGizmos.Apply(harmony));
+            ApplyPatch("PlaySettingsAbilityHotkeys", () => UI.Patch_PlaySettings_AbilityHotkeys.Apply(harmony));
+            ApplyPatch("UIRootAbilityHotkeys", () => UI.Patch_UIRoot_AbilityHotkeys.Apply(harmony));
             ApplyPatch("WeaponRender", () => Rendering.Patch_WeaponRender.Apply(harmony));
             ApplyPatch("RaceLabel", () => Patches.Patch_RaceLabel.Apply(harmony));
             ApplyPatch("CharacterAttributeBuffStat", () => Patches.Patch_CharacterAttributeBuffStat.Apply(harmony));

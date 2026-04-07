@@ -876,6 +876,7 @@ namespace CharacterStudio.Rendering
             string overlaySemanticKey = skinComp.GetEffectiveOverlaySemanticKey();
             bool isBlinkActive = skinComp.IsBlinkActive();
             BlinkPhase blinkPhase = skinComp.GetBlinkPhase();
+            float blinkPhaseProgress = skinComp.GetBlinkPhaseProgress01();
             bool hasReplacementEyeOverlay = HasActiveReplacementEye(customNode, pawn, skinComp);
             EyeAnimationVariant eyeVariant = skinComp.GetEffectiveEyeAnimationVariant();
             PupilScaleVariant pupilVariant = skinComp.GetEffectivePupilScaleVariant();
@@ -891,10 +892,12 @@ namespace CharacterStudio.Rendering
                 emotionState,
                 isBlinkActive,
                 blinkPhase,
+                blinkPhaseProgress,
                 hasReplacementEyeOverlay,
                 eyeVariant,
                 pupilVariant,
                 expression,
+                pawn.Rotation,
                 gazeOffset,
                 primaryWave,
                 slowWave);
@@ -1579,7 +1582,7 @@ namespace CharacterStudio.Rendering
         {
             Pawn? pawn = customNode.tree?.pawn;
             CompPawnSkin? skinComp = pawn?.TryGetComp<CompPawnSkin>();
-            const float defaultUpperLidMoveDown = 0.0044f;
+            const float defaultUpperLidMoveDown = 0.008f;
 
             // 预览面板中 LidState 可单独覆盖，但并不会强制启用 eyeDirectionConfig。
             // 之前这里优先读取编译态 portraitTrack.eyeDirection.upperLidMoveDown，
@@ -1617,7 +1620,7 @@ namespace CharacterStudio.Rendering
                 return false;
 
             if (expression == ExpressionType.Blink)
-                return false;
+                return true;
 
             if (skinComp.IsBlinkActive())
             {
@@ -1746,7 +1749,7 @@ namespace CharacterStudio.Rendering
         private bool IsOverlayAllowedByExplicitRules(string activeOverlayId, List<string> explicitOverlayIds)
         {
             if (explicitOverlayIds.Count == 0)
-                return IsGenericOverlayGroupId(activeOverlayId);
+                return false;
 
             if (IsGenericOverlayGroupId(activeOverlayId))
             {
@@ -1787,61 +1790,30 @@ namespace CharacterStudio.Rendering
             }
         }
 
-        private string ResolveExplicitOverlaySemanticKey(PawnFaceConfig faceConfig, ExpressionType expression)
+        private string ResolveExplicitOverlaySemanticKey(PawnFaceConfig faceConfig, CompPawnSkin? skinComp, ExpressionType expression)
         {
-            if (faceConfig.expressionOverlayRules == null || faceConfig.expressionOverlayRules.Count == 0)
-                return string.Empty;
+            string runtimeSemanticKey = PawnFaceConfig.NormalizeOverlaySemanticKey(skinComp?.CurrentFaceRuntimeState.currentOverlaySemanticKey);
+            if (!string.IsNullOrWhiteSpace(runtimeSemanticKey))
+                return runtimeSemanticKey;
 
-            PawnFaceConfig.ExpressionOverlayRule? rule = faceConfig.expressionOverlayRules
-                .FirstOrDefault(r => r != null && r.expression == expression);
-            if (rule == null)
-                return string.Empty;
+            EmotionOverlayState runtimeOverlayState = skinComp?.CurrentFaceRuntimeState.currentEmotionOverlayState ?? EmotionOverlayState.None;
+            string runtimeEmotionSemanticKey = PawnFaceConfig.MapLegacyEmotionStateToSemanticKey(runtimeOverlayState.ToString());
+            if (!string.IsNullOrWhiteSpace(runtimeEmotionSemanticKey))
+                return runtimeEmotionSemanticKey;
 
-            if (!string.IsNullOrWhiteSpace(rule.semanticKey))
-                return PawnFaceConfig.NormalizeOverlaySemanticKey(rule.semanticKey);
-
-            return PawnFaceConfig.MapLegacyEmotionStateToSemanticKey(rule.emotionState);
+            return faceConfig.ResolveOverlaySemanticKey(expression);
         }
 
-        private List<string> ResolveExplicitOverlayIds(PawnFaceConfig faceConfig, string? semanticKey, ExpressionType expression)
+        private List<string> ResolveExplicitOverlayIds(PawnFaceConfig faceConfig, CompPawnSkin? skinComp, string? semanticKey, ExpressionType expression)
         {
-            if (faceConfig.emotionOverlayRules == null || faceConfig.emotionOverlayRules.Count == 0)
-                return new List<string>();
-
             string normalizedSemanticKey = PawnFaceConfig.NormalizeOverlaySemanticKey(semanticKey);
             if (string.IsNullOrWhiteSpace(normalizedSemanticKey))
-                normalizedSemanticKey = ResolveExplicitOverlaySemanticKey(faceConfig, expression);
+                normalizedSemanticKey = ResolveExplicitOverlaySemanticKey(faceConfig, skinComp, expression);
 
             if (string.IsNullOrWhiteSpace(normalizedSemanticKey))
                 return new List<string>();
 
-            return faceConfig.emotionOverlayRules
-                .Where(rule =>
-                {
-                    if (rule == null)
-                        return false;
-
-                    string ruleSemanticKey = !string.IsNullOrWhiteSpace(rule.semanticKey)
-                        ? PawnFaceConfig.NormalizeOverlaySemanticKey(rule.semanticKey)
-                        : PawnFaceConfig.MapLegacyEmotionStateToSemanticKey(rule.emotionState);
-                    return string.Equals(ruleSemanticKey, normalizedSemanticKey, StringComparison.OrdinalIgnoreCase);
-                })
-                .SelectMany(rule =>
-                {
-                    if (rule == null)
-                        return Enumerable.Empty<string>();
-
-                    if (rule.overlayIds != null && rule.overlayIds.Count > 0)
-                        return rule.overlayIds;
-
-                    return string.IsNullOrWhiteSpace(rule.overlayId)
-                        ? Enumerable.Empty<string>()
-                        : new[] { rule.overlayId };
-                })
-                .Select(PawnFaceConfig.NormalizeOverlayId)
-                .Where(id => !string.IsNullOrWhiteSpace(id))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
+            return faceConfig.ResolveOverlayIds(normalizedSemanticKey, expression);
         }
 
         private bool ShouldSuppressEmotionOverlayRendering(PawnRenderNode_Custom customNode, Pawn? pawn)
@@ -1862,11 +1834,11 @@ namespace CharacterStudio.Rendering
                 ?? (TryGetFallbackExpression(pawn) ?? ExpressionType.Neutral);
             string activeOverlayId = ResolveActiveEmotionOverlayId(customNode, pawn);
 
-            string semanticKey = ResolveExplicitOverlaySemanticKey(faceConfig, expression);
+            string semanticKey = ResolveExplicitOverlaySemanticKey(faceConfig, skinComp, expression);
             if (string.IsNullOrWhiteSpace(semanticKey))
                 return true;
 
-            List<string> explicitOverlayIds = ResolveExplicitOverlayIds(faceConfig, semanticKey, expression);
+            List<string> explicitOverlayIds = ResolveExplicitOverlayIds(faceConfig, skinComp, semanticKey, expression);
             return !IsOverlayAllowedByExplicitRules(activeOverlayId, explicitOverlayIds);
         }
 
@@ -1881,11 +1853,11 @@ namespace CharacterStudio.Rendering
                 return false;
 
             ExpressionType expression = skinComp.GetEffectiveExpression();
-            string semanticKey = ResolveExplicitOverlaySemanticKey(faceConfig, expression);
+            string semanticKey = ResolveExplicitOverlaySemanticKey(faceConfig, skinComp, expression);
             if (string.IsNullOrWhiteSpace(semanticKey))
                 return false;
 
-            List<string> activeOverlayIds = ResolveExplicitOverlayIds(faceConfig, semanticKey, expression);
+            List<string> activeOverlayIds = ResolveExplicitOverlayIds(faceConfig, skinComp, semanticKey, expression);
             return IsOverlayAllowedByExplicitRules(overlayId, activeOverlayIds);
         }
 
@@ -1948,7 +1920,11 @@ namespace CharacterStudio.Rendering
 
                     if (expression == ExpressionType.Blink)
                     {
-                        HideProgrammaticFacePart(customNode);
+                        SetProgrammaticFaceTransform(
+                            customNode,
+                            0f,
+                            Vector3.zero,
+                            Vector3.one);
                         return;
                     }
 
@@ -2043,6 +2019,29 @@ namespace CharacterStudio.Rendering
                             HideProgrammaticFacePart(customNode);
                             return;
                         }
+
+                        string followTarget = ResolveOverlayFollowTarget(skinComp.ActiveSkin?.faceConfig, overlayId);
+                        switch (followTarget)
+                        {
+                            case "Pupil":
+                            {
+                                if (TryGetFollowSourceTransform(customNode, pawn, LayeredFacePartType.Pupil, out float pupilAngle, out Vector3 pupilOffset))
+                                {
+                                    SetProgrammaticFaceTransform(customNode, pupilAngle, pupilOffset, Vector3.one);
+                                    return;
+                                }
+                                return;
+                            }
+                            case "Face":
+                            {
+                                if (TryGetFollowSourceTransform(customNode, pawn, LayeredFacePartType.Eye, out _, out Vector3 eyeOffset))
+                                {
+                                    SetProgrammaticFaceTransform(customNode, 0f, eyeOffset, Vector3.one);
+                                    return;
+                                }
+                                return;
+                            }
+                        }
                     }
 
                     SetProgrammaticFaceTransform(
@@ -2053,6 +2052,54 @@ namespace CharacterStudio.Rendering
                     return;
                 }
             }
+        }
+
+        private string ResolveOverlayFollowTarget(PawnFaceConfig? faceConfig, string overlayId)
+        {
+            if (faceConfig?.layeredParts == null)
+                return string.Empty;
+
+            string normalizedOverlayId = PawnFaceConfig.NormalizeOverlayId(overlayId);
+            LayeredFacePartConfig? part = faceConfig.layeredParts.FirstOrDefault(existing => existing != null
+                && existing.partType == LayeredFacePartType.Overlay
+                && string.Equals(PawnFaceConfig.NormalizeOverlayId(existing.overlayId), normalizedOverlayId, StringComparison.OrdinalIgnoreCase));
+            return (part?.followTarget ?? string.Empty).Trim();
+        }
+
+        private bool TryGetFollowSourceTransform(PawnRenderNode_Custom overlayNode, Pawn pawn, LayeredFacePartType sourceType, out float angle, out Vector3 offset)
+        {
+            angle = 0f;
+            offset = Vector3.zero;
+
+            PawnRenderTree? tree = overlayNode.tree;
+            if (tree?.rootNode == null)
+                return false;
+
+            Queue<PawnRenderNode> queue = new Queue<PawnRenderNode>();
+            queue.Enqueue(tree.rootNode);
+            while (queue.Count > 0)
+            {
+                PawnRenderNode node = queue.Dequeue();
+                if (node is PawnRenderNode_Custom custom
+                    && custom != overlayNode
+                    && custom.layeredFacePartType == sourceType)
+                {
+                    angle = custom.currentProgrammaticAngle;
+                    offset = custom.currentProgrammaticOffset;
+                    return true;
+                }
+
+                if (node.children != null)
+                {
+                    foreach (PawnRenderNode child in node.children)
+                    {
+                        if (child != null)
+                            queue.Enqueue(child);
+                    }
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -2813,6 +2860,30 @@ namespace CharacterStudio.Rendering
                 return null;
             }
 
+            if (partType == LayeredFacePartType.Eye)
+            {
+                string eyeNeutralBasePath = faceConfig.GetAnyDirectionalLayeredPartPath(partType, side, facing);
+                string? pairedVariantPath = TryResolveLayeredPairedPartVariantPath(
+                    customNode,
+                    pawn,
+                    eyeNeutralBasePath,
+                    expression);
+                if (!string.IsNullOrWhiteSpace(pairedVariantPath))
+                    return pairedVariantPath;
+            }
+
+            if (partType == LayeredFacePartType.Eye
+                || partType == LayeredFacePartType.Pupil
+                || partType == LayeredFacePartType.UpperLid
+                || partType == LayeredFacePartType.LowerLid)
+            {
+                string? replacementSetPath = skinComp == null
+                    ? null
+                    : ResolveReplacementEyePath(faceConfig, skinComp, facing);
+                if (!string.IsNullOrWhiteSpace(replacementSetPath))
+                    return replacementSetPath;
+            }
+
             string neutralPath = isOverlay
                 ? faceConfig.GetLayeredDirectionalPartPath(partType, ExpressionType.Neutral, overlayId, facing)
                 : faceConfig.GetLayeredDirectionalPartPath(partType, ExpressionType.Neutral, side, facing);
@@ -3015,9 +3086,28 @@ namespace CharacterStudio.Rendering
 
             if (skinComp.IsBlinkActive())
             {
-                // Blink 流程改为“先眼睑位移，再替换”。
-                // 眨眼期间的替换眼显示由 blink phase 显式驱动，
-                // 不在这里提前套用 EyeAnimationVariant 贴图。
+                if (partType == LayeredFacePartType.Eye)
+                {
+                    EyeAnimationVariant eyeVariantDuringBlink = skinComp.GetEffectiveEyeAnimationVariant();
+                    ExpressionType blinkSemanticExpression = skinComp.CurrentFaceRuntimeState.baseExpressionBeforeBlink;
+                    List<string> blinkTokens = GetEyeAnimationVariantTokens(eyeVariantDuringBlink, blinkSemanticExpression);
+                    string blinkNeutralPath = neutralPath!;
+                    foreach (string token in blinkTokens)
+                    {
+                        string variantPath = AppendVariantToken(blinkNeutralPath, token);
+                        if (TextureExists(variantPath))
+                            return variantPath;
+                    }
+
+                    string closeHappyPath = AppendVariantToken(AppendVariantToken(blinkNeutralPath, "Close"), "Happy");
+                    if (TextureExists(closeHappyPath))
+                        return closeHappyPath;
+
+                    string happyClosePath = AppendVariantToken(AppendVariantToken(blinkNeutralPath, "Happy"), "Close");
+                    if (TextureExists(happyClosePath))
+                        return happyClosePath;
+                }
+
                 return null;
             }
 
@@ -3048,7 +3138,7 @@ namespace CharacterStudio.Rendering
             if (expression != ExpressionType.Blink || skinComp == null || !skinComp.IsBlinkActive())
                 return false;
 
-            if (partType == LayeredFacePartType.Eye || partType == LayeredFacePartType.Pupil)
+            if (partType == LayeredFacePartType.Pupil)
                 return true;
 
             return skinComp.GetBlinkPhase() != BlinkPhase.ShowReplacementEye;

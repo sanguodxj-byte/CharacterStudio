@@ -16,6 +16,9 @@ namespace CharacterStudio.UI
     /// </summary>
     public class Gizmo_CSAbility : Gizmo
     {
+        public const float BaseWidth = 75f;
+        public const float BaseHeight = 75f;
+
         private readonly Pawn pawn;
         private readonly ModularAbilityDef modAbility;
         private readonly VisibleAbilitySlotEntry? slotEntry;
@@ -42,20 +45,25 @@ namespace CharacterStudio.UI
             this.Order = 10f;
         }
 
-        public override float GetWidth(float maxWidth) => 75f;
+        public override float GetWidth(float maxWidth) => BaseWidth;
 
         public override GizmoResult GizmoOnGUI(Vector2 topLeft, float maxWidth, GizmoRenderParms parms)
         {
-            Rect outerRect = new Rect(topLeft.x, topLeft.y, GetWidth(maxWidth), 75f);
+            float scale = Mathf.Clamp(maxWidth / BaseWidth, 0.32f, 1f);
+            Rect outerRect = new Rect(topLeft.x, topLeft.y, BaseWidth * scale, BaseHeight * scale);
+            Rect drawRect = new Rect(0f, 0f, BaseWidth, BaseHeight);
 
-            Widgets.DrawBoxSolid(outerRect, ColorBg);
+            Matrix4x4 oldMatrix = GUI.matrix;
+            GUI.matrix = Matrix4x4.TRS(new Vector3(topLeft.x, topLeft.y, 0f), Quaternion.identity, new Vector3(scale, scale, 1f));
+
+            Widgets.DrawBoxSolid(drawRect, ColorBg);
 
             bool onCooldown = IsOnCooldown(out float cdPct, out string cdLabel);
             bool canUse = !onCooldown && CanPawnUseAbility();
 
-            DrawSlotBadge(outerRect);
+            DrawSlotBadge(drawRect);
 
-            Rect iconRect = new Rect(outerRect.x + 15f, outerRect.y + 8f, 44f, 44f);
+            Rect iconRect = new Rect(drawRect.x + 15f, drawRect.y + 8f, 44f, 44f);
             GUI.color = canUse ? ColorReady : ColorOnCD;
             if (iconTex != null)
             {
@@ -73,7 +81,7 @@ namespace CharacterStudio.UI
             GUI.color = Color.white;
             Text.Anchor = TextAnchor.UpperLeft;
 
-            Rect nameRect = new Rect(outerRect.x + 2f, outerRect.y + 56f, outerRect.width - 4f, 16f);
+            Rect nameRect = new Rect(drawRect.x + 2f, drawRect.y + 56f, drawRect.width - 4f, 16f);
             Text.Font = GameFont.Tiny;
             Text.Anchor = TextAnchor.UpperCenter;
             GUI.color = canUse ? Color.white : Color.gray;
@@ -82,8 +90,9 @@ namespace CharacterStudio.UI
             Text.Anchor = TextAnchor.UpperLeft;
 
             GUI.color = canUse ? ColorBorder : new Color(0.3f, 0.3f, 0.3f, 0.5f);
-            Widgets.DrawBox(outerRect, 1);
+            Widgets.DrawBox(drawRect, 1);
             GUI.color = Color.white;
+            GUI.matrix = oldMatrix;
 
             TooltipHandler.TipRegion(outerRect, BuildTooltip(onCooldown, cdLabel));
 
@@ -161,6 +170,11 @@ namespace CharacterStudio.UI
         private bool TryProcessViaVanillaCommand(Event ev)
         {
             if (AbilityVanillaFlightUtility.ShouldBlockStandardAbilityAccessDuringFlight(pawn, modAbility))
+            {
+                return false;
+            }
+
+            if (GetSmartJumpComponent(modAbility) != null)
             {
                 return false;
             }
@@ -315,6 +329,15 @@ namespace CharacterStudio.UI
                 "Q" => comp.qCooldownUntilTick,
                 "W" => comp.wCooldownUntilTick,
                 "E" => comp.eCooldownUntilTick,
+                "T" => comp.tCooldownUntilTick,
+                "A" => comp.aCooldownUntilTick,
+                "S" => comp.sCooldownUntilTick,
+                "D" => comp.dCooldownUntilTick,
+                "F" => comp.fCooldownUntilTick,
+                "Z" => comp.zCooldownUntilTick,
+                "X" => comp.xCooldownUntilTick,
+                "C" => comp.cCooldownUntilTick,
+                "V" => comp.vCooldownUntilTick,
                 "R" => comp.rCooldownUntilTick,
                 _ => 0
             };
@@ -449,6 +472,19 @@ namespace CharacterStudio.UI
 
             return ContentFinder<Texture2D>.Get("UI/Designators/Strip", true);
         }
+
+        private static AbilityRuntimeComponentConfig? GetSmartJumpComponent(ModularAbilityDef? ability)
+        {
+            if (ability?.runtimeComponents == null)
+            {
+                return null;
+            }
+
+            return ability.runtimeComponents.FirstOrDefault(component => component != null
+                && component.enabled
+                && (component.type == AbilityRuntimeComponentType.SmartJump
+                    || component.type == AbilityRuntimeComponentType.EShortJump));
+        }
     }
 
     public class Gizmo_CSShieldStatus : Gizmo
@@ -494,7 +530,7 @@ namespace CharacterStudio.UI
 
         public override GizmoResult GizmoOnGUI(Vector2 topLeft, float maxWidth, GizmoRenderParms parms)
         {
-            Rect outerRect = new Rect(topLeft.x, topLeft.y, GetWidth(maxWidth), 75f);
+            Rect outerRect = new Rect(topLeft.x, topLeft.y, GetWidth(maxWidth), Gizmo_CSAbility.BaseHeight);
             CompPawnSkin? skin = pawn.GetComp<CompPawnSkin>();
             float currentShield = Mathf.Max(0f, skin?.shieldRemainingDamage ?? 0f);
             float storedShield = Mathf.Max(0f, skin?.shieldStoredHeal ?? 0f);
@@ -746,6 +782,92 @@ namespace CharacterStudio.UI
         }
     }
 
+    public class Gizmo_CSAbilityBar : Gizmo
+    {
+        private readonly List<Gizmo_CSAbility> abilities;
+
+        private const int MaxColumns = 5;
+        private const float HorizontalGap = 4f;
+        private const float VerticalGap = 2f;
+
+        public Gizmo_CSAbilityBar(IEnumerable<Gizmo_CSAbility> abilities)
+        {
+            this.abilities = abilities?.Where(static a => a != null).ToList() ?? new List<Gizmo_CSAbility>();
+            Order = 10f;
+        }
+
+        public override float GetWidth(float maxWidth)
+        {
+            LayoutMetrics metrics = CalculateLayout();
+            int columns = Mathf.Min(MaxColumns, Mathf.Max(1, metrics.columnCount));
+            return (columns * metrics.itemWidth) + ((columns - 1) * HorizontalGap);
+        }
+
+        public override GizmoResult GizmoOnGUI(Vector2 topLeft, float maxWidth, GizmoRenderParms parms)
+        {
+            if (abilities.Count == 0)
+            {
+                return new GizmoResult(GizmoState.Clear);
+            }
+
+            LayoutMetrics metrics = CalculateLayout();
+            int columns = Mathf.Min(MaxColumns, Mathf.Max(1, metrics.columnCount));
+            GizmoResult finalResult = new GizmoResult(GizmoState.Clear);
+
+            for (int index = 0; index < abilities.Count; index++)
+            {
+                int row = index / columns;
+                int column = index % columns;
+                Vector2 childTopLeft = new Vector2(
+                    topLeft.x + column * (metrics.itemWidth + HorizontalGap),
+                    topLeft.y + row * (metrics.itemHeight + VerticalGap));
+
+                Gizmo_CSAbility child = abilities[index];
+                GizmoResult result = child.GizmoOnGUI(childTopLeft, metrics.itemWidth, parms);
+                if (result.State == GizmoState.Interacted || result.State == GizmoState.OpenedFloatMenu)
+                {
+                    return result;
+                }
+
+                if (result.State == GizmoState.Mouseover)
+                {
+                    finalResult = result;
+                }
+            }
+
+            return finalResult;
+        }
+
+        private LayoutMetrics CalculateLayout()
+        {
+            int count = Mathf.Max(1, abilities.Count);
+            int rows = count <= 5 ? 1 : count <= 10 ? 2 : 3;
+            int columns = Mathf.CeilToInt(count / (float)rows);
+            float scale = rows switch
+            {
+                <= 1 => 1f,
+                2 => 0.84f,
+                _ => 0.70f
+            };
+
+            return new LayoutMetrics
+            {
+                rowCount = rows,
+                columnCount = columns,
+                itemWidth = Gizmo_CSAbility.BaseWidth * scale,
+                itemHeight = Gizmo_CSAbility.BaseHeight * scale
+            };
+        }
+
+        private struct LayoutMetrics
+        {
+            public int rowCount;
+            public int columnCount;
+            public float itemWidth;
+            public float itemHeight;
+        }
+    }
+
     /// <summary>
     /// Harmony 补丁：为持有 CS 皮肤且皮肤含技能的 Pawn 注入技能 Gizmo
     /// </summary>
@@ -843,6 +965,7 @@ namespace CharacterStudio.UI
                 list.Add(new Gizmo_CSShieldStatus(__instance));
             }
 
+            List<Gizmo_CSAbility> abilityGizmos = new List<Gizmo_CSAbility>();
             foreach (var entry in visibleSlots)
             {
                 string defName = entry.abilityDefName!;
@@ -865,7 +988,12 @@ namespace CharacterStudio.UI
                     };
 
                 vanillaCommandsByAbility.TryGetValue(defName, out Gizmo? vanillaCommand);
-                list.Add(new Gizmo_CSAbility(__instance, placeholder, entry, vanillaCommand));
+                abilityGizmos.Add(new Gizmo_CSAbility(__instance, placeholder, entry, vanillaCommand));
+            }
+
+            if (abilityGizmos.Count > 0)
+            {
+                list.Add(new Gizmo_CSAbilityBar(abilityGizmos));
             }
 
             __result = list;

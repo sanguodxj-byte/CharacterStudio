@@ -306,9 +306,11 @@ namespace CharacterStudio.Abilities
 
                 switch (component.type)
                 {
-                    case AbilityRuntimeComponentType.QComboWindow:
+                    case AbilityRuntimeComponentType.SlotOverrideWindow:
                         int comboWindow = component.comboWindowTicks > 0 ? component.comboWindowTicks : 12;
-                        skinComp.qComboWindowEndTick = nowTick + comboWindow;
+                        skinComp.slotOverrideWindowEndTick = nowTick + comboWindow;
+                        skinComp.slotOverrideWindowSlotId = component.comboTargetHotkeySlot.ToString();
+                        skinComp.slotOverrideWindowAbilityDefName = component.comboTargetAbilityDefName ?? string.Empty;
                         break;
                     case AbilityRuntimeComponentType.HotkeyOverride:
                         ApplyHotkeyOverride(component, skinComp, nowTick);
@@ -485,6 +487,42 @@ namespace CharacterStudio.Abilities
                     skinComp.eOverrideAbilityDefName = overrideDefName;
                     skinComp.eOverrideExpireTick = expireTick;
                     break;
+                case AbilityRuntimeHotkeySlot.T:
+                    skinComp.tOverrideAbilityDefName = overrideDefName;
+                    skinComp.tOverrideExpireTick = expireTick;
+                    break;
+                case AbilityRuntimeHotkeySlot.A:
+                    skinComp.aOverrideAbilityDefName = overrideDefName;
+                    skinComp.aOverrideExpireTick = expireTick;
+                    break;
+                case AbilityRuntimeHotkeySlot.S:
+                    skinComp.sOverrideAbilityDefName = overrideDefName;
+                    skinComp.sOverrideExpireTick = expireTick;
+                    break;
+                case AbilityRuntimeHotkeySlot.D:
+                    skinComp.dOverrideAbilityDefName = overrideDefName;
+                    skinComp.dOverrideExpireTick = expireTick;
+                    break;
+                case AbilityRuntimeHotkeySlot.F:
+                    skinComp.fOverrideAbilityDefName = overrideDefName;
+                    skinComp.fOverrideExpireTick = expireTick;
+                    break;
+                case AbilityRuntimeHotkeySlot.Z:
+                    skinComp.zOverrideAbilityDefName = overrideDefName;
+                    skinComp.zOverrideExpireTick = expireTick;
+                    break;
+                case AbilityRuntimeHotkeySlot.X:
+                    skinComp.xOverrideAbilityDefName = overrideDefName;
+                    skinComp.xOverrideExpireTick = expireTick;
+                    break;
+                case AbilityRuntimeHotkeySlot.C:
+                    skinComp.cOverrideAbilityDefName = overrideDefName;
+                    skinComp.cOverrideExpireTick = expireTick;
+                    break;
+                case AbilityRuntimeHotkeySlot.V:
+                    skinComp.vOverrideAbilityDefName = overrideDefName;
+                    skinComp.vOverrideExpireTick = expireTick;
+                    break;
                 default:
                     skinComp.rOverrideAbilityDefName = overrideDefName;
                     skinComp.rOverrideExpireTick = expireTick;
@@ -505,6 +543,33 @@ namespace CharacterStudio.Abilities
                     break;
                 case AbilityRuntimeHotkeySlot.E:
                     skinComp.eCooldownUntilTick = Mathf.Max(skinComp.eCooldownUntilTick, cooldownUntil);
+                    break;
+                case AbilityRuntimeHotkeySlot.T:
+                    skinComp.tCooldownUntilTick = Mathf.Max(skinComp.tCooldownUntilTick, cooldownUntil);
+                    break;
+                case AbilityRuntimeHotkeySlot.A:
+                    skinComp.aCooldownUntilTick = Mathf.Max(skinComp.aCooldownUntilTick, cooldownUntil);
+                    break;
+                case AbilityRuntimeHotkeySlot.S:
+                    skinComp.sCooldownUntilTick = Mathf.Max(skinComp.sCooldownUntilTick, cooldownUntil);
+                    break;
+                case AbilityRuntimeHotkeySlot.D:
+                    skinComp.dCooldownUntilTick = Mathf.Max(skinComp.dCooldownUntilTick, cooldownUntil);
+                    break;
+                case AbilityRuntimeHotkeySlot.F:
+                    skinComp.fCooldownUntilTick = Mathf.Max(skinComp.fCooldownUntilTick, cooldownUntil);
+                    break;
+                case AbilityRuntimeHotkeySlot.Z:
+                    skinComp.zCooldownUntilTick = Mathf.Max(skinComp.zCooldownUntilTick, cooldownUntil);
+                    break;
+                case AbilityRuntimeHotkeySlot.X:
+                    skinComp.xCooldownUntilTick = Mathf.Max(skinComp.xCooldownUntilTick, cooldownUntil);
+                    break;
+                case AbilityRuntimeHotkeySlot.C:
+                    skinComp.cCooldownUntilTick = Mathf.Max(skinComp.cCooldownUntilTick, cooldownUntil);
+                    break;
+                case AbilityRuntimeHotkeySlot.V:
+                    skinComp.vCooldownUntilTick = Mathf.Max(skinComp.vCooldownUntilTick, cooldownUntil);
                     break;
                 default:
                     skinComp.rCooldownUntilTick = Mathf.Max(skinComp.rCooldownUntilTick, cooldownUntil);
@@ -1202,6 +1267,15 @@ namespace CharacterStudio.Abilities
                 AbilityRuntimeHotkeySlot.Q => skinComp.qCooldownUntilTick,
                 AbilityRuntimeHotkeySlot.W => skinComp.wCooldownUntilTick,
                 AbilityRuntimeHotkeySlot.E => skinComp.eCooldownUntilTick,
+                AbilityRuntimeHotkeySlot.T => skinComp.tCooldownUntilTick,
+                AbilityRuntimeHotkeySlot.A => skinComp.aCooldownUntilTick,
+                AbilityRuntimeHotkeySlot.S => skinComp.sCooldownUntilTick,
+                AbilityRuntimeHotkeySlot.D => skinComp.dCooldownUntilTick,
+                AbilityRuntimeHotkeySlot.F => skinComp.fCooldownUntilTick,
+                AbilityRuntimeHotkeySlot.Z => skinComp.zCooldownUntilTick,
+                AbilityRuntimeHotkeySlot.X => skinComp.xCooldownUntilTick,
+                AbilityRuntimeHotkeySlot.C => skinComp.cCooldownUntilTick,
+                AbilityRuntimeHotkeySlot.V => skinComp.vCooldownUntilTick,
                 _ => skinComp.rCooldownUntilTick
             };
         }
@@ -1218,6 +1292,33 @@ namespace CharacterStudio.Abilities
                     break;
                 case AbilityRuntimeHotkeySlot.E:
                     skinComp.eCooldownUntilTick = value;
+                    break;
+                case AbilityRuntimeHotkeySlot.T:
+                    skinComp.tCooldownUntilTick = value;
+                    break;
+                case AbilityRuntimeHotkeySlot.A:
+                    skinComp.aCooldownUntilTick = value;
+                    break;
+                case AbilityRuntimeHotkeySlot.S:
+                    skinComp.sCooldownUntilTick = value;
+                    break;
+                case AbilityRuntimeHotkeySlot.D:
+                    skinComp.dCooldownUntilTick = value;
+                    break;
+                case AbilityRuntimeHotkeySlot.F:
+                    skinComp.fCooldownUntilTick = value;
+                    break;
+                case AbilityRuntimeHotkeySlot.Z:
+                    skinComp.zCooldownUntilTick = value;
+                    break;
+                case AbilityRuntimeHotkeySlot.X:
+                    skinComp.xCooldownUntilTick = value;
+                    break;
+                case AbilityRuntimeHotkeySlot.C:
+                    skinComp.cCooldownUntilTick = value;
+                    break;
+                case AbilityRuntimeHotkeySlot.V:
+                    skinComp.vCooldownUntilTick = value;
                     break;
                 default:
                     skinComp.rCooldownUntilTick = value;

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Defs>
-  <ThingDef ParentName="BulletShieldPsychic">
+  <ThingDef ParentName="EtherealThingBase">
     <defName>CS_AttachedShieldVisual</defName>
     <label>attached shield visual</label>
     <thingClass>ThingWithComps</thingClass>
@@ -54,13 +54,11 @@
     <comps>
       <li Class="RimWorld.CompProperties_ProjectileInterceptor">
         <radius>2.9</radius>
-        <maxHitPoints>60</maxHitPoints>
-        <rechargeTickDelay>180</rechargeTickDelay>
-        <rechargeTicks>240</rechargeTicks>
+        <hitPoints>60</hitPoints>
+        <startWithMaxHitPoints>true</startWithMaxHitPoints>
         <interceptGroundProjectiles>true</interceptGroundProjectiles>
         <interceptAirProjectiles>true</interceptAirProjectiles>
-        <useHitPoints>true</useHitPoints>
-        <alwaysInterceptNonHostile>false</alwaysInterceptNonHostile>
+        <interceptNonHostileProjectiles>false</interceptNonHostileProjectiles>
         <interceptOutgoingProjectiles>true</interceptOutgoingProjectiles>
         <interceptEffect>Interceptor_BlockedProjectilePsychic</interceptEffect>
         <minAlpha>0.2</minAlpha>

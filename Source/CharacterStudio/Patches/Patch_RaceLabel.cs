@@ -1,136 +1,54 @@
-using System.Collections.Generic;
+using System;
 using System.Reflection;
-using System.Reflection.Emit;
 using HarmonyLib;
 using CharacterStudio.Core;
 using RimWorld;
+using UnityEngine;
 using Verse;
 
 namespace CharacterStudio.Patches
 {
     /// <summary>
-    /// Harmony Transpiler：兼容不同版本的 CharacterCardUtility.DrawCharacterCard。
-    /// 旧版本可能直接读取 pawn.def.LabelCap，1.6/Biotech 场景则通常显示 pawn.genes.XenotypeLabelCap。
-    /// 若当前 pawn 装备了含 raceDisplayName 的皮肤，则统一替换为皮肤自定义名称。
+    /// RimWorld 1.6 中角色卡顶部标签已不再稳定地直接读取 DrawCharacterCard 内的 IL。
+    /// 这里改为在 CharacterCardUtility.DoTopStack 的绘制上下文内，覆写 Pawn_GeneTracker.XenotypeLabelCap，
+    /// 从而稳定地将角色卡顶部显示替换为皮肤自定义 raceDisplayName。
     /// </summary>
     [HarmonyPatch]
     public static class Patch_RaceLabel
     {
-        // ─────────────────────────────────────────────
-        // 目标方法定位
-        // ─────────────────────────────────────────────
+        [ThreadStatic]
+        private static int characterCardContextDepth;
 
-        static MethodBase TargetMethod()
+        private static readonly FieldInfo? PawnGeneTrackerPawnField =
+            AccessTools.Field(typeof(Pawn_GeneTracker), "pawn");
+
+        private static void DoTopStack_Prefix()
         {
-            // CharacterCardUtility.DrawCharacterCard 存在多个重载，取参数最多的那个
-            // RimWorld 1.6 签名：DrawCharacterCard(Rect, Pawn, Action, Rect, bool)
-            var methods = typeof(CharacterCardUtility).GetMethods(
-                BindingFlags.Public | BindingFlags.Static);
-
-            MethodBase? best = null;
-            int bestParamCount = -1;
-            foreach (var m in methods)
-            {
-                if (m.Name != "DrawCharacterCard") continue;
-                int cnt = m.GetParameters().Length;
-                if (cnt > bestParamCount)
-                {
-                    bestParamCount = cnt;
-                    best = m;
-                }
-            }
-            return best!;
+            characterCardContextDepth++;
         }
 
-        // ─────────────────────────────────────────────
-        // Transpiler
-        // ─────────────────────────────────────────────
-
-        static IEnumerable<CodeInstruction> Transpiler(
-            IEnumerable<CodeInstruction> instructions,
-            ILGenerator generator)
+        private static void DoTopStack_Postfix()
         {
-            // 兼容两种 IL：
-            // 1) pawn.def.LabelCap
-            // 2) pawn.genes.XenotypeLabelCap（RimWorld 1.6 角色卡常见路径）
-            // 两种情况都替换为调用我们的静态辅助方法 GetRaceLabel(Pawn)。
-
-            var defField = typeof(Thing).GetField("def");
-            var labelCapGetter = typeof(Def).GetProperty("LabelCap")?.GetGetMethod();
-            var genesGetter = typeof(Pawn).GetProperty("genes")?.GetGetMethod();
-            var xenotypeLabelGetter = typeof(Pawn_GeneTracker).GetProperty("XenotypeLabelCap")?.GetGetMethod();
-            var helperMethod = typeof(Patch_RaceLabel).GetMethod(
-                nameof(GetRaceLabel), BindingFlags.Public | BindingFlags.Static);
-
-            if (helperMethod == null)
+            if (characterCardContextDepth > 0)
             {
-                Log.Warning("[CharacterStudio] Patch_RaceLabel: 无法定位辅助方法，Transpiler 跳过。");
-                foreach (var inst in instructions) yield return inst;
-                yield break;
+                characterCardContextDepth--;
+            }
+        }
+
+        private static void XenotypeLabelCap_Postfix(Pawn_GeneTracker __instance, ref string __result)
+        {
+            if (characterCardContextDepth <= 0)
+            {
+                return;
             }
 
-            var codes = new List<CodeInstruction>(instructions);
-            bool patchedLegacyDefLabel = false;
-            bool patchedXenotypeLabel = false;
-
-            for (int i = 0; i < codes.Count - 1; i++)
+            Pawn? pawn = PawnGeneTrackerPawnField?.GetValue(__instance) as Pawn;
+            if (pawn == null)
             {
-                var cur = codes[i];
-                var next = codes[i + 1];
-
-                bool isDefLoad = defField != null
-                    && cur.opcode == OpCodes.Ldfld
-                    && cur.operand is FieldInfo defFieldInfo
-                    && defFieldInfo == defField;
-                bool isLabelCapCall = labelCapGetter != null
-                    && (next.opcode == OpCodes.Call || next.opcode == OpCodes.Callvirt)
-                    && next.operand is MethodInfo labelMethod
-                    && labelMethod == labelCapGetter;
-
-                bool isGenesGetterCall = genesGetter != null
-                    && (cur.opcode == OpCodes.Call || cur.opcode == OpCodes.Callvirt)
-                    && cur.operand is MethodInfo genesMethod
-                    && genesMethod == genesGetter;
-                bool isXenotypeLabelCall = xenotypeLabelGetter != null
-                    && (next.opcode == OpCodes.Call || next.opcode == OpCodes.Callvirt)
-                    && next.operand is MethodInfo xenotypeMethod
-                    && xenotypeMethod == xenotypeLabelGetter;
-
-                if (isDefLoad && isLabelCapCall)
-                {
-                    cur.opcode = OpCodes.Nop;
-                    cur.operand = null;
-
-                    next.opcode = OpCodes.Call;
-                    next.operand = helperMethod;
-
-                    patchedLegacyDefLabel = true;
-                }
-                else if (isGenesGetterCall && isXenotypeLabelCall)
-                {
-                    cur.opcode = OpCodes.Nop;
-                    cur.operand = null;
-
-                    next.opcode = OpCodes.Call;
-                    next.operand = helperMethod;
-
-                    patchedXenotypeLabel = true;
-                }
-
-                yield return cur;
+                return;
             }
 
-            if (codes.Count > 0)
-                yield return codes[codes.Count - 1];
-
-            if (!patchedLegacyDefLabel && !patchedXenotypeLabel)
-            {
-                Log.Warning("[CharacterStudio] Patch_RaceLabel: 未能找到 def.LabelCap 或 genes.XenotypeLabelCap 指令对，种族名替换未生效。");
-            }
-            else
-            {
-                Log.Message($"[CharacterStudio] Patch_RaceLabel: legacyDefLabel={patchedLegacyDefLabel}, xenotypeLabel={patchedXenotypeLabel}");
-            }
+            __result = GetRaceLabel(pawn).Resolve();
         }
 
         // ─────────────────────────────────────────────
@@ -160,21 +78,34 @@ namespace CharacterStudio.Patches
         // 注册入口
         // ─────────────────────────────────────────────
 
-        /// <summary>由 ModEntryPoint.ApplyPatches() 调用，手动注册此 Transpiler。</summary>
+        /// <summary>由 ModEntryPoint.ApplyPatches() 调用，手动注册补丁。</summary>
         public static void Apply(HarmonyLib.Harmony harmony)
         {
-            var target = TargetMethod();
-            if (target == null)
+            MethodInfo? doTopStack = AccessTools.Method(
+                typeof(CharacterCardUtility),
+                "DoTopStack",
+                new[] { typeof(Pawn), typeof(Rect), typeof(bool), typeof(float) });
+            MethodInfo? xenotypeLabelGetter = AccessTools.PropertyGetter(typeof(Pawn_GeneTracker), nameof(Pawn_GeneTracker.XenotypeLabelCap));
+
+            if (doTopStack == null || xenotypeLabelGetter == null)
             {
-                Log.Warning("[CharacterStudio] Patch_RaceLabel: 未找到目标方法 DrawCharacterCard，跳过注册。");
+                Log.Warning("[CharacterStudio] Patch_RaceLabel: 未找到 1.6 所需目标方法，跳过注册。");
                 return;
             }
 
-            var transpiler = new HarmonyLib.HarmonyMethod(
+            var prefix = new HarmonyLib.HarmonyMethod(
                 typeof(Patch_RaceLabel),
-                nameof(Transpiler));
-            harmony.Patch(target, transpiler: transpiler);
-            Log.Message("[CharacterStudio] Patch_RaceLabel 已注册（Transpiler）。");
+                nameof(DoTopStack_Prefix));
+            var postfix = new HarmonyLib.HarmonyMethod(
+                typeof(Patch_RaceLabel),
+                nameof(DoTopStack_Postfix));
+            var xenotypePostfix = new HarmonyLib.HarmonyMethod(
+                typeof(Patch_RaceLabel),
+                nameof(XenotypeLabelCap_Postfix));
+
+            harmony.Patch(doTopStack, prefix: prefix, postfix: postfix);
+            harmony.Patch(xenotypeLabelGetter, postfix: xenotypePostfix);
+            Log.Message("[CharacterStudio] Patch_RaceLabel 已注册（DoTopStack + XenotypeLabelCap）。");
         }
     }
 }

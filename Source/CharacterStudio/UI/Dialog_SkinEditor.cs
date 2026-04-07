@@ -72,6 +72,9 @@ namespace CharacterStudio.UI
         private string scannedOverlayCacheSourceRoot = string.Empty;
         private readonly List<ScannedOverlayCandidate> scannedOverlayCandidates = new List<ScannedOverlayCandidate>();
         private string scannedOverlayCacheError = string.Empty;
+        private string scannedEyeCacheSourceRoot = string.Empty;
+        private readonly List<ScannedEyeCandidate> scannedEyeCandidates = new List<ScannedEyeCandidate>();
+        private string scannedEyeCacheError = string.Empty;
         private WeaponCarryVisualState previewWeaponCarryState = WeaponCarryVisualState.Undrafted;
  
         private enum EditorTab { BaseAppearance, Layers, Face, Attributes, Weapon, Equipment }
@@ -165,6 +168,8 @@ namespace CharacterStudio.UI
         private EmotionOverlayState previewEmotionState = EmotionOverlayState.None;
         private bool previewEyeDirectionOverrideEnabled = false;
         private EyeDirection previewEyeDirection = EyeDirection.Center;
+        private bool previewGazeCursorEnabled = false;
+        private Vector2 previewGazeCursorOffset = Vector2.zero;
         private bool previewAutoPlayEnabled = false;
         private float previewAutoPlayIntervalSeconds = 0.75f;
         private float previewAutoPlayNextStepTime = 0f;

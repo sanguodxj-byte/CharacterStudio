@@ -66,6 +66,9 @@ namespace CharacterStudio.UI
             UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_CharacterDefinition_Apparel".Translate());
             DrawListSummary(ref y, width, "CS_Studio_CharacterDefinition_ApparelSummary".Translate(definition.startingApparelDefNames.Count), ShowApparelSelector);
 
+            UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_RuntimeTriggers_Section".Translate());
+            DrawListSummary(ref y, width, "CS_Studio_RuntimeTriggers_Summary".Translate(definition.runtimeTriggers?.Count ?? 0), ShowRuntimeTriggersEditor);
+
             Widgets.EndScrollView();
 
             float buttonY = inRect.height - 36f;
@@ -202,6 +205,11 @@ namespace CharacterStudio.UI
                 .Select(def => new FloatMenuOption($"{(def.label ?? def.defName)} ({def.defName})", () => ToggleListValue(definition.startingApparelDefNames, def.defName)))
                 .ToList();
             Find.WindowStack.Add(new FloatMenu(options));
+        }
+
+        private void ShowRuntimeTriggersEditor()
+        {
+            Find.WindowStack.Add(new Dialog_RuntimeTriggers(definition, onChanged));
         }
 
         private static void ToggleListValue(List<string> values, string value)

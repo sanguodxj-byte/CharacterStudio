@@ -42,6 +42,8 @@ namespace CharacterStudio.Abilities
 
         public void ExposeData()
         {
+            Scribe_Collections.Look(ref abilities, "abilities", LookMode.Deep);
+
             if (Scribe.mode != LoadSaveMode.LoadingVars)
             {
                 SyncSerializedAbilityDefNamesFromAbilities();
@@ -59,7 +61,7 @@ namespace CharacterStudio.Abilities
             abilities ??= new List<ModularAbilityDef>();
             if (Scribe.mode == LoadSaveMode.LoadingVars)
             {
-                abilities.Clear();
+                abilities.RemoveAll(static ability => ability == null || string.IsNullOrWhiteSpace(ability.defName));
             }
             else
             {
@@ -155,7 +157,16 @@ namespace CharacterStudio.Abilities
             Q,
             W,
             E,
-            R
+            R,
+            T,
+            A,
+            S,
+            D,
+            F,
+            Z,
+            X,
+            C,
+            V
         }
 
         public static CharacterAbilityLoadout CreateLoadout(IEnumerable<ModularAbilityDef>? abilities, SkinAbilityHotkeyConfig? hotkeys)
@@ -321,7 +332,15 @@ namespace CharacterStudio.Abilities
                 || !string.IsNullOrWhiteSpace(hotkeys.wAbilityDefName)
                 || !string.IsNullOrWhiteSpace(hotkeys.eAbilityDefName)
                 || !string.IsNullOrWhiteSpace(hotkeys.rAbilityDefName)
-                || !string.IsNullOrWhiteSpace(hotkeys.wComboAbilityDefName);
+                || !string.IsNullOrWhiteSpace(hotkeys.tAbilityDefName)
+                || !string.IsNullOrWhiteSpace(hotkeys.aAbilityDefName)
+                || !string.IsNullOrWhiteSpace(hotkeys.sAbilityDefName)
+                || !string.IsNullOrWhiteSpace(hotkeys.dAbilityDefName)
+                || !string.IsNullOrWhiteSpace(hotkeys.fAbilityDefName)
+                || !string.IsNullOrWhiteSpace(hotkeys.zAbilityDefName)
+                || !string.IsNullOrWhiteSpace(hotkeys.xAbilityDefName)
+                || !string.IsNullOrWhiteSpace(hotkeys.cAbilityDefName)
+                || !string.IsNullOrWhiteSpace(hotkeys.vAbilityDefName);
         }
 
         public static void SetExplicitLoadout(Pawn? pawn, CharacterAbilityLoadout? loadout)
@@ -415,26 +434,11 @@ namespace CharacterStudio.Abilities
             SkinAbilityHotkeyConfig? hotkeys = loadout.hotkeys;
             if (comp == null || hotkeys == null || !hotkeys.enabled)
             {
-                foreach (var ability in loadout.abilities)
-                {
-                    if (ability == null || string.IsNullOrWhiteSpace(ability.defName))
-                    {
-                        continue;
-                    }
-
-                    yield return new VisibleAbilitySlotEntry
-                    {
-                        slotId = string.Empty,
-                        slotBadge = string.Empty,
-                        abilityDefName = ability.defName
-                    };
-                }
-
                 yield break;
             }
 
             int tick = Find.TickManager?.TicksGame ?? 0;
-            foreach (VisibleAbilitySlot slot in new[] { VisibleAbilitySlot.Q, VisibleAbilitySlot.W, VisibleAbilitySlot.E, VisibleAbilitySlot.R })
+            foreach (VisibleAbilitySlot slot in new[] { VisibleAbilitySlot.Q, VisibleAbilitySlot.W, VisibleAbilitySlot.E, VisibleAbilitySlot.R, VisibleAbilitySlot.T, VisibleAbilitySlot.A, VisibleAbilitySlot.S, VisibleAbilitySlot.D, VisibleAbilitySlot.F, VisibleAbilitySlot.Z, VisibleAbilitySlot.X, VisibleAbilitySlot.C, VisibleAbilitySlot.V })
             {
                 string defName = ResolveVisibleAbilityDefName(comp, loadout, slot, tick);
                 if (string.IsNullOrWhiteSpace(defName))
@@ -481,12 +485,12 @@ namespace CharacterStudio.Abilities
             bool isOverride = !string.IsNullOrWhiteSpace(overrideDefName)
                 && string.Equals(overrideDefName, defName, StringComparison.OrdinalIgnoreCase);
 
-            string comboAbilityDefName = loadout.hotkeys?.wComboAbilityDefName ?? string.Empty;
-            bool isCombo = slot == VisibleAbilitySlot.W
-                && !isOverride
-                && tick <= comp.qComboWindowEndTick
-                && !string.IsNullOrWhiteSpace(comboAbilityDefName)
-                && string.Equals(comboAbilityDefName, defName, StringComparison.OrdinalIgnoreCase);
+            bool isCombo = !isOverride
+                && tick <= comp.slotOverrideWindowEndTick
+                && !string.IsNullOrWhiteSpace(comp.slotOverrideWindowSlotId)
+                && string.Equals(comp.slotOverrideWindowSlotId, slot.ToString(), StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(comp.slotOverrideWindowAbilityDefName)
+                && string.Equals(comp.slotOverrideWindowAbilityDefName, defName, StringComparison.OrdinalIgnoreCase);
 
             bool isSecondStage = slot == VisibleAbilitySlot.R && comp.rSecondStageReady;
 
@@ -498,7 +502,7 @@ namespace CharacterStudio.Abilities
                 isCombo = isCombo,
                 isOverride = isOverride,
                 isSecondStage = isSecondStage,
-                qModeIndex = slot == VisibleAbilitySlot.Q ? Math.Max(0, comp.qHotkeyModeIndex) : -1,
+                qModeIndex = -1,
                 rStackCount = slot == VisibleAbilitySlot.R ? Math.Max(0, comp.rStackCount) : 0
             };
         }
@@ -508,11 +512,29 @@ namespace CharacterStudio.Abilities
             switch (slot)
             {
                 case VisibleAbilitySlot.Q:
-                    return $"Q{Math.Min(4, Math.Max(1, comp.qHotkeyModeIndex + 1))}";
+                    return "Q";
                 case VisibleAbilitySlot.W:
-                    return isCombo ? "W2" : "W";
+                    return isCombo ? "W*" : "W";
                 case VisibleAbilitySlot.E:
                     return "E";
+                case VisibleAbilitySlot.T:
+                    return "T";
+                case VisibleAbilitySlot.A:
+                    return "A";
+                case VisibleAbilitySlot.S:
+                    return "S";
+                case VisibleAbilitySlot.D:
+                    return "D";
+                case VisibleAbilitySlot.F:
+                    return "F";
+                case VisibleAbilitySlot.Z:
+                    return "Z";
+                case VisibleAbilitySlot.X:
+                    return "X";
+                case VisibleAbilitySlot.C:
+                    return "C";
+                case VisibleAbilitySlot.V:
+                    return "V";
                 default:
                     return isSecondStage ? "R2" : "R";
             }
@@ -532,66 +554,30 @@ namespace CharacterStudio.Abilities
                 return overrideDefName;
             }
 
-            if (slot == VisibleAbilitySlot.Q)
+            if (tick <= comp.slotOverrideWindowEndTick
+                && !string.IsNullOrWhiteSpace(comp.slotOverrideWindowSlotId)
+                && string.Equals(comp.slotOverrideWindowSlotId, slot.ToString(), StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(comp.slotOverrideWindowAbilityDefName))
             {
-                return ResolveQModeAbilityDefName(hotkeys.qAbilityDefName, comp.qHotkeyModeIndex);
-            }
-
-            if (slot == VisibleAbilitySlot.W
-                && tick <= comp.qComboWindowEndTick
-                && !string.IsNullOrWhiteSpace(hotkeys.wComboAbilityDefName))
-            {
-                return hotkeys.wComboAbilityDefName;
+                return comp.slotOverrideWindowAbilityDefName;
             }
 
             return slot switch
             {
+                VisibleAbilitySlot.Q => hotkeys.qAbilityDefName ?? string.Empty,
                 VisibleAbilitySlot.W => hotkeys.wAbilityDefName ?? string.Empty,
                 VisibleAbilitySlot.E => hotkeys.eAbilityDefName ?? string.Empty,
+                VisibleAbilitySlot.T => hotkeys.tAbilityDefName ?? string.Empty,
+                VisibleAbilitySlot.A => hotkeys.aAbilityDefName ?? string.Empty,
+                VisibleAbilitySlot.S => hotkeys.sAbilityDefName ?? string.Empty,
+                VisibleAbilitySlot.D => hotkeys.dAbilityDefName ?? string.Empty,
+                VisibleAbilitySlot.F => hotkeys.fAbilityDefName ?? string.Empty,
+                VisibleAbilitySlot.Z => hotkeys.zAbilityDefName ?? string.Empty,
+                VisibleAbilitySlot.X => hotkeys.xAbilityDefName ?? string.Empty,
+                VisibleAbilitySlot.C => hotkeys.cAbilityDefName ?? string.Empty,
+                VisibleAbilitySlot.V => hotkeys.vAbilityDefName ?? string.Empty,
                 _ => hotkeys.rAbilityDefName ?? string.Empty
             };
-        }
-
-        private static string ResolveQModeAbilityDefName(string baseDefName, int modeIndex)
-        {
-            if (string.IsNullOrWhiteSpace(baseDefName))
-            {
-                return string.Empty;
-            }
-
-            int normalizedModeIndex = Math.Max(0, Math.Min(3, modeIndex));
-            if (TryResolveSequentialQAbilityDefName(baseDefName, normalizedModeIndex, out string resolvedDefName))
-            {
-                return resolvedDefName;
-            }
-
-            return baseDefName;
-        }
-
-        private static bool TryResolveSequentialQAbilityDefName(string baseDefName, int modeIndex, out string resolvedDefName)
-        {
-            resolvedDefName = baseDefName;
-            if (string.IsNullOrWhiteSpace(baseDefName))
-            {
-                return false;
-            }
-
-            int markerIndex = baseDefName.LastIndexOf("_Q", StringComparison.OrdinalIgnoreCase);
-            if (markerIndex < 0 || markerIndex + 3 > baseDefName.Length)
-            {
-                return false;
-            }
-
-            char indexChar = baseDefName[markerIndex + 2];
-            if (!char.IsDigit(indexChar))
-            {
-                return false;
-            }
-
-            string prefix = baseDefName.Substring(0, markerIndex + 2);
-            string suffix = baseDefName.Substring(markerIndex + 3);
-            resolvedDefName = $"{prefix}{modeIndex + 1}{suffix}";
-            return true;
         }
 
         private static string GetActiveSlotOverrideAbilityDefName(CompPawnSkin comp, VisibleAbilitySlot slot, int tick)
@@ -612,6 +598,42 @@ namespace CharacterStudio.Abilities
                 case VisibleAbilitySlot.E:
                     abilityDefName = comp.eOverrideAbilityDefName;
                     expireTick = comp.eOverrideExpireTick;
+                    break;
+                case VisibleAbilitySlot.T:
+                    abilityDefName = comp.tOverrideAbilityDefName;
+                    expireTick = comp.tOverrideExpireTick;
+                    break;
+                case VisibleAbilitySlot.A:
+                    abilityDefName = comp.aOverrideAbilityDefName;
+                    expireTick = comp.aOverrideExpireTick;
+                    break;
+                case VisibleAbilitySlot.S:
+                    abilityDefName = comp.sOverrideAbilityDefName;
+                    expireTick = comp.sOverrideExpireTick;
+                    break;
+                case VisibleAbilitySlot.D:
+                    abilityDefName = comp.dOverrideAbilityDefName;
+                    expireTick = comp.dOverrideExpireTick;
+                    break;
+                case VisibleAbilitySlot.F:
+                    abilityDefName = comp.fOverrideAbilityDefName;
+                    expireTick = comp.fOverrideExpireTick;
+                    break;
+                case VisibleAbilitySlot.Z:
+                    abilityDefName = comp.zOverrideAbilityDefName;
+                    expireTick = comp.zOverrideExpireTick;
+                    break;
+                case VisibleAbilitySlot.X:
+                    abilityDefName = comp.xOverrideAbilityDefName;
+                    expireTick = comp.xOverrideExpireTick;
+                    break;
+                case VisibleAbilitySlot.C:
+                    abilityDefName = comp.cOverrideAbilityDefName;
+                    expireTick = comp.cOverrideExpireTick;
+                    break;
+                case VisibleAbilitySlot.V:
+                    abilityDefName = comp.vOverrideAbilityDefName;
+                    expireTick = comp.vOverrideExpireTick;
                     break;
                 default:
                     abilityDefName = comp.rOverrideAbilityDefName;

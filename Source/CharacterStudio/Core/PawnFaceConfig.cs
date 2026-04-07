@@ -88,7 +88,6 @@ namespace CharacterStudio.Core
         SocialRelax,    // 社交放松（NL FA SocialRelax）
         Lovin,          // 亲密（NL FA ForJobs/Lovin）
         Strip,          // 脱装备（NL FA ForJobs/Strip）
-        Goto,           // 移动中（NL FA ForJobs/Goto）
         LayDown,        // 躺下（NL FA ForJobs/LayDown）
 
         // ── 死亡状态 ──
@@ -203,6 +202,12 @@ namespace CharacterStudio.Core
         /// 当 partType = Overlay 时，表示编辑器内排序顺序。数值越小越先绘制。
         /// </summary>
         public int overlayOrder = 0;
+
+        /// <summary>
+        /// Overlay 跟随的程序动画部件目标。
+        /// 仅对 Overlay/Hair 生效。
+        /// </summary>
+        public string followTarget = string.Empty;
 
         /// <summary>
         /// 程序控制动画可移动距离。

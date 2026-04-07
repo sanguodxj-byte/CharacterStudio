@@ -8,6 +8,18 @@ namespace CharacterStudio.UI
 {
     public partial class Dialog_SkinEditor
     {
+        private static string BuildVariantLogicTooltip(LayerVariantLogic logic)
+        {
+            string tooltip = "CS_Studio_Variant_LogicTip".Translate();
+            string detailKey = $"CS_Studio_VariantLogicTip_{logic}";
+            if (detailKey.CanTranslate())
+            {
+                tooltip += "\n\n" + detailKey.Translate();
+            }
+
+            return tooltip;
+        }
+
         private void MutateSelectedLayersWithUndo(PawnLayerConfig primaryLayer, Action<PawnLayerConfig> mutateLayer, bool refreshRenderTree = false)
         {
             MutateWithUndo(() =>
@@ -261,15 +273,13 @@ namespace CharacterStudio.UI
 
             if (DrawCollapsibleSection(ref y, width, "CS_Studio_Section_VariantsExpression".Translate(), "Variants"))
             {
-                DrawPropertyHint(ref y, width, "CS_Studio_Variant_SectionHint".Translate());
-
                 UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Variant_LayerRole".Translate(), layer.role,
                     (LayerRole[])Enum.GetValues(typeof(LayerRole)),
                     option => ($"CS_Studio_LayerRole_{option}").Translate(),
                     val =>
                     {
                         MutateSelectedLayersWithUndo(layer, l => l.role = val);
-                    });
+                    }, tooltip: "CS_Studio_Variant_LayerRoleTip".Translate());
 
                 UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Variant_Logic".Translate(), layer.variantLogic,
                     (LayerVariantLogic[])Enum.GetValues(typeof(LayerVariantLogic)),
@@ -277,17 +287,17 @@ namespace CharacterStudio.UI
                     val =>
                     {
                         MutateSelectedLayersWithUndo(layer, l => l.variantLogic = val);
-                    });
+                    }, tooltip: BuildVariantLogicTooltip(layer.variantLogic));
 
                 string variantBaseName = layer.variantBaseName ?? string.Empty;
-                UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Variant_BaseName".Translate(), ref variantBaseName);
+                UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Variant_BaseName".Translate(), ref variantBaseName, tooltip: "CS_Studio_Variant_BaseNameTip".Translate());
                 if (variantBaseName != (layer.variantBaseName ?? string.Empty))
                 {
                     MutateSelectedLayersWithUndo(layer, l => l.variantBaseName = variantBaseName);
                 }
 
                 bool useDirectionalSuffix = layer.useDirectionalSuffix;
-                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Variant_UseDirectionalSuffix".Translate(), ref useDirectionalSuffix);
+                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Variant_UseDirectionalSuffix".Translate(), ref useDirectionalSuffix, tooltip: "CS_Studio_Variant_UseDirectionalSuffixTip".Translate());
                 if (useDirectionalSuffix != layer.useDirectionalSuffix)
                 {
                     MutateSelectedLayersWithUndo(layer, l => l.useDirectionalSuffix = useDirectionalSuffix);
@@ -300,45 +310,45 @@ namespace CharacterStudio.UI
                     val =>
                     {
                         MutateSelectedLayersWithUndo(layer, l => l.directionalFacing = val);
-                    });
+                    }, tooltip: "CS_Studio_Variant_DirectionalFacingTip".Translate());
 
                 bool useExpressionSuffix = layer.useExpressionSuffix;
-                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Variant_UseExpressionSuffix".Translate(), ref useExpressionSuffix);
+                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Variant_UseExpressionSuffix".Translate(), ref useExpressionSuffix, tooltip: "CS_Studio_Variant_UseExpressionSuffixTip".Translate());
                 if (useExpressionSuffix != layer.useExpressionSuffix)
                 {
                     MutateSelectedLayersWithUndo(layer, l => l.useExpressionSuffix = useExpressionSuffix);
                 }
 
                 bool useEyeDirectionSuffix = layer.useEyeDirectionSuffix;
-                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Variant_UseEyeDirectionSuffix".Translate(), ref useEyeDirectionSuffix);
+                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Variant_UseEyeDirectionSuffix".Translate(), ref useEyeDirectionSuffix, tooltip: "CS_Studio_Variant_UseEyeDirectionSuffixTip".Translate());
                 if (useEyeDirectionSuffix != layer.useEyeDirectionSuffix)
                 {
                     MutateSelectedLayersWithUndo(layer, l => l.useEyeDirectionSuffix = useEyeDirectionSuffix);
                 }
 
                 bool useBlinkSuffix = layer.useBlinkSuffix;
-                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Variant_UseBlinkSuffix".Translate(), ref useBlinkSuffix);
+                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Variant_UseBlinkSuffix".Translate(), ref useBlinkSuffix, tooltip: "CS_Studio_Variant_UseBlinkSuffixTip".Translate());
                 if (useBlinkSuffix != layer.useBlinkSuffix)
                 {
                     MutateSelectedLayersWithUndo(layer, l => l.useBlinkSuffix = useBlinkSuffix);
                 }
 
                 bool useFrameSequence = layer.useFrameSequence;
-                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Variant_UseFrameSequence".Translate(), ref useFrameSequence);
+                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Variant_UseFrameSequence".Translate(), ref useFrameSequence, tooltip: "CS_Studio_Variant_UseFrameSequenceTip".Translate());
                 if (useFrameSequence != layer.useFrameSequence)
                 {
                     MutateSelectedLayersWithUndo(layer, l => l.useFrameSequence = useFrameSequence);
                 }
 
                 bool hideWhenMissingVariant = layer.hideWhenMissingVariant;
-                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Variant_HideWhenMissing".Translate(), ref hideWhenMissingVariant);
+                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Variant_HideWhenMissing".Translate(), ref hideWhenMissingVariant, tooltip: "CS_Studio_Variant_HideWhenMissingTip".Translate());
                 if (hideWhenMissingVariant != layer.hideWhenMissingVariant)
                 {
                     MutateSelectedLayersWithUndo(layer, l => l.hideWhenMissingVariant = hideWhenMissingVariant);
                 }
 
                 string visibleExpressionsText = string.Join(", ", layer.visibleExpressions ?? Array.Empty<string>());
-                UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Variant_VisibleExpressions".Translate(), ref visibleExpressionsText);
+                UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Variant_VisibleExpressions".Translate(), ref visibleExpressionsText, tooltip: "CS_Studio_Variant_VisibleExpressionsTip".Translate());
                 string normalizedVisibleExpressionsText = string.Join(", ", layer.visibleExpressions ?? Array.Empty<string>());
                 if (visibleExpressionsText != normalizedVisibleExpressionsText)
                 {
@@ -347,7 +357,7 @@ namespace CharacterStudio.UI
                 }
 
                 string hiddenExpressionsText = string.Join(", ", layer.hiddenExpressions ?? Array.Empty<string>());
-                UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Variant_HiddenExpressions".Translate(), ref hiddenExpressionsText);
+                UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Variant_HiddenExpressions".Translate(), ref hiddenExpressionsText, tooltip: "CS_Studio_Variant_HiddenExpressionsTip".Translate());
                 string normalizedHiddenExpressionsText = string.Join(", ", layer.hiddenExpressions ?? Array.Empty<string>());
                 if (hiddenExpressionsText != normalizedHiddenExpressionsText)
                 {
@@ -366,7 +376,7 @@ namespace CharacterStudio.UI
 
         private void DrawLayerContextSection(ref float y, float width, PawnLayerConfig layer)
         {
-            UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Panel_Preview".Translate(), previewRotation.ToString());
+            UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Panel_Preview".Translate(), GetPreviewRotationLabel(previewRotation));
 
             UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Variant_Logic".Translate(), ($"CS_Studio_VariantLogic_{layer.variantLogic}").Translate());
             UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Anim_Type".Translate(), GetLayerAnimationSummary(layer));
@@ -442,6 +452,18 @@ namespace CharacterStudio.UI
                 : $"CS_Studio_Variant_DirectionalFacing_{option}";
 
             return key.CanTranslate() ? key.Translate() : option;
+        }
+
+        private static string GetPreviewRotationLabel(Rot4 rot)
+        {
+            string key = $"CS_Studio_Rotation_{rot}";
+            return key.CanTranslate() ? key.Translate() : rot.ToString();
+        }
+
+        private static string GetLayerColorSourceLabel(LayerColorSource source)
+        {
+            string key = $"CS_Studio_ColorSource_{source}";
+            return key.CanTranslate() ? key.Translate() : source.ToString();
         }
 
         internal void DrawSelectedLayerExpressionMovementSection(ref float y, float width, PawnLayerConfig layer)

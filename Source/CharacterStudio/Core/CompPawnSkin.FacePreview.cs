@@ -458,6 +458,23 @@ namespace CharacterStudio.Core
                 RequestRenderRefresh();
         }
 
+        public void SetPreviewGazeOffset(Vector2? gazeOffset)
+        {
+            if (!FaceRuntimeActivationGuard.CanProcessFaceRuntime(this, Pawn))
+                return;
+
+            FaceRuntimeState runtimeState = CurrentFaceRuntimeState;
+            Vector2 target = gazeOffset.HasValue
+                ? Vector2.ClampMagnitude(gazeOffset.Value, 1f)
+                : Vector2.zero;
+
+            if ((runtimeState.gazeOffset - target).sqrMagnitude > 0.000001f)
+            {
+                runtimeState.gazeOffset = target;
+                RequestRenderRefresh();
+            }
+        }
+
         private void UpdateEyeDirectionState()
         {
             if (!FaceRuntimeActivationGuard.CanProcessEyeDirection(this, Pawn)) return;

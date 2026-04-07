@@ -42,4 +42,67 @@
     <CS_AttrBuff_Search>Search Stat</CS_AttrBuff_Search>
     <CS_AttrBuff_Section>Attribute Buff</CS_AttrBuff_Section>
     <CS_AttrBuff_Value>Value</CS_AttrBuff_Value>
+    <CS_Studio_RuntimeTriggers_Section>Runtime Triggers</CS_Studio_RuntimeTriggers_Section>
+    <CS_Studio_RuntimeTriggers_Summary>{0} runtime trigger(s) configured</CS_Studio_RuntimeTriggers_Summary>
+    <CS_Studio_RuntimeTriggers_Title>Runtime Trigger Configuration</CS_Studio_RuntimeTriggers_Title>
+    <CS_Studio_RuntimeTriggers_ConditionBrowser_Title>Select Condition Type</CS_Studio_RuntimeTriggers_ConditionBrowser_Title>
+    <CS_Studio_RuntimeTriggers_Hint>Configure auto-registered runtime triggers. When conditions become true, Character Studio will spawn this character at runtime using the configured spawn settings.</CS_Studio_RuntimeTriggers_Hint>
+    <CS_Studio_RuntimeTriggers_Add>Add Trigger</CS_Studio_RuntimeTriggers_Add>
+    <CS_Studio_RuntimeTriggers_Status>Status Panel</CS_Studio_RuntimeTriggers_Status>
+    <CS_Studio_RuntimeTriggers_Remove>Remove Trigger</CS_Studio_RuntimeTriggers_Remove>
+    <CS_Studio_RuntimeTriggers_Label>Label</CS_Studio_RuntimeTriggers_Label>
+    <CS_Studio_RuntimeTriggers_Enabled>Enabled</CS_Studio_RuntimeTriggers_Enabled>
+    <CS_Studio_RuntimeTriggers_ConditionLogic>Condition Logic</CS_Studio_RuntimeTriggers_ConditionLogic>
+    <CS_Studio_RuntimeTriggers_ConditionLogic_All>All</CS_Studio_RuntimeTriggers_ConditionLogic_All>
+    <CS_Studio_RuntimeTriggers_ConditionLogic_Any>Any</CS_Studio_RuntimeTriggers_ConditionLogic_Any>
+    <CS_Studio_RuntimeTriggers_ConditionLogic_Not>Not</CS_Studio_RuntimeTriggers_ConditionLogic_Not>
+    <CS_Studio_RuntimeTriggers_EvaluationInterval>Evaluation Interval Ticks</CS_Studio_RuntimeTriggers_EvaluationInterval>
+    <CS_Studio_RuntimeTriggers_CooldownTicks>Cooldown Ticks</CS_Studio_RuntimeTriggers_CooldownTicks>
+    <CS_Studio_RuntimeTriggers_RequireHomeMap>Require Player Home Map</CS_Studio_RuntimeTriggers_RequireHomeMap>
+    <CS_Studio_RuntimeTriggers_SpawnNearColonist>Spawn Near Colonist</CS_Studio_RuntimeTriggers_SpawnNearColonist>
+    <CS_Studio_RuntimeTriggers_OncePerGame>Fire Once Per Game</CS_Studio_RuntimeTriggers_OncePerGame>
+    <CS_Studio_RuntimeTriggers_OncePerMap>Fire Once Per Map</CS_Studio_RuntimeTriggers_OncePerMap>
+    <CS_Studio_RuntimeTriggers_Conditions>Conditions</CS_Studio_RuntimeTriggers_Conditions>
+    <CS_Studio_RuntimeTriggers_AddCondition>Add Condition</CS_Studio_RuntimeTriggers_AddCondition>
+    <CS_Studio_RuntimeTriggers_RemoveCondition>Remove</CS_Studio_RuntimeTriggers_RemoveCondition>
+    <CS_Studio_RuntimeTriggers_EditSpawn>Edit Spawn Settings</CS_Studio_RuntimeTriggers_EditSpawn>
+    <CS_Studio_RuntimeTriggers_Condition_Always>Always</CS_Studio_RuntimeTriggers_Condition_Always>
+    <CS_Studio_RuntimeTriggers_Condition_ColonyThingDefCount>Colony ThingDef Count</CS_Studio_RuntimeTriggers_Condition_ColonyThingDefCount>
+    <CS_Studio_RuntimeTriggers_Condition_ColonyThingCategoryCount>Colony Thing Category Count</CS_Studio_RuntimeTriggers_Condition_ColonyThingCategoryCount>
+    <CS_Studio_RuntimeTriggers_Condition_ColonyTradeTagCount>Colony Trade Tag Count</CS_Studio_RuntimeTriggers_Condition_ColonyTradeTagCount>
+    <CS_Studio_RuntimeTriggers_Condition_ColonyFoodTypeCount>Colony Food Type Count</CS_Studio_RuntimeTriggers_Condition_ColonyFoodTypeCount>
+    <CS_Studio_RuntimeTriggers_Condition_ColonyFoodPreferabilityCount>Colony Food Preferability Count</CS_Studio_RuntimeTriggers_Condition_ColonyFoodPreferabilityCount>
+    <CS_Studio_RuntimeTriggers_Condition_ColonistCountAtLeast>Colonist Count At Least</CS_Studio_RuntimeTriggers_Condition_ColonistCountAtLeast>
+    <CS_Studio_RuntimeTriggers_Condition_DaysPassedAtLeast>Days Passed At Least</CS_Studio_RuntimeTriggers_Condition_DaysPassedAtLeast>
+    <CS_Studio_RuntimeTriggers_ConditionValue_Default>Select / edit value in list</CS_Studio_RuntimeTriggers_ConditionValue_Default>
+    <CS_Studio_RuntimeTriggers_MinCount>Min Count</CS_Studio_RuntimeTriggers_MinCount>
+    <CS_Studio_RuntimeTriggers_CountStackCount>Count stack size</CS_Studio_RuntimeTriggers_CountStackCount>
+    <CS_Studio_RuntimeTriggers_StringValue>Value</CS_Studio_RuntimeTriggers_StringValue>
+    <CS_Studio_RuntimeTriggers_DefaultLabel>Trigger {0}</CS_Studio_RuntimeTriggers_DefaultLabel>
+    <CS_Studio_RuntimeTriggers_FoodType_Meal>Meal</CS_Studio_RuntimeTriggers_FoodType_Meal>
+    <CS_Studio_RuntimeTriggers_FoodType_Meat>Meat</CS_Studio_RuntimeTriggers_FoodType_Meat>
+    <CS_Studio_RuntimeTriggers_FoodType_VegetableOrFruit>Vegetable / Fruit</CS_Studio_RuntimeTriggers_FoodType_VegetableOrFruit>
+    <CS_Studio_RuntimeTriggers_FoodType_Seed>Seed</CS_Studio_RuntimeTriggers_FoodType_Seed>
+    <CS_Studio_RuntimeTriggers_FoodType_TreeNutOrBerry>Berry / Nut</CS_Studio_RuntimeTriggers_FoodType_TreeNutOrBerry>
+    <CS_Studio_RuntimeTriggers_FoodType_Corpse>Corpse</CS_Studio_RuntimeTriggers_FoodType_Corpse>
+    <CS_Studio_RuntimeTriggers_FoodType_PsychicEmanator>Psychic Emanator</CS_Studio_RuntimeTriggers_FoodType_PsychicEmanator>
+    <CS_Studio_RuntimeTriggers_FoodPreferability_DesperateOnly>Desperate Only</CS_Studio_RuntimeTriggers_FoodPreferability_DesperateOnly>
+    <CS_Studio_RuntimeTriggers_FoodPreferability_RawBad>Raw Bad</CS_Studio_RuntimeTriggers_FoodPreferability_RawBad>
+    <CS_Studio_RuntimeTriggers_FoodPreferability_RawTasty>Raw Tasty</CS_Studio_RuntimeTriggers_FoodPreferability_RawTasty>
+    <CS_Studio_RuntimeTriggers_FoodPreferability_NeverForNutrition>Never For Nutrition</CS_Studio_RuntimeTriggers_FoodPreferability_NeverForNutrition>
+    <CS_Studio_RuntimeTriggers_FoodPreferability_MealAwful>Awful Meal</CS_Studio_RuntimeTriggers_FoodPreferability_MealAwful>
+    <CS_Studio_RuntimeTriggers_FoodPreferability_MealSimple>Simple Meal</CS_Studio_RuntimeTriggers_FoodPreferability_MealSimple>
+    <CS_Studio_RuntimeTriggers_FoodPreferability_MealFine>Fine Meal</CS_Studio_RuntimeTriggers_FoodPreferability_MealFine>
+    <CS_Studio_RuntimeTriggers_FoodPreferability_MealLavish>Lavish Meal</CS_Studio_RuntimeTriggers_FoodPreferability_MealLavish>
+    <CS_Studio_RuntimeTriggerStatus_Title>Runtime Trigger Status</CS_Studio_RuntimeTriggerStatus_Title>
+    <CS_Studio_RuntimeTriggerStatus_Hint>Read-only status view for registered runtime triggers, current condition evaluation, and cooldown state.</CS_Studio_RuntimeTriggerStatus_Hint>
+    <CS_Studio_RuntimeTriggerStatus_Empty>No runtime triggers are currently registered.</CS_Studio_RuntimeTriggerStatus_Empty>
+    <CS_Studio_RuntimeTriggerStatus_NoMap>No active map available.</CS_Studio_RuntimeTriggerStatus_NoMap>
+    <CS_Studio_RuntimeTriggerStatus_LiveHint>Live view. Current tick: {0}</CS_Studio_RuntimeTriggerStatus_LiveHint>
+    <CS_Studio_RuntimeTriggerStatus_ResetScroll>Reset Scroll</CS_Studio_RuntimeTriggerStatus_ResetScroll>
+    <CS_Studio_RuntimeTriggerStatus_Line>Map: {0} | Eligible: {1} | Conditions: {2} | Can Fire: {3} | Last: {4} | Cooldown: {5}</CS_Studio_RuntimeTriggerStatus_Line>
+    <CS_Studio_RuntimeTriggerStatus_Test>Test</CS_Studio_RuntimeTriggerStatus_Test>
+    <CS_Studio_RuntimeTriggerStatus_TestMessage>{0}: Eligible={1}, Conditions={2}, Can Fire={3}, Cooldown={4}</CS_Studio_RuntimeTriggerStatus_TestMessage>
+    <CS_Studio_RuntimeTriggerStatus_Yes>Yes</CS_Studio_RuntimeTriggerStatus_Yes>
+    <CS_Studio_RuntimeTriggerStatus_No>No</CS_Studio_RuntimeTriggerStatus_No>
 </LanguageData>

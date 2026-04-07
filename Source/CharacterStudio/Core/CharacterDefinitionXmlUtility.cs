@@ -26,25 +26,31 @@ namespace CharacterStudio.Core
 
             XDocument document = new XDocument(
                 new XDeclaration("1.0", "utf-8", null),
-                new XElement("CharacterDefinition",
-                    new XElement("defName", definition.defName ?? string.Empty),
-                    new XElement("displayName", definition.displayName ?? string.Empty),
-                    new XElement("gender", definition.gender.ToString()),
-                    new XElement("biologicalAge", definition.biologicalAge.ToString(CultureInfo.InvariantCulture)),
-                    new XElement("chronologicalAge", definition.chronologicalAge.ToString(CultureInfo.InvariantCulture)),
-                    new XElement("raceDefName", definition.raceDefName ?? ThingDefOf.Human.defName),
-                    string.IsNullOrWhiteSpace(definition.xenotypeDefName) ? null : new XElement("xenotypeDefName", definition.xenotypeDefName),
-                    string.IsNullOrWhiteSpace(definition.bodyTypeDefName) ? null : new XElement("bodyTypeDefName", definition.bodyTypeDefName),
-                    string.IsNullOrWhiteSpace(definition.headTypeDefName) ? null : new XElement("headTypeDefName", definition.headTypeDefName),
-                    string.IsNullOrWhiteSpace(definition.hairDefName) ? null : new XElement("hairDefName", definition.hairDefName),
-                    string.IsNullOrWhiteSpace(definition.childhoodBackstoryDefName) ? null : new XElement("childhoodBackstoryDefName", definition.childhoodBackstoryDefName),
-                    string.IsNullOrWhiteSpace(definition.adulthoodBackstoryDefName) ? null : new XElement("adulthoodBackstoryDefName", definition.adulthoodBackstoryDefName),
-                    BuildStringList("traitDefNames", definition.traitDefNames),
-                    BuildStringList("startingApparelDefNames", definition.startingApparelDefNames),
-                    BuildSkillsElement(definition.skills)
-                ));
+                ToXElement("CharacterDefinition", definition));
 
             document.Save(filePath);
+        }
+
+        public static XElement ToXElement(string elementName, CharacterDefinition definition, bool includeRuntimeTriggers = true)
+        {
+            return new XElement(elementName,
+                new XElement("defName", definition.defName ?? string.Empty),
+                new XElement("displayName", definition.displayName ?? string.Empty),
+                new XElement("gender", definition.gender.ToString()),
+                new XElement("biologicalAge", definition.biologicalAge.ToString(CultureInfo.InvariantCulture)),
+                new XElement("chronologicalAge", definition.chronologicalAge.ToString(CultureInfo.InvariantCulture)),
+                new XElement("raceDefName", definition.raceDefName ?? ThingDefOf.Human.defName),
+                string.IsNullOrWhiteSpace(definition.xenotypeDefName) ? null : new XElement("xenotypeDefName", definition.xenotypeDefName),
+                string.IsNullOrWhiteSpace(definition.bodyTypeDefName) ? null : new XElement("bodyTypeDefName", definition.bodyTypeDefName),
+                string.IsNullOrWhiteSpace(definition.headTypeDefName) ? null : new XElement("headTypeDefName", definition.headTypeDefName),
+                string.IsNullOrWhiteSpace(definition.hairDefName) ? null : new XElement("hairDefName", definition.hairDefName),
+                string.IsNullOrWhiteSpace(definition.childhoodBackstoryDefName) ? null : new XElement("childhoodBackstoryDefName", definition.childhoodBackstoryDefName),
+                string.IsNullOrWhiteSpace(definition.adulthoodBackstoryDefName) ? null : new XElement("adulthoodBackstoryDefName", definition.adulthoodBackstoryDefName),
+                BuildStringList("traitDefNames", definition.traitDefNames),
+                BuildStringList("startingApparelDefNames", definition.startingApparelDefNames),
+                BuildSkillsElement(definition.skills),
+                includeRuntimeTriggers ? BuildRuntimeTriggersElement(definition.runtimeTriggers) : null
+            );
         }
 
         public static CharacterDefinition? Load(string filePath)
@@ -77,7 +83,8 @@ namespace CharacterStudio.Core
                     adulthoodBackstoryDefName = root.Element("adulthoodBackstoryDefName")?.Value ?? string.Empty,
                     traitDefNames = ParseStringList(root.Element("traitDefNames")),
                     startingApparelDefNames = ParseStringList(root.Element("startingApparelDefNames")),
-                    skills = ParseSkills(root.Element("skills"))
+                    skills = ParseSkills(root.Element("skills")),
+                    runtimeTriggers = ParseRuntimeTriggers(root.Element("runtimeTriggers"))
                 };
 
                 if (Enum.TryParse(root.Element("gender")?.Value ?? string.Empty, true, out Gender parsedGender))
@@ -169,6 +176,41 @@ namespace CharacterStudio.Core
                 if (!string.IsNullOrWhiteSpace(entry.skillDefName))
                 {
                     result.Add(entry);
+                }
+            }
+
+            return result;
+        }
+
+        private static XElement? BuildRuntimeTriggersElement(IEnumerable<CharacterRuntimeTriggerDef>? runtimeTriggers)
+        {
+            List<CharacterRuntimeTriggerDef> entries = runtimeTriggers?
+                .Where(static trigger => trigger != null)
+                .Select(static trigger => trigger.Clone())
+                .ToList() ?? new List<CharacterRuntimeTriggerDef>();
+            if (entries.Count == 0)
+            {
+                return null;
+            }
+
+            return new XElement("runtimeTriggers",
+                entries.Select(static trigger => CharacterRuntimeTriggerXmlUtility.BuildRuntimeTriggerEntryElement(trigger)));
+        }
+
+        private static List<CharacterRuntimeTriggerDef> ParseRuntimeTriggers(XElement? element)
+        {
+            List<CharacterRuntimeTriggerDef> result = new List<CharacterRuntimeTriggerDef>();
+            if (element == null)
+            {
+                return result;
+            }
+
+            foreach (XElement item in element.Elements("li"))
+            {
+                CharacterRuntimeTriggerDef trigger = CharacterRuntimeTriggerXmlUtility.ParseRuntimeTriggerEntryElement(item);
+                if (!string.IsNullOrWhiteSpace(trigger.defName) || !string.IsNullOrWhiteSpace(trigger.label) || trigger.requiredConditions.Count > 0)
+                {
+                    result.Add(trigger);
                 }
             }
 

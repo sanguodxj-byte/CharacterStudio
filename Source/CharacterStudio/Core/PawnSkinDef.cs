@@ -14,7 +14,15 @@ namespace CharacterStudio.Core
         public string wAbilityDefName = "";
         public string eAbilityDefName = "";
         public string rAbilityDefName = "";
-        public string wComboAbilityDefName = "";
+        public string tAbilityDefName = "";
+        public string aAbilityDefName = "";
+        public string sAbilityDefName = "";
+        public string dAbilityDefName = "";
+        public string fAbilityDefName = "";
+        public string zAbilityDefName = "";
+        public string xAbilityDefName = "";
+        public string cAbilityDefName = "";
+        public string vAbilityDefName = "";
 
         public SkinAbilityHotkeyConfig Clone()
         {
@@ -25,7 +33,15 @@ namespace CharacterStudio.Core
                 wAbilityDefName = wAbilityDefName,
                 eAbilityDefName = eAbilityDefName,
                 rAbilityDefName = rAbilityDefName,
-                wComboAbilityDefName = wComboAbilityDefName
+                tAbilityDefName = tAbilityDefName,
+                aAbilityDefName = aAbilityDefName,
+                sAbilityDefName = sAbilityDefName,
+                dAbilityDefName = dAbilityDefName,
+                fAbilityDefName = fAbilityDefName,
+                zAbilityDefName = zAbilityDefName,
+                xAbilityDefName = xAbilityDefName,
+                cAbilityDefName = cAbilityDefName,
+                vAbilityDefName = vAbilityDefName
             };
         }
 
@@ -36,13 +52,29 @@ namespace CharacterStudio.Core
             Scribe_Values.Look(ref wAbilityDefName, "wAbilityDefName", "");
             Scribe_Values.Look(ref eAbilityDefName, "eAbilityDefName", "");
             Scribe_Values.Look(ref rAbilityDefName, "rAbilityDefName", "");
-            Scribe_Values.Look(ref wComboAbilityDefName, "wComboAbilityDefName", "");
+            Scribe_Values.Look(ref tAbilityDefName, "tAbilityDefName", "");
+            Scribe_Values.Look(ref aAbilityDefName, "aAbilityDefName", "");
+            Scribe_Values.Look(ref sAbilityDefName, "sAbilityDefName", "");
+            Scribe_Values.Look(ref dAbilityDefName, "dAbilityDefName", "");
+            Scribe_Values.Look(ref fAbilityDefName, "fAbilityDefName", "");
+            Scribe_Values.Look(ref zAbilityDefName, "zAbilityDefName", "");
+            Scribe_Values.Look(ref xAbilityDefName, "xAbilityDefName", "");
+            Scribe_Values.Look(ref cAbilityDefName, "cAbilityDefName", "");
+            Scribe_Values.Look(ref vAbilityDefName, "vAbilityDefName", "");
 
             qAbilityDefName ??= string.Empty;
             wAbilityDefName ??= string.Empty;
             eAbilityDefName ??= string.Empty;
             rAbilityDefName ??= string.Empty;
-            wComboAbilityDefName ??= string.Empty;
+            tAbilityDefName ??= string.Empty;
+            aAbilityDefName ??= string.Empty;
+            sAbilityDefName ??= string.Empty;
+            dAbilityDefName ??= string.Empty;
+            fAbilityDefName ??= string.Empty;
+            zAbilityDefName ??= string.Empty;
+            xAbilityDefName ??= string.Empty;
+            cAbilityDefName ??= string.Empty;
+            vAbilityDefName ??= string.Empty;
         }
     }
 

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Verse;
 
 namespace CharacterStudio.Core
 {
@@ -34,14 +35,8 @@ namespace CharacterStudio.Core
         /// <summary>获取槽位的显示名称</summary>
         public static string GetDisplayName(BaseAppearanceSlotType slotType)
         {
-            switch (slotType)
-            {
-                case BaseAppearanceSlotType.Body:  return "Body";
-                case BaseAppearanceSlotType.Head:  return "Head";
-                case BaseAppearanceSlotType.Hair:  return "Hair";
-                case BaseAppearanceSlotType.Beard: return "Beard";
-                default: return slotType.ToString();
-            }
+            string key = $"CS_Studio_BaseSlot_{slotType}";
+            return key.CanTranslate() ? key.Translate().ToString() : slotType.ToString();
         }
 
         /// <summary>构建合成图层列表（供自定义图层注入使用）</summary>

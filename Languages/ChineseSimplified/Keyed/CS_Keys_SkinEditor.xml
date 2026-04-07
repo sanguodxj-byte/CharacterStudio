@@ -13,6 +13,12 @@
     <CS_Studio_ColorType_Hair>头发颜色</CS_Studio_ColorType_Hair>
     <CS_Studio_ColorType_Skin>皮肤颜色</CS_Studio_ColorType_Skin>
     <CS_Studio_ColorType_White>白色</CS_Studio_ColorType_White>
+    <CS_Studio_ColorSource_Fixed>自定义颜色</CS_Studio_ColorSource_Fixed>
+    <CS_Studio_ColorSource_PawnHair>角色头发颜色</CS_Studio_ColorSource_PawnHair>
+    <CS_Studio_ColorSource_PawnSkin>角色皮肤颜色</CS_Studio_ColorSource_PawnSkin>
+    <CS_Studio_ColorSource_PawnApparelPrimary>服装主色</CS_Studio_ColorSource_PawnApparelPrimary>
+    <CS_Studio_ColorSource_PawnApparelSecondary>服装副色</CS_Studio_ColorSource_PawnApparelSecondary>
+    <CS_Studio_ColorSource_White>白色</CS_Studio_ColorSource_White>
     <CS_Studio_Hide_HiddenPaths>隐藏路径 (hiddenPaths):</CS_Studio_Hide_HiddenPaths>
     <CS_Studio_Hide_HiddenTagsCompat>隐藏标签（兼容）:</CS_Studio_Hide_HiddenTagsCompat>
     <CS_Studio_Hide_NoHiddenPaths>  无 hiddenPaths</CS_Studio_Hide_NoHiddenPaths>
@@ -166,6 +172,7 @@
     <CS_Studio_Transform_EastRotationHint>东西向保留独立旋转偏移；缩放现已统一为全向全局缩放。</CS_Studio_Transform_EastRotationHint>
     <CS_Studio_Transform_FinalDrawOrder>最终绘制顺序</CS_Studio_Transform_FinalDrawOrder>
     <CS_Studio_Transform_GlobalHint>缩放现已统一为全向基础值；东西向仅保留旋转偏移，Preview 行显示当前预览朝向的最终结果。</CS_Studio_Transform_GlobalHint>
+    <CS_Studio_Transform_GlobalScale>全向缩放</CS_Studio_Transform_GlobalScale>
     <CS_Studio_Transform_GlobalScaleX>全向缩放 X</CS_Studio_Transform_GlobalScaleX>
     <CS_Studio_Transform_GlobalScaleY>全向缩放 Y</CS_Studio_Transform_GlobalScaleY>
     <CS_Studio_Transform_PreviewRotation>预览旋转</CS_Studio_Transform_PreviewRotation>
@@ -181,27 +188,59 @@
     <CS_Studio_Variant_DirectionalFacing_West>仅西向</CS_Studio_Variant_DirectionalFacing_West>
     <CS_Studio_Variant_DirectionalFacing_EastWest>仅东西向</CS_Studio_Variant_DirectionalFacing_EastWest>
     <CS_Studio_Variant_HiddenExpressions>隐藏表情</CS_Studio_Variant_HiddenExpressions>
+    <CS_Studio_Variant_HideWhenMissing>缺失变体时隐藏</CS_Studio_Variant_HideWhenMissing>
     <CS_Studio_Variant_LayerRole>图层角色</CS_Studio_Variant_LayerRole>
+    <CS_Studio_Variant_LayerRoleTip>用于声明这个图层在运行时扮演的职责，便于系统决定它是否按面部通道、装饰层或基础层来参与匹配。</CS_Studio_Variant_LayerRoleTip>
     <CS_Studio_Variant_Logic>变体逻辑</CS_Studio_Variant_Logic>
+    <CS_Studio_Variant_LogicTip>用于决定这张图层依据哪类运行时状态去拼接并查找变体贴图。悬浮在当前逻辑项上可查看该模式的实际匹配方式。</CS_Studio_Variant_LogicTip>
     <CS_Studio_Variant_SectionHint>这一组用于控制图层如何在不同预览上下文下匹配贴图变体，例如表情、朝向、视线方向、眨眼和帧序列。</CS_Studio_Variant_SectionHint>
+    <CS_Studio_Variant_BaseNameTip>用于指定变体贴图的基础名称。留空时继续直接使用当前图层的贴图路径。</CS_Studio_Variant_BaseNameTip>
     <CS_Studio_Variant_UseBlinkSuffix>使用眨眼后缀</CS_Studio_Variant_UseBlinkSuffix>
+    <CS_Studio_Variant_UseBlinkSuffixTip>在查找变体时追加眨眼状态后缀，让图层可在 blink/close 等状态下切换贴图。</CS_Studio_Variant_UseBlinkSuffixTip>
     <CS_Studio_Variant_UseDirectionalSuffix>使用朝向后缀</CS_Studio_Variant_UseDirectionalSuffix>
+    <CS_Studio_Variant_UseDirectionalSuffixTip>在查找变体时追加南/北/东西向后缀，让图层可按朝向切换贴图。</CS_Studio_Variant_UseDirectionalSuffixTip>
+    <CS_Studio_Variant_DirectionalFacingTip>把图层限制在指定朝向下显示；选择“不限”时则所有朝向都可见。</CS_Studio_Variant_DirectionalFacingTip>
     <CS_Studio_Variant_UseExpressionSuffix>使用表情后缀</CS_Studio_Variant_UseExpressionSuffix>
+    <CS_Studio_Variant_UseExpressionSuffixTip>在查找变体时追加表情后缀，让图层可随 happy、angry、shock 等表情切换贴图。</CS_Studio_Variant_UseExpressionSuffixTip>
     <CS_Studio_Variant_UseEyeDirectionSuffix>使用视线方向后缀</CS_Studio_Variant_UseEyeDirectionSuffix>
+    <CS_Studio_Variant_UseEyeDirectionSuffixTip>在查找变体时追加视线方向后缀，让图层可随左看、右看、上看、下看切换贴图。</CS_Studio_Variant_UseEyeDirectionSuffixTip>
+    <CS_Studio_Variant_UseFrameSequence>使用帧序列</CS_Studio_Variant_UseFrameSequence>
+    <CS_Studio_Variant_UseFrameSequenceTip>使用编号帧后缀来驱动序列贴图，而不是只使用单张静态贴图。</CS_Studio_Variant_UseFrameSequenceTip>
     <CS_Studio_Variant_VisibleExpressions>可见表情</CS_Studio_Variant_VisibleExpressions>
+    <CS_Studio_Variant_VisibleExpressionsTip>逗号分隔的允许列表。填写后，这张图层只会在列出的表情下保持可见。</CS_Studio_Variant_VisibleExpressionsTip>
+    <CS_Studio_Variant_HiddenExpressionsTip>逗号分隔的禁止列表。填写后，这张图层会在列出的表情下自动隐藏。</CS_Studio_Variant_HiddenExpressionsTip>
+    <CS_Studio_Variant_HideWhenMissingTip>当目标变体贴图不存在时，直接隐藏该图层，而不是回退到基础贴图。</CS_Studio_Variant_HideWhenMissingTip>
+    <CS_Studio_LayerRole_Base>基础层</CS_Studio_LayerRole_Base>
+    <CS_Studio_LayerRole_Head>头部</CS_Studio_LayerRole_Head>
     <CS_Studio_LayerRole_Decoration>装饰</CS_Studio_LayerRole_Decoration>
     <CS_Studio_LayerRole_Eye>眼睛</CS_Studio_LayerRole_Eye>
-    <CS_Studio_LayerRole_Pupil>瞳孔</CS_Studio_LayerRole_Pupil>
     <CS_Studio_LayerRole_Lid>眼睑</CS_Studio_LayerRole_Lid>
     <CS_Studio_LayerRole_Brow>眉毛</CS_Studio_LayerRole_Brow>
     <CS_Studio_LayerRole_Mouth>嘴部</CS_Studio_LayerRole_Mouth>
-    <CS_Studio_LayerRole_EmotionOverlay>情绪叠层</CS_Studio_LayerRole_EmotionOverlay>
+    <CS_Studio_LayerRole_Emotion>情绪层</CS_Studio_LayerRole_Emotion>
+    <CS_Studio_LayerRole_SkinMark>皮肤标记</CS_Studio_LayerRole_SkinMark>
+    <CS_Studio_BaseSlot_Body>身体</CS_Studio_BaseSlot_Body>
+    <CS_Studio_BaseSlot_Head>头部</CS_Studio_BaseSlot_Head>
+    <CS_Studio_BaseSlot_Hair>头发</CS_Studio_BaseSlot_Hair>
+    <CS_Studio_BaseSlot_Beard>胡须</CS_Studio_BaseSlot_Beard>
+    <CS_Studio_Rotation_North>北向</CS_Studio_Rotation_North>
+    <CS_Studio_Rotation_South>南向</CS_Studio_Rotation_South>
+    <CS_Studio_Rotation_East>东向</CS_Studio_Rotation_East>
+    <CS_Studio_Rotation_West>西向</CS_Studio_Rotation_West>
     <CS_Studio_VariantLogic_None>无</CS_Studio_VariantLogic_None>
-    <CS_Studio_VariantLogic_ByExpression>按表情</CS_Studio_VariantLogic_ByExpression>
-    <CS_Studio_VariantLogic_ByFacing>按朝向</CS_Studio_VariantLogic_ByFacing>
-    <CS_Studio_VariantLogic_ByEyeDirection>按视线方向</CS_Studio_VariantLogic_ByEyeDirection>
-    <CS_Studio_VariantLogic_ByBlink>按眨眼</CS_Studio_VariantLogic_ByBlink>
-    <CS_Studio_VariantLogic_Combined>组合匹配</CS_Studio_VariantLogic_Combined>
+    <CS_Studio_VariantLogic_ExpressionOnly>仅按表情</CS_Studio_VariantLogic_ExpressionOnly>
+    <CS_Studio_VariantLogic_EyeDirectionOnly>仅按视线方向</CS_Studio_VariantLogic_EyeDirectionOnly>
+    <CS_Studio_VariantLogic_BlinkOnly>仅按眨眼</CS_Studio_VariantLogic_BlinkOnly>
+    <CS_Studio_VariantLogic_ExpressionAndDirection>表情与视线方向</CS_Studio_VariantLogic_ExpressionAndDirection>
+    <CS_Studio_VariantLogic_ChannelState>按通道状态</CS_Studio_VariantLogic_ChannelState>
+    <CS_Studio_VariantLogic_Sequence>按帧序列</CS_Studio_VariantLogic_Sequence>
+    <CS_Studio_VariantLogicTip_None>不做任何自动变体匹配，直接使用基础贴图路径。</CS_Studio_VariantLogicTip_None>
+    <CS_Studio_VariantLogicTip_ExpressionOnly>只根据当前表情状态匹配变体，例如 happy、angry、shock、sleeping 等。</CS_Studio_VariantLogicTip_ExpressionOnly>
+    <CS_Studio_VariantLogicTip_EyeDirectionOnly>只根据当前视线方向匹配变体，适合眼睛、瞳孔等跟随视线的图层。</CS_Studio_VariantLogicTip_EyeDirectionOnly>
+    <CS_Studio_VariantLogicTip_BlinkOnly>只根据眨眼状态匹配变体，适合 blink/close 专用眼睑或覆盖图层。</CS_Studio_VariantLogicTip_BlinkOnly>
+    <CS_Studio_VariantLogicTip_ExpressionAndDirection>同时结合表情和视线方向来拼接并匹配变体路径。</CS_Studio_VariantLogicTip_ExpressionAndDirection>
+    <CS_Studio_VariantLogicTip_ChannelState>根据解析后的通道状态（如 mouth、lid、brow、emotion）选择对应变体。</CS_Studio_VariantLogicTip_ChannelState>
+    <CS_Studio_VariantLogicTip_Sequence>根据帧序列进度匹配编号变体，用于序列动画图层。</CS_Studio_VariantLogicTip_Sequence>
     <CS_Studio_Workflow_CompositeBaseLayerName>主体底图</CS_Studio_Workflow_CompositeBaseLayerName>
     <CS_Studio_Workflow_MechanoidStandardLayers>机械体分层工作流</CS_Studio_Workflow_MechanoidStandardLayers>
     <CS_Studio_Anim_Brownian>布朗闲逛</CS_Studio_Anim_Brownian>

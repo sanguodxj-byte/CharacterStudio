@@ -41,6 +41,7 @@ namespace CharacterStudio.Core
         public List<string> traitDefNames = new List<string>();
         public List<string> startingApparelDefNames = new List<string>();
         public List<CharacterSkillEntry> skills = new List<CharacterSkillEntry>();
+        public List<CharacterRuntimeTriggerDef> runtimeTriggers = new List<CharacterRuntimeTriggerDef>();
 
         public CharacterDefinition Clone()
         {
@@ -60,7 +61,11 @@ namespace CharacterStudio.Core
                 adulthoodBackstoryDefName = adulthoodBackstoryDefName ?? string.Empty,
                 traitDefNames = new List<string>(traitDefNames ?? new List<string>()),
                 startingApparelDefNames = new List<string>(startingApparelDefNames ?? new List<string>()),
-                skills = (skills ?? new List<CharacterSkillEntry>()).Where(static entry => entry != null).Select(static entry => entry.Clone()).ToList()
+                skills = (skills ?? new List<CharacterSkillEntry>()).Where(static entry => entry != null).Select(static entry => entry.Clone()).ToList(),
+                runtimeTriggers = (runtimeTriggers ?? new List<CharacterRuntimeTriggerDef>())
+                    .Where(static trigger => trigger != null)
+                    .Select(static trigger => trigger.Clone())
+                    .ToList()
             };
         }
 
@@ -81,6 +86,7 @@ namespace CharacterStudio.Core
             traitDefNames ??= new List<string>();
             startingApparelDefNames ??= new List<string>();
             skills ??= new List<CharacterSkillEntry>();
+            runtimeTriggers ??= new List<CharacterRuntimeTriggerDef>();
 
             if (traitDefNames.Count == 0 && attributes?.keyTraits != null)
             {
@@ -104,6 +110,10 @@ namespace CharacterStudio.Core
                 .Where(static entry => entry != null && !string.IsNullOrWhiteSpace(entry.skillDefName))
                 .GroupBy(static entry => entry.skillDefName, StringComparer.OrdinalIgnoreCase)
                 .Select(static group => group.First().Clone())
+                .ToList();
+            runtimeTriggers = runtimeTriggers
+                .Where(static trigger => trigger != null)
+                .Select(static trigger => trigger.Clone())
                 .ToList();
         }
     }

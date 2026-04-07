@@ -830,8 +830,11 @@ namespace CharacterStudio.UI
         {
             switch (component.type)
             {
-                case AbilityRuntimeComponentType.QComboWindow:
-                    return "CS_Studio_Ability_PreviewRuntimeQCombo".Translate(component.comboWindowTicks.ToString());
+                case AbilityRuntimeComponentType.SlotOverrideWindow:
+                    return "CS_Studio_Ability_PreviewRuntimeHotkeyOverride".Translate(
+                        ($"CS_Studio_Ability_Hotkey_{component.comboTargetHotkeySlot}").Translate(),
+                        string.IsNullOrWhiteSpace(component.comboTargetAbilityDefName) ? "-" : component.comboTargetAbilityDefName,
+                        component.comboWindowTicks.ToString());
                 case AbilityRuntimeComponentType.HotkeyOverride:
                     return "CS_Studio_Ability_PreviewRuntimeHotkeyOverride".Translate(
                         ($"CS_Studio_Ability_Hotkey_{component.overrideHotkeySlot}").Translate(),

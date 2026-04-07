@@ -570,6 +570,7 @@ namespace CharacterStudio.Core
         public FaceRenderLod currentLod = FaceRenderLod.Standard;
 
         public ExpressionType currentExpression = ExpressionType.Neutral;
+        public ExpressionType baseExpressionBeforeBlink = ExpressionType.Neutral;
         public EyeDirection currentEyeDirection = EyeDirection.Center;
         public MouthState currentMouthState = MouthState.Normal;
         public LidState currentLidState = LidState.Normal;

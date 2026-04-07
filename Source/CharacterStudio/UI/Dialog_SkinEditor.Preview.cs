@@ -134,6 +134,19 @@ namespace CharacterStudio.UI
             return ($"CS_Studio_Preview_FlowStep_{label}").Translate();
         }
 
+        private static string GetExpressionRuntimeHint(ExpressionType expression)
+        {
+            return ($"CS_Studio_Preview_ExpressionHint_{expression}").Translate();
+        }
+
+        private static void DrawPreviewExpressionMenuTooltip(Rect rect, string tooltip)
+        {
+            if (string.IsNullOrWhiteSpace(tooltip))
+                return;
+
+            TooltipHandler.TipRegion(rect, tooltip);
+        }
+
         private static string GetPreviewHintLabel(string hintKey)
         {
             return ($"CS_Studio_Preview_Hint_{hintKey}").Translate();
@@ -249,7 +262,12 @@ namespace CharacterStudio.UI
             foreach (ExpressionType expression in Enum.GetValues(typeof(ExpressionType)))
             {
                 ExpressionType localExpression = expression;
-                options.Add(new FloatMenuOption(GetExpressionTypeLabel(localExpression), () => ApplyPreviewExpressionOverride(true, localExpression)));
+                string tooltip = GetExpressionRuntimeHint(localExpression);
+                options.Add(new FloatMenuOption(
+                    GetExpressionTypeLabel(localExpression),
+                    () => ApplyPreviewExpressionOverride(true, localExpression),
+                    MenuOptionPriority.Default,
+                    rect => DrawPreviewExpressionMenuTooltip(rect, tooltip)));
             }
 
             Find.WindowStack.Add(new FloatMenu(options));
@@ -686,6 +704,7 @@ namespace CharacterStudio.UI
                     {
                         previewFaceAnimationElapsedTicks -= ticksToAdvance;
                         skinComp.AdvancePreviewFaceAnimationTicks(ticksToAdvance);
+                        RefreshPreview();
                     }
                 }
             }
@@ -700,6 +719,7 @@ namespace CharacterStudio.UI
             {
                 skinComp.TriggerBlink();
                 previewFaceAnimationLastRealtime = Time.realtimeSinceStartup;
+                RefreshPreview();
                 return;
             }
 
@@ -708,6 +728,7 @@ namespace CharacterStudio.UI
                 previewFaceAnimationPlaying = false;
                 previewFaceAnimationLoop = false;
                 previewFaceAnimationLastRealtime = -1f;
+                RefreshPreview();
             }
         }
 
@@ -800,6 +821,7 @@ namespace CharacterStudio.UI
                     : (previewExpressionOverrideEnabled ? previewExpression : (ExpressionType?)null));
             skinComp.SetPreviewRuntimeExpression(previewRuntimeExpressionOverrideEnabled ? previewRuntimeExpression : null);
             skinComp.SetPreviewEyeDirection(previewEyeDirectionOverrideEnabled ? previewEyeDirection : null);
+            skinComp.SetPreviewGazeOffset(previewGazeCursorEnabled ? previewGazeCursorOffset : (Vector2?)null);
             skinComp.SetPreviewMouthState(previewMouthStateOverrideEnabled ? previewMouthState : null);
             skinComp.SetPreviewLidState(previewLidStateOverrideEnabled ? previewLidState : null);
             skinComp.SetPreviewBrowState(previewBrowStateOverrideEnabled ? previewBrowState : null);
@@ -999,7 +1021,9 @@ namespace CharacterStudio.UI
                     36f,
                     150f,
                     OpenPreviewExpressionMenu);
-                TooltipHandler.TipRegion(new Rect(rect.x + Margin, btnY, 190f, ButtonHeight), "CS_Studio_Preview_ExpressionContextHint".Translate());
+                TooltipHandler.TipRegion(
+                    new Rect(rect.x + Margin, btnY, 190f, ButtonHeight),
+                    "CS_Studio_Preview_ExpressionContextHint".Translate() + "\n\n" + GetExpressionRuntimeHint(previewExpression));
 
                 DrawPreviewOverrideButton(
                     ref controlX,
@@ -1095,6 +1119,7 @@ namespace CharacterStudio.UI
                 DrawWeaponPreviewOverlay(previewInnerRect);
                 DrawReferenceGhostOverlay(previewInnerRect);
                 DrawMapTileReferenceGrid(previewInnerRect);
+                DrawFaceGazeCursorOverlay(previewInnerRect);
             }
             else
             {
@@ -1105,17 +1130,86 @@ namespace CharacterStudio.UI
                 Text.Anchor = TextAnchor.UpperLeft;
             }
 
-            if (targetPawn != null)
-            {
-                TooltipHandler.TipRegion(previewInnerRect, "CS_Studio_Preview_RefHint".Translate());
-            }
-
             DrawPreviewHintsOverlay(previewInnerRect);
             DrawSelectedEquipmentPivotOverlay(previewInnerRect);
 
             HandlePreviewInput(previewInnerRect);
+            HandleFaceGazeCursorInput(previewInnerRect);
 
             DrawSelectedLayerHighlight(previewInnerRect);
+        }
+
+        private void DrawFaceGazeCursorOverlay(Rect previewRect)
+        {
+            if (currentTab != EditorTab.Face)
+            {
+                return;
+            }
+
+            Rect hintRect = new Rect(previewRect.x + 10f, previewRect.y + 10f, Mathf.Min(360f, previewRect.width - 20f), 30f);
+            Widgets.DrawBoxSolid(hintRect, new Color(0f, 0f, 0f, 0.35f));
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.UpperLeft;
+            GUI.color = UIHelper.HeaderColor;
+            Widgets.Label(hintRect.ContractedBy(6f), previewGazeCursorEnabled
+                ? "CS_Studio_Face_GazeCursor_Hint_Enabled".Translate()
+                : "CS_Studio_Face_GazeCursor_Hint_Disabled".Translate());
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = GameFont.Small;
+
+            Vector2 center = previewRect.center;
+            Vector2 cursorPos = center + new Vector2(previewGazeCursorOffset.x * previewRect.width * 0.22f, -previewGazeCursorOffset.y * previewRect.height * 0.22f);
+            Color crossColor = new Color(0.25f, 0.75f, 1f, previewGazeCursorEnabled ? 0.95f : 0.75f);
+            Widgets.DrawLine(new Vector2(cursorPos.x - 10f, cursorPos.y), new Vector2(cursorPos.x + 10f, cursorPos.y), crossColor, 2f);
+            Widgets.DrawLine(new Vector2(cursorPos.x, cursorPos.y - 10f), new Vector2(cursorPos.x, cursorPos.y + 10f), crossColor, 2f);
+            Widgets.DrawBoxSolid(new Rect(cursorPos.x - 2f, cursorPos.y - 2f, 4f, 4f), crossColor);
+            GUI.color = Color.white;
+        }
+
+        private void HandleFaceGazeCursorInput(Rect previewRect)
+        {
+            if (currentTab != EditorTab.Face)
+            {
+                if (previewGazeCursorEnabled || previewGazeCursorOffset != Vector2.zero)
+                {
+                    previewGazeCursorEnabled = false;
+                    SyncPreviewOverridesToSkinComp();
+                }
+                return;
+            }
+
+            if (!previewGazeCursorEnabled)
+            {
+                return;
+            }
+
+            Event current = Event.current;
+            if (current == null)
+            {
+                return;
+            }
+
+            bool inside = previewRect.Contains(current.mousePosition);
+            bool dragging = current.type == EventType.MouseDrag && current.button == 0;
+            bool clicking = current.type == EventType.MouseDown && current.button == 0;
+
+            if (!inside && !dragging && !clicking)
+            {
+                return;
+            }
+
+            previewEyeDirectionOverrideEnabled = false;
+            previewAutoPlayEnabled = false;
+
+            float normalizedX = Mathf.Clamp((current.mousePosition.x - previewRect.center.x) / (previewRect.width * 0.22f), -1f, 1f);
+            float normalizedY = Mathf.Clamp((previewRect.center.y - current.mousePosition.y) / (previewRect.height * 0.22f), -1f, 1f);
+            previewGazeCursorOffset = new Vector2(normalizedX, normalizedY);
+            SyncPreviewOverridesToSkinComp();
+            if (current.type == EventType.MouseDown || current.type == EventType.MouseDrag)
+            {
+                current.Use();
+            }
         }
 
         private void DrawReferenceGhostOverlay(Rect previewRect)

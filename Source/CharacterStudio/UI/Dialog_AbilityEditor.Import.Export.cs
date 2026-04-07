@@ -371,7 +371,15 @@ namespace CharacterStudio.UI
                 !string.IsNullOrEmpty(hotkeys.wAbilityDefName) ? new System.Xml.Linq.XElement("wAbilityDefName", hotkeys.wAbilityDefName) : null,
                 !string.IsNullOrEmpty(hotkeys.eAbilityDefName) ? new System.Xml.Linq.XElement("eAbilityDefName", hotkeys.eAbilityDefName) : null,
                 !string.IsNullOrEmpty(hotkeys.rAbilityDefName) ? new System.Xml.Linq.XElement("rAbilityDefName", hotkeys.rAbilityDefName) : null,
-                !string.IsNullOrEmpty(hotkeys.wComboAbilityDefName) ? new System.Xml.Linq.XElement("wComboAbilityDefName", hotkeys.wComboAbilityDefName) : null
+                !string.IsNullOrEmpty(hotkeys.tAbilityDefName) ? new System.Xml.Linq.XElement("tAbilityDefName", hotkeys.tAbilityDefName) : null,
+                !string.IsNullOrEmpty(hotkeys.aAbilityDefName) ? new System.Xml.Linq.XElement("aAbilityDefName", hotkeys.aAbilityDefName) : null,
+                !string.IsNullOrEmpty(hotkeys.sAbilityDefName) ? new System.Xml.Linq.XElement("sAbilityDefName", hotkeys.sAbilityDefName) : null,
+                !string.IsNullOrEmpty(hotkeys.dAbilityDefName) ? new System.Xml.Linq.XElement("dAbilityDefName", hotkeys.dAbilityDefName) : null,
+                !string.IsNullOrEmpty(hotkeys.fAbilityDefName) ? new System.Xml.Linq.XElement("fAbilityDefName", hotkeys.fAbilityDefName) : null,
+                !string.IsNullOrEmpty(hotkeys.zAbilityDefName) ? new System.Xml.Linq.XElement("zAbilityDefName", hotkeys.zAbilityDefName) : null,
+                !string.IsNullOrEmpty(hotkeys.xAbilityDefName) ? new System.Xml.Linq.XElement("xAbilityDefName", hotkeys.xAbilityDefName) : null,
+                !string.IsNullOrEmpty(hotkeys.cAbilityDefName) ? new System.Xml.Linq.XElement("cAbilityDefName", hotkeys.cAbilityDefName) : null,
+                !string.IsNullOrEmpty(hotkeys.vAbilityDefName) ? new System.Xml.Linq.XElement("vAbilityDefName", hotkeys.vAbilityDefName) : null
             );
         }
     }

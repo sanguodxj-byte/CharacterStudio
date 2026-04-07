@@ -32,6 +32,9 @@
     <CS_Studio_Export_IncludeAbilities>包含技能</CS_Studio_Export_IncludeAbilities>
     <CS_Studio_Export_IncludeGeneDef>包含基因定义</CS_Studio_Export_IncludeGeneDef>
     <CS_Studio_Export_IncludePawnKind>包含 PawnKind 定义</CS_Studio_Export_IncludePawnKind>
+    <CS_Studio_Export_IncludeRuntimeTriggers>包含运行时触发器</CS_Studio_Export_IncludeRuntimeTriggers>
+    <CS_Studio_Export_IncludeRuntimeTriggers_Hint>导出会在初始化时自动注册的运行时触发 Def 与角色配置 Def，其他依赖 Character Studio 的模组也可直接声明式注册。</CS_Studio_Export_IncludeRuntimeTriggers_Hint>
+    <CS_Studio_Export_IncludeRuntimeTriggers_EmptyHint>当前角色定义尚未配置运行时触发器。</CS_Studio_Export_IncludeRuntimeTriggers_EmptyHint>
     <CS_Studio_Export_IncludeSkinDef>包含皮肤定义</CS_Studio_Export_IncludeSkinDef>
     <CS_Studio_Export_IncludeSummonItem>包含角色物品</CS_Studio_Export_IncludeSummonItem>
     <CS_Studio_Export_LocalFiles>本地文件</CS_Studio_Export_LocalFiles>

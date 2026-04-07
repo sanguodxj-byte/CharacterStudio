@@ -206,7 +206,6 @@ namespace CharacterStudio.UI
             hotkeyConfig.wAbilityDefName = "CS_Example_W_Pierce";
             hotkeyConfig.eAbilityDefName = "CS_Example_E_ShadowStep";
             hotkeyConfig.rAbilityDefName = "CS_Example_R_Annihilation";
-            hotkeyConfig.wComboAbilityDefName = "CS_Example_W2_ComboBurst";
             SanitizeHotkeyConfigAgainstAbilities(GetCurrentHotkeyConfig());
 
             validationSummary = "CS_Studio_Ability_ExamplesLoaded".Translate();

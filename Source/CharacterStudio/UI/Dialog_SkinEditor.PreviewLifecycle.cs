@@ -2,6 +2,7 @@ using System;
 using CharacterStudio.Core;
 using CharacterStudio.Design;
 using RimWorld;
+using UnityEngine;
 using Verse;
 
 namespace CharacterStudio.UI
@@ -138,6 +139,7 @@ namespace CharacterStudio.UI
             skinComp.SetPreviewBrowState(previewBrowStateOverrideEnabled ? previewBrowState : null);
             skinComp.SetPreviewEmotionOverlayState(previewEmotionStateOverrideEnabled ? previewEmotionState : null);
             skinComp.SetPreviewEyeDirection(previewEyeDirectionOverrideEnabled ? previewEyeDirection : null);
+            skinComp.SetPreviewGazeOffset(previewGazeCursorEnabled ? previewGazeCursorOffset : (Vector2?)null);
             skinComp.EnsureFaceRuntimeStateReadyForPreview();
         }
 

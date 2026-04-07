@@ -58,8 +58,8 @@
     <sortOrder>25</sortOrder>
     <requiredConditions>
       <li>
-        <matchMode>FoodType</matchMode>
-        <foodType>MealLavish</foodType>
+        <matchMode>FoodPreferability</matchMode>
+        <foodPreferability>MealLavish</foodPreferability>
         <minCount>5</minCount>
         <countStackCount>true</countStackCount>
       </li>
@@ -199,8 +199,8 @@
     <conditionLogic>Not</conditionLogic>
     <requiredConditions>
       <li>
-        <matchMode>FoodType</matchMode>
-        <foodType>MealLavish</foodType>
+        <matchMode>FoodPreferability</matchMode>
+        <foodPreferability>MealLavish</foodPreferability>
         <minCount>5</minCount>
         <countStackCount>true</countStackCount>
       </li>

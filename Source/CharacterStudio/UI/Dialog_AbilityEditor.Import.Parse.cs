@@ -356,6 +356,13 @@ namespace CharacterStudio.UI
                     var runtimeComponent = DirectXmlToObject.ObjectFromXml<AbilityRuntimeComponentConfig>(child, true);
                     if (runtimeComponent != null)
                     {
+                        if (runtimeComponent.type == AbilityRuntimeComponentType.SlotOverrideWindow
+                            && string.IsNullOrWhiteSpace(runtimeComponent.comboTargetAbilityDefName)
+                            && !string.IsNullOrWhiteSpace(runtimeComponent.overrideAbilityDefName))
+                        {
+                            runtimeComponent.comboTargetAbilityDefName = runtimeComponent.overrideAbilityDefName;
+                        }
+
                         if (runtimeComponent.type == AbilityRuntimeComponentType.VanillaPawnFlyer)
                         {
                             runtimeComponent.type = AbilityRuntimeComponentType.FlightState;
@@ -415,7 +422,15 @@ namespace CharacterStudio.UI
                 wAbilityDefName = GetChildText(node, "wAbilityDefName"),
                 eAbilityDefName = GetChildText(node, "eAbilityDefName"),
                 rAbilityDefName = GetChildText(node, "rAbilityDefName"),
-                wComboAbilityDefName = GetChildText(node, "wComboAbilityDefName")
+                tAbilityDefName = GetChildText(node, "tAbilityDefName"),
+                aAbilityDefName = GetChildText(node, "aAbilityDefName"),
+                sAbilityDefName = GetChildText(node, "sAbilityDefName"),
+                dAbilityDefName = GetChildText(node, "dAbilityDefName"),
+                fAbilityDefName = GetChildText(node, "fAbilityDefName"),
+                zAbilityDefName = GetChildText(node, "zAbilityDefName"),
+                xAbilityDefName = GetChildText(node, "xAbilityDefName"),
+                cAbilityDefName = GetChildText(node, "cAbilityDefName"),
+                vAbilityDefName = GetChildText(node, "vAbilityDefName")
             };
         }
 
@@ -425,7 +440,15 @@ namespace CharacterStudio.UI
             hotkeys.wAbilityDefName = RemapImportedHotkeyDefName(hotkeys.wAbilityDefName, originalDefNames);
             hotkeys.eAbilityDefName = RemapImportedHotkeyDefName(hotkeys.eAbilityDefName, originalDefNames);
             hotkeys.rAbilityDefName = RemapImportedHotkeyDefName(hotkeys.rAbilityDefName, originalDefNames);
-            hotkeys.wComboAbilityDefName = RemapImportedHotkeyDefName(hotkeys.wComboAbilityDefName, originalDefNames);
+            hotkeys.tAbilityDefName = RemapImportedHotkeyDefName(hotkeys.tAbilityDefName, originalDefNames);
+            hotkeys.aAbilityDefName = RemapImportedHotkeyDefName(hotkeys.aAbilityDefName, originalDefNames);
+            hotkeys.sAbilityDefName = RemapImportedHotkeyDefName(hotkeys.sAbilityDefName, originalDefNames);
+            hotkeys.dAbilityDefName = RemapImportedHotkeyDefName(hotkeys.dAbilityDefName, originalDefNames);
+            hotkeys.fAbilityDefName = RemapImportedHotkeyDefName(hotkeys.fAbilityDefName, originalDefNames);
+            hotkeys.zAbilityDefName = RemapImportedHotkeyDefName(hotkeys.zAbilityDefName, originalDefNames);
+            hotkeys.xAbilityDefName = RemapImportedHotkeyDefName(hotkeys.xAbilityDefName, originalDefNames);
+            hotkeys.cAbilityDefName = RemapImportedHotkeyDefName(hotkeys.cAbilityDefName, originalDefNames);
+            hotkeys.vAbilityDefName = RemapImportedHotkeyDefName(hotkeys.vAbilityDefName, originalDefNames);
         }
 
         private static string RemapImportedHotkeyDefName(string? defName, Dictionary<ModularAbilityDef, string> originalDefNames)

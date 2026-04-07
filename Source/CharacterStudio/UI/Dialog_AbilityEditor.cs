@@ -320,7 +320,6 @@ namespace CharacterStudio.UI
             target.wAbilityDefName = source.wAbilityDefName ?? string.Empty;
             target.eAbilityDefName = source.eAbilityDefName ?? string.Empty;
             target.rAbilityDefName = source.rAbilityDefName ?? string.Empty;
-            target.wComboAbilityDefName = source.wComboAbilityDefName ?? string.Empty;
         }
 
         private void SanitizeHotkeyConfigAgainstAbilities(SkinAbilityHotkeyConfig? hotkeyConfig)
@@ -334,13 +333,11 @@ namespace CharacterStudio.UI
             hotkeyConfig.wAbilityDefName = ResolveExistingAbilityDefName(hotkeyConfig.wAbilityDefName);
             hotkeyConfig.eAbilityDefName = ResolveExistingAbilityDefName(hotkeyConfig.eAbilityDefName);
             hotkeyConfig.rAbilityDefName = ResolveExistingAbilityDefName(hotkeyConfig.rAbilityDefName);
-            hotkeyConfig.wComboAbilityDefName = ResolveExistingAbilityDefName(hotkeyConfig.wComboAbilityDefName);
 
             bool hasAnyBinding = !string.IsNullOrWhiteSpace(hotkeyConfig.qAbilityDefName)
                 || !string.IsNullOrWhiteSpace(hotkeyConfig.wAbilityDefName)
                 || !string.IsNullOrWhiteSpace(hotkeyConfig.eAbilityDefName)
-                || !string.IsNullOrWhiteSpace(hotkeyConfig.rAbilityDefName)
-                || !string.IsNullOrWhiteSpace(hotkeyConfig.wComboAbilityDefName);
+                || !string.IsNullOrWhiteSpace(hotkeyConfig.rAbilityDefName);
 
             if (!hasAnyBinding)
             {

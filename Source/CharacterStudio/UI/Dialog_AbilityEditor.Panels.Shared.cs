@@ -397,7 +397,7 @@ namespace CharacterStudio.UI
         {
             return type switch
             {
-                AbilityRuntimeComponentType.QComboWindow => 86f,
+                AbilityRuntimeComponentType.SlotOverrideWindow => 138f,
                 AbilityRuntimeComponentType.HotkeyOverride => 164f,
                 AbilityRuntimeComponentType.FollowupCooldownGate => 112f,
                 AbilityRuntimeComponentType.SmartJump => 244f,
@@ -483,8 +483,37 @@ namespace CharacterStudio.UI
                 float labelW = 160f;
                 float valueW = inner.width - labelW - 6f;
 
-                if (comp.type == AbilityRuntimeComponentType.QComboWindow)
+                if (comp.type == AbilityRuntimeComponentType.SlotOverrideWindow)
                 {
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_HotkeyOverrideSlot".Translate());
+                    if (DrawSelectionFieldButton(new Rect(inner.x + labelW, rowY, valueW, 24f),
+                        ($"CS_Studio_Ability_Hotkey_{comp.comboTargetHotkeySlot}").Translate(), () =>
+                        {
+                            var options = new List<FloatMenuOption>();
+                            foreach (AbilityRuntimeHotkeySlot slot in Enum.GetValues(typeof(AbilityRuntimeHotkeySlot)))
+                            {
+                                AbilityRuntimeHotkeySlot localSlot = slot;
+                                options.Add(new FloatMenuOption(($"CS_Studio_Ability_Hotkey_{localSlot}").Translate(), () =>
+                                {
+                                    comp.comboTargetHotkeySlot = localSlot;
+                                    NotifyAbilityPreviewDirty(true);
+                                }));
+                            }
+                            Find.WindowStack.Add(new FloatMenu(options));
+                        }))
+                    {
+                    }
+                    rowY += 26f;
+
+                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_HotkeyOverrideAbility".Translate());
+                    string comboAbilityLabel = string.IsNullOrWhiteSpace(comp.comboTargetAbilityDefName)
+                        ? "CS_Studio_None".Translate()
+                        : comp.comboTargetAbilityDefName;
+                    if (DrawSelectionFieldButton(new Rect(inner.x + labelW, rowY, valueW, 24f), comboAbilityLabel, () => ShowAbilityDefSelectorForRuntime(comp)))
+                    {
+                    }
+                    rowY += 26f;
+
                     Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_QWindowTicks".Translate());
                     string s = comp.comboWindowTicks.ToString();
                     int comboWindowBefore = comp.comboWindowTicks;

@@ -32,6 +32,9 @@
     <CS_Studio_Export_IncludeAbilities>Include Abilities</CS_Studio_Export_IncludeAbilities>
     <CS_Studio_Export_IncludeGeneDef>Include Gene Definition</CS_Studio_Export_IncludeGeneDef>
     <CS_Studio_Export_IncludePawnKind>Include PawnKind Definition</CS_Studio_Export_IncludePawnKind>
+    <CS_Studio_Export_IncludeRuntimeTriggers>Include Runtime Triggers</CS_Studio_Export_IncludeRuntimeTriggers>
+    <CS_Studio_Export_IncludeRuntimeTriggers_Hint>Exports auto-registered runtime trigger defs and spawn profile defs that other mods can register by depending on Character Studio.</CS_Studio_Export_IncludeRuntimeTriggers_Hint>
+    <CS_Studio_Export_IncludeRuntimeTriggers_EmptyHint>No runtime triggers are configured in this character definition yet.</CS_Studio_Export_IncludeRuntimeTriggers_EmptyHint>
     <CS_Studio_Export_IncludeSkinDef>Include Skin Definition</CS_Studio_Export_IncludeSkinDef>
     <CS_Studio_Export_IncludeSummonItem>Include Character Item</CS_Studio_Export_IncludeSummonItem>
     <CS_Studio_Export_LocalFiles>Local Files</CS_Studio_Export_LocalFiles>

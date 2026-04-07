@@ -4,7 +4,7 @@
   <CharacterStudio.Abilities.ModularAbilityDef>
     <defName>CS_Example_Q1_ModeSlash</defName>
     <label>Q1·智能跃斩</label>
-    <description>示例：Q1 朝鼠标方向智能施法，复用原版跳跃动画跃进一格并结算伤害；随后 Q 会立即切换显示为 Q2，但仍需等待 1 秒冷却后才能释放。</description>
+    <description>示例：该技能绑定在任意槽位都可使用。施放后通过运行时组件把同槽位临时覆盖为下一个连段技能，并附加 1 秒跟进冷却。</description>
     <cooldownTicks>45</cooldownTicks>
     <warmupTicks>0</warmupTicks>
     <charges>1</charges>
@@ -64,7 +64,7 @@
   <CharacterStudio.Abilities.ModularAbilityDef>
     <defName>CS_Example_Q2_ModeSlash</defName>
     <label>Q2·追击跃斩</label>
-    <description>示例：Q2 延续连段，再次智能跃进；随后 Q 会立即切换显示为 Q3，但仍需等待 1 秒冷却后才能释放。</description>
+    <description>示例：第二段连招，行为仍由技能自身组件决定；施放后继续把同槽位临时覆盖为下一段，并附加 1 秒跟进冷却。</description>
     <cooldownTicks>45</cooldownTicks>
     <warmupTicks>0</warmupTicks>
     <charges>1</charges>
@@ -124,7 +124,7 @@
   <CharacterStudio.Abilities.ModularAbilityDef>
     <defName>CS_Example_Q3_ModeSlash</defName>
     <label>Q3·裂步连斩</label>
-    <description>示例：Q3 继续同槽位连段；随后 Q 会立即切换显示为 Q4，但仍需等待 1 秒冷却后才能释放。</description>
+    <description>示例：第三段连招。该技能不依赖固定 Q 键逻辑，而是继续通过同槽位覆盖窗口切换到终段技能。</description>
     <cooldownTicks>45</cooldownTicks>
     <warmupTicks>0</warmupTicks>
     <charges>1</charges>
@@ -184,7 +184,7 @@
   <CharacterStudio.Abilities.ModularAbilityDef>
     <defName>CS_Example_Q4_ModeSlash</defName>
     <label>Q4·终结跃斩</label>
-    <description>示例：Q4 作为终段造成更高伤害，并额外开启 W2 连段窗口，使 W 在短时间内替换为 W2。</description>
+    <description>示例：终段造成更高伤害，并额外开启另一个槽位覆盖窗口：在短时间内把目标槽位替换为强化追击技能。</description>
     <cooldownTicks>45</cooldownTicks>
     <warmupTicks>0</warmupTicks>
     <charges>1</charges>
@@ -226,16 +226,11 @@
         <wave3Damage>220</wave3Damage>
       </li>
       <li>
-        <type>QComboWindow</type>
+        <type>SlotOverrideWindow</type>
         <enabled>true</enabled>
+        <comboTargetHotkeySlot>W</comboTargetHotkeySlot>
+        <comboTargetAbilityDefName>CS_Example_W2_ComboBurst</comboTargetAbilityDefName>
         <comboWindowTicks>60</comboWindowTicks>
-      </li>
-      <li>
-        <type>HotkeyOverride</type>
-        <enabled>true</enabled>
-        <overrideHotkeySlot>W</overrideHotkeySlot>
-        <overrideAbilityDefName>CS_Example_W2_ComboBurst</overrideAbilityDefName>
-        <overrideDurationTicks>60</overrideDurationTicks>
       </li>
     </runtimeComponents>
   </CharacterStudio.Abilities.ModularAbilityDef>
@@ -268,7 +263,7 @@
   <CharacterStudio.Abilities.ModularAbilityDef>
     <defName>CS_Example_W2_ComboBurst</defName>
     <label>W2·裂阵追击</label>
-    <description>示例：仅在 Q4 打开的窗口内可通过 W 触发的强化追击爆发。</description>
+    <description>示例：仅在其他技能打开的槽位覆盖窗口内可触发的强化追击爆发，不依赖固定 Q/W 硬编码。</description>
     <cooldownTicks>90</cooldownTicks>
     <warmupTicks>0</warmupTicks>
     <charges>1</charges>
@@ -293,7 +288,7 @@
   <CharacterStudio.Abilities.ModularAbilityDef>
     <defName>CS_Example_E_ShadowStep</defName>
     <label>E·影踏</label>
-    <description>示例：E 键瞬移到鼠标指向位置，落点触发范围伤害。</description>
+    <description>示例：该技能带有短距离跳跃运行时组件。绑定到任意槽位后，都会按组件配置执行跳跃并在落点结算伤害。</description>
     <cooldownTicks>120</cooldownTicks>
     <warmupTicks>0</warmupTicks>
     <charges>1</charges>
@@ -337,7 +332,7 @@
   <CharacterStudio.Abilities.ModularAbilityDef>
     <defName>CS_Example_R_Annihilation</defName>
     <label>R·歼灭界域</label>
-    <description>示例：R 键先开启近战叠层，再选点延迟跃迁并释放三段爆炸波。</description>
+    <description>示例：该技能带有叠层/二段引爆运行时组件。绑定到任意槽位后，都可按组件配置进入叠层并执行延迟引爆。</description>
     <cooldownTicks>240</cooldownTicks>
     <warmupTicks>0</warmupTicks>
     <charges>1</charges>

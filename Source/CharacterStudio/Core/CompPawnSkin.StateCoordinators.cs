@@ -12,6 +12,7 @@ namespace CharacterStudio.Core
         private sealed class FaceExpressionRuntimeState
         {
             public ExpressionType currentExpression = ExpressionType.Neutral;
+            public int shockExpireTick = -1;
             public int blinkTimer = 0;
             public int expressionAnimTick = 0;
             public ExpressionType lastAnimatedExpression = ExpressionType.Neutral;
@@ -111,6 +112,23 @@ namespace CharacterStudio.Core
                 lastAnimatedExpression = ExpressionType.Neutral;
                 lastAnimatedFrameIndex = -1;
             }
+
+            public void TriggerShock(int nowTick, int durationTicks)
+            {
+                shockExpireTick = nowTick + Math.Max(1, durationTicks);
+            }
+
+            public bool IsShockActive(int nowTick)
+                => shockExpireTick >= nowTick;
+
+            public bool ClearExpiredShock(int nowTick)
+            {
+                if (shockExpireTick < 0 || shockExpireTick >= nowTick)
+                    return false;
+
+                shockExpireTick = -1;
+                return true;
+            }
         }
 
         private sealed class EyeDirectionRuntimeState
@@ -130,6 +148,7 @@ namespace CharacterStudio.Core
         private sealed class EffectiveFaceStateSnapshot
         {
             public readonly ExpressionType expression;
+            public readonly ExpressionType baseExpressionBeforeBlink;
             public readonly EyeDirection eyeDirection;
             public readonly MouthState mouthState;
             public readonly LidState lidState;
@@ -141,6 +160,7 @@ namespace CharacterStudio.Core
 
             public EffectiveFaceStateSnapshot(
                 ExpressionType expression,
+                ExpressionType baseExpressionBeforeBlink,
                 EyeDirection eyeDirection,
                 MouthState mouthState,
                 LidState lidState,
@@ -151,6 +171,7 @@ namespace CharacterStudio.Core
                 PupilScaleVariant pupilVariant)
             {
                 this.expression = expression;
+                this.baseExpressionBeforeBlink = baseExpressionBeforeBlink;
                 this.eyeDirection = eyeDirection;
                 this.mouthState = mouthState;
                 this.lidState = lidState;
@@ -216,6 +237,7 @@ namespace CharacterStudio.Core
             private static bool HasEffectiveFaceStateChanged(FaceRuntimeState runtimeState, EffectiveFaceStateSnapshot snapshot)
             {
                 return runtimeState.currentExpression != snapshot.expression
+                    || runtimeState.baseExpressionBeforeBlink != snapshot.baseExpressionBeforeBlink
                     || runtimeState.currentEyeDirection != snapshot.eyeDirection
                     || runtimeState.currentMouthState != snapshot.mouthState
                     || runtimeState.currentLidState != snapshot.lidState
@@ -229,6 +251,7 @@ namespace CharacterStudio.Core
             private static void ApplyEffectiveFaceState(FaceRuntimeState runtimeState, EffectiveFaceStateSnapshot snapshot)
             {
                 runtimeState.currentExpression = snapshot.expression;
+                runtimeState.baseExpressionBeforeBlink = snapshot.baseExpressionBeforeBlink;
                 runtimeState.currentEyeDirection = snapshot.eyeDirection;
                 runtimeState.currentMouthState = snapshot.mouthState;
                 runtimeState.currentLidState = snapshot.lidState;
@@ -373,6 +396,7 @@ namespace CharacterStudio.Core
                 ExpressionType expression = ResolveExpression(owner);
                 return new EffectiveFaceStateSnapshot(
                     expression,
+                    ResolveBaseExpressionBeforeBlink(owner, expression),
                     ResolveEyeDirection(owner),
                     ResolveMouthState(owner, expression),
                     ResolveLidState(owner, expression),
@@ -396,6 +420,45 @@ namespace CharacterStudio.Core
 
                 if (owner.faceExpressionState.IsBlinkActive)
                     return ExpressionType.Blink;
+
+                Pawn? pawn = owner.Pawn;
+                int now = Find.TickManager?.TicksGame ?? 0;
+                if (pawn != null
+                    && owner.faceExpressionState.IsShockActive(now)
+                    && !pawn.Dead
+                    && !pawn.Downed
+                    && !RestUtility.InBed(pawn))
+                {
+                    return ExpressionType.Shock;
+                }
+
+                return owner.curExpression;
+            }
+
+            private static ExpressionType ResolveBaseExpressionBeforeBlink(CompPawnSkin owner, ExpressionType effectiveExpression)
+            {
+                if (effectiveExpression != ExpressionType.Blink)
+                    return effectiveExpression;
+
+                if (owner.previewOverrides.PreviewExpression.HasValue)
+                    return owner.previewOverrides.PreviewExpression.Value;
+
+                if (owner.previewOverrides.PreviewRuntimeExpression.HasValue)
+                    return owner.previewOverrides.PreviewRuntimeExpression.Value;
+
+                if (owner.IsAbilityExpressionOverrideActive())
+                    return owner.abilityExpressionOverride ?? owner.curExpression;
+
+                Pawn? pawn = owner.Pawn;
+                int now = Find.TickManager?.TicksGame ?? 0;
+                if (pawn != null
+                    && owner.faceExpressionState.IsShockActive(now)
+                    && !pawn.Dead
+                    && !pawn.Downed
+                    && !RestUtility.InBed(pawn))
+                {
+                    return ExpressionType.Shock;
+                }
 
                 return owner.curExpression;
             }
@@ -1155,6 +1218,9 @@ namespace CharacterStudio.Core
                 owner.EnsureFaceRuntimeStateUpdated();
                 owner.faceExpressionState.AdvanceAnimTick();
 
+                if (owner.faceExpressionState.ClearExpiredShock(Find.TickManager?.TicksGame ?? 0))
+                    owner.RequestRenderRefresh();
+
                 if (ShouldUpdateExpression(pawn))
                     owner.UpdateExpressionState();
 
@@ -1267,8 +1333,9 @@ namespace CharacterStudio.Core
 
         private sealed class AbilityHotkeyRuntimeState
         {
-            public int qHotkeyModeIndex = 0;
-            public int qComboWindowEndTick = 0;
+            public int slotOverrideWindowEndTick = 0;
+            public string slotOverrideWindowAbilityDefName = string.Empty;
+            public string slotOverrideWindowSlotId = string.Empty;
             public string qOverrideAbilityDefName = string.Empty;
             public int qOverrideExpireTick = -1;
             public string wOverrideAbilityDefName = string.Empty;
@@ -1277,16 +1344,44 @@ namespace CharacterStudio.Core
             public int eOverrideExpireTick = -1;
             public string rOverrideAbilityDefName = string.Empty;
             public int rOverrideExpireTick = -1;
+            public string tOverrideAbilityDefName = string.Empty;
+            public int tOverrideExpireTick = -1;
+            public string aOverrideAbilityDefName = string.Empty;
+            public int aOverrideExpireTick = -1;
+            public string sOverrideAbilityDefName = string.Empty;
+            public int sOverrideExpireTick = -1;
+            public string dOverrideAbilityDefName = string.Empty;
+            public int dOverrideExpireTick = -1;
+            public string fOverrideAbilityDefName = string.Empty;
+            public int fOverrideExpireTick = -1;
+            public string zOverrideAbilityDefName = string.Empty;
+            public int zOverrideExpireTick = -1;
+            public string xOverrideAbilityDefName = string.Empty;
+            public int xOverrideExpireTick = -1;
+            public string cOverrideAbilityDefName = string.Empty;
+            public int cOverrideExpireTick = -1;
+            public string vOverrideAbilityDefName = string.Empty;
+            public int vOverrideExpireTick = -1;
             public int qCooldownUntilTick = 0;
             public int wCooldownUntilTick = 0;
             public int eCooldownUntilTick = 0;
             public int rCooldownUntilTick = 0;
+            public int tCooldownUntilTick = 0;
+            public int aCooldownUntilTick = 0;
+            public int sCooldownUntilTick = 0;
+            public int dCooldownUntilTick = 0;
+            public int fCooldownUntilTick = 0;
+            public int zCooldownUntilTick = 0;
+            public int xCooldownUntilTick = 0;
+            public int cCooldownUntilTick = 0;
+            public int vCooldownUntilTick = 0;
             public bool rStackingEnabled = false;
             public int rStackCount = 0;
             public bool rSecondStageReady = false;
             public int rSecondStageExecuteTick = -1;
             public bool rSecondStageHasTarget = false;
             public IntVec3 rSecondStageTargetCell = IntVec3.Invalid;
+            public string rStackAbilityDefName = string.Empty;
             public int weaponCarryCastingUntilTick = -1;
             public int periodicPulseNextTick = -1;
             public int periodicPulseEndTick = -1;
@@ -1339,8 +1434,9 @@ namespace CharacterStudio.Core
 
             public void ExposeData()
             {
-                Scribe_Values.Look(ref qHotkeyModeIndex, "qHotkeyModeIndex", 0);
-                Scribe_Values.Look(ref qComboWindowEndTick, "qComboWindowEndTick", 0);
+                Scribe_Values.Look(ref slotOverrideWindowEndTick, "slotOverrideWindowEndTick", 0);
+                Scribe_Values.Look(ref slotOverrideWindowAbilityDefName, "slotOverrideWindowAbilityDefName", string.Empty);
+                Scribe_Values.Look(ref slotOverrideWindowSlotId, "slotOverrideWindowSlotId", string.Empty);
                 Scribe_Values.Look(ref qOverrideAbilityDefName, "qOverrideAbilityDefName", string.Empty);
                 Scribe_Values.Look(ref qOverrideExpireTick, "qOverrideExpireTick", -1);
                 Scribe_Values.Look(ref wOverrideAbilityDefName, "wOverrideAbilityDefName", string.Empty);
@@ -1349,16 +1445,44 @@ namespace CharacterStudio.Core
                 Scribe_Values.Look(ref eOverrideExpireTick, "eOverrideExpireTick", -1);
                 Scribe_Values.Look(ref rOverrideAbilityDefName, "rOverrideAbilityDefName", string.Empty);
                 Scribe_Values.Look(ref rOverrideExpireTick, "rOverrideExpireTick", -1);
+                Scribe_Values.Look(ref tOverrideAbilityDefName, "tOverrideAbilityDefName", string.Empty);
+                Scribe_Values.Look(ref tOverrideExpireTick, "tOverrideExpireTick", -1);
+                Scribe_Values.Look(ref aOverrideAbilityDefName, "aOverrideAbilityDefName", string.Empty);
+                Scribe_Values.Look(ref aOverrideExpireTick, "aOverrideExpireTick", -1);
+                Scribe_Values.Look(ref sOverrideAbilityDefName, "sOverrideAbilityDefName", string.Empty);
+                Scribe_Values.Look(ref sOverrideExpireTick, "sOverrideExpireTick", -1);
+                Scribe_Values.Look(ref dOverrideAbilityDefName, "dOverrideAbilityDefName", string.Empty);
+                Scribe_Values.Look(ref dOverrideExpireTick, "dOverrideExpireTick", -1);
+                Scribe_Values.Look(ref fOverrideAbilityDefName, "fOverrideAbilityDefName", string.Empty);
+                Scribe_Values.Look(ref fOverrideExpireTick, "fOverrideExpireTick", -1);
+                Scribe_Values.Look(ref zOverrideAbilityDefName, "zOverrideAbilityDefName", string.Empty);
+                Scribe_Values.Look(ref zOverrideExpireTick, "zOverrideExpireTick", -1);
+                Scribe_Values.Look(ref xOverrideAbilityDefName, "xOverrideAbilityDefName", string.Empty);
+                Scribe_Values.Look(ref xOverrideExpireTick, "xOverrideExpireTick", -1);
+                Scribe_Values.Look(ref cOverrideAbilityDefName, "cOverrideAbilityDefName", string.Empty);
+                Scribe_Values.Look(ref cOverrideExpireTick, "cOverrideExpireTick", -1);
+                Scribe_Values.Look(ref vOverrideAbilityDefName, "vOverrideAbilityDefName", string.Empty);
+                Scribe_Values.Look(ref vOverrideExpireTick, "vOverrideExpireTick", -1);
                 Scribe_Values.Look(ref qCooldownUntilTick, "qCooldownUntilTick", 0);
                 Scribe_Values.Look(ref wCooldownUntilTick, "wCooldownUntilTick", 0);
                 Scribe_Values.Look(ref eCooldownUntilTick, "eCooldownUntilTick", 0);
                 Scribe_Values.Look(ref rCooldownUntilTick, "rCooldownUntilTick", 0);
+                Scribe_Values.Look(ref tCooldownUntilTick, "tCooldownUntilTick", 0);
+                Scribe_Values.Look(ref aCooldownUntilTick, "aCooldownUntilTick", 0);
+                Scribe_Values.Look(ref sCooldownUntilTick, "sCooldownUntilTick", 0);
+                Scribe_Values.Look(ref dCooldownUntilTick, "dCooldownUntilTick", 0);
+                Scribe_Values.Look(ref fCooldownUntilTick, "fCooldownUntilTick", 0);
+                Scribe_Values.Look(ref zCooldownUntilTick, "zCooldownUntilTick", 0);
+                Scribe_Values.Look(ref xCooldownUntilTick, "xCooldownUntilTick", 0);
+                Scribe_Values.Look(ref cCooldownUntilTick, "cCooldownUntilTick", 0);
+                Scribe_Values.Look(ref vCooldownUntilTick, "vCooldownUntilTick", 0);
                 Scribe_Values.Look(ref rStackingEnabled, "rStackingEnabled", false);
                 Scribe_Values.Look(ref rStackCount, "rStackCount", 0);
                 Scribe_Values.Look(ref rSecondStageReady, "rSecondStageReady", false);
                 Scribe_Values.Look(ref rSecondStageExecuteTick, "rSecondStageExecuteTick", -1);
                 Scribe_Values.Look(ref rSecondStageHasTarget, "rSecondStageHasTarget", false);
                 Scribe_Values.Look(ref rSecondStageTargetCell, "rSecondStageTargetCell", IntVec3.Invalid);
+                Scribe_Values.Look(ref rStackAbilityDefName, "rStackAbilityDefName", string.Empty);
                 Scribe_Values.Look(ref weaponCarryCastingUntilTick, "weaponCarryCastingUntilTick", -1);
                 Scribe_Values.Look(ref periodicPulseNextTick, "periodicPulseNextTick", -1);
                 Scribe_Values.Look(ref periodicPulseEndTick, "periodicPulseEndTick", -1);
@@ -1414,14 +1538,20 @@ namespace CharacterStudio.Core
             public void Normalize()
             {
                 qOverrideAbilityDefName ??= string.Empty;
+                slotOverrideWindowAbilityDefName ??= string.Empty;
+                slotOverrideWindowSlotId ??= string.Empty;
                 wOverrideAbilityDefName ??= string.Empty;
                 eOverrideAbilityDefName ??= string.Empty;
                 rOverrideAbilityDefName ??= string.Empty;
-
-                if (qHotkeyModeIndex < 0 || qHotkeyModeIndex > 3)
-                {
-                    qHotkeyModeIndex = 0;
-                }
+                tOverrideAbilityDefName ??= string.Empty;
+                aOverrideAbilityDefName ??= string.Empty;
+                sOverrideAbilityDefName ??= string.Empty;
+                dOverrideAbilityDefName ??= string.Empty;
+                fOverrideAbilityDefName ??= string.Empty;
+                zOverrideAbilityDefName ??= string.Empty;
+                xOverrideAbilityDefName ??= string.Empty;
+                cOverrideAbilityDefName ??= string.Empty;
+                vOverrideAbilityDefName ??= string.Empty;
 
                 if (rStackCount < 0)
                 {
@@ -1436,6 +1566,8 @@ namespace CharacterStudio.Core
                 {
                     rSecondStageTargetCell = IntVec3.Invalid;
                 }
+
+                rStackAbilityDefName ??= string.Empty;
 
                 if (shieldRemainingDamage < 0f)
                 {

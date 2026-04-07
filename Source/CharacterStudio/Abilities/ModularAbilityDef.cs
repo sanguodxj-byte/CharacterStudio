@@ -164,7 +164,7 @@ namespace CharacterStudio.Abilities
 
     public enum AbilityRuntimeComponentType
     {
-        QComboWindow,
+        SlotOverrideWindow,
         HotkeyOverride,
         FollowupCooldownGate,
         SmartJump,
@@ -201,7 +201,16 @@ namespace CharacterStudio.Abilities
         Q,
         W,
         E,
-        R
+        R,
+        T,
+        A,
+        S,
+        D,
+        F,
+        Z,
+        X,
+        C,
+        V
     }
 
     public class AbilityRuntimeComponentConfig
@@ -210,6 +219,8 @@ namespace CharacterStudio.Abilities
         public bool enabled = true;
 
         public int comboWindowTicks = 12;
+        public AbilityRuntimeHotkeySlot comboTargetHotkeySlot = AbilityRuntimeHotkeySlot.W;
+        public string comboTargetAbilityDefName = string.Empty;
         public AbilityRuntimeHotkeySlot overrideHotkeySlot = AbilityRuntimeHotkeySlot.Q;
         public string overrideAbilityDefName = string.Empty;
         public int overrideDurationTicks = 60;
@@ -407,9 +418,11 @@ namespace CharacterStudio.Abilities
 
             switch (type)
             {
-                case AbilityRuntimeComponentType.QComboWindow:
+                case AbilityRuntimeComponentType.SlotOverrideWindow:
                     if (comboWindowTicks <= 0)
                         result.AddError("CS_Ability_Validate_QComboWindowTicks".Translate());
+                    if (string.IsNullOrWhiteSpace(comboTargetAbilityDefName))
+                        result.AddError("CS_Ability_Validate_HotkeyOverrideAbilityDefName".Translate());
                     break;
                 case AbilityRuntimeComponentType.HotkeyOverride:
                     if (string.IsNullOrWhiteSpace(overrideAbilityDefName))
@@ -1286,7 +1299,7 @@ namespace CharacterStudio.Abilities
                 return;
             }
 
-            WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.QComboWindow);
+            WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.SlotOverrideWindow);
             WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.HotkeyOverride);
             WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.FollowupCooldownGate);
             WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.RStackDetonation);

@@ -382,7 +382,7 @@ namespace CharacterStudio.UI
             {
                 UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_BaseSlot_PrimaryColorSource".Translate(), slot.colorSource,
                     (LayerColorSource[])Enum.GetValues(typeof(LayerColorSource)),
-                    option => option.ToString(),
+                    GetLayerColorSourceLabel,
                     val =>
                     {
                         MutateBaseSlotWithUndo(() => slot.colorSource = val);
@@ -398,7 +398,7 @@ namespace CharacterStudio.UI
 
                 UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_BaseSlot_SecondaryColorSource".Translate(), slot.colorTwoSource,
                     (LayerColorSource[])Enum.GetValues(typeof(LayerColorSource)),
-                    option => option.ToString(),
+                    GetLayerColorSourceLabel,
                     val =>
                     {
                         MutateBaseSlotWithUndo(() => slot.colorTwoSource = val);

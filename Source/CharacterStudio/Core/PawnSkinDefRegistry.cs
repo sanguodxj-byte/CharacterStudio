@@ -116,6 +116,11 @@ namespace CharacterStudio.Core
                 int count = 0;
                 foreach (var file in Directory.GetFiles(dir, "*.xml", SearchOption.TopDirectoryOnly))
                 {
+                    if (file.EndsWith(".character.xml", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
                     try
                     {
                         var def = LoadSkinDefFromFile(file);

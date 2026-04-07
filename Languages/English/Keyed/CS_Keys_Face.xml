@@ -8,7 +8,6 @@
     <CS_Expression_Dead>Dead</CS_Expression_Dead>
     <CS_Expression_Eating>Eating</CS_Expression_Eating>
     <CS_Expression_Gloomy>Gloomy</CS_Expression_Gloomy>
-    <CS_Expression_Goto>Moving</CS_Expression_Goto>
     <CS_Expression_Happy>Happy</CS_Expression_Happy>
     <CS_Expression_Hauling>Hauling</CS_Expression_Hauling>
     <CS_Expression_Hopeless>Hopeless</CS_Expression_Hopeless>
@@ -167,6 +166,8 @@
     <CS_Studio_Face_PreviewHint>Preview Mode</CS_Studio_Face_PreviewHint>
     <CS_Studio_Face_PreviewHintValue>Switch between auto and a forced expression in the preview panel to inspect the current face setup instantly</CS_Studio_Face_PreviewHintValue>
     <CS_Studio_Face_PreviewModeButton>Preview Mode</CS_Studio_Face_PreviewModeButton>
+    <CS_Studio_Face_EyeMapping_Title>Eye Replacements</CS_Studio_Face_EyeMapping_Title>
+    <CS_Studio_Face_EyeMapping_Empty>No recognizable Eye replacement textures were found in the current directory. All textures with the Eye_ prefix are scanned and can be configured as conditional replacements for the Eye part.</CS_Studio_Face_EyeMapping_Empty>
     <CS_Studio_Face_OverlayMapping_Empty>No recognizable overlay textures were found in the current directory. Names should follow Overlay_xxx or an explicit semantic prefix.</CS_Studio_Face_OverlayMapping_Empty>
     <CS_Studio_Face_OverlayMapping_Hint>Scan overlay textures and manually assign their semantic channel. Offset and scale are still better handled in external art tools.</CS_Studio_Face_OverlayMapping_Hint>
     <CS_Studio_Face_OverlayMapping_Suggested>Suggested {0}</CS_Studio_Face_OverlayMapping_Suggested>
@@ -249,6 +250,50 @@
     <CS_Studio_Face_Motion_Pupil_DirRightOffsetX>Pupil Look Right Offset X</CS_Studio_Face_Motion_Pupil_DirRightOffsetX>
     <CS_Studio_Face_Motion_Pupil_DirUpOffsetZ>Pupil Look Up Offset Z</CS_Studio_Face_Motion_Pupil_DirUpOffsetZ>
     <CS_Studio_Face_Motion_Pupil_DirDownOffsetZ>Pupil Look Down Offset Z</CS_Studio_Face_Motion_Pupil_DirDownOffsetZ>
+    <CS_Studio_Face_GazeCursor_Title>Gaze Cursor Test</CS_Studio_Face_GazeCursor_Title>
+    <CS_Studio_Face_GazeCursor_Hint>Click or drag in this area to test the continuous pupil follow range driven by the current procedural face config. This only affects the face editor preview.</CS_Studio_Face_GazeCursor_Hint>
+    <CS_Studio_Face_GazeCursor_State>Gaze Cursor</CS_Studio_Face_GazeCursor_State>
+    <CS_Studio_Face_GazeCursor_Debug>Cursor Debug</CS_Studio_Face_GazeCursor_Debug>
+    <CS_Studio_Face_GazeCursor_Enabled>Enabled</CS_Studio_Face_GazeCursor_Enabled>
+    <CS_Studio_Face_GazeCursor_Disabled>Disabled</CS_Studio_Face_GazeCursor_Disabled>
+    <CS_Studio_Face_GazeCursor_Enable>Enable</CS_Studio_Face_GazeCursor_Enable>
+    <CS_Studio_Face_GazeCursor_Disable>Disable</CS_Studio_Face_GazeCursor_Disable>
+    <CS_Studio_Face_GazeCursor_Reset>Reset</CS_Studio_Face_GazeCursor_Reset>
+    <CS_Studio_Face_GazeCursor_LeftHint>Enable this, then drag the blue cross in preview with left mouse. Disabling keeps the current position.</CS_Studio_Face_GazeCursor_LeftHint>
+    <CS_Studio_Face_GazeCursor_Hint_Enabled>Drag the blue cross with left mouse to adjust the gaze target. Disabling debug keeps the current position.</CS_Studio_Face_GazeCursor_Hint_Enabled>
+    <CS_Studio_Face_GazeCursor_Hint_Disabled>Enable cursor debug on the left, then drag the blue cross in preview to test pupil follow.</CS_Studio_Face_GazeCursor_Hint_Disabled>
+    <CS_Studio_Face_OverlayMapping_Hint_StateOnly>Map scanned overlay textures directly to emotion states. Overlays without a mapped state will not attach.</CS_Studio_Face_OverlayMapping_Hint_StateOnly>
+    <CS_Studio_Face_OverlayMapping_UnmappedState>No emotion state</CS_Studio_Face_OverlayMapping_UnmappedState>
+    <CS_Studio_Face_OverlayMapping_ClearState>Clear emotion state</CS_Studio_Face_OverlayMapping_ClearState>
+    <CS_Studio_Face_OverlayMapping_Hint_Semantic>Map scanned overlay textures directly to expression semantics. Unconfigured overlays are shown as ... and will not attach.</CS_Studio_Face_OverlayMapping_Hint_Semantic>
+    <CS_Studio_Preview_ExpressionHint_Neutral>Default fallback. Triggers when no death, downed, sleeping, job, mental-state, or mood/rest threshold takes priority.</CS_Studio_Preview_ExpressionHint_Neutral>
+    <CS_Studio_Preview_ExpressionHint_Happy>Triggers when mood is above 0.8.</CS_Studio_Preview_ExpressionHint_Happy>
+    <CS_Studio_Preview_ExpressionHint_Cheerful>Triggers when mood is above 0.9.</CS_Studio_Preview_ExpressionHint_Cheerful>
+    <CS_Studio_Preview_ExpressionHint_Gloomy>Triggers when mood is below 0.4 but not low enough to become Sad or Hopeless.</CS_Studio_Preview_ExpressionHint_Gloomy>
+    <CS_Studio_Preview_ExpressionHint_Sad>Triggers when mood is below 0.2 but not low enough to become Hopeless.</CS_Studio_Preview_ExpressionHint_Sad>
+    <CS_Studio_Preview_ExpressionHint_Hopeless>Triggers when mood is below 0.1.</CS_Studio_Preview_ExpressionHint_Hopeless>
+    <CS_Studio_Preview_ExpressionHint_Tired>Triggers when rest is below 0.15.</CS_Studio_Preview_ExpressionHint_Tired>
+    <CS_Studio_Preview_ExpressionHint_Pain>Triggers when the pawn is downed.</CS_Studio_Preview_ExpressionHint_Pain>
+    <CS_Studio_Preview_ExpressionHint_Sleeping>Triggers when the pawn is resting or sleeping in bed.</CS_Studio_Preview_ExpressionHint_Sleeping>
+    <CS_Studio_Preview_ExpressionHint_Angry>Triggers during non-panic mental states and also backs some combat-facing expression behavior.</CS_Studio_Preview_ExpressionHint_Angry>
+    <CS_Studio_Preview_ExpressionHint_Scared>Triggers during panic-like mental states such as Flee, Panic, or WildMan.</CS_Studio_Preview_ExpressionHint_Scared>
+    <CS_Studio_Preview_ExpressionHint_Shock>Triggers briefly after taking damage that is not fully absorbed by shields.</CS_Studio_Preview_ExpressionHint_Shock>
+    <CS_Studio_Preview_ExpressionHint_WaitCombat>Triggers when the current job name contains WaitCombat.</CS_Studio_Preview_ExpressionHint_WaitCombat>
+    <CS_Studio_Preview_ExpressionHint_AttackMelee>Triggers when the current job name contains AttackMelee.</CS_Studio_Preview_ExpressionHint_AttackMelee>
+    <CS_Studio_Preview_ExpressionHint_AttackRanged>Triggers when the current job name contains AttackStatic, Shoot, or Burst.</CS_Studio_Preview_ExpressionHint_AttackRanged>
+    <CS_Studio_Preview_ExpressionHint_Eating>Triggers when the current job is Ingest.</CS_Studio_Preview_ExpressionHint_Eating>
+    <CS_Studio_Preview_ExpressionHint_Working>Triggers for DoBill or jobs whose names contain work keywords such as Craft, Cook, Mine, Build, or Research.</CS_Studio_Preview_ExpressionHint_Working>
+    <CS_Studio_Preview_ExpressionHint_Hauling>Triggers for hauling jobs or job names containing Haul or Carry.</CS_Studio_Preview_ExpressionHint_Hauling>
+    <CS_Studio_Preview_ExpressionHint_Reading>Triggers when the current job name contains Read or Study.</CS_Studio_Preview_ExpressionHint_Reading>
+    <CS_Studio_Preview_ExpressionHint_SocialRelax>Triggers when the current job name contains SocialRelax or Chat.</CS_Studio_Preview_ExpressionHint_SocialRelax>
+    <CS_Studio_Preview_ExpressionHint_Lovin>Triggers when the current job is Lovin.</CS_Studio_Preview_ExpressionHint_Lovin>
+    <CS_Studio_Preview_ExpressionHint_Strip>Triggers when the current job is Strip or its name contains Strip.</CS_Studio_Preview_ExpressionHint_Strip>
+    <CS_Studio_Preview_ExpressionHint_LayDown>Triggers when the current job name equals or contains LayDown.</CS_Studio_Preview_ExpressionHint_LayDown>
+    <CS_Studio_Preview_ExpressionHint_Dead>Triggers when the pawn is dead.</CS_Studio_Preview_ExpressionHint_Dead>
+    <CS_Studio_Preview_ExpressionHint_Blink>Internal random blink state. Briefly triggers only when the pawn is not sleeping or dead and preview expression forcing is not active.</CS_Studio_Preview_ExpressionHint_Blink>
+    <CS_Studio_Face_OverlayFollow_Label>Follow</CS_Studio_Face_OverlayFollow_Label>
+    <CS_Studio_Face_OverlayFollow_Face>Face</CS_Studio_Face_OverlayFollow_Face>
+    <CS_Studio_Face_OverlayFollow_Pupil>Pupil</CS_Studio_Face_OverlayFollow_Pupil>
     <CS_Studio_Face_Motion_Pupil_NeutralSoftOffsetZ>Pupil Neutral Soft Offset Z</CS_Studio_Face_Motion_Pupil_NeutralSoftOffsetZ>
     <CS_Studio_Face_Motion_Pupil_NeutralLookDownOffsetZ>Pupil Neutral Look Down Offset Z</CS_Studio_Face_Motion_Pupil_NeutralLookDownOffsetZ>
     <CS_Studio_Face_Motion_Pupil_NeutralGlanceWaveOffsetX>Pupil Neutral Glance Wave Offset X</CS_Studio_Face_Motion_Pupil_NeutralGlanceWaveOffsetX>

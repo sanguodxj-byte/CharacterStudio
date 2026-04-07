@@ -8,7 +8,6 @@
     <CS_Expression_Dead>死亡</CS_Expression_Dead>
     <CS_Expression_Eating>进食</CS_Expression_Eating>
     <CS_Expression_Gloomy>阴郁</CS_Expression_Gloomy>
-    <CS_Expression_Goto>移动</CS_Expression_Goto>
     <CS_Expression_Happy>快乐</CS_Expression_Happy>
     <CS_Expression_Hauling>搬运</CS_Expression_Hauling>
     <CS_Expression_Hopeless>绝望</CS_Expression_Hopeless>
@@ -149,6 +148,8 @@
     <CS_Studio_Face_PreviewHint>预览模式</CS_Studio_Face_PreviewHint>
     <CS_Studio_Face_PreviewHintValue>可在预览面板切换自动/指定表情，并即时预览当前配置</CS_Studio_Face_PreviewHintValue>
     <CS_Studio_Face_PreviewModeButton>切换预览</CS_Studio_Face_PreviewModeButton>
+    <CS_Studio_Face_EyeMapping_Title>Eye 替换件</CS_Studio_Face_EyeMapping_Title>
+    <CS_Studio_Face_EyeMapping_Empty>当前目录未扫描到可识别的 Eye 替换纹理。会扫描所有以 Eye_ 开头的纹理，并可按表情语义配置为 Eye 部件的替换件。</CS_Studio_Face_EyeMapping_Empty>
     <CS_Studio_Face_OverlayMapping_Empty>当前目录未扫描到可识别的 overlay 纹理。命名需符合 Overlay_xxx 或显式语义前缀。</CS_Studio_Face_OverlayMapping_Empty>
     <CS_Studio_Face_OverlayMapping_Hint>扫描 overlay 纹理并手动指定语义通道；偏移与缩放建议在外部工具中处理。</CS_Studio_Face_OverlayMapping_Hint>
     <CS_Studio_Face_OverlayMapping_Suggested>建议 {0}</CS_Studio_Face_OverlayMapping_Suggested>
@@ -222,6 +223,50 @@
     <CS_Studio_Face_MotionSection_BrowMotion>眉毛运动参数</CS_Studio_Face_MotionSection_BrowMotion>
     <CS_Studio_Face_MotionSection_MouthMotion>嘴部运动参数</CS_Studio_Face_MotionSection_MouthMotion>
     <CS_Studio_Face_MotionSection_EmotionOverlayMotion>情绪叠层运动参数</CS_Studio_Face_MotionSection_EmotionOverlayMotion>
+    <CS_Studio_Face_GazeCursor_Title>注视点测试</CS_Studio_Face_GazeCursor_Title>
+    <CS_Studio_Face_GazeCursor_Hint>在此区域点击或拖拽光标，测试程序动画配置下瞳孔的连续跟随偏移范围。仅影响表情编辑页面预览。</CS_Studio_Face_GazeCursor_Hint>
+    <CS_Studio_Face_GazeCursor_State>注视点光标</CS_Studio_Face_GazeCursor_State>
+    <CS_Studio_Face_GazeCursor_Debug>光标调试</CS_Studio_Face_GazeCursor_Debug>
+    <CS_Studio_Face_GazeCursor_Enabled>已启用</CS_Studio_Face_GazeCursor_Enabled>
+    <CS_Studio_Face_GazeCursor_Disabled>未启用</CS_Studio_Face_GazeCursor_Disabled>
+    <CS_Studio_Face_GazeCursor_Enable>启用</CS_Studio_Face_GazeCursor_Enable>
+    <CS_Studio_Face_GazeCursor_Disable>关闭</CS_Studio_Face_GazeCursor_Disable>
+    <CS_Studio_Face_GazeCursor_Reset>重置</CS_Studio_Face_GazeCursor_Reset>
+    <CS_Studio_Face_GazeCursor_LeftHint>启用后在预览中左键拖动蓝色十字调整注视点；关闭后保留当前位置。</CS_Studio_Face_GazeCursor_LeftHint>
+    <CS_Studio_Face_GazeCursor_Hint_Enabled>左键拖动蓝色十字调整注视点；关闭调试后将保留当前位置。</CS_Studio_Face_GazeCursor_Hint_Enabled>
+    <CS_Studio_Face_GazeCursor_Hint_Disabled>打开左侧“光标调试”后，可在预览中拖动蓝色十字测试瞳孔跟随。</CS_Studio_Face_GazeCursor_Hint_Disabled>
+    <CS_Studio_Face_OverlayMapping_Hint_StateOnly>将扫描到的 overlay 纹理直接映射到情绪状态。未映射状态的 overlay 不会附加。</CS_Studio_Face_OverlayMapping_Hint_StateOnly>
+    <CS_Studio_Face_OverlayMapping_UnmappedState>未配置情绪状态</CS_Studio_Face_OverlayMapping_UnmappedState>
+    <CS_Studio_Face_OverlayMapping_ClearState>清空情绪状态</CS_Studio_Face_OverlayMapping_ClearState>
+    <CS_Studio_Face_OverlayMapping_Hint_Semantic>将扫描到的 overlay 纹理直接映射到表情语义。未配置的 overlay 显示为 ...，且不会附加。</CS_Studio_Face_OverlayMapping_Hint_Semantic>
+    <CS_Studio_Preview_ExpressionHint_Neutral>默认状态。未命中死亡、倒地、睡眠、工作、精神状态或心情阈值时触发。</CS_Studio_Preview_ExpressionHint_Neutral>
+    <CS_Studio_Preview_ExpressionHint_Happy>心情值大于 0.8 时触发。</CS_Studio_Preview_ExpressionHint_Happy>
+    <CS_Studio_Preview_ExpressionHint_Cheerful>心情值大于 0.9 时触发。</CS_Studio_Preview_ExpressionHint_Cheerful>
+    <CS_Studio_Preview_ExpressionHint_Gloomy>心情值低于 0.4 且未低到 Sad / Hopeless 时触发。</CS_Studio_Preview_ExpressionHint_Gloomy>
+    <CS_Studio_Preview_ExpressionHint_Sad>心情值低于 0.2 且未低到 Hopeless 时触发。</CS_Studio_Preview_ExpressionHint_Sad>
+    <CS_Studio_Preview_ExpressionHint_Hopeless>心情值低于 0.1 时触发。</CS_Studio_Preview_ExpressionHint_Hopeless>
+    <CS_Studio_Preview_ExpressionHint_Tired>休息值低于 0.15 时触发。</CS_Studio_Preview_ExpressionHint_Tired>
+    <CS_Studio_Preview_ExpressionHint_Pain>Pawn 倒地时触发。</CS_Studio_Preview_ExpressionHint_Pain>
+    <CS_Studio_Preview_ExpressionHint_Sleeping>Pawn 在床上休息/睡眠时触发。</CS_Studio_Preview_ExpressionHint_Sleeping>
+    <CS_Studio_Preview_ExpressionHint_Angry>处于非惊慌类精神状态时触发，也用于部分攻击/备战表现。</CS_Studio_Preview_ExpressionHint_Angry>
+    <CS_Studio_Preview_ExpressionHint_Scared>处于 Flee / Panic / WildMan 等惊慌类精神状态时触发。</CS_Studio_Preview_ExpressionHint_Scared>
+    <CS_Studio_Preview_ExpressionHint_Shock>受到未被护盾完全吸收的伤害后短时触发。</CS_Studio_Preview_ExpressionHint_Shock>
+    <CS_Studio_Preview_ExpressionHint_WaitCombat>当前 Job 名包含 WaitCombat 时触发。</CS_Studio_Preview_ExpressionHint_WaitCombat>
+    <CS_Studio_Preview_ExpressionHint_AttackMelee>当前 Job 名包含 AttackMelee 时触发。</CS_Studio_Preview_ExpressionHint_AttackMelee>
+    <CS_Studio_Preview_ExpressionHint_AttackRanged>当前 Job 名包含 AttackStatic / Shoot / Burst 时触发。</CS_Studio_Preview_ExpressionHint_AttackRanged>
+    <CS_Studio_Preview_ExpressionHint_Eating>当前 Job 为进食 Ingest 时触发。</CS_Studio_Preview_ExpressionHint_Eating>
+    <CS_Studio_Preview_ExpressionHint_Working>当前 Job 为 DoBill 或名称包含 Craft / Cook / Mine / Build / Research 等工作关键字时触发。</CS_Studio_Preview_ExpressionHint_Working>
+    <CS_Studio_Preview_ExpressionHint_Hauling>当前 Job 为搬运，或名称包含 Haul / Carry 时触发。</CS_Studio_Preview_ExpressionHint_Hauling>
+    <CS_Studio_Preview_ExpressionHint_Reading>当前 Job 名包含 Read / Study 时触发。</CS_Studio_Preview_ExpressionHint_Reading>
+    <CS_Studio_Preview_ExpressionHint_SocialRelax>当前 Job 名包含 SocialRelax / Chat 时触发。</CS_Studio_Preview_ExpressionHint_SocialRelax>
+    <CS_Studio_Preview_ExpressionHint_Lovin>当前 Job 为 Lovin 时触发。</CS_Studio_Preview_ExpressionHint_Lovin>
+    <CS_Studio_Preview_ExpressionHint_Strip>当前 Job 为 Strip 或名称包含 Strip 时触发。</CS_Studio_Preview_ExpressionHint_Strip>
+    <CS_Studio_Preview_ExpressionHint_LayDown>当前 Job 名为或包含 LayDown 时触发。</CS_Studio_Preview_ExpressionHint_LayDown>
+    <CS_Studio_Preview_ExpressionHint_Dead>Pawn 死亡时触发。</CS_Studio_Preview_ExpressionHint_Dead>
+    <CS_Studio_Preview_ExpressionHint_Blink>内部随机眨眼状态。仅在非睡眠、非死亡、未强制预览表情时短时触发。</CS_Studio_Preview_ExpressionHint_Blink>
+    <CS_Studio_Face_OverlayFollow_Label>跟随</CS_Studio_Face_OverlayFollow_Label>
+    <CS_Studio_Face_OverlayFollow_Face>面部</CS_Studio_Face_OverlayFollow_Face>
+    <CS_Studio_Face_OverlayFollow_Pupil>瞳孔</CS_Studio_Face_OverlayFollow_Pupil>
     <CS_Studio_Face_Motion_Lid_GenericDefaultScaleZWaveAmplitude>通用默认纵向缩放波动</CS_Studio_Face_Motion_Lid_GenericDefaultScaleZWaveAmplitude>
     <CS_Studio_Face_Motion_Eye_SideBiasX>眼球左右基准偏移</CS_Studio_Face_Motion_Eye_SideBiasX>
     <CS_Studio_Face_Motion_Eye_PrimaryWaveOffsetZ>眼球主波纵向偏移</CS_Studio_Face_Motion_Eye_PrimaryWaveOffsetZ>

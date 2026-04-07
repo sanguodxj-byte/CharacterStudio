@@ -39,4 +39,67 @@
     <CS_AttrBuff_Search>搜索属性</CS_AttrBuff_Search>
     <CS_AttrBuff_Section>属性增益 Buff</CS_AttrBuff_Section>
     <CS_AttrBuff_Value>数值</CS_AttrBuff_Value>
+    <CS_Studio_RuntimeTriggers_Section>运行时触发器</CS_Studio_RuntimeTriggers_Section>
+    <CS_Studio_RuntimeTriggers_Summary>已配置 {0} 个运行时触发器</CS_Studio_RuntimeTriggers_Summary>
+    <CS_Studio_RuntimeTriggers_Title>运行时触发器配置</CS_Studio_RuntimeTriggers_Title>
+    <CS_Studio_RuntimeTriggers_ConditionBrowser_Title>选择条件类型</CS_Studio_RuntimeTriggers_ConditionBrowser_Title>
+    <CS_Studio_RuntimeTriggers_Hint>配置会在初始化时自动注册的运行时触发器。条件满足后，Character Studio 会按生成设置在运行时生成该角色。</CS_Studio_RuntimeTriggers_Hint>
+    <CS_Studio_RuntimeTriggers_Add>添加触发器</CS_Studio_RuntimeTriggers_Add>
+    <CS_Studio_RuntimeTriggers_Status>状态面板</CS_Studio_RuntimeTriggers_Status>
+    <CS_Studio_RuntimeTriggers_Remove>删除触发器</CS_Studio_RuntimeTriggers_Remove>
+    <CS_Studio_RuntimeTriggers_Label>名称</CS_Studio_RuntimeTriggers_Label>
+    <CS_Studio_RuntimeTriggers_Enabled>启用</CS_Studio_RuntimeTriggers_Enabled>
+    <CS_Studio_RuntimeTriggers_ConditionLogic>条件逻辑</CS_Studio_RuntimeTriggers_ConditionLogic>
+    <CS_Studio_RuntimeTriggers_ConditionLogic_All>全部满足</CS_Studio_RuntimeTriggers_ConditionLogic_All>
+    <CS_Studio_RuntimeTriggers_ConditionLogic_Any>满足任一</CS_Studio_RuntimeTriggers_ConditionLogic_Any>
+    <CS_Studio_RuntimeTriggers_ConditionLogic_Not>全部不满足</CS_Studio_RuntimeTriggers_ConditionLogic_Not>
+    <CS_Studio_RuntimeTriggers_EvaluationInterval>评估间隔 Tick</CS_Studio_RuntimeTriggers_EvaluationInterval>
+    <CS_Studio_RuntimeTriggers_CooldownTicks>冷却 Tick</CS_Studio_RuntimeTriggers_CooldownTicks>
+    <CS_Studio_RuntimeTriggers_RequireHomeMap>仅玩家家园地图</CS_Studio_RuntimeTriggers_RequireHomeMap>
+    <CS_Studio_RuntimeTriggers_SpawnNearColonist>在殖民者附近生成</CS_Studio_RuntimeTriggers_SpawnNearColonist>
+    <CS_Studio_RuntimeTriggers_OncePerGame>每局仅触发一次</CS_Studio_RuntimeTriggers_OncePerGame>
+    <CS_Studio_RuntimeTriggers_OncePerMap>每张地图仅触发一次</CS_Studio_RuntimeTriggers_OncePerMap>
+    <CS_Studio_RuntimeTriggers_Conditions>条件</CS_Studio_RuntimeTriggers_Conditions>
+    <CS_Studio_RuntimeTriggers_AddCondition>添加条件</CS_Studio_RuntimeTriggers_AddCondition>
+    <CS_Studio_RuntimeTriggers_RemoveCondition>移除</CS_Studio_RuntimeTriggers_RemoveCondition>
+    <CS_Studio_RuntimeTriggers_EditSpawn>编辑生成设置</CS_Studio_RuntimeTriggers_EditSpawn>
+    <CS_Studio_RuntimeTriggers_Condition_Always>始终满足</CS_Studio_RuntimeTriggers_Condition_Always>
+    <CS_Studio_RuntimeTriggers_Condition_ColonyThingDefCount>殖民地 ThingDef 数量</CS_Studio_RuntimeTriggers_Condition_ColonyThingDefCount>
+    <CS_Studio_RuntimeTriggers_Condition_ColonyThingCategoryCount>殖民地分类数量</CS_Studio_RuntimeTriggers_Condition_ColonyThingCategoryCount>
+    <CS_Studio_RuntimeTriggers_Condition_ColonyTradeTagCount>殖民地贸易标签数量</CS_Studio_RuntimeTriggers_Condition_ColonyTradeTagCount>
+    <CS_Studio_RuntimeTriggers_Condition_ColonyFoodTypeCount>殖民地食物类型数量</CS_Studio_RuntimeTriggers_Condition_ColonyFoodTypeCount>
+    <CS_Studio_RuntimeTriggers_Condition_ColonyFoodPreferabilityCount>殖民地食物等级数量</CS_Studio_RuntimeTriggers_Condition_ColonyFoodPreferabilityCount>
+    <CS_Studio_RuntimeTriggers_Condition_ColonistCountAtLeast>殖民者数量至少</CS_Studio_RuntimeTriggers_Condition_ColonistCountAtLeast>
+    <CS_Studio_RuntimeTriggers_Condition_DaysPassedAtLeast>已过天数至少</CS_Studio_RuntimeTriggers_Condition_DaysPassedAtLeast>
+    <CS_Studio_RuntimeTriggers_ConditionValue_Default>在列表中选择或编辑值</CS_Studio_RuntimeTriggers_ConditionValue_Default>
+    <CS_Studio_RuntimeTriggers_MinCount>最小数量</CS_Studio_RuntimeTriggers_MinCount>
+    <CS_Studio_RuntimeTriggers_CountStackCount>按堆叠数量计数</CS_Studio_RuntimeTriggers_CountStackCount>
+    <CS_Studio_RuntimeTriggers_StringValue>数值</CS_Studio_RuntimeTriggers_StringValue>
+    <CS_Studio_RuntimeTriggers_DefaultLabel>触发器 {0}</CS_Studio_RuntimeTriggers_DefaultLabel>
+    <CS_Studio_RuntimeTriggers_FoodType_Meal>餐食</CS_Studio_RuntimeTriggers_FoodType_Meal>
+    <CS_Studio_RuntimeTriggers_FoodType_Meat>肉类</CS_Studio_RuntimeTriggers_FoodType_Meat>
+    <CS_Studio_RuntimeTriggers_FoodType_VegetableOrFruit>蔬果</CS_Studio_RuntimeTriggers_FoodType_VegetableOrFruit>
+    <CS_Studio_RuntimeTriggers_FoodType_Seed>种子</CS_Studio_RuntimeTriggers_FoodType_Seed>
+    <CS_Studio_RuntimeTriggers_FoodType_TreeNutOrBerry>浆果 / 坚果</CS_Studio_RuntimeTriggers_FoodType_TreeNutOrBerry>
+    <CS_Studio_RuntimeTriggers_FoodType_Corpse>尸体</CS_Studio_RuntimeTriggers_FoodType_Corpse>
+    <CS_Studio_RuntimeTriggers_FoodType_PsychicEmanator>灵能发散体</CS_Studio_RuntimeTriggers_FoodType_PsychicEmanator>
+    <CS_Studio_RuntimeTriggers_FoodPreferability_DesperateOnly>绝境才吃</CS_Studio_RuntimeTriggers_FoodPreferability_DesperateOnly>
+    <CS_Studio_RuntimeTriggers_FoodPreferability_RawBad>难吃生食</CS_Studio_RuntimeTriggers_FoodPreferability_RawBad>
+    <CS_Studio_RuntimeTriggers_FoodPreferability_RawTasty>可口生食</CS_Studio_RuntimeTriggers_FoodPreferability_RawTasty>
+    <CS_Studio_RuntimeTriggers_FoodPreferability_NeverForNutrition>不可作营养来源</CS_Studio_RuntimeTriggers_FoodPreferability_NeverForNutrition>
+    <CS_Studio_RuntimeTriggers_FoodPreferability_MealAwful>难吃餐</CS_Studio_RuntimeTriggers_FoodPreferability_MealAwful>
+    <CS_Studio_RuntimeTriggers_FoodPreferability_MealSimple>简单餐</CS_Studio_RuntimeTriggers_FoodPreferability_MealSimple>
+    <CS_Studio_RuntimeTriggers_FoodPreferability_MealFine>精致餐</CS_Studio_RuntimeTriggers_FoodPreferability_MealFine>
+    <CS_Studio_RuntimeTriggers_FoodPreferability_MealLavish>豪华餐</CS_Studio_RuntimeTriggers_FoodPreferability_MealLavish>
+    <CS_Studio_RuntimeTriggerStatus_Title>运行时触发器状态</CS_Studio_RuntimeTriggerStatus_Title>
+    <CS_Studio_RuntimeTriggerStatus_Hint>只读查看当前已注册的运行时触发器、条件判定结果与冷却状态。</CS_Studio_RuntimeTriggerStatus_Hint>
+    <CS_Studio_RuntimeTriggerStatus_Empty>当前没有已注册的运行时触发器。</CS_Studio_RuntimeTriggerStatus_Empty>
+    <CS_Studio_RuntimeTriggerStatus_NoMap>当前没有可用地图。</CS_Studio_RuntimeTriggerStatus_NoMap>
+    <CS_Studio_RuntimeTriggerStatus_LiveHint>实时视图。当前 Tick：{0}</CS_Studio_RuntimeTriggerStatus_LiveHint>
+    <CS_Studio_RuntimeTriggerStatus_ResetScroll>重置滚动</CS_Studio_RuntimeTriggerStatus_ResetScroll>
+    <CS_Studio_RuntimeTriggerStatus_Line>地图：{0} | 可评估：{1} | 条件满足：{2} | 可触发：{3} | 上次触发：{4} | 剩余冷却：{5}</CS_Studio_RuntimeTriggerStatus_Line>
+    <CS_Studio_RuntimeTriggerStatus_Test>测试</CS_Studio_RuntimeTriggerStatus_Test>
+    <CS_Studio_RuntimeTriggerStatus_TestMessage>{0}：可评估={1}，条件满足={2}，可触发={3}，剩余冷却={4}</CS_Studio_RuntimeTriggerStatus_TestMessage>
+    <CS_Studio_RuntimeTriggerStatus_Yes>是</CS_Studio_RuntimeTriggerStatus_Yes>
+    <CS_Studio_RuntimeTriggerStatus_No>否</CS_Studio_RuntimeTriggerStatus_No>
 </LanguageData>

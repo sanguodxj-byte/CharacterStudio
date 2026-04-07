@@ -45,7 +45,8 @@ namespace CharacterStudio.Core
         SpecificThingDef,
         ThingCategory,
         TradeTag,
-        FoodType
+        FoodType,
+        FoodPreferability
     }
 
     public enum CharacterSpawnConditionLogic
@@ -63,6 +64,7 @@ namespace CharacterStudio.Core
         public string categoryDefName = string.Empty;
         public string tradeTag = string.Empty;
         public FoodTypeFlags foodType = FoodTypeFlags.None;
+        public FoodPreferability foodPreferability = FoodPreferability.Undefined;
         public int minCount = 1;
         public bool countStackCount = true;
 

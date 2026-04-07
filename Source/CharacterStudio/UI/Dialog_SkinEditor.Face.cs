@@ -25,6 +25,20 @@ namespace CharacterStudio.UI
             }
         }
 
+        private readonly struct ScannedEyeCandidate
+        {
+            public readonly string FilePath;
+            public readonly string FileName;
+            public readonly ExpressionType SuggestedExpression;
+
+            public ScannedEyeCandidate(string filePath, string fileName, ExpressionType suggestedExpression)
+            {
+                FilePath = filePath;
+                FileName = fileName;
+                SuggestedExpression = suggestedExpression;
+            }
+        }
+
         /// <summary>
         /// 绘制表情配置面板
         /// </summary>
@@ -61,17 +75,6 @@ namespace CharacterStudio.UI
         private static string GetEmotionOverlayStateLabel(EmotionOverlayState state)
         {
             return ($"CS_Studio_Preview_EmotionState_{state}").Translate();
-        }
-
-        private static string GetEmotionOverlayStateLabel(string? stateKey)
-        {
-            if (string.IsNullOrWhiteSpace(stateKey)
-                || !Enum.TryParse(stateKey, true, out EmotionOverlayState parsed))
-            {
-                return stateKey ?? string.Empty;
-            }
-
-            return GetEmotionOverlayStateLabel(parsed);
         }
 
         private static string GetOverlaySemanticLabel(string? overlayId)
@@ -414,95 +417,259 @@ namespace CharacterStudio.UI
 
         private void DrawPupilOffsetCoreSection(ref float y, float width, PawnEyeDirectionConfig.PupilMotionConfig pupilMotion)
         {
+            pupilMotion.EnsureDirectionalDefaults();
             UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_PupilCore_Title".Translate());
             DrawPropertyHint(ref y, width, "CS_Studio_Face_PupilCore_Hint".Translate());
-            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DirLeftOffsetX"), ref pupilMotion.dirLeftOffsetX, -0.01f, 0.01f, "F6");
-            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DirRightOffsetX"), ref pupilMotion.dirRightOffsetX, -0.01f, 0.01f, "F6");
-            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DirUpOffsetZ"), ref pupilMotion.dirUpOffsetZ, -0.01f, 0.01f, "F6");
-            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DirDownOffsetZ"), ref pupilMotion.dirDownOffsetZ, -0.01f, 0.01f, "F6");
+
+            UIHelper.DrawSectionTitle(ref y, width, "正面 (Front)");
+            DrawFloatProperty(ref y, width, "左眼 X 偏移", ref pupilMotion.frontLeftOffsetX, -0.03f, 0.03f, "F6");
+            DrawFloatProperty(ref y, width, "右眼 X 偏移", ref pupilMotion.frontRightOffsetX, -0.03f, 0.03f, "F6");
+            DrawFloatProperty(ref y, width, "左眼 Z 偏移", ref pupilMotion.frontLeftOffsetZ, -0.03f, 0.03f, "F6");
+            DrawFloatProperty(ref y, width, "右眼 Z 偏移", ref pupilMotion.frontRightOffsetZ, -0.03f, 0.03f, "F6");
+            y += 2f;
+
+            UIHelper.DrawSectionTitle(ref y, width, "侧面 (East/West)");
+            DrawFloatProperty(ref y, width, "左眼 X 偏移", ref pupilMotion.sideLeftOffsetX, -0.03f, 0.03f, "F6");
+            DrawFloatProperty(ref y, width, "右眼 X 偏移", ref pupilMotion.sideRightOffsetX, -0.03f, 0.03f, "F6");
+            DrawFloatProperty(ref y, width, "左眼 Z 偏移", ref pupilMotion.sideLeftOffsetZ, -0.03f, 0.03f, "F6");
+            DrawFloatProperty(ref y, width, "右眼 Z 偏移", ref pupilMotion.sideRightOffsetZ, -0.03f, 0.03f, "F6");
+            y += 2f;
+
+            UIHelper.DrawSectionTitle(ref y, width, "注视方向附加偏移");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DirLeftOffsetX"), ref pupilMotion.dirLeftOffsetX, -0.03f, 0.03f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DirRightOffsetX"), ref pupilMotion.dirRightOffsetX, -0.03f, 0.03f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DirUpOffsetZ"), ref pupilMotion.dirUpOffsetZ, -0.03f, 0.03f, "F6");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DirDownOffsetZ"), ref pupilMotion.dirDownOffsetZ, -0.03f, 0.03f, "F6");
             y += 4f;
         }
 
         private void DrawOverlayMappingSection(ref float y, float width, PawnFaceConfig fc)
         {
-            fc.EnsureDefaultOverlayRules();
-
             y += 6f;
-            UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_OverlayRule_Title".Translate());
-            DrawPropertyHint(ref y, width, "CS_Studio_Face_OverlayRule_Hint".Translate());
-
-            foreach (PawnFaceConfig.ExpressionOverlayRule rule in fc.expressionOverlayRules)
-            {
-                UIHelper.DrawPropertyFieldWithButton(ref y, width, GetExpressionTypeLabel(rule.expression), GetOverlaySemanticKeyLabel(rule.semanticKey), () =>
-                {
-                    List<FloatMenuOption> options = new List<FloatMenuOption>();
-                    foreach (string semanticKey in GetKnownOverlaySemanticKeys(fc))
-                    {
-                        string localSemanticKey = semanticKey;
-                        options.Add(new FloatMenuOption(GetOverlaySemanticKeyLabel(localSemanticKey), () =>
-                        {
-                            MutateWithUndo(() => rule.semanticKey = localSemanticKey);
-                        }));
-                    }
-
-                    Find.WindowStack.Add(new FloatMenu(options));
-                });
-                y += 2f;
-            }
-
-            UIHelper.DrawPropertyFieldWithButton(ref y, width, "CS_Studio_Face_OverlayRule_AddExpression".Translate(), "CS_Studio_Add".Translate(), () =>
-            {
-                List<FloatMenuOption> options = new List<FloatMenuOption>();
-                foreach (ExpressionType expression in Enum.GetValues(typeof(ExpressionType)))
-                {
-                    ExpressionType localExpression = expression;
-                    options.Add(new FloatMenuOption(GetExpressionTypeLabel(localExpression), () =>
-                    {
-                        MutateWithUndo(() => fc.expressionOverlayRules.Add(new PawnFaceConfig.ExpressionOverlayRule
-                        {
-                            expression = localExpression,
-                            semanticKey = PawnFaceConfig.NormalizeOverlaySemanticKey(localExpression.ToString())
-                        }));
-                    }));
-                }
-
-                Find.WindowStack.Add(new FloatMenu(options));
-            });
-            y += 4f;
-
-            y += 4f;
-            UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_OverlayRule_RoutingTitle".Translate());
-            DrawPropertyHint(ref y, width, "为扫描到的 overlay 纹理指定 happy、sleep 等表情语义；界面会同步显示这些语义当前关联到哪些表情。没有语义绑定的 overlay 不会响应表情。");
+            UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_OverlayMapping_Title".Translate());
             DrawScannedOverlaySemanticSection(fc, ref y, width);
-            y += 4f;
         }
 
-        private IEnumerable<string> GetKnownOverlaySemanticKeys(PawnFaceConfig fc)
+        private void DrawEyeSemanticMappingSection(ref float y, float width, PawnFaceConfig fc)
         {
-            HashSet<string> keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            y += 6f;
+            UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_EyeMapping_Title".Translate());
+            EnsureScannedEyeCandidates(fc);
 
-            foreach (PawnFaceConfig.ExpressionOverlayRule rule in fc.expressionOverlayRules)
+            if (!string.IsNullOrWhiteSpace(scannedEyeCacheError))
             {
-                string key = PawnFaceConfig.NormalizeOverlaySemanticKey(rule.semanticKey);
-                if (!string.IsNullOrWhiteSpace(key))
-                    keys.Add(key);
+                DrawPropertyHint(ref y, width, scannedEyeCacheError);
+                return;
             }
 
-            foreach (PawnFaceConfig.EmotionOverlayRule rule in fc.emotionOverlayRules)
+            if (scannedEyeCandidates.Count == 0)
             {
-                string key = PawnFaceConfig.NormalizeOverlaySemanticKey(rule.semanticKey);
-                if (!string.IsNullOrWhiteSpace(key))
-                    keys.Add(key);
+                DrawPropertyHint(ref y, width, "CS_Studio_Face_EyeMapping_Empty".Translate());
+                return;
             }
+
+            foreach (ScannedEyeCandidate candidate in scannedEyeCandidates)
+            {
+                DrawScannedEyeSemanticRow(fc, ref y, width, candidate);
+            }
+        }
+
+        private void EnsureScannedEyeCandidates(PawnFaceConfig fc)
+        {
+            string sourceRoot = fc.layeredSourceRoot ?? string.Empty;
+            if (ArePathStringsEquivalent(scannedEyeCacheSourceRoot, sourceRoot)
+                && (scannedEyeCandidates.Count > 0 || !string.IsNullOrWhiteSpace(scannedEyeCacheError)))
+            {
+                return;
+            }
+
+            scannedEyeCacheSourceRoot = sourceRoot;
+            scannedEyeCandidates.Clear();
+            scannedEyeCacheError = string.Empty;
+
+            if (string.IsNullOrWhiteSpace(sourceRoot))
+            {
+                scannedEyeCacheError = "请先设置 layered source root。";
+                return;
+            }
+
+            if (!Directory.Exists(sourceRoot))
+            {
+                scannedEyeCacheError = $"目录不存在：{sourceRoot}";
+                return;
+            }
+
+            try
+            {
+                foreach (string filePath in Directory.EnumerateFiles(sourceRoot)
+                    .Where(IsSupportedLayeredFaceTextureFile)
+                    .OrderBy(Path.GetFileNameWithoutExtension, StringComparer.OrdinalIgnoreCase))
+                {
+                    if (!TryParseEyeSemanticCandidate(filePath, out ExpressionType expression))
+                        continue;
+
+                    string fileName = Path.GetFileName(filePath) ?? filePath;
+                    scannedEyeCandidates.Add(new ScannedEyeCandidate(filePath, fileName, expression));
+                }
+            }
+            catch (Exception ex)
+            {
+                scannedEyeCandidates.Clear();
+                scannedEyeCacheError = $"扫描 Eye 纹理失败：{ex.Message}";
+            }
+        }
+
+        private static bool TryParseEyeSemanticCandidate(string filePath, out ExpressionType expression)
+        {
+            expression = ExpressionType.Neutral;
+            string fileName = Path.GetFileNameWithoutExtension(filePath) ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(fileName) || !fileName.StartsWith("Eye_", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            string lower = fileName.ToLowerInvariant();
+
+            foreach (ExpressionType candidate in Enum.GetValues(typeof(ExpressionType)))
+            {
+                if (candidate == ExpressionType.Blink)
+                    continue;
+
+                string token = candidate.ToString().ToLowerInvariant();
+                if (lower.Contains(token))
+                {
+                    expression = candidate;
+                    return true;
+                }
+            }
+
+            if (lower.Contains("happy"))
+            {
+                expression = ExpressionType.Happy;
+                return true;
+            }
+
+            if (lower.Contains("sleep"))
+            {
+                expression = ExpressionType.Sleeping;
+                return true;
+            }
+
+            if (lower.Contains("dead") || lower.Contains("death"))
+            {
+                expression = ExpressionType.Dead;
+                return true;
+            }
+
+            return false;
+        }
+
+        private void DrawScannedEyeSemanticRow(PawnFaceConfig fc, ref float y, float width, ScannedEyeCandidate candidate)
+        {
+            string mappedPath = fc.GetLayeredPartPath(LayeredFacePartType.ReplacementEye, candidate.SuggestedExpression);
+            string displayLabel = TryGetEyeMappedExpression(fc, candidate.FilePath, out ExpressionType mappedExpression)
+                ? GetExpressionTypeLabel(mappedExpression)
+                : GetExpressionTypeLabel(candidate.SuggestedExpression);
+
+            Rect rowRect = new Rect(0f, y, width, 24f);
+            Widgets.DrawBoxSolid(rowRect, UIHelper.AlternatingRowColor);
+            GUI.color = UIHelper.BorderColor;
+            Widgets.DrawBox(rowRect, 1);
+            GUI.color = Color.white;
+
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.MiddleLeft;
+            bool oldWordWrap = Text.WordWrap;
+            Text.WordWrap = false;
+            float labelWidth = Mathf.Max(56f, width - 88f);
+            Widgets.Label(new Rect(6f, y, labelWidth, 24f), TruncateSingleLineText(candidate.FileName, labelWidth - 4f));
+            Text.WordWrap = oldWordWrap;
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = GameFont.Small;
+
+            Rect buttonRect = new Rect(width - 84f, y + 2f, 80f, 20f);
+            if (UIHelper.DrawSelectionButton(buttonRect, displayLabel))
+            {
+                OpenScannedEyeSemanticMenu(fc, candidate);
+            }
+
+            string mappedName = string.IsNullOrWhiteSpace(mappedPath) ? "—" : Path.GetFileName(mappedPath);
+            TooltipHandler.TipRegion(rowRect, $"{candidate.FileName}\n表情语义: {displayLabel}\n当前映射: {mappedName}");
+
+            y += 25f;
+        }
+
+        private void OpenScannedEyeSemanticMenu(PawnFaceConfig fc, ScannedEyeCandidate candidate)
+        {
+            var options = new List<FloatMenuOption>
+            {
+                new FloatMenuOption("CS_Studio_Face_OverlayMapping_ClearState".Translate(), () =>
+                {
+                    MutateWithUndo(() =>
+                    {
+                        ClearReplacementEyeAssignmentsForPath(fc, candidate.FilePath);
+                        FaceRuntimeCompiler.ClearCache();
+                        PawnRenderNodeWorker_FaceComponent.ClearCache();
+                        PawnRenderNodeWorker_CustomLayer.ClearExternalGraphicCache();
+                    }, refreshPreview: true, refreshRenderTree: true);
+                })
+            };
 
             foreach (ExpressionType expression in Enum.GetValues(typeof(ExpressionType)))
             {
-                string key = PawnFaceConfig.NormalizeOverlaySemanticKey(expression.ToString());
-                if (!string.IsNullOrWhiteSpace(key))
-                    keys.Add(key);
+                ExpressionType localExpression = expression;
+                options.Add(new FloatMenuOption(GetExpressionTypeLabel(localExpression), () =>
+                {
+                    MutateWithUndo(() =>
+                    {
+                        fc.SetLayeredPart(LayeredFacePartType.ReplacementEye, localExpression, candidate.FilePath);
+                        layeredPartPathBuffer[GetLayeredPartBufferKey(LayeredFacePartType.ReplacementEye, localExpression)] = candidate.FilePath;
+                        FaceRuntimeCompiler.ClearCache();
+                        PawnRenderNodeWorker_FaceComponent.ClearCache();
+                        PawnRenderNodeWorker_CustomLayer.ClearExternalGraphicCache();
+                    }, refreshPreview: true, refreshRenderTree: true);
+                }));
             }
 
-            return keys.OrderBy(key => key, StringComparer.OrdinalIgnoreCase);
+            Find.WindowStack.Add(new FloatMenu(options));
+        }
+
+        private bool TryGetEyeMappedExpression(PawnFaceConfig fc, string filePath, out ExpressionType expression)
+        {
+            foreach (ExpressionType candidate in Enum.GetValues(typeof(ExpressionType)))
+            {
+                string mappedPath = fc.GetLayeredPartPath(LayeredFacePartType.ReplacementEye, candidate);
+                if (ArePathStringsEquivalent(mappedPath, filePath))
+                {
+                    expression = candidate;
+                    return true;
+                }
+            }
+
+            expression = ExpressionType.Neutral;
+            return false;
+        }
+
+        private void ClearEyeAssignmentsForPath(PawnFaceConfig fc, string filePath)
+        {
+            foreach (ExpressionType expression in Enum.GetValues(typeof(ExpressionType)))
+            {
+                LayeredFacePartConfig? eyePart = fc.GetLayeredPartConfig(LayeredFacePartType.Eye, expression, LayeredFacePartSide.None);
+                if (eyePart != null && ArePathStringsEquivalent(eyePart.texPath, filePath))
+                {
+                    fc.RemoveLayeredPart(LayeredFacePartType.Eye, expression);
+                }
+            }
+        }
+
+        private void ClearReplacementEyeAssignmentsForPath(PawnFaceConfig fc, string filePath)
+        {
+            foreach (ExpressionType expression in Enum.GetValues(typeof(ExpressionType)))
+            {
+                LayeredFacePartConfig? replacementPart = fc.GetLayeredPartConfig(LayeredFacePartType.ReplacementEye, expression, LayeredFacePartSide.None);
+                if (replacementPart != null && ArePathStringsEquivalent(replacementPart.texPath, filePath))
+                {
+                    fc.RemoveLayeredPart(LayeredFacePartType.ReplacementEye, expression);
+                }
+            }
         }
 
         private void DrawScannedOverlaySemanticSection(PawnFaceConfig fc, ref float y, float width)
@@ -530,16 +697,18 @@ namespace CharacterStudio.UI
         private void DrawScannedOverlaySemanticRow(PawnFaceConfig fc, ref float y, float width, ScannedOverlayCandidate candidate)
         {
             string mappedOverlayId = GetMappedOverlayIdForPath(fc, candidate.FilePath);
-            List<string> activeSemanticKeys = GetSemanticKeysForOverlayId(fc, mappedOverlayId);
-            List<ExpressionType> linkedExpressions = GetExpressionsForSemanticKeys(fc, activeSemanticKeys);
-            string displayLabel = activeSemanticKeys.Count == 0
-                ? "未配置表情语义"
-                : string.Join(" / ", activeSemanticKeys.Select(GetOverlaySemanticKeyLabel));
-            string expressionLabel = linkedExpressions.Count == 0
-                ? "未关联表情"
-                : string.Join(" / ", linkedExpressions.Select(GetExpressionTypeLabel));
+            string semanticKey = GetPrimarySemanticKeyForOverlayId(fc, mappedOverlayId);
+            string displayLabel = string.IsNullOrWhiteSpace(semanticKey)
+                ? (TrySemanticKeyToExpression(PawnFaceConfig.NormalizeOverlaySemanticKey(candidate.SuggestedOverlayId), out ExpressionType suggestedExpression)
+                    ? GetExpressionTypeLabel(suggestedExpression)
+                    : "...")
+                : GetOverlaySelectionLabel(semanticKey);
+            string followTarget = GetFollowTargetForOverlayId(fc, mappedOverlayId);
+            string followLabel = string.IsNullOrWhiteSpace(followTarget)
+                ? "..."
+                : GetOverlayFollowTargetLabel(followTarget);
 
-            Rect rowRect = new Rect(0f, y, width, 38f);
+            Rect rowRect = new Rect(0f, y, width, 24f);
             Widgets.DrawBoxSolid(rowRect, UIHelper.AlternatingRowColor);
             GUI.color = UIHelper.BorderColor;
             Widgets.DrawBox(rowRect, 1);
@@ -547,67 +716,69 @@ namespace CharacterStudio.UI
 
             Text.Font = GameFont.Tiny;
             Text.Anchor = TextAnchor.MiddleLeft;
-            Widgets.Label(new Rect(6f, y + 1f, Mathf.Max(60f, width - 140f), 18f), candidate.FileName);
-            GUI.color = UIHelper.SubtleColor;
-            Widgets.Label(new Rect(6f, y + 19f, Mathf.Max(60f, width - 140f), 18f), expressionLabel);
+            bool oldWordWrap = Text.WordWrap;
+            Text.WordWrap = false;
+            float labelWidth = Mathf.Max(56f, width - 116f);
+            Widgets.Label(new Rect(6f, y, labelWidth, 24f), TruncateSingleLineText(candidate.FileName, labelWidth - 4f));
+            Text.WordWrap = oldWordWrap;
             GUI.color = Color.white;
             Text.Anchor = TextAnchor.UpperLeft;
             Text.Font = GameFont.Small;
 
-            Rect buttonRect = new Rect(width - 132f, y + 9f, 128f, 20f);
-            if (UIHelper.DrawSelectionButton(buttonRect, displayLabel))
+            Rect followButtonRect = new Rect(width - 110f, y + 2f, 18f, 20f);
+            if (UIHelper.DrawSelectionButton(followButtonRect, "CS_Studio_Face_OverlayFollow_Label".Translate()))
             {
-                OpenScannedOverlaySemanticMenu(fc, candidate, mappedOverlayId, activeSemanticKeys);
+                OpenScannedOverlayFollowMenu(fc, candidate, mappedOverlayId, followTarget);
             }
 
-            TooltipHandler.TipRegion(rowRect, $"{candidate.FileName}\n语义: {displayLabel}\n表情: {expressionLabel}");
+            Rect buttonRect = new Rect(width - 88f, y + 2f, 80f, 20f);
+            if (UIHelper.DrawSelectionButton(buttonRect, displayLabel))
+            {
+                OpenScannedOverlaySemanticMenu(fc, candidate, mappedOverlayId, semanticKey);
+            }
 
-            y += 39f;
+            TooltipHandler.TipRegion(rowRect, $"{candidate.FileName}\n表情语义: {displayLabel}\n跟随: {followLabel}");
+
+            y += 25f;
         }
 
-        private List<ExpressionType> GetExpressionsForSemanticKeys(PawnFaceConfig fc, IEnumerable<string> semanticKeys)
-        {
-            HashSet<string> normalizedKeys = new HashSet<string>(semanticKeys.Select(PawnFaceConfig.NormalizeOverlaySemanticKey), StringComparer.OrdinalIgnoreCase);
-            if (normalizedKeys.Count == 0)
-                return new List<ExpressionType>();
-
-            return fc.expressionOverlayRules
-                .Where(rule => normalizedKeys.Contains(PawnFaceConfig.NormalizeOverlaySemanticKey(rule.semanticKey)))
-                .Select(rule => rule.expression)
-                .Distinct()
-                .OrderBy(expression => expression.ToString(), StringComparer.OrdinalIgnoreCase)
-                .ToList();
-        }
-
-        private List<string> GetSemanticKeysForOverlayId(PawnFaceConfig fc, string overlayId)
+        private string GetPrimarySemanticKeyForOverlayId(PawnFaceConfig fc, string overlayId)
         {
             string normalizedOverlayId = PawnFaceConfig.NormalizeOverlayId(overlayId);
             if (string.IsNullOrWhiteSpace(normalizedOverlayId))
-                return new List<string>();
+                return string.Empty;
 
-            return fc.emotionOverlayRules
-                .Where(rule => (rule.overlayIds ?? new List<string>()).Any(id => string.Equals(PawnFaceConfig.NormalizeOverlayId(id), normalizedOverlayId, StringComparison.OrdinalIgnoreCase)))
-                .Select(rule => PawnFaceConfig.NormalizeOverlaySemanticKey(rule.semanticKey))
-                .Where(key => !string.IsNullOrWhiteSpace(key))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .OrderBy(key => key, StringComparer.OrdinalIgnoreCase)
-                .ToList();
+            PawnFaceConfig.EmotionOverlayRule? rule = fc.emotionOverlayRules
+                .FirstOrDefault(existing => (existing.overlayIds ?? new List<string>())
+                    .Any(id => string.Equals(PawnFaceConfig.NormalizeOverlayId(id), normalizedOverlayId, StringComparison.OrdinalIgnoreCase)));
+
+            if (rule == null)
+                return string.Empty;
+
+            return PawnFaceConfig.NormalizeOverlaySemanticKey(rule.semanticKey);
         }
 
-        private void OpenScannedOverlaySemanticMenu(PawnFaceConfig fc, ScannedOverlayCandidate candidate, string mappedOverlayId, List<string> activeSemanticKeys)
+        private string GetFollowTargetForOverlayId(PawnFaceConfig fc, string overlayId)
         {
-            string resolvedOverlayId = string.IsNullOrWhiteSpace(mappedOverlayId)
-                ? PawnFaceConfig.NormalizeOverlayId(candidate.SuggestedOverlayId)
-                : PawnFaceConfig.NormalizeOverlayId(mappedOverlayId);
+            string normalizedOverlayId = PawnFaceConfig.NormalizeOverlayId(overlayId);
+            if (string.IsNullOrWhiteSpace(normalizedOverlayId))
+                return string.Empty;
 
-            if (string.IsNullOrWhiteSpace(resolvedOverlayId))
-            {
-                resolvedOverlayId = PawnFaceConfig.NormalizeOverlayId(Path.GetFileNameWithoutExtension(candidate.FileName));
-            }
+            LayeredFacePartConfig? part = fc.layeredParts?
+                .FirstOrDefault(existing => existing != null
+                    && existing.partType == LayeredFacePartType.Overlay
+                    && string.Equals(PawnFaceConfig.NormalizeOverlayId(existing.overlayId), normalizedOverlayId, StringComparison.OrdinalIgnoreCase));
+
+            return part?.followTarget ?? string.Empty;
+        }
+
+        private void OpenScannedOverlaySemanticMenu(PawnFaceConfig fc, ScannedOverlayCandidate candidate, string mappedOverlayId, string activeSemanticKey)
+        {
+            string resolvedOverlayId = ResolveOverlayStorageId(fc, candidate, mappedOverlayId, activeSemanticKey);
 
             var options = new List<FloatMenuOption>
             {
-                new FloatMenuOption("清空全部语义", () =>
+                new FloatMenuOption("CS_Studio_Face_OverlayMapping_ClearState".Translate(), () =>
                 {
                     MutateWithUndo(() => ApplySemanticSelectionForOverlay(fc, resolvedOverlayId, null, false, candidate.FilePath));
                 })
@@ -616,13 +787,27 @@ namespace CharacterStudio.UI
             foreach (string semanticKey in GetKnownOverlaySemanticKeys(fc))
             {
                 string localSemanticKey = semanticKey;
-                bool enabled = activeSemanticKeys.Any(key => string.Equals(key, localSemanticKey, StringComparison.OrdinalIgnoreCase));
-                string label = (enabled ? "[√] " : "[ ] ") + GetOverlaySemanticKeyLabel(localSemanticKey);
+                bool enabled = string.Equals(activeSemanticKey, localSemanticKey, StringComparison.OrdinalIgnoreCase);
+                string label = (enabled ? "[√] " : "[ ] ") + GetOverlaySelectionLabel(localSemanticKey);
                 options.Add(new FloatMenuOption(label, () =>
                 {
                     MutateWithUndo(() => ApplySemanticSelectionForOverlay(fc, resolvedOverlayId, localSemanticKey, !enabled, candidate.FilePath));
                 }));
             }
+
+            Find.WindowStack.Add(new FloatMenu(options));
+        }
+
+        private void OpenScannedOverlayFollowMenu(PawnFaceConfig fc, ScannedOverlayCandidate candidate, string mappedOverlayId, string activeFollowTarget)
+        {
+            string resolvedOverlayId = ResolveOverlayStorageId(fc, candidate, mappedOverlayId, GetPrimarySemanticKeyForOverlayId(fc, mappedOverlayId));
+
+            var options = new List<FloatMenuOption>
+            {
+                new FloatMenuOption("...", () => MutateWithUndo(() => ApplyFollowTargetSelectionForOverlay(fc, resolvedOverlayId, string.Empty))),
+                new FloatMenuOption(GetOverlayFollowTargetLabel("Face"), () => MutateWithUndo(() => ApplyFollowTargetSelectionForOverlay(fc, resolvedOverlayId, "Face"))),
+                new FloatMenuOption(GetOverlayFollowTargetLabel("Pupil"), () => MutateWithUndo(() => ApplyFollowTargetSelectionForOverlay(fc, resolvedOverlayId, "Pupil")))
+            };
 
             Find.WindowStack.Add(new FloatMenu(options));
         }
@@ -634,8 +819,6 @@ namespace CharacterStudio.UI
                 return;
 
             ClearOverlayAssignmentsForPath(fc, filePath);
-            fc.SetLayeredPart(LayeredFacePartType.Overlay, ExpressionType.Neutral, filePath, normalizedOverlayId, fc.GetOverlayOrder(normalizedOverlayId));
-
             string normalizedSemanticKey = PawnFaceConfig.NormalizeOverlaySemanticKey(semanticKey);
             foreach (PawnFaceConfig.EmotionOverlayRule rule in fc.emotionOverlayRules.ToList())
             {
@@ -649,6 +832,8 @@ namespace CharacterStudio.UI
 
             if (add && !string.IsNullOrWhiteSpace(normalizedSemanticKey))
             {
+                fc.SetLayeredPart(LayeredFacePartType.Overlay, ExpressionType.Neutral, filePath, normalizedOverlayId, fc.GetOverlayOrder(normalizedOverlayId));
+
                 PawnFaceConfig.EmotionOverlayRule? rule = fc.emotionOverlayRules.FirstOrDefault(existing =>
                     string.Equals(PawnFaceConfig.NormalizeOverlaySemanticKey(existing.semanticKey), normalizedSemanticKey, StringComparison.OrdinalIgnoreCase));
                 if (rule == null)
@@ -656,6 +841,7 @@ namespace CharacterStudio.UI
                     rule = new PawnFaceConfig.EmotionOverlayRule
                     {
                         semanticKey = normalizedSemanticKey,
+                        emotionState = string.Empty,
                         overlayIds = new List<string>()
                     };
                     fc.emotionOverlayRules.Add(rule);
@@ -668,6 +854,132 @@ namespace CharacterStudio.UI
 
                 EnsureExpressionOverlayRuleExists(fc, normalizedSemanticKey);
             }
+
+            ForceResetPreviewMannequin();
+            RebuildEditorBuffersFromWorkingState();
+            RefreshPreview();
+        }
+
+        private string ResolveOverlayStorageId(PawnFaceConfig fc, ScannedOverlayCandidate candidate, string mappedOverlayId, string activeSemanticKey)
+        {
+            string normalizedMappedOverlayId = PawnFaceConfig.NormalizeOverlayId(mappedOverlayId);
+            if (!string.IsNullOrWhiteSpace(normalizedMappedOverlayId))
+                return normalizedMappedOverlayId;
+
+            string normalizedSemanticKey = PawnFaceConfig.NormalizeOverlaySemanticKey(activeSemanticKey);
+            if (!string.IsNullOrWhiteSpace(normalizedSemanticKey))
+                return normalizedSemanticKey;
+
+            string normalizedSuggestedOverlayId = PawnFaceConfig.NormalizeOverlayId(candidate.SuggestedOverlayId);
+            if (!string.IsNullOrWhiteSpace(normalizedSuggestedOverlayId))
+                return normalizedSuggestedOverlayId;
+
+            string normalizedFileName = PawnFaceConfig.NormalizeOverlayId(Path.GetFileNameWithoutExtension(candidate.FileName));
+            return normalizedFileName;
+        }
+
+        private void ApplyFollowTargetSelectionForOverlay(PawnFaceConfig fc, string overlayId, string followTarget)
+        {
+            string normalizedOverlayId = PawnFaceConfig.NormalizeOverlayId(overlayId);
+            if (string.IsNullOrWhiteSpace(normalizedOverlayId) || fc.layeredParts == null)
+                return;
+
+            foreach (LayeredFacePartConfig part in fc.layeredParts.Where(existing => existing != null
+                         && existing.partType == LayeredFacePartType.Overlay
+                         && string.Equals(PawnFaceConfig.NormalizeOverlayId(existing.overlayId), normalizedOverlayId, StringComparison.OrdinalIgnoreCase)))
+            {
+                part.followTarget = followTarget ?? string.Empty;
+            }
+
+            RefreshPreview();
+        }
+
+        private IEnumerable<string> GetKnownOverlaySemanticKeys(PawnFaceConfig fc)
+        {
+            List<string> orderedKeys = new List<string>();
+            HashSet<string> seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (ExpressionType expression in Enum.GetValues(typeof(ExpressionType)))
+            {
+                string key = PawnFaceConfig.NormalizeOverlaySemanticKey(expression.ToString());
+                if (!string.IsNullOrWhiteSpace(key) && seen.Add(key))
+                    orderedKeys.Add(key);
+            }
+
+            foreach (PawnFaceConfig.ExpressionOverlayRule rule in fc.expressionOverlayRules ?? new List<PawnFaceConfig.ExpressionOverlayRule>())
+            {
+                string key = PawnFaceConfig.NormalizeOverlaySemanticKey(rule.semanticKey);
+                if (!string.IsNullOrWhiteSpace(key) && seen.Add(key))
+                    orderedKeys.Add(key);
+            }
+
+            foreach (PawnFaceConfig.EmotionOverlayRule rule in fc.emotionOverlayRules ?? new List<PawnFaceConfig.EmotionOverlayRule>())
+            {
+                string key = PawnFaceConfig.NormalizeOverlaySemanticKey(rule.semanticKey);
+                if (!string.IsNullOrWhiteSpace(key) && seen.Add(key))
+                    orderedKeys.Add(key);
+            }
+
+            return orderedKeys;
+        }
+
+        private static bool TrySemanticKeyToExpression(string semanticKey, out ExpressionType expression)
+        {
+            string normalized = PawnFaceConfig.NormalizeOverlaySemanticKey(semanticKey);
+            foreach (ExpressionType candidate in Enum.GetValues(typeof(ExpressionType)))
+            {
+                if (string.Equals(PawnFaceConfig.NormalizeOverlaySemanticKey(candidate.ToString()), normalized, StringComparison.OrdinalIgnoreCase))
+                {
+                    expression = candidate;
+                    return true;
+                }
+            }
+
+            expression = ExpressionType.Neutral;
+            return false;
+        }
+
+        private static string GetOverlaySelectionLabel(string semanticKey)
+        {
+            return TrySemanticKeyToExpression(semanticKey, out ExpressionType expression)
+                ? GetExpressionTypeLabel(expression)
+                : GetOverlaySemanticKeyLabel(semanticKey);
+        }
+
+        private static string GetOverlayFollowTargetLabel(string followTarget)
+        {
+            string normalized = (followTarget ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(normalized))
+                return "...";
+
+            return ($"CS_Studio_Face_OverlayFollow_{normalized}").Translate();
+        }
+
+        private static string TruncateSingleLineText(string text, float maxWidth)
+        {
+            if (string.IsNullOrEmpty(text) || maxWidth <= 8f)
+                return text;
+
+            const string ellipsis = "...";
+            if (Text.CalcSize(text).x <= maxWidth)
+                return text;
+
+            if (Text.CalcSize(ellipsis).x >= maxWidth)
+                return ellipsis;
+
+            int low = 0;
+            int high = text.Length;
+            while (low < high)
+            {
+                int mid = (low + high + 1) / 2;
+                string candidate = text.Substring(0, mid) + ellipsis;
+                if (Text.CalcSize(candidate).x <= maxWidth)
+                    low = mid;
+                else
+                    high = mid - 1;
+            }
+
+            return text.Substring(0, low) + ellipsis;
         }
 
         private void EnsureExpressionOverlayRuleExists(PawnFaceConfig fc, string normalizedSemanticKey)
@@ -675,23 +987,21 @@ namespace CharacterStudio.UI
             if (string.IsNullOrWhiteSpace(normalizedSemanticKey))
                 return;
 
-            foreach (ExpressionType expression in Enum.GetValues(typeof(ExpressionType)))
+            if (!TrySemanticKeyToExpression(normalizedSemanticKey, out ExpressionType expression))
+                return;
+
+            PawnFaceConfig.ExpressionOverlayRule? existing = fc.expressionOverlayRules.FirstOrDefault(rule => rule.expression == expression);
+            if (existing == null)
             {
-                string expressionKey = PawnFaceConfig.NormalizeOverlaySemanticKey(expression.ToString());
-                if (!string.Equals(expressionKey, normalizedSemanticKey, StringComparison.OrdinalIgnoreCase))
-                    continue;
-
-                if (!fc.expressionOverlayRules.Any(rule => rule.expression == expression))
+                fc.expressionOverlayRules.Add(new PawnFaceConfig.ExpressionOverlayRule
                 {
-                    fc.expressionOverlayRules.Add(new PawnFaceConfig.ExpressionOverlayRule
-                    {
-                        expression = expression,
-                        semanticKey = normalizedSemanticKey
-                    });
-                }
-
+                    expression = expression,
+                    semanticKey = normalizedSemanticKey
+                });
                 return;
             }
+
+            existing.semanticKey = normalizedSemanticKey;
         }
 
         private void OpenFaceWorkflowMenu()
@@ -760,6 +1070,65 @@ namespace CharacterStudio.UI
 
             y += 4f;
 
+            UIHelper.DrawPropertyFieldWithButton(
+                ref y,
+                width,
+                "CS_Studio_Face_GazeCursor_Debug".Translate(),
+                previewGazeCursorEnabled
+                    ? "CS_Studio_Face_GazeCursor_Enabled".Translate()
+                    : "CS_Studio_Face_GazeCursor_Disabled".Translate(),
+                ToggleFaceGazeCursor,
+                previewGazeCursorEnabled
+                    ? "CS_Studio_Face_GazeCursor_Disable".Translate()
+                    : "CS_Studio_Face_GazeCursor_Enable".Translate());
+
+            y += 4f;
+
+            DrawEyeSemanticMappingSection(ref y, width, fc);
+
+            y += 4f;
+
+            DrawOverlayMappingSection(ref y, width, fc);
+
+        }
+
+        private void HandleGazeCursorInput(Rect innerRect)
+        {
+            Event current = Event.current;
+            if (current == null)
+            {
+                return;
+            }
+
+            bool inside = innerRect.Contains(current.mousePosition);
+            bool dragging = current.type == EventType.MouseDrag && current.button == 0;
+            bool clicking = current.type == EventType.MouseDown && current.button == 0;
+
+            if (!inside && !dragging && !clicking)
+            {
+                return;
+            }
+
+            previewGazeCursorEnabled = true;
+            previewEyeDirectionOverrideEnabled = false;
+            previewAutoPlayEnabled = false;
+
+            float normalizedX = Mathf.Clamp((current.mousePosition.x - innerRect.center.x) / (innerRect.width * 0.45f), -1f, 1f);
+            float normalizedY = Mathf.Clamp((innerRect.center.y - current.mousePosition.y) / (innerRect.height * 0.45f), -1f, 1f);
+            previewGazeCursorOffset = new Vector2(normalizedX, normalizedY);
+            SyncPreviewOverridesToSkinComp();
+            if (current.type == EventType.MouseDown || current.type == EventType.MouseDrag)
+            {
+                current.Use();
+            }
+        }
+
+        private void ToggleFaceGazeCursor()
+        {
+            previewGazeCursorEnabled = !previewGazeCursorEnabled;
+
+            SyncPreviewOverridesToSkinComp();
+            RefreshPreview();
         }
 
         private void MoveOverlayOrder(PawnFaceConfig fc, LayeredFacePartType partType, string overlayId, int direction)
@@ -792,62 +1161,6 @@ namespace CharacterStudio.UI
                 PawnRenderNodeWorker_FaceComponent.ClearCache();
                 PawnRenderNodeWorker_CustomLayer.ClearExternalGraphicCache();
             });
-        }
-
-        private void DrawScannedOverlayMappingSection(PawnFaceConfig fc, ref float y, float width)
-        {
-            EnsureScannedOverlayCandidates(fc);
-
-            UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_OverlayMapping_Title".Translate());
-
-            if (!string.IsNullOrWhiteSpace(scannedOverlayCacheError))
-            {
-                DrawPropertyHint(ref y, width, scannedOverlayCacheError);
-                return;
-            }
-
-            if (scannedOverlayCandidates.Count == 0)
-            {
-                DrawPropertyHint(ref y, width, "CS_Studio_Face_OverlayMapping_Empty".Translate());
-                return;
-            }
-
-            foreach (ScannedOverlayCandidate candidate in scannedOverlayCandidates)
-            {
-                DrawCompactOverlayMappingRow(fc, ref y, width, candidate);
-            }
-
-            y += 2f;
-        }
-
-        private void DrawCompactOverlayMappingRow(PawnFaceConfig fc, ref float y, float width, ScannedOverlayCandidate candidate)
-        {
-            string mappedOverlayId = GetMappedOverlayIdForPath(fc, candidate.FilePath);
-            string displayLabel = string.IsNullOrWhiteSpace(mappedOverlayId)
-                ? (string.IsNullOrWhiteSpace(candidate.SuggestedOverlayId)
-                    ? "CS_Studio_Face_OverlayMapping_Unmapped".Translate().ToString()
-                    : "CS_Studio_Face_OverlayMapping_Suggested".Translate(GetOverlaySemanticLabel(candidate.SuggestedOverlayId)).ToString())
-                : GetOverlaySemanticLabel(mappedOverlayId);
-
-            Rect rowRect = new Rect(0f, y, width, 20f);
-            Widgets.DrawBoxSolid(rowRect, UIHelper.AlternatingRowColor);
-            GUI.color = UIHelper.BorderColor;
-            Widgets.DrawBox(rowRect, 1);
-            GUI.color = Color.white;
-
-            Text.Font = GameFont.Tiny;
-            Text.Anchor = TextAnchor.MiddleLeft;
-            Widgets.Label(new Rect(6f, y, Mathf.Max(60f, width - 84f), 20f), candidate.FileName);
-            Text.Anchor = TextAnchor.UpperLeft;
-            Text.Font = GameFont.Small;
-
-            Rect buttonRect = new Rect(width - 78f, y, 78f, 20f);
-            if (UIHelper.DrawSelectionButton(buttonRect, displayLabel))
-            {
-                OpenScannedOverlayMappingMenu(fc, candidate);
-            }
-
-            y += 21f;
         }
 
         private void EnsureScannedOverlayCandidates(PawnFaceConfig fc)
@@ -899,15 +1212,6 @@ namespace CharacterStudio.UI
             }
         }
 
-        private static readonly string[] ManualOverlayIds =
-        {
-            "Blush",
-            "Tear",
-            "Sweat",
-            "Sleep",
-            "Gloomy"
-        };
-
         private string GetMappedOverlayIdForPath(PawnFaceConfig fc, string filePath)
         {
             foreach (string overlayId in fc.GetOrderedOverlayIds())
@@ -932,47 +1236,6 @@ namespace CharacterStudio.UI
                     fc.RemoveLayeredPart(LayeredFacePartType.Overlay, ExpressionType.Neutral, overlayId);
                 }
             }
-        }
-
-        private void OpenScannedOverlayMappingMenu(PawnFaceConfig fc, ScannedOverlayCandidate candidate)
-        {
-            var options = new List<FloatMenuOption>
-            {
-                new FloatMenuOption("未映射", () =>
-                {
-                    MutateWithUndo(() =>
-                    {
-                        ClearOverlayAssignmentsForPath(fc, candidate.FilePath);
-                        layeredPartPathBuffer.Clear();
-                    });
-                })
-            };
-
-            IEnumerable<string> overlayIds = ManualOverlayIds
-                .Concat(fc.GetOrderedOverlayIds())
-                .Concat(string.IsNullOrWhiteSpace(candidate.SuggestedOverlayId)
-                    ? Enumerable.Empty<string>()
-                    : new[] { candidate.SuggestedOverlayId })
-                .Where(id => !string.IsNullOrWhiteSpace(id))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .OrderBy(id => PawnFaceConfig.GetCanonicalOverlayOrder(id))
-                .ThenBy(id => id, StringComparer.OrdinalIgnoreCase);
-
-            foreach (string overlayId in overlayIds)
-            {
-                string localOverlayId = overlayId;
-                options.Add(new FloatMenuOption(GetOverlaySemanticLabel(localOverlayId), () =>
-                {
-                    MutateWithUndo(() =>
-                    {
-                        ClearOverlayAssignmentsForPath(fc, candidate.FilePath);
-                        fc.SetLayeredPart(LayeredFacePartType.Overlay, ExpressionType.Neutral, candidate.FilePath, localOverlayId, fc.GetOverlayOrder(localOverlayId));
-                        layeredPartPathBuffer.Clear();
-                    });
-                }));
-            }
-
-            Find.WindowStack.Add(new FloatMenu(options));
         }
 
         private void DrawLayeredPartConfigSection(PawnFaceConfig fc, ref float y, float width)
@@ -1533,16 +1796,6 @@ namespace CharacterStudio.UI
             eyeCfg.pupilMotion ??= new PawnEyeDirectionConfig.PupilMotionConfig();
             eyeCfg.lidMotion ??= new PawnEyeDirectionConfig.LidMotionConfig();
 
-            y += 4f;
-            float upperLidMoveDown = eyeCfg.upperLidMoveDown;
-            UIHelper.DrawPropertySlider(ref y, width,
-                "CS_Studio_Face_EyeDir_UpperLidMoveDown".Translate(),
-                ref upperLidMoveDown, 0f, 0.02f, "F4");
-            if (upperLidMoveDown != eyeCfg.upperLidMoveDown)
-            {
-                MutateWithUndo(() => eyeCfg.upperLidMoveDown = upperLidMoveDown);
-            }
-
             if (!includeTextureRows)
             {
                 DrawEyeMotionConfigSection(ref y, width, eyeCfg.eyeMotion, eyeCfg.pupilMotion);
@@ -1618,8 +1871,25 @@ namespace CharacterStudio.UI
 
             if (DrawCollapsibleFaceSectionHeader(ref y, width, "PupilMotion", GetFaceMotionSectionLabel("PupilMotion"), isSectionExpanded, toggleSectionExpanded))
             {
+            pupilMotion.EnsureDirectionalDefaults();
             UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_PupilAdvanced_Title".Translate());
             DrawPropertyHint(ref y, width, "CS_Studio_Face_PupilAdvanced_Hint".Translate());
+
+            UIHelper.DrawSectionTitle(ref y, width, "正面 (Front)");
+            DrawFloatProperty(ref y, width, "左眼 X 偏移", ref pupilMotion.frontLeftOffsetX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, "右眼 X 偏移", ref pupilMotion.frontRightOffsetX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, "左眼 Z 偏移", ref pupilMotion.frontLeftOffsetZ, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, "右眼 Z 偏移", ref pupilMotion.frontRightOffsetZ, -0.01f, 0.01f, "F6");
+            y += 2f;
+
+            UIHelper.DrawSectionTitle(ref y, width, "侧面 (East/West)");
+            DrawFloatProperty(ref y, width, "左眼 X 偏移", ref pupilMotion.sideLeftOffsetX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, "右眼 X 偏移", ref pupilMotion.sideRightOffsetX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, "左眼 Z 偏移", ref pupilMotion.sideLeftOffsetZ, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, "右眼 Z 偏移", ref pupilMotion.sideRightOffsetZ, -0.01f, 0.01f, "F6");
+            y += 2f;
+
+            UIHelper.DrawSectionTitle(ref y, width, "通用动态参数");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_SideBiasX"), ref pupilMotion.sideBiasX, 0f, 0.01f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_SlowWaveOffsetZ"), ref pupilMotion.slowWaveOffsetZ, -0.01f, 0.01f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_NeutralSoftOffsetZ"), ref pupilMotion.neutralSoftOffsetZ, -0.01f, 0.01f, "F6");
@@ -1703,9 +1973,21 @@ namespace CharacterStudio.UI
 
             if (DrawCollapsibleFaceSectionHeader(ref y, width, "LidMotion", GetFaceMotionSectionLabel("LidMotion"), isSectionExpanded, toggleSectionExpanded))
             {
-            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperSideBiasX".Translate(), ref eyeCfg.lidMotion.upperSideBiasX, -0.01f, 0.01f, "F6");
+            float upperLidMoveDown = eyeCfg.upperLidMoveDown;
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_EyeDir_UpperLidMoveDown".Translate(), ref upperLidMoveDown, 0f, 0.02f, "F4");
+            if (upperLidMoveDown != eyeCfg.upperLidMoveDown)
+            {
+                MutateWithUndo(() => eyeCfg.upperLidMoveDown = upperLidMoveDown);
+            }
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperBlinkScaleX".Translate(), ref eyeCfg.lidMotion.upperBlinkScaleX, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperBlinkScaleZ".Translate(), ref eyeCfg.lidMotion.upperBlinkScaleZ, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerBlinkOffset".Translate(), ref eyeCfg.lidMotion.lowerBlinkOffset, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerBlinkScaleX".Translate(), ref eyeCfg.lidMotion.lowerBlinkScaleX, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerBlinkScaleZ".Translate(), ref eyeCfg.lidMotion.lowerBlinkScaleZ, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericBlinkOffset".Translate(), ref eyeCfg.lidMotion.genericBlinkOffset, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericBlinkScaleX".Translate(), ref eyeCfg.lidMotion.genericBlinkScaleX, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericBlinkScaleZ".Translate(), ref eyeCfg.lidMotion.genericBlinkScaleZ, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperSideBiasX".Translate(), ref eyeCfg.lidMotion.upperSideBiasX, -0.01f, 0.01f, "F6");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperCloseScaleX".Translate(), ref eyeCfg.lidMotion.upperCloseScaleX, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperCloseScaleZ".Translate(), ref eyeCfg.lidMotion.upperCloseScaleZ, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperHalfBaseOffsetSubtract".Translate(), ref eyeCfg.lidMotion.upperHalfBaseOffsetSubtract, 0f, 0.02f, "F6");
@@ -1727,9 +2009,6 @@ namespace CharacterStudio.UI
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperHappySlowWaveOffset".Translate(), ref eyeCfg.lidMotion.upperHappySlowWaveOffset, -0.02f, 0.02f, "F6");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperDefaultSlowWaveOffset".Translate(), ref eyeCfg.lidMotion.upperDefaultSlowWaveOffset, -0.02f, 0.02f, "F6");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerSideBiasX".Translate(), ref eyeCfg.lidMotion.lowerSideBiasX, -0.01f, 0.01f, "F6");
-            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerBlinkOffset".Translate(), ref eyeCfg.lidMotion.lowerBlinkOffset, -0.02f, 0.02f, "F6");
-            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerBlinkScaleX".Translate(), ref eyeCfg.lidMotion.lowerBlinkScaleX, 0f, 3f, "F4");
-            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerBlinkScaleZ".Translate(), ref eyeCfg.lidMotion.lowerBlinkScaleZ, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerCloseOffset".Translate(), ref eyeCfg.lidMotion.lowerCloseOffset, -0.02f, 0.02f, "F6");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerCloseScaleX".Translate(), ref eyeCfg.lidMotion.lowerCloseScaleX, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerCloseScaleZ".Translate(), ref eyeCfg.lidMotion.lowerCloseScaleZ, 0f, 3f, "F4");
@@ -1744,9 +2023,6 @@ namespace CharacterStudio.UI
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerHappyScaleX".Translate(), ref eyeCfg.lidMotion.lowerHappyScaleX, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerHappyScaleZ".Translate(), ref eyeCfg.lidMotion.lowerHappyScaleZ, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerDefaultSlowWaveOffset".Translate(), ref eyeCfg.lidMotion.lowerDefaultSlowWaveOffset, -0.02f, 0.02f, "F6");
-            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericBlinkOffset".Translate(), ref eyeCfg.lidMotion.genericBlinkOffset, -0.02f, 0.02f, "F6");
-            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericBlinkScaleX".Translate(), ref eyeCfg.lidMotion.genericBlinkScaleX, 0f, 3f, "F4");
-            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericBlinkScaleZ".Translate(), ref eyeCfg.lidMotion.genericBlinkScaleZ, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericCloseOffset".Translate(), ref eyeCfg.lidMotion.genericCloseOffset, -0.02f, 0.02f, "F6");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericCloseScaleX".Translate(), ref eyeCfg.lidMotion.genericCloseScaleX, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericCloseScaleZ".Translate(), ref eyeCfg.lidMotion.genericCloseScaleZ, 0f, 3f, "F4");
@@ -1877,7 +2153,11 @@ namespace CharacterStudio.UI
 
             if (!Mathf.Approximately(edited, value))
             {
-                MutateFloatWithUndo(ref value, edited, () => FaceRuntimeCompiler.ClearCache());
+                MutateFloatWithUndo(ref value, edited, () =>
+                {
+                    FaceRuntimeCompiler.ClearCache();
+                    RefreshPreview();
+                }, refreshPreview: false);
             }
 
             Text.Font = GameFont.Small;

@@ -42,6 +42,7 @@ namespace CharacterStudio.UI
         private bool includePawnKind = false;
         private bool includeSummonItem = false;
         private bool includeAbilities = false;
+        private bool includeRuntimeTriggers = false;
         private bool copyTextures = true;
         private SummonArrivalMode roleCardArrivalMode = SummonArrivalMode.DropPod;
         private SummonSpawnEventMode roleCardSpawnEvent = SummonSpawnEventMode.PositiveLetter;
@@ -153,6 +154,10 @@ namespace CharacterStudio.UI
                 bool canExportAbilities = abilities.Count > 0;
                 UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Export_IncludePawnKind".Translate(), ref includePawnKind, "CS_Studio_Export_ModulePawnKindHint".Translate());
                 UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Export_IncludeSummonItem".Translate(), ref includeSummonItem, "CS_Studio_Export_ModuleSummonHint".Translate());
+                UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Export_IncludeRuntimeTriggers".Translate(), ref includeRuntimeTriggers,
+                    characterDefinition.runtimeTriggers != null && characterDefinition.runtimeTriggers.Count > 0
+                        ? "CS_Studio_Export_IncludeRuntimeTriggers_Hint".Translate()
+                        : "CS_Studio_Export_IncludeRuntimeTriggers_EmptyHint".Translate());
                 UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Export_IncludeAbilities".Translate(), ref includeAbilities,
                     canExportAbilities
                         ? "CS_Studio_Export_ModuleAbilitiesHint".Translate()
@@ -333,6 +338,7 @@ namespace CharacterStudio.UI
                 includePawnKind = false;
                 includeSummonItem = false;
                 includeAbilities = false;
+                includeRuntimeTriggers = false;
                 includeGeneDef = exportAsGene && includeGeneDef;
                 if (includeGeneDef)
                 {
@@ -344,6 +350,12 @@ namespace CharacterStudio.UI
                 if (includeSummonItem)
                 {
                     includePawnKind = true;
+                }
+
+                if (includeRuntimeTriggers)
+                {
+                    includePawnKind = true;
+                    includeSkinDef = true;
                 }
 
                 if (abilities.Count == 0)
@@ -418,6 +430,7 @@ namespace CharacterStudio.UI
                             RoleCardSpawnAnimation = roleCardSpawnAnimation,
                             RoleCardSpawnAnimationScale = roleCardSpawnAnimationScale,
                             CharacterDefinition = characterDefinition.Clone(),
+                            IncludeRuntimeTriggers = includeRuntimeTriggers,
                             AssetRightsConfirmed = assetRightsConfirmed
                         };
 

@@ -10,7 +10,7 @@ namespace CharacterStudio.UI
     {
         private static readonly AbilityRuntimeComponentType[] RuntimeComponentLibraryOrder =
         {
-            AbilityRuntimeComponentType.QComboWindow,
+            AbilityRuntimeComponentType.SlotOverrideWindow,
             AbilityRuntimeComponentType.HotkeyOverride,
             AbilityRuntimeComponentType.FollowupCooldownGate,
             AbilityRuntimeComponentType.SmartJump,
@@ -79,7 +79,7 @@ namespace CharacterStudio.UI
 
         private static bool IsSingletonLikeRuntimeComponent(AbilityRuntimeComponentType type)
         {
-            return type == AbilityRuntimeComponentType.QComboWindow
+            return type == AbilityRuntimeComponentType.SlotOverrideWindow
                 || type == AbilityRuntimeComponentType.HotkeyOverride
                 || type == AbilityRuntimeComponentType.FollowupCooldownGate
                 || type == AbilityRuntimeComponentType.KillRefresh
@@ -100,7 +100,7 @@ namespace CharacterStudio.UI
         {
             return type switch
             {
-                AbilityRuntimeComponentType.QComboWindow => "CS_Studio_Runtime_Desc_QComboWindow".Translate(),
+                AbilityRuntimeComponentType.SlotOverrideWindow => "CS_Studio_Runtime_Desc_QComboWindow".Translate(),
                 AbilityRuntimeComponentType.HotkeyOverride => "CS_Studio_Runtime_Desc_HotkeyOverride".Translate(),
                 AbilityRuntimeComponentType.FollowupCooldownGate => "CS_Studio_Runtime_Desc_FollowupCooldownGate".Translate(),
                 AbilityRuntimeComponentType.SmartJump => "CS_Studio_Runtime_Desc_SmartJump".Translate(),
@@ -294,6 +294,23 @@ namespace CharacterStudio.UI
             return config;
         }
 
+        private static IEnumerable<AbilityRuntimeHotkeySlot> GetRuntimeHotkeySlotOptions()
+        {
+            yield return AbilityRuntimeHotkeySlot.Q;
+            yield return AbilityRuntimeHotkeySlot.W;
+            yield return AbilityRuntimeHotkeySlot.E;
+            yield return AbilityRuntimeHotkeySlot.R;
+            yield return AbilityRuntimeHotkeySlot.T;
+            yield return AbilityRuntimeHotkeySlot.A;
+            yield return AbilityRuntimeHotkeySlot.S;
+            yield return AbilityRuntimeHotkeySlot.D;
+            yield return AbilityRuntimeHotkeySlot.F;
+            yield return AbilityRuntimeHotkeySlot.Z;
+            yield return AbilityRuntimeHotkeySlot.X;
+            yield return AbilityRuntimeHotkeySlot.C;
+            yield return AbilityRuntimeHotkeySlot.V;
+        }
+
         private void ShowDamageDefSelectorForRuntime(AbilityRuntimeComponentConfig component)
         {
             var options = new List<FloatMenuOption>
@@ -391,6 +408,9 @@ namespace CharacterStudio.UI
                             break;
                         case AbilityRuntimeComponentType.VanillaPawnFlyer:
                             component.flightOnlyAbilityDefName = localAbility.defName;
+                            break;
+                        case AbilityRuntimeComponentType.SlotOverrideWindow:
+                            component.comboTargetAbilityDefName = localAbility.defName;
                             break;
                         default:
                             component.overrideAbilityDefName = localAbility.defName;

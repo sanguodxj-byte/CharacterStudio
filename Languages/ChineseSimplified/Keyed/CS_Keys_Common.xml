@@ -25,6 +25,7 @@
     <CS_Glossary_Term_ModularAbility>ModularAbility（模块技能）</CS_Glossary_Term_ModularAbility>
     <CS_Glossary_Term_PawnLayer>PawnLayer（图层）</CS_Glossary_Term_PawnLayer>
     <CS_Glossary_Term_RenderNode>RenderNode（渲染节点）</CS_Glossary_Term_RenderNode>
+    <CS_Ability_Hotkey_ToggleDesc>技能热键：保留并优先拦截 Q/W/E/R/T/A/S/D/F/Z/X/C/V，用于 Character Studio 技能热键。</CS_Ability_Hotkey_ToggleDesc>
     <CS_Help_Anchor_Desc>图层依附的身体部位。图层会跟随锚点移动和旋转。例如，选择“头部”作为锚点，图层就会随头转动。</CS_Help_Anchor_Desc>
     <CS_Help_Anchor_Title>锚点 (Anchor)</CS_Help_Anchor_Title>
     <CS_Help_Animation_Desc>为图层添加动态效果。\n- Random Twitch: 随机抽动，适合兽耳。\n- Periodic Swing: 周期摆动，适合尾巴。</CS_Help_Animation_Desc>
@@ -301,6 +302,7 @@
     <CS_Studio_Section_VariantsExpression>变体 / 表情</CS_Studio_Section_VariantsExpression>
     <CS_Studio_Section_WeaponCarryVisual>状态武器视觉</CS_Studio_Section_WeaponCarryVisual>
     <CS_Studio_Section_WeaponRender>武器渲染覆写</CS_Studio_Section_WeaponRender>
+    <CS_Studio_Transform_GlobalScale>全局缩放</CS_Studio_Transform_GlobalScale>
     <CS_Studio_Skin_DefaultForTargetRaces>作为目标种族默认皮肤</CS_Studio_Skin_DefaultForTargetRaces>
     <CS_Studio_Skin_DefaultForTargetRaces_Tip>启用后，匹配 targetRaces 的种族会在运行时自动应用此皮肤；已有手动皮肤的 Pawn 不会被覆盖。</CS_Studio_Skin_DefaultForTargetRaces_Tip>
     <CS_Studio_Skin_DefaultRacePriority>默认皮肤优先级</CS_Studio_Skin_DefaultRacePriority>
@@ -329,6 +331,23 @@
     <CS_Studio_Variant_HideWhenMissing>缺失变体时隐藏</CS_Studio_Variant_HideWhenMissing>
     <CS_Studio_Variant_UseFrameSequence>使用帧序列</CS_Studio_Variant_UseFrameSequence>
     <CS_Studio_Version>版本</CS_Studio_Version>
+    <CS_Studio_Section_AbilityHotkeys>技能热键</CS_Studio_Section_AbilityHotkeys>
+    <CS_Studio_Ability_Hotkey_Enable>启用技能热键</CS_Studio_Ability_Hotkey_Enable>
+    <CS_Studio_Ability_Hotkey_None>（无）</CS_Studio_Ability_Hotkey_None>
+    <CS_Studio_Ability_Hotkey_Q>Q 槽位</CS_Studio_Ability_Hotkey_Q>
+    <CS_Studio_Ability_Hotkey_W>W 槽位</CS_Studio_Ability_Hotkey_W>
+    <CS_Studio_Ability_Hotkey_E>E 槽位</CS_Studio_Ability_Hotkey_E>
+    <CS_Studio_Ability_Hotkey_R>R 槽位</CS_Studio_Ability_Hotkey_R>
+    <CS_Studio_Ability_Hotkey_T>T 槽位</CS_Studio_Ability_Hotkey_T>
+    <CS_Studio_Ability_Hotkey_A>A 槽位</CS_Studio_Ability_Hotkey_A>
+    <CS_Studio_Ability_Hotkey_S>S 槽位</CS_Studio_Ability_Hotkey_S>
+    <CS_Studio_Ability_Hotkey_D>D 槽位</CS_Studio_Ability_Hotkey_D>
+    <CS_Studio_Ability_Hotkey_F>F 槽位</CS_Studio_Ability_Hotkey_F>
+    <CS_Studio_Ability_Hotkey_Z>Z 槽位</CS_Studio_Ability_Hotkey_Z>
+    <CS_Studio_Ability_Hotkey_X>X 槽位</CS_Studio_Ability_Hotkey_X>
+    <CS_Studio_Ability_Hotkey_C>C 槽位</CS_Studio_Ability_Hotkey_C>
+    <CS_Studio_Ability_Hotkey_V>V 槽位</CS_Studio_Ability_Hotkey_V>
+    <CS_Studio_Ability_Hotkey_WCombo>W 连段槽位</CS_Studio_Ability_Hotkey_WCombo>
     <CS_Studio_Warn_ImportMissingTexturesDetail>已从 {0} 导入，但有 {1} 个外部纹理缺失，系统已安全跳过：\n{2}</CS_Studio_Warn_ImportMissingTexturesDetail>
     <CS_Studio_Warn_ImportMissingTexturesStatus>导入完成，但有 {0} 个外部纹理缺失</CS_Studio_Warn_ImportMissingTexturesStatus>
     <CS_Studio_Warn_NoLayers>警告：当前皮肤没有任何图层，是否仍要导出？</CS_Studio_Warn_NoLayers>

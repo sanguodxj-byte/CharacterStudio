@@ -28,7 +28,6 @@ namespace CharacterStudio.UI
         private string tempWAbilityDefName;
         private string tempEAbilityDefName;
         private string tempRAbilityDefName;
-        private string tempWComboAbilityDefName;
 
         public override Vector2 InitialSize => new Vector2(500f, 560f);
 
@@ -55,7 +54,6 @@ namespace CharacterStudio.UI
             tempWAbilityDefName = skin.abilityHotkeys?.wAbilityDefName ?? "";
             tempEAbilityDefName = skin.abilityHotkeys?.eAbilityDefName ?? "";
             tempRAbilityDefName = skin.abilityHotkeys?.rAbilityDefName ?? "";
-            tempWComboAbilityDefName = skin.abilityHotkeys?.wComboAbilityDefName ?? "";
         }
 
         public override void PreClose()
@@ -138,7 +136,6 @@ namespace CharacterStudio.UI
             DrawHotkeyMappingField(ref vy, width, "CS_Studio_Ability_Hotkey_W".Translate(), () => tempWAbilityDefName, v => tempWAbilityDefName = v);
             DrawHotkeyMappingField(ref vy, width, "CS_Studio_Ability_Hotkey_E".Translate(), () => tempEAbilityDefName, v => tempEAbilityDefName = v);
             DrawHotkeyMappingField(ref vy, width, "CS_Studio_Ability_Hotkey_R".Translate(), () => tempRAbilityDefName, v => tempRAbilityDefName = v);
-            DrawHotkeyMappingField(ref vy, width, "CS_Studio_Ability_Hotkey_WCombo".Translate(), () => tempWComboAbilityDefName, v => tempWComboAbilityDefName = v);
 
             // 武器渲染覆写
             UIHelper.DrawSectionTitle(ref vy, width, "CS_Studio_Section_WeaponRender".Translate());
@@ -204,7 +201,6 @@ namespace CharacterStudio.UI
             skinDef.abilityHotkeys.wAbilityDefName = tempWAbilityDefName;
             skinDef.abilityHotkeys.eAbilityDefName = tempEAbilityDefName;
             skinDef.abilityHotkeys.rAbilityDefName = tempRAbilityDefName;
-            skinDef.abilityHotkeys.wComboAbilityDefName = tempWComboAbilityDefName;
 
             skinDef.xenotypeDefName = tempXenotypeDefName;
             skinDef.raceDisplayName = tempRaceDisplayName;

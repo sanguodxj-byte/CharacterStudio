@@ -59,6 +59,14 @@ namespace CharacterStudio.Core
 
         public class PupilMotionConfig
         {
+            public float frontLeftOffsetX = -0.00018f;
+            public float frontRightOffsetX = 0.00018f;
+            public float frontLeftOffsetZ = 0f;
+            public float frontRightOffsetZ = 0f;
+            public float sideLeftOffsetX = -0.00018f;
+            public float sideRightOffsetX = 0.00018f;
+            public float sideLeftOffsetZ = 0f;
+            public float sideRightOffsetZ = 0f;
             public float sideBiasX = 0.000028f;
             public float slowWaveOffsetZ = 0.00005f;
             public float dirLeftOffsetX = -0.00018f;
@@ -109,6 +117,18 @@ namespace CharacterStudio.Core
             public float scaredFlinchMinScaleWave = 0.01f;
 
             public PupilMotionConfig Clone() => (PupilMotionConfig)MemberwiseClone();
+
+            public void EnsureDirectionalDefaults()
+            {
+                if (Mathf.Approximately(frontLeftOffsetX, 0f) && Mathf.Approximately(frontRightOffsetX, 0f)
+                    && Mathf.Approximately(sideLeftOffsetX, 0f) && Mathf.Approximately(sideRightOffsetX, 0f))
+                {
+                    frontLeftOffsetX = dirLeftOffsetX;
+                    frontRightOffsetX = dirRightOffsetX;
+                    sideLeftOffsetX = dirLeftOffsetX;
+                    sideRightOffsetX = dirRightOffsetX;
+                }
+            }
         }
 
         public class LidMotionConfig

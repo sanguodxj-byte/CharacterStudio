@@ -20,6 +20,7 @@
     <CS_Glossary_Term_ModularAbility>ModularAbility</CS_Glossary_Term_ModularAbility>
     <CS_Glossary_Term_PawnLayer>PawnLayer</CS_Glossary_Term_PawnLayer>
     <CS_Glossary_Term_RenderNode>RenderNode</CS_Glossary_Term_RenderNode>
+    <CS_Ability_Hotkey_ToggleDesc>Ability Hotkeys: reserves Q/W/E/R/T/A/S/D/F/Z/X/C/V and prioritizes Character Studio skill hotkeys.</CS_Ability_Hotkey_ToggleDesc>
     <CS_Help_Anchor_Desc>The body part to which the layer is attached. The layer moves and rotates with the anchor. For example, attaching to "Head" makes the layer rotate with the head.</CS_Help_Anchor_Desc>
     <CS_Help_Anchor_Title>Anchor</CS_Help_Anchor_Title>
     <CS_Help_Animation_Desc>Adds dynamic effects to the layer.\n- Random Twitch: Random twitching, suitable for animal ears.\n- Periodic Swing: Periodic swinging, suitable for tails.</CS_Help_Animation_Desc>
@@ -238,6 +239,7 @@
     <CS_Studio_Section_VariantsExpression>Variants / Expression</CS_Studio_Section_VariantsExpression>
     <CS_Studio_Section_WeaponCarryVisual>State Weapon Visual</CS_Studio_Section_WeaponCarryVisual>
     <CS_Studio_Section_WeaponRender>Weapon Render Override</CS_Studio_Section_WeaponRender>
+    <CS_Studio_Transform_GlobalScale>Global Scale</CS_Studio_Transform_GlobalScale>
     <CS_Studio_Skin_DefaultForTargetRaces>Use as default skin for target races</CS_Studio_Skin_DefaultForTargetRaces>
     <CS_Studio_Skin_DefaultForTargetRaces_Tip>When enabled, races matching targetRaces automatically receive this skin at runtime. Pawns with an existing manual skin are not overridden.</CS_Studio_Skin_DefaultForTargetRaces_Tip>
     <CS_Studio_Skin_DefaultRacePriority>Default skin priority</CS_Studio_Skin_DefaultRacePriority>
@@ -261,6 +263,23 @@
     <CS_Studio_UI_Off>Off</CS_Studio_UI_Off>
     <CS_Studio_UI_On>On</CS_Studio_UI_On>
     <CS_Studio_Version>Version</CS_Studio_Version>
+    <CS_Studio_Section_AbilityHotkeys>Ability Hotkeys</CS_Studio_Section_AbilityHotkeys>
+    <CS_Studio_Ability_Hotkey_Enable>Enable Skill Hotkeys</CS_Studio_Ability_Hotkey_Enable>
+    <CS_Studio_Ability_Hotkey_None>(None)</CS_Studio_Ability_Hotkey_None>
+    <CS_Studio_Ability_Hotkey_Q>Q Slot</CS_Studio_Ability_Hotkey_Q>
+    <CS_Studio_Ability_Hotkey_W>W Slot</CS_Studio_Ability_Hotkey_W>
+    <CS_Studio_Ability_Hotkey_E>E Slot</CS_Studio_Ability_Hotkey_E>
+    <CS_Studio_Ability_Hotkey_R>R Slot</CS_Studio_Ability_Hotkey_R>
+    <CS_Studio_Ability_Hotkey_T>T Slot</CS_Studio_Ability_Hotkey_T>
+    <CS_Studio_Ability_Hotkey_A>A Slot</CS_Studio_Ability_Hotkey_A>
+    <CS_Studio_Ability_Hotkey_S>S Slot</CS_Studio_Ability_Hotkey_S>
+    <CS_Studio_Ability_Hotkey_D>D Slot</CS_Studio_Ability_Hotkey_D>
+    <CS_Studio_Ability_Hotkey_F>F Slot</CS_Studio_Ability_Hotkey_F>
+    <CS_Studio_Ability_Hotkey_Z>Z Slot</CS_Studio_Ability_Hotkey_Z>
+    <CS_Studio_Ability_Hotkey_X>X Slot</CS_Studio_Ability_Hotkey_X>
+    <CS_Studio_Ability_Hotkey_C>C Slot</CS_Studio_Ability_Hotkey_C>
+    <CS_Studio_Ability_Hotkey_V>V Slot</CS_Studio_Ability_Hotkey_V>
+    <CS_Studio_Ability_Hotkey_WCombo>W Combo Slot</CS_Studio_Ability_Hotkey_WCombo>
     <CS_Studio_Warn_ImportMissingTexturesDetail>Imported from {0}, but {1} external textures were missing and have been skipped safely:\n{2}</CS_Studio_Warn_ImportMissingTexturesDetail>
     <CS_Studio_Warn_ImportMissingTexturesStatus>Import completed with {0} missing external textures</CS_Studio_Warn_ImportMissingTexturesStatus>
     <CS_Studio_Warn_NoLayers>Warning: No layers in current skin, continue export?</CS_Studio_Warn_NoLayers>

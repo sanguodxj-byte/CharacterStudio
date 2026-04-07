@@ -17,6 +17,12 @@
     <CS_Studio_ColorType_Hair>Hair Color</CS_Studio_ColorType_Hair>
     <CS_Studio_ColorType_Skin>Skin Color</CS_Studio_ColorType_Skin>
     <CS_Studio_ColorType_White>White</CS_Studio_ColorType_White>
+    <CS_Studio_ColorSource_Fixed>Custom Color</CS_Studio_ColorSource_Fixed>
+    <CS_Studio_ColorSource_PawnHair>Pawn Hair Color</CS_Studio_ColorSource_PawnHair>
+    <CS_Studio_ColorSource_PawnSkin>Pawn Skin Color</CS_Studio_ColorSource_PawnSkin>
+    <CS_Studio_ColorSource_PawnApparelPrimary>Apparel Primary Color</CS_Studio_ColorSource_PawnApparelPrimary>
+    <CS_Studio_ColorSource_PawnApparelSecondary>Apparel Secondary Color</CS_Studio_ColorSource_PawnApparelSecondary>
+    <CS_Studio_ColorSource_White>White</CS_Studio_ColorSource_White>
     <CS_Studio_Hide_HiddenPaths>Hidden Paths (hiddenPaths):</CS_Studio_Hide_HiddenPaths>
     <CS_Studio_Hide_HiddenTagsCompat>Hidden Tags (compat):</CS_Studio_Hide_HiddenTagsCompat>
     <CS_Studio_Hide_NoHiddenPaths>  No hiddenPaths</CS_Studio_Hide_NoHiddenPaths>
@@ -186,6 +192,7 @@
     <CS_Studio_Transform_EastRotationHint>East/West keeps a separate rotation offset. Scale is now unified as global all-facing scale.</CS_Studio_Transform_EastRotationHint>
     <CS_Studio_Transform_FinalDrawOrder>Final Draw Order</CS_Studio_Transform_FinalDrawOrder>
     <CS_Studio_Transform_GlobalHint>Scale now uses a global all-facing base value. East/West keeps only a rotation offset, and Preview rows show the current facing result.</CS_Studio_Transform_GlobalHint>
+    <CS_Studio_Transform_GlobalScale>Global Scale</CS_Studio_Transform_GlobalScale>
     <CS_Studio_Transform_GlobalScaleX>Global Scale X</CS_Studio_Transform_GlobalScaleX>
     <CS_Studio_Transform_GlobalScaleY>Global Scale Y</CS_Studio_Transform_GlobalScaleY>
     <CS_Studio_Transform_PreviewRotation>Preview Rotation</CS_Studio_Transform_PreviewRotation>
@@ -203,27 +210,57 @@
     <CS_Studio_Variant_HiddenExpressions>Hidden Expressions</CS_Studio_Variant_HiddenExpressions>
     <CS_Studio_Variant_HideWhenMissing>Hide When Missing Variant</CS_Studio_Variant_HideWhenMissing>
     <CS_Studio_Variant_LayerRole>Layer Role</CS_Studio_Variant_LayerRole>
+    <CS_Studio_Variant_LayerRoleTip>Choose what this layer represents so runtime systems can decide when and how to treat it as a face, channel, or decorative layer.</CS_Studio_Variant_LayerRoleTip>
     <CS_Studio_Variant_Logic>Variant Logic</CS_Studio_Variant_Logic>
+    <CS_Studio_Variant_LogicTip>Choose which runtime state decides the texture variant path for this layer. Hover the current mode to see what it matches.</CS_Studio_Variant_LogicTip>
     <CS_Studio_Variant_SectionHint>This section controls how the layer chooses texture variants under different preview contexts such as expression, facing, eye direction, blink, and frame sequence.</CS_Studio_Variant_SectionHint>
+    <CS_Studio_Variant_BaseNameTip>Base name used when building variant texture paths. Leave empty to keep using the layer texture path directly.</CS_Studio_Variant_BaseNameTip>
     <CS_Studio_Variant_UseBlinkSuffix>Use Blink Suffix</CS_Studio_Variant_UseBlinkSuffix>
+    <CS_Studio_Variant_UseBlinkSuffixTip>Append blink state suffixes to the variant lookup so the layer can switch textures during blink states.</CS_Studio_Variant_UseBlinkSuffixTip>
     <CS_Studio_Variant_UseDirectionalSuffix>Use Directional Suffix</CS_Studio_Variant_UseDirectionalSuffix>
+    <CS_Studio_Variant_UseDirectionalSuffixTip>Append facing suffixes such as south, north, or eastwest when resolving this layer's variant path.</CS_Studio_Variant_UseDirectionalSuffixTip>
+    <CS_Studio_Variant_DirectionalFacingTip>Restrict the layer to only render for a specific facing set. Use Any Facing to keep it available everywhere.</CS_Studio_Variant_DirectionalFacingTip>
     <CS_Studio_Variant_UseExpressionSuffix>Use Expression Suffix</CS_Studio_Variant_UseExpressionSuffix>
+    <CS_Studio_Variant_UseExpressionSuffixTip>Append expression suffixes so the layer can swap textures for smile, angry, shock, and other expression states.</CS_Studio_Variant_UseExpressionSuffixTip>
     <CS_Studio_Variant_UseEyeDirectionSuffix>Use Eye Direction Suffix</CS_Studio_Variant_UseEyeDirectionSuffix>
+    <CS_Studio_Variant_UseEyeDirectionSuffixTip>Append eye-direction suffixes so this layer can follow left, right, up, or down gaze variants.</CS_Studio_Variant_UseEyeDirectionSuffixTip>
     <CS_Studio_Variant_UseFrameSequence>Use Frame Sequence</CS_Studio_Variant_UseFrameSequence>
+    <CS_Studio_Variant_UseFrameSequenceTip>Use numbered frame suffixes for animated variant sequences instead of a single static texture.</CS_Studio_Variant_UseFrameSequenceTip>
     <CS_Studio_Variant_VisibleExpressions>Visible Expressions</CS_Studio_Variant_VisibleExpressions>
+    <CS_Studio_Variant_VisibleExpressionsTip>Comma-separated allowlist. When set, the layer only stays visible for the listed expressions.</CS_Studio_Variant_VisibleExpressionsTip>
+    <CS_Studio_Variant_HiddenExpressionsTip>Comma-separated denylist. When set, the layer hides itself for the listed expressions.</CS_Studio_Variant_HiddenExpressionsTip>
+    <CS_Studio_Variant_HideWhenMissingTip>Hide the layer instead of falling back when the resolved variant texture cannot be found.</CS_Studio_Variant_HideWhenMissingTip>
+    <CS_Studio_LayerRole_Base>Base</CS_Studio_LayerRole_Base>
+    <CS_Studio_LayerRole_Head>Head</CS_Studio_LayerRole_Head>
     <CS_Studio_LayerRole_Decoration>Decoration</CS_Studio_LayerRole_Decoration>
     <CS_Studio_LayerRole_Eye>Eye</CS_Studio_LayerRole_Eye>
-    <CS_Studio_LayerRole_Pupil>Pupil</CS_Studio_LayerRole_Pupil>
     <CS_Studio_LayerRole_Lid>Lid</CS_Studio_LayerRole_Lid>
     <CS_Studio_LayerRole_Brow>Brow</CS_Studio_LayerRole_Brow>
     <CS_Studio_LayerRole_Mouth>Mouth</CS_Studio_LayerRole_Mouth>
-    <CS_Studio_LayerRole_EmotionOverlay>Emotion Overlay</CS_Studio_LayerRole_EmotionOverlay>
+    <CS_Studio_LayerRole_Emotion>Emotion</CS_Studio_LayerRole_Emotion>
+    <CS_Studio_LayerRole_SkinMark>Skin Mark</CS_Studio_LayerRole_SkinMark>
+    <CS_Studio_BaseSlot_Body>Body</CS_Studio_BaseSlot_Body>
+    <CS_Studio_BaseSlot_Head>Head</CS_Studio_BaseSlot_Head>
+    <CS_Studio_BaseSlot_Hair>Hair</CS_Studio_BaseSlot_Hair>
+    <CS_Studio_BaseSlot_Beard>Beard</CS_Studio_BaseSlot_Beard>
+    <CS_Studio_Rotation_North>North</CS_Studio_Rotation_North>
+    <CS_Studio_Rotation_South>South</CS_Studio_Rotation_South>
+    <CS_Studio_Rotation_East>East</CS_Studio_Rotation_East>
+    <CS_Studio_Rotation_West>West</CS_Studio_Rotation_West>
     <CS_Studio_VariantLogic_None>None</CS_Studio_VariantLogic_None>
-    <CS_Studio_VariantLogic_ByExpression>By Expression</CS_Studio_VariantLogic_ByExpression>
-    <CS_Studio_VariantLogic_ByFacing>By Facing</CS_Studio_VariantLogic_ByFacing>
-    <CS_Studio_VariantLogic_ByEyeDirection>By Eye Direction</CS_Studio_VariantLogic_ByEyeDirection>
-    <CS_Studio_VariantLogic_ByBlink>By Blink</CS_Studio_VariantLogic_ByBlink>
-    <CS_Studio_VariantLogic_Combined>Combined</CS_Studio_VariantLogic_Combined>
+    <CS_Studio_VariantLogic_ExpressionOnly>Expression Only</CS_Studio_VariantLogic_ExpressionOnly>
+    <CS_Studio_VariantLogic_EyeDirectionOnly>Eye Direction Only</CS_Studio_VariantLogic_EyeDirectionOnly>
+    <CS_Studio_VariantLogic_BlinkOnly>Blink Only</CS_Studio_VariantLogic_BlinkOnly>
+    <CS_Studio_VariantLogic_ExpressionAndDirection>Expression And Direction</CS_Studio_VariantLogic_ExpressionAndDirection>
+    <CS_Studio_VariantLogic_ChannelState>Channel State</CS_Studio_VariantLogic_ChannelState>
+    <CS_Studio_VariantLogic_Sequence>Sequence</CS_Studio_VariantLogic_Sequence>
+    <CS_Studio_VariantLogicTip_None>Do not apply any automatic variant matching. The layer uses its base texture path directly.</CS_Studio_VariantLogicTip_None>
+    <CS_Studio_VariantLogicTip_ExpressionOnly>Match variants by expression only, such as happy, angry, shocked, or sleeping.</CS_Studio_VariantLogicTip_ExpressionOnly>
+    <CS_Studio_VariantLogicTip_EyeDirectionOnly>Match variants only by current eye direction, useful for gaze-following layers.</CS_Studio_VariantLogicTip_EyeDirectionOnly>
+    <CS_Studio_VariantLogicTip_BlinkOnly>Match variants only by blink state, useful for blink-specific lids or overlays.</CS_Studio_VariantLogicTip_BlinkOnly>
+    <CS_Studio_VariantLogicTip_ExpressionAndDirection>Combine expression and eye direction when resolving variant paths.</CS_Studio_VariantLogicTip_ExpressionAndDirection>
+    <CS_Studio_VariantLogicTip_ChannelState>Use resolved channel states such as mouth, lid, brow, or emotion overlay state to choose variants.</CS_Studio_VariantLogicTip_ChannelState>
+    <CS_Studio_VariantLogicTip_Sequence>Use frame-sequence progression to choose numbered variant frames for animated layers.</CS_Studio_VariantLogicTip_Sequence>
     <CS_Studio_Workflow_AnimalStandardLayers>Animal Layered Workflow</CS_Studio_Workflow_AnimalStandardLayers>
     <CS_Studio_Workflow_CompositeBase>Composite Base Workflow</CS_Studio_Workflow_CompositeBase>
     <CS_Studio_Workflow_CompositeBase_Hint>A single composite base contains body/head/hair but no apparel, headgear, or expressions; vanilla apparel and headgear render on top, while expressions should use transparent Head overlays.</CS_Studio_Workflow_CompositeBase_Hint>

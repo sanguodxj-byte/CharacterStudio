@@ -1,5 +1,6 @@
 using UnityEngine;
 using CharacterStudio.Rendering;
+using Verse;
 
 namespace CharacterStudio.Core
 {
@@ -37,10 +38,12 @@ namespace CharacterStudio.Core
         public readonly EmotionOverlayState emotionState;
         public readonly bool isBlinkActive;
         public readonly BlinkPhase blinkPhase;
+        public readonly float blinkPhaseProgress;
         public readonly bool hasReplacementEyeOverlay;
         public readonly EyeAnimationVariant eyeVariant;
         public readonly PupilScaleVariant pupilVariant;
         public readonly ExpressionType expression;
+        public readonly Rot4 facing;
         public readonly Vector2 gazeOffset;
         public readonly float primaryWave;
         public readonly float slowWave;
@@ -56,10 +59,12 @@ namespace CharacterStudio.Core
             EmotionOverlayState emotionState,
             bool isBlinkActive,
             BlinkPhase blinkPhase,
+            float blinkPhaseProgress,
             bool hasReplacementEyeOverlay,
             EyeAnimationVariant eyeVariant,
             PupilScaleVariant pupilVariant,
             ExpressionType expression,
+            Rot4 facing,
             Vector2 gazeOffset,
             float primaryWave,
             float slowWave)
@@ -74,10 +79,12 @@ namespace CharacterStudio.Core
             this.emotionState = emotionState;
             this.isBlinkActive = isBlinkActive;
             this.blinkPhase = blinkPhase;
+            this.blinkPhaseProgress = blinkPhaseProgress;
             this.hasReplacementEyeOverlay = hasReplacementEyeOverlay;
             this.eyeVariant = eyeVariant;
             this.pupilVariant = pupilVariant;
             this.expression = expression;
+            this.facing = facing;
             this.gazeOffset = gazeOffset;
             this.primaryWave = primaryWave;
             this.slowWave = slowWave;
@@ -147,7 +154,7 @@ namespace CharacterStudio.Core
 
         private static FaceTransformResult EvaluateEye(FaceTransformContext context, PawnEyeDirectionConfig.EyeMotionConfig motion)
         {
-            if (context.lidState == LidState.Blink || context.lidState == LidState.Close)
+            if (context.lidState == LidState.Close)
                 return FaceTransformResult.Hidden();
 
             float sideSign = SideSign(context.side);
@@ -224,13 +231,24 @@ namespace CharacterStudio.Core
 
         private static FaceTransformResult EvaluatePupil(FaceTransformContext context, PawnEyeDirectionConfig.PupilMotionConfig motion)
         {
-            if (context.lidState == LidState.Blink || context.lidState == LidState.Close)
+            if (context.lidState == LidState.Close)
                 return FaceTransformResult.Hidden();
+
+            motion.EnsureDirectionalDefaults();
 
             float sideSign = SideSign(context.side);
             float offsetX = SideBias(context.side, motion.sideBiasX);
             float offsetZ = context.slowWave * motion.slowWaveOffsetZ;
             Vector2 clampedGazeOffset = Vector2.ClampMagnitude(context.gazeOffset, 1f);
+
+            bool isSideFacing = context.facing == Rot4.East || context.facing == Rot4.West;
+            bool isLeftEye = context.side == LayeredFacePartSide.Left;
+            offsetX += isSideFacing
+                ? (isLeftEye ? motion.sideLeftOffsetX : motion.sideRightOffsetX)
+                : (isLeftEye ? motion.frontLeftOffsetX : motion.frontRightOffsetX);
+            offsetZ += isSideFacing
+                ? (isLeftEye ? motion.sideLeftOffsetZ : motion.sideRightOffsetZ)
+                : (isLeftEye ? motion.frontLeftOffsetZ : motion.frontRightOffsetZ);
 
             offsetX += clampedGazeOffset.x * Mathf.Max(
                 Mathf.Abs(motion.dirLeftOffsetX),
@@ -279,7 +297,6 @@ namespace CharacterStudio.Core
                     offsetX += context.slowWave * motion.scaredFlinchWaveOffsetX + sideSign * motion.scaredFlinchSideOffsetX;
                     break;
                 case EyeAnimationVariant.HappyClosedPeak:
-                case EyeAnimationVariant.BlinkClosed:
                     return FaceTransformResult.Hidden();
             }
 
@@ -328,17 +345,25 @@ namespace CharacterStudio.Core
         {
             float replacementMoveDown = upperLidMoveDown;
             float sideBiasX = SideBias(context.side, lidMotion.upperSideBiasX);
-            float blinkFactor = Mathf.Clamp01(context.gazeOffset.magnitude);
             switch (context.lidState)
             {
                 case LidState.Blink:
+                    float upperBlinkProgress = context.blinkPhase switch
+                    {
+                        BlinkPhase.ClosingLid => context.blinkPhaseProgress,
+                        BlinkPhase.HideBaseEyeParts => 1f,
+                        BlinkPhase.ShowReplacementEye => 1f,
+                        BlinkPhase.RestoreBaseEyeParts => 1f,
+                        BlinkPhase.OpeningLid => 1f - context.blinkPhaseProgress,
+                        _ => context.isBlinkActive ? 1f : 0f,
+                    };
                     return FaceTransformResult.Visible(
                         0f,
-                        new Vector3(sideBiasX, 0f, replacementMoveDown * Mathf.Lerp(0.35f, 1f, blinkFactor)),
+                        new Vector3(sideBiasX, 0f, replacementMoveDown * upperBlinkProgress),
                         new Vector3(
-                            lidMotion.upperBlinkScaleX,
+                            Mathf.Lerp(1f, lidMotion.upperBlinkScaleX, upperBlinkProgress),
                             1f,
-                            Mathf.Lerp(1f, lidMotion.upperBlinkScaleZ, blinkFactor)));
+                            Mathf.Lerp(1f, lidMotion.upperBlinkScaleZ, upperBlinkProgress)));
                 case LidState.Close:
                     return FaceTransformResult.Visible(0f, new Vector3(sideBiasX, 0f, replacementMoveDown), new Vector3(lidMotion.upperCloseScaleX, 1f, lidMotion.upperCloseScaleZ));
                 case LidState.Half:
@@ -383,17 +408,25 @@ namespace CharacterStudio.Core
         private static FaceTransformResult EvaluateLowerLid(FaceTransformContext context, PawnEyeDirectionConfig.LidMotionConfig lidMotion)
         {
             float sideBiasX = SideBias(context.side, lidMotion.lowerSideBiasX);
-            float blinkFactor = Mathf.Clamp01(context.gazeOffset.magnitude);
             switch (context.lidState)
             {
                 case LidState.Blink:
+                    float lowerBlinkProgress = context.blinkPhase switch
+                    {
+                        BlinkPhase.ClosingLid => context.blinkPhaseProgress,
+                        BlinkPhase.HideBaseEyeParts => 1f,
+                        BlinkPhase.ShowReplacementEye => 1f,
+                        BlinkPhase.RestoreBaseEyeParts => 1f,
+                        BlinkPhase.OpeningLid => 1f - context.blinkPhaseProgress,
+                        _ => context.isBlinkActive ? 1f : 0f,
+                    };
                     return FaceTransformResult.Visible(
                         0f,
-                        new Vector3(sideBiasX, 0f, lidMotion.lowerBlinkOffset * Mathf.Lerp(0.35f, 1f, blinkFactor)),
+                        new Vector3(sideBiasX, 0f, lidMotion.lowerBlinkOffset * lowerBlinkProgress),
                         new Vector3(
-                            lidMotion.lowerBlinkScaleX,
+                            Mathf.Lerp(1f, lidMotion.lowerBlinkScaleX, lowerBlinkProgress),
                             1f,
-                            Mathf.Lerp(1f, lidMotion.lowerBlinkScaleZ, blinkFactor)));
+                            Mathf.Lerp(1f, lidMotion.lowerBlinkScaleZ, lowerBlinkProgress)));
                 case LidState.Close:
                     return FaceTransformResult.Visible(0f, new Vector3(sideBiasX, 0f, lidMotion.lowerCloseOffset), new Vector3(lidMotion.lowerCloseScaleX, 1f, lidMotion.lowerCloseScaleZ));
                 case LidState.Half:

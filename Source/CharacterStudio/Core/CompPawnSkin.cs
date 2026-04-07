@@ -38,6 +38,7 @@ namespace CharacterStudio.Core
 
         private readonly FacePreviewOverrideState previewOverrides = new FacePreviewOverrideState();
         private const int BlinkDuration = 10;
+        private const int ShockExpressionDuration = 24;
 
         // 眼睛注视方向
         private readonly EyeDirectionRuntimeState eyeDirectionState = new EyeDirectionRuntimeState();
@@ -49,18 +50,22 @@ namespace CharacterStudio.Core
 
         private readonly AbilityHotkeyRuntimeState abilityRuntimeState = new AbilityHotkeyRuntimeState();
 
-        // Q 键四段轮换模式索引（0..3）
-        public int qHotkeyModeIndex
+        public int slotOverrideWindowEndTick
         {
-            get => abilityRuntimeState.qHotkeyModeIndex;
-            set => abilityRuntimeState.qHotkeyModeIndex = value;
+            get => abilityRuntimeState.slotOverrideWindowEndTick;
+            set => abilityRuntimeState.slotOverrideWindowEndTick = value;
         }
 
-        // Q->W 连段窗口（单位：Tick）
-        public int qComboWindowEndTick
+        public string slotOverrideWindowAbilityDefName
         {
-            get => abilityRuntimeState.qComboWindowEndTick;
-            set => abilityRuntimeState.qComboWindowEndTick = value;
+            get => abilityRuntimeState.slotOverrideWindowAbilityDefName;
+            set => abilityRuntimeState.slotOverrideWindowAbilityDefName = value ?? string.Empty;
+        }
+
+        public string slotOverrideWindowSlotId
+        {
+            get => abilityRuntimeState.slotOverrideWindowSlotId;
+            set => abilityRuntimeState.slotOverrideWindowSlotId = value ?? string.Empty;
         }
 
         public string qOverrideAbilityDefName
@@ -111,6 +116,114 @@ namespace CharacterStudio.Core
             set => abilityRuntimeState.rOverrideExpireTick = value;
         }
 
+        public string tOverrideAbilityDefName
+        {
+            get => abilityRuntimeState.tOverrideAbilityDefName;
+            set => abilityRuntimeState.tOverrideAbilityDefName = value ?? string.Empty;
+        }
+
+        public int tOverrideExpireTick
+        {
+            get => abilityRuntimeState.tOverrideExpireTick;
+            set => abilityRuntimeState.tOverrideExpireTick = value;
+        }
+
+        public string aOverrideAbilityDefName
+        {
+            get => abilityRuntimeState.aOverrideAbilityDefName;
+            set => abilityRuntimeState.aOverrideAbilityDefName = value ?? string.Empty;
+        }
+
+        public int aOverrideExpireTick
+        {
+            get => abilityRuntimeState.aOverrideExpireTick;
+            set => abilityRuntimeState.aOverrideExpireTick = value;
+        }
+
+        public string sOverrideAbilityDefName
+        {
+            get => abilityRuntimeState.sOverrideAbilityDefName;
+            set => abilityRuntimeState.sOverrideAbilityDefName = value ?? string.Empty;
+        }
+
+        public int sOverrideExpireTick
+        {
+            get => abilityRuntimeState.sOverrideExpireTick;
+            set => abilityRuntimeState.sOverrideExpireTick = value;
+        }
+
+        public string dOverrideAbilityDefName
+        {
+            get => abilityRuntimeState.dOverrideAbilityDefName;
+            set => abilityRuntimeState.dOverrideAbilityDefName = value ?? string.Empty;
+        }
+
+        public int dOverrideExpireTick
+        {
+            get => abilityRuntimeState.dOverrideExpireTick;
+            set => abilityRuntimeState.dOverrideExpireTick = value;
+        }
+
+        public string fOverrideAbilityDefName
+        {
+            get => abilityRuntimeState.fOverrideAbilityDefName;
+            set => abilityRuntimeState.fOverrideAbilityDefName = value ?? string.Empty;
+        }
+
+        public int fOverrideExpireTick
+        {
+            get => abilityRuntimeState.fOverrideExpireTick;
+            set => abilityRuntimeState.fOverrideExpireTick = value;
+        }
+
+        public string zOverrideAbilityDefName
+        {
+            get => abilityRuntimeState.zOverrideAbilityDefName;
+            set => abilityRuntimeState.zOverrideAbilityDefName = value ?? string.Empty;
+        }
+
+        public int zOverrideExpireTick
+        {
+            get => abilityRuntimeState.zOverrideExpireTick;
+            set => abilityRuntimeState.zOverrideExpireTick = value;
+        }
+
+        public string xOverrideAbilityDefName
+        {
+            get => abilityRuntimeState.xOverrideAbilityDefName;
+            set => abilityRuntimeState.xOverrideAbilityDefName = value ?? string.Empty;
+        }
+
+        public int xOverrideExpireTick
+        {
+            get => abilityRuntimeState.xOverrideExpireTick;
+            set => abilityRuntimeState.xOverrideExpireTick = value;
+        }
+
+        public string cOverrideAbilityDefName
+        {
+            get => abilityRuntimeState.cOverrideAbilityDefName;
+            set => abilityRuntimeState.cOverrideAbilityDefName = value ?? string.Empty;
+        }
+
+        public int cOverrideExpireTick
+        {
+            get => abilityRuntimeState.cOverrideExpireTick;
+            set => abilityRuntimeState.cOverrideExpireTick = value;
+        }
+
+        public string vOverrideAbilityDefName
+        {
+            get => abilityRuntimeState.vOverrideAbilityDefName;
+            set => abilityRuntimeState.vOverrideAbilityDefName = value ?? string.Empty;
+        }
+
+        public int vOverrideExpireTick
+        {
+            get => abilityRuntimeState.vOverrideExpireTick;
+            set => abilityRuntimeState.vOverrideExpireTick = value;
+        }
+
         // 各槽位技能 CD（单位：Tick）
         // E 槽由 AbilityHotkeyRuntimeComponent 写入，Q/W/R 由统一门控写入
         public int qCooldownUntilTick
@@ -135,6 +248,60 @@ namespace CharacterStudio.Core
         {
             get => abilityRuntimeState.rCooldownUntilTick;
             set => abilityRuntimeState.rCooldownUntilTick = value;
+        }
+
+        public int tCooldownUntilTick
+        {
+            get => abilityRuntimeState.tCooldownUntilTick;
+            set => abilityRuntimeState.tCooldownUntilTick = value;
+        }
+
+        public int aCooldownUntilTick
+        {
+            get => abilityRuntimeState.aCooldownUntilTick;
+            set => abilityRuntimeState.aCooldownUntilTick = value;
+        }
+
+        public int sCooldownUntilTick
+        {
+            get => abilityRuntimeState.sCooldownUntilTick;
+            set => abilityRuntimeState.sCooldownUntilTick = value;
+        }
+
+        public int dCooldownUntilTick
+        {
+            get => abilityRuntimeState.dCooldownUntilTick;
+            set => abilityRuntimeState.dCooldownUntilTick = value;
+        }
+
+        public int fCooldownUntilTick
+        {
+            get => abilityRuntimeState.fCooldownUntilTick;
+            set => abilityRuntimeState.fCooldownUntilTick = value;
+        }
+
+        public int zCooldownUntilTick
+        {
+            get => abilityRuntimeState.zCooldownUntilTick;
+            set => abilityRuntimeState.zCooldownUntilTick = value;
+        }
+
+        public int xCooldownUntilTick
+        {
+            get => abilityRuntimeState.xCooldownUntilTick;
+            set => abilityRuntimeState.xCooldownUntilTick = value;
+        }
+
+        public int cCooldownUntilTick
+        {
+            get => abilityRuntimeState.cCooldownUntilTick;
+            set => abilityRuntimeState.cCooldownUntilTick = value;
+        }
+
+        public int vCooldownUntilTick
+        {
+            get => abilityRuntimeState.vCooldownUntilTick;
+            set => abilityRuntimeState.vCooldownUntilTick = value;
         }
 
         // R 两段机制状态
@@ -172,6 +339,12 @@ namespace CharacterStudio.Core
         {
             get => abilityRuntimeState.rSecondStageTargetCell;
             set => abilityRuntimeState.rSecondStageTargetCell = value;
+        }
+
+        public string rStackAbilityDefName
+        {
+            get => abilityRuntimeState.rStackAbilityDefName;
+            set => abilityRuntimeState.rStackAbilityDefName = value ?? string.Empty;
         }
 
         // 状态武器视觉：施法中窗口
@@ -752,6 +925,31 @@ namespace CharacterStudio.Core
             base.PostPreApplyDamage(ref dinfo, out absorbed);
 
             absorbed = TryAbsorbShieldDamage(ref dinfo);
+
+            if (!absorbed)
+            {
+                TriggerShockExpression(dinfo);
+            }
+        }
+
+        private void TriggerShockExpression(DamageInfo dinfo)
+        {
+            Pawn? pawn = Pawn;
+            if (pawn == null || !pawn.Spawned)
+                return;
+
+            if (pawn.Dead || pawn.Downed || RestUtility.InBed(pawn))
+                return;
+
+            float incomingDamage = Mathf.Max(0f, dinfo.Amount);
+            if (incomingDamage <= 0.001f)
+                return;
+
+            int now = Find.TickManager?.TicksGame ?? 0;
+            faceExpressionState.TriggerShock(now, ShockExpressionDuration);
+            faceExpressionState.ClearBlink();
+            faceExpressionState.ResetAnimatedFrameTracking();
+            RequestRenderRefresh();
         }
 
         private bool TryAbsorbShieldDamage(ref DamageInfo dinfo)
