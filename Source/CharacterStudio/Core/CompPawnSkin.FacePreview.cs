@@ -201,6 +201,41 @@ namespace CharacterStudio.Core
             }
         }
 
+        public void SetPreviewWinkSide(LayeredFacePartSide? side)
+        {
+            LayeredFacePartSide? normalized = side.HasValue && side.Value != LayeredFacePartSide.None
+                ? side.Value
+                : null;
+
+            bool changed = previewOverrides.SetWinkSide(normalized);
+            if (normalized.HasValue)
+                faceExpressionState.SetWinkSide(normalized.Value);
+
+            if (changed)
+                RequestRenderRefresh();
+        }
+
+        public LayeredFacePartSide GetEffectiveWinkSide()
+        {
+            if (GetEffectiveExpression() != ExpressionType.Wink)
+                return LayeredFacePartSide.None;
+
+            if (previewOverrides.PreviewWinkSide.HasValue)
+                return previewOverrides.PreviewWinkSide.Value;
+
+            EyeDirection previewEyeDirection = previewOverrides.PreviewEyeDirection ?? curEyeDirection;
+            if (previewEyeDirection == EyeDirection.Right)
+                return LayeredFacePartSide.Right;
+
+            if (previewEyeDirection == EyeDirection.Left)
+                return LayeredFacePartSide.Left;
+
+            if (faceExpressionState.winkSide != LayeredFacePartSide.None)
+                return faceExpressionState.winkSide;
+
+            return LayeredFacePartSide.Left;
+        }
+
         public ExpressionType GetEffectiveExpression()
             => EffectiveFaceStateEvaluator.ResolveExpression(this);
 

@@ -13,6 +13,7 @@ namespace CharacterStudio.Core
         {
             public ExpressionType currentExpression = ExpressionType.Neutral;
             public int shockExpireTick = -1;
+            public LayeredFacePartSide winkSide = LayeredFacePartSide.None;
             public int blinkTimer = 0;
             public int expressionAnimTick = 0;
             public ExpressionType lastAnimatedExpression = ExpressionType.Neutral;
@@ -129,6 +130,21 @@ namespace CharacterStudio.Core
                 shockExpireTick = -1;
                 return true;
             }
+
+            public bool SetWinkSide(LayeredFacePartSide side)
+            {
+                LayeredFacePartSide normalized = side == LayeredFacePartSide.Right
+                    ? LayeredFacePartSide.Right
+                    : side == LayeredFacePartSide.Left
+                        ? LayeredFacePartSide.Left
+                        : LayeredFacePartSide.None;
+
+                if (winkSide == normalized)
+                    return false;
+
+                winkSide = normalized;
+                return true;
+            }
         }
 
         private sealed class EyeDirectionRuntimeState
@@ -149,6 +165,7 @@ namespace CharacterStudio.Core
         {
             public readonly ExpressionType expression;
             public readonly ExpressionType baseExpressionBeforeBlink;
+            public readonly LayeredFacePartSide winkSide;
             public readonly EyeDirection eyeDirection;
             public readonly MouthState mouthState;
             public readonly LidState lidState;
@@ -161,6 +178,7 @@ namespace CharacterStudio.Core
             public EffectiveFaceStateSnapshot(
                 ExpressionType expression,
                 ExpressionType baseExpressionBeforeBlink,
+                LayeredFacePartSide winkSide,
                 EyeDirection eyeDirection,
                 MouthState mouthState,
                 LidState lidState,
@@ -172,6 +190,7 @@ namespace CharacterStudio.Core
             {
                 this.expression = expression;
                 this.baseExpressionBeforeBlink = baseExpressionBeforeBlink;
+                this.winkSide = winkSide;
                 this.eyeDirection = eyeDirection;
                 this.mouthState = mouthState;
                 this.lidState = lidState;
@@ -238,6 +257,7 @@ namespace CharacterStudio.Core
             {
                 return runtimeState.currentExpression != snapshot.expression
                     || runtimeState.baseExpressionBeforeBlink != snapshot.baseExpressionBeforeBlink
+                    || runtimeState.winkSide != snapshot.winkSide
                     || runtimeState.currentEyeDirection != snapshot.eyeDirection
                     || runtimeState.currentMouthState != snapshot.mouthState
                     || runtimeState.currentLidState != snapshot.lidState
@@ -252,6 +272,7 @@ namespace CharacterStudio.Core
             {
                 runtimeState.currentExpression = snapshot.expression;
                 runtimeState.baseExpressionBeforeBlink = snapshot.baseExpressionBeforeBlink;
+                runtimeState.winkSide = snapshot.winkSide;
                 runtimeState.currentEyeDirection = snapshot.eyeDirection;
                 runtimeState.currentMouthState = snapshot.mouthState;
                 runtimeState.currentLidState = snapshot.lidState;
@@ -279,6 +300,7 @@ namespace CharacterStudio.Core
                     case ExpressionType.AttackMelee:
                     case ExpressionType.AttackRanged:
                     case ExpressionType.Scared:
+                    case ExpressionType.Wink:
                         return MouthState.Open;
 
                     case ExpressionType.Gloomy:
@@ -304,6 +326,9 @@ namespace CharacterStudio.Core
                 {
                     case ExpressionType.Blink:
                         return LidState.Blink;
+
+                    case ExpressionType.Wink:
+                        return LidState.Happy;
 
                     case ExpressionType.Sleeping:
                     case ExpressionType.Dead:
@@ -348,6 +373,7 @@ namespace CharacterStudio.Core
                     case ExpressionType.Happy:
                     case ExpressionType.Cheerful:
                     case ExpressionType.Lovin:
+                    case ExpressionType.Wink:
                         return BrowState.Happy;
 
                     default:
@@ -397,6 +423,7 @@ namespace CharacterStudio.Core
                 return new EffectiveFaceStateSnapshot(
                     expression,
                     ResolveBaseExpressionBeforeBlink(owner, expression),
+                    ResolveWinkSide(owner, expression),
                     ResolveEyeDirection(owner),
                     ResolveMouthState(owner, expression),
                     ResolveLidState(owner, expression),
@@ -465,6 +492,21 @@ namespace CharacterStudio.Core
 
             public static EyeDirection ResolveEyeDirection(CompPawnSkin owner)
                 => owner.previewOverrides.PreviewEyeDirection ?? owner.curEyeDirection;
+
+            public static LayeredFacePartSide ResolveWinkSide(CompPawnSkin owner, ExpressionType expression)
+            {
+                if (expression != ExpressionType.Wink)
+                    return LayeredFacePartSide.None;
+
+                if (owner.previewOverrides.PreviewWinkSide.HasValue)
+                    return owner.previewOverrides.PreviewWinkSide.Value;
+
+                if (owner.faceExpressionState.winkSide == LayeredFacePartSide.Left
+                    || owner.faceExpressionState.winkSide == LayeredFacePartSide.Right)
+                    return owner.faceExpressionState.winkSide;
+
+                return LayeredFacePartSide.Left;
+            }
 
             public static MouthState ResolveMouthState(CompPawnSkin owner)
             {
@@ -1246,6 +1288,7 @@ namespace CharacterStudio.Core
         {
             public ExpressionType? PreviewExpression { get; private set; }
             public ExpressionType? PreviewRuntimeExpression { get; private set; }
+            public LayeredFacePartSide? PreviewWinkSide { get; private set; }
             public EyeDirection? PreviewEyeDirection { get; private set; }
             public MouthState? PreviewMouthState { get; private set; }
             public LidState? PreviewLidState { get; private set; }
@@ -1267,6 +1310,15 @@ namespace CharacterStudio.Core
                     return false;
 
                 PreviewRuntimeExpression = expression;
+                return true;
+            }
+
+            public bool SetWinkSide(LayeredFacePartSide? side)
+            {
+                if (PreviewWinkSide == side)
+                    return false;
+
+                PreviewWinkSide = side;
                 return true;
             }
 
@@ -1320,12 +1372,14 @@ namespace CharacterStudio.Core
                 bool changed = PreviewMouthState.HasValue
                     || PreviewLidState.HasValue
                     || PreviewBrowState.HasValue
-                    || PreviewEmotionOverlayState.HasValue;
+                    || PreviewEmotionOverlayState.HasValue
+                    || PreviewWinkSide.HasValue;
 
                 PreviewMouthState = null;
                 PreviewLidState = null;
                 PreviewBrowState = null;
                 PreviewEmotionOverlayState = null;
+                PreviewWinkSide = null;
 
                 return changed;
             }

@@ -42,8 +42,6 @@ namespace CharacterStudio.Abilities
 
         public void ExposeData()
         {
-            Scribe_Collections.Look(ref abilities, "abilities", LookMode.Deep);
-
             if (Scribe.mode != LoadSaveMode.LoadingVars)
             {
                 SyncSerializedAbilityDefNamesFromAbilities();
@@ -61,7 +59,7 @@ namespace CharacterStudio.Abilities
             abilities ??= new List<ModularAbilityDef>();
             if (Scribe.mode == LoadSaveMode.LoadingVars)
             {
-                abilities.RemoveAll(static ability => ability == null || string.IsNullOrWhiteSpace(ability.defName));
+                abilities.Clear();
             }
             else
             {
@@ -148,6 +146,9 @@ namespace CharacterStudio.Abilities
         public bool isSecondStage;
         public int qModeIndex = -1;
         public int rStackCount = 0;
+        public int charges = 1;
+        public string runtimeTag = string.Empty;
+        public string runtimeSummary = string.Empty;
     }
 
     public static class AbilityLoadoutRuntimeUtility
@@ -503,8 +504,44 @@ namespace CharacterStudio.Abilities
                 isOverride = isOverride,
                 isSecondStage = isSecondStage,
                 qModeIndex = -1,
-                rStackCount = slot == VisibleAbilitySlot.R ? Math.Max(0, comp.rStackCount) : 0
+                rStackCount = slot == VisibleAbilitySlot.R ? Math.Max(0, comp.rStackCount) : 0,
+                charges = Math.Max(1, ResolveAbilityByDefName(loadout, defName)?.charges ?? 1),
+                runtimeTag = BuildRuntimeTag(ResolveAbilityByDefName(loadout, defName)),
+                runtimeSummary = BuildRuntimeSummary(ResolveAbilityByDefName(loadout, defName))
             };
+        }
+
+        private static string BuildRuntimeTag(ModularAbilityDef? ability)
+        {
+            if (ability?.runtimeComponents == null)
+            {
+                return string.Empty;
+            }
+
+            if (ability.runtimeComponents.Any(c => c != null && c.enabled && (c.type == AbilityRuntimeComponentType.SmartJump || c.type == AbilityRuntimeComponentType.EShortJump))) return "跃";
+            if (ability.runtimeComponents.Any(c => c != null && c.enabled && c.type == AbilityRuntimeComponentType.ShieldAbsorb)) return "盾";
+            if (ability.runtimeComponents.Any(c => c != null && c.enabled && c.type == AbilityRuntimeComponentType.RStackDetonation)) return "爆";
+            if (ability.runtimeComponents.Any(c => c != null && c.enabled && c.type == AbilityRuntimeComponentType.ChainBounce)) return "链";
+            if (ability.runtimeComponents.Any(c => c != null && c.enabled && c.type == AbilityRuntimeComponentType.PeriodicPulse)) return "脉";
+            if (ability.runtimeComponents.Any(c => c != null && c.enabled && c.type == AbilityRuntimeComponentType.SlotOverrideWindow)) return "连";
+            return string.Empty;
+        }
+
+        private static string BuildRuntimeSummary(ModularAbilityDef? ability)
+        {
+            if (ability?.runtimeComponents == null)
+            {
+                return string.Empty;
+            }
+
+            List<string> parts = new List<string>();
+            foreach (AbilityRuntimeComponentConfig component in ability.runtimeComponents.Where(static c => c != null && c.enabled).Take(3))
+            {
+                string key = $"CS_Ability_RuntimeComponentType_{component.type}";
+                parts.Add(key.CanTranslate() ? (string)key.Translate() : component.type.ToString());
+            }
+
+            return string.Join(" / ", parts);
         }
 
         private static string BuildSlotBadge(CompPawnSkin comp, VisibleAbilitySlot slot, bool isCombo, bool isSecondStage)

@@ -100,7 +100,7 @@ namespace CharacterStudio.UI
         {
             return type switch
             {
-                AbilityRuntimeComponentType.SlotOverrideWindow => "CS_Studio_Runtime_Desc_QComboWindow".Translate(),
+                AbilityRuntimeComponentType.SlotOverrideWindow => "CS_Studio_Runtime_Desc_SlotOverrideWindow".Translate(),
                 AbilityRuntimeComponentType.HotkeyOverride => "CS_Studio_Runtime_Desc_HotkeyOverride".Translate(),
                 AbilityRuntimeComponentType.FollowupCooldownGate => "CS_Studio_Runtime_Desc_FollowupCooldownGate".Translate(),
                 AbilityRuntimeComponentType.SmartJump => "CS_Studio_Runtime_Desc_SmartJump".Translate(),

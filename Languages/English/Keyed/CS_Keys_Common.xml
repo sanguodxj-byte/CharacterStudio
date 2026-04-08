@@ -280,6 +280,27 @@
     <CS_Studio_Ability_Hotkey_C>C Slot</CS_Studio_Ability_Hotkey_C>
     <CS_Studio_Ability_Hotkey_V>V Slot</CS_Studio_Ability_Hotkey_V>
     <CS_Studio_Ability_Hotkey_WCombo>W Combo Slot</CS_Studio_Ability_Hotkey_WCombo>
+    <CS_Studio_Runtime_Desc_SlotOverrideWindow>Temporarily replace a specified hotkey slot with another ability for a short window.</CS_Studio_Runtime_Desc_SlotOverrideWindow>
+    <CS_Ability_CarrierType_Self>Self</CS_Ability_CarrierType_Self>
+    <CS_Ability_CarrierType_Touch>Touch</CS_Ability_CarrierType_Touch>
+    <CS_Ability_CarrierType_Target>Target</CS_Ability_CarrierType_Target>
+    <CS_Ability_CarrierType_Projectile>Projectile</CS_Ability_CarrierType_Projectile>
+    <CS_Ability_CarrierType_Area>Area</CS_Ability_CarrierType_Area>
+    <CS_Ability_TargetType_Self>Self</CS_Ability_TargetType_Self>
+    <CS_Ability_TargetType_Entity>Entity</CS_Ability_TargetType_Entity>
+    <CS_Ability_TargetType_Cell>Cell</CS_Ability_TargetType_Cell>
+    <CS_Studio_VFX_Type_SteamBurst>Steam Burst</CS_Studio_VFX_Type_SteamBurst>
+    <CS_Studio_VFX_Type_EmberBurst>Ember Burst</CS_Studio_VFX_Type_EmberBurst>
+    <CS_Studio_VFX_Type_ShockBurst>Shock Burst</CS_Studio_VFX_Type_ShockBurst>
+    <CS_Studio_VFX_Type_DustRing>Dust Ring</CS_Studio_VFX_Type_DustRing>
+    <CS_Studio_VFX_Type_ArcSparkBurst>Arc Spark Burst</CS_Studio_VFX_Type_ArcSparkBurst>
+    <CS_Studio_VFX_Type_FlameSurge>Flame Surge</CS_Studio_VFX_Type_FlameSurge>
+    <CS_Studio_VFX_Desc_SteamBurst>Vanilla steam/smoke-style burst, suitable for frost mist, heat haze, and landing afterwaves.</CS_Studio_VFX_Desc_SteamBurst>
+    <CS_Studio_VFX_Desc_EmberBurst>Vanilla ember and spark scatter, suitable for flame slashes, burning exhaust, and hot impact points.</CS_Studio_VFX_Desc_EmberBurst>
+    <CS_Studio_VFX_Desc_ShockBurst>Vanilla electric flash and spark shock burst, suitable for lightning, shock, and EMP skills.</CS_Studio_VFX_Desc_ShockBurst>
+    <CS_Studio_VFX_Desc_DustRing>Vanilla dust ring shockwave, suitable for ground slam, knockback, landing impact, and zone activation.</CS_Studio_VFX_Desc_DustRing>
+    <CS_Studio_VFX_Desc_ArcSparkBurst>Vanilla clustered arc sparks, suitable for chain bounce, quick burst hits, and spell impact feedback.</CS_Studio_VFX_Desc_ArcSparkBurst>
+    <CS_Studio_VFX_Desc_FlameSurge>Vanilla fire surge with rising smoke, suitable for flame breath, ignition burst, and heat rush effects.</CS_Studio_VFX_Desc_FlameSurge>
     <CS_Studio_Warn_ImportMissingTexturesDetail>Imported from {0}, but {1} external textures were missing and have been skipped safely:\n{2}</CS_Studio_Warn_ImportMissingTexturesDetail>
     <CS_Studio_Warn_ImportMissingTexturesStatus>Import completed with {0} missing external textures</CS_Studio_Warn_ImportMissingTexturesStatus>
     <CS_Studio_Warn_NoLayers>Warning: No layers in current skin, continue export?</CS_Studio_Warn_NoLayers>

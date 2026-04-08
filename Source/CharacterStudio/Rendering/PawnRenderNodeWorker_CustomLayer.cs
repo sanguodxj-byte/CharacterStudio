@@ -54,6 +54,20 @@ namespace CharacterStudio.Rendering
                 // 否则游戏内会与编辑器预览使用两套完全不同的面部表现。
                 if (customNode.layeredFacePartType.HasValue)
                 {
+                    if (customNode.layeredFacePartType == LayeredFacePartType.Mouth && parms.pawn != null)
+                    {
+                        CompPawnSkin? skinComp = parms.pawn.TryGetComp<CompPawnSkin>();
+                        PawnFaceConfig? faceConfig = skinComp?.ActiveSkin?.faceConfig;
+                        if (skinComp != null
+                            && faceConfig != null
+                            && faceConfig.workflowMode == FaceWorkflowMode.LayeredDynamic
+                            && HasReplacementMouthTextureForCurrentState(faceConfig, skinComp)
+                            && skinComp.GetEffectiveExpression() != ExpressionType.Neutral)
+                        {
+                            return false;
+                        }
+                    }
+
                     EnsureProgrammaticFaceStateUpdated(customNode, parms.pawn);
                     if (customNode.targetProgrammaticAlpha <= ProgrammaticFaceAlphaSnapThreshold
                         && customNode.currentProgrammaticAlpha <= ProgrammaticFaceAlphaSnapThreshold)
@@ -896,6 +910,7 @@ namespace CharacterStudio.Rendering
                 hasReplacementEyeOverlay,
                 eyeVariant,
                 pupilVariant,
+                skinComp.CurrentFaceRuntimeState.winkSide,
                 expression,
                 pawn.Rotation,
                 gazeOffset,
@@ -909,6 +924,7 @@ namespace CharacterStudio.Rendering
                 case LayeredFacePartType.Pupil:
                 case LayeredFacePartType.UpperLid:
                 case LayeredFacePartType.LowerLid:
+                case LayeredFacePartType.ReplacementEye:
                 case LayeredFacePartType.Mouth:
                 case LayeredFacePartType.Hair:
                 case LayeredFacePartType.Blush:
@@ -1619,6 +1635,14 @@ namespace CharacterStudio.Rendering
             if (!HasActiveReplacementEye(customNode, pawn, skinComp))
                 return false;
 
+            LayeredFacePartSide activeReplacementSide = GetActiveReplacementEyeSide(customNode, skinComp, expression);
+            if (activeReplacementSide != LayeredFacePartSide.None
+                && customNode.layeredFacePartSide != LayeredFacePartSide.None
+                && customNode.layeredFacePartSide != activeReplacementSide)
+            {
+                return false;
+            }
+
             if (expression == ExpressionType.Blink)
                 return true;
 
@@ -1629,7 +1653,29 @@ namespace CharacterStudio.Rendering
                     || blinkPhase == BlinkPhase.ShowReplacementEye
                     || blinkPhase == BlinkPhase.RestoreBaseEyeParts;
             }
-            return expression == ExpressionType.Dead;
+
+            if (expression == ExpressionType.Dead)
+                return true;
+
+            return true;
+        }
+
+        private static LayeredFacePartSide GetActiveReplacementEyeSide(
+            PawnRenderNode_Custom customNode,
+            CompPawnSkin skinComp,
+            ExpressionType expression)
+        {
+            if (expression == ExpressionType.Wink)
+            {
+                LayeredFacePartSide winkSide = skinComp.GetEffectiveWinkSide();
+                if (winkSide == LayeredFacePartSide.Left || winkSide == LayeredFacePartSide.Right)
+                    return winkSide;
+            }
+
+            if (customNode.layeredFacePartType == LayeredFacePartType.ReplacementEye)
+                return customNode.layeredFacePartSide;
+
+            return LayeredFacePartSide.None;
         }
 
         private bool ShouldHideUpperLidAtBlinkEndpoint(PawnRenderNode_Custom customNode, CompPawnSkin skinComp, ExpressionType expression)
@@ -1668,9 +1714,32 @@ namespace CharacterStudio.Rendering
             if (faceConfig.CountLayeredParts(LayeredFacePartType.ReplacementEye) == 0)
                 return false;
 
+            LayeredFacePartSide preferredSide = skinComp.GetEffectiveExpression() == ExpressionType.Wink
+                ? skinComp.GetEffectiveWinkSide()
+                : LayeredFacePartSide.None;
+
             foreach (ExpressionType candidate in EnumerateReplacementEyeExpressions(skinComp))
             {
-                if (HasReplacementEyeTexture(faceConfig, candidate))
+                if (HasReplacementEyeTexture(faceConfig, candidate, preferredSide))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private bool HasReplacementMouthTextureForCurrentState(PawnFaceConfig faceConfig, CompPawnSkin skinComp)
+        {
+            if (faceConfig.CountLayeredParts(LayeredFacePartType.ReplacementMouth) == 0)
+                return false;
+
+            foreach (ExpressionType candidate in EnumerateReplacementMouthExpressions(skinComp))
+            {
+                string directPath = faceConfig.GetLayeredDirectionalPartPath(LayeredFacePartType.ReplacementMouth, candidate, Rot4.South);
+                if (!string.IsNullOrWhiteSpace(directPath))
+                    return true;
+
+                LayeredFacePartConfig? config = faceConfig.GetLayeredPartConfig(LayeredFacePartType.ReplacementMouth, candidate);
+                if (config != null && config.enabled && config.HasAnyTexture())
                     return true;
             }
 
@@ -1690,9 +1759,7 @@ namespace CharacterStudio.Rendering
 
             switch (expression)
             {
-                case ExpressionType.Cheerful:
-                case ExpressionType.Lovin:
-                case ExpressionType.SocialRelax:
+                case ExpressionType.Wink:
                     yield return ExpressionType.Happy;
                     break;
                 case ExpressionType.Dead:
@@ -1702,21 +1769,53 @@ namespace CharacterStudio.Rendering
                 case ExpressionType.Sleeping:
                     yield return ExpressionType.Blink;
                     break;
+                case ExpressionType.Cheerful:
+                case ExpressionType.Lovin:
+                case ExpressionType.SocialRelax:
+                    yield return ExpressionType.Happy;
+                    break;
             }
+
+            if (expression != ExpressionType.Neutral)
+                yield return ExpressionType.Neutral;
         }
 
-        private static bool HasReplacementEyeTexture(PawnFaceConfig faceConfig, ExpressionType expression)
+        private static IEnumerable<ExpressionType> EnumerateReplacementMouthExpressions(CompPawnSkin skinComp)
         {
-            string directPath = faceConfig.GetLayeredDirectionalPartPath(LayeredFacePartType.ReplacementEye, expression, LayeredFacePartSide.None, Rot4.South);
-            if (!string.IsNullOrWhiteSpace(directPath))
-                return true;
+            ExpressionType expression = skinComp.GetEffectiveExpression();
+            yield return expression;
 
-            string anyPath = faceConfig.GetAnyLayeredPartPath(LayeredFacePartType.ReplacementEye);
-            if (string.IsNullOrWhiteSpace(anyPath))
-                return false;
+            switch (expression)
+            {
+                case ExpressionType.Cheerful:
+                case ExpressionType.Lovin:
+                case ExpressionType.SocialRelax:
+                case ExpressionType.Wink:
+                    yield return ExpressionType.Happy;
+                    break;
+                case ExpressionType.Dead:
+                    yield return ExpressionType.Sleeping;
+                    break;
+            }
 
-            LayeredFacePartConfig? config = faceConfig.GetLayeredPartConfig(LayeredFacePartType.ReplacementEye, expression, LayeredFacePartSide.None);
-            return config != null && config.enabled && config.HasAnyTexture();
+            if (expression != ExpressionType.Neutral)
+                yield return ExpressionType.Neutral;
+        }
+
+        private static bool HasReplacementEyeTexture(PawnFaceConfig faceConfig, ExpressionType expression, LayeredFacePartSide preferredSide)
+        {
+            foreach (LayeredFacePartSide side in EnumerateReplacementEyeSides(preferredSide))
+            {
+                string directPath = faceConfig.GetLayeredDirectionalPartPath(LayeredFacePartType.ReplacementEye, expression, side, Rot4.South);
+                if (!string.IsNullOrWhiteSpace(directPath))
+                    return true;
+
+                LayeredFacePartConfig? config = faceConfig.GetLayeredPartConfig(LayeredFacePartType.ReplacementEye, expression, side);
+                if (config != null && config.enabled && config.HasAnyTexture())
+                    return true;
+            }
+
+            return false;
         }
 
         private LayeredFacePartType GetProgrammaticEmotionPartType(PawnRenderNode_Custom customNode)
@@ -2862,7 +2961,9 @@ namespace CharacterStudio.Rendering
 
             if (partType == LayeredFacePartType.Eye)
             {
-                string eyeNeutralBasePath = faceConfig.GetAnyDirectionalLayeredPartPath(partType, side, facing);
+                string eyeNeutralBasePath = faceConfig.GetLayeredDirectionalPartPath(partType, ExpressionType.Neutral, side, facing);
+                if (string.IsNullOrWhiteSpace(eyeNeutralBasePath))
+                    eyeNeutralBasePath = faceConfig.GetAnyDirectionalLayeredPartPath(partType, side, facing);
                 string? pairedVariantPath = TryResolveLayeredPairedPartVariantPath(
                     customNode,
                     pawn,
@@ -2872,27 +2973,34 @@ namespace CharacterStudio.Rendering
                     return pairedVariantPath;
             }
 
-            if (partType == LayeredFacePartType.Eye
-                || partType == LayeredFacePartType.Pupil
-                || partType == LayeredFacePartType.UpperLid
-                || partType == LayeredFacePartType.LowerLid)
-            {
-                string? replacementSetPath = skinComp == null
-                    ? null
-                    : ResolveReplacementEyePath(faceConfig, skinComp, facing);
-                if (!string.IsNullOrWhiteSpace(replacementSetPath))
-                    return replacementSetPath;
-            }
-
             string neutralPath = isOverlay
                 ? faceConfig.GetLayeredDirectionalPartPath(partType, ExpressionType.Neutral, overlayId, facing)
                 : faceConfig.GetLayeredDirectionalPartPath(partType, ExpressionType.Neutral, side, facing);
 
+            if (!isOverlay
+                && PawnFaceConfig.UsesStrictExpressionFallback(partType)
+                && string.IsNullOrWhiteSpace(neutralPath))
+            {
+                neutralPath = faceConfig.GetAnyDirectionalLayeredPartPath(partType, side, facing);
+            }
+
             if (partType == LayeredFacePartType.ReplacementEye && skinComp != null)
             {
-                string? replacementEyePath = ResolveReplacementEyePath(faceConfig, skinComp, facing);
+                string? replacementEyePath = ResolveReplacementEyePath(faceConfig, skinComp, facing, side);
                 if (!string.IsNullOrWhiteSpace(replacementEyePath))
                     return replacementEyePath;
+
+                return null;
+            }
+
+            if (partType == LayeredFacePartType.ReplacementMouth && skinComp != null)
+            {
+                foreach (ExpressionType candidate in EnumerateReplacementMouthExpressions(skinComp))
+                {
+                    string replacementMouthPath = faceConfig.GetLayeredDirectionalPartPath(LayeredFacePartType.ReplacementMouth, candidate, facing);
+                    if (!string.IsNullOrWhiteSpace(replacementMouthPath))
+                        return replacementMouthPath;
+                }
 
                 return null;
             }
@@ -2953,7 +3061,7 @@ namespace CharacterStudio.Rendering
             if (!string.IsNullOrWhiteSpace(neutralPath))
                 return neutralPath;
 
-            if (!isOverlay)
+            if (!isOverlay && !PawnFaceConfig.UsesStrictExpressionFallback(partType))
             {
                 string anyPath = partType == LayeredFacePartType.Base
                     ? faceConfig.GetAnyDirectionalLayeredPartPath(partType, facing)
@@ -3054,21 +3162,38 @@ namespace CharacterStudio.Rendering
             return null;
         }
 
-        private string? ResolveReplacementEyePath(PawnFaceConfig faceConfig, CompPawnSkin skinComp, Rot4 facing)
+        private string? ResolveReplacementEyePath(PawnFaceConfig faceConfig, CompPawnSkin skinComp, Rot4 facing, LayeredFacePartSide preferredSide)
         {
             foreach (ExpressionType candidate in EnumerateReplacementEyeExpressions(skinComp))
             {
-                string resolved = faceConfig.GetLayeredDirectionalPartPath(
-                    LayeredFacePartType.ReplacementEye,
-                    candidate,
-                    LayeredFacePartSide.None,
-                    facing);
+                foreach (LayeredFacePartSide side in EnumerateReplacementEyeSides(preferredSide))
+                {
+                    string resolved = faceConfig.GetLayeredDirectionalPartPath(
+                        LayeredFacePartType.ReplacementEye,
+                        candidate,
+                        side,
+                        facing);
 
-                if (!string.IsNullOrWhiteSpace(resolved))
-                    return resolved;
+                    if (!string.IsNullOrWhiteSpace(resolved))
+                        return resolved;
+                }
             }
 
             return null;
+        }
+
+        private static IEnumerable<LayeredFacePartSide> EnumerateReplacementEyeSides(LayeredFacePartSide preferredSide)
+        {
+            if (preferredSide != LayeredFacePartSide.None)
+                yield return preferredSide;
+
+            yield return LayeredFacePartSide.None;
+
+            if (preferredSide != LayeredFacePartSide.Left)
+                yield return LayeredFacePartSide.Left;
+
+            if (preferredSide != LayeredFacePartSide.Right)
+                yield return LayeredFacePartSide.Right;
         }
 
         private string? TryResolveLayeredEyeAnimationVariantPath(PawnRenderNode_Custom customNode, Pawn pawn, string? neutralPath)
@@ -3322,6 +3447,7 @@ namespace CharacterStudio.Rendering
                 case LayeredFacePartType.UpperLid:
                 case LayeredFacePartType.LowerLid:
                 case LayeredFacePartType.Mouth:
+                case LayeredFacePartType.ReplacementMouth:
                 case LayeredFacePartType.Blush:
                 case LayeredFacePartType.Tear:
                 case LayeredFacePartType.Sweat:
@@ -3342,9 +3468,12 @@ namespace CharacterStudio.Rendering
                 case LayeredFacePartType.UpperLid:
                 case LayeredFacePartType.LowerLid:
                     return LayerRole.Lid;
+                case LayeredFacePartType.ReplacementEye:
+                    return LayerRole.Eye;
                 case LayeredFacePartType.Pupil:
                     return LayerRole.Eye;
                 case LayeredFacePartType.Mouth:
+                case LayeredFacePartType.ReplacementMouth:
                     return LayerRole.Mouth;
                 case LayeredFacePartType.Blush:
                 case LayeredFacePartType.Tear:

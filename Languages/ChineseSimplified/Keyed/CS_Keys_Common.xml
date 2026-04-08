@@ -348,6 +348,27 @@
     <CS_Studio_Ability_Hotkey_C>C 槽位</CS_Studio_Ability_Hotkey_C>
     <CS_Studio_Ability_Hotkey_V>V 槽位</CS_Studio_Ability_Hotkey_V>
     <CS_Studio_Ability_Hotkey_WCombo>W 连段槽位</CS_Studio_Ability_Hotkey_WCombo>
+    <CS_Studio_Runtime_Desc_SlotOverrideWindow>在短时间内把指定热键槽位临时替换为另一个技能。</CS_Studio_Runtime_Desc_SlotOverrideWindow>
+    <CS_Ability_CarrierType_Self>自身</CS_Ability_CarrierType_Self>
+    <CS_Ability_CarrierType_Touch>接触</CS_Ability_CarrierType_Touch>
+    <CS_Ability_CarrierType_Target>指定目标</CS_Ability_CarrierType_Target>
+    <CS_Ability_CarrierType_Projectile>投射物</CS_Ability_CarrierType_Projectile>
+    <CS_Ability_CarrierType_Area>范围</CS_Ability_CarrierType_Area>
+    <CS_Ability_TargetType_Self>自身</CS_Ability_TargetType_Self>
+    <CS_Ability_TargetType_Entity>实体</CS_Ability_TargetType_Entity>
+    <CS_Ability_TargetType_Cell>地块</CS_Ability_TargetType_Cell>
+    <CS_Studio_VFX_Type_SteamBurst>蒸汽爆散</CS_Studio_VFX_Type_SteamBurst>
+    <CS_Studio_VFX_Type_EmberBurst>余烬喷溅</CS_Studio_VFX_Type_EmberBurst>
+    <CS_Studio_VFX_Type_ShockBurst>电震爆闪</CS_Studio_VFX_Type_ShockBurst>
+    <CS_Studio_VFX_Type_DustRing>尘环冲击</CS_Studio_VFX_Type_DustRing>
+    <CS_Studio_VFX_Type_ArcSparkBurst>电弧火花束</CS_Studio_VFX_Type_ArcSparkBurst>
+    <CS_Studio_VFX_Type_FlameSurge>烈焰翻涌</CS_Studio_VFX_Type_FlameSurge>
+    <CS_Studio_VFX_Desc_SteamBurst>原版蒸汽/烟雾风格爆散，适合冰雾、热浪、落点余波。</CS_Studio_VFX_Desc_SteamBurst>
+    <CS_Studio_VFX_Desc_EmberBurst>原版余烬与火花喷溅，适合火焰斩击、燃烧尾焰、炽热爆点。</CS_Studio_VFX_Desc_EmberBurst>
+    <CS_Studio_VFX_Desc_ShockBurst>原版电光爆闪与火花冲击，适合雷击、感电、EMP 类技能。</CS_Studio_VFX_Desc_ShockBurst>
+    <CS_Studio_VFX_Desc_DustRing>原版尘圈式冲击波，适合震地、击退、落地砸击和领域展开。</CS_Studio_VFX_Desc_DustRing>
+    <CS_Studio_VFX_Desc_ArcSparkBurst>原版电弧火花簇射，适合链式弹跳、短促爆发与法术命中反馈。</CS_Studio_VFX_Desc_ArcSparkBurst>
+    <CS_Studio_VFX_Desc_FlameSurge>原版火焰涌动与烟热上升，适合喷焰、爆燃和热流冲锋。</CS_Studio_VFX_Desc_FlameSurge>
     <CS_Studio_Warn_ImportMissingTexturesDetail>已从 {0} 导入，但有 {1} 个外部纹理缺失，系统已安全跳过：\n{2}</CS_Studio_Warn_ImportMissingTexturesDetail>
     <CS_Studio_Warn_ImportMissingTexturesStatus>导入完成，但有 {0} 个外部纹理缺失</CS_Studio_Warn_ImportMissingTexturesStatus>
     <CS_Studio_Warn_NoLayers>警告：当前皮肤没有任何图层，是否仍要导出？</CS_Studio_Warn_NoLayers>

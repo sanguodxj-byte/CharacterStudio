@@ -966,6 +966,18 @@ namespace CharacterStudio.UI
                     return new Color(0.66f, 0.68f, 0.74f);
                 case AbilityVisualEffectType.ExplosionEffect:
                     return new Color(1f, 0.48f, 0.34f);
+                case AbilityVisualEffectType.SteamBurst:
+                    return new Color(0.82f, 0.82f, 0.86f);
+                case AbilityVisualEffectType.EmberBurst:
+                    return new Color(1f, 0.68f, 0.22f);
+                case AbilityVisualEffectType.ShockBurst:
+                    return new Color(0.56f, 0.82f, 1f);
+                case AbilityVisualEffectType.DustRing:
+                    return new Color(0.72f, 0.66f, 0.56f);
+                case AbilityVisualEffectType.ArcSparkBurst:
+                    return new Color(0.74f, 0.92f, 1f);
+                case AbilityVisualEffectType.FlameSurge:
+                    return new Color(1f, 0.42f, 0.16f);
                 default:
                     return Color.white;
             }

@@ -251,11 +251,26 @@ namespace CharacterStudio.Rendering
             // 缓存键：路径 + shader 名称 + 颜色 RGBA + tickKey（帧动画每帧独立缓存）
             string key = BuildCacheKey(path, shader, color, tickKey);
             if (graphicCache.TryGetValue(key, out var cached))
-                return cached;
+            {
+                if (CanCacheGraphic(cached))
+                    return cached;
+
+                graphicCache.Remove(key);
+            }
 
             Graphic g = BuildGraphic(path, shader, color);
-            graphicCache[key] = g;
+            if (CanCacheGraphic(g))
+                graphicCache[key] = g;
+
             return g;
+        }
+
+        private static bool CanCacheGraphic(Graphic graphic)
+        {
+            if (graphic is Graphic_Runtime runtimeGraphic)
+                return runtimeGraphic.IsInitializedSuccessfully;
+
+            return true;
         }
 
         private static Graphic BuildGraphic(string path, Shader shader, Color color)

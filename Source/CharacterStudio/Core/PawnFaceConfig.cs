@@ -30,11 +30,13 @@ namespace CharacterStudio.Core
         LowerLid,
         ReplacementEye,
         Mouth,
+        ReplacementMouth,
         Blush,
         Sweat,
         Tear,
         Hair,
-        Overlay
+        Overlay,
+        OverlayTop
     }
 
     public enum LayeredFacePartSide
@@ -76,6 +78,7 @@ namespace CharacterStudio.Core
         Angry,          // 愤怒（心理崩溃 / 攻击性精神状态）
         Scared,         // 恐惧（逃跑 / Panic 精神状态）
         Shock,          // 震惊（受到攻击，NL FA Reactive/ReceivedAnAttack）
+        Wink,           // 眨单眼（单眼表情语义，支持左右侧别）
         WaitCombat,     // 备战（NL FA ForJobs/WaitCombat — 举枪警戒状态）
         AttackMelee,    // 近战攻击中（NL FA ForJobs/AttackMelee）
         AttackRanged,   // 远程攻击中（NL FA ForJobs/AttackStatic）
@@ -677,6 +680,7 @@ namespace CharacterStudio.Core
         public static bool IsOverlayPart(LayeredFacePartType partType)
         {
             return partType == LayeredFacePartType.Overlay
+                || partType == LayeredFacePartType.OverlayTop
                 || partType == LayeredFacePartType.Hair;
         }
 
@@ -689,6 +693,7 @@ namespace CharacterStudio.Core
                 case LayeredFacePartType.Pupil:
                 case LayeredFacePartType.UpperLid:
                 case LayeredFacePartType.LowerLid:
+                case LayeredFacePartType.ReplacementEye:
                     return true;
                 default:
                     return false;
@@ -755,6 +760,9 @@ namespace CharacterStudio.Core
         {
             if (originalPartType == LayeredFacePartType.Hair)
                 return LayeredFacePartType.Hair;
+
+            if (originalPartType == LayeredFacePartType.OverlayTop)
+                return LayeredFacePartType.OverlayTop;
 
             switch (GetOverlayKind(overlayId))
             {
@@ -1219,6 +1227,20 @@ namespace CharacterStudio.Core
             }
 
             return string.Empty;
+        }
+
+        public static bool UsesStrictExpressionFallback(LayeredFacePartType partType)
+        {
+            switch (partType)
+            {
+                case LayeredFacePartType.Eye:
+                case LayeredFacePartType.Pupil:
+                case LayeredFacePartType.UpperLid:
+                case LayeredFacePartType.LowerLid:
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         public string GetAnyLayeredPartPath(LayeredFacePartType partType, LayeredFacePartSide side)

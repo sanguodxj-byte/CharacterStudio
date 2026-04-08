@@ -19,6 +19,7 @@ namespace CharacterStudio.UI
                 { "Default", ExpressionType.Neutral },
                 { "Sleep", ExpressionType.Sleeping },
                 { "Sleeping", ExpressionType.Sleeping },
+                { "Wink", ExpressionType.Wink },
                 { "Combat", ExpressionType.WaitCombat },
                 { "Melee", ExpressionType.AttackMelee },
                 { "Ranged", ExpressionType.AttackRanged },
@@ -45,6 +46,7 @@ namespace CharacterStudio.UI
                 { "ReplacementEyes", LayeredFacePartType.ReplacementEye },
                 { "Mouth", LayeredFacePartType.Mouth },
                 { "Hair", LayeredFacePartType.Hair },
+                { "OverlayTop", LayeredFacePartType.OverlayTop },
             };
 
         private static readonly HashSet<string> DirectionalVariantTokens =
@@ -207,6 +209,19 @@ namespace CharacterStudio.UI
             return Enum.TryParse(normalized, true, out expression);
         }
 
+        private static bool TryParseExpressionToken(string? token, out ExpressionType expression)
+        {
+            expression = ExpressionType.Neutral;
+            if (string.IsNullOrWhiteSpace(token))
+                return false;
+
+            string normalized = token!.Trim().Replace("-", "_").Replace(" ", string.Empty);
+            if (FullFaceExpressionFileAliases.TryGetValue(normalized, out expression))
+                return true;
+
+            return Enum.TryParse(normalized, true, out expression);
+        }
+
         private void ShowFullFaceAutoImportSummary(
             string directoryPath,
             string selectedBasePath,
@@ -275,7 +290,31 @@ namespace CharacterStudio.UI
             return true;
         }
 
-        private void AutoPopulateLayeredFacePartsFromDirectory(PawnFaceConfig fc, string directoryPath, bool switchedFromFullFaceMode = false)
+        private bool TryAppendLayeredFacePartsFromSelection(PawnFaceConfig fc, string? selectedPath)
+        {
+            if (fc == null || string.IsNullOrWhiteSpace(selectedPath))
+                return false;
+
+            string resolvedPath = selectedPath!.Trim();
+            string? directory = null;
+
+            if (Directory.Exists(resolvedPath))
+            {
+                directory = resolvedPath;
+            }
+            else if (File.Exists(resolvedPath))
+            {
+                directory = Path.GetDirectoryName(resolvedPath);
+            }
+
+            if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
+                return false;
+
+            AutoPopulateLayeredFacePartsFromDirectory(fc, directory!, appendOnly: true);
+            return true;
+        }
+
+        private void AutoPopulateLayeredFacePartsFromDirectory(PawnFaceConfig fc, string directoryPath, bool switchedFromFullFaceMode = false, bool appendOnly = false)
         {
             Dictionary<string, string> originalLayeredPartPathBuffer = new Dictionary<string, string>(layeredPartPathBuffer, StringComparer.OrdinalIgnoreCase);
             Dictionary<ExpressionType, string> originalExprPathBuffer = new Dictionary<ExpressionType, string>(exprPathBuffer);
@@ -286,12 +325,14 @@ namespace CharacterStudio.UI
                     CaptureUndoSnapshot();
 
                 PawnFaceConfig importedFaceConfig = fc.Clone();
-                importedFaceConfig.layeredParts.Clear();
+                if (!appendOnly)
+                    importedFaceConfig.layeredParts.Clear();
                 importedFaceConfig.expressions.Clear();
                 importedFaceConfig.enabled = true;
                 importedFaceConfig.workflowMode = FaceWorkflowMode.LayeredDynamic;
                 importedFaceConfig.layeredSourceRoot = directoryPath;
-                importedFaceConfig.eyeDirectionConfig = null;
+                if (!appendOnly)
+                    importedFaceConfig.eyeDirectionConfig = null;
 
                 List<string> files = Directory.EnumerateFiles(directoryPath)
                     .Where(IsSupportedLayeredFaceTextureFile)
@@ -359,6 +400,9 @@ namespace CharacterStudio.UI
                     Rot4? facing = null)
                 {
                     Rot4 resolvedFacing = facing ?? Rot4.South;
+                    if (appendOnly && HasImportedLayeredEntry(importedFaceConfig, partType, expression, overlayId, side, resolvedFacing))
+                        return false;
+
                     ResolveAutoImportDirectionalPaths(
                         detectedFilePathMap,
                         texturePath,
@@ -508,9 +552,21 @@ namespace CharacterStudio.UI
                 TryApplyFirstAvailableStem(LayeredFacePartType.Hair, ExpressionType.Neutral, new[] { "Hair" });
 
                 TryApplyFirstAvailableStem(LayeredFacePartType.ReplacementEye, ExpressionType.Blink, new[] { "Eye_blink" });
+                TryApplyPairedNeutralParts(
+                    LayeredFacePartType.ReplacementEye,
+                    new[] { "Eye_blink_Left", "ReplacementEye_Left_blink", "ReplacementEye_Left_Blink" },
+                    new[] { "Eye_blink_Right", "ReplacementEye_Right_blink", "ReplacementEye_Right_Blink" });
 
                 bool hasDeadEye = TryApplyFirstAvailableStem(LayeredFacePartType.ReplacementEye, ExpressionType.Dead, new[] { "Eye_death", "Eye_dead" });
                 TryApplyFirstAvailableStem(LayeredFacePartType.ReplacementEye, ExpressionType.Sleeping, new[] { "Eye_closed" });
+                TryApplyPairedNeutralParts(
+                    LayeredFacePartType.ReplacementEye,
+                    new[] { "Eye_closed_Left", "ReplacementEye_Left_closed", "ReplacementEye_Left_Close" },
+                    new[] { "Eye_closed_Right", "ReplacementEye_Right_closed", "ReplacementEye_Right_Close" });
+                TryApplyPairedNeutralParts(
+                    LayeredFacePartType.ReplacementEye,
+                    new[] { "Eye_death_Left", "Eye_dead_Left", "ReplacementEye_Left_dead", "ReplacementEye_Left_Death" },
+                    new[] { "Eye_death_Right", "Eye_dead_Right", "ReplacementEye_Right_dead", "ReplacementEye_Right_Death" });
                 if (!hasDeadEye)
                 {
                     TryApplyFirstAvailableStem(LayeredFacePartType.ReplacementEye, ExpressionType.Dead, new[] { "Eye_closed" });
@@ -520,6 +576,18 @@ namespace CharacterStudio.UI
                     LayeredFacePartType.ReplacementEye,
                     new[] { ExpressionType.Happy, ExpressionType.Cheerful, ExpressionType.Lovin, ExpressionType.SocialRelax },
                     new[] { "Eye_closed_happy" });
+                TryApplyPairedNeutralParts(
+                    LayeredFacePartType.ReplacementEye,
+                    new[] { "Eye_closed_happy_Left", "Eye_happy_closed_Left", "ReplacementEye_Left_happy" },
+                    new[] { "Eye_closed_happy_Right", "Eye_happy_closed_Right", "ReplacementEye_Right_happy" });
+                TryApplyExpressionGroup(
+                    LayeredFacePartType.ReplacementEye,
+                    new[] { ExpressionType.Shock, ExpressionType.Scared },
+                    new[] { "Eye_shock", "Eye_scared", "Eye_wide" });
+                TryApplyPairedNeutralParts(
+                    LayeredFacePartType.ReplacementEye,
+                    new[] { "Eye_shock_Left", "Eye_scared_Left", "Eye_wide_Left" },
+                    new[] { "Eye_shock_Right", "Eye_scared_Right", "Eye_wide_Right" });
 
                 TryApplyExpressionGroup(
                     LayeredFacePartType.Mouth,
@@ -584,10 +652,35 @@ namespace CharacterStudio.UI
                         continue;
                     }
 
-                    if (Enum.TryParse(suffix, true, out ExpressionType scannedExpression))
+                    if (TryParseExpressionToken(suffix, out ExpressionType scannedExpression))
                     {
                         ApplyRecognized(scannedPartType, scannedExpression, filePath, fileStem, overlayId, scannedSide, scannedFacing);
                     }
+                }
+
+                foreach (string filePath in files)
+                {
+                    string fileStem = Path.GetFileNameWithoutExtension(filePath) ?? string.Empty;
+                    if (recognizedFileNames.Contains(fileStem) || !LooksLikeLayeredVariantFileName(fileStem))
+                        continue;
+
+                    if (!TryParseLayeredFaceFileName(
+                            filePath,
+                            out LayeredFacePartType scannedPartType,
+                            out LayeredFacePartSide scannedSide,
+                            out string? overlayId,
+                            out string? suffix,
+                            out Rot4 scannedFacing))
+                    {
+                        continue;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(suffix) || !TryParseExpressionToken(suffix, out ExpressionType scannedExpression))
+                        continue;
+
+                    string virtualBasePath = BuildVirtualVariantBasePath(filePath, fileStem);
+                    ApplyRecognized(scannedPartType, scannedExpression, virtualBasePath, fileStem, overlayId, scannedSide, scannedFacing);
+                    synthesizedLines.Add($"• {FormatLayeredAutoImportMatchLabel(scannedPartType, scannedExpression, overlayId, scannedSide)} ← {Path.GetFileName(filePath)} (虚拟基底)");
                 }
 
                 AutoConfigureProgrammaticLayeredFaceLogic(importedFaceConfig, detectedFileNames, detectedFilePathMap);
@@ -618,7 +711,8 @@ namespace CharacterStudio.UI
                 SyncImportedLayeredFaceBaseToHeadSlot(fc, hasLayeredFaceBase);
                 RebuildFaceImportBuffers(fc);
                 SyncLayeredFacePartsToEditableLayers(fc);
-                workingSkin.hideVanillaHead = hasLayeredFaceBase;
+                if (!appendOnly)
+                    workingSkin.hideVanillaHead = hasLayeredFaceBase;
 
                 ForceResetPreviewMannequin();
                 FinalizeMutatedEditorState(refreshPreview: true, refreshRenderTree: true);
@@ -630,7 +724,7 @@ namespace CharacterStudio.UI
                     synthesizedLines,
                     runtimeVariantFiles,
                     ignoredFiles,
-                    switchedFromFullFaceMode);
+                    switchedFromFullFaceMode || appendOnly);
             }
             catch (Exception ex)
             {
@@ -1177,6 +1271,7 @@ namespace CharacterStudio.UI
                 case LayeredFacePartType.Sweat:
                 case LayeredFacePartType.Tear:
                 case LayeredFacePartType.Overlay:
+                case LayeredFacePartType.OverlayTop:
                     return LayerVariantLogic.ChannelState;
                 case LayeredFacePartType.Pupil:
                     return LayerVariantLogic.EyeDirectionOnly;
@@ -1210,6 +1305,7 @@ namespace CharacterStudio.UI
                 case LayeredFacePartType.Sweat:
                 case LayeredFacePartType.Tear:
                 case LayeredFacePartType.Overlay:
+                case LayeredFacePartType.OverlayTop:
                     return LayerRole.Emotion;
                 default:
                     return LayerRole.Decoration;
@@ -1264,6 +1360,25 @@ namespace CharacterStudio.UI
                 default:
                     return 50.20f;
             }
+        }
+
+        private static bool HasImportedLayeredEntry(
+            PawnFaceConfig fc,
+            LayeredFacePartType partType,
+            ExpressionType expression,
+            string? overlayId,
+            LayeredFacePartSide side,
+            Rot4 facing)
+        {
+            if (PawnFaceConfig.IsOverlayPart(partType))
+            {
+                LayeredFacePartConfig? existingOverlay = fc.GetLayeredPartConfig(partType, expression, PawnFaceConfig.NormalizeOverlayId(overlayId));
+                return existingOverlay != null && existingOverlay.enabled && existingOverlay.HasAnyTexture();
+            }
+
+            LayeredFacePartSide normalizedSide = PawnFaceConfig.NormalizePartSide(partType, side);
+            LayeredFacePartConfig? existing = fc.GetLayeredPartConfig(partType, expression, normalizedSide);
+            return existing != null && existing.enabled && existing.HasAnyTexture();
         }
 
         private static float GetLegacyLayeredFaceDefaultDrawOrder(LayeredFacePartType partType, int overlayOrder = 0, string overlayId = "")
@@ -1489,12 +1604,14 @@ namespace CharacterStudio.UI
             List<string> tailSegments = segments.Skip(1).ToList();
 
             if (segments[0].Equals("Overlay", StringComparison.OrdinalIgnoreCase)
-                || segments[0].Equals("Overlays", StringComparison.OrdinalIgnoreCase)
+                || segments[0].Equals("OverlayTop", StringComparison.OrdinalIgnoreCase)
                 || segments[0].Equals("Hair", StringComparison.OrdinalIgnoreCase))
             {
-                partType = segments[0].Equals("Hair", StringComparison.OrdinalIgnoreCase) 
-                    ? LayeredFacePartType.Hair 
-                    : LayeredFacePartType.Overlay;
+                partType = segments[0].Equals("Hair", StringComparison.OrdinalIgnoreCase)
+                    ? LayeredFacePartType.Hair
+                    : segments[0].Equals("OverlayTop", StringComparison.OrdinalIgnoreCase)
+                        ? LayeredFacePartType.OverlayTop
+                        : LayeredFacePartType.Overlay;
 
                 while (tailSegments.Count > 0 && DirectionalVariantTokens.Contains(tailSegments[tailSegments.Count - 1]))
                 {
@@ -1524,7 +1641,7 @@ namespace CharacterStudio.UI
                 }
 
                 string lastSegment = tailSegments[tailSegments.Count - 1];
-                if (Enum.TryParse(lastSegment, true, out ExpressionType parsedExpression))
+                if (TryParseExpressionToken(lastSegment, out ExpressionType parsedExpression))
                 {
                     overlayId = PawnFaceConfig.NormalizeOverlayId(string.Join("_", tailSegments.Take(tailSegments.Count - 1)));
                     suffix = parsedExpression.ToString();
@@ -1548,17 +1665,13 @@ namespace CharacterStudio.UI
                 }
 
                 if (segments.Length > 1 && tailSegments.Count == 0)
-                {
                     return false;
-                }
 
                 partType = LayeredFacePartType.Overlay;
                 overlayId = PawnFaceConfig.NormalizeOverlayId(segments[0]);
                 suffix = tailSegments.Count == 0 ? null : string.Join("_", tailSegments);
-                if (!string.IsNullOrWhiteSpace(suffix) && Enum.TryParse(suffix, true, out ExpressionType overlayExpression))
-                {
+                if (!string.IsNullOrWhiteSpace(suffix) && TryParseExpressionToken(suffix, out ExpressionType overlayExpression))
                     suffix = overlayExpression.ToString();
-                }
 
                 return true;
             }
@@ -1569,7 +1682,7 @@ namespace CharacterStudio.UI
             }
 
             string? parsedExpressionSuffix = null;
-            if (tailSegments.Count > 0 && Enum.TryParse(tailSegments[tailSegments.Count - 1], true, out ExpressionType parsedPartExpression))
+            if (tailSegments.Count > 0 && TryParseExpressionToken(tailSegments[tailSegments.Count - 1], out ExpressionType parsedPartExpression))
             {
                 parsedExpressionSuffix = parsedPartExpression.ToString();
                 tailSegments.RemoveAt(tailSegments.Count - 1);
@@ -1602,6 +1715,16 @@ namespace CharacterStudio.UI
                 }
             }
 
+            if (partType == LayeredFacePartType.Eye && !string.IsNullOrWhiteSpace(parsedExpressionSuffix))
+            {
+                partType = LayeredFacePartType.ReplacementEye;
+            }
+
+            if (partType == LayeredFacePartType.Mouth && !string.IsNullOrWhiteSpace(parsedExpressionSuffix))
+            {
+                partType = LayeredFacePartType.ReplacementMouth;
+            }
+
             if (tailSegments.Count == 0)
             {
                 suffix = parsedExpressionSuffix;
@@ -1631,6 +1754,7 @@ namespace CharacterStudio.UI
                 case LayeredFacePartType.Pupil:
                 case LayeredFacePartType.UpperLid:
                 case LayeredFacePartType.LowerLid:
+                case LayeredFacePartType.ReplacementEye:
                     return true;
                 default:
                     return false;
@@ -1862,17 +1986,14 @@ namespace CharacterStudio.UI
             }
 
             string firstSegment = segments[0];
-            if (firstSegment.Equals("Overlay", StringComparison.OrdinalIgnoreCase))
+            if (firstSegment.Equals("Overlay", StringComparison.OrdinalIgnoreCase)
+                || firstSegment.Equals("OverlayTop", StringComparison.OrdinalIgnoreCase)
+                || firstSegment.Equals("Eye", StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }
 
-            if (!LayeredFacePartFileAliases.ContainsKey(firstSegment))
-            {
-                return false;
-            }
-
-            return !firstSegment.Equals("Base", StringComparison.OrdinalIgnoreCase);
+            return false;
         }
 
         private string BuildVirtualVariantBasePath(string sampleFilePath, string virtualStem)
@@ -1940,11 +2061,30 @@ namespace CharacterStudio.UI
                 && p.enabled
                 && !string.IsNullOrWhiteSpace(p.texPath)) ?? 0;
 
-            List<string> configuredParts = Enum.GetValues(typeof(LayeredFacePartType))
+            bool hasBaseSlot = workingSkin?.baseAppearance?.GetSlot(BaseAppearanceSlotType.Head)?.enabled == true
+                && !string.IsNullOrWhiteSpace(workingSkin.baseAppearance.GetSlot(BaseAppearanceSlotType.Head)?.texPath);
+
+            List<LayeredFacePartType> configuredPartTypes = Enum.GetValues(typeof(LayeredFacePartType))
                 .Cast<LayeredFacePartType>()
-                .Where(partType => fc.CountLayeredParts(partType) > 0)
+                .Where(partType => partType != LayeredFacePartType.Base && fc.CountLayeredParts(partType) > 0)
+                .ToList();
+
+            List<string> missingPartLabels = Enum.GetValues(typeof(LayeredFacePartType))
+                .Cast<LayeredFacePartType>()
+                .Where(partType => partType != LayeredFacePartType.Base && fc.CountLayeredParts(partType) <= 0)
+                .Select(GetLayeredFacePartTypeLabel)
+                .ToList();
+
+            List<string> configuredParts = configuredPartTypes
                 .Select(partType => $"• {GetLayeredFacePartTypeLabel(partType)}: {fc.CountLayeredParts(partType)}")
                 .ToList();
+
+            List<string> baseSlotLines = new List<string>();
+            if (hasBaseSlot)
+            {
+                string? basePath = workingSkin?.baseAppearance?.GetSlot(BaseAppearanceSlotType.Head)?.texPath;
+                baseSlotLines.Add($"• 基础槽位 / Head ← {Path.GetFileName(basePath ?? string.Empty)}");
+            }
 
             string summary =
                 (switchedFromFullFaceMode
@@ -1952,18 +2092,21 @@ namespace CharacterStudio.UI
                     : "分层面部自动识别完成。\n\n")
                 + $"目录：{directoryPath}\n"
                 + $"已配置条目：{assignedEntries}\n"
-                + $"已覆盖部件：{configuredParts.Count} / {Enum.GetValues(typeof(LayeredFacePartType)).Length}\n\n"
+                + $"已覆盖部件：{configuredPartTypes.Count} / {Enum.GetValues(typeof(LayeredFacePartType)).Length - 1}\n"
+                + "未配置部件：\n"
+                + (missingPartLabels.Count > 0 ? string.Join("\n", missingPartLabels.Select(label => $"• {label}")) : "（无）")
+                + "\n\n基础槽位：\n"
+                + (baseSlotLines.Count > 0 ? string.Join("\n", baseSlotLines) : "（未导入）")
+                + "\n\n"
                 + "部件概览：\n"
                 + (configuredParts.Count > 0 ? string.Join("\n", configuredParts) : "（无）")
                 + "\n\n已写入配置：\n"
                 + (matchedLines.Count > 0 ? string.Join("\n", matchedLines) : "（无）")
-                + "\n\n自动合成基础路径（已停用）：\n"
-                + (synthesizedLines.Count > 0 ? string.Join("\n", synthesizedLines) : "（无）")
                 + "\n\n未直接写入的派生文件：\n"
                 + (runtimeVariantFiles.Count > 0 ? string.Join("\n", runtimeVariantFiles) : "（无）")
                 + "\n\n未识别文件：\n"
                 + (ignoredFiles.Count > 0 ? string.Join("\n", ignoredFiles) : "（无）")
-                + "\n\n说明：paired 部件的 left / right 会作为左右独立层导入；_east / _west 会写入侧视资源，_north 会写入后视资源，Base 或 _south 会写入正视资源；仍未直接映射的命名才会保留在派生文件列表中。"
+                + "\n\n说明：paired 部件的 left / right 会作为左右独立层导入；_east / _west 会写入侧视资源，_north 会写入后视资源；Base 会导入至基础槽位；仍未直接映射的命名才会保留在派生文件列表中。"
                 + "\n分层面部条目会同步写入图层编辑器中的 [Face] 图层，左右独立部件会拆分为独立图层，后续可直接调整层级、位置与显示。";
 
             Find.WindowStack.Add(new Dialog_CopyableText("分层面部自动导入摘要", summary));

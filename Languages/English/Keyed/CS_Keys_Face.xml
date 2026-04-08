@@ -24,6 +24,7 @@
     <CS_Expression_Strip>Undressing</CS_Expression_Strip>
     <CS_Expression_Tired>Tired</CS_Expression_Tired>
     <CS_Expression_WaitCombat>On Guard</CS_Expression_WaitCombat>
+    <CS_Expression_Wink>Wink</CS_Expression_Wink>
     <CS_Expression_Working>Working</CS_Expression_Working>
     <CS_FaceComponent_Brows>Brows</CS_FaceComponent_Brows>
     <CS_FaceComponent_Eyes>Eyes</CS_FaceComponent_Eyes>
@@ -155,7 +156,9 @@
     <CS_Studio_Face_LayeredPart_Eye>Eye</CS_Studio_Face_LayeredPart_Eye>
     <CS_Studio_Face_LayeredPart_LowerLid>Lower Lid</CS_Studio_Face_LayeredPart_LowerLid>
     <CS_Studio_Face_LayeredPart_Mouth>Mouth</CS_Studio_Face_LayeredPart_Mouth>
+    <CS_Studio_Face_LayeredPart_ReplacementMouth>Replacement Mouth</CS_Studio_Face_LayeredPart_ReplacementMouth>
     <CS_Studio_Face_LayeredPart_Overlay>Overlay</CS_Studio_Face_LayeredPart_Overlay>
+    <CS_Studio_Face_LayeredPart_OverlayTop>Top Overlay</CS_Studio_Face_LayeredPart_OverlayTop>
     <CS_Studio_Face_LayeredPart_Pupil>Pupil</CS_Studio_Face_LayeredPart_Pupil>
     <CS_Studio_Face_LayeredPart_Sweat>Sweat</CS_Studio_Face_LayeredPart_Sweat>
     <CS_Studio_Face_LayeredPart_Tear>Tear</CS_Studio_Face_LayeredPart_Tear>
@@ -166,10 +169,12 @@
     <CS_Studio_Face_PreviewHint>Preview Mode</CS_Studio_Face_PreviewHint>
     <CS_Studio_Face_PreviewHintValue>Switch between auto and a forced expression in the preview panel to inspect the current face setup instantly</CS_Studio_Face_PreviewHintValue>
     <CS_Studio_Face_PreviewModeButton>Preview Mode</CS_Studio_Face_PreviewModeButton>
-    <CS_Studio_Face_EyeMapping_Title>Eye Replacements</CS_Studio_Face_EyeMapping_Title>
-    <CS_Studio_Face_EyeMapping_Empty>No recognizable Eye replacement textures were found in the current directory. All textures with the Eye_ prefix are scanned and can be configured as conditional replacements for the Eye part.</CS_Studio_Face_EyeMapping_Empty>
-    <CS_Studio_Face_OverlayMapping_Empty>No recognizable overlay textures were found in the current directory. Names should follow Overlay_xxx or an explicit semantic prefix.</CS_Studio_Face_OverlayMapping_Empty>
-    <CS_Studio_Face_OverlayMapping_Hint>Scan overlay textures and manually assign their semantic channel. Offset and scale are still better handled in external art tools.</CS_Studio_Face_OverlayMapping_Hint>
+    <CS_Studio_Face_EyeMapping_Title>Eye Mapping</CS_Studio_Face_EyeMapping_Title>
+    <CS_Studio_Face_EyeMapping_Empty>No recognizable Eye_ textures were found in the current directory. All textures with the Eye_ prefix are scanned and can be manually mapped to replacement-eye semantics.</CS_Studio_Face_EyeMapping_Empty>
+    <CS_Studio_Face_MouthMapping_Title>Mouth Mapping</CS_Studio_Face_MouthMapping_Title>
+    <CS_Studio_Face_MouthMapping_Empty>No recognizable Mouth_ textures were found in the current directory. All textures with the Mouth_ prefix are scanned and can be manually mapped to replacement-mouth semantics.</CS_Studio_Face_MouthMapping_Empty>
+    <CS_Studio_Face_OverlayMapping_Empty>No recognizable Overlay_ / OverlayTop_ textures were found in the current directory. All textures with those prefixes are scanned and can be manually mapped to overlay semantics.</CS_Studio_Face_OverlayMapping_Empty>
+    <CS_Studio_Face_OverlayMapping_Hint>Scan Overlay_ / OverlayTop_ textures and manually assign semantic routing and follow targets. Offset and scale are still better handled in external art tools.</CS_Studio_Face_OverlayMapping_Hint>
     <CS_Studio_Face_OverlayMapping_Suggested>Suggested {0}</CS_Studio_Face_OverlayMapping_Suggested>
     <CS_Studio_Face_OverlayMapping_Title>Overlay Mapping</CS_Studio_Face_OverlayMapping_Title>
     <CS_Studio_Face_OverlayMapping_Unmapped>Unmapped</CS_Studio_Face_OverlayMapping_Unmapped>
@@ -279,6 +284,7 @@
     <CS_Studio_Preview_ExpressionHint_Scared>Triggers during panic-like mental states such as Flee, Panic, or WildMan.</CS_Studio_Preview_ExpressionHint_Scared>
     <CS_Studio_Preview_ExpressionHint_Shock>Triggers briefly after taking damage that is not fully absorbed by shields.</CS_Studio_Preview_ExpressionHint_Shock>
     <CS_Studio_Preview_ExpressionHint_WaitCombat>Triggers when the current job name contains WaitCombat.</CS_Studio_Preview_ExpressionHint_WaitCombat>
+    <CS_Studio_Preview_ExpressionHint_Wink>Single-eye expression semantic. With sided ReplacementEye assets, only one eye is replaced; in preview, Left / Right eye direction decides which side winks.</CS_Studio_Preview_ExpressionHint_Wink>
     <CS_Studio_Preview_ExpressionHint_AttackMelee>Triggers when the current job name contains AttackMelee.</CS_Studio_Preview_ExpressionHint_AttackMelee>
     <CS_Studio_Preview_ExpressionHint_AttackRanged>Triggers when the current job name contains AttackStatic, Shoot, or Burst.</CS_Studio_Preview_ExpressionHint_AttackRanged>
     <CS_Studio_Preview_ExpressionHint_Eating>Triggers when the current job is Ingest.</CS_Studio_Preview_ExpressionHint_Eating>

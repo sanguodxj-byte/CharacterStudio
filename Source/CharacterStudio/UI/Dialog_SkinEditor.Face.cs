@@ -16,12 +16,16 @@ namespace CharacterStudio.UI
             public readonly string FilePath;
             public readonly string FileName;
             public readonly string SuggestedOverlayId;
+            public readonly LayeredFacePartType PartType;
+            public readonly string SuggestedToken;
 
-            public ScannedOverlayCandidate(string filePath, string fileName, string suggestedOverlayId)
+            public ScannedOverlayCandidate(string filePath, string fileName, string suggestedOverlayId, LayeredFacePartType partType, string suggestedToken)
             {
                 FilePath = filePath;
                 FileName = fileName;
                 SuggestedOverlayId = suggestedOverlayId;
+                PartType = partType;
+                SuggestedToken = suggestedToken;
             }
         }
 
@@ -30,12 +34,32 @@ namespace CharacterStudio.UI
             public readonly string FilePath;
             public readonly string FileName;
             public readonly ExpressionType SuggestedExpression;
+            public readonly LayeredFacePartSide Side;
+            public readonly string SuggestedToken;
 
-            public ScannedEyeCandidate(string filePath, string fileName, ExpressionType suggestedExpression)
+            public ScannedEyeCandidate(string filePath, string fileName, ExpressionType suggestedExpression, LayeredFacePartSide side, string suggestedToken)
             {
                 FilePath = filePath;
                 FileName = fileName;
                 SuggestedExpression = suggestedExpression;
+                Side = side;
+                SuggestedToken = suggestedToken;
+            }
+        }
+
+        private readonly struct ScannedMouthCandidate
+        {
+            public readonly string FilePath;
+            public readonly string FileName;
+            public readonly ExpressionType SuggestedExpression;
+            public readonly string SuggestedToken;
+
+            public ScannedMouthCandidate(string filePath, string fileName, ExpressionType suggestedExpression, string suggestedToken)
+            {
+                FilePath = filePath;
+                FileName = fileName;
+                SuggestedExpression = suggestedExpression;
+                SuggestedToken = suggestedToken;
             }
         }
 
@@ -421,21 +445,10 @@ namespace CharacterStudio.UI
             UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_PupilCore_Title".Translate());
             DrawPropertyHint(ref y, width, "CS_Studio_Face_PupilCore_Hint".Translate());
 
-            UIHelper.DrawSectionTitle(ref y, width, "正面 (Front)");
-            DrawFloatProperty(ref y, width, "左眼 X 偏移", ref pupilMotion.frontLeftOffsetX, -0.03f, 0.03f, "F6");
-            DrawFloatProperty(ref y, width, "右眼 X 偏移", ref pupilMotion.frontRightOffsetX, -0.03f, 0.03f, "F6");
-            DrawFloatProperty(ref y, width, "左眼 Z 偏移", ref pupilMotion.frontLeftOffsetZ, -0.03f, 0.03f, "F6");
-            DrawFloatProperty(ref y, width, "右眼 Z 偏移", ref pupilMotion.frontRightOffsetZ, -0.03f, 0.03f, "F6");
-            y += 2f;
-
-            UIHelper.DrawSectionTitle(ref y, width, "侧面 (East/West)");
-            DrawFloatProperty(ref y, width, "左眼 X 偏移", ref pupilMotion.sideLeftOffsetX, -0.03f, 0.03f, "F6");
-            DrawFloatProperty(ref y, width, "右眼 X 偏移", ref pupilMotion.sideRightOffsetX, -0.03f, 0.03f, "F6");
-            DrawFloatProperty(ref y, width, "左眼 Z 偏移", ref pupilMotion.sideLeftOffsetZ, -0.03f, 0.03f, "F6");
-            DrawFloatProperty(ref y, width, "右眼 Z 偏移", ref pupilMotion.sideRightOffsetZ, -0.03f, 0.03f, "F6");
-            y += 2f;
-
             UIHelper.DrawSectionTitle(ref y, width, "注视方向附加偏移");
+            DrawFloatProperty(ref y, width, "正面左眼 X 偏移", ref pupilMotion.frontLeftEyeOffsetX, -0.03f, 0.03f, "F6");
+            DrawFloatProperty(ref y, width, "正面右眼 X 偏移", ref pupilMotion.frontRightEyeOffsetX, -0.03f, 0.03f, "F6");
+            DrawFloatProperty(ref y, width, "侧面朝向 X 偏移", ref pupilMotion.sideFacingOffsetX, 0f, 0.03f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DirLeftOffsetX"), ref pupilMotion.dirLeftOffsetX, -0.03f, 0.03f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DirRightOffsetX"), ref pupilMotion.dirRightOffsetX, -0.03f, 0.03f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DirUpOffsetZ"), ref pupilMotion.dirUpOffsetZ, -0.03f, 0.03f, "F6");
@@ -505,11 +518,11 @@ namespace CharacterStudio.UI
                     .Where(IsSupportedLayeredFaceTextureFile)
                     .OrderBy(Path.GetFileNameWithoutExtension, StringComparer.OrdinalIgnoreCase))
                 {
-                    if (!TryParseEyeSemanticCandidate(filePath, out ExpressionType expression))
+                    if (!TryParseReplacementEyeCandidate(filePath, out ExpressionType expression, out LayeredFacePartSide side, out string suggestedToken))
                         continue;
 
                     string fileName = Path.GetFileName(filePath) ?? filePath;
-                    scannedEyeCandidates.Add(new ScannedEyeCandidate(filePath, fileName, expression));
+                    scannedEyeCandidates.Add(new ScannedEyeCandidate(filePath, fileName, expression, side, suggestedToken));
                 }
             }
             catch (Exception ex)
@@ -519,55 +532,189 @@ namespace CharacterStudio.UI
             }
         }
 
-        private static bool TryParseEyeSemanticCandidate(string filePath, out ExpressionType expression)
+        private readonly List<ScannedMouthCandidate> scannedMouthCandidates = new List<ScannedMouthCandidate>();
+        private string scannedMouthCacheSourceRoot = string.Empty;
+        private string scannedMouthCacheError = string.Empty;
+
+        private void DrawMouthSemanticMappingSection(ref float y, float width, PawnFaceConfig fc)
         {
-            expression = ExpressionType.Neutral;
-            string fileName = Path.GetFileNameWithoutExtension(filePath) ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(fileName) || !fileName.StartsWith("Eye_", StringComparison.OrdinalIgnoreCase))
-                return false;
+            y += 6f;
+            UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_MouthMapping_Title".Translate());
+            EnsureScannedMouthCandidates(fc);
 
-            string lower = fileName.ToLowerInvariant();
+            if (!string.IsNullOrWhiteSpace(scannedMouthCacheError))
+            {
+                DrawPropertyHint(ref y, width, scannedMouthCacheError);
+                return;
+            }
 
+            if (scannedMouthCandidates.Count == 0)
+            {
+                DrawPropertyHint(ref y, width, "CS_Studio_Face_MouthMapping_Empty".Translate());
+                return;
+            }
+
+            foreach (ScannedMouthCandidate candidate in scannedMouthCandidates)
+            {
+                DrawScannedMouthSemanticRow(fc, ref y, width, candidate);
+            }
+        }
+
+        private void EnsureScannedMouthCandidates(PawnFaceConfig fc)
+        {
+            string sourceRoot = fc.layeredSourceRoot ?? string.Empty;
+            if (ArePathStringsEquivalent(scannedMouthCacheSourceRoot, sourceRoot)
+                && (scannedMouthCandidates.Count > 0 || !string.IsNullOrWhiteSpace(scannedMouthCacheError)))
+            {
+                return;
+            }
+
+            scannedMouthCacheSourceRoot = sourceRoot;
+            scannedMouthCandidates.Clear();
+            scannedMouthCacheError = string.Empty;
+
+            if (string.IsNullOrWhiteSpace(sourceRoot))
+            {
+                scannedMouthCacheError = "请先设置 layered source root。";
+                return;
+            }
+
+            if (!Directory.Exists(sourceRoot))
+            {
+                scannedMouthCacheError = $"目录不存在：{sourceRoot}";
+                return;
+            }
+
+            try
+            {
+                foreach (string filePath in Directory.EnumerateFiles(sourceRoot)
+                    .Where(IsSupportedLayeredFaceTextureFile)
+                    .OrderBy(Path.GetFileNameWithoutExtension, StringComparer.OrdinalIgnoreCase))
+                {
+                    if (!TryParseReplacementMouthCandidate(filePath, out ExpressionType expression, out string suggestedToken))
+                    {
+                        continue;
+                    }
+
+                    string fileName = Path.GetFileName(filePath) ?? filePath;
+                    scannedMouthCandidates.Add(new ScannedMouthCandidate(filePath, fileName, expression, suggestedToken));
+                }
+            }
+            catch (Exception ex)
+            {
+                scannedMouthCandidates.Clear();
+                scannedMouthCacheError = $"扫描 Mouth 纹理失败：{ex.Message}";
+            }
+        }
+
+        private void DrawScannedMouthSemanticRow(PawnFaceConfig fc, ref float y, float width, ScannedMouthCandidate candidate)
+        {
+            string mappedPath = fc.GetLayeredPartPath(LayeredFacePartType.ReplacementMouth, candidate.SuggestedExpression);
+            string displayLabel = TryGetMouthMappedExpression(fc, candidate.FilePath, out ExpressionType mappedExpression)
+                ? GetExpressionTypeLabel(mappedExpression)
+                : (!string.IsNullOrWhiteSpace(candidate.SuggestedToken)
+                    ? candidate.SuggestedToken
+                    : GetExpressionTypeLabel(candidate.SuggestedExpression));
+
+            Rect rowRect = new Rect(0f, y, width, 24f);
+            Widgets.DrawBoxSolid(rowRect, UIHelper.AlternatingRowColor);
+            GUI.color = UIHelper.BorderColor;
+            Widgets.DrawBox(rowRect, 1);
+            GUI.color = Color.white;
+
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.MiddleLeft;
+            bool oldWordWrap = Text.WordWrap;
+            Text.WordWrap = false;
+            float labelWidth = Mathf.Max(56f, width - 88f);
+            Widgets.Label(new Rect(6f, y, labelWidth, 24f), TruncateSingleLineText(candidate.FileName, labelWidth - 4f));
+            Text.WordWrap = oldWordWrap;
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = GameFont.Small;
+
+            Rect buttonRect = new Rect(width - 84f, y + 2f, 80f, 20f);
+            if (UIHelper.DrawSelectionButton(buttonRect, displayLabel))
+            {
+                OpenScannedMouthSemanticMenu(fc, candidate);
+            }
+
+            string mappedName = string.IsNullOrWhiteSpace(mappedPath) ? "—" : Path.GetFileName(mappedPath);
+            TooltipHandler.TipRegion(rowRect, $"文件：{candidate.FileName}\n建议语义：{displayLabel}\n当前映射：{mappedName}");
+
+            y += 25f;
+        }
+
+        private void OpenScannedMouthSemanticMenu(PawnFaceConfig fc, ScannedMouthCandidate candidate)
+        {
+            var options = new List<FloatMenuOption>
+            {
+                new FloatMenuOption("CS_Studio_Face_OverlayMapping_ClearState".Translate(), () =>
+                {
+                    MutateWithUndo(() =>
+                    {
+                        ClearReplacementMouthAssignmentsForPath(fc, candidate.FilePath);
+                        FaceRuntimeCompiler.ClearCache();
+                        PawnRenderNodeWorker_FaceComponent.ClearCache();
+                        PawnRenderNodeWorker_CustomLayer.ClearExternalGraphicCache();
+                    }, refreshPreview: true, refreshRenderTree: true);
+                })
+            };
+
+            foreach (ExpressionType expression in Enum.GetValues(typeof(ExpressionType)))
+            {
+                ExpressionType localExpression = expression;
+                options.Add(new FloatMenuOption(GetExpressionTypeLabel(localExpression), () =>
+                {
+                    MutateWithUndo(() =>
+                    {
+                        fc.SetLayeredPart(LayeredFacePartType.ReplacementMouth, localExpression, candidate.FilePath);
+                        layeredPartPathBuffer[GetLayeredPartBufferKey(LayeredFacePartType.ReplacementMouth, localExpression)] = candidate.FilePath;
+                        FaceRuntimeCompiler.ClearCache();
+                        PawnRenderNodeWorker_FaceComponent.ClearCache();
+                        PawnRenderNodeWorker_CustomLayer.ClearExternalGraphicCache();
+                    }, refreshPreview: true, refreshRenderTree: true);
+                }));
+            }
+
+            Find.WindowStack.Add(new FloatMenu(options));
+        }
+
+        private bool TryGetMouthMappedExpression(PawnFaceConfig fc, string filePath, out ExpressionType expression)
+        {
             foreach (ExpressionType candidate in Enum.GetValues(typeof(ExpressionType)))
             {
-                if (candidate == ExpressionType.Blink)
-                    continue;
-
-                string token = candidate.ToString().ToLowerInvariant();
-                if (lower.Contains(token))
+                string mappedPath = fc.GetLayeredPartPath(LayeredFacePartType.ReplacementMouth, candidate);
+                if (ArePathStringsEquivalent(mappedPath, filePath))
                 {
                     expression = candidate;
                     return true;
                 }
             }
 
-            if (lower.Contains("happy"))
-            {
-                expression = ExpressionType.Happy;
-                return true;
-            }
-
-            if (lower.Contains("sleep"))
-            {
-                expression = ExpressionType.Sleeping;
-                return true;
-            }
-
-            if (lower.Contains("dead") || lower.Contains("death"))
-            {
-                expression = ExpressionType.Dead;
-                return true;
-            }
-
+            expression = ExpressionType.Neutral;
             return false;
+        }
+
+        private void ClearReplacementMouthAssignmentsForPath(PawnFaceConfig fc, string filePath)
+        {
+            foreach (ExpressionType expression in Enum.GetValues(typeof(ExpressionType)))
+            {
+                LayeredFacePartConfig? replacementPart = fc.GetLayeredPartConfig(LayeredFacePartType.ReplacementMouth, expression);
+                if (replacementPart != null && ArePathStringsEquivalent(replacementPart.texPath, filePath))
+                {
+                    fc.RemoveLayeredPart(LayeredFacePartType.ReplacementMouth, expression);
+                }
+            }
         }
 
         private void DrawScannedEyeSemanticRow(PawnFaceConfig fc, ref float y, float width, ScannedEyeCandidate candidate)
         {
-            string mappedPath = fc.GetLayeredPartPath(LayeredFacePartType.ReplacementEye, candidate.SuggestedExpression);
+            string mappedPath = fc.GetLayeredPartPath(LayeredFacePartType.ReplacementEye, candidate.SuggestedExpression, candidate.Side);
             string displayLabel = TryGetEyeMappedExpression(fc, candidate.FilePath, out ExpressionType mappedExpression)
                 ? GetExpressionTypeLabel(mappedExpression)
-                : GetExpressionTypeLabel(candidate.SuggestedExpression);
+                : (!string.IsNullOrWhiteSpace(candidate.SuggestedToken)
+                    ? candidate.SuggestedToken
+                    : GetExpressionTypeLabel(candidate.SuggestedExpression));
 
             Rect rowRect = new Rect(0f, y, width, 24f);
             Widgets.DrawBoxSolid(rowRect, UIHelper.AlternatingRowColor);
@@ -592,7 +739,7 @@ namespace CharacterStudio.UI
             }
 
             string mappedName = string.IsNullOrWhiteSpace(mappedPath) ? "—" : Path.GetFileName(mappedPath);
-            TooltipHandler.TipRegion(rowRect, $"{candidate.FileName}\n表情语义: {displayLabel}\n当前映射: {mappedName}");
+            TooltipHandler.TipRegion(rowRect, $"文件：{candidate.FileName}\n建议语义：{displayLabel}\n当前映射：{mappedName}");
 
             y += 25f;
         }
@@ -620,8 +767,8 @@ namespace CharacterStudio.UI
                 {
                     MutateWithUndo(() =>
                     {
-                        fc.SetLayeredPart(LayeredFacePartType.ReplacementEye, localExpression, candidate.FilePath);
-                        layeredPartPathBuffer[GetLayeredPartBufferKey(LayeredFacePartType.ReplacementEye, localExpression)] = candidate.FilePath;
+                        fc.SetLayeredPart(LayeredFacePartType.ReplacementEye, localExpression, candidate.FilePath, candidate.Side);
+                        layeredPartPathBuffer[GetLayeredPartBufferKey(LayeredFacePartType.ReplacementEye, localExpression, side: candidate.Side)] = candidate.FilePath;
                         FaceRuntimeCompiler.ClearCache();
                         PawnRenderNodeWorker_FaceComponent.ClearCache();
                         PawnRenderNodeWorker_CustomLayer.ClearExternalGraphicCache();
@@ -636,11 +783,14 @@ namespace CharacterStudio.UI
         {
             foreach (ExpressionType candidate in Enum.GetValues(typeof(ExpressionType)))
             {
-                string mappedPath = fc.GetLayeredPartPath(LayeredFacePartType.ReplacementEye, candidate);
-                if (ArePathStringsEquivalent(mappedPath, filePath))
+                foreach (LayeredFacePartSide side in new[] { LayeredFacePartSide.None, LayeredFacePartSide.Left, LayeredFacePartSide.Right })
                 {
-                    expression = candidate;
-                    return true;
+                    string mappedPath = fc.GetLayeredPartPath(LayeredFacePartType.ReplacementEye, candidate, side);
+                    if (ArePathStringsEquivalent(mappedPath, filePath))
+                    {
+                        expression = candidate;
+                        return true;
+                    }
                 }
             }
 
@@ -664,12 +814,146 @@ namespace CharacterStudio.UI
         {
             foreach (ExpressionType expression in Enum.GetValues(typeof(ExpressionType)))
             {
-                LayeredFacePartConfig? replacementPart = fc.GetLayeredPartConfig(LayeredFacePartType.ReplacementEye, expression, LayeredFacePartSide.None);
-                if (replacementPart != null && ArePathStringsEquivalent(replacementPart.texPath, filePath))
+                foreach (LayeredFacePartSide side in new[] { LayeredFacePartSide.None, LayeredFacePartSide.Left, LayeredFacePartSide.Right })
                 {
-                    fc.RemoveLayeredPart(LayeredFacePartType.ReplacementEye, expression);
+                    LayeredFacePartConfig? replacementPart = fc.GetLayeredPartConfig(LayeredFacePartType.ReplacementEye, expression, side);
+                    if (replacementPart != null && ArePathStringsEquivalent(replacementPart.texPath, filePath))
+                    {
+                        fc.RemoveLayeredPart(LayeredFacePartType.ReplacementEye, expression, side);
+                    }
                 }
             }
+        }
+
+        private static bool TryParseReplacementEyeCandidate(string filePath, out ExpressionType expression, out LayeredFacePartSide side, out string suggestedToken)
+        {
+            expression = ExpressionType.Neutral;
+            side = LayeredFacePartSide.None;
+            suggestedToken = string.Empty;
+
+            string fileName = Path.GetFileNameWithoutExtension(filePath) ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(fileName) || !fileName.StartsWith("Eye", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            string normalized = fileName.Replace('-', '_');
+            string[] segments = normalized.Split(new[] { '_' }, StringSplitOptions.RemoveEmptyEntries);
+            if (segments.Length == 0 || !segments[0].Equals("Eye", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            var tokens = segments.Skip(1).ToList();
+            for (int i = tokens.Count - 1; i >= 0; i--)
+            {
+                if (tokens[i].Equals("Left", StringComparison.OrdinalIgnoreCase))
+                {
+                    side = LayeredFacePartSide.Left;
+                    tokens.RemoveAt(i);
+                    break;
+                }
+
+                if (tokens[i].Equals("Right", StringComparison.OrdinalIgnoreCase))
+                {
+                    side = LayeredFacePartSide.Right;
+                    tokens.RemoveAt(i);
+                    break;
+                }
+            }
+
+            while (tokens.Count > 0)
+            {
+                string last = tokens[tokens.Count - 1];
+                if (last.Equals("east", StringComparison.OrdinalIgnoreCase)
+                    || last.Equals("west", StringComparison.OrdinalIgnoreCase)
+                    || last.Equals("north", StringComparison.OrdinalIgnoreCase)
+                    || last.Equals("south", StringComparison.OrdinalIgnoreCase)
+                    || last.Equals("up", StringComparison.OrdinalIgnoreCase)
+                    || last.Equals("down", StringComparison.OrdinalIgnoreCase)
+                    || last.Equals("center", StringComparison.OrdinalIgnoreCase))
+                {
+                    tokens.RemoveAt(tokens.Count - 1);
+                    continue;
+                }
+
+                break;
+            }
+
+            if (tokens.Count == 0)
+                return false;
+
+            string semanticToken = string.Join("_", tokens).ToLowerInvariant();
+            suggestedToken = string.Join("_", tokens);
+            switch (semanticToken)
+            {
+                case "blink":
+                    expression = ExpressionType.Blink;
+                    return true;
+                case "death":
+                case "dead":
+                    expression = ExpressionType.Dead;
+                    return true;
+                case "closed":
+                case "sleep":
+                case "sleeping":
+                    expression = ExpressionType.Sleeping;
+                    return true;
+                case "closed_happy":
+                case "happy_closed":
+                case "happy":
+                    expression = ExpressionType.Happy;
+                    return true;
+                case "shock":
+                case "wide":
+                    expression = ExpressionType.Shock;
+                    return true;
+                case "scared":
+                    expression = ExpressionType.Scared;
+                    return true;
+                case "wink":
+                    expression = ExpressionType.Wink;
+                    return true;
+                default:
+                    return Enum.TryParse(semanticToken, true, out expression) || true;
+            }
+        }
+
+        private static bool TryParseReplacementMouthCandidate(string filePath, out ExpressionType expression, out string suggestedToken)
+        {
+            expression = ExpressionType.Neutral;
+            suggestedToken = string.Empty;
+
+            string fileName = Path.GetFileNameWithoutExtension(filePath) ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(fileName) || !fileName.StartsWith("Mouth", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            string normalized = fileName.Replace('-', '_');
+            string[] segments = normalized.Split(new[] { '_' }, StringSplitOptions.RemoveEmptyEntries);
+            if (segments.Length < 2 || !segments[0].Equals("Mouth", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            var tokens = segments.Skip(1).ToList();
+            while (tokens.Count > 0)
+            {
+                string last = tokens[tokens.Count - 1];
+                if (last.Equals("east", StringComparison.OrdinalIgnoreCase)
+                    || last.Equals("west", StringComparison.OrdinalIgnoreCase)
+                    || last.Equals("north", StringComparison.OrdinalIgnoreCase)
+                    || last.Equals("south", StringComparison.OrdinalIgnoreCase)
+                    || last.Equals("up", StringComparison.OrdinalIgnoreCase)
+                    || last.Equals("down", StringComparison.OrdinalIgnoreCase)
+                    || last.Equals("center", StringComparison.OrdinalIgnoreCase))
+                {
+                    tokens.RemoveAt(tokens.Count - 1);
+                    continue;
+                }
+
+                break;
+            }
+
+            if (tokens.Count == 0)
+                return false;
+
+            string semanticToken = string.Join("_", tokens).ToLowerInvariant();
+            suggestedToken = string.Join("_", tokens);
+            return Enum.TryParse(semanticToken, true, out expression) || true;
         }
 
         private void DrawScannedOverlaySemanticSection(PawnFaceConfig fc, ref float y, float width)
@@ -696,14 +980,14 @@ namespace CharacterStudio.UI
 
         private void DrawScannedOverlaySemanticRow(PawnFaceConfig fc, ref float y, float width, ScannedOverlayCandidate candidate)
         {
-            string mappedOverlayId = GetMappedOverlayIdForPath(fc, candidate.FilePath);
+            string mappedOverlayId = GetMappedOverlayIdForPath(fc, candidate.FilePath, candidate.PartType);
             string semanticKey = GetPrimarySemanticKeyForOverlayId(fc, mappedOverlayId);
             string displayLabel = string.IsNullOrWhiteSpace(semanticKey)
-                ? (TrySemanticKeyToExpression(PawnFaceConfig.NormalizeOverlaySemanticKey(candidate.SuggestedOverlayId), out ExpressionType suggestedExpression)
+                ? (TrySemanticKeyToExpression(PawnFaceConfig.NormalizeOverlaySemanticKey(candidate.SuggestedToken), out ExpressionType suggestedExpression)
                     ? GetExpressionTypeLabel(suggestedExpression)
-                    : "...")
+                    : (!string.IsNullOrWhiteSpace(candidate.SuggestedToken) ? candidate.SuggestedToken : "..."))
                 : GetOverlaySelectionLabel(semanticKey);
-            string followTarget = GetFollowTargetForOverlayId(fc, mappedOverlayId);
+            string followTarget = GetFollowTargetForOverlayId(fc, mappedOverlayId, candidate.PartType);
             string followLabel = string.IsNullOrWhiteSpace(followTarget)
                 ? "..."
                 : GetOverlayFollowTargetLabel(followTarget);
@@ -718,26 +1002,28 @@ namespace CharacterStudio.UI
             Text.Anchor = TextAnchor.MiddleLeft;
             bool oldWordWrap = Text.WordWrap;
             Text.WordWrap = false;
-            float labelWidth = Mathf.Max(56f, width - 116f);
+            const float buttonWidth = 32f;
+            const float buttonGap = 4f;
+            float labelWidth = Mathf.Max(56f, width - (buttonWidth * 2f + buttonGap + 12f));
             Widgets.Label(new Rect(6f, y, labelWidth, 24f), TruncateSingleLineText(candidate.FileName, labelWidth - 4f));
             Text.WordWrap = oldWordWrap;
             GUI.color = Color.white;
             Text.Anchor = TextAnchor.UpperLeft;
             Text.Font = GameFont.Small;
 
-            Rect followButtonRect = new Rect(width - 110f, y + 2f, 18f, 20f);
+            Rect followButtonRect = new Rect(width - (buttonWidth * 2f + buttonGap + 8f), y + 2f, buttonWidth, 20f);
             if (UIHelper.DrawSelectionButton(followButtonRect, "CS_Studio_Face_OverlayFollow_Label".Translate()))
             {
                 OpenScannedOverlayFollowMenu(fc, candidate, mappedOverlayId, followTarget);
             }
 
-            Rect buttonRect = new Rect(width - 88f, y + 2f, 80f, 20f);
-            if (UIHelper.DrawSelectionButton(buttonRect, displayLabel))
+            Rect buttonRect = new Rect(width - (buttonWidth + 8f), y + 2f, buttonWidth, 20f);
+            if (UIHelper.DrawSelectionButton(buttonRect, "..."))
             {
                 OpenScannedOverlaySemanticMenu(fc, candidate, mappedOverlayId, semanticKey);
             }
 
-            TooltipHandler.TipRegion(rowRect, $"{candidate.FileName}\n表情语义: {displayLabel}\n跟随: {followLabel}");
+            TooltipHandler.TipRegion(rowRect, $"文件：{candidate.FileName}\n建议语义：{displayLabel}\n当前映射：{GetOverlaySemanticLabel(mappedOverlayId)}\n跟随：{followLabel}");
 
             y += 25f;
         }
@@ -758,7 +1044,7 @@ namespace CharacterStudio.UI
             return PawnFaceConfig.NormalizeOverlaySemanticKey(rule.semanticKey);
         }
 
-        private string GetFollowTargetForOverlayId(PawnFaceConfig fc, string overlayId)
+        private string GetFollowTargetForOverlayId(PawnFaceConfig fc, string overlayId, LayeredFacePartType partType)
         {
             string normalizedOverlayId = PawnFaceConfig.NormalizeOverlayId(overlayId);
             if (string.IsNullOrWhiteSpace(normalizedOverlayId))
@@ -766,7 +1052,7 @@ namespace CharacterStudio.UI
 
             LayeredFacePartConfig? part = fc.layeredParts?
                 .FirstOrDefault(existing => existing != null
-                    && existing.partType == LayeredFacePartType.Overlay
+                    && existing.partType == partType
                     && string.Equals(PawnFaceConfig.NormalizeOverlayId(existing.overlayId), normalizedOverlayId, StringComparison.OrdinalIgnoreCase));
 
             return part?.followTarget ?? string.Empty;
@@ -780,7 +1066,7 @@ namespace CharacterStudio.UI
             {
                 new FloatMenuOption("CS_Studio_Face_OverlayMapping_ClearState".Translate(), () =>
                 {
-                    MutateWithUndo(() => ApplySemanticSelectionForOverlay(fc, resolvedOverlayId, null, false, candidate.FilePath));
+                    MutateWithUndo(() => ApplySemanticSelectionForOverlay(fc, candidate.PartType, resolvedOverlayId, null, false, candidate.FilePath));
                 })
             };
 
@@ -791,7 +1077,7 @@ namespace CharacterStudio.UI
                 string label = (enabled ? "[√] " : "[ ] ") + GetOverlaySelectionLabel(localSemanticKey);
                 options.Add(new FloatMenuOption(label, () =>
                 {
-                    MutateWithUndo(() => ApplySemanticSelectionForOverlay(fc, resolvedOverlayId, localSemanticKey, !enabled, candidate.FilePath));
+                    MutateWithUndo(() => ApplySemanticSelectionForOverlay(fc, candidate.PartType, resolvedOverlayId, localSemanticKey, !enabled, candidate.FilePath));
                 }));
             }
 
@@ -804,21 +1090,21 @@ namespace CharacterStudio.UI
 
             var options = new List<FloatMenuOption>
             {
-                new FloatMenuOption("...", () => MutateWithUndo(() => ApplyFollowTargetSelectionForOverlay(fc, resolvedOverlayId, string.Empty))),
-                new FloatMenuOption(GetOverlayFollowTargetLabel("Face"), () => MutateWithUndo(() => ApplyFollowTargetSelectionForOverlay(fc, resolvedOverlayId, "Face"))),
-                new FloatMenuOption(GetOverlayFollowTargetLabel("Pupil"), () => MutateWithUndo(() => ApplyFollowTargetSelectionForOverlay(fc, resolvedOverlayId, "Pupil")))
+                new FloatMenuOption("...", () => MutateWithUndo(() => ApplyFollowTargetSelectionForOverlay(fc, candidate.PartType, resolvedOverlayId, string.Empty))),
+                new FloatMenuOption(GetOverlayFollowTargetLabel("Face"), () => MutateWithUndo(() => ApplyFollowTargetSelectionForOverlay(fc, candidate.PartType, resolvedOverlayId, "Face"))),
+                new FloatMenuOption(GetOverlayFollowTargetLabel("Pupil"), () => MutateWithUndo(() => ApplyFollowTargetSelectionForOverlay(fc, candidate.PartType, resolvedOverlayId, "Pupil")))
             };
 
             Find.WindowStack.Add(new FloatMenu(options));
         }
 
-        private void ApplySemanticSelectionForOverlay(PawnFaceConfig fc, string overlayId, string? semanticKey, bool add, string filePath)
+        private void ApplySemanticSelectionForOverlay(PawnFaceConfig fc, LayeredFacePartType partType, string overlayId, string? semanticKey, bool add, string filePath)
         {
             string normalizedOverlayId = PawnFaceConfig.NormalizeOverlayId(overlayId);
             if (string.IsNullOrWhiteSpace(normalizedOverlayId))
                 return;
 
-            ClearOverlayAssignmentsForPath(fc, filePath);
+            ClearOverlayAssignmentsForPath(fc, filePath, partType);
             string normalizedSemanticKey = PawnFaceConfig.NormalizeOverlaySemanticKey(semanticKey);
             foreach (PawnFaceConfig.EmotionOverlayRule rule in fc.emotionOverlayRules.ToList())
             {
@@ -832,7 +1118,7 @@ namespace CharacterStudio.UI
 
             if (add && !string.IsNullOrWhiteSpace(normalizedSemanticKey))
             {
-                fc.SetLayeredPart(LayeredFacePartType.Overlay, ExpressionType.Neutral, filePath, normalizedOverlayId, fc.GetOverlayOrder(normalizedOverlayId));
+                fc.SetLayeredPart(partType, ExpressionType.Neutral, filePath, normalizedOverlayId, fc.GetOverlayOrder(normalizedOverlayId, partType));
 
                 PawnFaceConfig.EmotionOverlayRule? rule = fc.emotionOverlayRules.FirstOrDefault(existing =>
                     string.Equals(PawnFaceConfig.NormalizeOverlaySemanticKey(existing.semanticKey), normalizedSemanticKey, StringComparison.OrdinalIgnoreCase));
@@ -874,24 +1160,77 @@ namespace CharacterStudio.UI
             if (!string.IsNullOrWhiteSpace(normalizedSuggestedOverlayId))
                 return normalizedSuggestedOverlayId;
 
+            string normalizedSuggestedToken = PawnFaceConfig.NormalizeOverlayId(candidate.SuggestedToken);
+            if (!string.IsNullOrWhiteSpace(normalizedSuggestedToken))
+                return normalizedSuggestedToken;
+
             string normalizedFileName = PawnFaceConfig.NormalizeOverlayId(Path.GetFileNameWithoutExtension(candidate.FileName));
             return normalizedFileName;
         }
 
-        private void ApplyFollowTargetSelectionForOverlay(PawnFaceConfig fc, string overlayId, string followTarget)
+        private void ApplyFollowTargetSelectionForOverlay(PawnFaceConfig fc, LayeredFacePartType partType, string overlayId, string followTarget)
         {
             string normalizedOverlayId = PawnFaceConfig.NormalizeOverlayId(overlayId);
             if (string.IsNullOrWhiteSpace(normalizedOverlayId) || fc.layeredParts == null)
                 return;
 
             foreach (LayeredFacePartConfig part in fc.layeredParts.Where(existing => existing != null
-                         && existing.partType == LayeredFacePartType.Overlay
+                         && existing.partType == partType
                          && string.Equals(PawnFaceConfig.NormalizeOverlayId(existing.overlayId), normalizedOverlayId, StringComparison.OrdinalIgnoreCase)))
             {
                 part.followTarget = followTarget ?? string.Empty;
             }
 
             RefreshPreview();
+        }
+
+        private static bool TryParseOverlayMappingCandidate(string filePath, out LayeredFacePartType partType, out string overlayId, out string suggestedToken)
+        {
+            partType = LayeredFacePartType.Overlay;
+            overlayId = string.Empty;
+            suggestedToken = string.Empty;
+
+            string fileName = Path.GetFileNameWithoutExtension(filePath) ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(fileName))
+                return false;
+
+            string normalized = fileName.Replace('-', '_');
+            string[] segments = normalized.Split(new[] { '_' }, StringSplitOptions.RemoveEmptyEntries);
+            if (segments.Length < 2)
+                return false;
+
+            if (segments[0].Equals("OverlayTop", StringComparison.OrdinalIgnoreCase))
+                partType = LayeredFacePartType.OverlayTop;
+            else if (segments[0].Equals("Overlay", StringComparison.OrdinalIgnoreCase))
+                partType = LayeredFacePartType.Overlay;
+            else
+                return false;
+
+            var tokens = segments.Skip(1).ToList();
+            while (tokens.Count > 0)
+            {
+                string last = tokens[tokens.Count - 1];
+                if (last.Equals("east", StringComparison.OrdinalIgnoreCase)
+                    || last.Equals("west", StringComparison.OrdinalIgnoreCase)
+                    || last.Equals("north", StringComparison.OrdinalIgnoreCase)
+                    || last.Equals("south", StringComparison.OrdinalIgnoreCase)
+                    || last.Equals("up", StringComparison.OrdinalIgnoreCase)
+                    || last.Equals("down", StringComparison.OrdinalIgnoreCase)
+                    || last.Equals("center", StringComparison.OrdinalIgnoreCase))
+                {
+                    tokens.RemoveAt(tokens.Count - 1);
+                    continue;
+                }
+
+                break;
+            }
+
+            if (tokens.Count == 0)
+                return false;
+
+            suggestedToken = string.Join("_", tokens);
+            overlayId = suggestedToken;
+            return true;
         }
 
         private IEnumerable<string> GetKnownOverlaySemanticKeys(PawnFaceConfig fc)
@@ -1063,7 +1402,10 @@ namespace CharacterStudio.UI
                     {
                         if (!string.IsNullOrWhiteSpace(path))
                         {
-                            AutoPopulateLayeredFacePartsFromDirectory(fc, path);
+                            if (!TryAppendLayeredFacePartsFromSelection(fc, path))
+                            {
+                                AutoPopulateLayeredFacePartsFromDirectory(fc, path);
+                            }
                         }
                     }));
                 });
@@ -1085,6 +1427,10 @@ namespace CharacterStudio.UI
             y += 4f;
 
             DrawEyeSemanticMappingSection(ref y, width, fc);
+
+            y += 4f;
+
+            DrawMouthSemanticMappingSection(ref y, width, fc);
 
             y += 4f;
 
@@ -1194,15 +1540,14 @@ namespace CharacterStudio.UI
                     .Where(IsSupportedLayeredFaceTextureFile)
                     .OrderBy(Path.GetFileNameWithoutExtension, StringComparer.OrdinalIgnoreCase))
                 {
-                    if (!TryParseLayeredFaceFileName(filePath, out LayeredFacePartType partType, out _, out string? overlayId, out _, out _)
-                        || partType != LayeredFacePartType.Overlay)
+                    if (!TryParseOverlayMappingCandidate(filePath, out LayeredFacePartType partType, out string overlayId, out string suggestedToken))
                     {
                         continue;
                     }
 
                     string fileName = Path.GetFileName(filePath) ?? filePath;
                     string normalizedOverlayId = PawnFaceConfig.NormalizeOverlayId(overlayId);
-                    scannedOverlayCandidates.Add(new ScannedOverlayCandidate(filePath, fileName, normalizedOverlayId));
+                    scannedOverlayCandidates.Add(new ScannedOverlayCandidate(filePath, fileName, normalizedOverlayId, partType, suggestedToken));
                 }
             }
             catch (Exception ex)
@@ -1212,11 +1557,11 @@ namespace CharacterStudio.UI
             }
         }
 
-        private string GetMappedOverlayIdForPath(PawnFaceConfig fc, string filePath)
+        private string GetMappedOverlayIdForPath(PawnFaceConfig fc, string filePath, LayeredFacePartType partType)
         {
-            foreach (string overlayId in fc.GetOrderedOverlayIds())
+            foreach (string overlayId in fc.GetOrderedOverlayIds(partType))
             {
-                LayeredFacePartConfig? overlayPart = fc.GetLayeredPartConfig(LayeredFacePartType.Overlay, ExpressionType.Neutral, overlayId);
+                LayeredFacePartConfig? overlayPart = fc.GetLayeredPartConfig(partType, ExpressionType.Neutral, overlayId);
                 if (overlayPart != null && ArePathStringsEquivalent(overlayPart.texPath, filePath))
                 {
                     return overlayId;
@@ -1226,14 +1571,14 @@ namespace CharacterStudio.UI
             return string.Empty;
         }
 
-        private void ClearOverlayAssignmentsForPath(PawnFaceConfig fc, string filePath)
+        private void ClearOverlayAssignmentsForPath(PawnFaceConfig fc, string filePath, LayeredFacePartType partType)
         {
-            foreach (string overlayId in fc.GetOrderedOverlayIds().ToList())
+            foreach (string overlayId in fc.GetOrderedOverlayIds(partType).ToList())
             {
-                LayeredFacePartConfig? overlayPart = fc.GetLayeredPartConfig(LayeredFacePartType.Overlay, ExpressionType.Neutral, overlayId);
+                LayeredFacePartConfig? overlayPart = fc.GetLayeredPartConfig(partType, ExpressionType.Neutral, overlayId);
                 if (overlayPart != null && ArePathStringsEquivalent(overlayPart.texPath, filePath))
                 {
-                    fc.RemoveLayeredPart(LayeredFacePartType.Overlay, ExpressionType.Neutral, overlayId);
+                    fc.RemoveLayeredPart(partType, ExpressionType.Neutral, overlayId);
                 }
             }
         }
@@ -1243,6 +1588,21 @@ namespace CharacterStudio.UI
             foreach (LayeredFacePartType partType in EnumerateLayeredPartEditorTypes())
             {
                 DrawLayeredPartEditorGroup(fc, ref y, width, partType);
+            }
+
+            foreach (LayeredFacePartType partType in new[] { LayeredFacePartType.Overlay, LayeredFacePartType.OverlayTop, LayeredFacePartType.Hair })
+            {
+                List<string> overlayIds = fc.GetOrderedOverlayIds(partType);
+                if (!overlayIds.Any())
+                    continue;
+
+                UIHelper.DrawSectionTitle(ref y, width, GetLayeredFacePartTypeLabel(partType));
+                foreach (string overlayId in overlayIds)
+                {
+                    DrawLayeredPartRow(fc, ref y, width, partType, previewExpression, overlayId: overlayId);
+                }
+
+                y += 2f;
             }
         }
 
@@ -1256,6 +1616,7 @@ namespace CharacterStudio.UI
             yield return LayeredFacePartType.ReplacementEye;
             yield return LayeredFacePartType.Brow;
             yield return LayeredFacePartType.Mouth;
+            yield return LayeredFacePartType.ReplacementMouth;
         }
 
         private void DrawLayeredPartEditorGroup(PawnFaceConfig fc, ref float y, float width, LayeredFacePartType partType)
@@ -1875,21 +2236,10 @@ namespace CharacterStudio.UI
             UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_PupilAdvanced_Title".Translate());
             DrawPropertyHint(ref y, width, "CS_Studio_Face_PupilAdvanced_Hint".Translate());
 
-            UIHelper.DrawSectionTitle(ref y, width, "正面 (Front)");
-            DrawFloatProperty(ref y, width, "左眼 X 偏移", ref pupilMotion.frontLeftOffsetX, -0.01f, 0.01f, "F6");
-            DrawFloatProperty(ref y, width, "右眼 X 偏移", ref pupilMotion.frontRightOffsetX, -0.01f, 0.01f, "F6");
-            DrawFloatProperty(ref y, width, "左眼 Z 偏移", ref pupilMotion.frontLeftOffsetZ, -0.01f, 0.01f, "F6");
-            DrawFloatProperty(ref y, width, "右眼 Z 偏移", ref pupilMotion.frontRightOffsetZ, -0.01f, 0.01f, "F6");
-            y += 2f;
-
-            UIHelper.DrawSectionTitle(ref y, width, "侧面 (East/West)");
-            DrawFloatProperty(ref y, width, "左眼 X 偏移", ref pupilMotion.sideLeftOffsetX, -0.01f, 0.01f, "F6");
-            DrawFloatProperty(ref y, width, "右眼 X 偏移", ref pupilMotion.sideRightOffsetX, -0.01f, 0.01f, "F6");
-            DrawFloatProperty(ref y, width, "左眼 Z 偏移", ref pupilMotion.sideLeftOffsetZ, -0.01f, 0.01f, "F6");
-            DrawFloatProperty(ref y, width, "右眼 Z 偏移", ref pupilMotion.sideRightOffsetZ, -0.01f, 0.01f, "F6");
-            y += 2f;
-
-            UIHelper.DrawSectionTitle(ref y, width, "通用动态参数");
+            UIHelper.DrawSectionTitle(ref y, width, "注视方向附加偏移");
+            DrawFloatProperty(ref y, width, "正面左眼 X 偏移", ref pupilMotion.frontLeftEyeOffsetX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, "正面右眼 X 偏移", ref pupilMotion.frontRightEyeOffsetX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, "侧面朝向 X 偏移", ref pupilMotion.sideFacingOffsetX, 0f, 0.01f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_SideBiasX"), ref pupilMotion.sideBiasX, 0f, 0.01f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_SlowWaveOffsetZ"), ref pupilMotion.slowWaveOffsetZ, -0.01f, 0.01f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_NeutralSoftOffsetZ"), ref pupilMotion.neutralSoftOffsetZ, -0.01f, 0.01f, "F6");

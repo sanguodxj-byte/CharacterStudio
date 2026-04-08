@@ -24,6 +24,7 @@
     <CS_Expression_Strip>脱衣</CS_Expression_Strip>
     <CS_Expression_Tired>疲惫</CS_Expression_Tired>
     <CS_Expression_WaitCombat>备战</CS_Expression_WaitCombat>
+    <CS_Expression_Wink>眨单眼</CS_Expression_Wink>
     <CS_Expression_Working>工作</CS_Expression_Working>
     <CS_FaceComponent_Brows>眉毛</CS_FaceComponent_Brows>
     <CS_FaceComponent_Eyes>眼睛</CS_FaceComponent_Eyes>
@@ -140,6 +141,9 @@
     <CS_Studio_Face_Layered_Title>分层面部部件</CS_Studio_Face_Layered_Title>
     <CS_Studio_Face_LayeredPart_Base>基础脸层</CS_Studio_Face_LayeredPart_Base>
     <CS_Studio_Face_LayeredPart_ReplacementEye>替换眼层</CS_Studio_Face_LayeredPart_ReplacementEye>
+    <CS_Studio_Face_LayeredPart_ReplacementMouth>替换嘴层</CS_Studio_Face_LayeredPart_ReplacementMouth>
+    <CS_Studio_Face_LayeredPart_Overlay>Overlay层</CS_Studio_Face_LayeredPart_Overlay>
+    <CS_Studio_Face_LayeredPart_OverlayTop>顶层Overlay</CS_Studio_Face_LayeredPart_OverlayTop>
     <CS_Studio_Face_LayeredPart_LowerLid>下眼睑层</CS_Studio_Face_LayeredPart_LowerLid>
     <CS_Studio_Face_LayeredPart_UpperLid>上眼睑层</CS_Studio_Face_LayeredPart_UpperLid>
     <CS_Studio_Face_MinSetProgress>最小集 {0}/{1} 已完成（★ 标记为推荐优先配置）</CS_Studio_Face_MinSetProgress>
@@ -148,10 +152,12 @@
     <CS_Studio_Face_PreviewHint>预览模式</CS_Studio_Face_PreviewHint>
     <CS_Studio_Face_PreviewHintValue>可在预览面板切换自动/指定表情，并即时预览当前配置</CS_Studio_Face_PreviewHintValue>
     <CS_Studio_Face_PreviewModeButton>切换预览</CS_Studio_Face_PreviewModeButton>
-    <CS_Studio_Face_EyeMapping_Title>Eye 替换件</CS_Studio_Face_EyeMapping_Title>
-    <CS_Studio_Face_EyeMapping_Empty>当前目录未扫描到可识别的 Eye 替换纹理。会扫描所有以 Eye_ 开头的纹理，并可按表情语义配置为 Eye 部件的替换件。</CS_Studio_Face_EyeMapping_Empty>
-    <CS_Studio_Face_OverlayMapping_Empty>当前目录未扫描到可识别的 overlay 纹理。命名需符合 Overlay_xxx 或显式语义前缀。</CS_Studio_Face_OverlayMapping_Empty>
-    <CS_Studio_Face_OverlayMapping_Hint>扫描 overlay 纹理并手动指定语义通道；偏移与缩放建议在外部工具中处理。</CS_Studio_Face_OverlayMapping_Hint>
+    <CS_Studio_Face_EyeMapping_Title>Eye 映射</CS_Studio_Face_EyeMapping_Title>
+    <CS_Studio_Face_EyeMapping_Empty>当前目录未扫描到可识别的 Eye_ 纹理。会扫描所有以 Eye_ 开头的纹理，并可手动映射到替换眼语义。</CS_Studio_Face_EyeMapping_Empty>
+    <CS_Studio_Face_MouthMapping_Title>Mouth 映射</CS_Studio_Face_MouthMapping_Title>
+    <CS_Studio_Face_MouthMapping_Empty>当前目录未扫描到可识别的 Mouth_ 纹理。会扫描所有以 Mouth_ 开头的纹理，并可手动映射到替换嘴语义。</CS_Studio_Face_MouthMapping_Empty>
+    <CS_Studio_Face_OverlayMapping_Empty>当前目录未扫描到可识别的 Overlay_ / OverlayTop_ 纹理。会扫描所有以这两个前缀开头的纹理，并可手动映射到 overlay 语义。</CS_Studio_Face_OverlayMapping_Empty>
+    <CS_Studio_Face_OverlayMapping_Hint>扫描 Overlay_ / OverlayTop_ 纹理并手动指定语义与跟随目标；偏移与缩放建议在外部工具中处理。</CS_Studio_Face_OverlayMapping_Hint>
     <CS_Studio_Face_OverlayMapping_Suggested>建议 {0}</CS_Studio_Face_OverlayMapping_Suggested>
     <CS_Studio_Face_OverlayMapping_Title>Overlay 映射</CS_Studio_Face_OverlayMapping_Title>
     <CS_Studio_Face_OverlayMapping_Unmapped>未映射</CS_Studio_Face_OverlayMapping_Unmapped>
@@ -252,6 +258,7 @@
     <CS_Studio_Preview_ExpressionHint_Scared>处于 Flee / Panic / WildMan 等惊慌类精神状态时触发。</CS_Studio_Preview_ExpressionHint_Scared>
     <CS_Studio_Preview_ExpressionHint_Shock>受到未被护盾完全吸收的伤害后短时触发。</CS_Studio_Preview_ExpressionHint_Shock>
     <CS_Studio_Preview_ExpressionHint_WaitCombat>当前 Job 名包含 WaitCombat 时触发。</CS_Studio_Preview_ExpressionHint_WaitCombat>
+    <CS_Studio_Preview_ExpressionHint_Wink>单眼表情语义。可通过 ReplacementEye 的左右侧资源只替换一只眼；预览时用眼球朝向 Left / Right 决定眨哪一侧。</CS_Studio_Preview_ExpressionHint_Wink>
     <CS_Studio_Preview_ExpressionHint_AttackMelee>当前 Job 名包含 AttackMelee 时触发。</CS_Studio_Preview_ExpressionHint_AttackMelee>
     <CS_Studio_Preview_ExpressionHint_AttackRanged>当前 Job 名包含 AttackStatic / Shoot / Burst 时触发。</CS_Studio_Preview_ExpressionHint_AttackRanged>
     <CS_Studio_Preview_ExpressionHint_Eating>当前 Job 为进食 Ingest 时触发。</CS_Studio_Preview_ExpressionHint_Eating>

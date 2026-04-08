@@ -182,10 +182,18 @@ namespace CharacterStudio.UI
             string facingText = UsesCustomTextureSettings(vfx)
                 ? GetVfxFacingModeLabel(vfx.facingMode)
                 : "CS_Studio_VFX_FacingMode_None".Translate();
-            return "CS_Studio_VFX_SummaryLine".Translate(
+            string summary = "CS_Studio_VFX_SummaryLine".Translate(
                 GetVfxTargetLabel(vfx.target),
                 GetVfxTriggerLabel(vfx.trigger),
                 facingText);
+
+            string descKey = $"CS_Studio_VFX_Desc_{vfx.type}";
+            if (descKey.CanTranslate())
+            {
+                summary += " · " + descKey.Translate();
+            }
+
+            return summary;
         }
 
         private void DrawVfxItem(Rect rect, AbilityVisualEffectConfig vfx, int index)

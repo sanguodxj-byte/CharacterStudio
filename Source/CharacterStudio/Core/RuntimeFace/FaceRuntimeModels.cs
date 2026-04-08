@@ -579,6 +579,7 @@ namespace CharacterStudio.Core
         public string currentOverlaySemanticKey = string.Empty;
         public EyeAnimationVariant eyeDirectionRuntimeVariant = EyeAnimationVariant.NeutralOpen;
         public PupilScaleVariant pupilScaleRuntimeVariant = PupilScaleVariant.Neutral;
+        public LayeredFacePartSide winkSide = LayeredFacePartSide.None;
 
         // --- 全局程序动画驱动源 (Global Procedural Animation Drive) ---
         /// <summary>当前眨眼的缓动进度 (0=张开, 1=完全闭合，经过 Cos 曲线缓动)</summary>

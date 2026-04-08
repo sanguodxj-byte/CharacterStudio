@@ -11,7 +11,7 @@ namespace CharacterStudio.UI
         {
             DrawAbilityPanelShell(rect, "CS_Studio_Ability_PropertiesTitle".Translate(), out Rect contentRect);
 
-            Rect viewRect = new Rect(0f, 0f, Mathf.Max(0f, contentRect.width - 16f), Mathf.Max(contentRect.height, 620f));
+            Rect viewRect = new Rect(0f, 0f, Mathf.Max(0f, contentRect.width - 16f), Mathf.Max(contentRect.height, 960f));
             Widgets.BeginScrollView(contentRect, ref propsScrollPos, viewRect);
 
             float y = 0f;
@@ -107,7 +107,7 @@ namespace CharacterStudio.UI
             AbilityTargetType normalizedTarget = ModularAbilityDefExtensions.NormalizeTargetType(ability);
 
             UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Ability_Type".Translate(), normalizedCarrier,
-                new[] { AbilityCarrierType.Self, AbilityCarrierType.Target, AbilityCarrierType.Projectile },
+                new[] { AbilityCarrierType.Self, AbilityCarrierType.Touch, AbilityCarrierType.Target, AbilityCarrierType.Projectile, AbilityCarrierType.Area },
                 GetCarrierTypeLabel,
                 val =>
                 {

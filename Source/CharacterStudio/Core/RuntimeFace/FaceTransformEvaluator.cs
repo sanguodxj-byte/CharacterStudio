@@ -42,6 +42,7 @@ namespace CharacterStudio.Core
         public readonly bool hasReplacementEyeOverlay;
         public readonly EyeAnimationVariant eyeVariant;
         public readonly PupilScaleVariant pupilVariant;
+        public readonly LayeredFacePartSide winkSide;
         public readonly ExpressionType expression;
         public readonly Rot4 facing;
         public readonly Vector2 gazeOffset;
@@ -63,6 +64,7 @@ namespace CharacterStudio.Core
             bool hasReplacementEyeOverlay,
             EyeAnimationVariant eyeVariant,
             PupilScaleVariant pupilVariant,
+            LayeredFacePartSide winkSide,
             ExpressionType expression,
             Rot4 facing,
             Vector2 gazeOffset,
@@ -83,6 +85,7 @@ namespace CharacterStudio.Core
             this.hasReplacementEyeOverlay = hasReplacementEyeOverlay;
             this.eyeVariant = eyeVariant;
             this.pupilVariant = pupilVariant;
+            this.winkSide = winkSide;
             this.expression = expression;
             this.facing = facing;
             this.gazeOffset = gazeOffset;
@@ -244,11 +247,8 @@ namespace CharacterStudio.Core
             bool isSideFacing = context.facing == Rot4.East || context.facing == Rot4.West;
             bool isLeftEye = context.side == LayeredFacePartSide.Left;
             offsetX += isSideFacing
-                ? (isLeftEye ? motion.sideLeftOffsetX : motion.sideRightOffsetX)
-                : (isLeftEye ? motion.frontLeftOffsetX : motion.frontRightOffsetX);
-            offsetZ += isSideFacing
-                ? (isLeftEye ? motion.sideLeftOffsetZ : motion.sideRightOffsetZ)
-                : (isLeftEye ? motion.frontLeftOffsetZ : motion.frontRightOffsetZ);
+                ? SideBias(context.side, motion.sideFacingOffsetX)
+                : (isLeftEye ? motion.frontLeftEyeOffsetX : motion.frontRightEyeOffsetX);
 
             offsetX += clampedGazeOffset.x * Mathf.Max(
                 Mathf.Abs(motion.dirLeftOffsetX),
@@ -542,6 +542,15 @@ namespace CharacterStudio.Core
             if (!context.hasReplacementEyeOverlay)
                 return FaceTransformResult.Hidden();
 
+            if (context.expression == ExpressionType.Wink
+                && context.side != LayeredFacePartSide.None)
+            {
+                bool shouldShowThisSide = context.side == context.winkSide;
+
+                if (!shouldShowThisSide)
+                    return FaceTransformResult.Hidden();
+            }
+
             if (context.isBlinkActive)
             {
                 return context.blinkPhase == BlinkPhase.ShowReplacementEye
@@ -549,13 +558,7 @@ namespace CharacterStudio.Core
                     : FaceTransformResult.Hidden();
             }
 
-            return context.expression switch
-            {
-                ExpressionType.Dead => FaceTransformResult.Visible(0f, Vector3.zero, Vector3.one),
-                ExpressionType.Sleeping => FaceTransformResult.Visible(0f, Vector3.zero, Vector3.one),
-                ExpressionType.Happy or ExpressionType.Cheerful or ExpressionType.Lovin or ExpressionType.SocialRelax => FaceTransformResult.Visible(0f, Vector3.zero, Vector3.one),
-                _ => FaceTransformResult.Hidden()
-            };
+            return FaceTransformResult.Visible(0f, Vector3.zero, Vector3.one);
         }
     }
 }

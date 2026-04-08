@@ -843,6 +843,7 @@ namespace CharacterStudio.UI
                 }
             }
 
+            skinComp.EnsureFaceRuntimeStateReadyForPreview();
             skinComp.RequestRenderRefresh();
         }
 

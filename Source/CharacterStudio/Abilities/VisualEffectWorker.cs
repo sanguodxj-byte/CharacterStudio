@@ -239,6 +239,99 @@ namespace CharacterStudio.Abilities
         }
     }
 
+    public class VisualEffectWorker_SteamBurst : VisualEffectWorker
+    {
+        public override void Play(AbilityVisualEffectConfig config, LocalTargetInfo target, Pawn caster)
+        {
+            Map map = caster.Map;
+            if (map == null) return;
+            foreach (Vector3 pos in ResolvePositions(config, target, caster))
+            {
+                FleckMaker.ThrowSmoke(pos, map, config.scale * 1.25f);
+                FleckMaker.ThrowDustPuff(pos, map, config.scale * 0.7f);
+            }
+        }
+    }
+
+    public class VisualEffectWorker_EmberBurst : VisualEffectWorker
+    {
+        public override void Play(AbilityVisualEffectConfig config, LocalTargetInfo target, Pawn caster)
+        {
+            Map map = caster.Map;
+            if (map == null) return;
+            foreach (Vector3 pos in ResolvePositions(config, target, caster))
+            {
+                FleckMaker.ThrowFireGlow(pos, map, config.scale * 0.85f);
+                FleckMaker.ThrowMicroSparks(pos, map);
+                FleckMaker.ThrowDustPuff(pos, map, config.scale * 0.45f);
+            }
+        }
+    }
+
+    public class VisualEffectWorker_ShockBurst : VisualEffectWorker
+    {
+        public override void Play(AbilityVisualEffectConfig config, LocalTargetInfo target, Pawn caster)
+        {
+            Map map = caster.Map;
+            if (map == null) return;
+            foreach (Vector3 pos in ResolvePositions(config, target, caster))
+            {
+                FleckMaker.ThrowLightningGlow(pos, map, config.scale * 1.6f);
+                FleckMaker.ThrowMicroSparks(pos, map);
+                FleckMaker.ThrowSmoke(pos, map, config.scale * 0.35f);
+            }
+        }
+    }
+
+    public class VisualEffectWorker_DustRing : VisualEffectWorker
+    {
+        public override void Play(AbilityVisualEffectConfig config, LocalTargetInfo target, Pawn caster)
+        {
+            Map map = caster.Map;
+            if (map == null) return;
+            foreach (Vector3 pos in ResolvePositions(config, target, caster))
+            {
+                for (int i = 0; i < 4; i++)
+                {
+                    float angle = i * 90f * Mathf.Deg2Rad;
+                    Vector3 offset = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * 0.45f;
+                    FleckMaker.ThrowDustPuff(pos + offset, map, config.scale * 0.7f);
+                }
+            }
+        }
+    }
+
+    public class VisualEffectWorker_ArcSparkBurst : VisualEffectWorker
+    {
+        public override void Play(AbilityVisualEffectConfig config, LocalTargetInfo target, Pawn caster)
+        {
+            Map map = caster.Map;
+            if (map == null) return;
+            foreach (Vector3 pos in ResolvePositions(config, target, caster))
+            {
+                FleckMaker.ThrowLightningGlow(pos, map, config.scale);
+                FleckMaker.ThrowMicroSparks(pos + new Vector3(0.2f, 0f, 0f), map);
+                FleckMaker.ThrowMicroSparks(pos + new Vector3(-0.2f, 0f, 0f), map);
+                FleckMaker.ThrowMicroSparks(pos + new Vector3(0f, 0f, 0.2f), map);
+            }
+        }
+    }
+
+    public class VisualEffectWorker_FlameSurge : VisualEffectWorker
+    {
+        public override void Play(AbilityVisualEffectConfig config, LocalTargetInfo target, Pawn caster)
+        {
+            Map map = caster.Map;
+            if (map == null) return;
+            foreach (Vector3 pos in ResolvePositions(config, target, caster))
+            {
+                FleckMaker.ThrowFireGlow(pos, map, config.scale * 1.25f);
+                FleckMaker.ThrowSmoke(pos, map, config.scale * 0.55f);
+                FleckMaker.ThrowMicroSparks(pos, map);
+            }
+        }
+    }
+
     /// <summary>
     /// 飞行喷射蓝光特效（机械推进尾焰）
     /// </summary>
@@ -310,6 +403,12 @@ namespace CharacterStudio.Abilities
             { AbilityVisualEffectType.FireGlow,        typeof(VisualEffectWorker_FireGlow) },
             { AbilityVisualEffectType.Smoke,           typeof(VisualEffectWorker_Smoke) },
             { AbilityVisualEffectType.ExplosionEffect, typeof(VisualEffectWorker_ExplosionEffect) },
+            { AbilityVisualEffectType.SteamBurst,      typeof(VisualEffectWorker_SteamBurst) },
+            { AbilityVisualEffectType.EmberBurst,      typeof(VisualEffectWorker_EmberBurst) },
+            { AbilityVisualEffectType.ShockBurst,      typeof(VisualEffectWorker_ShockBurst) },
+            { AbilityVisualEffectType.DustRing,        typeof(VisualEffectWorker_DustRing) },
+            { AbilityVisualEffectType.ArcSparkBurst,   typeof(VisualEffectWorker_ArcSparkBurst) },
+            { AbilityVisualEffectType.FlameSurge,      typeof(VisualEffectWorker_FlameSurge) },
             { (AbilityVisualEffectType)1001, typeof(VisualEffectWorker_FlightJetBlue) },
             { (AbilityVisualEffectType)1002, typeof(VisualEffectWorker_FlightJetTrail) },
         };
@@ -324,6 +423,12 @@ namespace CharacterStudio.Abilities
             { "Smoke", AbilityVisualEffectType.Smoke },
             { "Explosion", AbilityVisualEffectType.ExplosionEffect },
             { "ExplosionEffect", AbilityVisualEffectType.ExplosionEffect },
+            { "SteamBurst", AbilityVisualEffectType.SteamBurst },
+            { "EmberBurst", AbilityVisualEffectType.EmberBurst },
+            { "ShockBurst", AbilityVisualEffectType.ShockBurst },
+            { "DustRing", AbilityVisualEffectType.DustRing },
+            { "ArcSparkBurst", AbilityVisualEffectType.ArcSparkBurst },
+            { "FlameSurge", AbilityVisualEffectType.FlameSurge },
             { "FlightJetBlue", (AbilityVisualEffectType)1001 },
             { "FlightJetTrail", (AbilityVisualEffectType)1002 },
         };

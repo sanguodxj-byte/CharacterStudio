@@ -904,7 +904,6 @@ namespace CharacterStudio.Rendering
                 case LayeredFacePartType.Eye:
                 case LayeredFacePartType.UpperLid:
                 case LayeredFacePartType.LowerLid:
-                case LayeredFacePartType.ReplacementEye:
                 case LayeredFacePartType.Mouth:
                 case LayeredFacePartType.Blush:
                 case LayeredFacePartType.Sweat:
@@ -931,8 +930,9 @@ namespace CharacterStudio.Rendering
                 case LayeredFacePartType.Eye:
                 case LayeredFacePartType.UpperLid:
                 case LayeredFacePartType.LowerLid:
-                case LayeredFacePartType.ReplacementEye:
                     return LayerRole.Lid;
+                case LayeredFacePartType.ReplacementEye:
+                    return LayerRole.Eye;
                 case LayeredFacePartType.Pupil:
                     return LayerRole.Eye;
                 case LayeredFacePartType.Mouth:
@@ -943,6 +943,7 @@ namespace CharacterStudio.Rendering
                 case LayeredFacePartType.Sweat:
                 case LayeredFacePartType.Tear:
                 case LayeredFacePartType.Overlay:
+                case LayeredFacePartType.OverlayTop:
                     return LayerRole.Emotion;
                 default:
                     return LayerRole.Decoration;
@@ -996,6 +997,8 @@ namespace CharacterStudio.Rendering
                             return 0.149f + Math.Min(4, Math.Max(0, overlayOrder - 4)) * 0.0002f;
                     }
                 }
+                case LayeredFacePartType.OverlayTop:
+                    return 0.250f + Math.Min(8, Math.Max(0, overlayOrder)) * 0.0002f;
                 default:
                     return 0.20f;
             }
@@ -1043,6 +1046,7 @@ namespace CharacterStudio.Rendering
                 case LayeredFacePartType.Sweat:
                     return 50.146f;
                 case LayeredFacePartType.Overlay:
+                case LayeredFacePartType.OverlayTop:
                     switch (PawnFaceConfig.GetOverlayKind(overlayId))
                     {
                         case LayeredOverlayKind.Blush:
@@ -1072,6 +1076,7 @@ namespace CharacterStudio.Rendering
                 case LayeredFacePartType.Sweat:
                     return 50.26f;
                 case LayeredFacePartType.Overlay:
+                case LayeredFacePartType.OverlayTop:
                     switch (PawnFaceConfig.GetOverlayKind(overlayId))
                     {
                         case LayeredOverlayKind.Blush:
@@ -1095,7 +1100,8 @@ namespace CharacterStudio.Rendering
             return partType == LayeredFacePartType.Blush
                 || partType == LayeredFacePartType.Tear
                 || partType == LayeredFacePartType.Sweat
-                || partType == LayeredFacePartType.Overlay;
+                || partType == LayeredFacePartType.Overlay
+                || partType == LayeredFacePartType.OverlayTop;
         }
 
         private static bool TryMigrateLegacyOverlayDrawOrder(
