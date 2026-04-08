@@ -1,8 +1,8 @@
 # CharacterStudio 技能编辑器模块 Code Review
 - 日期: 2026-04-08
 - 概述: 对 CharacterStudio 技能编辑器（Abilities + UI）的全面代码审查，涵盖架构设计、代码质量、性能、可维护性等维度。
-- 状态: 进行中
-- 总体结论: 待定
+- 状态: 已完成
+- 总体结论: 有条件通过
 
 ## 评审范围
 
@@ -21,16 +21,16 @@
 
 ## 评审摘要
 
-- 当前状态: 进行中
-- 已审模块: Abilities/ModularAbilityDef.cs, Abilities/CompAbilityEffect_Modular.cs, Abilities/EffectWorkers.cs, Abilities/VisualEffectWorker.cs, Abilities/AbilityAreaUtility.cs, Abilities/AbilityGrantUtility.cs, Abilities/AbilityHotkeyRuntimeComponent.cs, Abilities/AbilityLoadoutRuntimeUtility.cs, Abilities/AbilityTimeStopRuntimeController.cs, Abilities/AbilityVanillaFlightUtility.cs, UI/Dialog_AbilityEditor.cs, UI/Dialog_AbilityEditor.Labels.cs, UI/AbilityEditorExtensionRegistry.cs
+- 当前状态: 已完成
+- 已审模块: Abilities/ModularAbilityDef.cs, Abilities/CompAbilityEffect_Modular.cs, Abilities/EffectWorkers.cs, Abilities/VisualEffectWorker.cs, Abilities/AbilityAreaUtility.cs, Abilities/AbilityGrantUtility.cs, Abilities/AbilityHotkeyRuntimeComponent.cs, Abilities/AbilityLoadoutRuntimeUtility.cs, Abilities/AbilityTimeStopRuntimeController.cs, Abilities/AbilityVanillaFlightUtility.cs, UI/Dialog_AbilityEditor.cs, UI/Dialog_AbilityEditor.Labels.cs, UI/AbilityEditorExtensionRegistry.cs, Abilities/Patch_AbilityRuntimeTick.cs, Abilities/Verb_CastAbilityStraightJump.cs
 - 当前进度: 已记录 2 个里程碑；最新：M2
 - 里程碑总数: 2
 - 已完成里程碑: 2
 - 问题总数: 12
 - 问题严重级别分布: 高 2 / 中 6 / 低 4
-- 最新结论: 审查了运行时性能热点、内存分配模式、并发安全性、工厂模式效率、序列化健壮性等方面的问题。同时覆盖了编辑器 UI 层的 Dialog_AbilityEditor partial class 体系和扩展注册表设计。
-- 下一步建议: 待定
-- 总体结论: 待定
+- 最新结论: ## 总体评价 CharacterStudio 技能编辑器模块实现了一套**功能极为丰富的模块化技能系统**，涵盖 8 种效果类型、30 种运行时组件、16+ 种视觉特效、13 个热键槽位、飞行/时停/盾牌等高级玩法，并配有完整的编辑器 UI、导入导出、验证、预览等能力。在 RimWorld Mod 生态中属于高水平的技能系统实现。 ### 亮点 - **架构分层清晰**：编辑器数据模型（ModularAbilityDef）→ 运行时 AbilityDef 转换（AbilityGrantUtility）→ 执行引擎（CompAbilityEffect_Modular）→ 效果/视觉 Worker 工厂，层次分明 - **验证体系完善**：AbilityValidationResult 系统覆盖了全部效果类型、运行时组件的参数校验和冲突检测 - **扩展性设计**：AbilityEditorExtensionRegistry 允许外部模组注册自定义面板；EffectWorker/VisualEffectWorker 支持运行时注册 - **NormalizeForSave/NormalizeLegacyData 兼容性思路**值得肯定 ### 主要风险 1. **可维护性债务严重**（2 个 High）：AbilityRuntimeComponentConfig 上帝对象和热键槽位重复代码是最大的技术债务，新增功能的成本正在加速上升 2. **功能性 Bug**（2 个 Medium）：CopyHotkeyConfig 和 SanitizeHotkeyConfigAgainstAbilities 未覆盖全部 13 个槽位，会导致 T-V 槽位配置丢失 3. **性能隐患**：FindThingById 全地图线性扫描在高频 Tick 中存在风险 ### 推荐优先级 | 优先级 | 问题 | 工作量 | |--------|------|--------| | P0 (立即) | F-QUAL-04/05: 补全 CopyHotkeyConfig 和 Sanitize 的槽位覆盖 | 低（1h） | | P1 (短期) | F-PERF-01: Worker 工厂改单例 | 低（2h） | | P1 (短期) | F-PERF-02: FindThingById 改直接引用 | 中（4h） | | P1 (短期) | F-ARCH-03: 删除 HotkeyRuntimeComponent 重复代码 | 低（2h） | | P2 (中期) | F-ARCH-02: 热键槽位数据结构重构 | 高（2-3d） | | P2 (中期) | F-ARCH-04: VFX 位置解析统一 | 中（1d） | | P3 (长期) | F-ARCH-01: RuntimeComponentConfig 拆分 | 极高（1w+） | 共发现 12 个问题：2 High / 6 Medium / 4 Low
+- 下一步建议: 立即修复 P0 级的 CopyHotkeyConfig/SanitizeHotkeyConfig 热键槽位遗漏 Bug，然后按 P1 优先级处理性能相关问题。
+- 总体结论: 有条件通过
 
 ## 评审发现
 
@@ -288,7 +288,34 @@
 
 ## 最终结论
 
-审查了运行时性能热点、内存分配模式、并发安全性、工厂模式效率、序列化健壮性等方面的问题。同时覆盖了编辑器 UI 层的 Dialog_AbilityEditor partial class 体系和扩展注册表设计。
+## 总体评价
+
+CharacterStudio 技能编辑器模块实现了一套**功能极为丰富的模块化技能系统**，涵盖 8 种效果类型、30 种运行时组件、16+ 种视觉特效、13 个热键槽位、飞行/时停/盾牌等高级玩法，并配有完整的编辑器 UI、导入导出、验证、预览等能力。在 RimWorld Mod 生态中属于高水平的技能系统实现。
+
+### 亮点
+- **架构分层清晰**：编辑器数据模型（ModularAbilityDef）→ 运行时 AbilityDef 转换（AbilityGrantUtility）→ 执行引擎（CompAbilityEffect_Modular）→ 效果/视觉 Worker 工厂，层次分明
+- **验证体系完善**：AbilityValidationResult 系统覆盖了全部效果类型、运行时组件的参数校验和冲突检测
+- **扩展性设计**：AbilityEditorExtensionRegistry 允许外部模组注册自定义面板；EffectWorker/VisualEffectWorker 支持运行时注册
+- **NormalizeForSave/NormalizeLegacyData 兼容性思路**值得肯定
+
+### 主要风险
+1. **可维护性债务严重**（2 个 High）：AbilityRuntimeComponentConfig 上帝对象和热键槽位重复代码是最大的技术债务，新增功能的成本正在加速上升
+2. **功能性 Bug**（2 个 Medium）：CopyHotkeyConfig 和 SanitizeHotkeyConfigAgainstAbilities 未覆盖全部 13 个槽位，会导致 T-V 槽位配置丢失
+3. **性能隐患**：FindThingById 全地图线性扫描在高频 Tick 中存在风险
+
+### 推荐优先级
+
+| 优先级 | 问题 | 工作量 |
+|--------|------|--------|
+| P0 (立即) | F-QUAL-04/05: 补全 CopyHotkeyConfig 和 Sanitize 的槽位覆盖 | 低（1h） |
+| P1 (短期) | F-PERF-01: Worker 工厂改单例 | 低（2h） |
+| P1 (短期) | F-PERF-02: FindThingById 改直接引用 | 中（4h） |
+| P1 (短期) | F-ARCH-03: 删除 HotkeyRuntimeComponent 重复代码 | 低（2h） |
+| P2 (中期) | F-ARCH-02: 热键槽位数据结构重构 | 高（2-3d） |
+| P2 (中期) | F-ARCH-04: VFX 位置解析统一 | 中（1d） |
+| P3 (长期) | F-ARCH-01: RuntimeComponentConfig 拆分 | 极高（1w+） |
+
+共发现 12 个问题：2 High / 6 Medium / 4 Low
 
 ## 评审快照
 
@@ -298,10 +325,10 @@
   "kind": "limcode.review",
   "reviewRunId": "review-mnqkbxgt-8gu1c6",
   "createdAt": "2026-04-08T00:00:00.000Z",
-  "updatedAt": "2026-04-08T21:36:43.982Z",
-  "finalizedAt": null,
-  "status": "in_progress",
-  "overallDecision": null,
+  "updatedAt": "2026-04-08T21:37:46.250Z",
+  "finalizedAt": "2026-04-08T21:37:46.250Z",
+  "status": "completed",
+  "overallDecision": "conditionally_accepted",
   "header": {
     "title": "CharacterStudio 技能编辑器模块 Code Review",
     "date": "2026-04-08",
@@ -311,8 +338,8 @@
     "markdown": "# CharacterStudio 技能编辑器模块 Code Review\n\n## 审查范围\n\n- `Source/CharacterStudio/Abilities/` 目录下全部 12 个文件\n- `Source/CharacterStudio/UI/Dialog_AbilityEditor*.cs` 系列 14 个 partial class 文件\n- `Source/CharacterStudio/UI/AbilityEditorExtensionRegistry.cs`\n- `Defs/AbilityExampleDefs/`\n\n## 总体评价\n\n技能编辑器模块实现了一套 **非常完备的模块化技能系统**，从编辑器 UI 到运行时执行链路、从视觉特效到热键系统，功能覆盖面广且设计目标清晰。代码有良好的注释和文档意识。但由于功能持续堆叠，部分区域出现了明显的 **技术债务**，需要有针对性地治理。"
   },
   "summary": {
-    "latestConclusion": "审查了运行时性能热点、内存分配模式、并发安全性、工厂模式效率、序列化健壮性等方面的问题。同时覆盖了编辑器 UI 层的 Dialog_AbilityEditor partial class 体系和扩展注册表设计。",
-    "recommendedNextAction": null,
+    "latestConclusion": "## 总体评价\n\nCharacterStudio 技能编辑器模块实现了一套**功能极为丰富的模块化技能系统**，涵盖 8 种效果类型、30 种运行时组件、16+ 种视觉特效、13 个热键槽位、飞行/时停/盾牌等高级玩法，并配有完整的编辑器 UI、导入导出、验证、预览等能力。在 RimWorld Mod 生态中属于高水平的技能系统实现。\n\n### 亮点\n- **架构分层清晰**：编辑器数据模型（ModularAbilityDef）→ 运行时 AbilityDef 转换（AbilityGrantUtility）→ 执行引擎（CompAbilityEffect_Modular）→ 效果/视觉 Worker 工厂，层次分明\n- **验证体系完善**：AbilityValidationResult 系统覆盖了全部效果类型、运行时组件的参数校验和冲突检测\n- **扩展性设计**：AbilityEditorExtensionRegistry 允许外部模组注册自定义面板；EffectWorker/VisualEffectWorker 支持运行时注册\n- **NormalizeForSave/NormalizeLegacyData 兼容性思路**值得肯定\n\n### 主要风险\n1. **可维护性债务严重**（2 个 High）：AbilityRuntimeComponentConfig 上帝对象和热键槽位重复代码是最大的技术债务，新增功能的成本正在加速上升\n2. **功能性 Bug**（2 个 Medium）：CopyHotkeyConfig 和 SanitizeHotkeyConfigAgainstAbilities 未覆盖全部 13 个槽位，会导致 T-V 槽位配置丢失\n3. **性能隐患**：FindThingById 全地图线性扫描在高频 Tick 中存在风险\n\n### 推荐优先级\n\n| 优先级 | 问题 | 工作量 |\n|--------|------|--------|\n| P0 (立即) | F-QUAL-04/05: 补全 CopyHotkeyConfig 和 Sanitize 的槽位覆盖 | 低（1h） |\n| P1 (短期) | F-PERF-01: Worker 工厂改单例 | 低（2h） |\n| P1 (短期) | F-PERF-02: FindThingById 改直接引用 | 中（4h） |\n| P1 (短期) | F-ARCH-03: 删除 HotkeyRuntimeComponent 重复代码 | 低（2h） |\n| P2 (中期) | F-ARCH-02: 热键槽位数据结构重构 | 高（2-3d） |\n| P2 (中期) | F-ARCH-04: VFX 位置解析统一 | 中（1d） |\n| P3 (长期) | F-ARCH-01: RuntimeComponentConfig 拆分 | 极高（1w+） |\n\n共发现 12 个问题：2 High / 6 Medium / 4 Low",
+    "recommendedNextAction": "立即修复 P0 级的 CopyHotkeyConfig/SanitizeHotkeyConfig 热键槽位遗漏 Bug，然后按 P1 优先级处理性能相关问题。",
     "reviewedModules": [
       "Abilities/ModularAbilityDef.cs",
       "Abilities/CompAbilityEffect_Modular.cs",
@@ -326,7 +353,9 @@
       "Abilities/AbilityVanillaFlightUtility.cs",
       "UI/Dialog_AbilityEditor.cs",
       "UI/Dialog_AbilityEditor.Labels.cs",
-      "UI/AbilityEditorExtensionRegistry.cs"
+      "UI/AbilityEditorExtensionRegistry.cs",
+      "Abilities/Patch_AbilityRuntimeTick.cs",
+      "Abilities/Verb_CastAbilityStraightJump.cs"
     ]
   },
   "stats": {
@@ -696,8 +725,8 @@
   ],
   "render": {
     "rendererVersion": 4,
-    "bodyHash": "sha256:a02498a66cb6066460e8894f26f914be2d5eee0e19154eca11a7fef43e24b930",
-    "generatedAt": "2026-04-08T21:36:43.982Z",
+    "bodyHash": "sha256:fc8c408fd1b16fefd33ef848eeed5172e31f27a7a0bff82ab02a5ae35b0fb766",
+    "generatedAt": "2026-04-08T21:37:46.250Z",
     "locale": "zh-CN"
   }
 }
