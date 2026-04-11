@@ -531,12 +531,24 @@ namespace CharacterStudio.UI
                 // 获取肖像
                 // 注意：zoom 参数在 PortraitsCache.Get 中控制相机的 OrthographicSize
                 // 较大的 zoom 值 (例如 1.5) 会放大 Pawn
+                float effectiveZoom = zoom;
+                var skinComp = mannequinPawn.GetComp<CompPawnSkin>();
+                PawnSkinDef? activeSkin = skinComp?.ActiveSkin;
+                if (activeSkin != null
+                    && !float.IsNaN(activeSkin.globalTextureScale)
+                    && !float.IsInfinity(activeSkin.globalTextureScale)
+                    && activeSkin.globalTextureScale > 0.01f)
+                {
+                    // Portrait zoom scales the whole pawn as one unit. Smaller scale means zoom out.
+                    effectiveZoom /= activeSkin.globalTextureScale;
+                }
+
                 var portrait = PortraitsCache.Get(
                     mannequinPawn,
                     portraitSize,
                     rotation,
                     PreviewCameraOffset, // 以头部区域为预览中心，而非默认身体中心
-                    zoom, // 传递 zoom 参数给 PortraitsCache
+                    effectiveZoom, // 传递整体缩放后的 zoom 给 PortraitsCache
                     showHeadgear,
                     showClothes
                 );

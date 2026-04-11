@@ -40,12 +40,16 @@ namespace CharacterStudio.UI
         private readonly HashSet<string> queuedThumbnailLoads = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         private string currentPath;
-        private readonly Action<string> onFileSelected;
+        private readonly Action<string>? onFileSelected;
         private readonly string filter;
         private Vector2 scrollPos;
         private string searchText = "";
         private string? selectedFilePath;
         private string? hoveredFilePath;
+        
+        private readonly bool multiSelect;
+        private readonly Action<List<string>>? onFilesSelected;
+        private readonly HashSet<string> multiSelectedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         private List<FileSystemInfo> currentFiles = new List<FileSystemInfo>();
 
@@ -53,13 +57,53 @@ namespace CharacterStudio.UI
 
         public Dialog_FileBrowser(string initialPath, Action<string> onSelect, string fileFilter = "*.png")
         {
+            string fallbackPath = Path.Combine(GenFilePaths.ConfigFolderPath, "CharacterStudio");
+            try
+            {
+                if (!Directory.Exists(fallbackPath))
+                {
+                    Directory.CreateDirectory(fallbackPath);
+                }
+            }
+            catch { }
+
             currentPath = (!string.IsNullOrWhiteSpace(initialPath)
                 && Path.IsPathRooted(initialPath)
                 && Directory.Exists(initialPath))
                 ? initialPath
-                : GenFilePaths.ModsFolderPath;
+                : fallbackPath;
 
             onFileSelected = onSelect;
+            filter = fileFilter;
+            doCloseX = true;
+            doCloseButton = true;
+            draggable = true;
+            resizeable = true;
+            absorbInputAroundWindow = true;
+
+            RefreshFileList();
+        }
+
+        public Dialog_FileBrowser(string initialPath, Action<List<string>> onSelectMulti, string fileFilter = "*.xml")
+        {
+            string fallbackPath = Path.Combine(GenFilePaths.ConfigFolderPath, "CharacterStudio");
+            try
+            {
+                if (!Directory.Exists(fallbackPath))
+                {
+                    Directory.CreateDirectory(fallbackPath);
+                }
+            }
+            catch { }
+
+            currentPath = (!string.IsNullOrWhiteSpace(initialPath)
+                && Path.IsPathRooted(initialPath)
+                && Directory.Exists(initialPath))
+                ? initialPath
+                : fallbackPath;
+
+            this.onFilesSelected = onSelectMulti;
+            this.multiSelect = true;
             filter = fileFilter;
             doCloseX = true;
             doCloseButton = true;
@@ -193,8 +237,22 @@ namespace CharacterStudio.UI
 
         private void DrawBody(Rect inRect, float y)
         {
-            Rect bodyRect = new Rect(0f, y, inRect.width, inRect.height - y - 10f);
+            float bottomReserved = multiSelect ? 40f : 0f;
+            Rect bodyRect = new Rect(0f, y, inRect.width, inRect.height - y - bottomReserved - 10f);
             DrawFileList(bodyRect);
+            
+            if (multiSelect)
+            {
+                Rect bottomBar = new Rect(0f, inRect.height - 40f, inRect.width, 40f);
+                if (UIHelper.DrawToolbarButton(new Rect(bottomBar.xMax - 120f, bottomBar.y + 4f, 120f, 32f), "CS_Studio_Btn_OK".Translate(), accent: true))
+                {
+                    onFilesSelected?.Invoke(multiSelectedPaths.ToList());
+                    Close();
+                }
+                Text.Anchor = TextAnchor.MiddleLeft;
+                Widgets.Label(new Rect(bottomBar.x, bottomBar.y, bottomBar.width - 130f, 40f), "已选择 {0} 个文件".Formatted(multiSelectedPaths.Count));
+                Text.Anchor = TextAnchor.UpperLeft;
+            }
         }
 
         private void DrawFileList(Rect listRect)
@@ -224,8 +282,17 @@ namespace CharacterStudio.UI
         private void DrawFileEntry(FileSystemInfo item, int index, float width, float y)
         {
             Rect entryRect = new Rect(0f, y, width, EntryHeight);
-            bool isSelected = !string.IsNullOrWhiteSpace(selectedFilePath)
-                && string.Equals(selectedFilePath, item.FullName, StringComparison.OrdinalIgnoreCase);
+            
+            bool isSelected = false;
+            if (multiSelect && item is FileInfo)
+            {
+                isSelected = multiSelectedPaths.Contains(item.FullName);
+            }
+            else
+            {
+                isSelected = !string.IsNullOrWhiteSpace(selectedFilePath)
+                    && string.Equals(selectedFilePath, item.FullName, StringComparison.OrdinalIgnoreCase);
+            }
             bool isHovered = Mouse.IsOver(entryRect);
 
             UIHelper.DrawAlternatingRowBackground(entryRect, index);
@@ -288,8 +355,6 @@ namespace CharacterStudio.UI
 
         private void HandleItemClick(FileSystemInfo item)
         {
-            selectedFilePath = item.FullName;
-
             if (item is DirectoryInfo)
             {
                 currentPath = item.FullName;
@@ -299,8 +364,23 @@ namespace CharacterStudio.UI
                 return;
             }
 
-            onFileSelected?.Invoke(item.FullName);
-            Close();
+            if (multiSelect)
+            {
+                if (multiSelectedPaths.Contains(item.FullName))
+                {
+                    multiSelectedPaths.Remove(item.FullName);
+                }
+                else
+                {
+                    multiSelectedPaths.Add(item.FullName);
+                }
+            }
+            else
+            {
+                selectedFilePath = item.FullName;
+                onFileSelected?.Invoke(item.FullName);
+                Close();
+            }
         }
 
         private void DrawEntryThumbnail(FileSystemInfo item, Rect rect)

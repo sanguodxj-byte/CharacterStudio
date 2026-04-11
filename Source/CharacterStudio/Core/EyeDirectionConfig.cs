@@ -59,15 +59,30 @@ namespace CharacterStudio.Core
 
         public class PupilMotionConfig
         {
-            public float frontLeftEyeOffsetX = -0.00018f;
-            public float frontRightEyeOffsetX = 0.00018f;
-            public float sideFacingOffsetX = 0.00018f;
+            // ── 正面朝向：左瞳孔方向偏移 ──
+            public float leftPupil_frontBaseX = -0.00018f;
+            public float leftPupil_dirLeftX = -0.00018f;
+            public float leftPupil_dirRightX = 0.00018f;
+            public float leftPupil_dirUpZ = -0.00014f;
+            public float leftPupil_dirDownZ = 0.00016f;
+
+            // ── 正面朝向：右瞳孔方向偏移 ──
+            public float rightPupil_frontBaseX = 0.00018f;
+            public float rightPupil_dirLeftX = -0.00018f;
+            public float rightPupil_dirRightX = 0.00018f;
+            public float rightPupil_dirUpZ = -0.00014f;
+            public float rightPupil_dirDownZ = 0.00016f;
+
+            // ── 侧面朝向偏移 ──
+            public float side_baseX = 0.00018f;
+            public float side_dirLeftX = -0.00012f;
+            public float side_dirRightX = 0.00012f;
+            public float side_dirUpZ = -0.00010f;
+            public float side_dirDownZ = 0.00012f;
+
+            // ── 通用参数 ──
             public float sideBiasX = 0.000028f;
             public float slowWaveOffsetZ = 0.00005f;
-            public float dirLeftOffsetX = -0.00018f;
-            public float dirRightOffsetX = 0.00018f;
-            public float dirUpOffsetZ = -0.00014f;
-            public float dirDownOffsetZ = 0.00016f;
             public float neutralSoftOffsetZ = 0.00004f;
             public float neutralLookDownOffsetZ = 0.00012f;
             public float neutralGlanceWaveOffsetX = 0.00010f;
@@ -113,17 +128,21 @@ namespace CharacterStudio.Core
 
             public PupilMotionConfig Clone() => (PupilMotionConfig)MemberwiseClone();
 
-            public void EnsureDirectionalDefaults()
-            {
-                if (Mathf.Approximately(frontLeftEyeOffsetX, 0f) && Mathf.Approximately(frontRightEyeOffsetX, 0f))
-                {
-                    frontLeftEyeOffsetX = dirLeftOffsetX;
-                    frontRightEyeOffsetX = dirRightOffsetX;
-                }
-
-                if (Mathf.Approximately(sideFacingOffsetX, 0f))
-                    sideFacingOffsetX = Mathf.Max(Mathf.Abs(dirLeftOffsetX), Mathf.Abs(dirRightOffsetX));
-            }
+            // 向后兼容：旧数据迁移
+            [System.Obsolete("Use leftPupil_dirLeftX / rightPupil_dirLeftX instead")]
+            public float dirLeftOffsetX { set { leftPupil_dirLeftX = value; rightPupil_dirLeftX = value; } }
+            [System.Obsolete("Use leftPupil_dirRightX / rightPupil_dirRightX instead")]
+            public float dirRightOffsetX { set { leftPupil_dirRightX = value; rightPupil_dirRightX = value; } }
+            [System.Obsolete("Use leftPupil_dirUpZ / rightPupil_dirUpZ instead")]
+            public float dirUpOffsetZ { set { leftPupil_dirUpZ = value; rightPupil_dirUpZ = value; } }
+            [System.Obsolete("Use leftPupil_dirDownZ / rightPupil_dirDownZ instead")]
+            public float dirDownOffsetZ { set { leftPupil_dirDownZ = value; rightPupil_dirDownZ = value; } }
+            [System.Obsolete("Use leftPupil_frontBaseX instead")]
+            public float frontLeftEyeOffsetX { set { leftPupil_frontBaseX = value; } }
+            [System.Obsolete("Use rightPupil_frontBaseX instead")]
+            public float frontRightEyeOffsetX { set { rightPupil_frontBaseX = value; } }
+            [System.Obsolete("Use side_baseX instead")]
+            public float sideFacingOffsetX { set { side_baseX = value; } }
         }
 
         public class LidMotionConfig

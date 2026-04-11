@@ -907,5 +907,45 @@ namespace CharacterStudio.UI
 
             return Widgets.ButtonInvisible(rect) && !isActive;
         }
+
+        /// <summary>
+        /// Draws a text field with a browse button ("...") for file/path selection.
+        /// Returns true if the text value was changed by the user.
+        /// Extracted from Dialog_SkinEditor.Weapon.cs and Dialog_SkinEditor.Properties.Equipment.cs
+        /// to eliminate duplication (review F-UI-02).
+        /// </summary>
+        public static bool DrawPathFieldWithBrowser(ref float rowY, float width, string label, ref string value, Action browseAction)
+        {
+            Rect rowRect = new Rect(0f, rowY, width, RowHeight);
+            Text.Font = GameFont.Small;
+
+            float actualLabelWidth = Mathf.Max(LabelWidth, Text.CalcSize(label).x + 10f);
+            float buttonWidth = 30f;
+            float spacing = 5f;
+            float fieldWidth = Mathf.Max(40f, rowRect.width - actualLabelWidth - buttonWidth - spacing);
+
+            Widgets.Label(new Rect(rowRect.x, rowRect.y, actualLabelWidth, 24f), label);
+
+            string newValue = Widgets.TextField(
+                new Rect(rowRect.x + actualLabelWidth, rowRect.y, fieldWidth, 24f),
+                value ?? string.Empty);
+
+            bool changed = false;
+            if (newValue != value)
+            {
+                value = SanitizeInput(newValue, 260);
+                changed = true;
+            }
+
+            if (Widgets.ButtonText(
+                new Rect(rowRect.x + actualLabelWidth + fieldWidth + spacing, rowRect.y, buttonWidth, 24f),
+                "..."))
+            {
+                browseAction?.Invoke();
+            }
+
+            rowY += RowHeight;
+            return changed;
+        }
     }
 }

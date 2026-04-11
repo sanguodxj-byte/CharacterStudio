@@ -8,6 +8,17 @@ namespace CharacterStudio.UI
 {
     public partial class Dialog_SkinEditor
     {
+#pragma warning disable CS0618
+        private static readonly LayerColorType[] CachedLayerColorTypes =
+            (LayerColorType[])Enum.GetValues(typeof(LayerColorType));
+#pragma warning restore CS0618
+        private static readonly LayerRole[] CachedLayerRoles =
+            (LayerRole[])Enum.GetValues(typeof(LayerRole));
+        private static readonly LayerVariantLogic[] CachedLayerVariantLogics =
+            (LayerVariantLogic[])Enum.GetValues(typeof(LayerVariantLogic));
+        private static readonly LayerAnimationType[] CachedLayerAnimationTypes =
+            (LayerAnimationType[])Enum.GetValues(typeof(LayerAnimationType));
+
         private static string BuildVariantLogicTooltip(LayerVariantLogic logic)
         {
             string tooltip = "CS_Studio_Variant_LogicTip".Translate();
@@ -51,7 +62,7 @@ namespace CharacterStudio.UI
             GUI.color = UIHelper.BorderColor;
             Widgets.DrawBox(propsRect, 1);
             GUI.color = Color.white;
-            Rect viewRect = new Rect(0, 0, propsRect.width - 20, 1600);
+            Rect viewRect = new Rect(0, 0, propsRect.width - 20, lastLayersPanelHeight);
 
             Widgets.BeginScrollView(propsRect.ContractedBy(2f), ref propsScrollPos, viewRect);
 
@@ -247,7 +258,7 @@ namespace CharacterStudio.UI
 
 #pragma warning disable CS0618
                 UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Prop_ColorType".Translate(), layer.colorType,
-                    (LayerColorType[])Enum.GetValues(typeof(LayerColorType)),
+                    CachedLayerColorTypes,
                     type => $"CS_Studio_ColorType_{type}".Translate(),
                     val =>
                     {
@@ -274,7 +285,7 @@ namespace CharacterStudio.UI
             if (DrawCollapsibleSection(ref y, width, "CS_Studio_Section_VariantsExpression".Translate(), "Variants"))
             {
                 UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Variant_LayerRole".Translate(), layer.role,
-                    (LayerRole[])Enum.GetValues(typeof(LayerRole)),
+                    CachedLayerRoles,
                     option => ($"CS_Studio_LayerRole_{option}").Translate(),
                     val =>
                     {
@@ -282,7 +293,7 @@ namespace CharacterStudio.UI
                     }, tooltip: "CS_Studio_Variant_LayerRoleTip".Translate());
 
                 UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Variant_Logic".Translate(), layer.variantLogic,
-                    (LayerVariantLogic[])Enum.GetValues(typeof(LayerVariantLogic)),
+                    CachedLayerVariantLogics,
                     option => ($"CS_Studio_VariantLogic_{option}").Translate(),
                     val =>
                     {
@@ -473,7 +484,7 @@ namespace CharacterStudio.UI
 
             UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Section_Animation".Translate());
             UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Anim_Type".Translate(), layer.animationType,
-                (LayerAnimationType[])Enum.GetValues(typeof(LayerAnimationType)),
+                CachedLayerAnimationTypes,
                 type => $"CS_Studio_Anim_{type}".Translate(),
                 val =>
                 {

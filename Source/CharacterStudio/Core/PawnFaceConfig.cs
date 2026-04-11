@@ -1398,7 +1398,7 @@ namespace CharacterStudio.Core
             }
         }
 
-        public void EnsureOverlayEntry(string overlayId)
+        public void EnsureOverlayEntry(string overlayId, LayeredFacePartType partType = LayeredFacePartType.Overlay)
         {
             layeredParts ??= new List<LayeredFacePartConfig>();
 
@@ -1408,7 +1408,7 @@ namespace CharacterStudio.Core
 
             bool exists = layeredParts.Any(p =>
                 p != null
-                && p.partType == LayeredFacePartType.Overlay
+                && p.partType == partType
                 && MatchesOverlayId(p, normalized));
 
             if (exists)
@@ -1420,7 +1420,7 @@ namespace CharacterStudio.Core
 
             layeredParts.Add(new LayeredFacePartConfig
             {
-                partType = LayeredFacePartType.Overlay,
+                partType = partType,
                 expression = ExpressionType.Neutral,
                 texPath = string.Empty,
                 enabled = false,
@@ -1429,7 +1429,7 @@ namespace CharacterStudio.Core
             });
         }
 
-        public void RemoveOverlayGroup(string overlayId)
+        public void RemoveOverlayGroup(string overlayId, LayeredFacePartType partType = LayeredFacePartType.Overlay)
         {
             if (layeredParts == null || layeredParts.Count == 0)
                 return;
@@ -1437,7 +1437,7 @@ namespace CharacterStudio.Core
             string normalized = NormalizeOverlayId(overlayId);
             layeredParts.RemoveAll(p =>
                 p != null
-                && p.partType == LayeredFacePartType.Overlay
+                && p.partType == partType
                 && MatchesOverlayId(p, normalized));
 
             NormalizeOverlayOrders();

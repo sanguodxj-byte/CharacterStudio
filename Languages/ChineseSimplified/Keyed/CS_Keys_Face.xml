@@ -224,6 +224,10 @@
     <CS_Studio_Face_MotionSection_PupilMotion>瞳孔程序控制</CS_Studio_Face_MotionSection_PupilMotion>
     <CS_Studio_Face_PupilCore_Title>核心四项</CS_Studio_Face_PupilCore_Title>
     <CS_Studio_Face_PupilCore_Hint>先调这四项：它们直接决定瞳孔向左 / 向右 / 向上 / 向下看的偏移距离。</CS_Studio_Face_PupilCore_Hint>
+    <CS_Studio_Face_PupilCore_GazeOffset>注视方向附加偏移</CS_Studio_Face_PupilCore_GazeOffset>
+    <CS_Studio_Face_PupilCore_FrontLeftEyeOffsetX>正面左眼 X 偏移</CS_Studio_Face_PupilCore_FrontLeftEyeOffsetX>
+    <CS_Studio_Face_PupilCore_FrontRightEyeOffsetX>正面右眼 X 偏移</CS_Studio_Face_PupilCore_FrontRightEyeOffsetX>
+    <CS_Studio_Face_PupilCore_SideFacingOffsetX>侧面朝向 X 偏移</CS_Studio_Face_PupilCore_SideFacingOffsetX>
     <CS_Studio_Face_PupilAdvanced_Title>高级细调</CS_Studio_Face_PupilAdvanced_Title>
     <CS_Studio_Face_PupilAdvanced_Hint>以下参数用于不同表情、缓动与缩放细节；一般只在核心四项调好后再继续微调。</CS_Studio_Face_PupilAdvanced_Hint>
     <CS_Studio_Face_MotionSection_BrowMotion>眉毛运动参数</CS_Studio_Face_MotionSection_BrowMotion>

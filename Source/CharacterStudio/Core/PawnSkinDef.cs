@@ -123,6 +123,9 @@ namespace CharacterStudio.Core
         /// <summary>图层列表</summary>
         public List<PawnLayerConfig> layers = new List<PawnLayerConfig>();
 
+        /// <summary>全局纹理缩放（统一影响走 CustomLayer 的纹理渲染）</summary>
+        public float globalTextureScale = 1f;
+
         // ─────────────────────────────────────────────
         // 目标限制
         // ─────────────────────────────────────────────
@@ -233,6 +236,7 @@ namespace CharacterStudio.Core
                 author = this.author,
                 version = this.version,
                 previewTexPath = this.previewTexPath,
+                globalTextureScale = this.globalTextureScale,
                 faceConfig = this.faceConfig?.Clone() ?? new PawnFaceConfig(),
                 abilityHotkeys = this.abilityHotkeys?.Clone() ?? new SkinAbilityHotkeyConfig(),
                 baseAppearance = this.baseAppearance?.Clone() ?? new BaseAppearanceConfig(),

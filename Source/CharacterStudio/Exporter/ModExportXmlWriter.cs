@@ -23,6 +23,8 @@ namespace CharacterStudio.Exporter
             }
 
             var root = new XElement("baseAppearance");
+            root.Add(new XElement("globalScale", baseAppearance.drawSizeScale.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            root.Add(new XElement("drawSizeScale", baseAppearance.drawSizeScale.ToString(System.Globalization.CultureInfo.InvariantCulture)));
             var slotsEl = new XElement("slots");
 
             foreach (var slot in baseAppearance.slots)
@@ -892,6 +894,7 @@ namespace CharacterStudio.Exporter
                         new XElement("hideVanillaBody", skin.hideVanillaBody.ToString().ToLower()),
                         new XElement("hideVanillaApparel", skin.hideVanillaApparel.ToString().ToLower()),
                         new XElement("humanlikeOnly", skin.humanlikeOnly.ToString().ToLower()),
+                        new XElement("globalTextureScale", skin.globalTextureScale.ToString(System.Globalization.CultureInfo.InvariantCulture)),
                         new XElement("author", author),
                         new XElement("version", version),
                         !string.IsNullOrEmpty(skin.previewTexPath) ? new XElement("previewTexPath", skin.previewTexPath) : null,
@@ -1000,8 +1003,8 @@ namespace CharacterStudio.Exporter
             var recipeDef = new XElement("RecipeDef",
                 new XAttribute("ParentName", "MakeRecipeBase"),
                 new XElement("defName", recipeDefName),
-                new XElement("label", $"制作{equipment.GetDisplayLabel()}"),
-                new XElement("jobString", $"正在制作{equipment.GetDisplayLabel()}"),
+                new XElement("label", $"Make {equipment.GetDisplayLabel()}"),
+                new XElement("jobString", $"Making {equipment.GetDisplayLabel()}"),
                 new XElement("workAmount", equipment.recipeWorkAmount.ToString(System.Globalization.CultureInfo.InvariantCulture)),
                 new XElement("products",
                     new XElement("li",
@@ -1619,10 +1622,21 @@ namespace CharacterStudio.Exporter
             el.Add(new XElement("pupilMotion",
                 new XElement("sideBiasX", eyeCfg.pupilMotion.sideBiasX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
                 new XElement("slowWaveOffsetZ", eyeCfg.pupilMotion.slowWaveOffsetZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
-                new XElement("dirLeftOffsetX", eyeCfg.pupilMotion.dirLeftOffsetX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
-                new XElement("dirRightOffsetX", eyeCfg.pupilMotion.dirRightOffsetX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
-                new XElement("dirUpOffsetZ", eyeCfg.pupilMotion.dirUpOffsetZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
-                new XElement("dirDownOffsetZ", eyeCfg.pupilMotion.dirDownOffsetZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("leftPupil_frontBaseX", eyeCfg.pupilMotion.leftPupil_frontBaseX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("leftPupil_dirLeftX", eyeCfg.pupilMotion.leftPupil_dirLeftX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("leftPupil_dirRightX", eyeCfg.pupilMotion.leftPupil_dirRightX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("leftPupil_dirUpZ", eyeCfg.pupilMotion.leftPupil_dirUpZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("leftPupil_dirDownZ", eyeCfg.pupilMotion.leftPupil_dirDownZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("rightPupil_frontBaseX", eyeCfg.pupilMotion.rightPupil_frontBaseX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("rightPupil_dirLeftX", eyeCfg.pupilMotion.rightPupil_dirLeftX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("rightPupil_dirRightX", eyeCfg.pupilMotion.rightPupil_dirRightX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("rightPupil_dirUpZ", eyeCfg.pupilMotion.rightPupil_dirUpZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("rightPupil_dirDownZ", eyeCfg.pupilMotion.rightPupil_dirDownZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("side_baseX", eyeCfg.pupilMotion.side_baseX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("side_dirLeftX", eyeCfg.pupilMotion.side_dirLeftX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("side_dirRightX", eyeCfg.pupilMotion.side_dirRightX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("side_dirUpZ", eyeCfg.pupilMotion.side_dirUpZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("side_dirDownZ", eyeCfg.pupilMotion.side_dirDownZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
                 new XElement("neutralSoftOffsetZ", eyeCfg.pupilMotion.neutralSoftOffsetZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
                 new XElement("neutralLookDownOffsetZ", eyeCfg.pupilMotion.neutralLookDownOffsetZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
                 new XElement("neutralGlanceWaveOffsetX", eyeCfg.pupilMotion.neutralGlanceWaveOffsetX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),

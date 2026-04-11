@@ -44,6 +44,11 @@ namespace CharacterStudio.UI
         private bool includeAbilities = false;
         private bool includeRuntimeTriggers = false;
         private bool copyTextures = true;
+
+        private List<string> skinDefXmlPaths = new List<string>();
+        private List<string> pawnKindDefXmlPaths = new List<string>();
+        private List<string> summonItemXmlPaths = new List<string>();
+        private List<string> abilityXmlPaths = new List<string>();
         private SummonArrivalMode roleCardArrivalMode = SummonArrivalMode.DropPod;
         private SummonSpawnEventMode roleCardSpawnEvent = SummonSpawnEventMode.PositiveLetter;
         private SummonSpawnAnimationMode roleCardSpawnAnimation = SummonSpawnAnimationMode.ExplosionEffect;
@@ -54,6 +59,7 @@ namespace CharacterStudio.UI
         private const float ExportRightsConfirmWaitSeconds = 10f;
 
         private Vector2 scrollPos;
+        private float scrollViewHeight = 800f;
 
         public override Vector2 InitialSize => new Vector2(580f, 680f);
 
@@ -92,7 +98,7 @@ namespace CharacterStudio.UI
             float fieldWidth = inRect.width - labelWidth - 20;
 
             Rect scrollRect = new Rect(0, y, inRect.width, inRect.height - y - 80);
-            Rect viewRect = new Rect(0, 0, scrollRect.width - 16, 720);
+            Rect viewRect = new Rect(0, 0, scrollRect.width - 16, scrollViewHeight);
 
             UIHelper.DrawContentCard(scrollRect);
 
@@ -129,12 +135,13 @@ namespace CharacterStudio.UI
             }
             vy += UIHelper.RowHeight;
 
-            Widgets.Label(new Rect(0, vy, width, 42f), "CS_Studio_Export_ModuleSummary".Translate());
+            Widgets.Label(new Rect(0, vy, width, 42f), "CS_Studio_Export_ModuleSummary".Translate(GetSelectedModulesSummary()));
             vy += 46f;
 
             // 模块化开关
             UIHelper.DrawSectionTitle(ref vy, width, "CS_Studio_Export_ModuleOptions".Translate());
             UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Export_IncludeSkinDef".Translate(), ref includeSkinDef);
+            if (includeSkinDef) DrawXmlSelectorRow(ref vy, width, "CS_Studio_Export_SkinDefXmlPath".Translate(), skinDefXmlPaths);
 
             if (exportMode == ExportMode.CosmeticPack)
             {
@@ -153,36 +160,30 @@ namespace CharacterStudio.UI
             {
                 bool canExportAbilities = abilities.Count > 0;
                 UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Export_IncludePawnKind".Translate(), ref includePawnKind, "CS_Studio_Export_ModulePawnKindHint".Translate());
+                if (includePawnKind) DrawXmlSelectorRow(ref vy, width, "CS_Studio_Export_PawnKindDefXmlPath".Translate(), pawnKindDefXmlPaths);
+
                 UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Export_IncludeSummonItem".Translate(), ref includeSummonItem, "CS_Studio_Export_ModuleSummonHint".Translate());
+                if (includeSummonItem) DrawXmlSelectorRow(ref vy, width, "CS_Studio_Export_SummonItemXmlPath".Translate(), summonItemXmlPaths);
                 UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Export_IncludeRuntimeTriggers".Translate(), ref includeRuntimeTriggers,
                     characterDefinition.runtimeTriggers != null && characterDefinition.runtimeTriggers.Count > 0
                         ? "CS_Studio_Export_IncludeRuntimeTriggers_Hint".Translate()
                         : "CS_Studio_Export_IncludeRuntimeTriggers_EmptyHint".Translate());
+
+                if (includeRuntimeTriggers)
+                {
+                    Rect triggerBtnRect = new Rect(0, vy, width, 24f);
+                    if (UIHelper.DrawToolbarButton(triggerBtnRect, "CS_Studio_RuntimeTriggers_Title".Translate()))
+                    {
+                        Find.WindowStack.Add(new Dialog_RuntimeTriggers(characterDefinition, () => { }));
+                    }
+                    vy += 30f;
+                }
+
                 UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Export_IncludeAbilities".Translate(), ref includeAbilities,
                     canExportAbilities
                         ? "CS_Studio_Export_ModuleAbilitiesHint".Translate()
                         : "CS_Studio_Export_ModuleAbilitiesEmptyHint".Translate());
-
-                if (includeSummonItem)
-                {
-                    UIHelper.DrawSectionTitle(ref vy, width, "CS_Studio_Export_RoleCardOptions".Translate());
-                    UIHelper.DrawPropertyDropdown(ref vy, width, "CS_Studio_Export_RoleCardArrival".Translate(), roleCardArrivalMode,
-                        (SummonArrivalMode[])Enum.GetValues(typeof(SummonArrivalMode)),
-                        mode => $"CS_Studio_Export_RoleCardArrival_{mode}".Translate(),
-                        val => roleCardArrivalMode = val);
-                    UIHelper.DrawPropertyDropdown(ref vy, width, "CS_Studio_Export_RoleCardEvent".Translate(), roleCardSpawnEvent,
-                        (SummonSpawnEventMode[])Enum.GetValues(typeof(SummonSpawnEventMode)),
-                        mode => $"CS_Studio_Export_RoleCardEvent_{mode}".Translate(),
-                        val => roleCardSpawnEvent = val);
-                    UIHelper.DrawPropertyDropdown(ref vy, width, "CS_Studio_Export_RoleCardAnimation".Translate(), roleCardSpawnAnimation,
-                        (SummonSpawnAnimationMode[])Enum.GetValues(typeof(SummonSpawnAnimationMode)),
-                        mode => $"CS_Studio_Export_RoleCardAnimation_{mode}".Translate(),
-                        val => roleCardSpawnAnimation = val);
-                    if (roleCardSpawnAnimation != SummonSpawnAnimationMode.None)
-                    {
-                        UIHelper.DrawPropertySlider(ref vy, width, "CS_Studio_Export_RoleCardAnimationScale".Translate(), ref roleCardSpawnAnimationScale, 0.1f, 5f, "F2");
-                    }
-                }
+                if (includeAbilities) DrawXmlSelectorRow(ref vy, width, "CS_Studio_Export_AbilityXmlPath".Translate(), abilityXmlPaths);
             }
 
             UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Export_CopyTextures".Translate(), ref copyTextures);
@@ -223,6 +224,10 @@ namespace CharacterStudio.UI
             UIHelper.DrawPropertyFieldWithButton(ref vy, width, "CS_Studio_Export_OutputPath".Translate(),
                 outputPath, OnBrowseOutputPath, "CS_Studio_Export_Browse".Translate());
 
+            if (Event.current.type == EventType.Layout)
+            {
+                scrollViewHeight = vy;
+            }
             Widgets.EndScrollView();
 
             // 状态消息
@@ -259,19 +264,20 @@ namespace CharacterStudio.UI
 
         private string GetDefaultOutputPath()
         {
-            // 尝试获取 RimWorld Mods 目录
-            try
-            {
-                string rimworldPath = GenFilePaths.ModsFolderPath;
-                if (Directory.Exists(rimworldPath))
-                {
-                    return rimworldPath;
-                }
-            }
-            catch { }
+            return Path.Combine(GenFilePaths.ConfigFolderPath, "CharacterStudio");
+        }
 
-            // 回退到桌面
-            return Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        private void DrawXmlSelectorRow(ref float y, float width, string label, List<string> pathList)
+        {
+            string displayStatus = pathList.Count > 0 ? "CS_Studio_Export_ExternalFilesSelected".Translate(pathList.Count) : "CS_Studio_Export_DefaultGenerated".Translate();
+            UIHelper.DrawPropertyFieldWithButton(ref y, width, label, displayStatus, () => 
+            {
+                Find.WindowStack.Add(new Dialog_FileBrowser("", paths => 
+                {
+                    pathList.Clear();
+                    pathList.AddRange(paths);
+                }, "*.xml"));
+            }, "...");
         }
 
         private void OnBrowseOutputPath()
@@ -304,6 +310,23 @@ namespace CharacterStudio.UI
             return assetRightsConfirmed
                 && exportWarningAcknowledged
                 && GetRemainingConfirmationSeconds() <= 0f;
+        }
+
+        private string GetSelectedModulesSummary()
+        {
+            var list = new List<string>();
+            if (includeSkinDef) list.Add("CS_Studio_Export_IncludeSkinDef".Translate());
+            if (exportMode == ExportMode.CosmeticPack && exportAsGene) list.Add("CS_Studio_Export_AsGene".Translate());
+            if (exportMode == ExportMode.FullUnit)
+            {
+                if (includePawnKind) list.Add("CS_Studio_Export_IncludePawnKind".Translate());
+                if (includeSummonItem) list.Add("CS_Studio_Export_IncludeSummonItem".Translate());
+                if (includeRuntimeTriggers) list.Add("CS_Studio_Export_IncludeRuntimeTriggers".Translate());
+                if (includeAbilities) list.Add("CS_Studio_Export_IncludeAbilities".Translate());
+            }
+            if (copyTextures) list.Add("CS_Studio_Export_CopyTextures".Translate());
+
+            return list.Count > 0 ? string.Join(" / ", list) : "CS_Studio_None".Translate().ToString();
         }
 
         private void ApplyModePreset()
@@ -356,11 +379,6 @@ namespace CharacterStudio.UI
                 {
                     includePawnKind = true;
                     includeSkinDef = true;
-                }
-
-                if (abilities.Count == 0)
-                {
-                    includeAbilities = false;
                 }
             }
         }
@@ -425,6 +443,12 @@ namespace CharacterStudio.UI
                             IncludeSummonItem = includeSummonItem,
                             IncludeAbilities = includeAbilities,
                             CopyTextures = copyTextures,
+
+                            SkinDefXmlPaths = skinDefXmlPaths,
+                            PawnKindDefXmlPaths = pawnKindDefXmlPaths,
+                            SummonItemXmlPaths = summonItemXmlPaths,
+                            AbilityXmlPaths = abilityXmlPaths,
+
                             RoleCardArrivalMode = roleCardArrivalMode,
                             RoleCardSpawnEvent = roleCardSpawnEvent,
                             RoleCardSpawnAnimation = roleCardSpawnAnimation,

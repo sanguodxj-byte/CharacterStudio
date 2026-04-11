@@ -19,6 +19,8 @@
     <CS_Attr_StartingApparel>初始服装 Def</CS_Attr_StartingApparel>
     <CS_Attr_Tags>标签</CS_Attr_Tags>
     <CS_Attr_Title>称号</CS_Attr_Title>
+    <CS_Studio_Attributes_ExportScattered>导出散件 XML</CS_Studio_Attributes_ExportScattered>
+    <CS_Studio_Attributes_ExportScatteredSuccess>散件 XML 已导出至 Config\CharacterStudio\ScatteredComponents</CS_Studio_Attributes_ExportScatteredSuccess>
     <CS_AttrBuff_AddAny>添加任意属性</CS_AttrBuff_AddAny>
     <CS_AttrBuff_AddCommon>添加常用属性</CS_AttrBuff_AddCommon>
     <CS_AttrBuff_Category_Animal>动物</CS_AttrBuff_Category_Animal>
@@ -39,6 +41,9 @@
     <CS_AttrBuff_Search>搜索属性</CS_AttrBuff_Search>
     <CS_AttrBuff_Section>属性增益 Buff</CS_AttrBuff_Section>
     <CS_AttrBuff_Value>数值</CS_AttrBuff_Value>
+    <CS_AttrBuff_Summary>已配置 {0} 项属性增益，启用 {1} 项</CS_AttrBuff_Summary>
+    <CS_AttrBuff_OpenEditor>打开属性增益编辑器</CS_AttrBuff_OpenEditor>
+    <CS_AttrBuff_ManageBuff>管理属性增益 Buff</CS_AttrBuff_ManageBuff>
     <CS_Studio_RuntimeTriggers_Section>运行时触发器</CS_Studio_RuntimeTriggers_Section>
     <CS_Studio_RuntimeTriggers_Summary>已配置 {0} 个运行时触发器</CS_Studio_RuntimeTriggers_Summary>
     <CS_Studio_RuntimeTriggers_Title>运行时触发器配置</CS_Studio_RuntimeTriggers_Title>

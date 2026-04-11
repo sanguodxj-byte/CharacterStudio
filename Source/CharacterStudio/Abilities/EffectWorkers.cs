@@ -328,35 +328,35 @@ namespace CharacterStudio.Abilities
     }
 
     /// <summary>
-    /// 工厂类 - 使用类型映射而非单例实例
+    /// 工厂类 - 使用单例缓存，EffectWorker 子类均为无状态，单例安全
     /// </summary>
     public static class EffectWorkerFactory
     {
-        // 类型映射，每次调用时创建新实例，避免状态共享问题
-        private static readonly Dictionary<AbilityEffectType, Type> workerTypes = new Dictionary<AbilityEffectType, Type>
+        // 单例缓存，EffectWorker 子类均为无状态（Apply 不依赖实例字段），单例完全安全
+        private static readonly Dictionary<AbilityEffectType, EffectWorker> workerInstances = new Dictionary<AbilityEffectType, EffectWorker>
         {
-            { AbilityEffectType.Damage, typeof(EffectWorker_Damage) },
-            { AbilityEffectType.Heal, typeof(EffectWorker_Heal) },
-            { AbilityEffectType.Buff, typeof(EffectWorker_Status) },
-            { AbilityEffectType.Debuff, typeof(EffectWorker_Status) },
-            { AbilityEffectType.Summon, typeof(EffectWorker_Summon) },
-            { AbilityEffectType.Teleport, typeof(EffectWorker_Teleport) },
-            { AbilityEffectType.Control, typeof(EffectWorker_Control) },
-            { AbilityEffectType.Terraform, typeof(EffectWorker_Terraform) }
+            { AbilityEffectType.Damage, new EffectWorker_Damage() },
+            { AbilityEffectType.Heal, new EffectWorker_Heal() },
+            { AbilityEffectType.Buff, new EffectWorker_Status() },
+            { AbilityEffectType.Debuff, new EffectWorker_Status() },
+            { AbilityEffectType.Summon, new EffectWorker_Summon() },
+            { AbilityEffectType.Teleport, new EffectWorker_Teleport() },
+            { AbilityEffectType.Control, new EffectWorker_Control() },
+            { AbilityEffectType.Terraform, new EffectWorker_Terraform() }
         };
 
         /// <summary>
-        /// 获取效果工作器（每次调用创建新实例）
+        /// 获取效果工作器（返回缓存的单例实例）
         /// </summary>
         public static EffectWorker GetWorker(AbilityEffectType type)
         {
-            if (workerTypes.TryGetValue(type, out var workerType))
+            if (workerInstances.TryGetValue(type, out var worker))
             {
-                return (EffectWorker)Activator.CreateInstance(workerType);
+                return worker;
             }
             
             Log.Warning($"[CharacterStudio] [EffectWorkerFactory] 未知的效果类型: {type}, 使用默认伤害效果");
-            return new EffectWorker_Damage();
+            return workerInstances[AbilityEffectType.Damage];
         }
 
         /// <summary>
@@ -369,8 +369,8 @@ namespace CharacterStudio.Abilities
                 Log.Error($"[CharacterStudio] [EffectWorkerFactory] 类型 {workerType.Name} 不是 EffectWorker 的子类");
                 return;
             }
-            
-            workerTypes[type] = workerType;
+
+            workerInstances[type] = (EffectWorker)Activator.CreateInstance(workerType);
         }
     }
 }

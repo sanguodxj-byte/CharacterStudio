@@ -221,6 +221,7 @@
     <CS_Studio_Msg_SelectEditorTarget>请选择一个基础槽位、图层或渲染树节点</CS_Studio_Msg_SelectEditorTarget>
     <CS_Studio_Msg_SelectedLayer>已选中: {0}</CS_Studio_Msg_SelectedLayer>
     <CS_Studio_Msg_SelectionCleared>已清除选择</CS_Studio_Msg_SelectionCleared>
+    <CS_Studio_Msg_SetPatchOffset>已设置节点补丁层级偏移：{0} => {1}</CS_Studio_Msg_SetPatchOffset>
     <CS_Studio_Msg_Shown>已显示: {0}</CS_Studio_Msg_Shown>
     <CS_Studio_Msg_TagAdded>已添加隐藏标签: {0}</CS_Studio_Msg_TagAdded>
     <CS_Studio_Msg_TargetPawnRequired>请先导入或绑定一个可应用的目标角色</CS_Studio_Msg_TargetPawnRequired>
@@ -238,6 +239,12 @@
     <CS_Studio_Passion_Minor>小热情</CS_Studio_Passion_Minor>
     <CS_Studio_Passion_Major>大热情</CS_Studio_Passion_Major>
     <CS_Studio_RenderFixPatchLabel>图层修改补丁</CS_Studio_RenderFixPatchLabel>
+    <CS_Studio_Patch_Title>图层修改补丁属性</CS_Studio_Patch_Title>
+    <CS_Studio_Patch_SectionTitle>图层修改补丁</CS_Studio_Patch_SectionTitle>
+    <CS_Studio_Patch_ShowNode>从补丁中显示节点</CS_Studio_Patch_ShowNode>
+    <CS_Studio_Patch_HideNode>加入补丁隐藏节点</CS_Studio_Patch_HideNode>
+    <CS_Studio_Patch_DrawOrderOffset>DrawOrder Offset</CS_Studio_Patch_DrawOrderOffset>
+    <CS_Studio_Patch_StatusMessage>图层修改工作流：隐藏节点 {0} 个，层级修正 {1} 个。当前模式不会修改主皮肤模型。</CS_Studio_Patch_StatusMessage>
     <CS_Studio_SpawnedNewPawn>已生成角色：{0}</CS_Studio_SpawnedNewPawn>
     <CS_Studio_SpawnNewPawnButton>生成角色</CS_Studio_SpawnNewPawnButton>
     <CS_Studio_SpawnedNewPawnButton>生成角色</CS_Studio_SpawnedNewPawnButton>

@@ -237,9 +237,9 @@ namespace CharacterStudio.Core
 
         public void EnsureDefaults()
         {
-            slotTag = string.IsNullOrWhiteSpace(slotTag) ? "Apparel" : slotTag;
-            parentThingDefName = string.IsNullOrWhiteSpace(parentThingDefName) ? "ApparelMakeableBase" : parentThingDefName;
-            shaderDefName = string.IsNullOrWhiteSpace(shaderDefName) ? "Cutout" : shaderDefName;
+            slotTag = string.IsNullOrWhiteSpace(slotTag) ? DefaultSlotTag : slotTag;
+            parentThingDefName = string.IsNullOrWhiteSpace(parentThingDefName) ? DefaultParentThingDefName : parentThingDefName;
+            shaderDefName = string.IsNullOrWhiteSpace(shaderDefName) ? DefaultShaderDefName : shaderDefName;
 
             tags ??= new List<string>();
             exportGroupKey = exportGroupKey?.Trim() ?? string.Empty;

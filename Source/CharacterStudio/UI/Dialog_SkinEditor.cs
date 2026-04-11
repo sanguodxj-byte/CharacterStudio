@@ -55,6 +55,8 @@ namespace CharacterStudio.UI
         private int undoMutationDepth = 0;
         private Vector2 layerScrollPos;
         private Vector2 propsScrollPos;
+        private float lastLayersPanelHeight = 1600f;
+        private float lastNodesPanelHeight = 820f;
         private Vector2 faceScrollPos;
         private Vector2 baseScrollPos;
         private Vector2 equipmentScrollPos;
@@ -82,6 +84,9 @@ namespace CharacterStudio.UI
         private string statusMessage = "";
         private float statusMessageTime = 0f;
         private bool suspendHeavyPreviewWork = false;
+        private bool pendingFacePreviewRefresh = false;
+        private float nextFacePreviewRefreshRealtime = 0f;
+        private const float FacePreviewRefreshThrottleSeconds = 0.05f;
         private CharacterSpawnSettings directSpawnSettings = new CharacterSpawnSettings
         {
             sourceMapForConditionCheck = null,

@@ -441,18 +441,34 @@ namespace CharacterStudio.UI
 
         private void DrawPupilOffsetCoreSection(ref float y, float width, PawnEyeDirectionConfig.PupilMotionConfig pupilMotion)
         {
-            pupilMotion.EnsureDirectionalDefaults();
             UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_PupilCore_Title".Translate());
             DrawPropertyHint(ref y, width, "CS_Studio_Face_PupilCore_Hint".Translate());
 
-            UIHelper.DrawSectionTitle(ref y, width, "注视方向附加偏移");
-            DrawFloatProperty(ref y, width, "正面左眼 X 偏移", ref pupilMotion.frontLeftEyeOffsetX, -0.03f, 0.03f, "F6");
-            DrawFloatProperty(ref y, width, "正面右眼 X 偏移", ref pupilMotion.frontRightEyeOffsetX, -0.03f, 0.03f, "F6");
-            DrawFloatProperty(ref y, width, "侧面朝向 X 偏移", ref pupilMotion.sideFacingOffsetX, 0f, 0.03f, "F6");
-            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DirLeftOffsetX"), ref pupilMotion.dirLeftOffsetX, -0.03f, 0.03f, "F6");
-            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DirRightOffsetX"), ref pupilMotion.dirRightOffsetX, -0.03f, 0.03f, "F6");
-            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DirUpOffsetZ"), ref pupilMotion.dirUpOffsetZ, -0.03f, 0.03f, "F6");
-            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_DirDownOffsetZ"), ref pupilMotion.dirDownOffsetZ, -0.03f, 0.03f, "F6");
+            // ── 左瞳孔（正面朝向） ──
+            UIHelper.DrawSectionTitle(ref y, width, "左瞳孔 · 正面朝向");
+            DrawFloatProperty(ref y, width, "基础 X 偏移", ref pupilMotion.leftPupil_frontBaseX, -0.03f, 0.03f, "F6");
+            DrawFloatProperty(ref y, width, "向左看 X", ref pupilMotion.leftPupil_dirLeftX, -0.03f, 0.03f, "F6");
+            DrawFloatProperty(ref y, width, "向右看 X", ref pupilMotion.leftPupil_dirRightX, -0.03f, 0.03f, "F6");
+            DrawFloatProperty(ref y, width, "向上看 Z", ref pupilMotion.leftPupil_dirUpZ, -0.03f, 0.03f, "F6");
+            DrawFloatProperty(ref y, width, "向下看 Z", ref pupilMotion.leftPupil_dirDownZ, -0.03f, 0.03f, "F6");
+            y += 4f;
+
+            // ── 右瞳孔（正面朝向） ──
+            UIHelper.DrawSectionTitle(ref y, width, "右瞳孔 · 正面朝向");
+            DrawFloatProperty(ref y, width, "基础 X 偏移", ref pupilMotion.rightPupil_frontBaseX, -0.03f, 0.03f, "F6");
+            DrawFloatProperty(ref y, width, "向左看 X", ref pupilMotion.rightPupil_dirLeftX, -0.03f, 0.03f, "F6");
+            DrawFloatProperty(ref y, width, "向右看 X", ref pupilMotion.rightPupil_dirRightX, -0.03f, 0.03f, "F6");
+            DrawFloatProperty(ref y, width, "向上看 Z", ref pupilMotion.rightPupil_dirUpZ, -0.03f, 0.03f, "F6");
+            DrawFloatProperty(ref y, width, "向下看 Z", ref pupilMotion.rightPupil_dirDownZ, -0.03f, 0.03f, "F6");
+            y += 4f;
+
+            // ── 侧面朝向 ──
+            UIHelper.DrawSectionTitle(ref y, width, "侧面朝向");
+            DrawFloatProperty(ref y, width, "基础 X 偏移", ref pupilMotion.side_baseX, -0.03f, 0.03f, "F6");
+            DrawFloatProperty(ref y, width, "向左看 X", ref pupilMotion.side_dirLeftX, -0.03f, 0.03f, "F6");
+            DrawFloatProperty(ref y, width, "向右看 X", ref pupilMotion.side_dirRightX, -0.03f, 0.03f, "F6");
+            DrawFloatProperty(ref y, width, "向上看 Z", ref pupilMotion.side_dirUpZ, -0.03f, 0.03f, "F6");
+            DrawFloatProperty(ref y, width, "向下看 Z", ref pupilMotion.side_dirDownZ, -0.03f, 0.03f, "F6");
             y += 4f;
         }
 
@@ -610,11 +626,20 @@ namespace CharacterStudio.UI
         private void DrawScannedMouthSemanticRow(PawnFaceConfig fc, ref float y, float width, ScannedMouthCandidate candidate)
         {
             string mappedPath = fc.GetLayeredPartPath(LayeredFacePartType.ReplacementMouth, candidate.SuggestedExpression);
-            string displayLabel = TryGetMouthMappedExpression(fc, candidate.FilePath, out ExpressionType mappedExpression)
-                ? GetExpressionTypeLabel(mappedExpression)
-                : (!string.IsNullOrWhiteSpace(candidate.SuggestedToken)
+            List<ExpressionType> mappedExpressions = GetAllMouthMappedExpressions(fc, candidate.FilePath);
+            string displayLabel;
+            if (mappedExpressions.Count > 0)
+            {
+                displayLabel = mappedExpressions.Count <= 2
+                    ? string.Join("+", mappedExpressions.Select(GetExpressionTypeLabel))
+                    : $"{GetExpressionTypeLabel(mappedExpressions[0])}+{mappedExpressions.Count - 1}";
+            }
+            else
+            {
+                displayLabel = !string.IsNullOrWhiteSpace(candidate.SuggestedToken)
                     ? candidate.SuggestedToken
-                    : GetExpressionTypeLabel(candidate.SuggestedExpression));
+                    : GetExpressionTypeLabel(candidate.SuggestedExpression);
+            }
 
             Rect rowRect = new Rect(0f, y, width, 24f);
             Widgets.DrawBoxSolid(rowRect, UIHelper.AlternatingRowColor);
@@ -646,6 +671,8 @@ namespace CharacterStudio.UI
 
         private void OpenScannedMouthSemanticMenu(PawnFaceConfig fc, ScannedMouthCandidate candidate)
         {
+            List<ExpressionType> currentlyMapped = GetAllMouthMappedExpressions(fc, candidate.FilePath);
+
             var options = new List<FloatMenuOption>
             {
                 new FloatMenuOption("CS_Studio_Face_OverlayMapping_ClearState".Translate(), () =>
@@ -663,12 +690,22 @@ namespace CharacterStudio.UI
             foreach (ExpressionType expression in Enum.GetValues(typeof(ExpressionType)))
             {
                 ExpressionType localExpression = expression;
-                options.Add(new FloatMenuOption(GetExpressionTypeLabel(localExpression), () =>
+                bool isActive = currentlyMapped.Contains(localExpression);
+                string label = (isActive ? "[√] " : "[ ] ") + GetExpressionTypeLabel(localExpression);
+                options.Add(new FloatMenuOption(label, () =>
                 {
                     MutateWithUndo(() =>
                     {
-                        fc.SetLayeredPart(LayeredFacePartType.ReplacementMouth, localExpression, candidate.FilePath);
-                        layeredPartPathBuffer[GetLayeredPartBufferKey(LayeredFacePartType.ReplacementMouth, localExpression)] = candidate.FilePath;
+                        if (isActive)
+                        {
+                            fc.RemoveLayeredPart(LayeredFacePartType.ReplacementMouth, localExpression);
+                            layeredPartPathBuffer.Remove(GetLayeredPartBufferKey(LayeredFacePartType.ReplacementMouth, localExpression));
+                        }
+                        else
+                        {
+                            fc.SetLayeredPart(LayeredFacePartType.ReplacementMouth, localExpression, candidate.FilePath);
+                            layeredPartPathBuffer[GetLayeredPartBufferKey(LayeredFacePartType.ReplacementMouth, localExpression)] = candidate.FilePath;
+                        }
                         FaceRuntimeCompiler.ClearCache();
                         PawnRenderNodeWorker_FaceComponent.ClearCache();
                         PawnRenderNodeWorker_CustomLayer.ClearExternalGraphicCache();
@@ -695,6 +732,20 @@ namespace CharacterStudio.UI
             return false;
         }
 
+        private List<ExpressionType> GetAllMouthMappedExpressions(PawnFaceConfig fc, string filePath)
+        {
+            var results = new List<ExpressionType>();
+            foreach (ExpressionType candidate in Enum.GetValues(typeof(ExpressionType)))
+            {
+                string mappedPath = fc.GetLayeredPartPath(LayeredFacePartType.ReplacementMouth, candidate);
+                if (ArePathStringsEquivalent(mappedPath, filePath))
+                {
+                    results.Add(candidate);
+                }
+            }
+            return results;
+        }
+
         private void ClearReplacementMouthAssignmentsForPath(PawnFaceConfig fc, string filePath)
         {
             foreach (ExpressionType expression in Enum.GetValues(typeof(ExpressionType)))
@@ -710,11 +761,20 @@ namespace CharacterStudio.UI
         private void DrawScannedEyeSemanticRow(PawnFaceConfig fc, ref float y, float width, ScannedEyeCandidate candidate)
         {
             string mappedPath = fc.GetLayeredPartPath(LayeredFacePartType.ReplacementEye, candidate.SuggestedExpression, candidate.Side);
-            string displayLabel = TryGetEyeMappedExpression(fc, candidate.FilePath, out ExpressionType mappedExpression)
-                ? GetExpressionTypeLabel(mappedExpression)
-                : (!string.IsNullOrWhiteSpace(candidate.SuggestedToken)
+            List<ExpressionType> mappedExpressions = GetAllEyeMappedExpressions(fc, candidate.FilePath);
+            string displayLabel;
+            if (mappedExpressions.Count > 0)
+            {
+                displayLabel = mappedExpressions.Count <= 2
+                    ? string.Join("+", mappedExpressions.Select(GetExpressionTypeLabel))
+                    : $"{GetExpressionTypeLabel(mappedExpressions[0])}+{mappedExpressions.Count - 1}";
+            }
+            else
+            {
+                displayLabel = !string.IsNullOrWhiteSpace(candidate.SuggestedToken)
                     ? candidate.SuggestedToken
-                    : GetExpressionTypeLabel(candidate.SuggestedExpression));
+                    : GetExpressionTypeLabel(candidate.SuggestedExpression);
+            }
 
             Rect rowRect = new Rect(0f, y, width, 24f);
             Widgets.DrawBoxSolid(rowRect, UIHelper.AlternatingRowColor);
@@ -746,6 +806,8 @@ namespace CharacterStudio.UI
 
         private void OpenScannedEyeSemanticMenu(PawnFaceConfig fc, ScannedEyeCandidate candidate)
         {
+            List<ExpressionType> currentlyMapped = GetAllEyeMappedExpressions(fc, candidate.FilePath);
+
             var options = new List<FloatMenuOption>
             {
                 new FloatMenuOption("CS_Studio_Face_OverlayMapping_ClearState".Translate(), () =>
@@ -763,12 +825,22 @@ namespace CharacterStudio.UI
             foreach (ExpressionType expression in Enum.GetValues(typeof(ExpressionType)))
             {
                 ExpressionType localExpression = expression;
-                options.Add(new FloatMenuOption(GetExpressionTypeLabel(localExpression), () =>
+                bool isActive = currentlyMapped.Contains(localExpression);
+                string label = (isActive ? "[√] " : "[ ] ") + GetExpressionTypeLabel(localExpression);
+                options.Add(new FloatMenuOption(label, () =>
                 {
                     MutateWithUndo(() =>
                     {
-                        fc.SetLayeredPart(LayeredFacePartType.ReplacementEye, localExpression, candidate.FilePath, candidate.Side);
-                        layeredPartPathBuffer[GetLayeredPartBufferKey(LayeredFacePartType.ReplacementEye, localExpression, side: candidate.Side)] = candidate.FilePath;
+                        if (isActive)
+                        {
+                            fc.RemoveLayeredPart(LayeredFacePartType.ReplacementEye, localExpression, candidate.Side);
+                            layeredPartPathBuffer.Remove(GetLayeredPartBufferKey(LayeredFacePartType.ReplacementEye, localExpression, side: candidate.Side));
+                        }
+                        else
+                        {
+                            fc.SetLayeredPart(LayeredFacePartType.ReplacementEye, localExpression, candidate.FilePath, candidate.Side);
+                            layeredPartPathBuffer[GetLayeredPartBufferKey(LayeredFacePartType.ReplacementEye, localExpression, side: candidate.Side)] = candidate.FilePath;
+                        }
                         FaceRuntimeCompiler.ClearCache();
                         PawnRenderNodeWorker_FaceComponent.ClearCache();
                         PawnRenderNodeWorker_CustomLayer.ClearExternalGraphicCache();
@@ -796,6 +868,24 @@ namespace CharacterStudio.UI
 
             expression = ExpressionType.Neutral;
             return false;
+        }
+
+        private List<ExpressionType> GetAllEyeMappedExpressions(PawnFaceConfig fc, string filePath)
+        {
+            var results = new List<ExpressionType>();
+            foreach (ExpressionType candidate in Enum.GetValues(typeof(ExpressionType)))
+            {
+                foreach (LayeredFacePartSide side in new[] { LayeredFacePartSide.None, LayeredFacePartSide.Left, LayeredFacePartSide.Right })
+                {
+                    string mappedPath = fc.GetLayeredPartPath(LayeredFacePartType.ReplacementEye, candidate, side);
+                    if (ArePathStringsEquivalent(mappedPath, filePath))
+                    {
+                        results.Add(candidate);
+                        break;
+                    }
+                }
+            }
+            return results;
         }
 
         private void ClearEyeAssignmentsForPath(PawnFaceConfig fc, string filePath)
@@ -2232,14 +2322,34 @@ namespace CharacterStudio.UI
 
             if (DrawCollapsibleFaceSectionHeader(ref y, width, "PupilMotion", GetFaceMotionSectionLabel("PupilMotion"), isSectionExpanded, toggleSectionExpanded))
             {
-            pupilMotion.EnsureDirectionalDefaults();
             UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_PupilAdvanced_Title".Translate());
             DrawPropertyHint(ref y, width, "CS_Studio_Face_PupilAdvanced_Hint".Translate());
 
-            UIHelper.DrawSectionTitle(ref y, width, "注视方向附加偏移");
-            DrawFloatProperty(ref y, width, "正面左眼 X 偏移", ref pupilMotion.frontLeftEyeOffsetX, -0.01f, 0.01f, "F6");
-            DrawFloatProperty(ref y, width, "正面右眼 X 偏移", ref pupilMotion.frontRightEyeOffsetX, -0.01f, 0.01f, "F6");
-            DrawFloatProperty(ref y, width, "侧面朝向 X 偏移", ref pupilMotion.sideFacingOffsetX, 0f, 0.01f, "F6");
+            // ── 左瞳孔（正面朝向） ──
+            UIHelper.DrawSectionTitle(ref y, width, "左瞳孔 · 正面朝向");
+            DrawFloatProperty(ref y, width, "基础 X 偏移", ref pupilMotion.leftPupil_frontBaseX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, "向左看 X", ref pupilMotion.leftPupil_dirLeftX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, "向右看 X", ref pupilMotion.leftPupil_dirRightX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, "向上看 Z", ref pupilMotion.leftPupil_dirUpZ, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, "向下看 Z", ref pupilMotion.leftPupil_dirDownZ, -0.01f, 0.01f, "F6");
+
+            // ── 右瞳孔（正面朝向） ──
+            UIHelper.DrawSectionTitle(ref y, width, "右瞳孔 · 正面朝向");
+            DrawFloatProperty(ref y, width, "基础 X 偏移", ref pupilMotion.rightPupil_frontBaseX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, "向左看 X", ref pupilMotion.rightPupil_dirLeftX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, "向右看 X", ref pupilMotion.rightPupil_dirRightX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, "向上看 Z", ref pupilMotion.rightPupil_dirUpZ, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, "向下看 Z", ref pupilMotion.rightPupil_dirDownZ, -0.01f, 0.01f, "F6");
+
+            // ── 侧面朝向 ──
+            UIHelper.DrawSectionTitle(ref y, width, "侧面朝向");
+            DrawFloatProperty(ref y, width, "基础 X 偏移", ref pupilMotion.side_baseX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, "向左看 X", ref pupilMotion.side_dirLeftX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, "向右看 X", ref pupilMotion.side_dirRightX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, "向上看 Z", ref pupilMotion.side_dirUpZ, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, "向下看 Z", ref pupilMotion.side_dirDownZ, -0.01f, 0.01f, "F6");
+            y += 4f;
+
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_SideBiasX"), ref pupilMotion.sideBiasX, 0f, 0.01f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_SlowWaveOffsetZ"), ref pupilMotion.slowWaveOffsetZ, -0.01f, 0.01f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Pupil_NeutralSoftOffsetZ"), ref pupilMotion.neutralSoftOffsetZ, -0.01f, 0.01f, "F6");

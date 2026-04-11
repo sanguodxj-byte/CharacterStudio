@@ -140,8 +140,8 @@ namespace CharacterStudio.Rendering
         {
             Shader safeShader = shader ?? ShaderDatabase.Cutout;
 
-            // 外部文件路径（绝对路径，含扩展名）
-            if (System.IO.Path.IsPathRooted(path) || path.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+            // 外部文件路径（绝对路径）— 与 FaceComponent Worker 保持一致，仅使用 IsPathRooted 判断
+            if (System.IO.Path.IsPathRooted(path))
             {
                 var req = new GraphicRequest
                 {

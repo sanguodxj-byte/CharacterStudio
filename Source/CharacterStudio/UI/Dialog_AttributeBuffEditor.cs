@@ -146,7 +146,7 @@ namespace CharacterStudio.UI
                 }
 
                 float beforeValue = entry.value;
-                Widgets.Label(new Rect(valueLabelX, rowY + top, valueLabelWidth, 24f), "值");
+                Widgets.Label(new Rect(valueLabelX, rowY + top, valueLabelWidth, 24f), "CS_AttrBuff_Value".Translate());
                 string buffer = entry.value.ToString(System.Globalization.CultureInfo.InvariantCulture);
                 float editedValue = entry.value;
                 UIHelper.TextFieldNumeric(new Rect(valueX, rowY + top, valueWidth, 24f), ref editedValue, ref buffer, -100f, 100f, null, $"AttrBuffValue_{i}");

@@ -56,8 +56,9 @@ namespace CharacterStudio.Exporter
 
                 if (File.Exists(filePath))
                 {
-                    File.Copy(tempFilePath, filePath, true);
-                    File.Delete(tempFilePath);
+                    string backupPath = filePath + ".bak";
+                    File.Replace(tempFilePath, filePath, backupPath);
+                    try { File.Delete(backupPath); } catch { /* backup cleanup is best-effort */ }
                 }
                 else
                 {
@@ -146,6 +147,7 @@ namespace CharacterStudio.Exporter
                 new XElement("hideVanillaBody", skin.hideVanillaBody.ToString().ToLower()),
                 new XElement("hideVanillaApparel", skin.hideVanillaApparel.ToString().ToLower()),
                 new XElement("humanlikeOnly", skin.humanlikeOnly.ToString().ToLower()),
+                new XElement("globalTextureScale", skin.globalTextureScale.ToString(System.Globalization.CultureInfo.InvariantCulture)),
                 !string.IsNullOrEmpty(skin.author) ? new XElement("author", skin.author) : null,
                 !string.IsNullOrEmpty(skin.version) ? new XElement("version", skin.version) : null,
                 !string.IsNullOrEmpty(skin.previewTexPath) ? new XElement("previewTexPath", skin.previewTexPath) : null,
@@ -592,6 +594,8 @@ namespace CharacterStudio.Exporter
             if (baseAppearance == null || baseAppearance.slots == null || baseAppearance.slots.Count == 0) return null;
 
             var root = new XElement("baseAppearance");
+            root.Add(new XElement("globalScale", baseAppearance.drawSizeScale.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            root.Add(new XElement("drawSizeScale", baseAppearance.drawSizeScale.ToString(System.Globalization.CultureInfo.InvariantCulture)));
             var slotsEl = new XElement("slots");
 
             foreach (var slot in baseAppearance.slots)

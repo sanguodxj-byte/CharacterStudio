@@ -153,6 +153,38 @@ namespace CharacterStudio.UI
             SkinEditorPreviewRefresher.Refresh(this);
         }
 
+        private void RequestThrottledFacePreviewRefresh(bool force = false)
+        {
+            float now = Time.realtimeSinceStartup;
+            if (force || now >= nextFacePreviewRefreshRealtime)
+            {
+                pendingFacePreviewRefresh = false;
+                nextFacePreviewRefreshRealtime = now + FacePreviewRefreshThrottleSeconds;
+                RefreshPreview();
+                return;
+            }
+
+            pendingFacePreviewRefresh = true;
+        }
+
+        private void FlushPendingThrottledFacePreviewRefresh(bool force = false)
+        {
+            if (!pendingFacePreviewRefresh)
+            {
+                return;
+            }
+
+            float now = Time.realtimeSinceStartup;
+            if (!force && now < nextFacePreviewRefreshRealtime)
+            {
+                return;
+            }
+
+            pendingFacePreviewRefresh = false;
+            nextFacePreviewRefreshRealtime = now + FacePreviewRefreshThrottleSeconds;
+            RefreshPreview();
+        }
+
         private void ShowStatus(string message)
         {
             statusMessage = message;

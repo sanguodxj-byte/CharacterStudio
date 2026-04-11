@@ -728,11 +728,13 @@ namespace CharacterStudio.Rendering
             yield return LayeredFacePartType.ReplacementEye;
             yield return LayeredFacePartType.Brow;
             yield return LayeredFacePartType.Mouth;
+            yield return LayeredFacePartType.ReplacementMouth;
             yield return LayeredFacePartType.Hair;
             yield return LayeredFacePartType.Blush;
             yield return LayeredFacePartType.Tear;
             yield return LayeredFacePartType.Sweat;
             yield return LayeredFacePartType.Overlay;
+            yield return LayeredFacePartType.OverlayTop;
         }
 
         private static IEnumerable<LayeredFacePartSide> GetLayeredFaceInjectionSides(PawnFaceConfig faceConfig, LayeredFacePartType partType)
@@ -905,10 +907,12 @@ namespace CharacterStudio.Rendering
                 case LayeredFacePartType.UpperLid:
                 case LayeredFacePartType.LowerLid:
                 case LayeredFacePartType.Mouth:
+                case LayeredFacePartType.ReplacementMouth:
                 case LayeredFacePartType.Blush:
                 case LayeredFacePartType.Sweat:
                 case LayeredFacePartType.Tear:
                 case LayeredFacePartType.Overlay:
+                case LayeredFacePartType.OverlayTop:
                     return LayerVariantLogic.ChannelState;
                 case LayeredFacePartType.Pupil:
                     return LayerVariantLogic.EyeDirectionOnly;
@@ -936,6 +940,8 @@ namespace CharacterStudio.Rendering
                 case LayeredFacePartType.Pupil:
                     return LayerRole.Eye;
                 case LayeredFacePartType.Mouth:
+                    return LayerRole.Mouth;
+                case LayeredFacePartType.ReplacementMouth:
                     return LayerRole.Mouth;
                 case LayeredFacePartType.Hair:
                     return LayerRole.Decoration;

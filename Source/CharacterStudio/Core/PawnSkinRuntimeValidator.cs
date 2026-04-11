@@ -42,6 +42,13 @@ namespace CharacterStudio.Core
             prepared.baseAppearance ??= new BaseAppearanceConfig();
             prepared.baseAppearance.EnsureAllSlotsExist();
 
+            if (!IsFinite(prepared.globalTextureScale) || prepared.globalTextureScale <= 0f)
+            {
+                prepared.globalTextureScale = prepared.baseAppearance.drawSizeScale > 0f
+                    ? prepared.baseAppearance.drawSizeScale
+                    : (prepared.baseAppearance.globalScale > 0f ? prepared.baseAppearance.globalScale : 1f);
+            }
+
             prepared.hiddenPaths.RemoveAll(string.IsNullOrWhiteSpace);
 #pragma warning disable CS0618
             prepared.hiddenTags.RemoveAll(string.IsNullOrWhiteSpace);
@@ -228,6 +235,18 @@ namespace CharacterStudio.Core
             }
 
             baseAppearance.EnsureAllSlotsExist();
+
+            if (!IsFinite(baseAppearance.globalScale) || baseAppearance.globalScale <= 0f)
+            {
+                baseAppearance.globalScale = 1f;
+            }
+
+            if (!IsFinite(baseAppearance.drawSizeScale) || baseAppearance.drawSizeScale <= 0f)
+            {
+                baseAppearance.drawSizeScale = baseAppearance.globalScale > 0f ? baseAppearance.globalScale : 1f;
+            }
+
+            baseAppearance.globalScale = baseAppearance.drawSizeScale;
 
             foreach (var slot in baseAppearance.slots)
             {

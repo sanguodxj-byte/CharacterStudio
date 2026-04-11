@@ -13,6 +13,10 @@ namespace CharacterStudio.UI
 
         private const float BaseSlotRowHeight = 36f;
         private const float BaseSlotEditButtonWidth = 30f;
+        private string baseAppearanceGlobalScaleBuffer = "1.000";
+
+        private static readonly BaseAppearanceSlotType[] CachedBaseAppearanceSlotTypes =
+            (BaseAppearanceSlotType[])Enum.GetValues(typeof(BaseAppearanceSlotType));
 
         private void DrawBaseAppearancePanel(Rect rect)
         {
@@ -62,7 +66,42 @@ namespace CharacterStudio.UI
             Text.Anchor = TextAnchor.UpperLeft;
             Text.Font = GameFont.Small;
 
-            float contentY = summaryRect.yMax + 8f;
+            Rect globalScaleRect = new Rect(rect.x + Margin, summaryRect.yMax + 6f, rect.width - Margin * 2, 42f);
+            Widgets.DrawBoxSolid(globalScaleRect, UIHelper.PanelFillSoftColor);
+            GUI.color = UIHelper.BorderColor;
+            Widgets.DrawBox(globalScaleRect, 1);
+            GUI.color = Color.white;
+
+            float globalScale = Mathf.Clamp(workingSkin.globalTextureScale, 0.1f, 3f);
+            Rect labelRect = new Rect(globalScaleRect.x + 8f, globalScaleRect.y + 3f, globalScaleRect.width - 16f, 14f);
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.MiddleLeft;
+            GUI.color = UIHelper.SubtleColor;
+            Widgets.Label(labelRect, $"DrawSize / {"CS_Studio_Transform_GlobalScale".Translate()}");
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.UpperLeft;
+
+            Rect sliderRect = new Rect(globalScaleRect.x + 8f, globalScaleRect.y + 20f, globalScaleRect.width - 62f, 16f);
+            float editedGlobalScale = Widgets.HorizontalSlider(sliderRect, globalScale, 0.1f, 3f, true, null, null, null, 0.01f);
+
+            Rect valueRect = new Rect(globalScaleRect.xMax - 48f, globalScaleRect.y + 16f, 40f, 20f);
+            baseAppearanceGlobalScaleBuffer = editedGlobalScale.ToString("F3");
+            Text.Anchor = TextAnchor.MiddleRight;
+            Widgets.Label(valueRect, baseAppearanceGlobalScaleBuffer);
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = GameFont.Small;
+
+            if (Math.Abs(editedGlobalScale - workingSkin.globalTextureScale) > 0.0001f)
+            {
+                MutateWithUndo(() =>
+                {
+                    workingSkin.globalTextureScale = editedGlobalScale;
+                    workingSkin.baseAppearance.drawSizeScale = editedGlobalScale;
+                    workingSkin.baseAppearance.globalScale = editedGlobalScale;
+                }, refreshPreview: true, refreshRenderTree: true);
+            }
+
+            float contentY = globalScaleRect.yMax + 8f;
             float contentHeight = rect.height - contentY + rect.y - Margin;
             Rect contentRect = new Rect(rect.x + Margin, contentY, rect.width - Margin * 2, contentHeight);
             Widgets.DrawBoxSolid(contentRect, UIHelper.PanelFillSoftColor);
@@ -77,7 +116,7 @@ namespace CharacterStudio.UI
 
             float y = 2f;
             int rowIndex = 0;
-            foreach (BaseAppearanceSlotType slotType in Enum.GetValues(typeof(BaseAppearanceSlotType)))
+            foreach (BaseAppearanceSlotType slotType in CachedBaseAppearanceSlotTypes)
             {
                 y = DrawBaseSlotRow(workingSkin.baseAppearance.GetSlot(slotType), y, viewRect.width, rowIndex++);
             }

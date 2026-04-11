@@ -15,6 +15,11 @@ namespace CharacterStudio.Patches
 
         public static void Apply(Harmony harmony)
         {
+            if (StatWorkerStatField == null)
+            {
+                Log.Warning("[CharacterStudio] Patch_CharacterAttributeBuffStat: Could not find StatWorker.stat field via reflection. Attribute buffs will be silently inactive. This may indicate a RimWorld version mismatch.");
+            }
+
             var target = AccessTools.Method(typeof(StatWorker), nameof(StatWorker.GetValue), new[] { typeof(Thing), typeof(bool), typeof(int) });
             var postfix = AccessTools.Method(typeof(Patch_CharacterAttributeBuffStat), nameof(Postfix));
             var explanationPostfix = AccessTools.Method(typeof(Patch_CharacterAttributeBuffStat), nameof(ExplanationPostfix));
@@ -33,6 +38,12 @@ namespace CharacterStudio.Patches
         private static void Postfix(StatWorker __instance, Thing thing, ref float __result)
         {
             if (thing is not Pawn pawn || pawn.DestroyedOrNull())
+            {
+                return;
+            }
+
+            // P0: 快速路径 — O(1) HashSet 检查，无 buff 的 Pawn 立即跳过，避免后续反射和迭代
+            if (!CharacterAttributeBuffService.HasActiveBuffFast(pawn.thingIDNumber))
             {
                 return;
             }

@@ -65,6 +65,7 @@ namespace CharacterStudio.UI
                 string characterFilePath = Path.Combine(exportDir, (savePlanSkin.defName ?? workingSkin.defName ?? "CS_Character") + ".character.xml");
                 workingDocument.characterDefinition.EnsureDefaults(savePlanSkin.defName ?? workingSkin.defName ?? "CS_Character", ResolveSpawnRaceForCurrentDesign(savePlanSkin), savePlanSkin.attributes);
                 CharacterDefinitionXmlUtility.Save(workingDocument.characterDefinition, characterFilePath);
+                ModBuilder.ExportScatteredLooseFiles(savePlanSkin, workingDocument.characterDefinition);
                 CharacterRuntimeTriggerConfigUtility.SyncCharacterAssets(savePlanSkin, workingDocument.characterDefinition);
 
                 var registered = PawnSkinDefRegistry.RegisterOrReplace(savePlanSkin.Clone());

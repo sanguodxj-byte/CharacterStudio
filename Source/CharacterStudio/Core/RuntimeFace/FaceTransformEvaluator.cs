@@ -164,13 +164,8 @@ namespace CharacterStudio.Core
             float offsetX = SideBias(context.side, motion.sideBiasX);
             float offsetZ = motion.primaryWaveOffsetZ * context.primaryWave;
 
-            switch (context.eyeDirection)
-            {
-                case EyeDirection.Left: offsetX += motion.dirLeftOffsetX; break;
-                case EyeDirection.Right: offsetX += motion.dirRightOffsetX; break;
-                case EyeDirection.Up: offsetZ += motion.dirUpOffsetZ; break;
-                case EyeDirection.Down: offsetZ += motion.dirDownOffsetZ; break;
-            }
+            // Eye white (sclera) does NOT shift with gaze direction.
+            // Only the Pupil layer tracks eye direction; the sclera stays stationary.
 
             switch (context.eyeVariant)
             {
@@ -237,8 +232,6 @@ namespace CharacterStudio.Core
             if (context.lidState == LidState.Close)
                 return FaceTransformResult.Hidden();
 
-            motion.EnsureDirectionalDefaults();
-
             float sideSign = SideSign(context.side);
             float offsetX = SideBias(context.side, motion.sideBiasX);
             float offsetZ = context.slowWave * motion.slowWaveOffsetZ;
@@ -246,23 +239,48 @@ namespace CharacterStudio.Core
 
             bool isSideFacing = context.facing == Rot4.East || context.facing == Rot4.West;
             bool isLeftEye = context.side == LayeredFacePartSide.Left;
-            offsetX += isSideFacing
-                ? SideBias(context.side, motion.sideFacingOffsetX)
-                : (isLeftEye ? motion.frontLeftEyeOffsetX : motion.frontRightEyeOffsetX);
 
-            offsetX += clampedGazeOffset.x * Mathf.Max(
-                Mathf.Abs(motion.dirLeftOffsetX),
-                Mathf.Abs(motion.dirRightOffsetX));
-            offsetZ += clampedGazeOffset.y * Mathf.Max(
-                Mathf.Abs(motion.dirUpOffsetZ),
-                Mathf.Abs(motion.dirDownOffsetZ));
+            // 根据朝向和瞳孔侧选择对应的方向偏移
+            float dirLeftX, dirRightX, dirUpZ, dirDownZ;
+            if (isSideFacing)
+            {
+                // 侧面朝向：使用侧面偏移配置
+                offsetX += SideBias(context.side, motion.side_baseX);
+                dirLeftX = motion.side_dirLeftX;
+                dirRightX = motion.side_dirRightX;
+                dirUpZ = motion.side_dirUpZ;
+                dirDownZ = motion.side_dirDownZ;
+            }
+            else
+            {
+                // 正面朝向：使用左/右瞳孔独立配置
+                if (isLeftEye)
+                {
+                    offsetX += motion.leftPupil_frontBaseX;
+                    dirLeftX = motion.leftPupil_dirLeftX;
+                    dirRightX = motion.leftPupil_dirRightX;
+                    dirUpZ = motion.leftPupil_dirUpZ;
+                    dirDownZ = motion.leftPupil_dirDownZ;
+                }
+                else
+                {
+                    offsetX += motion.rightPupil_frontBaseX;
+                    dirLeftX = motion.rightPupil_dirLeftX;
+                    dirRightX = motion.rightPupil_dirRightX;
+                    dirUpZ = motion.rightPupil_dirUpZ;
+                    dirDownZ = motion.rightPupil_dirDownZ;
+                }
+            }
+
+            offsetX += clampedGazeOffset.x * Mathf.Max(Mathf.Abs(dirLeftX), Mathf.Abs(dirRightX));
+            offsetZ += clampedGazeOffset.y * Mathf.Max(Mathf.Abs(dirUpZ), Mathf.Abs(dirDownZ));
 
             switch (context.eyeDirection)
             {
-                case EyeDirection.Left: offsetX += motion.dirLeftOffsetX; break;
-                case EyeDirection.Right: offsetX += motion.dirRightOffsetX; break;
-                case EyeDirection.Up: offsetZ += motion.dirUpOffsetZ; break;
-                case EyeDirection.Down: offsetZ += motion.dirDownOffsetZ; break;
+                case EyeDirection.Left: offsetX += dirLeftX; break;
+                case EyeDirection.Right: offsetX += dirRightX; break;
+                case EyeDirection.Up: offsetZ += dirUpZ; break;
+                case EyeDirection.Down: offsetZ += dirDownZ; break;
             }
 
             switch (context.eyeVariant)
@@ -553,7 +571,13 @@ namespace CharacterStudio.Core
 
             if (context.isBlinkActive)
             {
-                return context.blinkPhase == BlinkPhase.ShowReplacementEye
+                // Show replacement eye during HideBaseEyeParts, ShowReplacementEye, and
+                // RestoreBaseEyeParts to eliminate empty frames where neither base nor
+                // replacement eye is visible.
+                bool showDuringBlink = context.blinkPhase == BlinkPhase.ShowReplacementEye
+                    || context.blinkPhase == BlinkPhase.HideBaseEyeParts
+                    || context.blinkPhase == BlinkPhase.RestoreBaseEyeParts;
+                return showDuringBlink
                     ? FaceTransformResult.Visible(0f, Vector3.zero, Vector3.one)
                     : FaceTransformResult.Hidden();
             }

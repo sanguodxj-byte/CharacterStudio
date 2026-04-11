@@ -44,10 +44,9 @@ namespace CharacterStudio.UI
                 return;
             }
 
-            string searchLower = searchText.ToLower();
             filteredApparel = allApparel.FindAll(a => 
-                (a.label != null && a.label.ToLower().Contains(searchLower)) || 
-                a.defName.ToLower().Contains(searchLower)
+                (a.label != null && a.label.IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0) || 
+                a.defName.IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0
             );
         }
 

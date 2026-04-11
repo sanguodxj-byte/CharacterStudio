@@ -7,6 +7,9 @@ namespace CharacterStudio.UI
 {
     public partial class Dialog_SkinEditor
     {
+        private static readonly WeaponCarryVisualState[] CachedWeaponCarryVisualStates =
+            (WeaponCarryVisualState[])Enum.GetValues(typeof(WeaponCarryVisualState));
+
         private void DrawWeaponPanel(Rect rect)
         {
             Rect titleRect = UIHelper.DrawPanelShell(rect, "CS_Studio_Tab_Weapon".Translate(), Margin);
@@ -28,40 +31,6 @@ namespace CharacterStudio.UI
             var carry = workingSkin.weaponRenderConfig.carryVisual;
             var weaponOverride = workingSkin.weaponRenderConfig;
 
-            bool DrawPathFieldWithBrowser(ref float rowY, string label, ref string value, Action browseAction)
-            {
-                Rect rowRect = new Rect(0f, rowY, width, UIHelper.RowHeight);
-                Text.Font = GameFont.Small;
-
-                float actualLabelWidth = Mathf.Max(UIHelper.LabelWidth, Text.CalcSize(label).x + 10f);
-                float buttonWidth = 30f;
-                float spacing = 5f;
-                float fieldWidth = Mathf.Max(40f, rowRect.width - actualLabelWidth - buttonWidth - spacing);
-
-                Widgets.Label(new Rect(rowRect.x, rowRect.y, actualLabelWidth, 24f), label);
-
-                string newValue = Widgets.TextField(
-                    new Rect(rowRect.x + actualLabelWidth, rowRect.y, fieldWidth, 24f),
-                    value ?? string.Empty);
-
-                bool changed = false;
-                if (newValue != value)
-                {
-                    value = UIHelper.SanitizeInput(newValue, 260);
-                    changed = true;
-                }
-
-                if (Widgets.ButtonText(
-                    new Rect(rowRect.x + actualLabelWidth + fieldWidth + spacing, rowRect.y, buttonWidth, 24f),
-                    "..."))
-                {
-                    browseAction?.Invoke();
-                }
-
-                rowY += UIHelper.RowHeight;
-                return changed;
-            }
-
             UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Section_WeaponCarryVisual".Translate());
 
             WeaponCarryVisualConfig carrySnapshot = carry.Clone();
@@ -77,7 +46,7 @@ namespace CharacterStudio.UI
             UIHelper.DrawPropertyDropdown(ref y, width,
                 "CS_Studio_WeaponCarry_PreviewState".Translate(),
                 previewWeaponCarryState,
-                (WeaponCarryVisualState[])Enum.GetValues(typeof(WeaponCarryVisualState)),
+                CachedWeaponCarryVisualStates,
                 state => ($"CS_Studio_WeaponCarry_State_{state}").Translate(),
                 state =>
                 {
@@ -97,7 +66,7 @@ namespace CharacterStudio.UI
                 });
 
             string texUndrafted = carry.texUndrafted ?? string.Empty;
-            if (DrawPathFieldWithBrowser(ref y, "CS_Studio_WeaponCarry_TexUndrafted".Translate(), ref texUndrafted, () =>
+            if (UIHelper.DrawPathFieldWithBrowser(ref y, width, "CS_Studio_WeaponCarry_TexUndrafted".Translate(), ref texUndrafted, () =>
                 Find.WindowStack.Add(new Dialog_FileBrowser(carry.texUndrafted ?? string.Empty, path =>
                 {
                     MutateWithUndo(() => carry.texUndrafted = path ?? string.Empty, refreshPreview: true, refreshRenderTree: targetPawn != null);
@@ -107,7 +76,7 @@ namespace CharacterStudio.UI
             }
 
             string texDrafted = carry.texDrafted ?? string.Empty;
-            if (DrawPathFieldWithBrowser(ref y, "CS_Studio_WeaponCarry_TexDrafted".Translate(), ref texDrafted, () =>
+            if (UIHelper.DrawPathFieldWithBrowser(ref y, width, "CS_Studio_WeaponCarry_TexDrafted".Translate(), ref texDrafted, () =>
                 Find.WindowStack.Add(new Dialog_FileBrowser(carry.texDrafted ?? string.Empty, path =>
                 {
                     MutateWithUndo(() => carry.texDrafted = path ?? string.Empty, refreshPreview: true, refreshRenderTree: targetPawn != null);
@@ -117,7 +86,7 @@ namespace CharacterStudio.UI
             }
 
             string texCasting = carry.texCasting ?? string.Empty;
-            if (DrawPathFieldWithBrowser(ref y, "CS_Studio_WeaponCarry_TexCasting".Translate(), ref texCasting, () =>
+            if (UIHelper.DrawPathFieldWithBrowser(ref y, width, "CS_Studio_WeaponCarry_TexCasting".Translate(), ref texCasting, () =>
                 Find.WindowStack.Add(new Dialog_FileBrowser(carry.texCasting ?? string.Empty, path =>
                 {
                     MutateWithUndo(() => carry.texCasting = path ?? string.Empty, refreshPreview: true, refreshRenderTree: targetPawn != null);

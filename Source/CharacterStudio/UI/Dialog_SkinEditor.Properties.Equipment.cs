@@ -10,6 +10,11 @@ namespace CharacterStudio.UI
 {
     public partial class Dialog_SkinEditor
     {
+        private static readonly LayerColorSource[] CachedLayerColorSources =
+            (LayerColorSource[])Enum.GetValues(typeof(LayerColorSource));
+        private static readonly EquipmentTriggeredAnimationRole[] CachedEquipmentTriggeredAnimationRoles =
+            (EquipmentTriggeredAnimationRole[])Enum.GetValues(typeof(EquipmentTriggeredAnimationRole));
+
         private void DrawEquipmentProperties(Rect rect)
         {
             workingSkin.equipments ??= new List<CharacterEquipmentDef>();
@@ -45,40 +50,6 @@ namespace CharacterStudio.UI
             void MutateEquipmentWithUndo(Action mutation, bool refreshRenderTree = true)
             {
                 MutateWithUndo(mutation, refreshPreview: true, refreshRenderTree: refreshRenderTree);
-            }
-
-            bool DrawPathFieldWithBrowser(ref float rowY, string label, ref string value, Action browseAction)
-            {
-                Rect rowRect = new Rect(0f, rowY, width, UIHelper.RowHeight);
-                Text.Font = GameFont.Small;
-
-                float actualLabelWidth = Mathf.Max(UIHelper.LabelWidth, Text.CalcSize(label).x + 10f);
-                float buttonWidth = 30f;
-                float spacing = 5f;
-                float fieldWidth = Mathf.Max(40f, rowRect.width - actualLabelWidth - buttonWidth - spacing);
-
-                Widgets.Label(new Rect(rowRect.x, rowRect.y, actualLabelWidth, 24f), label);
-
-                string newValue = Widgets.TextField(
-                    new Rect(rowRect.x + actualLabelWidth, rowRect.y, fieldWidth, 24f),
-                    value ?? string.Empty);
-
-                bool changed = false;
-                if (newValue != value)
-                {
-                    value = UIHelper.SanitizeInput(newValue, 260);
-                    changed = true;
-                }
-
-                if (Widgets.ButtonText(
-                    new Rect(rowRect.x + actualLabelWidth + fieldWidth + spacing, rowRect.y, buttonWidth, 24f),
-                    "..."))
-                {
-                    browseAction?.Invoke();
-                }
-
-                rowY += UIHelper.RowHeight;
-                return changed;
             }
 
             void MarkEquipmentDirty(bool refreshRenderTree = true, string? statusMessage = null)
@@ -142,7 +113,7 @@ namespace CharacterStudio.UI
                 }
 
                 string previewTexPath = equipment.previewTexPath ?? string.Empty;
-                if (DrawPathFieldWithBrowser(ref y, "CS_Studio_Equip_PreviewTexture".Translate(), ref previewTexPath, () =>
+                if (UIHelper.DrawPathFieldWithBrowser(ref y, width, "CS_Studio_Equip_PreviewTexture".Translate(), ref previewTexPath, () =>
                     Find.WindowStack.Add(new Dialog_FileBrowser(equipment.previewTexPath ?? string.Empty, path =>
                     {
                         MutateWithUndo(() => equipment.previewTexPath = path ?? string.Empty, refreshPreview: true, refreshRenderTree: false);
@@ -220,7 +191,7 @@ namespace CharacterStudio.UI
             if (DrawCollapsibleSection(ref y, width, "CS_Studio_Equip_Section_Definition".Translate(), "EquipmentDefinition"))
             {
                 string worldTexPath = equipment.worldTexPath ?? string.Empty;
-                if (DrawPathFieldWithBrowser(ref y, "CS_Studio_Equip_WorldTexPath".Translate(), ref worldTexPath, () =>
+                if (UIHelper.DrawPathFieldWithBrowser(ref y, width, "CS_Studio_Equip_WorldTexPath".Translate(), ref worldTexPath, () =>
                     Find.WindowStack.Add(new Dialog_FileBrowser(equipment.worldTexPath ?? string.Empty, path =>
                     {
                         MutateEquipmentWithUndo(() => equipment.worldTexPath = path ?? string.Empty, refreshRenderTree: false);
@@ -230,7 +201,7 @@ namespace CharacterStudio.UI
                 }
 
                 string wornTexPath = equipment.wornTexPath ?? string.Empty;
-                if (DrawPathFieldWithBrowser(ref y, "CS_Studio_Equip_WornTexPath".Translate(), ref wornTexPath, () =>
+                if (UIHelper.DrawPathFieldWithBrowser(ref y, width, "CS_Studio_Equip_WornTexPath".Translate(), ref wornTexPath, () =>
                     Find.WindowStack.Add(new Dialog_FileBrowser(equipment.wornTexPath ?? string.Empty, path =>
                     {
                         MutateEquipmentWithUndo(() => equipment.wornTexPath = path ?? string.Empty, refreshRenderTree: false);
@@ -240,7 +211,7 @@ namespace CharacterStudio.UI
                 }
 
                 string equipmentMaskTexPath = equipment.maskTexPath ?? string.Empty;
-                if (DrawPathFieldWithBrowser(ref y, "CS_Studio_Equip_ApparelMask".Translate(), ref equipmentMaskTexPath, () =>
+                if (UIHelper.DrawPathFieldWithBrowser(ref y, width, "CS_Studio_Equip_ApparelMask".Translate(), ref equipmentMaskTexPath, () =>
                     Find.WindowStack.Add(new Dialog_FileBrowser(equipment.maskTexPath ?? string.Empty, path =>
                     {
                         MutateEquipmentWithUndo(() => equipment.maskTexPath = path ?? string.Empty, refreshRenderTree: false);
@@ -373,7 +344,7 @@ namespace CharacterStudio.UI
                 }
 
                 string texPath = renderData.texPath ?? string.Empty;
-                if (DrawPathFieldWithBrowser(ref y, "CS_Studio_Prop_TexturePath".Translate(), ref texPath, () =>
+                if (UIHelper.DrawPathFieldWithBrowser(ref y, width, "CS_Studio_Prop_TexturePath".Translate(), ref texPath, () =>
                     Find.WindowStack.Add(new Dialog_FileBrowser(renderData.texPath ?? string.Empty, path =>
                     {
                         CaptureUndoSnapshot();
@@ -403,7 +374,7 @@ namespace CharacterStudio.UI
                 }
 
                 string previewMaskTexPath = renderData.maskTexPath ?? string.Empty;
-                if (DrawPathFieldWithBrowser(ref y, "CS_Studio_BaseSlot_MaskTexture".Translate(), ref previewMaskTexPath, () =>
+                if (UIHelper.DrawPathFieldWithBrowser(ref y, width, "CS_Studio_BaseSlot_MaskTexture".Translate(), ref previewMaskTexPath, () =>
                     Find.WindowStack.Add(new Dialog_FileBrowser(renderData.maskTexPath ?? string.Empty, path =>
                     {
                         CaptureUndoSnapshot();
@@ -493,7 +464,7 @@ namespace CharacterStudio.UI
                 }
 
                 UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_BaseSlot_PrimaryColorSource".Translate(), renderData.colorSource,
-                    (LayerColorSource[])Enum.GetValues(typeof(LayerColorSource)),
+                    CachedLayerColorSources,
                     option => option.ToString(),
                     val =>
                     {
@@ -513,7 +484,7 @@ namespace CharacterStudio.UI
                 }
 
                 UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_BaseSlot_SecondaryColorSource".Translate(), renderData.colorTwoSource,
-                    (LayerColorSource[])Enum.GetValues(typeof(LayerColorSource)),
+                    CachedLayerColorSources,
                     option => option.ToString(),
                     val =>
                     {
@@ -719,7 +690,7 @@ namespace CharacterStudio.UI
                     }
 
                     UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Equip_TriggeredAnimation_Role".Translate(), renderData.triggeredAnimationRole,
-                        (EquipmentTriggeredAnimationRole[])Enum.GetValues(typeof(EquipmentTriggeredAnimationRole)),
+                        CachedEquipmentTriggeredAnimationRoles,
                         option => option.ToString(),
                         val =>
                         {
@@ -762,9 +733,9 @@ namespace CharacterStudio.UI
                     UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Equip_TriggeredAnimation_UseVfxVisibility".Translate(), ref useVfxVisibility);
                     if (useVfxVisibility != renderData.triggeredUseVfxVisibility) { CaptureUndoSnapshot(); renderData.triggeredUseVfxVisibility = useVfxVisibility; MarkEquipmentDirty(); }
 
-                    DrawTriggeredAnimationOverrideSection(ref y, width, "South Override", ref renderData.triggeredAnimationSouth, refreshRenderTree => MarkEquipmentDirty(refreshRenderTree));
-                    DrawTriggeredAnimationOverrideSection(ref y, width, "East/West Override", ref renderData.triggeredAnimationEastWest, refreshRenderTree => MarkEquipmentDirty(refreshRenderTree));
-                    DrawTriggeredAnimationOverrideSection(ref y, width, "North Override", ref renderData.triggeredAnimationNorth, refreshRenderTree => MarkEquipmentDirty(refreshRenderTree));
+                    DrawTriggeredAnimationOverrideSection(ref y, width, "CS_Studio_Equip_Override_South".Translate(), ref renderData.triggeredAnimationSouth, refreshRenderTree => MarkEquipmentDirty(refreshRenderTree));
+                    DrawTriggeredAnimationOverrideSection(ref y, width, "CS_Studio_Equip_Override_EastWest".Translate(), ref renderData.triggeredAnimationEastWest, refreshRenderTree => MarkEquipmentDirty(refreshRenderTree));
+                    DrawTriggeredAnimationOverrideSection(ref y, width, "CS_Studio_Equip_Override_North".Translate(), ref renderData.triggeredAnimationNorth, refreshRenderTree => MarkEquipmentDirty(refreshRenderTree));
                 }
             }
 
@@ -784,7 +755,7 @@ namespace CharacterStudio.UI
             }
 
             bool enabled = animationOverride != null;
-            UIHelper.DrawPropertyCheckbox(ref y, width, "Enabled", ref enabled);
+            UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Equip_Override_Enabled".Translate(), ref enabled);
             if (!enabled)
             {
                 if (animationOverride != null)
@@ -802,7 +773,7 @@ namespace CharacterStudio.UI
             EquipmentTriggeredAnimationOverride overrideData = animationOverride;
 
             bool useTriggeredLocalAnimation = overrideData.useTriggeredLocalAnimation;
-            UIHelper.DrawPropertyCheckbox(ref y, width, "Use Triggered Local Animation", ref useTriggeredLocalAnimation);
+            UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Equip_Override_UseTriggeredLocal".Translate(), ref useTriggeredLocalAnimation);
             if (useTriggeredLocalAnimation != overrideData.useTriggeredLocalAnimation)
             {
                 CaptureUndoSnapshot();
@@ -811,7 +782,7 @@ namespace CharacterStudio.UI
             }
 
             string triggerAbilityDefName = overrideData.triggerAbilityDefName ?? string.Empty;
-            UIHelper.DrawPropertyField(ref y, width, "Trigger Ability DefName", ref triggerAbilityDefName);
+            UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_Override_TriggerAbilityDefName".Translate(), ref triggerAbilityDefName);
             if (triggerAbilityDefName != (overrideData.triggerAbilityDefName ?? string.Empty))
             {
                 CaptureUndoSnapshot();
@@ -820,7 +791,7 @@ namespace CharacterStudio.UI
             }
 
             string animationGroupKey = overrideData.animationGroupKey ?? string.Empty;
-            UIHelper.DrawPropertyField(ref y, width, "Animation Group Key", ref animationGroupKey);
+            UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_Override_AnimGroupKey".Translate(), ref animationGroupKey);
             if (animationGroupKey != (overrideData.animationGroupKey ?? string.Empty))
             {
                 CaptureUndoSnapshot();
@@ -828,8 +799,8 @@ namespace CharacterStudio.UI
                 markEquipmentDirty(false);
             }
 
-            UIHelper.DrawPropertyDropdown(ref y, width, "Role", overrideData.triggeredAnimationRole,
-                (EquipmentTriggeredAnimationRole[])Enum.GetValues(typeof(EquipmentTriggeredAnimationRole)),
+            UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Equip_Override_Role".Translate(), overrideData.triggeredAnimationRole,
+                CachedEquipmentTriggeredAnimationRoles,
                 option => option.ToString(),
                 val =>
                 {
@@ -839,7 +810,7 @@ namespace CharacterStudio.UI
                 });
 
             float deployAngle = overrideData.triggeredDeployAngle;
-            UIHelper.DrawPropertySlider(ref y, width, "Deploy Angle", ref deployAngle, -180f, 180f, "F0");
+            UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Equip_Override_DeployAngle".Translate(), ref deployAngle, -180f, 180f, "F0");
             if (Math.Abs(deployAngle - overrideData.triggeredDeployAngle) > 0.0001f)
             {
                 CaptureUndoSnapshot();
@@ -848,7 +819,7 @@ namespace CharacterStudio.UI
             }
 
             float returnAngle = overrideData.triggeredReturnAngle;
-            UIHelper.DrawPropertySlider(ref y, width, "Return Angle", ref returnAngle, -180f, 180f, "F0");
+            UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Equip_Override_ReturnAngle".Translate(), ref returnAngle, -180f, 180f, "F0");
             if (Math.Abs(returnAngle - overrideData.triggeredReturnAngle) > 0.0001f)
             {
                 CaptureUndoSnapshot();
@@ -857,7 +828,7 @@ namespace CharacterStudio.UI
             }
 
             float deployTicksValue = overrideData.triggeredDeployTicks;
-            UIHelper.DrawPropertySlider(ref y, width, "Deploy Ticks", ref deployTicksValue, 1f, 300f, "F0");
+            UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Equip_Override_DeployTicks".Translate(), ref deployTicksValue, 1f, 300f, "F0");
             int deployTicks = Mathf.RoundToInt(deployTicksValue);
             if (deployTicks != overrideData.triggeredDeployTicks)
             {
@@ -867,7 +838,7 @@ namespace CharacterStudio.UI
             }
 
             float holdTicksValue = overrideData.triggeredHoldTicks;
-            UIHelper.DrawPropertySlider(ref y, width, "Hold Ticks", ref holdTicksValue, 0f, 600f, "F0");
+            UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Equip_Override_HoldTicks".Translate(), ref holdTicksValue, 0f, 600f, "F0");
             int holdTicks = Mathf.RoundToInt(holdTicksValue);
             if (holdTicks != overrideData.triggeredHoldTicks)
             {
@@ -877,7 +848,7 @@ namespace CharacterStudio.UI
             }
 
             float returnTicksValue = overrideData.triggeredReturnTicks;
-            UIHelper.DrawPropertySlider(ref y, width, "Return Ticks", ref returnTicksValue, 1f, 300f, "F0");
+            UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Equip_Override_ReturnTicks".Translate(), ref returnTicksValue, 1f, 300f, "F0");
             int returnTicks = Mathf.RoundToInt(returnTicksValue);
             if (returnTicks != overrideData.triggeredReturnTicks)
             {
@@ -887,9 +858,9 @@ namespace CharacterStudio.UI
             }
 
             float pivotX = overrideData.triggeredPivotOffset.x;
-            UIHelper.DrawPropertySlider(ref y, width, "Pivot X", ref pivotX, -1f, 1f, "F3");
+            UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Equip_Override_PivotX".Translate(), ref pivotX, -1f, 1f, "F3");
             float pivotY = overrideData.triggeredPivotOffset.y;
-            UIHelper.DrawPropertySlider(ref y, width, "Pivot Y", ref pivotY, -1f, 1f, "F3");
+            UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Equip_Override_PivotY".Translate(), ref pivotY, -1f, 1f, "F3");
             Vector2 newPivot = new Vector2(pivotX, pivotY);
             if (newPivot != overrideData.triggeredPivotOffset)
             {
@@ -899,7 +870,7 @@ namespace CharacterStudio.UI
             }
 
             bool triggeredUseVfxVisibility = overrideData.triggeredUseVfxVisibility;
-            UIHelper.DrawPropertyCheckbox(ref y, width, "Use VFX Visibility", ref triggeredUseVfxVisibility);
+            UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Equip_Override_UseVfxVisibility".Translate(), ref triggeredUseVfxVisibility);
             if (triggeredUseVfxVisibility != overrideData.triggeredUseVfxVisibility)
             {
                 CaptureUndoSnapshot();
@@ -908,7 +879,7 @@ namespace CharacterStudio.UI
             }
 
             bool visibleDuringDeploy = overrideData.triggeredVisibleDuringDeploy;
-            UIHelper.DrawPropertyCheckbox(ref y, width, "Visible During Deploy", ref visibleDuringDeploy);
+            UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Equip_Override_VisibleDuringDeploy".Translate(), ref visibleDuringDeploy);
             if (visibleDuringDeploy != overrideData.triggeredVisibleDuringDeploy)
             {
                 CaptureUndoSnapshot();
@@ -917,7 +888,7 @@ namespace CharacterStudio.UI
             }
 
             bool visibleDuringHold = overrideData.triggeredVisibleDuringHold;
-            UIHelper.DrawPropertyCheckbox(ref y, width, "Visible During Hold", ref visibleDuringHold);
+            UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Equip_Override_VisibleDuringHold".Translate(), ref visibleDuringHold);
             if (visibleDuringHold != overrideData.triggeredVisibleDuringHold)
             {
                 CaptureUndoSnapshot();
@@ -926,7 +897,7 @@ namespace CharacterStudio.UI
             }
 
             bool visibleDuringReturn = overrideData.triggeredVisibleDuringReturn;
-            UIHelper.DrawPropertyCheckbox(ref y, width, "Visible During Return", ref visibleDuringReturn);
+            UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Equip_Override_VisibleDuringReturn".Translate(), ref visibleDuringReturn);
             if (visibleDuringReturn != overrideData.triggeredVisibleDuringReturn)
             {
                 CaptureUndoSnapshot();
@@ -935,7 +906,7 @@ namespace CharacterStudio.UI
             }
 
             bool visibleOutsideCycle = overrideData.triggeredVisibleOutsideCycle;
-            UIHelper.DrawPropertyCheckbox(ref y, width, "Visible Outside Cycle", ref visibleOutsideCycle);
+            UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Equip_Override_VisibleOutsideCycle".Translate(), ref visibleOutsideCycle);
             if (visibleOutsideCycle != overrideData.triggeredVisibleOutsideCycle)
             {
                 CaptureUndoSnapshot();

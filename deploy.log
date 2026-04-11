@@ -1,0 +1,45 @@
+﻿
+========================================
+  CharacterStudio Build + Deploy
+========================================
+
+[1/3] Building Release...
+  正在确定要还原的项目…
+  已还原 D:\rim mod\CharacterStudio\Source\CharacterStudio\CharacterStudio.csproj (用时 185 毫秒)。
+  CharacterStudio -> D:\rim mod\CharacterStudio\1.6\Assemblies\CharacterStudio.dll
+
+已成功生成。
+    0 个警告
+    0 个错误
+
+已用时间 00:00:02.77
+      Build succeeded
+[2/3] Copying DLL...
+      Copied to: 1.5\Assemblies
+      Copied to: 1.6\Assemblies
+[3/3] Deploying to RimWorld...
+      About
+      1.5\Assemblies
+powershell : Copy-Item : The requested operation cannot be
+ performed on
+所在位置 行:1 字符: 1
++ powershell -ExecutionPolicy Bypass -File "d:\rim mod\Cha
+racterStudio\ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Copy-Item :  
+   The...be performed on:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ a file with a user-mapped section open.
+At D:\rim mod\CharacterStudio\build_and_deploy.ps1:70 char
+:13
++             Copy-Item -Path $srcWildcard -Destination $d
+st -Recurse - ...
++             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Copy-Ite 
+   m], IOException
+    + FullyQualifiedErrorId : System.IO.IOException,Micro 
+   soft.PowerShell.Commands.CopyItemCommand
+ 

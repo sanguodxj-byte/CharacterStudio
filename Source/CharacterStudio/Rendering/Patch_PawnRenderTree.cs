@@ -148,6 +148,17 @@ namespace CharacterStudio.Rendering
 
                 if (materialPostfix != null)
                     PatchAllDerivedWorkerMethods(harmony, materialPostfix);
+
+                // 全局 DrawSize / 全向缩放：对所有渲染节点（含原版身体/头发/装备）统一应用缩放
+                var scaleForMethod = AccessTools.Method(typeof(PawnRenderNodeWorker), "ScaleFor",
+                    new[] { typeof(PawnRenderNode), typeof(PawnDrawParms) });
+                var scaleForPostfix = AccessTools.Method(typeof(Patch_PawnRenderTree), nameof(ScaleFor_GlobalPostfix));
+                if (scaleForMethod != null && scaleForPostfix != null)
+                {
+                    harmony.Patch(scaleForMethod, postfix: new HarmonyMethod(scaleForPostfix));
+                    lock (patchStateLock) { patchedWorkerMethods.Add(scaleForMethod); }
+                    Log.Message("[CharacterStudio] PawnRenderNodeWorker.ScaleFor 全局缩放补丁已应用");
+                }
             }
             catch (Exception ex)
             {
@@ -226,6 +237,34 @@ namespace CharacterStudio.Rendering
             {
                 Log.Error($"[CharacterStudio] 移除补丁时出错: {ex}");
             }
+        }
+
+        // ─────────────────────────────────────────────
+        // Harmony 后缀：ScaleFor — 全局角色缩放
+        // ─────────────────────────────────────────────
+
+        /// <summary>
+        /// 对所有渲染节点（含原版身体、头发、装备等）统一乘以 globalTextureScale。
+        /// CS 自定义图层（PawnRenderNode_Custom）跳过，因为它们的 Worker 中已经单独应用了。
+        /// </summary>
+        public static void ScaleFor_GlobalPostfix(PawnRenderNode node, PawnDrawParms parms, ref Vector3 __result)
+        {
+            if (node == null || node is PawnRenderNode_Custom) return;
+
+            try
+            {
+                Pawn? pawn = parms.pawn ?? node.tree?.pawn;
+                if (pawn == null) return;
+
+                var skinComp = pawn.GetComp<CompPawnSkin>();
+                if (skinComp?.ActiveSkin == null) return;
+
+                float gs = skinComp.ActiveSkin.globalTextureScale;
+                if (float.IsNaN(gs) || float.IsInfinity(gs) || gs <= 0f || Math.Abs(gs - 1f) < 0.001f) return;
+
+                __result = new Vector3(__result.x * gs, __result.y, __result.z * gs);
+            }
+            catch { }
         }
 
         // ─────────────────────────────────────────────

@@ -51,7 +51,8 @@ namespace CharacterStudio.Core
                 yield return slot.ToPawnLayer(
                     $"[Base] {GetDisplayName(slot.slotType)}",
                     GetAnchorTag(slot.slotType),
-                    GetBaseDrawOrder(slot.slotType));
+                    GetBaseDrawOrder(slot.slotType),
+                    skin.baseAppearance.drawSizeScale);
             }
         }
 

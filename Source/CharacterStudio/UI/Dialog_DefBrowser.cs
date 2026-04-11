@@ -14,6 +14,8 @@ namespace CharacterStudio.UI
         private readonly Func<TDef, string> metaGetter;
         private readonly string title;
         private string searchText = string.Empty;
+        private string cachedSearchText = string.Empty;
+        private List<TDef> cachedVisibleDefs = new List<TDef>();
         private Vector2 scrollPos;
         private TDef? hoveredDef;
 
@@ -32,6 +34,8 @@ namespace CharacterStudio.UI
             resizeable = true;
             absorbInputAroundWindow = true;
             optionalTitle = title;
+            
+            UpdateVisibleDefsCache();
         }
 
         public override void DoWindowContents(Rect inRect)
@@ -58,11 +62,17 @@ namespace CharacterStudio.UI
             GUI.color = UIHelper.BorderColor;
             Widgets.DrawBox(searchRect, 1);
             GUI.color = Color.white;
-            searchText = Widgets.TextEntryLabeled(searchRect.ContractedBy(6f), "CS_Studio_Browser_Search".Translate(), searchText);
+            
+            string newSearchText = Widgets.TextEntryLabeled(searchRect.ContractedBy(6f), "CS_Studio_Browser_Search".Translate(), searchText);
+            if (newSearchText != searchText)
+            {
+                searchText = newSearchText;
+                UpdateVisibleDefsCache();
+            }
 
             y += 40f;
             Rect listRect = new Rect(0f, y, inRect.width, inRect.height - y - 10f);
-            List<TDef> visibleDefs = GetVisibleDefs();
+            List<TDef> visibleDefs = cachedVisibleDefs;
             float contentHeight = Mathf.Max(listRect.height - 4f, visibleDefs.Count * 76f);
             Rect viewRect = new Rect(0f, 0f, listRect.width - 16f, contentHeight);
 
@@ -74,24 +84,33 @@ namespace CharacterStudio.UI
 
             hoveredDef = null;
             Widgets.BeginScrollView(listRect.ContractedBy(2f), ref scrollPos, viewRect);
-            for (int i = 0; i < visibleDefs.Count; i++)
+            
+            float itemHeight = 76f;
+            int firstVisible = Mathf.Max(0, Mathf.FloorToInt(scrollPos.y / itemHeight));
+            int lastVisible = Mathf.Min(visibleDefs.Count - 1, Mathf.FloorToInt((scrollPos.y + listRect.height) / itemHeight));
+
+            for (int i = firstVisible; i <= lastVisible; i++)
             {
-                DrawDefEntry(visibleDefs[i], i, viewRect.width, i * 76f);
+                DrawDefEntry(visibleDefs[i], i, viewRect.width, i * itemHeight);
             }
             Widgets.EndScrollView();
         }
 
-        private List<TDef> GetVisibleDefs()
+        private void UpdateVisibleDefsCache()
         {
             if (string.IsNullOrWhiteSpace(searchText))
-                return allDefs;
-
-            string loweredSearch = searchText.Trim().ToLowerInvariant();
-            return allDefs
-                .Where(def => labelGetter(def).ToLowerInvariant().Contains(loweredSearch)
-                    || (metaGetter(def) ?? string.Empty).ToLowerInvariant().Contains(loweredSearch)
-                    || (def.defName ?? string.Empty).ToLowerInvariant().Contains(loweredSearch))
-                .ToList();
+            {
+                cachedVisibleDefs = allDefs;
+            }
+            else
+            {
+                string loweredSearch = searchText.Trim().ToLowerInvariant();
+                cachedVisibleDefs = allDefs
+                    .Where(def => labelGetter(def).ToLowerInvariant().Contains(loweredSearch)
+                        || (metaGetter(def) ?? string.Empty).ToLowerInvariant().Contains(loweredSearch)
+                        || (def.defName ?? string.Empty).ToLowerInvariant().Contains(loweredSearch))
+                    .ToList();
+            }
         }
 
         private void DrawDefEntry(TDef def, int index, float width, float y)
@@ -110,8 +129,9 @@ namespace CharacterStudio.UI
             Widgets.DrawBox(entryRect, 1);
             GUI.color = Color.white;
 
-            if (Widgets.ButtonInvisible(entryRect))
+            if (isHovered && Event.current.type == EventType.MouseDown && Event.current.button == 0)
             {
+                Event.current.Use();
                 onSelected(def);
                 Close();
             }

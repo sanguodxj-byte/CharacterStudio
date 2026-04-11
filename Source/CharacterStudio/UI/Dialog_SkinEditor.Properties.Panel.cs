@@ -8,7 +8,7 @@ namespace CharacterStudio.UI
     {
         private void DrawPropertiesHeader(Rect rect)
         {
-            string title = layerModificationWorkflowActive ? "图层修改补丁属性" : "CS_Studio_Panel_Properties".Translate();
+            string title = layerModificationWorkflowActive ? "CS_Studio_Patch_Title".Translate() : "CS_Studio_Panel_Properties".Translate();
             Rect titleRect = UIHelper.DrawPanelShell(rect, title, Margin, 72f);
 
             float expandBtnWidth = 24f;

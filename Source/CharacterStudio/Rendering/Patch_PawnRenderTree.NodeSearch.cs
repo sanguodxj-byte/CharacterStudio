@@ -194,8 +194,8 @@ namespace CharacterStudio.Rendering
             if (tree == null || string.IsNullOrWhiteSpace(tagName))
                 return null;
 
-            var nodesByTagField = AccessTools.Field(typeof(PawnRenderTree), "nodesByTag");
-            var nodesByTag = nodesByTagField?.GetValue(tree) as Dictionary<PawnRenderNodeTagDef, PawnRenderNode>;
+            // P-NEW-5: 使用主文件中已缓存的 FieldInfo，避免每次调用 AccessTools.Field() 反射
+            var nodesByTag = nodesByTagField_Cached?.GetValue(tree) as Dictionary<PawnRenderNodeTagDef, PawnRenderNode>;
             if (nodesByTag == null)
                 return null;
 

@@ -13,7 +13,7 @@ namespace CharacterStudio.Rendering
     /// 自定义图层渲染工作器
     /// 用于渲染皮肤系统添加的自定义图层
     /// </summary>
-    public class PawnRenderNodeWorker_CustomLayer : PawnRenderNodeWorker
+    public partial class PawnRenderNodeWorker_CustomLayer : PawnRenderNodeWorker
     {
         private static readonly Dictionary<string, Graphic> externalGraphicCache
             = new Dictionary<string, Graphic>(StringComparer.Ordinal);
@@ -23,6 +23,27 @@ namespace CharacterStudio.Rendering
         private static readonly Dictionary<string, bool> textureExistsCache = new Dictionary<string, bool>(StringComparer.Ordinal);
         private static readonly Dictionary<string, int> frameSequenceCountCache = new Dictionary<string, int>(StringComparer.Ordinal);
         private static readonly HashSet<string> missingExternalTextureWarnings = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        // P4: 缓存 Shader.PropertyToID 结果（避免每帧字符串哈希查找）
+        private static readonly int CachedColorTwoID = Shader.PropertyToID("_ColorTwo");
+        private static readonly int CachedMainTexSTID = Shader.PropertyToID("_MainTex_ST");
+
+        // P6: ContentFinder 图形类型探测结果缓存（避免重复资源查找）
+        private static readonly Dictionary<string, Type> graphicTypeProbeCache = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
+
+        // P2: 方向匹配预解析缓存（避免每帧字符串比较和 Trim 分配）
+        private enum DirectionalFacingMode : byte
+        {
+            Any,      // 空字符串 — 所有方向都匹配
+            South,
+            North,
+            East,
+            West,
+            EastWest, // "EastWest" / "Side" / "Sides"
+        }
+        private static readonly Dictionary<string, DirectionalFacingMode> directionalFacingParseCache
+            = new Dictionary<string, DirectionalFacingMode>(StringComparer.OrdinalIgnoreCase);
+
         private const float ProgrammaticFaceFadeInStep = 0.12f;
         private const float ProgrammaticFaceFadeOutStep = 0.08f;
         private const float ProgrammaticFaceAlphaSnapThreshold = 0.01f;
@@ -54,9 +75,21 @@ namespace CharacterStudio.Rendering
                 // 否则游戏内会与编辑器预览使用两套完全不同的面部表现。
                 if (customNode.layeredFacePartType.HasValue)
                 {
+                    if (customNode.layeredFacePartType == LayeredFacePartType.ReplacementMouth && parms.pawn != null)
+                    {
+                        CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
+                        PawnFaceConfig? faceConfig = skinComp?.ActiveSkin?.faceConfig;
+                        if (skinComp == null || faceConfig == null || faceConfig.workflowMode != FaceWorkflowMode.LayeredDynamic)
+                            return false;
+
+                        string? replacementPath = ResolveReplacementMouthPath(faceConfig, skinComp, parms.facing);
+                        if (string.IsNullOrWhiteSpace(replacementPath))
+                            return false;
+                    }
+
                     if (customNode.layeredFacePartType == LayeredFacePartType.Mouth && parms.pawn != null)
                     {
-                        CompPawnSkin? skinComp = parms.pawn.TryGetComp<CompPawnSkin>();
+                        CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
                         PawnFaceConfig? faceConfig = skinComp?.ActiveSkin?.faceConfig;
                         if (skinComp != null
                             && faceConfig != null
@@ -82,40 +115,40 @@ namespace CharacterStudio.Rendering
 
         private static bool MatchesDirectionalFacing(PawnLayerConfig config, Rot4 facing)
         {
-            string directionalFacing = config.directionalFacing?.Trim() ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(directionalFacing))
+            // P2: 使用预解析缓存，避免每帧 Trim() 分配和多次字符串比较
+            string raw = config.directionalFacing ?? string.Empty;
+            if (!directionalFacingParseCache.TryGetValue(raw, out DirectionalFacingMode mode))
             {
-                return true;
+                string trimmed = raw.Trim();
+                if (string.IsNullOrEmpty(trimmed))
+                    mode = DirectionalFacingMode.Any;
+                else if (string.Equals(trimmed, "South", StringComparison.OrdinalIgnoreCase))
+                    mode = DirectionalFacingMode.South;
+                else if (string.Equals(trimmed, "North", StringComparison.OrdinalIgnoreCase))
+                    mode = DirectionalFacingMode.North;
+                else if (string.Equals(trimmed, "East", StringComparison.OrdinalIgnoreCase))
+                    mode = DirectionalFacingMode.East;
+                else if (string.Equals(trimmed, "West", StringComparison.OrdinalIgnoreCase))
+                    mode = DirectionalFacingMode.West;
+                else if (string.Equals(trimmed, "EastWest", StringComparison.OrdinalIgnoreCase)
+                         || string.Equals(trimmed, "Side", StringComparison.OrdinalIgnoreCase)
+                         || string.Equals(trimmed, "Sides", StringComparison.OrdinalIgnoreCase))
+                    mode = DirectionalFacingMode.EastWest;
+                else
+                    mode = DirectionalFacingMode.Any;
+                directionalFacingParseCache[raw] = mode;
             }
 
-            if (string.Equals(directionalFacing, "South", StringComparison.OrdinalIgnoreCase))
+            return mode switch
             {
-                return facing == Rot4.South;
-            }
-
-            if (string.Equals(directionalFacing, "North", StringComparison.OrdinalIgnoreCase))
-            {
-                return facing == Rot4.North;
-            }
-
-            if (string.Equals(directionalFacing, "East", StringComparison.OrdinalIgnoreCase))
-            {
-                return facing == Rot4.East;
-            }
-
-            if (string.Equals(directionalFacing, "West", StringComparison.OrdinalIgnoreCase))
-            {
-                return facing == Rot4.West;
-            }
-
-            if (string.Equals(directionalFacing, "EastWest", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(directionalFacing, "Side", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(directionalFacing, "Sides", StringComparison.OrdinalIgnoreCase))
-            {
-                return facing == Rot4.East || facing == Rot4.West;
-            }
-
-            return true;
+                DirectionalFacingMode.Any => true,
+                DirectionalFacingMode.South => facing == Rot4.South,
+                DirectionalFacingMode.North => facing == Rot4.North,
+                DirectionalFacingMode.East => facing == Rot4.East,
+                DirectionalFacingMode.West => facing == Rot4.West,
+                DirectionalFacingMode.EastWest => facing == Rot4.East || facing == Rot4.West,
+                _ => true,
+            };
         }
 
         /// <summary>
@@ -149,7 +182,7 @@ namespace CharacterStudio.Rendering
             // 根据朝向应用额外的方向特定偏移
             Rot4 facing = parms.facing;
 
-            CompPawnSkin? skinComp = parms.pawn?.TryGetComp<CompPawnSkin>();
+            CompPawnSkin? skinComp = (node is PawnRenderNode_Custom cn) ? cn.GetCachedSkinComp() : parms.pawn?.TryGetComp<CompPawnSkin>();
             if (skinComp != null && skinComp.IsFlightStateActive())
             {
                 float liftFactor = skinComp.GetFlightLiftFactor01();
@@ -271,6 +304,13 @@ namespace CharacterStudio.Rendering
                     scale *= node.debugScale;
                 }
 
+                // 应用全局 DrawSize 缩放（类似原版 drawSize，统一放大/缩小角色在地图上的渲染尺寸）
+                float globalScale = GetGlobalDrawSizeScale(customNode);
+                if (globalScale != 1f)
+                {
+                    scale = new Vector3(scale.x * globalScale, scale.y, scale.z * globalScale);
+                }
+
                 return scale;
             }
 
@@ -281,6 +321,20 @@ namespace CharacterStudio.Rendering
             }
 
             return baseScale;
+        }
+
+        /// <summary>
+        /// 从缓存的 CompPawnSkin 中获取全局 DrawSize 缩放因子。
+        /// 返回 1f 表示无缩放。
+        /// </summary>
+        private static float GetGlobalDrawSizeScale(PawnRenderNode_Custom customNode)
+        {
+            CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
+            if (skinComp?.ActiveSkin == null)
+                return 1f;
+
+            float gs = skinComp.ActiveSkin.globalTextureScale;
+            return (float.IsNaN(gs) || float.IsInfinity(gs) || gs <= 0f) ? 1f : gs;
         }
 
         /// <summary>
@@ -852,7 +906,7 @@ namespace CharacterStudio.Rendering
             if (!customNode.layeredFacePartType.HasValue)
                 return;
 
-            CompPawnSkin? skinComp = pawn.TryGetComp<CompPawnSkin>();
+            CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
             if (skinComp == null)
                 return;
 
@@ -1034,8 +1088,7 @@ namespace CharacterStudio.Rendering
                 return;
             }
 
-            Pawn? pawn = customNode.tree?.pawn;
-            CompPawnSkin? skinComp = pawn?.TryGetComp<CompPawnSkin>();
+            CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
             EyeAnimationVariant eyeVariant = skinComp?.GetEffectiveEyeAnimationVariant() ?? EyeAnimationVariant.NeutralOpen;
 
             float sideSign = GetLayeredFaceSideSign(customNode);
@@ -1133,8 +1186,7 @@ namespace CharacterStudio.Rendering
                 return;
             }
 
-            Pawn? pawn = customNode.tree?.pawn;
-            CompPawnSkin? skinComp = pawn?.TryGetComp<CompPawnSkin>();
+            CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
             EyeAnimationVariant eyeVariant = skinComp?.GetEffectiveEyeAnimationVariant() ?? EyeAnimationVariant.NeutralOpen;
             PupilScaleVariant pupilVariant = skinComp?.GetEffectivePupilScaleVariant() ?? PupilScaleVariant.Neutral;
 
@@ -1256,8 +1308,7 @@ namespace CharacterStudio.Rendering
                 {
                     case LidState.Blink:
                     {
-                        Pawn? pawn = customNode.tree?.pawn;
-                        CompPawnSkin? blinkSkinComp = pawn?.TryGetComp<CompPawnSkin>();
+                        CompPawnSkin? blinkSkinComp = customNode.GetCachedSkinComp();
                         BlinkPhase blinkPhase = blinkSkinComp?.GetBlinkPhase() ?? BlinkPhase.None;
                         float phaseProgress = blinkSkinComp?.GetBlinkPhaseProgress01() ?? 0f;
                         float animatedMoveDown = blinkPhase switch
@@ -1288,8 +1339,7 @@ namespace CharacterStudio.Rendering
 
                     case LidState.Half:
                     {
-                        Pawn? pawn = customNode.tree?.pawn;
-                        CompPawnSkin? skinComp = pawn?.TryGetComp<CompPawnSkin>();
+                        CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
                         EyeAnimationVariant eyeVariant = skinComp?.GetEffectiveEyeAnimationVariant() ?? EyeAnimationVariant.NeutralSoft;
 
                         float halfOffset = Mathf.Max(0f, replacementMoveDown - lidMotion.upperHalfBaseOffsetSubtract);
@@ -1320,8 +1370,7 @@ namespace CharacterStudio.Rendering
 
                     case LidState.Happy:
                     {
-                        Pawn? pawn = customNode.tree?.pawn;
-                        CompPawnSkin? skinComp = pawn?.TryGetComp<CompPawnSkin>();
+                        CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
                         EyeAnimationVariant eyeVariant = skinComp?.GetEffectiveEyeAnimationVariant() ?? EyeAnimationVariant.HappyOpen;
                         if (eyeVariant == EyeAnimationVariant.HappyClosedPeak)
                         {
@@ -1358,8 +1407,7 @@ namespace CharacterStudio.Rendering
                 {
                     case LidState.Blink:
                     {
-                        Pawn? pawn = customNode.tree?.pawn;
-                        CompPawnSkin? blinkSkinComp = pawn?.TryGetComp<CompPawnSkin>();
+                        CompPawnSkin? blinkSkinComp = customNode.GetCachedSkinComp();
                         BlinkPhase blinkPhase = blinkSkinComp?.GetBlinkPhase() ?? BlinkPhase.None;
                         float phaseProgress = blinkSkinComp?.GetBlinkPhaseProgress01() ?? 0f;
                         float animatedMoveDown = blinkPhase switch
@@ -1420,8 +1468,7 @@ namespace CharacterStudio.Rendering
             {
                 case LidState.Blink:
                 {
-                    Pawn? pawn = customNode.tree?.pawn;
-                    CompPawnSkin? blinkSkinComp = pawn?.TryGetComp<CompPawnSkin>();
+                    CompPawnSkin? blinkSkinComp = customNode.GetCachedSkinComp();
                     BlinkPhase blinkPhase = blinkSkinComp?.GetBlinkPhase() ?? BlinkPhase.None;
                     float phaseProgress = blinkSkinComp?.GetBlinkPhaseProgress01() ?? 0f;
                     float animatedMoveDown = blinkPhase switch
@@ -1478,48 +1525,42 @@ namespace CharacterStudio.Rendering
 
         private PawnEyeDirectionConfig.LidMotionConfig GetLayeredLidMotionConfig(PawnRenderNode_Custom customNode)
         {
-            Pawn? pawn = customNode.tree?.pawn;
-            CompPawnSkin? skinComp = pawn?.TryGetComp<CompPawnSkin>();
+            CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
             return skinComp?.ActiveSkin?.faceConfig?.eyeDirectionConfig?.lidMotion
                 ?? new PawnEyeDirectionConfig.LidMotionConfig();
         }
 
         private PawnEyeDirectionConfig.EyeMotionConfig GetLayeredEyeMotionConfig(PawnRenderNode_Custom customNode)
         {
-            Pawn? pawn = customNode.tree?.pawn;
-            CompPawnSkin? skinComp = pawn?.TryGetComp<CompPawnSkin>();
+            CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
             return skinComp?.ActiveSkin?.faceConfig?.eyeDirectionConfig?.eyeMotion
                 ?? new PawnEyeDirectionConfig.EyeMotionConfig();
         }
 
         private PawnEyeDirectionConfig.PupilMotionConfig GetLayeredPupilMotionConfig(PawnRenderNode_Custom customNode)
         {
-            Pawn? pawn = customNode.tree?.pawn;
-            CompPawnSkin? skinComp = pawn?.TryGetComp<CompPawnSkin>();
+            CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
             return skinComp?.ActiveSkin?.faceConfig?.eyeDirectionConfig?.pupilMotion
                 ?? new PawnEyeDirectionConfig.PupilMotionConfig();
         }
 
         private PawnFaceConfig.BrowMotionConfig GetBrowMotionConfig(PawnRenderNode_Custom customNode)
         {
-            Pawn? pawn = customNode.tree?.pawn;
-            CompPawnSkin? skinComp = pawn?.TryGetComp<CompPawnSkin>();
+            CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
             return skinComp?.ActiveSkin?.faceConfig?.browMotion
                 ?? new PawnFaceConfig.BrowMotionConfig();
         }
 
         private PawnFaceConfig.MouthMotionConfig GetMouthMotionConfig(PawnRenderNode_Custom customNode)
         {
-            Pawn? pawn = customNode.tree?.pawn;
-            CompPawnSkin? skinComp = pawn?.TryGetComp<CompPawnSkin>();
+            CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
             return skinComp?.ActiveSkin?.faceConfig?.mouthMotion
                 ?? new PawnFaceConfig.MouthMotionConfig();
         }
 
         private PawnFaceConfig.EmotionOverlayMotionConfig GetEmotionOverlayMotionConfig(PawnRenderNode_Custom customNode)
         {
-            Pawn? pawn = customNode.tree?.pawn;
-            CompPawnSkin? skinComp = pawn?.TryGetComp<CompPawnSkin>();
+            CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
             return skinComp?.ActiveSkin?.faceConfig?.emotionOverlayMotion
                 ?? new PawnFaceConfig.EmotionOverlayMotionConfig();
         }
@@ -1596,8 +1637,7 @@ namespace CharacterStudio.Rendering
 
         private float GetLayeredUpperLidMoveDown(PawnRenderNode_Custom customNode)
         {
-            Pawn? pawn = customNode.tree?.pawn;
-            CompPawnSkin? skinComp = pawn?.TryGetComp<CompPawnSkin>();
+            CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
             const float defaultUpperLidMoveDown = 0.008f;
 
             // 预览面板中 LidState 可单独覆盖，但并不会强制启用 eyeDirectionConfig。
@@ -1729,21 +1769,7 @@ namespace CharacterStudio.Rendering
 
         private bool HasReplacementMouthTextureForCurrentState(PawnFaceConfig faceConfig, CompPawnSkin skinComp)
         {
-            if (faceConfig.CountLayeredParts(LayeredFacePartType.ReplacementMouth) == 0)
-                return false;
-
-            foreach (ExpressionType candidate in EnumerateReplacementMouthExpressions(skinComp))
-            {
-                string directPath = faceConfig.GetLayeredDirectionalPartPath(LayeredFacePartType.ReplacementMouth, candidate, Rot4.South);
-                if (!string.IsNullOrWhiteSpace(directPath))
-                    return true;
-
-                LayeredFacePartConfig? config = faceConfig.GetLayeredPartConfig(LayeredFacePartType.ReplacementMouth, candidate);
-                if (config != null && config.enabled && config.HasAnyTexture())
-                    return true;
-            }
-
-            return false;
+            return !string.IsNullOrWhiteSpace(ResolveReplacementMouthPath(faceConfig, skinComp, Rot4.South));
         }
 
         private static IEnumerable<ExpressionType> EnumerateReplacementEyeExpressions(CompPawnSkin skinComp)
@@ -1787,19 +1813,29 @@ namespace CharacterStudio.Rendering
 
             switch (expression)
             {
-                case ExpressionType.Cheerful:
-                case ExpressionType.Lovin:
-                case ExpressionType.SocialRelax:
                 case ExpressionType.Wink:
                     yield return ExpressionType.Happy;
                     break;
-                case ExpressionType.Dead:
-                    yield return ExpressionType.Sleeping;
-                    break;
+            }
+        }
+
+        private static string? ResolveReplacementMouthPath(PawnFaceConfig faceConfig, CompPawnSkin skinComp, Rot4 facing)
+        {
+            if (faceConfig.CountLayeredParts(LayeredFacePartType.ReplacementMouth) == 0)
+                return null;
+
+            foreach (ExpressionType candidate in EnumerateReplacementMouthExpressions(skinComp))
+            {
+                string directPath = faceConfig.GetLayeredDirectionalPartPath(LayeredFacePartType.ReplacementMouth, candidate, facing);
+                if (!string.IsNullOrWhiteSpace(directPath))
+                    return directPath;
+
+                LayeredFacePartConfig? config = faceConfig.GetLayeredPartConfig(LayeredFacePartType.ReplacementMouth, candidate);
+                if (config != null && config.enabled && config.HasAnyTexture())
+                    return config.GetDirectionalTexPath(facing);
             }
 
-            if (expression != ExpressionType.Neutral)
-                yield return ExpressionType.Neutral;
+            return null;
         }
 
         private static bool HasReplacementEyeTexture(PawnFaceConfig faceConfig, ExpressionType expression, LayeredFacePartSide preferredSide)
@@ -1866,7 +1902,8 @@ namespace CharacterStudio.Rendering
             return partType == LayeredFacePartType.Blush
                 || partType == LayeredFacePartType.Tear
                 || partType == LayeredFacePartType.Sweat
-                || partType == LayeredFacePartType.Overlay;
+                || partType == LayeredFacePartType.Overlay
+                || partType == LayeredFacePartType.OverlayTop;
         }
 
         private string ResolveActiveEmotionOverlayId(PawnRenderNode_Custom customNode, Pawn? pawn = null)
@@ -1883,6 +1920,7 @@ namespace CharacterStudio.Rendering
                 case LayeredFacePartType.Sweat:
                     return PawnFaceConfig.NormalizeOverlayId("Sweat");
                 case LayeredFacePartType.Overlay:
+                case LayeredFacePartType.OverlayTop:
                     return GetEffectiveLayeredOverlayId(customNode, pawn);
                 default:
                     return string.Empty;
@@ -1891,16 +1929,27 @@ namespace CharacterStudio.Rendering
 
         private string ResolveExplicitOverlaySemanticKey(PawnFaceConfig faceConfig, CompPawnSkin? skinComp, ExpressionType expression)
         {
+            string? mappedOverlayId = null;
+            if (skinComp?.CurrentFaceRuntimeState != null)
+            {
+                mappedOverlayId = skinComp.CurrentFaceRuntimeState.currentOverlaySemanticKey;
+            }
+
+            string normalizedMappedOverlayId = PawnFaceConfig.NormalizeOverlayId(mappedOverlayId);
+            if (!string.IsNullOrWhiteSpace(normalizedMappedOverlayId))
+            {
+                PawnFaceConfig.EmotionOverlayRule? mappedRule = faceConfig.emotionOverlayRules
+                    .FirstOrDefault(rule => (rule.overlayIds ?? new List<string>())
+                        .Any(id => string.Equals(PawnFaceConfig.NormalizeOverlayId(id), normalizedMappedOverlayId, StringComparison.OrdinalIgnoreCase)));
+                if (mappedRule != null && !string.IsNullOrWhiteSpace(mappedRule.semanticKey))
+                    return PawnFaceConfig.NormalizeOverlaySemanticKey(mappedRule.semanticKey);
+            }
+
             string runtimeSemanticKey = PawnFaceConfig.NormalizeOverlaySemanticKey(skinComp?.CurrentFaceRuntimeState.currentOverlaySemanticKey);
             if (!string.IsNullOrWhiteSpace(runtimeSemanticKey))
                 return runtimeSemanticKey;
 
-            EmotionOverlayState runtimeOverlayState = skinComp?.CurrentFaceRuntimeState.currentEmotionOverlayState ?? EmotionOverlayState.None;
-            string runtimeEmotionSemanticKey = PawnFaceConfig.MapLegacyEmotionStateToSemanticKey(runtimeOverlayState.ToString());
-            if (!string.IsNullOrWhiteSpace(runtimeEmotionSemanticKey))
-                return runtimeEmotionSemanticKey;
-
-            return faceConfig.ResolveOverlaySemanticKey(expression);
+            return string.Empty;
         }
 
         private List<string> ResolveExplicitOverlayIds(PawnFaceConfig faceConfig, CompPawnSkin? skinComp, string? semanticKey, ExpressionType expression)
@@ -1924,7 +1973,7 @@ namespace CharacterStudio.Rendering
             if (!IsEmotionOverlayVisualPart(partType))
                 return false;
 
-            CompPawnSkin? skinComp = pawn.TryGetComp<CompPawnSkin>();
+            CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
             PawnFaceConfig? faceConfig = skinComp?.ActiveSkin?.faceConfig;
             if (faceConfig == null || !faceConfig.enabled)
                 return false;
@@ -2010,7 +2059,7 @@ namespace CharacterStudio.Rendering
                 case LayeredFacePartType.ReplacementEye:
                 {
                     Pawn? pawn = customNode.tree?.pawn;
-                    CompPawnSkin? skinComp = pawn?.TryGetComp<CompPawnSkin>();
+                    CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
                     if (pawn == null || skinComp == null || !HasActiveReplacementEye(customNode, pawn, skinComp))
                     {
                         HideProgrammaticFacePart(customNode);
@@ -2106,9 +2155,10 @@ namespace CharacterStudio.Rendering
                 }
 
                 case LayeredFacePartType.Overlay:
+                case LayeredFacePartType.OverlayTop:
                 {
                     Pawn? pawn = customNode.tree?.pawn;
-                    CompPawnSkin? skinComp = pawn?.TryGetComp<CompPawnSkin>();
+                    CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
 
                     if (pawn != null && skinComp != null)
                     {
@@ -2150,6 +2200,25 @@ namespace CharacterStudio.Rendering
                         Vector3.one);
                     return;
                 }
+
+                case LayeredFacePartType.ReplacementMouth:
+                {
+                    Pawn? pawn = customNode.tree?.pawn;
+                    CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
+                    PawnFaceConfig? faceConfig = skinComp?.ActiveSkin?.faceConfig;
+                    if (pawn == null || skinComp == null || faceConfig == null || !HasReplacementMouthTextureForCurrentState(faceConfig, skinComp))
+                    {
+                        HideProgrammaticFacePart(customNode);
+                        return;
+                    }
+
+                    SetProgrammaticFaceTransform(
+                        customNode,
+                        0f,
+                        Vector3.zero,
+                        Vector3.one);
+                    return;
+                }
             }
         }
 
@@ -2160,7 +2229,7 @@ namespace CharacterStudio.Rendering
 
             string normalizedOverlayId = PawnFaceConfig.NormalizeOverlayId(overlayId);
             LayeredFacePartConfig? part = faceConfig.layeredParts.FirstOrDefault(existing => existing != null
-                && existing.partType == LayeredFacePartType.Overlay
+                && (existing.partType == LayeredFacePartType.Overlay || existing.partType == LayeredFacePartType.OverlayTop)
                 && string.Equals(PawnFaceConfig.NormalizeOverlayId(existing.overlayId), normalizedOverlayId, StringComparison.OrdinalIgnoreCase));
             return (part?.followTarget ?? string.Empty).Trim();
         }
@@ -2282,12 +2351,12 @@ namespace CharacterStudio.Rendering
                     
                     // 应用第二颜色（仅当使用支持 Mask 的 Shader 时有效）
                     // 始终设置 _ColorTwo，因为如果 Shader 不支持，设置属性也不会有负面影响
-                    int colorTwoID = Shader.PropertyToID("_ColorTwo");
-                    matPropBlock.SetColor(colorTwoID, finalColorTwo);
+                    // P4: 使用缓存的 PropertyToID 结果
+                    matPropBlock.SetColor(CachedColorTwoID, finalColorTwo);
                 }
 
-                int stID = Shader.PropertyToID("_MainTex_ST");
-                matPropBlock.SetVector(stID, new Vector4(1f, 1f, 0f, 0f));
+                // P4: 使用缓存的 PropertyToID 结果
+                matPropBlock.SetVector(CachedMainTexSTID, new Vector4(1f, 1f, 0f, 0f));
             }
             else
             {
@@ -2416,17 +2485,24 @@ namespace CharacterStudio.Rendering
                 {
                     if (graphicType == null || (graphicType != typeof(Graphic_Multi) && graphicType != typeof(Graphic_Single)))
                     {
-                        if (!RuntimeAssetLoader.IsMainThread())
+                        // P6: 使用缓存的图形类型探测结果（避免重复 ContentFinder 查找）
+                        if (graphicTypeProbeCache.TryGetValue(resolvedTexPath, out var cachedGraphicType))
+                        {
+                            graphicType = cachedGraphicType;
+                        }
+                        else if (!RuntimeAssetLoader.IsMainThread())
                         {
                             graphicType = typeof(Graphic_Multi);
                         }
                         else if (ContentFinder<Texture2D>.Get(resolvedTexPath + "_north", false) != null)
                         {
                             graphicType = typeof(Graphic_Multi);
+                            graphicTypeProbeCache[resolvedTexPath] = graphicType;
                         }
                         else if (ContentFinder<Texture2D>.Get(resolvedTexPath, false) != null)
                         {
                             graphicType = typeof(Graphic_Single);
+                            graphicTypeProbeCache[resolvedTexPath] = graphicType;
                         }
 
                         if (graphicType == null) graphicType = typeof(Graphic_Multi);
@@ -2896,7 +2972,7 @@ namespace CharacterStudio.Rendering
             if (!customNode.layeredFacePartType.HasValue || pawn == null)
                 return null;
 
-            CompPawnSkin? skinComp = pawn.TryGetComp<CompPawnSkin>();
+            CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
             PawnFaceConfig? faceConfig = skinComp?.ActiveSkin?.faceConfig;
             FaceRuntimeCompiledData? compiledData = skinComp?.CurrentFaceRuntimeCompiledData;
             FaceRenderTrack currentTrack = skinComp?.CurrentFaceRuntimeState.currentTrack ?? FaceRenderTrack.World;
@@ -2995,14 +3071,7 @@ namespace CharacterStudio.Rendering
 
             if (partType == LayeredFacePartType.ReplacementMouth && skinComp != null)
             {
-                foreach (ExpressionType candidate in EnumerateReplacementMouthExpressions(skinComp))
-                {
-                    string replacementMouthPath = faceConfig.GetLayeredDirectionalPartPath(LayeredFacePartType.ReplacementMouth, candidate, facing);
-                    if (!string.IsNullOrWhiteSpace(replacementMouthPath))
-                        return replacementMouthPath;
-                }
-
-                return null;
+                return ResolveReplacementMouthPath(faceConfig, skinComp, facing);
             }
 
             if (!shouldDelayBlinkTextureReplacement)
@@ -3099,7 +3168,7 @@ namespace CharacterStudio.Rendering
             if (!partType.HasValue || !IsPairedLayeredFacePart(partType.Value))
                 return null;
 
-            CompPawnSkin? skinComp = pawn.TryGetComp<CompPawnSkin>();
+            CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
             if (skinComp == null)
                 return null;
 
@@ -3145,7 +3214,7 @@ namespace CharacterStudio.Rendering
             if (!ShouldUseChannelVariantForPart(partType.Value))
                 return null;
 
-            CompPawnSkin? skinComp = pawn.TryGetComp<CompPawnSkin>();
+            CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
             if (skinComp == null)
                 return null;
 
@@ -3205,7 +3274,7 @@ namespace CharacterStudio.Rendering
             if (!partType.HasValue || !IsEyeVariantDrivenLayeredFacePart(partType.Value))
                 return null;
 
-            CompPawnSkin? skinComp = pawn.TryGetComp<CompPawnSkin>();
+            CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
             if (skinComp == null)
                 return null;
 
@@ -3490,7 +3559,7 @@ namespace CharacterStudio.Rendering
             if (!customNode.layeredFacePartType.HasValue || pawn == null)
                 return 0f;
 
-            CompPawnSkin? skinComp = pawn.TryGetComp<CompPawnSkin>();
+            CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
             FaceRuntimeCompiledData? compiledData = skinComp?.CurrentFaceRuntimeCompiledData;
             PawnFaceConfig? faceConfig = skinComp?.ActiveSkin?.faceConfig;
             List<LayeredFacePartConfig>? layeredParts = faceConfig?.layeredParts;
@@ -3742,7 +3811,7 @@ namespace CharacterStudio.Rendering
             if (!animationState.useTriggeredLocalAnimation)
                 return true;
 
-            CompPawnSkin? skinComp = pawn?.TryGetComp<CompPawnSkin>();
+            CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
             string triggerKey = string.IsNullOrWhiteSpace(animationState.triggerAbilityDefName)
                 ? animationState.animationGroupKey
                 : animationState.triggerAbilityDefName;
@@ -3784,7 +3853,7 @@ namespace CharacterStudio.Rendering
                 return;
             }
 
-            CompPawnSkin? skinComp = pawn?.TryGetComp<CompPawnSkin>();
+            CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
             string triggerKey = string.IsNullOrWhiteSpace(animationState.triggerAbilityDefName)
                 ? animationState.animationGroupKey
                 : animationState.triggerAbilityDefName;
@@ -3865,6 +3934,7 @@ namespace CharacterStudio.Rendering
             externalGraphicCache.Clear();
             textureExistsCache.Clear();
             frameSequenceCountCache.Clear();
+            graphicTypeProbeCache.Clear();
         }
     }
 }

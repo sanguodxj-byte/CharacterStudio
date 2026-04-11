@@ -59,33 +59,20 @@ namespace CharacterStudio.UI
 
         public override GizmoResult GizmoOnGUI(Vector2 topLeft, float maxWidth, GizmoRenderParms parms)
         {
-            float scale = Mathf.Clamp(maxWidth / BaseWidth, 0.32f, 1f);
-            Rect outerRect = new Rect(topLeft.x, topLeft.y, BaseWidth * scale, BaseHeight * scale);
-            Rect drawRect = new Rect(0f, 0f, BaseWidth, BaseHeight);
+            Rect rect = new Rect(topLeft.x, topLeft.y, BaseWidth, BaseHeight);
 
-            Matrix4x4 oldMatrix = GUI.matrix;
-            GUI.matrix = Matrix4x4.TRS(new Vector3(topLeft.x, topLeft.y, 0f), Quaternion.identity, new Vector3(scale, scale, 1f));
-
-            Widgets.DrawBoxSolid(drawRect, ColorBg);
-            Widgets.DrawBoxSolid(new Rect(drawRect.x + 1f, drawRect.y + 1f, drawRect.width - 2f, drawRect.height - 2f), ColorInset);
+            Widgets.DrawBoxSolid(rect, ColorBg);
+            Widgets.DrawBoxSolid(new Rect(rect.x + 1f, rect.y + 1f, rect.width - 2f, rect.height - 2f), ColorInset);
 
             float pulse = 0.5f + (0.5f * Mathf.Sin(((Find.TickManager?.TicksGame ?? 0) + pawn.thingIDNumber * 7f) / 8f));
-            bool hovered = Mouse.IsOver(outerRect);
+            bool hovered = Mouse.IsOver(rect);
             float glowAlpha = hovered ? 0.16f : 0.06f + pulse * 0.03f;
-            Widgets.DrawBoxSolid(new Rect(drawRect.x + 2f, drawRect.y + 2f, drawRect.width - 4f, 9f), new Color(GlowColor.r, GlowColor.g, GlowColor.b, glowAlpha));
+            Widgets.DrawBoxSolid(new Rect(rect.x + 2f, rect.y + 2f, rect.width - 4f, 9f), new Color(GlowColor.r, GlowColor.g, GlowColor.b, glowAlpha));
 
             bool onCooldown = IsOnCooldown(out float cdPct, out string cdLabel);
             bool canUse = !onCooldown && CanPawnUseAbility();
 
-            DrawSlotBadge(drawRect);
-            DrawChargeBadge(drawRect);
-            DrawRuntimeTag(drawRect);
-
-            Rect iconFrameRect = new Rect(drawRect.x + 13f, drawRect.y + 9f, 48f, 40f);
-            Widgets.DrawBoxSolid(iconFrameRect, new Color(0.03f, 0.05f, 0.08f, 0.92f));
-            Widgets.DrawBox(iconFrameRect, 1);
-
-            Rect iconRect = new Rect(drawRect.x + 15f, drawRect.y + 11f, 44f, 36f);
+            Rect iconRect = new Rect(rect.x + 2f, rect.y + 2f, rect.width - 4f, rect.height - 4f);
             GUI.color = canUse ? ColorReady : ColorOnCD;
             if (iconTex != null)
             {
@@ -102,40 +89,30 @@ namespace CharacterStudio.UI
 
             if (onCooldown)
             {
-                Widgets.DrawBoxSolid(iconFrameRect, CooldownOverlay);
+                Widgets.DrawBoxSolid(iconRect, CooldownOverlay);
                 Text.Font = GameFont.Tiny;
                 Text.Anchor = TextAnchor.MiddleCenter;
                 GUI.color = new Color(1f, 1f, 1f, 0.92f);
-                Widgets.Label(iconFrameRect, cdLabel);
+                Widgets.Label(iconRect, cdLabel);
                 GUI.color = Color.white;
                 Text.Anchor = TextAnchor.UpperLeft;
             }
 
+            DrawSlotBadge(rect);
+            DrawChargeBadge(rect);
+
             GUI.color = Color.white;
             Text.Anchor = TextAnchor.UpperLeft;
 
-            Rect nameRect = new Rect(drawRect.x + 5f, drawRect.y + 51f, drawRect.width - 10f, 15f);
+            Rect nameRect = new Rect(rect.x + 3f, rect.y + 36f, rect.width - 6f, 16f);
             Text.Font = GameFont.Tiny;
             Text.Anchor = TextAnchor.UpperCenter;
             GUI.color = canUse ? Color.white : Color.gray;
-            Widgets.Label(nameRect, GenText.Truncate(modAbility.label ?? modAbility.defName, 10f));
+            Widgets.Label(nameRect, GenText.Truncate(modAbility.label ?? modAbility.defName, nameRect.width));
             GUI.color = Color.white;
             Text.Anchor = TextAnchor.UpperLeft;
 
-            if (slotEntry?.rStackCount > 0)
-            {
-                Rect stackRect = new Rect(drawRect.x + drawRect.width - 20f, drawRect.y + 4f, 16f, 14f);
-                Widgets.DrawBoxSolid(stackRect, new Color(0.28f, 0.12f, 0.12f, 0.95f));
-                GUI.color = new Color(1f, 0.78f, 0.72f, 0.92f);
-                Widgets.DrawBox(stackRect, 1);
-                GUI.color = Color.white;
-                Text.Font = GameFont.Tiny;
-                Text.Anchor = TextAnchor.MiddleCenter;
-                Widgets.Label(stackRect, slotEntry.rStackCount.ToString());
-                Text.Anchor = TextAnchor.UpperLeft;
-            }
-
-            Rect cooldownBarRect = new Rect(drawRect.x + 6f, drawRect.y + 69f, drawRect.width - 12f, 4f);
+            Rect cooldownBarRect = new Rect(rect.x + 4f, rect.y + rect.height - 8f, rect.width - 8f, 4f);
             Widgets.DrawBoxSolid(cooldownBarRect, CooldownBarBg);
             float fillWidth = Mathf.Max(0f, (cooldownBarRect.width - 2f) * (onCooldown ? 1f - cdPct : 1f));
             if (fillWidth > 0.5f)
@@ -146,13 +123,12 @@ namespace CharacterStudio.UI
             Widgets.DrawBox(cooldownBarRect, 1);
 
             GUI.color = canUse ? (hovered ? ColorBorderActive : ColorBorder) : new Color(0.3f, 0.3f, 0.3f, 0.5f);
-            Widgets.DrawBox(drawRect, 1);
+            Widgets.DrawBox(rect, 1);
             GUI.color = Color.white;
-            GUI.matrix = oldMatrix;
 
-            TooltipHandler.TipRegion(outerRect, BuildTooltip(onCooldown, cdLabel));
+            TooltipHandler.TipRegion(rect, BuildTooltip(onCooldown, cdLabel));
 
-            if (Widgets.ButtonInvisible(outerRect))
+            if (Widgets.ButtonInvisible(rect))
             {
                 if (!canUse)
                 {
@@ -170,7 +146,7 @@ namespace CharacterStudio.UI
                 return new GizmoResult(GizmoState.Interacted, Event.current);
             }
 
-            return Mouse.IsOver(outerRect)
+            return Mouse.IsOver(rect)
                 ? new GizmoResult(GizmoState.Mouseover)
                 : new GizmoResult(GizmoState.Clear);
         }
@@ -427,7 +403,7 @@ namespace CharacterStudio.UI
                 return;
             }
 
-            Rect slotRect = new Rect(outerRect.x + 4f, outerRect.y + 4f, 22f, 14f);
+            Rect slotRect = new Rect(outerRect.x + 3f, outerRect.y + 3f, 26f, 16f);
             Widgets.DrawBoxSolid(slotRect, ColorSlotBg);
             GUI.color = ColorSlotBorder;
             Widgets.DrawBox(slotRect, 1);
@@ -902,10 +878,10 @@ namespace CharacterStudio.UI
     {
         private readonly List<Gizmo_CSAbility> abilities;
 
-        private const int MaxColumns = 5;
-        private const float HorizontalGap = 6f;
-        private const float VerticalGap = 6f;
-        private const float Padding = 8f;
+        private const int MaxColumns = 6;
+        private const float HorizontalGap = 4f;
+        private const float VerticalGap = 4f;
+        private const float Padding = 6f;
 
         public Gizmo_CSAbilityBar(IEnumerable<Gizmo_CSAbility> abilities)
         {
@@ -967,7 +943,7 @@ namespace CharacterStudio.UI
         private LayoutMetrics CalculateLayout()
         {
             int count = Mathf.Max(1, abilities.Count);
-            int rows = count <= 5 ? 1 : count <= 10 ? 2 : 3;
+            int rows = count <= 6 ? 1 : count <= 12 ? 2 : 3;
             int columns = Mathf.CeilToInt(count / (float)rows);
             float scale = rows switch
             {
@@ -1117,10 +1093,7 @@ namespace CharacterStudio.UI
                 abilityGizmos.Add(new Gizmo_CSAbility(__instance, placeholder, entry, vanillaCommand));
             }
 
-            if (abilityGizmos.Count > 0)
-            {
-                list.Add(new Gizmo_CSAbilityBar(abilityGizmos));
-            }
+            list.AddRange(abilityGizmos);
 
             __result = list;
         }

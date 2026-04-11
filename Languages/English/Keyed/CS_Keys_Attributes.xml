@@ -42,6 +42,9 @@
     <CS_AttrBuff_Search>Search Stat</CS_AttrBuff_Search>
     <CS_AttrBuff_Section>Attribute Buff</CS_AttrBuff_Section>
     <CS_AttrBuff_Value>Value</CS_AttrBuff_Value>
+    <CS_AttrBuff_Summary>{0} attribute buff(s) configured, {1} enabled</CS_AttrBuff_Summary>
+    <CS_AttrBuff_OpenEditor>Open Attribute Buff Editor</CS_AttrBuff_OpenEditor>
+    <CS_AttrBuff_ManageBuff>Manage Attribute Buffs</CS_AttrBuff_ManageBuff>
     <CS_Studio_RuntimeTriggers_Section>Runtime Triggers</CS_Studio_RuntimeTriggers_Section>
     <CS_Studio_RuntimeTriggers_Summary>{0} runtime trigger(s) configured</CS_Studio_RuntimeTriggers_Summary>
     <CS_Studio_RuntimeTriggers_Title>Runtime Trigger Configuration</CS_Studio_RuntimeTriggers_Title>

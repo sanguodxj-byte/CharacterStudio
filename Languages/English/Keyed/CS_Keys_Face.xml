@@ -219,6 +219,10 @@
     <CS_Studio_Face_MotionSection_PupilMotion>Pupil Procedural Motion</CS_Studio_Face_MotionSection_PupilMotion>
     <CS_Studio_Face_PupilCore_Title>Core Four</CS_Studio_Face_PupilCore_Title>
     <CS_Studio_Face_PupilCore_Hint>Start with these four values: they directly control how far the pupil looks left, right, up, and down.</CS_Studio_Face_PupilCore_Hint>
+    <CS_Studio_Face_PupilCore_GazeOffset>Gaze Direction Extra Offset</CS_Studio_Face_PupilCore_GazeOffset>
+    <CS_Studio_Face_PupilCore_FrontLeftEyeOffsetX>Front Left Eye X Offset</CS_Studio_Face_PupilCore_FrontLeftEyeOffsetX>
+    <CS_Studio_Face_PupilCore_FrontRightEyeOffsetX>Front Right Eye X Offset</CS_Studio_Face_PupilCore_FrontRightEyeOffsetX>
+    <CS_Studio_Face_PupilCore_SideFacingOffsetX>Side Facing X Offset</CS_Studio_Face_PupilCore_SideFacingOffsetX>
     <CS_Studio_Face_PupilAdvanced_Title>Advanced Fine Tuning</CS_Studio_Face_PupilAdvanced_Title>
     <CS_Studio_Face_PupilAdvanced_Hint>These values refine expression-specific offsets, easing, and scaling. Usually adjust them only after the core four feel correct.</CS_Studio_Face_PupilAdvanced_Hint>
     <CS_Studio_Face_MotionSection_BrowMotion>Brow Motion</CS_Studio_Face_MotionSection_BrowMotion>

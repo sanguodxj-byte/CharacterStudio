@@ -78,6 +78,11 @@ namespace CharacterStudio.Exporter
         public bool IncludeSummonItem { get; set; } = false;
         public bool IncludeAbilities { get; set; } = false;
         public bool CopyTextures { get; set; } = true;
+        
+        public List<string> SkinDefXmlPaths { get; set; } = new List<string>();
+        public List<string> PawnKindDefXmlPaths { get; set; } = new List<string>();
+        public List<string> SummonItemXmlPaths { get; set; } = new List<string>();
+        public List<string> AbilityXmlPaths { get; set; } = new List<string>();
 
         public SummonArrivalMode RoleCardArrivalMode { get; set; } = SummonArrivalMode.DropPod;
         public SummonSpawnAnimationMode RoleCardSpawnAnimation { get; set; } = SummonSpawnAnimationMode.ExplosionEffect;
@@ -145,8 +150,11 @@ namespace CharacterStudio.Exporter
                 Description = config.Description,
                 OutputPath = config.OutputPath,
                 SkinDef = config.SkinDef!.Clone(),
-                Abilities = config.Abilities,
-                SourceTexturePaths = config.SourceTexturePaths,
+                Abilities = config.Abilities?
+                    .Select(a => a?.Clone())
+                    .OfType<Abilities.ModularAbilityDef>()
+                    .ToList() ?? new List<Abilities.ModularAbilityDef>(),
+                SourceTexturePaths = config.SourceTexturePaths != null ? new List<string>(config.SourceTexturePaths) : new List<string>(),
                 Mode = config.Mode,
                 ExportAsGene = config.ExportAsGene,
                 ExportAsTattoo = config.ExportAsTattoo,
@@ -159,6 +167,10 @@ namespace CharacterStudio.Exporter
                 IncludeSummonItem = config.IncludeSummonItem,
                 IncludeAbilities = config.IncludeAbilities,
                 CopyTextures = config.CopyTextures,
+                SkinDefXmlPaths = config.SkinDefXmlPaths != null ? new List<string>(config.SkinDefXmlPaths) : new List<string>(),
+                PawnKindDefXmlPaths = config.PawnKindDefXmlPaths != null ? new List<string>(config.PawnKindDefXmlPaths) : new List<string>(),
+                SummonItemXmlPaths = config.SummonItemXmlPaths != null ? new List<string>(config.SummonItemXmlPaths) : new List<string>(),
+                AbilityXmlPaths = config.AbilityXmlPaths != null ? new List<string>(config.AbilityXmlPaths) : new List<string>(),
                 RoleCardArrivalMode = config.RoleCardArrivalMode,
                 RoleCardSpawnAnimation = config.RoleCardSpawnAnimation,
                 RoleCardSpawnAnimationScale = config.RoleCardSpawnAnimationScale,
@@ -319,37 +331,46 @@ namespace CharacterStudio.Exporter
             }
         }
 
+        private void CopyExternalXmls(string modPath, List<string> sourcePaths)
+        {
+            if (sourcePaths == null || sourcePaths.Count == 0) return;
+            string defsDir = Path.Combine(modPath, "Defs", "CharacterStudio");
+            if (!Directory.Exists(defsDir)) Directory.CreateDirectory(defsDir);
+
+            foreach (string path in sourcePaths)
+            {
+                if (File.Exists(path))
+                {
+                    string target = Path.Combine(defsDir, Path.GetFileName(path));
+                    File.Copy(path, target, true);
+                }
+            }
+        }
+
         private void GenerateDefinitionFiles(string modPath, ModExportConfig exportConfig)
         {
             if (exportConfig.IncludeSkinDef)
             {
-                GenerateSkinDefXml(modPath, exportConfig);
-            }
-
-            GenerateEquipmentThingDefXml(modPath, exportConfig);
-            GenerateEquipmentRecipeDefXml(modPath, exportConfig);
-            GenerateEquipmentBundleManifestXml(modPath, exportConfig);
-
-            if (exportConfig.IncludeGeneDef && exportConfig.ExportAsGene)
-            {
-                GenerateGeneDefXml(modPath, exportConfig);
+                if (exportConfig.SkinDefXmlPaths != null && exportConfig.SkinDefXmlPaths.Count > 0)
+                    CopyExternalXmls(modPath, exportConfig.SkinDefXmlPaths);
             }
 
             if (exportConfig.IncludePawnKind)
             {
-                GenerateUnitDefXml(modPath, exportConfig);
+                if (exportConfig.PawnKindDefXmlPaths != null && exportConfig.PawnKindDefXmlPaths.Count > 0)
+                    CopyExternalXmls(modPath, exportConfig.PawnKindDefXmlPaths);
             }
 
-            GenerateCharacterDefinitionXml(modPath, exportConfig);
-
-            if (exportConfig.IncludeRuntimeTriggers)
+            if (exportConfig.IncludeSummonItem)
             {
-                GenerateRuntimeTriggerXml(modPath, exportConfig);
+                if (exportConfig.SummonItemXmlPaths != null && exportConfig.SummonItemXmlPaths.Count > 0)
+                    CopyExternalXmls(modPath, exportConfig.SummonItemXmlPaths);
             }
 
-            if (exportConfig.IncludeAbilities && exportConfig.Abilities.Count > 0)
+            if (exportConfig.IncludeAbilities)
             {
-                GenerateAbilityDefXml(modPath, exportConfig);
+                if (exportConfig.AbilityXmlPaths != null && exportConfig.AbilityXmlPaths.Count > 0)
+                    CopyExternalXmls(modPath, exportConfig.AbilityXmlPaths);
             }
         }
 
@@ -394,7 +415,7 @@ namespace CharacterStudio.Exporter
                 config.IncludeSkinDef = true;
             }
 
-            if (config.Abilities == null || config.Abilities.Count == 0)
+            if ((config.Abilities == null || config.Abilities.Count == 0) && (config.AbilityXmlPaths == null || config.AbilityXmlPaths.Count == 0))
             {
                 config.IncludeAbilities = false;
             }
@@ -705,7 +726,7 @@ namespace CharacterStudio.Exporter
             }
 
             // 尝试不同的扩展名
-            string[] extensions = { ".png", ".PNG", ".jpg", ".JPG", ".jpeg" };
+            string[] extensions = { ".png", ".PNG", ".jpg", ".JPG", ".jpeg", ".JPEG" };
 
             foreach (var searchPath in searchPaths)
             {
@@ -816,51 +837,6 @@ namespace CharacterStudio.Exporter
             Log.Message($"[CharacterStudio] 装备包清单已生成: {defsPath}");
         }
 
-        private XElement? GenerateBaseAppearanceXml(BaseAppearanceConfig? baseAppearance)
-        {
-            return ModExportXmlWriter.GenerateBaseAppearanceXml(baseAppearance);
-        }
-
-        private XElement GenerateLayersXml(List<PawnLayerConfig>? layers)
-        {
-            return ModExportXmlWriter.GenerateLayersXml(layers);
-        }
-
-        private XElement? GenerateStringListXml(string tagName, List<string>? values)
-        {
-            return ModExportXmlWriter.GenerateStringListXml(tagName, values);
-        }
-
-        private XElement GenerateFaceConfigXml(PawnFaceConfig config)
-        {
-            return ModExportXmlWriter.GenerateFaceConfigXml(config);
-        }
-
-        private XElement GenerateTargetRacesXml(List<string>? races)
-        {
-            return ModExportXmlWriter.GenerateTargetRacesXml(races);
-        }
-
-        private XElement? GenerateSkinAbilitiesXml(List<ModularAbilityDef>? abilities)
-        {
-            return ModExportXmlWriter.GenerateSkinAbilitiesXml(abilities);
-        }
-
-        private XElement? GenerateSkinAbilityEffectsXml(List<AbilityEffectConfig>? effects)
-        {
-            return ModExportXmlWriter.GenerateSkinAbilityEffectsXml(effects);
-        }
-
-        private XElement? GenerateRuntimeComponentsXml(List<AbilityRuntimeComponentConfig>? components)
-        {
-            return ModExportXmlWriter.GenerateRuntimeComponentsXml(components);
-        }
-
-        private XElement? GenerateAbilityHotkeysXml(SkinAbilityHotkeyConfig? hotkeys)
-        {
-            return ModExportXmlWriter.GenerateAbilityHotkeysXml(hotkeys);
-        }
-
         // ─────────────────────────────────────────────
         // 基因定义生成
         // ─────────────────────────────────────────────
@@ -870,12 +846,6 @@ namespace CharacterStudio.Exporter
             if (config.SkinDef == null) return;
 
             string safeName = SanitizeFileName(config.ModName);
-            string geneDefName = $"CS_Gene_Face_{safeName}";
-            string skinDefName = config.SkinDef.defName ?? $"Skin_{safeName}";
-            string iconPath = string.IsNullOrEmpty(config.GeneIconPath)
-                ? $"CS/{safeName}/Icon"
-                : config.GeneIconPath;
-
             var doc = ModExportXmlWriter.CreateGeneDefDocument(config, safeName);
 
             string geneDefsPath = Path.Combine(modPath, "Defs", "GeneDefs", $"{safeName}_GeneDefs.xml");
@@ -893,9 +863,6 @@ namespace CharacterStudio.Exporter
             if (config.SkinDef == null) return;
 
             string safeName = SanitizeFileName(config.ModName);
-            string pawnKindName = $"CS_PawnKind_{safeName}";
-            string thingDefName = $"CS_Item_Summon_{safeName}";
-            string skinDefName = config.SkinDef.defName ?? $"Skin_{safeName}";
 
             var doc = ModExportXmlWriter.CreateUnitDefDocument(config, safeName);
 
@@ -912,7 +879,7 @@ namespace CharacterStudio.Exporter
                 var xenoDoc = ModExportXmlWriter.CreateXenotypeDefDocument(
                     config.SkinDef.xenotypeDefName,
                     xenoLabel,
-                    skinDefName);
+                    config.SkinDef.defName);
 
                 string xenoDefsPath = Path.Combine(modPath, "Defs", "PawnKindDefs", $"{safeName}_Xenotypes.xml");
                 xenoDoc.Save(xenoDefsPath);
@@ -998,14 +965,6 @@ namespace CharacterStudio.Exporter
             Log.Message($"[CharacterStudio] 运行时触发器已生成: {triggerPath}");
         }
 
-        /// <summary>
-        /// 创建 PawnKindDef 元素
-        /// </summary>
-        private XElement CreatePawnKindDefElement(string pawnKindName, ModExportConfig config, string skinDefName)
-        {
-            return ModExportXmlWriter.CreatePawnKindDefElement(pawnKindName, config, skinDefName);
-        }
-
         // ─────────────────────────────────────────────
         // 技能定义生成
         // ─────────────────────────────────────────────
@@ -1017,16 +976,6 @@ namespace CharacterStudio.Exporter
             doc.Save(abilityDefsPath);
 
             Log.Message($"[CharacterStudio] 技能定义已生成: {abilityDefsPath}");
-        }
-
-        private XElement? GenerateAbilitiesXml(List<ModularAbilityDef>? abilities)
-        {
-            return ModExportXmlWriter.GenerateAbilityRefsXml(abilities);
-        }
-
-        private XElement GenerateEffectsXml(List<AbilityEffectConfig> effects)
-        {
-            return ModExportXmlWriter.GenerateAbilityEffectsXml(effects);
         }
 
         // ─────────────────────────────────────────────
@@ -1050,7 +999,7 @@ namespace CharacterStudio.Exporter
         // 工具方法
         // ─────────────────────────────────────────────
 
-        private string SanitizeFileName(string name)
+        private static string SanitizeFileName(string name)
         {
             if (string.IsNullOrEmpty(name))
             {
@@ -1091,6 +1040,49 @@ namespace CharacterStudio.Exporter
             }
 
             return sanitized;
+        }
+        public static void ExportScatteredLooseFiles(PawnSkinDef activeSkin, CharacterDefinition characterDef)
+        {
+            try
+            {
+                string safeName = SanitizeFileName(activeSkin.defName ?? "CS_Character");
+                string exportDir = Path.Combine(GenFilePaths.ConfigFolderPath, "CharacterStudio", "ScatteredComponents", safeName);
+                
+                if (Directory.Exists(exportDir))
+                {
+                    Directory.Delete(exportDir, true);
+                }
+                Directory.CreateDirectory(exportDir);
+
+                ModExportConfig dummyConfig = new ModExportConfig
+                {
+                    ModName = safeName,
+                    SkinDef = activeSkin.Clone(),
+                    CharacterDefinition = characterDef.Clone(),
+                    Mode = ExportMode.FullUnit,
+                    ExportAsGene = true,
+                    CopyTextures = false
+                };
+
+                // Because Remap relies on dumping textures to "Textures/" directory, we bypass texture dumping
+                // by overriding modName temporarily or just letting the Builder run in "dry-run" mode essentially 
+                // but for now let it just generate into exportDir blindly (textures will be placed in scattered textues folder too, which is very helpful)
+                var builder = new ModBuilder();
+                
+                // Set the active builder states manually if necessary, or just run them:
+                builder.GenerateEquipmentThingDefXml(exportDir, dummyConfig);
+                builder.GenerateEquipmentRecipeDefXml(exportDir, dummyConfig);
+                builder.GenerateEquipmentBundleManifestXml(exportDir, dummyConfig);
+                builder.GenerateGeneDefXml(exportDir, dummyConfig);
+                builder.GenerateUnitDefXml(exportDir, dummyConfig);
+                builder.GenerateRuntimeTriggerXml(exportDir, dummyConfig);
+
+                Log.Message($"[CharacterStudio] 散碎配置 XML 成功脱机写出至: {exportDir}");
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"[CharacterStudio] 离机生成脱散 XML 失败: {ex}");
+            }
         }
     }
 }

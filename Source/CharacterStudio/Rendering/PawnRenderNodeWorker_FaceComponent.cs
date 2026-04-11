@@ -54,12 +54,32 @@ namespace CharacterStudio.Rendering
                 float sx = cfg.x <= 0f ? 1f : cfg.x;
                 float sy = cfg.y <= 0f ? 1f : cfg.y;
                 baseScale = new Vector3(sx * baseScale.x, 1f, sy * baseScale.z);
+
+                // 应用全局 DrawSize 缩放（与 CustomLayer 一致）
+                float globalScale = GetGlobalDrawSizeScale(customNode);
+                if (globalScale != 1f)
+                {
+                    baseScale = new Vector3(baseScale.x * globalScale, baseScale.y, baseScale.z * globalScale);
+                }
             }
 
             if (node.debugScale != 1f)
                 baseScale *= node.debugScale;
 
             return baseScale;
+        }
+
+        /// <summary>
+        /// 从缓存的 CompPawnSkin 中获取全局 DrawSize 缩放因子。
+        /// </summary>
+        private static float GetGlobalDrawSizeScale(PawnRenderNode_Custom customNode)
+        {
+            CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
+            if (skinComp?.ActiveSkin == null)
+                return 1f;
+
+            float gs = skinComp.ActiveSkin.globalTextureScale;
+            return (float.IsNaN(gs) || float.IsInfinity(gs) || gs <= 0f) ? 1f : gs;
         }
 
         public override Quaternion RotationFor(PawnRenderNode node, PawnDrawParms parms)

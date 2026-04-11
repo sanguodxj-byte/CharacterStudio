@@ -403,6 +403,15 @@ namespace CharacterStudio.UI
                     if (appendOnly && HasImportedLayeredEntry(importedFaceConfig, partType, expression, overlayId, side, resolvedFacing))
                         return false;
 
+                    if ((partType == LayeredFacePartType.ReplacementEye
+                            || partType == LayeredFacePartType.ReplacementMouth
+                            || partType == LayeredFacePartType.Overlay
+                            || partType == LayeredFacePartType.OverlayTop)
+                        && expression != ExpressionType.Neutral)
+                    {
+                        return false;
+                    }
+
                     ResolveAutoImportDirectionalPaths(
                         detectedFilePathMap,
                         texturePath,
@@ -470,28 +479,6 @@ namespace CharacterStudio.UI
                     return ApplyRecognized(partType, expression, resolvedPath, matchedStem, overlayId, side);
                 }
 
-                bool TryApplyExpressionGroup(
-                    LayeredFacePartType partType,
-                    IEnumerable<ExpressionType> expressions,
-                    IEnumerable<string> stemCandidates,
-                    string? overlayId = null,
-                    LayeredFacePartSide side = LayeredFacePartSide.None)
-                {
-                    if (!TryGetFirstExistingPath(stemCandidates, out string resolvedPath, out string matchedStem))
-                    {
-                        return false;
-                    }
-
-                    bool applied = false;
-                    foreach (ExpressionType expression in expressions)
-                    {
-                        ApplyRecognized(partType, expression, resolvedPath, matchedStem, overlayId, side);
-                        applied = true;
-                    }
-
-                    return applied;
-                }
-
                 bool TryApplyPairedNeutralParts(
                     LayeredFacePartType partType,
                     IEnumerable<string> leftStemCandidates,
@@ -551,81 +538,9 @@ namespace CharacterStudio.UI
                 TryApplyFirstAvailableStem(LayeredFacePartType.Hair, ExpressionType.Neutral, new[] { "Hair_north" }, "north");
                 TryApplyFirstAvailableStem(LayeredFacePartType.Hair, ExpressionType.Neutral, new[] { "Hair" });
 
-                TryApplyFirstAvailableStem(LayeredFacePartType.ReplacementEye, ExpressionType.Blink, new[] { "Eye_blink" });
-                TryApplyPairedNeutralParts(
-                    LayeredFacePartType.ReplacementEye,
-                    new[] { "Eye_blink_Left", "ReplacementEye_Left_blink", "ReplacementEye_Left_Blink" },
-                    new[] { "Eye_blink_Right", "ReplacementEye_Right_blink", "ReplacementEye_Right_Blink" });
-
-                bool hasDeadEye = TryApplyFirstAvailableStem(LayeredFacePartType.ReplacementEye, ExpressionType.Dead, new[] { "Eye_death", "Eye_dead" });
-                TryApplyFirstAvailableStem(LayeredFacePartType.ReplacementEye, ExpressionType.Sleeping, new[] { "Eye_closed" });
-                TryApplyPairedNeutralParts(
-                    LayeredFacePartType.ReplacementEye,
-                    new[] { "Eye_closed_Left", "ReplacementEye_Left_closed", "ReplacementEye_Left_Close" },
-                    new[] { "Eye_closed_Right", "ReplacementEye_Right_closed", "ReplacementEye_Right_Close" });
-                TryApplyPairedNeutralParts(
-                    LayeredFacePartType.ReplacementEye,
-                    new[] { "Eye_death_Left", "Eye_dead_Left", "ReplacementEye_Left_dead", "ReplacementEye_Left_Death" },
-                    new[] { "Eye_death_Right", "Eye_dead_Right", "ReplacementEye_Right_dead", "ReplacementEye_Right_Death" });
-                if (!hasDeadEye)
-                {
-                    TryApplyFirstAvailableStem(LayeredFacePartType.ReplacementEye, ExpressionType.Dead, new[] { "Eye_closed" });
-                }
-
-                TryApplyExpressionGroup(
-                    LayeredFacePartType.ReplacementEye,
-                    new[] { ExpressionType.Happy, ExpressionType.Cheerful, ExpressionType.Lovin, ExpressionType.SocialRelax },
-                    new[] { "Eye_closed_happy" });
-                TryApplyPairedNeutralParts(
-                    LayeredFacePartType.ReplacementEye,
-                    new[] { "Eye_closed_happy_Left", "Eye_happy_closed_Left", "ReplacementEye_Left_happy" },
-                    new[] { "Eye_closed_happy_Right", "Eye_happy_closed_Right", "ReplacementEye_Right_happy" });
-                TryApplyExpressionGroup(
-                    LayeredFacePartType.ReplacementEye,
-                    new[] { ExpressionType.Shock, ExpressionType.Scared },
-                    new[] { "Eye_shock", "Eye_scared", "Eye_wide" });
-                TryApplyPairedNeutralParts(
-                    LayeredFacePartType.ReplacementEye,
-                    new[] { "Eye_shock_Left", "Eye_scared_Left", "Eye_wide_Left" },
-                    new[] { "Eye_shock_Right", "Eye_scared_Right", "Eye_wide_Right" });
-
-                TryApplyExpressionGroup(
-                    LayeredFacePartType.Mouth,
-                    new[] { ExpressionType.Happy, ExpressionType.Cheerful, ExpressionType.SocialRelax, ExpressionType.Lovin },
-                    new[] { "Mouth_smile" });
-
-                TryApplyExpressionGroup(
-                    LayeredFacePartType.Mouth,
-                    new[] { ExpressionType.Eating, ExpressionType.AttackMelee, ExpressionType.AttackRanged, ExpressionType.Scared },
-                    new[] { "Mouth_speak", "Mouth_ohoho", "Mouth_open" });
-
-                TryApplyExpressionGroup(
-                    LayeredFacePartType.Mouth,
-                    new[] { ExpressionType.Gloomy, ExpressionType.Sad, ExpressionType.Hopeless, ExpressionType.Pain, ExpressionType.Tired, ExpressionType.LayDown },
-                    new[] { "Mouth_think", "Mouth_down" });
-
-                TryApplyExpressionGroup(
-                    LayeredFacePartType.Mouth,
-                    new[] { ExpressionType.Sleeping, ExpressionType.Dead },
-                    new[] { "Mouth_sleep", "Mouth_closed" });
-
-                TryApplyFirstAvailableStem(LayeredFacePartType.Overlay, ExpressionType.Neutral, new[] { "Overlay_blush", "Blush" }, "Blush");
-                TryApplyFirstAvailableStem(LayeredFacePartType.Overlay, ExpressionType.Neutral, new[] { "Overlay_tear", "Tear" }, "Tear");
-                TryApplyFirstAvailableStem(LayeredFacePartType.Overlay, ExpressionType.Neutral, new[] { "Overlay_sweat", "Sweat" }, "Sweat");
-                TryApplyFirstAvailableStem(LayeredFacePartType.Overlay, ExpressionType.Neutral, new[] { "Overlay_sleep", "Sleep" }, "Sleep");
-                TryApplyFirstAvailableStem(LayeredFacePartType.Overlay, ExpressionType.Neutral, new[] { "Overlay_gloomy", "Gloomy" }, "Gloomy");
-
-                TryApplyExpressionGroup(
-                    LayeredFacePartType.Overlay,
-                    new[] { ExpressionType.Lovin },
-                    new[] { "Overlay_love", "Overlay_lovin" },
-                    "Blush");
-
-                TryApplyExpressionGroup(
-                    LayeredFacePartType.Overlay,
-                    new[] { ExpressionType.Gloomy, ExpressionType.Sad, ExpressionType.Hopeless, ExpressionType.Pain },
-                    new[] { "Overlay_black", "Overlay_Nolight", "Overlay_NoLight", "Overlay_dark" },
-                    "Gloomy");
+                // ReplacementEye / ReplacementMouth / Overlay / OverlayTop are imported as raw assets
+                // only and must be mapped manually in the dedicated semantic mapping UI.
+                // No automatic expression-to-file semantic assignment is performed here.
 
                 foreach (string filePath in files)
                 {
@@ -1951,11 +1866,6 @@ namespace CharacterStudio.UI
                 facing = Rot4.South;
                 return;
             }
-
-            if (token.Equals("south", StringComparison.OrdinalIgnoreCase))
-            {
-                facing = Rot4.South;
-            }
         }
 
         private bool LooksLikeLayeredFaceDirectory(IEnumerable<string> files)
@@ -2056,6 +1966,13 @@ namespace CharacterStudio.UI
             List<string> ignoredFiles,
             bool switchedFromFullFaceMode)
         {
+            HashSet<LayeredFacePartType> optionalSummaryPartTypes = new HashSet<LayeredFacePartType>
+            {
+                LayeredFacePartType.Blush,
+                LayeredFacePartType.Sweat,
+                LayeredFacePartType.Tear
+            };
+
             int assignedEntries = fc.layeredParts?.Count(p =>
                 p != null
                 && p.enabled
@@ -2066,12 +1983,16 @@ namespace CharacterStudio.UI
 
             List<LayeredFacePartType> configuredPartTypes = Enum.GetValues(typeof(LayeredFacePartType))
                 .Cast<LayeredFacePartType>()
-                .Where(partType => partType != LayeredFacePartType.Base && fc.CountLayeredParts(partType) > 0)
+                .Where(partType => partType != LayeredFacePartType.Base
+                    && !optionalSummaryPartTypes.Contains(partType)
+                    && fc.CountLayeredParts(partType) > 0)
                 .ToList();
 
             List<string> missingPartLabels = Enum.GetValues(typeof(LayeredFacePartType))
                 .Cast<LayeredFacePartType>()
-                .Where(partType => partType != LayeredFacePartType.Base && fc.CountLayeredParts(partType) <= 0)
+                .Where(partType => partType != LayeredFacePartType.Base
+                    && !optionalSummaryPartTypes.Contains(partType)
+                    && fc.CountLayeredParts(partType) <= 0)
                 .Select(GetLayeredFacePartTypeLabel)
                 .ToList();
 
@@ -2092,7 +2013,7 @@ namespace CharacterStudio.UI
                     : "分层面部自动识别完成。\n\n")
                 + $"目录：{directoryPath}\n"
                 + $"已配置条目：{assignedEntries}\n"
-                + $"已覆盖部件：{configuredPartTypes.Count} / {Enum.GetValues(typeof(LayeredFacePartType)).Length - 1}\n"
+                + $"已覆盖部件：{configuredPartTypes.Count} / {Enum.GetValues(typeof(LayeredFacePartType)).Length - 1 - optionalSummaryPartTypes.Count}\n"
                 + "未配置部件：\n"
                 + (missingPartLabels.Count > 0 ? string.Join("\n", missingPartLabels.Select(label => $"• {label}")) : "（无）")
                 + "\n\n基础槽位：\n"

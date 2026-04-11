@@ -112,6 +112,26 @@
     <CS_Studio_Equip_TriggeredAnimation_PivotX>旋转枢轴 X</CS_Studio_Equip_TriggeredAnimation_PivotX>
     <CS_Studio_Equip_TriggeredAnimation_PivotY>旋转枢轴 Y</CS_Studio_Equip_TriggeredAnimation_PivotY>
     <CS_Studio_Equip_TriggeredAnimation_UseVfxVisibility>按周期控制特效层可见性</CS_Studio_Equip_TriggeredAnimation_UseVfxVisibility>
+    <CS_Studio_Equip_Override_Enabled>启用</CS_Studio_Equip_Override_Enabled>
+    <CS_Studio_Equip_Override_UseTriggeredLocal>使用触发式本地动画</CS_Studio_Equip_Override_UseTriggeredLocal>
+    <CS_Studio_Equip_Override_TriggerAbilityDefName>触发技能 DefName</CS_Studio_Equip_Override_TriggerAbilityDefName>
+    <CS_Studio_Equip_Override_AnimGroupKey>动画分组键</CS_Studio_Equip_Override_AnimGroupKey>
+    <CS_Studio_Equip_Override_Role>角色</CS_Studio_Equip_Override_Role>
+    <CS_Studio_Equip_Override_DeployAngle>展开角度</CS_Studio_Equip_Override_DeployAngle>
+    <CS_Studio_Equip_Override_ReturnAngle>收回角度</CS_Studio_Equip_Override_ReturnAngle>
+    <CS_Studio_Equip_Override_DeployTicks>展开 Tick 数</CS_Studio_Equip_Override_DeployTicks>
+    <CS_Studio_Equip_Override_HoldTicks>保持 Tick 数</CS_Studio_Equip_Override_HoldTicks>
+    <CS_Studio_Equip_Override_ReturnTicks>收回 Tick 数</CS_Studio_Equip_Override_ReturnTicks>
+    <CS_Studio_Equip_Override_PivotX>枢轴 X</CS_Studio_Equip_Override_PivotX>
+    <CS_Studio_Equip_Override_PivotY>枢轴 Y</CS_Studio_Equip_Override_PivotY>
+    <CS_Studio_Equip_Override_UseVfxVisibility>使用 VFX 可见性</CS_Studio_Equip_Override_UseVfxVisibility>
+    <CS_Studio_Equip_Override_VisibleDuringDeploy>展开期间可见</CS_Studio_Equip_Override_VisibleDuringDeploy>
+    <CS_Studio_Equip_Override_VisibleDuringHold>保持期间可见</CS_Studio_Equip_Override_VisibleDuringHold>
+    <CS_Studio_Equip_Override_VisibleDuringReturn>收回期间可见</CS_Studio_Equip_Override_VisibleDuringReturn>
+    <CS_Studio_Equip_Override_VisibleOutsideCycle>周期外可见</CS_Studio_Equip_Override_VisibleOutsideCycle>
+    <CS_Studio_Equip_Override_South>南向覆写</CS_Studio_Equip_Override_South>
+    <CS_Studio_Equip_Override_EastWest>东/西向覆写</CS_Studio_Equip_Override_EastWest>
+    <CS_Studio_Equip_Override_North>北向覆写</CS_Studio_Equip_Override_North>
     <CS_Studio_Equip_UseWornGraphicMask>使用穿戴图形遮罩</CS_Studio_Equip_UseWornGraphicMask>
     <CS_Studio_Equip_VisualLayerName>视觉图层名称</CS_Studio_Equip_VisualLayerName>
     <CS_Studio_Equip_WorkingSkinNull>workingSkin 为空</CS_Studio_Equip_WorkingSkinNull>

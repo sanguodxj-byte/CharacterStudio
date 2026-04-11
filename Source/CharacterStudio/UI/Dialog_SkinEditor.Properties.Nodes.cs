@@ -27,7 +27,7 @@ namespace CharacterStudio.UI
             float propsY = GetPropertiesContentTop(rect);
             float propsHeight = rect.height - propsY + rect.y - Margin;
             Rect propsRect = new Rect(rect.x + Margin, propsY, rect.width - Margin * 2, propsHeight);
-            Rect viewRect = new Rect(0, 0, propsRect.width - 16, 820);
+            Rect viewRect = new Rect(0, 0, propsRect.width - 16, lastNodesPanelHeight);
 
             Widgets.BeginScrollView(propsRect, ref propsScrollPos, viewRect);
 
@@ -96,23 +96,23 @@ namespace CharacterStudio.UI
                 y += 30;
             }
 
-            if (layerModificationWorkflowActive && DrawCollapsibleSection(ref y, propsRect.width - 20, "图层修改补丁".Translate(), "NodePatch"))
+            if (layerModificationWorkflowActive && DrawCollapsibleSection(ref y, propsRect.width - 20, "CS_Studio_Patch_SectionTitle".Translate(), "NodePatch"))
             {
                 bool isHidden = IsNodeHiddenInCurrentMode(node);
-                if (Widgets.ButtonText(new Rect(0, y, propsRect.width - 20, 28), isHidden ? "从补丁中显示节点" : "加入补丁隐藏节点"))
+                if (Widgets.ButtonText(new Rect(0, y, propsRect.width - 20, 28), isHidden ? "CS_Studio_Patch_ShowNode".Translate() : "CS_Studio_Patch_HideNode".Translate()))
                 {
                     ToggleNodeVisibilityInCurrentMode(node);
                 }
                 y += 32;
 
                 float patchOffset = GetNodePatchDrawOrderOffset(node.uniqueNodePath);
-                Widgets.Label(new Rect(0, y, labelWidth, 24), "DrawOrder Offset");
+                Widgets.Label(new Rect(0, y, labelWidth, 24), "CS_Studio_Patch_DrawOrderOffset".Translate());
                 string patchOffsetBuffer = patchOffset.ToString("F2");
                 string newOffsetText = Widgets.TextField(new Rect(labelWidth, y, fieldWidth, 24), patchOffsetBuffer);
                 if (float.TryParse(newOffsetText, out float parsedOffset) && Math.Abs(parsedOffset - patchOffset) > 0.0001f)
                 {
                     SetNodePatchDrawOrderOffset(node.uniqueNodePath, parsedOffset);
-                    ShowStatus($"已设置节点补丁层级偏移：{node.uniqueNodePath} => {parsedOffset:F2}");
+                    ShowStatus("CS_Studio_Msg_SetPatchOffset".Translate(node.uniqueNodePath, parsedOffset.ToString("F2")));
                     RefreshPreview();
                     RefreshRenderTree();
                 }
@@ -137,7 +137,7 @@ namespace CharacterStudio.UI
                     RefreshPreview();
                     RefreshRenderTree();
                 }
-                if (Widgets.ButtonText(new Rect((buttonWidth + 4f) * 3f, y, buttonWidth, 26f), "清除"))
+                if (Widgets.ButtonText(new Rect((buttonWidth + 4f) * 3f, y, buttonWidth, 26f), "CS_Studio_Btn_ClearShort".Translate()))
                 {
                     SetNodePatchDrawOrderOffset(node.uniqueNodePath, 0f);
                     RefreshPreview();
@@ -160,19 +160,19 @@ namespace CharacterStudio.UI
                 {
                     if (Widgets.ButtonText(new Rect(0, y, propsRect.width - 20, 28), "CS_Studio_Prop_MountLayer".Translate()))
                     {
-                        var newLayer = new PawnLayerConfig
+                        MutateWithUndo(() =>
                         {
-                            layerName = GetMountedLayerLabel(node),
-                            anchorPath = node.uniqueNodePath,
-                            anchorTag = node.tagDefName ?? "Body"
-                        };
-                        workingSkin.layers.Add(newLayer);
-                        AppendAttachNodeRule(node, newLayer);
-                        selectedLayerIndex = workingSkin.layers.Count - 1;
-                        selectedNodePath = "";
-                        isDirty = true;
-                        RefreshPreview();
-                        ShowStatus("CS_Studio_Msg_Appended".Translate(node.uniqueNodePath, "1"));
+                            var newLayer = new PawnLayerConfig
+                            {
+                                layerName = GetMountedLayerLabel(node),
+                                anchorPath = node.uniqueNodePath,
+                                anchorTag = node.tagDefName ?? "Body"
+                            };
+                            workingSkin.layers.Add(newLayer);
+                            AppendAttachNodeRule(node, newLayer);
+                            selectedLayerIndex = workingSkin.layers.Count - 1;
+                            selectedNodePath = "";
+                        }, statusMessage: "CS_Studio_Msg_Appended".Translate(node.uniqueNodePath, "1"));
                     }
                     y += 32;
                 }
@@ -234,6 +234,7 @@ namespace CharacterStudio.UI
                 }
             }
 
+            lastNodesPanelHeight = y + 40f;
             Widgets.EndScrollView();
         }
     }

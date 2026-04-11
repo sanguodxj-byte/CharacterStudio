@@ -860,7 +860,7 @@ namespace CharacterStudio.Abilities
                     continue;
                 }
 
-                AbilityVisualEffectTrigger runtimeTrigger = NormalizeRuntimeTrigger(vfx.trigger);
+                AbilityVisualEffectTrigger runtimeTrigger = vfx.trigger;
                 if (runtimeTrigger != trigger)
                 {
                     continue;
@@ -1525,10 +1525,7 @@ namespace CharacterStudio.Abilities
                 || effectType == AbilityEffectType.Terraform;
         }
 
-        private static AbilityVisualEffectTrigger NormalizeRuntimeTrigger(AbilityVisualEffectTrigger trigger)
-        {
-            return trigger;
-        }
+        // NormalizeRuntimeTrigger removed: was a no-op identity function (review F-QUAL-03)
 
         private static void LogRuntimeVfxWarningOnce(string key, string message)
         {

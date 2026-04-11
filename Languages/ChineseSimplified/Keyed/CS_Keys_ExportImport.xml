@@ -29,17 +29,21 @@
     <CS_Studio_Export_FinalConfirmMessage>最终确认：若你将此次导出作为独立模组发布，则素材来源、授权、再分发及创意工坊发布合规性均由你独自负责。继续导出。</CS_Studio_Export_FinalConfirmMessage>
     <CS_Studio_Export_GeneCategory>基因分类</CS_Studio_Export_GeneCategory>
     <CS_Studio_Export_HideAssets>隐藏资产来源</CS_Studio_Export_HideAssets>
-    <CS_Studio_Export_IncludeAbilities>包含技能</CS_Studio_Export_IncludeAbilities>
+    <CS_Studio_Export_IncludeAbilities>技能配置</CS_Studio_Export_IncludeAbilities>
     <CS_Studio_Export_IncludeGeneDef>包含基因定义</CS_Studio_Export_IncludeGeneDef>
-    <CS_Studio_Export_IncludePawnKind>包含 PawnKind 定义</CS_Studio_Export_IncludePawnKind>
-    <CS_Studio_Export_IncludeRuntimeTriggers>包含运行时触发器</CS_Studio_Export_IncludeRuntimeTriggers>
+    <CS_Studio_Export_IncludePawnKind>兵种与同伴类型</CS_Studio_Export_IncludePawnKind>
+    <CS_Studio_Export_IncludeRuntimeTriggers>生成触发器配置</CS_Studio_Export_IncludeRuntimeTriggers>
     <CS_Studio_Export_IncludeRuntimeTriggers_Hint>导出会在初始化时自动注册的运行时触发 Def 与角色配置 Def，其他依赖 Character Studio 的模组也可直接声明式注册。</CS_Studio_Export_IncludeRuntimeTriggers_Hint>
-    <CS_Studio_Export_IncludeRuntimeTriggers_EmptyHint>当前角色定义尚未配置运行时触发器。</CS_Studio_Export_IncludeRuntimeTriggers_EmptyHint>
-    <CS_Studio_Export_IncludeSkinDef>包含皮肤定义</CS_Studio_Export_IncludeSkinDef>
-    <CS_Studio_Export_IncludeSummonItem>包含角色物品</CS_Studio_Export_IncludeSummonItem>
+    <CS_Studio_Export_IncludeRuntimeTriggers_EmptyHint>当前角色定义尚未配置生成触发器。</CS_Studio_Export_IncludeRuntimeTriggers_EmptyHint>
+    <CS_Studio_Export_IncludeSkinDef>皮肤渲染预设</CS_Studio_Export_IncludeSkinDef>
+    <CS_Studio_Export_IncludeSummonItem>角色生成物品</CS_Studio_Export_IncludeSummonItem>
+    <CS_Studio_Export_SkinDefXmlPath>配置来源</CS_Studio_Export_SkinDefXmlPath>
+    <CS_Studio_Export_PawnKindDefXmlPath>配置来源</CS_Studio_Export_PawnKindDefXmlPath>
+    <CS_Studio_Export_SummonItemXmlPath>配置来源</CS_Studio_Export_SummonItemXmlPath>
+    <CS_Studio_Export_AbilityXmlPath>配置来源</CS_Studio_Export_AbilityXmlPath>
     <CS_Studio_Export_LocalFiles>本地文件</CS_Studio_Export_LocalFiles>
     <CS_Studio_Export_ModName>模组名称</CS_Studio_Export_ModName>
-    <CS_Studio_Export_ModuleOptions>模块选项</CS_Studio_Export_ModuleOptions>
+    <CS_Studio_Export_ModuleOptions>打包模块集</CS_Studio_Export_ModuleOptions>
     <CS_Studio_Export_OutputPath>输出路径</CS_Studio_Export_OutputPath>
     <CS_Studio_Export_OutputSettings>输出设置</CS_Studio_Export_OutputSettings>
     <CS_Studio_Export_OverlayMode>叠加模式</CS_Studio_Export_OverlayMode>
@@ -77,4 +81,6 @@
     <CS_Studio_Import_Source_Map>从地图角色导入</CS_Studio_Import_Source_Map>
     <CS_Studio_Import_Source_ProjectSkin>从项目角色列表导入</CS_Studio_Import_Source_ProjectSkin>
     <CS_Studio_Import_Source_Race>从种族列表导入</CS_Studio_Import_Source_Race>
+    <CS_Studio_Export_ExternalFilesSelected>已指定 {0} 个外部文件</CS_Studio_Export_ExternalFilesSelected>
+    <CS_Studio_Export_DefaultGenerated>缺省（保存时自动生成）</CS_Studio_Export_DefaultGenerated>
 </LanguageData>

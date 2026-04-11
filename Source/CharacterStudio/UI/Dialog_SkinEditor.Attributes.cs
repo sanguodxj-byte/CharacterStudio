@@ -31,28 +31,41 @@ namespace CharacterStudio.UI
             Rect contentRect = new Rect(rect.x + Margin, contentY, rect.width - Margin * 2, contentHeight);
             UIHelper.DrawContentCard(contentRect);
 
-            Rect viewRect = new Rect(0f, 0f, contentRect.width - 20f, 1560f);
+            Rect viewRect = new Rect(0f, 0f, contentRect.width - 20f, 780f);
             Widgets.BeginScrollView(contentRect.ContractedBy(2f), ref attributesScrollPos, viewRect);
 
             float y = 0f;
             float width = viewRect.width;
 
-            float basicBlockTop = y;
-            Rect basicRect = UIHelper.DrawSectionCard(ref y, width, "CS_Attr_Section_Basic".Translate(), 218f);
+            // ── 基础属性（合并称号、背景故事、年龄） ──
+            Rect basicRect = UIHelper.DrawSectionCard(ref y, width, "CS_Attr_Section_Basic".Translate(), 280f);
             float basicY = basicRect.y;
-            UIHelper.DrawPropertyFieldWithButton(ref basicY, basicRect.width, "CS_Studio_CharacterDefinition_Title".Translate(), "CS_Studio_CharacterDefinition_InlineHintShort".Translate(), OpenCharacterDefinitionDialog, "CS_Studio_CharacterDefinition_OpenButton".Translate());
             DrawTrackedPropertyField(ref basicY, basicRect.width, "CS_Attr_Title".Translate(), ref attributes.title);
-            DrawTrackedMultilineField(ref basicY, basicRect.width, "CS_Attr_BackstorySummary".Translate(), ref attributes.backstorySummary, 104f);
+            DrawTrackedMultilineField(ref basicY, basicRect.width, "CS_Attr_BackstorySummary".Translate(), ref attributes.backstorySummary, 80f);
+            DrawTrackedNumericField(ref basicY, basicRect.width, "CS_Attr_BiologicalAge".Translate(), ref attributes.biologicalAge, 0f, 999f);
+            DrawTrackedNumericField(ref basicY, basicRect.width, "CS_Attr_ChronologicalAge".Translate(), ref attributes.chronologicalAge, 0f, 9999f);
 
-            Rect statsRect = UIHelper.DrawSectionCard(ref y, width, "CS_Attr_Section_Stats".Translate(), 108f);
-            float statsY = statsRect.y;
-            DrawTrackedNumericField(ref statsY, statsRect.width, "CS_Attr_BiologicalAge".Translate(), ref attributes.biologicalAge, 0f, 999f);
-            DrawTrackedNumericField(ref statsY, statsRect.width, "CS_Attr_ChronologicalAge".Translate(), ref attributes.chronologicalAge, 0f, 9999f);
-
+            // ── 属性增益 Buff ──
             Rect buffRect = UIHelper.DrawSectionCard(ref y, width, "CS_AttrBuff_Section".Translate(), 96f, accent: true);
             float buffY = buffRect.y;
             DrawAttributeBuffEntry(ref buffY, buffRect.width, statProfile);
 
+            // ── 导出与角色定义 ──
+            y += 4f;
+            float halfBtnWidth = (width - 10f) / 2f;
+            Rect exportBtnRect = new Rect(0f, y, halfBtnWidth, 28f);
+            if (UIHelper.DrawToolbarButton(exportBtnRect, "CS_Studio_Attributes_ExportScattered".Translate(), accent: true))
+            {
+                ExportScatteredFromCurrentSkin();
+            }
+            Rect charDefBtnRect = new Rect(halfBtnWidth + 10f, y, halfBtnWidth, 28f);
+            if (UIHelper.DrawToolbarButton(charDefBtnRect, "CS_Studio_CharacterDefinition_OpenButton".Translate()))
+            {
+                OpenCharacterDefinitionDialog();
+            }
+            y += 36f;
+
+            // ── 辅助生成 ──
             Rect llmRect = UIHelper.DrawSectionCard(ref y, width, "CS_Studio_Attributes_Assistant".Translate(), 210f);
             float llmY = llmRect.y;
             UIHelper.DrawInfoBanner(ref llmY, llmRect.width, "CS_Studio_Attributes_AssistantHint".Translate());
@@ -65,7 +78,7 @@ namespace CharacterStudio.UI
             llmCharacterPrompt = Widgets.TextArea(promptRect.ContractedBy(4f), llmCharacterPrompt ?? string.Empty);
             llmY += 120f;
 
-            float buttonWidth = (llmRect.width - 10f) / 2f;
+            float llmBtnWidth = (llmRect.width - 10f) / 2f;
 
             if (llmCharacterPendingResult != null)
             {
@@ -85,14 +98,14 @@ namespace CharacterStudio.UI
 
             GUI.enabled = !llmCharacterGenerating;
             string generateLabel = llmCharacterGenerating ? "CS_LLM_Generating".Translate() : "CS_LLM_GenerateCharacter".Translate();
-            Rect generateRect = new Rect(0f, llmY, buttonWidth, 28f);
+            Rect generateRect = new Rect(0f, llmY, llmBtnWidth, 28f);
             if (UIHelper.DrawToolbarButton(generateRect, generateLabel, accent: !llmCharacterGenerating))
             {
                 GenerateCharacterFromPrompt();
             }
             GUI.enabled = true;
 
-            Rect settingsRect = new Rect(buttonWidth + 10f, llmY, buttonWidth, 28f);
+            Rect settingsRect = new Rect(llmBtnWidth + 10f, llmY, llmBtnWidth, 28f);
             if (UIHelper.DrawToolbarButton(settingsRect, "CS_LLM_OpenSettings".Translate()))
             {
                 OnOpenLlmSettings();
@@ -160,12 +173,12 @@ namespace CharacterStudio.UI
             GUI.color = UIHelper.SubtleColor;
             Widgets.Label(new Rect(0f, y, width, 24f), totalCount == 0
                 ? "CS_AttrBuff_Empty".Translate()
-                : "已配置 {0} 项属性增益，启用 {1} 项".Formatted(totalCount, enabledCount));
+                : "CS_AttrBuff_Summary".Translate(totalCount, enabledCount));
             GUI.color = Color.white;
             y += 28f;
 
             Rect buttonRect = new Rect(0f, y, width, 28f);
-            if (UIHelper.DrawToolbarButton(buttonRect, totalCount == 0 ? "打开属性增益编辑器" : "管理属性增益 Buff", accent: true))
+            if (UIHelper.DrawToolbarButton(buttonRect, totalCount == 0 ? "CS_AttrBuff_OpenEditor".Translate() : "CS_AttrBuff_ManageBuff".Translate(), accent: true))
             {
                 Find.WindowStack.Add(new Dialog_AttributeBuffEditor(
                     profile,
@@ -259,6 +272,33 @@ namespace CharacterStudio.UI
                 isDirty = true;
                 RefreshPreview();
             }));
+        }
+
+        private void ExportScatteredFromCurrentSkin()
+        {
+            try
+            {
+                var runtimeSkin = BuildRuntimeSkinForExecution();
+                if (runtimeSkin == null)
+                {
+                    ShowStatus("CS_Studio_Err_SaveFailed".Translate());
+                    return;
+                }
+
+                workingDocument.characterDefinition ??= new CharacterDefinition();
+                workingDocument.characterDefinition.EnsureDefaults(
+                    runtimeSkin.defName ?? workingSkin.defName ?? "CS_Character",
+                    ResolveSpawnRaceForCurrentDesign(runtimeSkin),
+                    runtimeSkin.attributes);
+
+                Exporter.ModBuilder.ExportScatteredLooseFiles(runtimeSkin, workingDocument.characterDefinition);
+                ShowStatus("CS_Studio_Attributes_ExportScatteredSuccess".Translate());
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"[CharacterStudio] 散件导出失败: {ex}");
+                ShowStatus("CS_Studio_Err_SaveFailed".Translate());
+            }
         }
 
         private void MergeGeneratedCharacterAttributes(CharacterAttributeProfile current, CharacterAttributeProfile? incoming)

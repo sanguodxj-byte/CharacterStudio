@@ -1,6 +1,6 @@
 # 项目进度
 - Project: CharacterStudio
-- Updated At: 2026-04-08T21:37:46.254Z
+- Updated At: 2026-04-08T23:14:38.028Z
 - Status: active
 - Phase: review
 
@@ -9,14 +9,14 @@
 <!-- LIMCODE_PROGRESS_SUMMARY_START -->
 - 当前进度：尚无里程碑记录
 - 当前焦点：CharacterStudio 图层编辑器代码审查
-- 最新结论：## 总体评价 CharacterStudio 技能编辑器模块实现了一套**功能极为丰富的模块化技能系统**，涵盖 8 种效果类型、30 种运行时组件、16+ 种视觉特效、13 个热键槽位、飞行/时停/盾牌等高级玩法，并配有完整的编辑器 UI、导入导出、验证、预览等能力。在 RimWorld Mod 生态中属于高水平的技能系统实现。 ### 亮点 - **架…
-- 下一步：立即修复 P0 级的 CopyHotkeyConfig/SanitizeHotkeyConfig 热键槽位遗漏 Bug，然后按 P1 优先级处理性能相关问题。
+- 最新结论：## 总体评价 两个项目在各自赛道上都展现了极高的野心和扎实的工程能力，在 RimWorld 模组生态中属于前沿探索级别的作品。 ### CharacterStudio 总评：⭐⭐⭐⭐ （优秀，有提升空间） **核心优势**：全流程游戏内闭环是杀手级功能，API 设计克制专业，多模态编辑能力远超同类竞品。 **关键短板**：功能密度太高导致新手体验差（6 标…
+- 下一步：按优先级处理 3 个高严重度发现：CS-UX-01（编辑器简化模式）、TSS-UX-01（首次使用引导）、TSS-SECURITY-01（API Key 安全与隐私声明），然后推进跨模组协同的可行性评估。
 <!-- LIMCODE_PROGRESS_SUMMARY_END -->
 
 ## 关联文档
 
 <!-- LIMCODE_PROGRESS_ARTIFACTS_START -->
-- 审查：`CharacterStudio/.limcode/review/ability-editor-code-review.md`
+- 审查：`CharacterStudio/.limcode/review/project-architecture-comprehensive-review.md`
 <!-- LIMCODE_PROGRESS_ARTIFACTS_END -->
 
 ## 当前 TODO 快照
@@ -40,13 +40,26 @@
 ## 最近更新
 
 <!-- LIMCODE_PROGRESS_LOG_START -->
-- 2026-04-08T21:09:12.121Z | created | 初始化项目进度
-- 2026-04-08T21:09:12.121Z | artifact_changed | review | 同步审查文档：CharacterStudio/.limcode/review/layer-editor-review.md
-- 2026-04-08T21:17:16.973Z | artifact_changed | review | 同步审查里程碑：M1
-- 2026-04-08T21:31:13.328Z | artifact_changed | review | 同步审查文档：CharacterStudio/.limcode/review/ability-editor-code-review.md
-- 2026-04-08T21:34:52.744Z | artifact_changed | review | 同步审查里程碑：M1
-- 2026-04-08T21:36:43.985Z | artifact_changed | review | 同步审查里程碑：M2
-- 2026-04-08T21:37:46.254Z | artifact_changed | review | 同步审查结论：CharacterStudio/.limcode/review/ability-editor-code-review.md
+- 2026-04-08T21:49:03.149Z | artifact_changed | review | 同步审查里程碑：M2
+- 2026-04-08T21:49:36.100Z | artifact_changed | review | 同步审查里程碑：M3
+- 2026-04-08T21:50:35.105Z | artifact_changed | review | 同步审查结论：CharacterStudio/.limcode/review/equipment-weapon-editor-review.md
+- 2026-04-08T22:05:18.933Z | artifact_changed | review | 同步审查文档：CharacterStudio/.limcode/review/expression-editor-code-review.md
+- 2026-04-08T22:07:51.640Z | artifact_changed | review | 同步审查里程碑：M1
+- 2026-04-08T22:09:22.597Z | artifact_changed | review | 同步审查里程碑：M2
+- 2026-04-08T22:10:28.718Z | artifact_changed | review | 同步审查结论：CharacterStudio/.limcode/review/expression-editor-code-review.md
+- 2026-04-08T22:13:45.265Z | artifact_changed | review | 同步审查文档：CharacterStudio/.limcode/review/exporter-code-review.md
+- 2026-04-08T22:14:51.731Z | artifact_changed | review | 同步审查里程碑：ms-architecture
+- 2026-04-08T22:15:50.916Z | artifact_changed | review | 同步审查里程碑：ms-robustness
+- 2026-04-08T22:16:32.252Z | artifact_changed | review | 同步审查结论：CharacterStudio/.limcode/review/exporter-code-review.md
+- 2026-04-08T22:24:12.381Z | artifact_changed | review | 同步审查文档：CharacterStudio/.limcode/review/attribute-editor-code-review.md
+- 2026-04-08T22:25:32.191Z | artifact_changed | review | 同步审查里程碑：M1
+- 2026-04-08T22:26:56.919Z | artifact_changed | review | 同步审查里程碑：M2
+- 2026-04-08T22:28:03.411Z | artifact_changed | review | 同步审查里程碑：M3
+- 2026-04-08T22:28:30.786Z | artifact_changed | review | 同步审查结论：CharacterStudio/.limcode/review/attribute-editor-code-review.md
+- 2026-04-08T22:45:30.934Z | artifact_changed | review | 同步审查文档：CharacterStudio/.limcode/review/project-architecture-comprehensive-review.md
+- 2026-04-08T22:47:11.119Z | artifact_changed | review | 同步审查里程碑：M1
+- 2026-04-08T23:13:55.591Z | artifact_changed | review | 同步审查里程碑：M2
+- 2026-04-08T23:14:38.028Z | artifact_changed | review | 同步审查结论：CharacterStudio/.limcode/review/project-architecture-comprehensive-review.md
 <!-- LIMCODE_PROGRESS_LOG_END -->
 
 <!-- LIMCODE_PROGRESS_METADATA_START -->
@@ -56,60 +69,139 @@
   "projectId": "characterstudio",
   "projectName": "CharacterStudio",
   "createdAt": "2026-04-08T21:09:12.121Z",
-  "updatedAt": "2026-04-08T21:37:46.254Z",
+  "updatedAt": "2026-04-08T23:14:38.028Z",
   "status": "active",
   "phase": "review",
   "currentFocus": "CharacterStudio 图层编辑器代码审查",
-  "latestConclusion": "## 总体评价\n\nCharacterStudio 技能编辑器模块实现了一套**功能极为丰富的模块化技能系统**，涵盖 8 种效果类型、30 种运行时组件、16+ 种视觉特效、13 个热键槽位、飞行/时停/盾牌等高级玩法，并配有完整的编辑器 UI、导入导出、验证、预览等能力。在 RimWorld Mod 生态中属于高水平的技能系统实现。\n\n### 亮点\n- **架构分层清晰**：编辑器数据模型（ModularAbilityDef）→ 运行时 AbilityDef 转换（AbilityGrantUtility）→ 执行引擎（CompAbilityEffect_Modular）→ 效果/视觉 Worker 工厂，层次分明\n- **验证体系完善**：AbilityValidationResult 系统覆盖了全部效果类型、运行时组件的参数校验和冲突检测\n- **扩展性设计**：AbilityEditorExtensionRegistry 允许外部模组注册自定义面板；EffectWorker/VisualEffectWorker 支持运行时注册\n- **NormalizeForSave/NormalizeLegacyData 兼容性思路**值得肯定\n\n### 主要风险\n1. **可维护性债务严重**（2 个 High）：AbilityRuntimeComponentConfig 上帝对象和热键槽位重复代码是最大的技术债务，新增功能的成本正在加速上升\n2. **功能性 Bug**（2 个 Medium）：CopyHotkeyConfig 和 SanitizeHotkeyConfigAgainstAbilities 未覆盖全部 13 个槽位，会导致 T-V 槽位配置丢失\n3. **性能隐患**：FindThingById 全地图线性扫描在高频 Tick 中存在风险\n\n### 推荐优先级\n\n| 优先级 | 问题 | 工作量 |\n|--------|------|--------|\n| P0 (立即) | F-QUAL-04/05: 补全 CopyHotkeyConfig 和 Sanitize 的槽位覆盖 | 低（1h） |\n| P1 (短期) | F-PERF-01: Worker 工厂改单例 | 低（2h） |\n| P1 (短期) | F-PERF-02: FindThingById 改直接引用 | 中（4h） |\n| P1 (短期) | F-ARCH-03: 删除 HotkeyRuntimeComponent 重复代码 | 低（2h） |\n| P2 (中期) | F-ARCH-02: 热键槽位数据结构重构 | 高（2-3d） |\n| P2 (中期) | F-ARCH-04: VFX 位置解析统一 | 中（1d） |\n| P3 (长期) | F-ARCH-01: RuntimeComponentConfig 拆分 | 极高（1w+） |\n\n共发现 12 个问题：2 High / 6 Medium / 4 Low",
+  "latestConclusion": "## 总体评价\n\n两个项目在各自赛道上都展现了极高的野心和扎实的工程能力，在 RimWorld 模组生态中属于前沿探索级别的作品。\n\n### CharacterStudio 总评：⭐⭐⭐⭐ （优秀，有提升空间）\n\n**核心优势**：全流程游戏内闭环是杀手级功能，API 设计克制专业，多模态编辑能力远超同类竞品。\n\n**关键短板**：功能密度太高导致新手体验差（6 标签页 + 73 个 UI 文件），技能系统与外观编辑器的定位张力未解决，英文文档缺失限制国际化。\n\n**最高优先级改进**：实现「精简模式/完整模式」切换 + 首页导航面板，将新手上手时间从「小时级」降到「分钟级」。\n\n### The Second Seat 总评：⭐⭐⭐⭐ （创新突出，成熟度有待提升）\n\n**核心优势**：双 Agent 架构设计精巧，好感度→事件联动→降临 的叙事闭环极具创新性，人格包生态的扩展性设计非常有远见。\n\n**关键短板**：首次使用门槛极高（必须配置 LLM API），安全/隐私保护不足，Prompt 系统过度复杂增加了维护和社区扩展成本。初始化链路存在重复注册和占位符代码。\n\n**最高优先级改进**：增加首次使用引导向导 + 隐私声明，解决 API Key 明文存储问题，制作示例人格包引导社区生态形成。\n\n### 跨项目协同机遇\n\n两个项目目前完全独立，但存在极大的协同空间：\n\n1. **CS 导出的角色包 → TSS 降临系统的 PawnKind**：CS 制作的自定义角色可以作为 TSS 降临时的物理化身，形成「用 CS 捏 AI 叙事者的脸 → 在 TSS 中让 TA 降临」的跨模组联动。\n2. **TSS 的 AI 生成 → CS 的属性定义**：TSS 已有多模态分析能力，可以从图片生成人格；如果与 CS 的属性系统打通，AI 可以从一张立绘自动生成完整的角色外观定义。\n3. **统一的社区生态**：CS 的「皮肤包分享」和 TSS 的「人格包分享」可以合并为一个「角色创作社区」——完整的角色 = 外观（CS）+ 人格（TSS）。\n\n### 共性问题\n\n两个项目有惊人相似的问题模式：\n- **功能密度过高、新手门槛陡峭**（CS 的 6 标签页 vs TSS 的 50 个设置项）\n- **都缺少精简模式/引导系统**\n- **英文内容不足限制国际化**\n- **性能优化已有意识但还需系统化**（CS 有 Performance 目录、TSS 有间隔检查，但都可以更精细）\n\n### 量化评估总览\n\n| 维度 | CharacterStudio | The Second Seat |\n|------|----------------|-----------------|\n| 功能完整度 | ★★★★★ | ★★★★☆ |\n| 用户体验 | ★★★☆☆ | ★★☆☆☆ |\n| 技术架构 | ★★★★☆ | ★★★★☆ |\n| 社区适配 | ★★★☆☆ | ★★★☆☆ |\n| 扩展性 | ★★★★★ | ★★★★☆ |\n| 安全/隐私 | ★★★★☆ | ★★☆☆☆ |\n| 文档 | ★★★★☆ | ★★★☆☆ |\n| 性能 | ★★★☆☆ | ★★★☆☆ |",
   "currentBlocker": null,
-  "nextAction": "立即修复 P0 级的 CopyHotkeyConfig/SanitizeHotkeyConfig 热键槽位遗漏 Bug，然后按 P1 优先级处理性能相关问题。",
+  "nextAction": "按优先级处理 3 个高严重度发现：CS-UX-01（编辑器简化模式）、TSS-UX-01（首次使用引导）、TSS-SECURITY-01（API Key 安全与隐私声明），然后推进跨模组协同的可行性评估。",
   "activeArtifacts": {
-    "review": "CharacterStudio/.limcode/review/ability-editor-code-review.md"
+    "review": "CharacterStudio/.limcode/review/project-architecture-comprehensive-review.md"
   },
   "todos": [],
   "milestones": [],
   "risks": [],
   "log": [
     {
-      "at": "2026-04-08T21:09:12.121Z",
-      "type": "created",
-      "message": "初始化项目进度"
-    },
-    {
-      "at": "2026-04-08T21:09:12.121Z",
-      "type": "artifact_changed",
-      "refId": "review",
-      "message": "同步审查文档：CharacterStudio/.limcode/review/layer-editor-review.md"
-    },
-    {
-      "at": "2026-04-08T21:17:16.973Z",
-      "type": "artifact_changed",
-      "refId": "review",
-      "message": "同步审查里程碑：M1"
-    },
-    {
-      "at": "2026-04-08T21:31:13.328Z",
-      "type": "artifact_changed",
-      "refId": "review",
-      "message": "同步审查文档：CharacterStudio/.limcode/review/ability-editor-code-review.md"
-    },
-    {
-      "at": "2026-04-08T21:34:52.744Z",
-      "type": "artifact_changed",
-      "refId": "review",
-      "message": "同步审查里程碑：M1"
-    },
-    {
-      "at": "2026-04-08T21:36:43.985Z",
+      "at": "2026-04-08T21:49:03.149Z",
       "type": "artifact_changed",
       "refId": "review",
       "message": "同步审查里程碑：M2"
     },
     {
-      "at": "2026-04-08T21:37:46.254Z",
+      "at": "2026-04-08T21:49:36.100Z",
       "type": "artifact_changed",
       "refId": "review",
-      "message": "同步审查结论：CharacterStudio/.limcode/review/ability-editor-code-review.md"
+      "message": "同步审查里程碑：M3"
+    },
+    {
+      "at": "2026-04-08T21:50:35.105Z",
+      "type": "artifact_changed",
+      "refId": "review",
+      "message": "同步审查结论：CharacterStudio/.limcode/review/equipment-weapon-editor-review.md"
+    },
+    {
+      "at": "2026-04-08T22:05:18.933Z",
+      "type": "artifact_changed",
+      "refId": "review",
+      "message": "同步审查文档：CharacterStudio/.limcode/review/expression-editor-code-review.md"
+    },
+    {
+      "at": "2026-04-08T22:07:51.640Z",
+      "type": "artifact_changed",
+      "refId": "review",
+      "message": "同步审查里程碑：M1"
+    },
+    {
+      "at": "2026-04-08T22:09:22.597Z",
+      "type": "artifact_changed",
+      "refId": "review",
+      "message": "同步审查里程碑：M2"
+    },
+    {
+      "at": "2026-04-08T22:10:28.718Z",
+      "type": "artifact_changed",
+      "refId": "review",
+      "message": "同步审查结论：CharacterStudio/.limcode/review/expression-editor-code-review.md"
+    },
+    {
+      "at": "2026-04-08T22:13:45.265Z",
+      "type": "artifact_changed",
+      "refId": "review",
+      "message": "同步审查文档：CharacterStudio/.limcode/review/exporter-code-review.md"
+    },
+    {
+      "at": "2026-04-08T22:14:51.731Z",
+      "type": "artifact_changed",
+      "refId": "review",
+      "message": "同步审查里程碑：ms-architecture"
+    },
+    {
+      "at": "2026-04-08T22:15:50.916Z",
+      "type": "artifact_changed",
+      "refId": "review",
+      "message": "同步审查里程碑：ms-robustness"
+    },
+    {
+      "at": "2026-04-08T22:16:32.252Z",
+      "type": "artifact_changed",
+      "refId": "review",
+      "message": "同步审查结论：CharacterStudio/.limcode/review/exporter-code-review.md"
+    },
+    {
+      "at": "2026-04-08T22:24:12.381Z",
+      "type": "artifact_changed",
+      "refId": "review",
+      "message": "同步审查文档：CharacterStudio/.limcode/review/attribute-editor-code-review.md"
+    },
+    {
+      "at": "2026-04-08T22:25:32.191Z",
+      "type": "artifact_changed",
+      "refId": "review",
+      "message": "同步审查里程碑：M1"
+    },
+    {
+      "at": "2026-04-08T22:26:56.919Z",
+      "type": "artifact_changed",
+      "refId": "review",
+      "message": "同步审查里程碑：M2"
+    },
+    {
+      "at": "2026-04-08T22:28:03.411Z",
+      "type": "artifact_changed",
+      "refId": "review",
+      "message": "同步审查里程碑：M3"
+    },
+    {
+      "at": "2026-04-08T22:28:30.786Z",
+      "type": "artifact_changed",
+      "refId": "review",
+      "message": "同步审查结论：CharacterStudio/.limcode/review/attribute-editor-code-review.md"
+    },
+    {
+      "at": "2026-04-08T22:45:30.934Z",
+      "type": "artifact_changed",
+      "refId": "review",
+      "message": "同步审查文档：CharacterStudio/.limcode/review/project-architecture-comprehensive-review.md"
+    },
+    {
+      "at": "2026-04-08T22:47:11.119Z",
+      "type": "artifact_changed",
+      "refId": "review",
+      "message": "同步审查里程碑：M1"
+    },
+    {
+      "at": "2026-04-08T23:13:55.591Z",
+      "type": "artifact_changed",
+      "refId": "review",
+      "message": "同步审查里程碑：M2"
+    },
+    {
+      "at": "2026-04-08T23:14:38.028Z",
+      "type": "artifact_changed",
+      "refId": "review",
+      "message": "同步审查结论：CharacterStudio/.limcode/review/project-architecture-comprehensive-review.md"
     }
   ],
   "stats": {
@@ -123,8 +215,8 @@
   },
   "render": {
     "rendererVersion": 1,
-    "generatedAt": "2026-04-08T21:37:46.254Z",
-    "bodyHash": "sha256:64e60d89669a603be0ac5438a36b7f6f4de94ff0b455a4a0cc27a565a7362a10"
+    "generatedAt": "2026-04-08T23:14:38.028Z",
+    "bodyHash": "sha256:963f104f0fe611ecd6992b19484efc1296b2d95a12085d85f6b99be93d9a3018"
   }
 }
 <!-- LIMCODE_PROGRESS_METADATA_END -->

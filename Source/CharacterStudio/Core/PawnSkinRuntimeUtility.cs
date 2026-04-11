@@ -55,13 +55,15 @@ namespace CharacterStudio.Core
 
             try
             {
-                // RefreshHiddenNodes 在主线程执行注入（纹理加载必须在主线程）
+                // RefreshHiddenNodes 已包含完整的注入流程（移除旧节点 → 注入新节点 → SetDirty）
+                // P5: 不再调用 ForceRebuildRenderTree，它会重置 setupComplete=false 导致
+                // TrySetupGraphIfNeeded 再次触发完整注入，造成双重注入性能浪费
                 Patch_PawnRenderTree.RefreshHiddenNodes(pawn);
-                Patch_PawnRenderTree.ForceRebuildRenderTree(pawn);
+                pawn.Drawer.renderer.SetAllGraphicsDirty();
             }
             catch (System.Exception ex)
             {
-                Log.Warning($"[CharacterStudio] ForceRebuildRenderTree 失败，回退到 RequestRenderRefresh: {ex.Message}");
+                Log.Warning($"[CharacterStudio] RefreshHiddenNodes 失败，回退到 RequestRenderRefresh: {ex.Message}");
                 comp.RequestRenderRefresh();
             }
 

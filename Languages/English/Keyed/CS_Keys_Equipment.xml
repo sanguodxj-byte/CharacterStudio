@@ -112,6 +112,26 @@
     <CS_Studio_Equip_TriggeredAnimation_PivotX>Pivot X</CS_Studio_Equip_TriggeredAnimation_PivotX>
     <CS_Studio_Equip_TriggeredAnimation_PivotY>Pivot Y</CS_Studio_Equip_TriggeredAnimation_PivotY>
     <CS_Studio_Equip_TriggeredAnimation_UseVfxVisibility>Control Effect Layer Visibility By Cycle</CS_Studio_Equip_TriggeredAnimation_UseVfxVisibility>
+    <CS_Studio_Equip_Override_Enabled>Enabled</CS_Studio_Equip_Override_Enabled>
+    <CS_Studio_Equip_Override_UseTriggeredLocal>Use Triggered Local Animation</CS_Studio_Equip_Override_UseTriggeredLocal>
+    <CS_Studio_Equip_Override_TriggerAbilityDefName>Trigger Ability DefName</CS_Studio_Equip_Override_TriggerAbilityDefName>
+    <CS_Studio_Equip_Override_AnimGroupKey>Animation Group Key</CS_Studio_Equip_Override_AnimGroupKey>
+    <CS_Studio_Equip_Override_Role>Role</CS_Studio_Equip_Override_Role>
+    <CS_Studio_Equip_Override_DeployAngle>Deploy Angle</CS_Studio_Equip_Override_DeployAngle>
+    <CS_Studio_Equip_Override_ReturnAngle>Return Angle</CS_Studio_Equip_Override_ReturnAngle>
+    <CS_Studio_Equip_Override_DeployTicks>Deploy Ticks</CS_Studio_Equip_Override_DeployTicks>
+    <CS_Studio_Equip_Override_HoldTicks>Hold Ticks</CS_Studio_Equip_Override_HoldTicks>
+    <CS_Studio_Equip_Override_ReturnTicks>Return Ticks</CS_Studio_Equip_Override_ReturnTicks>
+    <CS_Studio_Equip_Override_PivotX>Pivot X</CS_Studio_Equip_Override_PivotX>
+    <CS_Studio_Equip_Override_PivotY>Pivot Y</CS_Studio_Equip_Override_PivotY>
+    <CS_Studio_Equip_Override_UseVfxVisibility>Use VFX Visibility</CS_Studio_Equip_Override_UseVfxVisibility>
+    <CS_Studio_Equip_Override_VisibleDuringDeploy>Visible During Deploy</CS_Studio_Equip_Override_VisibleDuringDeploy>
+    <CS_Studio_Equip_Override_VisibleDuringHold>Visible During Hold</CS_Studio_Equip_Override_VisibleDuringHold>
+    <CS_Studio_Equip_Override_VisibleDuringReturn>Visible During Return</CS_Studio_Equip_Override_VisibleDuringReturn>
+    <CS_Studio_Equip_Override_VisibleOutsideCycle>Visible Outside Cycle</CS_Studio_Equip_Override_VisibleOutsideCycle>
+    <CS_Studio_Equip_Override_South>South Override</CS_Studio_Equip_Override_South>
+    <CS_Studio_Equip_Override_EastWest>East/West Override</CS_Studio_Equip_Override_EastWest>
+    <CS_Studio_Equip_Override_North>North Override</CS_Studio_Equip_Override_North>
     <CS_Studio_Equip_UseWornGraphicMask>Use Worn Graphic Mask</CS_Studio_Equip_UseWornGraphicMask>
     <CS_Studio_Equip_VisualLayerName>Visual Layer Name</CS_Studio_Equip_VisualLayerName>
     <CS_Studio_Equip_WorkingSkinNull>workingSkin is null</CS_Studio_Equip_WorkingSkinNull>

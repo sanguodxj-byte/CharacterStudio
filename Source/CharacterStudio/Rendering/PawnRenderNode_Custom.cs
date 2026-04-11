@@ -10,6 +10,31 @@ namespace CharacterStudio.Rendering
     /// </summary>
     public class PawnRenderNode_Custom : PawnRenderNode
     {
+        // P1: 缓存 CompPawnSkin 引用（避免每帧每节点 50+ 次 TryGetComp O(N) 查找）
+        private CompPawnSkin? _cachedSkinComp;
+        private int _cachedSkinCompTick = -1;
+
+        /// <summary>
+        /// P1: 获取缓存的 CompPawnSkin 引用。每 tick 最多解析一次。
+        /// </summary>
+        public CompPawnSkin? GetCachedSkinComp()
+        {
+            int currentTick = Find.TickManager?.TicksGame ?? 0;
+            if (_cachedSkinCompTick == currentTick)
+                return _cachedSkinComp;
+
+            _cachedSkinComp = tree?.pawn?.TryGetComp<CompPawnSkin>();
+            _cachedSkinCompTick = currentTick;
+            return _cachedSkinComp;
+        }
+
+        /// <summary>P1: 使缓存失效（皮肤切换时调用）</summary>
+        public void InvalidateSkinCompCache()
+        {
+            _cachedSkinCompTick = -1;
+            _cachedSkinComp = null;
+        }
+
         /// <summary>关联的图层配置</summary>
         public PawnLayerConfig? config;
 

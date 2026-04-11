@@ -316,6 +316,7 @@ namespace CharacterStudio.Core
             target.author           = cloned.author;
             target.version          = cloned.version;
             target.previewTexPath   = cloned.previewTexPath;
+            target.globalTextureScale = cloned.globalTextureScale;
             target.attributes       = cloned.attributes;
             target.statModifiers    = cloned.statModifiers;
             target.abilityHotkeys   = cloned.abilityHotkeys;

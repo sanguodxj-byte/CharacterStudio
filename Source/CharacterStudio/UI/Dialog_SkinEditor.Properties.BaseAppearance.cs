@@ -381,7 +381,7 @@ namespace CharacterStudio.UI
             if (DrawCollapsibleSection(ref y, width, "CS_Studio_Section_Rendering".Translate(), "BaseSlotRendering"))
             {
                 UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_BaseSlot_PrimaryColorSource".Translate(), slot.colorSource,
-                    (LayerColorSource[])Enum.GetValues(typeof(LayerColorSource)),
+                    CachedLayerColorSources,
                     GetLayerColorSourceLabel,
                     val =>
                     {
@@ -397,7 +397,7 @@ namespace CharacterStudio.UI
                 }
 
                 UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_BaseSlot_SecondaryColorSource".Translate(), slot.colorTwoSource,
-                    (LayerColorSource[])Enum.GetValues(typeof(LayerColorSource)),
+                    CachedLayerColorSources,
                     GetLayerColorSourceLabel,
                     val =>
                     {

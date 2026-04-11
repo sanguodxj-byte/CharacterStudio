@@ -71,8 +71,9 @@ namespace CharacterStudio.Core
             };
         }
 
-        public PawnLayerConfig ToPawnLayer(string layerName, string anchorTag, float baseDrawOrder)
+        public PawnLayerConfig ToPawnLayer(string layerName, string anchorTag, float baseDrawOrder, float drawSizeScale_unused = 1f)
         {
+            // 全局缩放已在 PawnRenderNodeWorker_CustomLayer.ScaleFor() 中统一应用，此处仅使用槽位自身 scale
             return new PawnLayerConfig
             {
                 layerName = layerName,
@@ -104,6 +105,8 @@ namespace CharacterStudio.Core
 
     public class BaseAppearanceConfig
     {
+        public float globalScale = 1f;
+        public float drawSizeScale = 1f;
         public List<BaseAppearanceSlotConfig> slots = new List<BaseAppearanceSlotConfig>();
 
         public BaseAppearanceConfig()
@@ -114,6 +117,8 @@ namespace CharacterStudio.Core
         public BaseAppearanceConfig Clone()
         {
             var clone = new BaseAppearanceConfig();
+            clone.globalScale = globalScale;
+            clone.drawSizeScale = drawSizeScale;
             clone.slots.Clear();
             foreach (var slot in slots)
             {

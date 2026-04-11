@@ -914,16 +914,10 @@ namespace CharacterStudio.Abilities
             customTexturePath = AbilityEditorNormalizationUtility.TrimOrEmpty(customTexturePath);
             soundDefName = AbilityEditorNormalizationUtility.TrimOrEmpty(soundDefName);
             NormalizeLegacyData();
-            trigger = trigger switch
+            if (!Enum.IsDefined(typeof(AbilityVisualEffectTrigger), trigger))
             {
-                AbilityVisualEffectTrigger.OnCastStart => AbilityVisualEffectTrigger.OnCastStart,
-                AbilityVisualEffectTrigger.OnWarmup => AbilityVisualEffectTrigger.OnWarmup,
-                AbilityVisualEffectTrigger.OnCastFinish => AbilityVisualEffectTrigger.OnCastFinish,
-                AbilityVisualEffectTrigger.OnTargetApply => AbilityVisualEffectTrigger.OnTargetApply,
-                AbilityVisualEffectTrigger.OnDurationTick => AbilityVisualEffectTrigger.OnDurationTick,
-                AbilityVisualEffectTrigger.OnExpire => AbilityVisualEffectTrigger.OnExpire,
-                _ => AbilityVisualEffectTrigger.OnTargetApply
-            };
+                trigger = AbilityVisualEffectTrigger.OnTargetApply;
+            }
             delayTicks = AbilityEditorNormalizationUtility.ClampInt(delayTicks, 0, 60000);
             displayDurationTicks = AbilityEditorNormalizationUtility.ClampInt(displayDurationTicks, 1, 60000);
             linkedExpressionDurationTicks = AbilityEditorNormalizationUtility.ClampInt(linkedExpressionDurationTicks, 1, 60000);

@@ -8,6 +8,8 @@ namespace CharacterStudio.UI
 {
     public partial class Dialog_SkinEditor
     {
+        private int consecutiveRenderErrors = 0;
+
         // ─────────────────────────────────────────────
         // 主绘制方法
         // ─────────────────────────────────────────────
@@ -17,10 +19,13 @@ namespace CharacterStudio.UI
             try
             {
                 bool skipHeavyPreviewWork = suspendHeavyPreviewWork;
+                bool forcePendingFacePreviewRefresh = Event.current != null
+                    && (Event.current.type == EventType.MouseUp || Event.current.rawType == EventType.MouseUp);
 
                 // 更新热加载
                 if (!skipHeavyPreviewWork)
                 {
+                    FlushPendingThrottledFacePreviewRefresh(forcePendingFacePreviewRefresh);
                     mannequin?.Update();
                     UpdatePreviewAutoPlay();
                     UpdatePreviewFaceAnimation();
@@ -110,8 +115,18 @@ namespace CharacterStudio.UI
             catch (Exception ex)
             {
                 Log.Error($"[CharacterStudio] 编辑器UI绘制错误: {ex}");
-                // 尝试重置状态或关闭窗口以避免循环报错
-                Close();
+                consecutiveRenderErrors++;
+                if (consecutiveRenderErrors >= 3)
+                {
+                    Log.Error("[CharacterStudio] 连续 3 次绘制异常，关闭编辑器以避免循环报错。");
+                    Close();
+                }
+            }
+
+            Event? currentEvent = Event.current;
+            if (consecutiveRenderErrors > 0 && currentEvent != null && currentEvent.type == EventType.Repaint)
+            {
+                consecutiveRenderErrors = 0;
             }
         }
 
@@ -330,11 +345,10 @@ namespace CharacterStudio.UI
             }
             else if (layerModificationWorkflowActive)
             {
-                int hiddenCount = workingRenderFixPatch?.hideNodePaths?.Count ?? 0;
-                int offsetCount = workingRenderFixPatch?.orderOverrides?.Count ?? 0;
-                status = $"图层修改工作流：隐藏节点 {hiddenCount} 个，层级修正 {offsetCount} 个。当前模式不会修改主皮肤模型。";
-            }
-            else if (isDirty)
+               int hiddenCount = workingRenderFixPatch?.hideNodePaths?.Count ?? 0;
+               int offsetCount = workingRenderFixPatch?.orderOverrides?.Count ?? 0;
+               status = "CS_Studio_Patch_StatusMessage".Translate(hiddenCount, offsetCount);
+            }            else if (isDirty)
             {
                 status = "CS_Studio_Status_UnsavedChanges".Translate();
             }
