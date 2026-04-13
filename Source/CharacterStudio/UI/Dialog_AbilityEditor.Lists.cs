@@ -78,7 +78,7 @@ namespace CharacterStudio.UI
             {
             }
 
-            if (DrawToolbarButton(new Rect(inner.x + (tripleButtonWidth + tripleButtonGap) * 2f, secondRowY, tripleButtonWidth, 24f), "CS_Studio_File_Export".Translate(), ExportAbilitiesToDefaultPath))
+            if (DrawToolbarButton(new Rect(inner.x + (tripleButtonWidth + tripleButtonGap) * 2f, secondRowY, tripleButtonWidth, 24f), "CS_Studio_File_ExportSelected".Translate(), ExportSelectedAbilityToXml))
             {
             }
 
@@ -257,6 +257,8 @@ namespace CharacterStudio.UI
                 targetType = source.targetType,
                 useRadius = source.useRadius,
                 areaCenter = source.areaCenter,
+                areaShape = source.areaShape,
+                irregularAreaPattern = source.irregularAreaPattern,
                 range = source.range,
                 radius = source.radius,
                 projectileDef = source.projectileDef

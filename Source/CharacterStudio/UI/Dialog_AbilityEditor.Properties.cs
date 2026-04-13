@@ -71,7 +71,7 @@ namespace CharacterStudio.UI
                 {
                     ability.iconPath = path ?? string.Empty;
                     NotifyAbilityPreviewDirty();
-                }))))
+                }, defaultRoot: GetAbilityTextureRootDir()))))
             {
                 ability.iconPath = iconPath;
                 NotifyAbilityPreviewDirty();
@@ -107,7 +107,7 @@ namespace CharacterStudio.UI
             AbilityTargetType normalizedTarget = ModularAbilityDefExtensions.NormalizeTargetType(ability);
 
             UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Ability_Type".Translate(), normalizedCarrier,
-                new[] { AbilityCarrierType.Self, AbilityCarrierType.Touch, AbilityCarrierType.Target, AbilityCarrierType.Projectile, AbilityCarrierType.Area },
+                new[] { AbilityCarrierType.Self, AbilityCarrierType.Target, AbilityCarrierType.Projectile },
                 GetCarrierTypeLabel,
                 val =>
                 {

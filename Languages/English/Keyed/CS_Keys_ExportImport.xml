@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
     <CS_Studio_Browser_Search>Search...</CS_Studio_Browser_Search>
+    <CS_Studio_Browser_ModsDir>Go to RimWorld Mods directory</CS_Studio_Browser_ModsDir>
     <CS_Studio_Browser_Title>File Browser</CS_Studio_Browser_Title>
     <CS_Studio_Browser_Up>Up</CS_Studio_Browser_Up>
     <CS_Studio_Export_AsGene>Export as Gene</CS_Studio_Export_AsGene>

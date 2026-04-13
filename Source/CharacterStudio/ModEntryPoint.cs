@@ -117,7 +117,7 @@ namespace CharacterStudio
             ApplyPatch("AbilityGizmos", () => UI.Patch_AbilityGizmos.Apply(harmony));
             ApplyPatch("PlaySettingsAbilityHotkeys", () => UI.Patch_PlaySettings_AbilityHotkeys.Apply(harmony));
             ApplyPatch("UIRootAbilityHotkeys", () => UI.Patch_UIRoot_AbilityHotkeys.Apply(harmony));
-            ApplyPatch("WeaponRender", () => Rendering.Patch_WeaponRender.Apply(harmony));
+            ApplyPatch("AnimationRender", () => Rendering.Patch_AnimationRender.Apply(harmony));
             ApplyPatch("RaceLabel", () => Patches.Patch_RaceLabel.Apply(harmony));
             ApplyPatch("CharacterAttributeBuffStat", () => Patches.Patch_CharacterAttributeBuffStat.Apply(harmony));
             ApplyPatch("AbilityTimeStop", () => Abilities.Patch_AbilityTimeStop.Apply(harmony));

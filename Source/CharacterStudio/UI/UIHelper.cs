@@ -534,6 +534,13 @@ namespace CharacterStudio.UI
             Text.Font = GameFont.Small;
             float actualLabelWidth = Mathf.Max(labelWidth, Text.CalcSize(label + ":").x + 10f);
             
+            float minFieldWidth = 40f;
+            float availableLabelWidth = rect.width - minFieldWidth;
+            if (actualLabelWidth > availableLabelWidth)
+            {
+                actualLabelWidth = Mathf.Max(30f, availableLabelWidth);
+            }
+            
             Widgets.Label(new Rect(rect.x, rect.y, actualLabelWidth, 24), label + ":");
             Widgets.Label(new Rect(rect.x + actualLabelWidth, rect.y, rect.width - actualLabelWidth, 24), value ?? "");
             y += RowHeight;
@@ -548,11 +555,19 @@ namespace CharacterStudio.UI
             
             // 计算标签实际宽度并适当调整，避免重叠
             Text.Font = GameFont.Small;
+            float minFieldWidth = 40f;
             float actualLabelWidth = Mathf.Max(labelWidth, Text.CalcSize(label).x + 10f);
+            
+            float availableLabelWidth = rect.width - minFieldWidth;
+            if (actualLabelWidth > availableLabelWidth)
+            {
+                actualLabelWidth = Mathf.Max(30f, availableLabelWidth);
+            }
             
             Widgets.Label(new Rect(rect.x, rect.y, actualLabelWidth, 24), label);
             
-            string newValue = Widgets.TextField(new Rect(rect.x + actualLabelWidth, rect.y, rect.width - actualLabelWidth, 24), value ?? "");
+            float fieldWidth = Mathf.Max(minFieldWidth, rect.width - actualLabelWidth);
+            string newValue = Widgets.TextField(new Rect(rect.x + actualLabelWidth, rect.y, fieldWidth, 24), value ?? "");
             if (newValue != value)
             {
                 value = SanitizeInput(newValue, 128);
@@ -574,19 +589,26 @@ namespace CharacterStudio.UI
             Rect rect = new Rect(0, y, width, RowHeight);
             
             Text.Font = GameFont.Small;
+            float btnWidth = Mathf.Max(32f, Text.CalcSize(buttonText).x + 18f);
+            float spacing = 5f;
+            float minFieldWidth = 40f;
+            
             float actualLabelWidth = Mathf.Max(labelWidth, Text.CalcSize(label).x + 10f);
+            float availableLabelWidth = rect.width - btnWidth - spacing - minFieldWidth;
+            if (actualLabelWidth > availableLabelWidth)
+            {
+                actualLabelWidth = Mathf.Max(30f, availableLabelWidth);
+            }
             
             Widgets.Label(new Rect(rect.x, rect.y, actualLabelWidth, 24), label);
             
-            Text.Font = GameFont.Small;
-            float btnWidth = Mathf.Max(32f, Text.CalcSize(buttonText).x + 18f);
-            float fieldWidth = rect.width - actualLabelWidth - btnWidth - 5;
+            float fieldWidth = Mathf.Max(minFieldWidth, rect.width - actualLabelWidth - btnWidth - spacing);
             
             string displayValue = string.IsNullOrWhiteSpace(value)
                 ? "CS_Studio_None".Translate().ToString()
                 : value;
             Widgets.Label(new Rect(rect.x + actualLabelWidth, rect.y, fieldWidth, 24), displayValue);
-            DrawBrowseButton(new Rect(rect.x + actualLabelWidth + fieldWidth + 5, rect.y, btnWidth, 24), onButtonClick, buttonText);
+            DrawBrowseButton(new Rect(rect.x + actualLabelWidth + fieldWidth + spacing, rect.y, btnWidth, 24), onButtonClick, buttonText);
 
             y += RowHeight;
         }
@@ -621,9 +643,16 @@ namespace CharacterStudio.UI
             Text.Font = GameFont.Small;
             float actualLabelWidth = Mathf.Max(labelWidth, Text.CalcSize(label).x + 10f);
 
+            float inputWidth = 64f;
+            float minSliderWidth = 40f;
+            float availableLabelWidth = rect.width - inputWidth - 5f - minSliderWidth;
+            if (actualLabelWidth > availableLabelWidth)
+            {
+                actualLabelWidth = Mathf.Max(30f, availableLabelWidth);
+            }
+
             Widgets.Label(new Rect(rect.x, rect.y, actualLabelWidth, 24), label);
 
-            float inputWidth = 64f;
             float sliderWidth = rect.width - actualLabelWidth - inputWidth - 5f;
 
             string numericFormat = string.IsNullOrWhiteSpace(format) ? "F2" : format;
@@ -691,6 +720,13 @@ namespace CharacterStudio.UI
 
             Text.Font = GameFont.Small;
             float actualLabelWidth = Mathf.Max(labelWidth, Text.CalcSize(label).x + 10f);
+            
+            float minFieldWidth = 40f;
+            float availableLabelWidth = rect.width - minFieldWidth;
+            if (actualLabelWidth > availableLabelWidth)
+            {
+                actualLabelWidth = Mathf.Max(30f, availableLabelWidth);
+            }
 
             Widgets.Label(new Rect(rect.x, rect.y, actualLabelWidth, 24), label);
 
@@ -758,6 +794,13 @@ namespace CharacterStudio.UI
             Text.Font = GameFont.Small;
             float actualLabelWidth = Mathf.Max(labelWidth, Text.CalcSize(label).x + 10f);
             
+            float minFieldWidth = 40f;
+            float availableLabelWidth = rect.width - minFieldWidth;
+            if (actualLabelWidth > availableLabelWidth)
+            {
+                actualLabelWidth = Mathf.Max(30f, availableLabelWidth);
+            }
+            
             Widgets.Label(new Rect(rect.x, rect.y, actualLabelWidth, 24), label);
             
             if (DrawSelectionButton(new Rect(rect.x + actualLabelWidth, rect.y, rect.width - actualLabelWidth, 24), labelMaker(currentValue)))
@@ -789,6 +832,13 @@ namespace CharacterStudio.UI
             Text.Font = GameFont.Small;
             float actualLabelWidth = Mathf.Max(labelWidth, Text.CalcSize(label).x + 10f);
             
+            float minFieldWidth = 100f;
+            float availableLabelWidth = rect.width - minFieldWidth;
+            if (actualLabelWidth > availableLabelWidth)
+            {
+                actualLabelWidth = Mathf.Max(30f, availableLabelWidth);
+            }
+            
             Widgets.Label(new Rect(rect.x, rect.y, actualLabelWidth, 24), label);
             
             Rect colorRect = new Rect(rect.x + actualLabelWidth, rect.y + 2, 40, 20);
@@ -819,7 +869,15 @@ namespace CharacterStudio.UI
             
             Text.Font = GameFont.Small;
             float actualLabelWidth = Mathf.Max(labelWidth, Text.CalcSize(label).x + 10f);
-            Rect toggleRect = new Rect(rect.x + actualLabelWidth, rect.y, Mathf.Max(44f, rect.width - actualLabelWidth), 24f);
+            
+            float minToggleWidth = 80f;
+            float availableLabelWidth = rect.width - minToggleWidth;
+            if (actualLabelWidth > availableLabelWidth)
+            {
+                actualLabelWidth = Mathf.Max(30f, availableLabelWidth);
+            }
+            
+            Rect toggleRect = new Rect(rect.x + actualLabelWidth, rect.y, rect.width - actualLabelWidth, 24f);
 
             Widgets.Label(new Rect(rect.x, rect.y, actualLabelWidth, 24), label);
             Widgets.DrawBoxSolid(toggleRect, value ? ActiveTabColor : PanelFillSoftColor);
@@ -919,10 +977,19 @@ namespace CharacterStudio.UI
             Rect rowRect = new Rect(0f, rowY, width, RowHeight);
             Text.Font = GameFont.Small;
 
-            float actualLabelWidth = Mathf.Max(LabelWidth, Text.CalcSize(label).x + 10f);
             float buttonWidth = 30f;
             float spacing = 5f;
-            float fieldWidth = Mathf.Max(40f, rowRect.width - actualLabelWidth - buttonWidth - spacing);
+            float minFieldWidth = 40f;
+            float actualLabelWidth = Mathf.Max(LabelWidth, Text.CalcSize(label).x + 10f);
+
+            // 如果可用宽度不足以容纳 label + 最小文本框 + 按钮，则压缩 label 宽度
+            float availableLabelWidth = rowRect.width - buttonWidth - spacing - minFieldWidth;
+            if (actualLabelWidth > availableLabelWidth)
+            {
+                actualLabelWidth = Mathf.Max(30f, availableLabelWidth);
+            }
+
+            float fieldWidth = Mathf.Max(minFieldWidth, rowRect.width - actualLabelWidth - buttonWidth - spacing);
 
             Widgets.Label(new Rect(rowRect.x, rowRect.y, actualLabelWidth, 24f), label);
 
@@ -937,12 +1004,10 @@ namespace CharacterStudio.UI
                 changed = true;
             }
 
-            if (Widgets.ButtonText(
+            DrawBrowseButton(
                 new Rect(rowRect.x + actualLabelWidth + fieldWidth + spacing, rowRect.y, buttonWidth, 24f),
-                "..."))
-            {
-                browseAction?.Invoke();
-            }
+                browseAction,
+                "...");
 
             rowY += RowHeight;
             return changed;

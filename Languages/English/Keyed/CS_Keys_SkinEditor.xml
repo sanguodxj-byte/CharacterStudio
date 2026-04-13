@@ -54,6 +54,15 @@
     <CS_Studio_Panel_RemoveLayer>Remove Layer</CS_Studio_Panel_RemoveLayer>
     <CS_Studio_Preview_Summary>Facing: {0}  |  Zoom: {1}x  |  Flow: {2}</CS_Studio_Preview_Summary>
     <CS_Studio_Preview_SummaryFlow_On>On</CS_Studio_Preview_SummaryFlow_On>
+    <CS_Studio_Tab_Animation>Animation</CS_Studio_Tab_Animation>
+    <CS_Studio_Tab_Items>Items</CS_Studio_Tab_Items>
+    <CS_Studio_Section_Animation>Procedural Animation</CS_Studio_Section_Animation>
+    <CS_Studio_Section_AnimationCarryVisual>Status Visuals</CS_Studio_Section_AnimationCarryVisual>
+    <CS_Studio_Section_AnimationRender>Global Pose Override</CS_Studio_Section_AnimationRender>
+    <CS_Studio_Anim_Breathe>Enable Breathing</CS_Studio_Anim_Breathe>
+    <CS_Studio_Anim_IdleSway>Enable Swaying</CS_Studio_Anim_IdleSway>
+    <CS_Studio_Anim_Speed>Speed</CS_Studio_Anim_Speed>
+    <CS_Studio_Anim_Amplitude>Amplitude</CS_Studio_Anim_Amplitude>
     <CS_Studio_Preview_SummaryFlow_Off>Off</CS_Studio_Preview_SummaryFlow_Off>
     <CS_Studio_Preview_Channel_Brow>Brow</CS_Studio_Preview_Channel_Brow>
     <CS_Studio_Preview_Channel_Emotion>Emotion</CS_Studio_Preview_Channel_Emotion>
@@ -133,6 +142,21 @@
     <CS_Studio_Prop_ShowNode>Show Node</CS_Studio_Prop_ShowNode>
     <CS_Studio_Prop_TexturePath>Texture Path</CS_Studio_Prop_TexturePath>
     <CS_Studio_Prop_Visible>Visible</CS_Studio_Prop_Visible>
+    <CS_Studio_Prop_Shader>Shader</CS_Studio_Prop_Shader>
+    <CS_Studio_Prop_Shader_Tooltip>Determines how the layer handles transparency and depth:
+• Cutout: Hard edges, writes depth (standard for vanilla pawn layers/apparel).
+• CutoutComplex: Hard edges with secondary color mask support.
+• Transparent: Soft semi-transparent edges, no depth (use for glasses, glowing effects, veils).
+• TransparentPostLight: Like Transparent but unaffected by shadows.
+• MetaOverlay: For special technical passes.</CS_Studio_Prop_Shader_Tooltip>
+    <CS_Studio_Prop_CustomShaderPath>Custom Shader Path</CS_Studio_Prop_CustomShaderPath>
+    <CS_Studio_Prop_CustomShaderPath_Tooltip>Shader path for custom shaders (e.g. Hidden/RimWorld/TransparentZWrite). Only used when Shader is set to Custom.</CS_Studio_Prop_CustomShaderPath_Tooltip>
+    <CS_Studio_Prop_Alpha>Opacity</CS_Studio_Prop_Alpha>
+    <CS_Studio_Prop_Alpha_Tooltip>Controls the transparency of this layer. 1 = fully opaque, 0 = fully transparent. Only available for transparent shaders.</CS_Studio_Prop_Alpha_Tooltip>
+    <CS_Studio_Prop_ZWrite>Depth Write</CS_Studio_Prop_ZWrite>
+    <CS_Studio_Prop_ZWrite_Tooltip>When enabled, this transparent layer writes to the depth buffer, allowing other transparent objects to correctly occlude behind it. Useful for semi-transparent equipment that should block visibility of body parts behind it.</CS_Studio_Prop_ZWrite_Tooltip>
+    <CS_Studio_Prop_MaskTexPath>Mask Texture Path</CS_Studio_Prop_MaskTexPath>
+    <CS_Studio_Prop_MaskTexPath_Tooltip>Optional mask texture that controls per-pixel transparency. White = fully opaque, Black = fully transparent. The mask color multiplies with the main texture alpha.</CS_Studio_Prop_MaskTexPath_Tooltip>
     <CS_Studio_Prop_Worker>Worker</CS_Studio_Prop_Worker>
     <CS_Studio_Properties_Summary_Node>Editing the selected render node.</CS_Studio_Properties_Summary_Node>
     <CS_Studio_Properties_Summary_BaseSlot>Editing the selected base slot.</CS_Studio_Properties_Summary_BaseSlot>

@@ -279,7 +279,10 @@
     <CS_Studio_Runtime_FullHealthThresholdPercent>满血判定阈值(%)</CS_Studio_Runtime_FullHealthThresholdPercent>
     <CS_Studio_Runtime_HitCooldownRefundPercent>返还冷却比例(%)</CS_Studio_Runtime_HitCooldownRefundPercent>
     <CS_Studio_Runtime_HitHealAmount>固定治疗量</CS_Studio_Runtime_HitHealAmount>
+    <CS_Studio_Runtime_Duration>持续时长 (Tick)</CS_Studio_Runtime_Duration>
     <CS_Studio_Runtime_HitHealRatio>按伤害治疗比例</CS_Studio_Runtime_HitHealRatio>
+    <CS_Studio_Runtime_ComboTargetAbility>连段目标技能</CS_Studio_Runtime_ComboTargetAbility>
+    <CS_Studio_Runtime_ComboTargetSlot>连段触发槽位</CS_Studio_Runtime_ComboTargetSlot>
     <CS_Studio_Runtime_HotkeyOverrideAbility>覆盖目标技能</CS_Studio_Runtime_HotkeyOverrideAbility>
     <CS_Studio_Runtime_HotkeyOverrideAbilityDefName>覆盖技能 DefName</CS_Studio_Runtime_HotkeyOverrideAbilityDefName>
     <CS_Studio_Runtime_HotkeyOverrideDuration>覆盖持续时间</CS_Studio_Runtime_HotkeyOverrideDuration>
@@ -452,6 +455,11 @@
     <CS_Ability_Validate_RuntimeConflict_FlightStateWithVanillaFlyer>{0} 与 {1} 冲突。</CS_Ability_Validate_RuntimeConflict_FlightStateWithVanillaFlyer>
     <CS_Ability_Validate_RuntimeConflict_LandingBurstNeedsVanillaFlyer>{0} 需要 VanillaPawnFlyer。</CS_Ability_Validate_RuntimeConflict_LandingBurstNeedsVanillaFlyer>
     <CS_Ability_Validate_RuntimeConflict_MovementDuplicate>检测到多个位移型运行时组件：{0}</CS_Ability_Validate_RuntimeConflict_MovementDuplicate>
+    <CS_Studio_File_ExportSelected>导出XML</CS_Studio_File_ExportSelected>
+    <CS_Ability_Validate_RuntimeConflict_ProjectileSplitNeedsProjectile>{0} 需要投射物载具类型。</CS_Ability_Validate_RuntimeConflict_ProjectileSplitNeedsProjectile>
+    <CS_Ability_Validate_RuntimeConflict_ChainBounceNeedsProjectile>{0} 需要投射物载具类型。</CS_Ability_Validate_RuntimeConflict_ChainBounceNeedsProjectile>
+    <CS_Ability_Validate_RuntimeConflict_ShieldOverlap>{0} 和 {1} 功能可能重叠。</CS_Ability_Validate_RuntimeConflict_ShieldOverlap>
+    <CS_Ability_Validate_RuntimeConflict_HitEffectNeedsTarget>{0} 在自身载具类型下无效果。</CS_Ability_Validate_RuntimeConflict_HitEffectNeedsTarget>
     <CS_Ability_Validate_SummonCount>召唤数量必须大于 0。</CS_Ability_Validate_SummonCount>
     <CS_Ability_Validate_SummonKindRequired>召唤效果需要指定 PawnKindDef。</CS_Ability_Validate_SummonKindRequired>
     <CS_Ability_Validate_TerraformSpawnCount>地形生成数量必须大于 0。</CS_Ability_Validate_TerraformSpawnCount>
@@ -469,6 +477,15 @@
     <CS_Studio_Ability_Hotkey_Q>Q</CS_Studio_Ability_Hotkey_Q>
     <CS_Studio_Ability_Hotkey_R>R</CS_Studio_Ability_Hotkey_R>
     <CS_Studio_Ability_Hotkey_W>W</CS_Studio_Ability_Hotkey_W>
+    <CS_Studio_Ability_Hotkey_T>T</CS_Studio_Ability_Hotkey_T>
+    <CS_Studio_Ability_Hotkey_A>A</CS_Studio_Ability_Hotkey_A>
+    <CS_Studio_Ability_Hotkey_S>S</CS_Studio_Ability_Hotkey_S>
+    <CS_Studio_Ability_Hotkey_D>D</CS_Studio_Ability_Hotkey_D>
+    <CS_Studio_Ability_Hotkey_F>F</CS_Studio_Ability_Hotkey_F>
+    <CS_Studio_Ability_Hotkey_Z>Z</CS_Studio_Ability_Hotkey_Z>
+    <CS_Studio_Ability_Hotkey_X>X</CS_Studio_Ability_Hotkey_X>
+    <CS_Studio_Ability_Hotkey_C>C</CS_Studio_Ability_Hotkey_C>
+    <CS_Studio_Ability_Hotkey_V>V</CS_Studio_Ability_Hotkey_V>
     <CS_Studio_Ability_Hotkey_WCombo>W 连段</CS_Studio_Ability_Hotkey_WCombo>
     <CS_Studio_Ability_PreviewRuntimeFlightOnlyStateAlways>始终可用</CS_Studio_Ability_PreviewRuntimeFlightOnlyStateAlways>
     <CS_Studio_Ability_PreviewRuntimeFlightOnlyStateWindow>仅飞行窗口</CS_Studio_Ability_PreviewRuntimeFlightOnlyStateWindow>

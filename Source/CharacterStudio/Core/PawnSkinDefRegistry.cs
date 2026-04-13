@@ -322,7 +322,7 @@ namespace CharacterStudio.Core
             target.abilityHotkeys   = cloned.abilityHotkeys;
             target.faceConfig       = cloned.faceConfig;
             target.baseAppearance   = cloned.baseAppearance;
-            target.weaponRenderConfig = cloned.weaponRenderConfig ?? new WeaponRenderConfig();
+            target.animationConfig  = cloned.animationConfig ?? new PawnAnimationConfig();
             target.xenotypeDefName  = cloned.xenotypeDefName;
             target.raceDisplayName  = cloned.raceDisplayName;
 

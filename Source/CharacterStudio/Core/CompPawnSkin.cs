@@ -48,7 +48,13 @@ namespace CharacterStudio.Core
             set => eyeDirectionState.currentEyeDirection = value;
         }
 
-        private readonly AbilityHotkeyRuntimeState abilityRuntimeState = new AbilityHotkeyRuntimeState();
+        internal readonly AbilityHotkeyRuntimeState abilityRuntimeState = new AbilityHotkeyRuntimeState();
+
+        // 瞬时缓存，用于性能优化，不序列化
+        internal Thing? attachedShieldVisualCached;
+        internal Thing? projectileInterceptorShieldCached;
+        private int lastShieldAbsorbTick = -9999;
+        private Vector3 shieldImpactVector = Vector3.zero;
 
         public int slotOverrideWindowEndTick
         {
@@ -985,6 +991,11 @@ namespace CharacterStudio.Core
             shieldStoredHeal += absorbedDamage;
             shieldStoredBonusDamage += absorbedDamage;
 
+            // 记录撞击效果数据 (仿原版护盾腰带)
+            lastShieldAbsorbTick = now;
+            Vector3 impactDir = dinfo.Instigator != null ? (dinfo.Instigator.Position - parent.Position).ToVector3().normalized : Vector3.up;
+            shieldImpactVector = new Vector3(impactDir.x, impactDir.z, 0f);
+
             float remainingDamage = incomingDamage - absorbedDamage;
             if (remainingDamage <= 0.001f)
             {
@@ -1085,7 +1096,75 @@ namespace CharacterStudio.Core
 
         public int GetExpressionAnimTick() => faceExpressionState.expressionAnimTick;
 
-        public void RequestRenderRefresh()
+        private static readonly Material DefaultShieldBubbleMat = MaterialPool.MatFrom("Things/Pawn/Effects/Shield", ShaderDatabase.Transparent);
+
+        public override void PostDraw()
+        {
+            base.PostDraw();
+
+            Pawn? pawn = Pawn;
+            if (pawn == null) return;
+
+            if (IsAttachedShieldVisualActive())
+            {
+                // 仿原版护盾腰带绘制逻辑 (ShieldBelt.DrawWornExtras)
+                // 基础大小随剩余护盾值微调 (模拟能量脉冲感)
+                float energyPercent = (shieldRemainingDamage > 0) ? Mathf.Clamp01(shieldRemainingDamage / 60f) : 1f;
+                float baseScale = attachedShieldVisualScale;
+                float drawScale = baseScale * (0.9f + (energyPercent * 0.2f));
+                
+                Vector3 pos = pawn.Drawer.DrawPos;
+                pos.y = AltitudeLayer.MoteOverhead.AltitudeFor() + attachedShieldVisualHeightOffset;
+
+                // 处理撞击抖动效果
+                int ticksSinceImpact = Find.TickManager.TicksGame - lastShieldAbsorbTick;
+                if (ticksSinceImpact < 8)
+                {
+                    float jitterFactor = (float)(8 - ticksSinceImpact) / 8f * 0.05f;
+                    pos.x -= shieldImpactVector.x * jitterFactor;
+                    pos.z -= shieldImpactVector.y * jitterFactor;
+                    drawScale -= jitterFactor;
+                }
+
+                // 旋转逻辑：使用稳定的随机种子或基于时间，避免逐帧乱闪
+                float angle = (float)(pawn.thingIDNumber % 360) + (Find.TickManager.TicksGame * 0.5f) % 360f;
+                
+                Matrix4x4 matrix = Matrix4x4.TRS(pos, Quaternion.AngleAxis(angle, Vector3.up), new Vector3(drawScale, 1f, drawScale));
+
+                Material? mat = null;
+                if (attachedShieldVisualCached != null)
+                {
+                    mat = attachedShieldVisualCached.Graphic?.MatSingle;
+                }
+                
+                // 如果没有指定特殊材质，使用原版护盾材质
+                mat ??= DefaultShieldBubbleMat;
+
+                if (mat != null)
+                {
+                    Graphics.DrawMesh(MeshPool.plane10, matrix, mat, 0);
+                }
+            }
+        }
+
+        private int lastPortraitDirtyTick = -1;
+
+        // ─── P-PERF: Per-frame effective state cache ───
+        // GetEffectiveExpression() etc. are called 50-100+ times per pawn per frame
+        // during ParallelGetPreRenderResults. Cache all derived states per-frame
+        // to eliminate redundant re-evaluation.
+        private int _effectiveStateCacheFrameId = -1;
+        private ExpressionType _cachedEffectiveExpression;
+        private MouthState _cachedEffectiveMouthState;
+        private LidState _cachedEffectiveLidState;
+        private BrowState _cachedEffectiveBrowState;
+        private EmotionOverlayState _cachedEffectiveEmotionOverlayState;
+        private string _cachedEffectiveOverlaySemanticKey = string.Empty;
+        private EyeAnimationVariant _cachedEffectiveEyeVariant;
+        private PupilScaleVariant _cachedEffectivePupilVariant;
+        private EyeDirection _cachedEffectiveEyeDirection;
+
+        public void RequestRenderRefresh(bool dirtyPortrait = false)
         {
             Pawn? pawn = Pawn;
             if (pawn?.Drawer?.renderer == null)
@@ -1095,11 +1174,17 @@ namespace CharacterStudio.Core
             if (!CharacterStudioPerformanceStats.TryBeginRenderRefresh(pawn, currentTick))
                 return;
 
+            // P-PERF: 令每帧有效状态缓存失效，下次访问时重建
+            _effectiveStateCacheFrameId = -1;
+
             pawn.Drawer.renderer.SetAllGraphicsDirty();
-            PortraitsCache.SetDirty(pawn);
-            // RequestRenderRefresh 只做当前 pawn 的轻量图形 dirty；
-            // 不在这里触发 RefreshHiddenNodes / ForceRebuildRenderTree，
-            // 避免普通状态变化经由全局渲染树链路误伤其他 pawn 的服装显示。
+            
+            // Throttle PortraitsCache to avoid Colonist Bar performance death spiral
+            if (dirtyPortrait || currentTick < 0 || currentTick - lastPortraitDirtyTick > 60)
+            {
+                PortraitsCache.SetDirty(pawn);
+                lastPortraitDirtyTick = currentTick;
+            }
         }
 
     }

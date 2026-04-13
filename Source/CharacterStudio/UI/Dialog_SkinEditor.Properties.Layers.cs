@@ -236,6 +236,59 @@ namespace CharacterStudio.UI
                     MutateSelectedLayersWithUndo(layer, l => l.visible = visible);
                 }
 
+                string[] shaderOptions = { "Cutout", "CutoutComplex", "Transparent", "TransparentPostLight", "TransparentZWrite", "ItemTransparent", "MetaOverlay", "Custom" };
+                UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Prop_Shader".Translate(), layer.shaderDefName ?? "Cutout",
+                    shaderOptions,
+                    val => val,
+                    val =>
+                    {
+                        MutateSelectedLayersWithUndo(layer, l => l.shaderDefName = val, refreshRenderTree: true);
+                    },
+                    tooltip: "CS_Studio_Prop_Shader_Tooltip".Translate());
+
+                // Custom shader path
+                if (layer.shaderDefName == "Custom")
+                {
+                    string customShaderPath = layer.customShaderPath ?? string.Empty;
+                    UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Prop_CustomShaderPath".Translate(), ref customShaderPath, tooltip: "CS_Studio_Prop_CustomShaderPath_Tooltip".Translate());
+                    if (customShaderPath != (layer.customShaderPath ?? string.Empty))
+                    {
+                        MutateSelectedLayersWithUndo(layer, l => l.customShaderPath = customShaderPath, refreshRenderTree: true);
+                    }
+                }
+
+                // Alpha slider for transparent shaders
+                bool isTransparentShader = layer.shaderDefName == "Transparent"
+                    || layer.shaderDefName == "TransparentPostLight"
+                    || layer.shaderDefName == "TransparentZWrite"
+                    || layer.shaderDefName == "ItemTransparent"
+                    || layer.shaderDefName == "Custom";
+                if (isTransparentShader)
+                {
+                    float alpha = layer.alpha;
+                    UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_Alpha".Translate(), ref alpha, 0f, 1f, "F2");
+                    if (Math.Abs(alpha - layer.alpha) > 0.0001f)
+                    {
+                        MutateSelectedLayersWithUndo(layer, l => l.alpha = alpha);
+                    }
+                }
+
+                // ZWrite checkbox
+                bool zWrite = layer.zWrite;
+                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Prop_ZWrite".Translate(), ref zWrite, tooltip: "CS_Studio_Prop_ZWrite_Tooltip".Translate());
+                if (zWrite != layer.zWrite)
+                {
+                    MutateSelectedLayersWithUndo(layer, l => l.zWrite = zWrite, refreshRenderTree: true);
+                }
+
+                // Mask texture path
+                string maskTexPath = layer.maskTexPath ?? string.Empty;
+                UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Prop_MaskTexPath".Translate(), ref maskTexPath, tooltip: "CS_Studio_Prop_MaskTexPath_Tooltip".Translate());
+                if (maskTexPath != (layer.maskTexPath ?? string.Empty))
+                {
+                    MutateSelectedLayersWithUndo(layer, l => l.maskTexPath = maskTexPath, refreshRenderTree: true);
+                }
+
                 float eastRotationOffset = layer.rotationEastOffset;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Transform_RotationOffset".Translate(), ref eastRotationOffset, -180f, 180f, "F0");
                 if (Math.Abs(eastRotationOffset - layer.rotationEastOffset) > 0.0001f)
@@ -280,6 +333,11 @@ namespace CharacterStudio.UI
                             MutateSelectedLayersWithUndo(layer, l => l.customColorTwo = col);
                         });
                 }
+            }
+
+            if (DrawCollapsibleSection(ref y, width, "CS_Studio_Section_Animation".Translate(), "Animation"))
+            {
+                DrawSelectedLayerExpressionMovementSection(ref y, width, layer);
             }
 
             if (DrawCollapsibleSection(ref y, width, "CS_Studio_Section_VariantsExpression".Translate(), "Variants"))
@@ -401,8 +459,7 @@ namespace CharacterStudio.UI
 
             if (workingSkin.hiddenPaths != null && workingSkin.hiddenPaths.Count > 0)
             {
-                Widgets.Label(new Rect(0, y, width, 22f), "CS_Studio_Hide_HiddenPaths".Translate());
-                y += 24f;
+                UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Hide_HiddenPaths".Translate());
                 foreach (var path in workingSkin.hiddenPaths.ToList())
                 {
                     Rect removeRect = new Rect(width - 36f, y - 1f, 32f, 22f);
@@ -429,8 +486,7 @@ namespace CharacterStudio.UI
 #pragma warning disable CS0618
             if (workingSkin.hiddenTags != null && workingSkin.hiddenTags.Count > 0)
             {
-                Widgets.Label(new Rect(0f, y, width, 22f), "CS_Studio_Hide_HiddenTagsCompat".Translate());
-                y += 24f;
+                UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Hide_HiddenTagsCompat".Translate());
                 foreach (var tag in workingSkin.hiddenTags.ToList())
                 {
                     Rect removeRect = new Rect(width - 36f, y - 1f, 32f, 22f);
@@ -448,12 +504,13 @@ namespace CharacterStudio.UI
             }
 #pragma warning restore
 
-            if (Widgets.ButtonText(new Rect(0f, y, width, 24f), "CS_Studio_Btn_AddHidden".Translate()))
-            {
-                ShowHiddenTagsMenu();
-            }
-
-            y += 28f;
+            int hiddenTotal = (workingSkin.hiddenPaths?.Count ?? 0)
+#pragma warning disable CS0618
+                + (workingSkin.hiddenTags?.Count ?? 0);
+#pragma warning restore
+            DrawSelectionPropertyButton(ref y, width, "CS_Studio_Btn_AddHidden".Translate(),
+                hiddenTotal > 0 ? hiddenTotal.ToString() : "0",
+                ShowHiddenTagsMenu);
         }
 
         private static string GetDirectionalFacingLabel(string option)

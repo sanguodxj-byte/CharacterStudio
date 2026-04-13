@@ -19,7 +19,7 @@ namespace CharacterStudio.Core
             if (oldExp != curExpression)
             {
                 faceExpressionState.ResetAnimatedFrameTracking();
-                RequestRenderRefresh();
+                RequestRenderRefresh(true);
             }
         }
 
@@ -236,10 +236,51 @@ namespace CharacterStudio.Core
             return LayeredFacePartSide.Left;
         }
 
-        public ExpressionType GetEffectiveExpression()
-            => EffectiveFaceStateEvaluator.ResolveExpression(this);
+        /// <summary>
+        /// P-PERF: 获取当前帧的缓存 ID（渲染帧用 frameCount，非渲染用 TicksGame）
+        /// </summary>
+        private int GetCurrentEffectiveStateFrameId()
+        {
+            // 在渲染期间使用 frameCount（每帧变化一次），
+            // 非 Tick 驱动路径下用 TicksGame
+            return Time.frameCount;
+        }
 
-        public bool IsBlinkActive() => GetEffectiveExpression() == ExpressionType.Blink;
+        private void EnsureEffectiveStateCache()
+        {
+            int frameId = GetCurrentEffectiveStateFrameId();
+            if (_effectiveStateCacheFrameId == frameId)
+                return;
+
+            _effectiveStateCacheFrameId = frameId;
+            _cachedEffectiveExpression = EffectiveFaceStateEvaluator.ResolveExpression(this);
+            _cachedEffectiveMouthState = EffectiveFaceStateEvaluator.ResolveMouthState(this);
+            _cachedEffectiveLidState = EffectiveFaceStateEvaluator.ResolveLidState(this);
+            _cachedEffectiveBrowState = EffectiveFaceStateEvaluator.ResolveBrowState(this);
+            _cachedEffectiveEmotionOverlayState = EffectiveFaceStateEvaluator.ResolveEmotionOverlayState(this);
+            _cachedEffectiveOverlaySemanticKey = EffectiveFaceStateEvaluator.ResolveOverlaySemanticKey(this);
+            _cachedEffectiveEyeVariant = ResolveEyeAnimationVariant(_cachedEffectiveExpression);
+            _cachedEffectivePupilVariant = ResolvePupilScaleVariant(_cachedEffectiveExpression);
+            _cachedEffectiveEyeDirection = EffectiveFaceStateEvaluator.ResolveEyeDirection(this);
+        }
+
+        /// <summary>P-PERF: 令有效状态缓存失效（表情/眨眼等状态变更时调用）</summary>
+        public void InvalidateEffectiveStateCache()
+        {
+            _effectiveStateCacheFrameId = -1;
+        }
+
+        public ExpressionType GetEffectiveExpression()
+        {
+            EnsureEffectiveStateCache();
+            return _cachedEffectiveExpression;
+        }
+
+        public bool IsBlinkActive()
+        {
+            EnsureEffectiveStateCache();
+            return _cachedEffectiveExpression == ExpressionType.Blink;
+        }
 
         public BlinkPhase GetBlinkPhase()
             => faceExpressionState.IsBlinkActive ? faceExpressionState.blinkPhase : BlinkPhase.None;
@@ -300,25 +341,46 @@ namespace CharacterStudio.Core
         }
 
         public MouthState GetEffectiveMouthState()
-            => EffectiveFaceStateEvaluator.ResolveMouthState(this);
+        {
+            EnsureEffectiveStateCache();
+            return _cachedEffectiveMouthState;
+        }
 
         public LidState GetEffectiveLidState()
-            => EffectiveFaceStateEvaluator.ResolveLidState(this);
+        {
+            EnsureEffectiveStateCache();
+            return _cachedEffectiveLidState;
+        }
 
         public BrowState GetEffectiveBrowState()
-            => EffectiveFaceStateEvaluator.ResolveBrowState(this);
+        {
+            EnsureEffectiveStateCache();
+            return _cachedEffectiveBrowState;
+        }
 
         public EmotionOverlayState GetEffectiveEmotionOverlayState()
-            => EffectiveFaceStateEvaluator.ResolveEmotionOverlayState(this);
+        {
+            EnsureEffectiveStateCache();
+            return _cachedEffectiveEmotionOverlayState;
+        }
 
         public string GetEffectiveOverlaySemanticKey()
-            => EffectiveFaceStateEvaluator.ResolveOverlaySemanticKey(this);
+        {
+            EnsureEffectiveStateCache();
+            return _cachedEffectiveOverlaySemanticKey;
+        }
 
         public EyeAnimationVariant GetEffectiveEyeAnimationVariant()
-            => ResolveEyeAnimationVariant(GetEffectiveExpression());
+        {
+            EnsureEffectiveStateCache();
+            return _cachedEffectiveEyeVariant;
+        }
 
         public PupilScaleVariant GetEffectivePupilScaleVariant()
-            => ResolvePupilScaleVariant(GetEffectiveExpression());
+        {
+            EnsureEffectiveStateCache();
+            return _cachedEffectivePupilVariant;
+        }
 
         public string? GetChannelStateSuffix(LayerRole role)
         {
@@ -483,7 +545,11 @@ namespace CharacterStudio.Core
 
         public EyeDirection CurEyeDirection
         {
-            get => EffectiveFaceStateEvaluator.ResolveEyeDirection(this);
+            get
+            {
+                EnsureEffectiveStateCache();
+                return _cachedEffectiveEyeDirection;
+            }
         }
 
         public void SetPreviewEyeDirection(EyeDirection? dir)

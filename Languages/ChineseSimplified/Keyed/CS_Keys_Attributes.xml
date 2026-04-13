@@ -13,6 +13,8 @@
     <CS_Attr_MeleePower>近战强度</CS_Attr_MeleePower>
     <CS_Attr_MoveSpeed>移动速度倍率</CS_Attr_MoveSpeed>
     <CS_Attr_Personality>性格</CS_Attr_Personality>
+    <CS_Attr_BasicSummary>称号: {0}\n年龄: {1}岁</CS_Attr_BasicSummary>
+    <CS_Attr_ConfigureBasic>配置角色定义...</CS_Attr_ConfigureBasic>
     <CS_Attr_Section_Basic>角色基础信息</CS_Attr_Section_Basic>
     <CS_Attr_Section_Stats>核心属性</CS_Attr_Section_Stats>
     <CS_Attr_ShootingAccuracy>射击精度</CS_Attr_ShootingAccuracy>

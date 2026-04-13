@@ -159,9 +159,7 @@ namespace CharacterStudio.Rendering
             allLayers.AddRange(BaseAppearanceUtility.BuildSyntheticLayers(skinDef));
             allLayers.AddRange(BuildEquipmentVisualLayers(pawn, skinDef));
 
-            var carryVisualLayer = BuildWeaponCarryVisualLayer(skinDef);
-            if (carryVisualLayer != null)
-                allLayers.Add(carryVisualLayer);
+            allLayers.AddRange(BuildWeaponCarryVisualLayers(pawn, skinDef));
 
             if (allLayers.Count == 0) return false;
 
@@ -286,9 +284,8 @@ namespace CharacterStudio.Rendering
             foreach (PawnLayerConfig layer in BuildEquipmentVisualLayers(pawn, skinDef))
                 yield return layer;
 
-            PawnLayerConfig? carryVisualLayer = BuildWeaponCarryVisualLayer(skinDef);
-            if (carryVisualLayer != null)
-                yield return carryVisualLayer;
+            foreach (PawnLayerConfig layer in BuildWeaponCarryVisualLayers(pawn, skinDef))
+                yield return layer;
         }
 
         private static bool IsInjectableLayerCandidate(PawnLayerConfig layer, PawnSkinDef skinDef)
@@ -471,29 +468,51 @@ namespace CharacterStudio.Rendering
 
         }
 
-        private static PawnLayerConfig? BuildWeaponCarryVisualLayer(PawnSkinDef? skinDef)
+        private static IEnumerable<PawnLayerConfig> BuildWeaponCarryVisualLayers(Pawn pawn, PawnSkinDef? skinDef)
         {
-            var carryVisual = skinDef?.weaponRenderConfig?.carryVisual;
-            if (carryVisual == null || !carryVisual.enabled)
-                return null;
-
-            string texPath = carryVisual.GetAnyTexPath();
-            if (string.IsNullOrWhiteSpace(texPath))
-                return null;
-
-            return new PawnLayerConfig
+            // 1. Skin global carry visual
+            var skinCarry = skinDef?.animationConfig?.carryVisual;
+            if (skinCarry != null && skinCarry.enabled && !string.IsNullOrWhiteSpace(skinCarry.GetAnyTexPath()))
             {
-                layerName = "[WeaponCarry] State Visual",
-                texPath = texPath,
-                anchorTag = string.IsNullOrWhiteSpace(carryVisual.anchorTag) ? "Body" : carryVisual.anchorTag,
-                offset = Vector3.zero,
-                offsetEast = Vector3.zero,
-                offsetNorth = Vector3.zero,
-                scale = Vector2.one,
-                drawOrder = carryVisual.drawOrder,
-                workerClass = typeof(PawnRenderNodeWorker_WeaponCarryVisual),
-                weaponCarryVisual = carryVisual.Clone()
-            };
+                yield return new PawnLayerConfig
+                {
+                    layerName = "[WeaponCarry] Skin State Visual",
+                    texPath = skinCarry.GetAnyTexPath(),
+                    anchorTag = string.IsNullOrWhiteSpace(skinCarry.anchorTag) ? "Body" : skinCarry.anchorTag,
+                    offset = Vector3.zero,
+                    offsetEast = Vector3.zero,
+                    offsetNorth = Vector3.zero,
+                    scale = Vector2.one,
+                    drawOrder = skinCarry.drawOrder,
+                    workerClass = typeof(PawnRenderNodeWorker_WeaponCarryVisual),
+                    weaponCarryVisual = skinCarry.Clone()
+                };
+            }
+
+            // 2. Equipped weapons carry visual
+            if (pawn?.equipment != null)
+            {
+                foreach (var eq in pawn.equipment.AllEquipmentListForReading)
+                {
+                    var ext = eq.def.GetModExtension<DefModExtension_WeaponRender>();
+                    if (ext != null && ext.enabled && ext.carryVisual != null && ext.carryVisual.enabled && !string.IsNullOrWhiteSpace(ext.carryVisual.GetAnyTexPath()))
+                    {
+                        yield return new PawnLayerConfig
+                        {
+                            layerName = $"[WeaponCarry] {eq.def.defName}",
+                            texPath = ext.carryVisual.GetAnyTexPath(),
+                            anchorTag = string.IsNullOrWhiteSpace(ext.carryVisual.anchorTag) ? "Body" : ext.carryVisual.anchorTag,
+                            offset = Vector3.zero,
+                            offsetEast = Vector3.zero,
+                            offsetNorth = Vector3.zero,
+                            scale = Vector2.one,
+                            drawOrder = ext.carryVisual.drawOrder,
+                            workerClass = typeof(PawnRenderNodeWorker_WeaponCarryVisual),
+                            weaponCarryVisual = ext.carryVisual.Clone()
+                        };
+                    }
+                }
+            }
         }
 
         private static PawnRenderNode? FindParentNode(PawnRenderTree tree, string? anchorTag)
@@ -549,9 +568,20 @@ namespace CharacterStudio.Rendering
                 var newChildren = new PawnRenderNode[parent.children.Length + 1];
                 Array.Copy(parent.children, newChildren, parent.children.Length);
                 newChildren[parent.children.Length] = child;
-                parent.children = newChildren
-                    .OrderBy(node => node?.Props?.baseLayer ?? 0f)
-                    .ToArray();
+                // 内联稳定排序（Insertion Sort），避免 LINQ OrderBy 产生的双重数组分配和闭包开销
+                // 对于渲染树中典型的小数组（< 30 个子节点），Insertion Sort 性能优于快速排序
+                float childLayer = child.Props?.baseLayer ?? 0f;
+                int insertIdx = parent.children.Length;
+                while (insertIdx > 0)
+                {
+                    float prevLayer = newChildren[insertIdx - 1]?.Props?.baseLayer ?? 0f;
+                    if (prevLayer <= childLayer)
+                        break;
+                    newChildren[insertIdx] = newChildren[insertIdx - 1];
+                    newChildren[insertIdx - 1] = child;
+                    insertIdx--;
+                }
+                parent.children = newChildren;
             }
         }
 

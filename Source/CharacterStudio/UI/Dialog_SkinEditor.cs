@@ -51,6 +51,64 @@ namespace CharacterStudio.UI
             get => session.SelectedLayerIndices;
             set => session.SelectedLayerIndices = value ?? new HashSet<int>();
         }
+
+        // ─────────────────────────────────────────────
+        // 目录管理辅助方法
+        // ─────────────────────────────────────────────
+
+        private static string GetSkinRootDir()
+        {
+            string path = Path.Combine(GenFilePaths.ConfigFolderPath, "CharacterStudio", "Skins");
+            Directory.CreateDirectory(path);
+            return path;
+        }
+
+        private static string GetSkinTextureBrowseStartPath(string? currentPath)
+        {
+            return ResolveBrowseStartPath(currentPath, GetSkinRootDir());
+        }
+
+        private static string GetEquipmentRootDir()
+        {
+            string path = Path.Combine(GenFilePaths.ConfigFolderPath, "CharacterStudio", "Equipments");
+            Directory.CreateDirectory(path);
+            return path;
+        }
+
+        private static string GetEquipmentTextureBrowseStartPath(string? currentPath)
+        {
+            return ResolveBrowseStartPath(currentPath, GetEquipmentRootDir());
+        }
+
+        private static string ResolveBrowseStartPath(string? currentPath, string fallback)
+        {
+            if (string.IsNullOrWhiteSpace(currentPath))
+            {
+                return fallback;
+            }
+
+            string trimmed = currentPath!.Trim().Trim('"');
+            if (Directory.Exists(trimmed))
+            {
+                return trimmed;
+            }
+
+            if (File.Exists(trimmed) || Path.IsPathRooted(trimmed))
+            {
+                try
+                {
+                    string? dir = Path.GetDirectoryName(trimmed);
+                    if (!string.IsNullOrWhiteSpace(dir) && Directory.Exists(dir))
+                    {
+                        return dir;
+                    }
+                }
+                catch { }
+            }
+
+            return fallback;
+        }
+
         private readonly EditorHistory editorHistory = new EditorHistory(100);
         private int undoMutationDepth = 0;
         private Vector2 layerScrollPos;
@@ -79,7 +137,7 @@ namespace CharacterStudio.UI
         private string scannedEyeCacheError = string.Empty;
         private WeaponCarryVisualState previewWeaponCarryState = WeaponCarryVisualState.Undrafted;
  
-        private enum EditorTab { BaseAppearance, Layers, Face, Attributes, Weapon, Equipment }
+        private enum EditorTab { BaseAppearance, Layers, Face, Attributes, Animation, Items }
         private EditorTab currentTab = EditorTab.BaseAppearance;
         private string statusMessage = "";
         private float statusMessageTime = 0f;

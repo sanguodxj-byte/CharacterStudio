@@ -15,6 +15,8 @@
     <CS_Attr_MeleePower>Melee Power</CS_Attr_MeleePower>
     <CS_Attr_MoveSpeed>Move Speed Multiplier</CS_Attr_MoveSpeed>
     <CS_Attr_Personality>Personality</CS_Attr_Personality>
+    <CS_Attr_BasicSummary>Title: {0}\nAge: {1}</CS_Attr_BasicSummary>
+    <CS_Attr_ConfigureBasic>Configure Character Definition...</CS_Attr_ConfigureBasic>
     <CS_Attr_PsychicSensitivity>Psychic Sensitivity</CS_Attr_PsychicSensitivity>
     <CS_Attr_Section_Basic>Character Basics</CS_Attr_Section_Basic>
     <CS_Attr_Section_Stats>Core Attributes</CS_Attr_Section_Stats>

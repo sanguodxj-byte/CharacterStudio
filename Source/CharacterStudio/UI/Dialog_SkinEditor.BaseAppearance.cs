@@ -11,8 +11,8 @@ namespace CharacterStudio.UI
         // BaseAppearance 左侧面板
         // ─────────────────────────────────────────────
 
-        private const float BaseSlotRowHeight = 36f;
-        private const float BaseSlotEditButtonWidth = 30f;
+        private const float BaseSlotRowHeight = 40f;
+        private const float BaseSlotEditButtonWidth = 32f;
         private string baseAppearanceGlobalScaleBuffer = "1.000";
 
         private static readonly BaseAppearanceSlotType[] CachedBaseAppearanceSlotTypes =
@@ -66,25 +66,26 @@ namespace CharacterStudio.UI
             Text.Anchor = TextAnchor.UpperLeft;
             Text.Font = GameFont.Small;
 
-            Rect globalScaleRect = new Rect(rect.x + Margin, summaryRect.yMax + 6f, rect.width - Margin * 2, 42f);
+            // 全局缩放区域美化
+            Rect globalScaleRect = new Rect(rect.x + Margin, summaryRect.yMax + 6f, rect.width - Margin * 2, 48f);
             Widgets.DrawBoxSolid(globalScaleRect, UIHelper.PanelFillSoftColor);
             GUI.color = UIHelper.BorderColor;
             Widgets.DrawBox(globalScaleRect, 1);
             GUI.color = Color.white;
 
             float globalScale = Mathf.Clamp(workingSkin.globalTextureScale, 0.1f, 3f);
-            Rect labelRect = new Rect(globalScaleRect.x + 8f, globalScaleRect.y + 3f, globalScaleRect.width - 16f, 14f);
+            Rect labelRect = new Rect(globalScaleRect.x + 8f, globalScaleRect.y + 4f, globalScaleRect.width - 16f, 18f);
             Text.Font = GameFont.Tiny;
             Text.Anchor = TextAnchor.MiddleLeft;
             GUI.color = UIHelper.SubtleColor;
+            // 修复文本显示不全：增加高度并确保锚点正确
             Widgets.Label(labelRect, $"DrawSize / {"CS_Studio_Transform_GlobalScale".Translate()}");
             GUI.color = Color.white;
-            Text.Anchor = TextAnchor.UpperLeft;
 
-            Rect sliderRect = new Rect(globalScaleRect.x + 8f, globalScaleRect.y + 20f, globalScaleRect.width - 62f, 16f);
-            float editedGlobalScale = Widgets.HorizontalSlider(sliderRect, globalScale, 0.1f, 3f, true, null, null, null, 0.01f);
+            Rect sliderRect = new Rect(globalScaleRect.x + 8f, globalScaleRect.y + 24f, globalScaleRect.width - 66f, 16f);
+            float editedGlobalScale = Widgets.HorizontalSlider(sliderRect, globalScale, 0.1f, 3f, true, null, null, null, 0.001f);
 
-            Rect valueRect = new Rect(globalScaleRect.xMax - 48f, globalScaleRect.y + 16f, 40f, 20f);
+            Rect valueRect = new Rect(globalScaleRect.xMax - 52f, globalScaleRect.y + 22f, 44f, 20f);
             baseAppearanceGlobalScaleBuffer = editedGlobalScale.ToString("F3");
             Text.Anchor = TextAnchor.MiddleRight;
             Widgets.Label(valueRect, baseAppearanceGlobalScaleBuffer);
@@ -104,10 +105,7 @@ namespace CharacterStudio.UI
             float contentY = globalScaleRect.yMax + 8f;
             float contentHeight = rect.height - contentY + rect.y - Margin;
             Rect contentRect = new Rect(rect.x + Margin, contentY, rect.width - Margin * 2, contentHeight);
-            Widgets.DrawBoxSolid(contentRect, UIHelper.PanelFillSoftColor);
-            GUI.color = UIHelper.BorderColor;
-            Widgets.DrawBox(contentRect, 1);
-            GUI.color = Color.white;
+            UIHelper.DrawContentCard(contentRect);
 
             Rect scrollRect = contentRect.ContractedBy(2f);
             float viewHeight = Mathf.Max(scrollRect.height, workingSkin.baseAppearance.slots.Count * BaseSlotRowHeight + 8f);
@@ -134,62 +132,77 @@ namespace CharacterStudio.UI
                 Widgets.DrawHighlight(rowRect);
             }
 
-            if (selectedBaseSlotType == slot.slotType)
+            bool isSelected = selectedBaseSlotType == slot.slotType;
+            if (isSelected)
             {
-                GUI.color = UIHelper.BorderColor;
+                GUI.color = UIHelper.AccentColor;
                 Widgets.DrawBox(rowRect, 1);
                 GUI.color = Color.white;
             }
 
-            Rect statusRect = new Rect(4f, y + 8f, 18f, 18f);
+            // 图标居中对齐
+            float iconSize = 18f;
+            float iconY = y + (BaseSlotRowHeight - iconSize) / 2f;
+            
+            // 启用状态 (菱形)
+            Rect statusRect = new Rect(8f, iconY, iconSize, iconSize);
             bool enabled = slot.enabled;
-            GUI.color = enabled ? new Color(0.55f, 0.95f, 1f) : Color.gray;
+            GUI.color = enabled ? new Color(0.37f, 0.82f, 1f) : new Color(0.4f, 0.45f, 0.5f);
+            Text.Anchor = TextAnchor.MiddleCenter;
             Widgets.Label(statusRect, enabled ? "◆" : "◇");
+            Text.Anchor = TextAnchor.UpperLeft;
             GUI.color = Color.white;
 
-            Rect toggleRect = new Rect(24f, y + 8f, 18f, 18f);
-            GUI.color = enabled ? Color.white : Color.gray;
+            // 显示开关 (圆形)
+            Rect toggleRect = new Rect(30f, iconY, iconSize, iconSize);
+            GUI.color = enabled ? Color.white : new Color(0.4f, 0.45f, 0.5f);
+            Text.Anchor = TextAnchor.MiddleCenter;
             if (Widgets.ButtonText(toggleRect, enabled ? "◉" : "◯", false))
             {
                 bool newEnabled = !slot.enabled;
                 MutateWithUndo(() => slot.enabled = newEnabled, refreshPreview: true, refreshRenderTree: true);
             }
+            Text.Anchor = TextAnchor.UpperLeft;
             GUI.color = Color.white;
 
-            float textX = 46f;
-            float editX = width - BaseSlotEditButtonWidth - 4f;
+            float textX = 56f;
+            float editX = width - BaseSlotEditButtonWidth - 8f;
             float textWidth = Mathf.Max(64f, editX - textX - 6f);
-            Rect nameRect = new Rect(textX, y + 3f, textWidth, 16f);
-            Rect metaRect = new Rect(textX, y + 18f, textWidth, 14f);
+            
+            // 文字对齐美化
+            Rect nameRect = new Rect(textX, y + 4f, textWidth, 20f);
+            Rect metaRect = new Rect(textX, y + 22f, textWidth, 16f);
             string slotLabel = BaseAppearanceUtility.GetDisplayName(slot.slotType);
-            string summary = string.IsNullOrEmpty(slot.texPath) ? "CS_Studio_BaseSlot_Unset".Translate() : System.IO.Path.GetFileName(slot.texPath);
+            string summary = string.IsNullOrEmpty(slot.texPath) ? $"({"CS_Studio_BaseSlot_Unset".Translate()})" : System.IO.Path.GetFileName(slot.texPath);
 
             GameFont oldFont = Text.Font;
             Text.Font = GameFont.Small;
-            GUI.color = enabled ? Color.white : Color.gray;
+            GUI.color = enabled ? Color.white : UIHelper.SubtleColor;
             Widgets.Label(nameRect, slotLabel);
 
             Text.Font = GameFont.Tiny;
-            GUI.color = UIHelper.SubtleColor;
+            GUI.color = enabled ? UIHelper.SubtleColor : new Color(0.4f, 0.45f, 0.5f);
             Widgets.Label(metaRect, summary);
             GUI.color = Color.white;
             Text.Font = oldFont;
 
-            Rect editRect = new Rect(editX, y + 7f, BaseSlotEditButtonWidth, 22f);
-            Widgets.DrawBoxSolid(editRect, selectedBaseSlotType == slot.slotType ? UIHelper.ActiveTabColor : UIHelper.PanelFillSoftColor);
-            Widgets.DrawBoxSolid(new Rect(editRect.x, editRect.yMax - 2f, editRect.width, 2f), selectedBaseSlotType == slot.slotType ? UIHelper.AccentColor : new Color(1f, 1f, 1f, 0.05f));
-            GUI.color = Mouse.IsOver(editRect) ? UIHelper.HoverOutlineColor : UIHelper.BorderColor;
+            // 编辑按钮美化
+            Rect editRect = new Rect(editX, y + (BaseSlotRowHeight - 24f) / 2f, BaseSlotEditButtonWidth, 24f);
+            bool isHovered = Mouse.IsOver(editRect);
+            
+            Widgets.DrawBoxSolid(editRect, isSelected ? UIHelper.ActiveTabColor : UIHelper.PanelFillSoftColor);
+            Widgets.DrawBoxSolid(new Rect(editRect.x, editRect.yMax - 2f, editRect.width, 2f), isSelected ? UIHelper.AccentColor : new Color(1f, 1f, 1f, 0.05f));
+            GUI.color = isHovered ? UIHelper.HoverOutlineColor : UIHelper.BorderColor;
             Widgets.DrawBox(editRect, 1);
             GUI.color = Color.white;
 
-            GameFont buttonOldFont = Text.Font;
             Text.Font = GameFont.Tiny;
             Text.Anchor = TextAnchor.MiddleCenter;
-            GUI.color = selectedBaseSlotType == slot.slotType ? Color.white : UIHelper.HeaderColor;
+            GUI.color = isSelected ? Color.white : UIHelper.HeaderColor;
             Widgets.Label(editRect, "···");
             GUI.color = Color.white;
             Text.Anchor = TextAnchor.UpperLeft;
-            Text.Font = buttonOldFont;
+            Text.Font = oldFont;
 
             if (Widgets.ButtonInvisible(editRect))
             {

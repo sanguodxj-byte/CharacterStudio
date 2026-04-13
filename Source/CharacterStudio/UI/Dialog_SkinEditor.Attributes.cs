@@ -23,7 +23,6 @@ namespace CharacterStudio.UI
             Rect titleRect = UIHelper.DrawPanelShell(rect, "CS_Studio_Tab_Attributes".Translate(), Margin);
 
             workingSkin.attributes ??= new CharacterAttributeProfile();
-            CharacterAttributeProfile attributes = workingSkin.attributes;
             CharacterStatModifierProfile statProfile = CharacterAttributeBuffService.GetOrCreateProfile(workingSkin);
 
             float contentY = titleRect.yMax + 8f;
@@ -31,41 +30,57 @@ namespace CharacterStudio.UI
             Rect contentRect = new Rect(rect.x + Margin, contentY, rect.width - Margin * 2, contentHeight);
             UIHelper.DrawContentCard(contentRect);
 
-            Rect viewRect = new Rect(0f, 0f, contentRect.width - 20f, 780f);
+            Rect viewRect = new Rect(0f, 0f, contentRect.width - 20f, 580f);
             Widgets.BeginScrollView(contentRect.ContractedBy(2f), ref attributesScrollPos, viewRect);
 
             float y = 0f;
             float width = viewRect.width;
 
-            // ── 基础属性（合并称号、背景故事、年龄） ──
-            Rect basicRect = UIHelper.DrawSectionCard(ref y, width, "CS_Attr_Section_Basic".Translate(), 280f);
-            float basicY = basicRect.y;
-            DrawTrackedPropertyField(ref basicY, basicRect.width, "CS_Attr_Title".Translate(), ref attributes.title);
-            DrawTrackedMultilineField(ref basicY, basicRect.width, "CS_Attr_BackstorySummary".Translate(), ref attributes.backstorySummary, 80f);
-            DrawTrackedNumericField(ref basicY, basicRect.width, "CS_Attr_BiologicalAge".Translate(), ref attributes.biologicalAge, 0f, 999f);
-            DrawTrackedNumericField(ref basicY, basicRect.width, "CS_Attr_ChronologicalAge".Translate(), ref attributes.chronologicalAge, 0f, 9999f);
-
-            // ── 属性增益 Buff ──
-            Rect buffRect = UIHelper.DrawSectionCard(ref y, width, "CS_AttrBuff_Section".Translate(), 96f, accent: true);
-            float buffY = buffRect.y;
-            DrawAttributeBuffEntry(ref buffY, buffRect.width, statProfile);
-
-            // ── 导出与角色定义 ──
-            y += 4f;
-            float halfBtnWidth = (width - 10f) / 2f;
-            Rect exportBtnRect = new Rect(0f, y, halfBtnWidth, 28f);
+            // ── 导出为 XML ──
+            Rect exportBtnRect = new Rect(0f, y, width, 32f);
             if (UIHelper.DrawToolbarButton(exportBtnRect, "CS_Studio_Attributes_ExportScattered".Translate(), accent: true))
             {
                 ExportScatteredFromCurrentSkin();
             }
-            Rect charDefBtnRect = new Rect(halfBtnWidth + 10f, y, halfBtnWidth, 28f);
-            if (UIHelper.DrawToolbarButton(charDefBtnRect, "CS_Studio_CharacterDefinition_OpenButton".Translate()))
+            y += 42f;
+
+            // ── 基础属性弹窗入口 ──
+            Rect basicCardRect = UIHelper.DrawSectionCard(ref y, width, "CS_Attr_Section_Basic".Translate(), 82f);
+            Text.Font = GameFont.Tiny;
+            GUI.color = UIHelper.SubtleColor;
+            string basicTitle = !string.IsNullOrWhiteSpace(workingSkin.attributes.title) ? workingSkin.attributes.title : "CS_Studio_None".Translate().ToString();
+            string basicSummary = "CS_Attr_BasicSummary".Translate(basicTitle, workingSkin.attributes.biologicalAge.ToString("F0"));
+            Widgets.Label(basicCardRect, basicSummary);
+            GUI.color = Color.white;
+            Text.Font = GameFont.Small;
+            if (UIHelper.DrawToolbarButton(new Rect(basicCardRect.x, basicCardRect.yMax - 26f, basicCardRect.width, 26f), "CS_Attr_ConfigureBasic".Translate()))
             {
                 OpenCharacterDefinitionDialog();
             }
-            y += 36f;
 
-            // ── 辅助生成 ──
+            // ── 属性增益弹窗入口 ──
+            int totalBuffs = statProfile.entries != null ? statProfile.entries.Count : 0;
+            int enabledBuffs = statProfile.entries != null ? statProfile.entries.Count(e => e.enabled) : 0;
+            Rect buffCardRect = UIHelper.DrawSectionCard(ref y, width, "CS_AttrBuff_Section".Translate(), 82f, accent: true);
+            Text.Font = GameFont.Tiny;
+            GUI.color = UIHelper.SubtleColor;
+            string buffSummary = "CS_AttrBuff_Summary".Translate(totalBuffs, enabledBuffs);
+            Widgets.Label(buffCardRect, buffSummary);
+            GUI.color = Color.white;
+            Text.Font = GameFont.Small;
+            if (UIHelper.DrawToolbarButton(new Rect(buffCardRect.x, buffCardRect.yMax - 26f, buffCardRect.width, 26f), "CS_AttrBuff_ManageBuff".Translate(), accent: true))
+            {
+                Find.WindowStack.Add(new Dialog_AttributeBuffEditor(
+                    statProfile,
+                    targetPawn,
+                    () =>
+                    {
+                        isDirty = true;
+                        CharacterAttributeBuffService.SyncAttributeBuff(targetPawn);
+                    }));
+            }
+
+            // ── 辅助生成 (LLM) ──
             Rect llmRect = UIHelper.DrawSectionCard(ref y, width, "CS_Studio_Attributes_Assistant".Translate(), 210f);
             float llmY = llmRect.y;
             UIHelper.DrawInfoBanner(ref llmY, llmRect.width, "CS_Studio_Attributes_AssistantHint".Translate());
@@ -114,83 +129,6 @@ namespace CharacterStudio.UI
             Widgets.EndScrollView();
         }
 
-        private void DrawTrackedPropertyField(ref float y, float width, string label, ref string value)
-        {
-            string before = value ?? string.Empty;
-            string current = value ?? string.Empty;
-            UIHelper.DrawPropertyField(ref y, width, label, ref current);
-            value = current;
-            if (!string.Equals(before, current, StringComparison.Ordinal))
-            {
-                isDirty = true;
-            }
-        }
-
-        private void DrawTrackedMultilineField(ref float y, float width, string label, ref string value, float height)
-        {
-            Widgets.Label(new Rect(0f, y, width, 24f), label);
-            Rect textRect = new Rect(0f, y + 24f, width, height);
-            Widgets.DrawBoxSolid(textRect, UIHelper.PanelFillColor);
-            GUI.color = UIHelper.BorderColor;
-            Widgets.DrawBox(textRect, 1);
-            GUI.color = Color.white;
-
-            string before = value ?? string.Empty;
-            string after = Widgets.TextArea(textRect.ContractedBy(4f), before);
-            if (!string.Equals(before, after, StringComparison.Ordinal))
-            {
-                value = after;
-                isDirty = true;
-            }
-
-            y += height + 32f;
-        }
-
-        private void DrawTrackedNumericField(ref float y, float width, string label, ref float value, float min, float max)
-        {
-            float before = value;
-            UIHelper.DrawNumericField(ref y, width, label, ref value, min, max);
-            if (Math.Abs(before - value) > 0.0001f)
-            {
-                isDirty = true;
-            }
-        }
-
-        private void DrawAttributeBuffEntry(ref float y, float width, CharacterStatModifierProfile profile)
-        {
-            profile.entries ??= new List<CharacterStatModifierEntry>();
-
-            int totalCount = profile.entries.Count;
-            int enabledCount = 0;
-            for (int i = 0; i < profile.entries.Count; i++)
-            {
-                if (profile.entries[i]?.enabled == true)
-                {
-                    enabledCount++;
-                }
-            }
-
-            GUI.color = UIHelper.SubtleColor;
-            Widgets.Label(new Rect(0f, y, width, 24f), totalCount == 0
-                ? "CS_AttrBuff_Empty".Translate()
-                : "CS_AttrBuff_Summary".Translate(totalCount, enabledCount));
-            GUI.color = Color.white;
-            y += 28f;
-
-            Rect buttonRect = new Rect(0f, y, width, 28f);
-            if (UIHelper.DrawToolbarButton(buttonRect, totalCount == 0 ? "CS_AttrBuff_OpenEditor".Translate() : "CS_AttrBuff_ManageBuff".Translate(), accent: true))
-            {
-                Find.WindowStack.Add(new Dialog_AttributeBuffEditor(
-                    profile,
-                    targetPawn,
-                    () =>
-                    {
-                        isDirty = true;
-                        CharacterAttributeBuffService.SyncAttributeBuff(targetPawn);
-                    }));
-            }
-            y += 32f;
-        }
 
         private void GenerateCharacterFromPrompt()
         {

@@ -431,7 +431,7 @@ namespace CharacterStudio.UI
 
         private void OnSelectTexture(PawnLayerConfig layer)
         {
-            Find.WindowStack.Add(new Dialog_FileBrowser(layer.texPath, path =>
+            Find.WindowStack.Add(new Dialog_FileBrowser(GetSkinTextureBrowseStartPath(layer.texPath), path =>
             {
                 MutateWithUndo(() =>
                 {
@@ -439,7 +439,7 @@ namespace CharacterStudio.UI
                     TrySyncEditableFaceLayerTextureToFaceConfig(layer);
                     RebuildEditorBuffersFromWorkingState();
                 }, refreshPreview: true, refreshRenderTree: true);
-            }));
+            }, defaultRoot: GetSkinRootDir()));
         }
 
         private void ShowHiddenTagsMenu()

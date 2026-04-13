@@ -76,13 +76,13 @@ namespace CharacterStudio.UI
                 {
                     DrawFacePanel(leftContentRect);
                 }
-                else if (currentTab == EditorTab.Weapon)
+                else if (currentTab == EditorTab.Animation)
                 {
-                    DrawWeaponPanel(leftContentRect);
+                    DrawAnimationPanel(leftContentRect);
                 }
-                else if (currentTab == EditorTab.Equipment)
+                else if (currentTab == EditorTab.Items)
                 {
-                    DrawEquipmentPanel(leftContentRect);
+                    DrawEquipmentPanel(leftContentRect); // Temporarily keeping the name of the method but calling it Items
                 }
                 else
                 {
@@ -172,15 +172,15 @@ namespace CharacterStudio.UI
             // 行 2
             if (UIHelper.DrawTabButton(
                 new Rect(rect.x, row2, halfW, halfH),
-                "CS_Studio_Tab_Weapon".Translate(),
-                currentTab == EditorTab.Weapon))
-                currentTab = EditorTab.Weapon;
+                "CS_Studio_Tab_Animation".Translate(),
+                currentTab == EditorTab.Animation))
+                currentTab = EditorTab.Animation;
 
             if (UIHelper.DrawTabButton(
                 new Rect(rect.x + halfW, row2, halfW, halfH),
-                "CS_Studio_Tab_Equipment".Translate(),
-                currentTab == EditorTab.Equipment))
-                currentTab = EditorTab.Equipment;
+                "CS_Studio_Tab_Items".Translate(),
+                currentTab == EditorTab.Items))
+                currentTab = EditorTab.Items;
         }
 
         // ─────────────────────────────────────────────

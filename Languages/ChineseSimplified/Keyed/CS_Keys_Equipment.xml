@@ -136,5 +136,8 @@
     <CS_Studio_Equip_VisualLayerName>视觉图层名称</CS_Studio_Equip_VisualLayerName>
     <CS_Studio_Equip_WorkingSkinNull>workingSkin 为空</CS_Studio_Equip_WorkingSkinNull>
     <CS_Studio_Equip_WorldTexPath>世界贴图路径</CS_Studio_Equip_WorldTexPath>
+    <CS_Studio_Equip_ItemType>物品类型</CS_Studio_Equip_ItemType>
+    <CS_Studio_Equip_WeaponTags>武器标签 (Weapon Tags)</CS_Studio_Equip_WeaponTags>
+    <CS_Studio_Equip_WeaponClasses>武器类别 (Weapon Classes)</CS_Studio_Equip_WeaponClasses>
     <CS_Studio_Equip_WornTexPath>穿戴贴图路径</CS_Studio_Equip_WornTexPath>
 </LanguageData>

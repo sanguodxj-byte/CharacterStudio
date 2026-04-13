@@ -170,8 +170,15 @@ namespace CharacterStudio.Core
         /// <summary>属性增强 Buff 配置：通过统一 Hediff 对宿主种族的最终数值做安全叠加</summary>
         public CharacterStatModifierProfile statModifiers = new CharacterStatModifierProfile();
 
-        /// <summary>武器渲染覆写配置（偏移 / 缩放）</summary>
-        public WeaponRenderConfig weaponRenderConfig = new WeaponRenderConfig();
+        /// <summary>动画与姿态渲染配置（呼吸、偏移、武器姿态等）</summary>
+        public PawnAnimationConfig animationConfig = new PawnAnimationConfig();
+
+        // ─────────────────────────────────────────────
+        // 预览基准补偿
+        // ─────────────────────────────────────────────
+
+        /// <summary>皮肤创建/编辑时预览人偶的 Head 节点 Z 偏移，用于自动补偿不同体型的面部 Z 差异。0 表示未记录（不做补偿）。</summary>
+        public float previewHeadOffsetZ = 0f;
 
         /// <summary>装备定义列表（编辑器内创建/导入/导出的装备条目）</summary>
         public List<CharacterEquipmentDef> equipments = new List<CharacterEquipmentDef>();
@@ -242,11 +249,13 @@ namespace CharacterStudio.Core
                 baseAppearance = this.baseAppearance?.Clone() ?? new BaseAppearanceConfig(),
                 attributes = this.attributes?.Clone() ?? new CharacterAttributeProfile(),
                 statModifiers = this.statModifiers?.Clone() ?? new CharacterStatModifierProfile(),
-                weaponRenderConfig = this.weaponRenderConfig?.Clone() ?? new WeaponRenderConfig()
+                animationConfig = this.animationConfig?.Clone() ?? new PawnAnimationConfig()
             };
 
             clone.xenotypeDefName = this.xenotypeDefName;
             clone.raceDisplayName = this.raceDisplayName;
+            clone.previewHeadOffsetZ = this.previewHeadOffsetZ;
+            clone.globalTextureScale = this.globalTextureScale;
 
             // 复制图层
             foreach (var layer in this.layers)

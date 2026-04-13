@@ -19,7 +19,13 @@ namespace CharacterStudio.AI
     /// <summary>
     /// 自定义 AI 组件
     /// 用于应用 AI 行为定义
+    /// 
+    /// [Obsolete] 此组件尚未完成实现。
+    /// ApplyPainImmunity、ApplyMoveSpeedModifier、ApplyBossImmunities 等方法为空壳。
+    /// AI 行为应通过 ThinkNode / JobGiver 系统实现而非 CompTick 轮询。
+    /// 待完成实现后移除此标记。
     /// </summary>
+    [System.Obsolete("CompCustomAI 尚未完成实现，部分方法为空壳。参见类注释。")]
     public class CompCustomAI : ThingComp
     {
         // 缓存的行为状态
@@ -222,6 +228,7 @@ namespace CharacterStudio.AI
         }
     }
 
+    [System.Obsolete("CompCustomAI 尚未完成实现，部分方法为空壳。参见 CompCustomAI 注释。")]
     public class CompProperties_CustomAI : CompProperties
     {
         public AIBehaviorDef? behavior;

@@ -1032,52 +1032,70 @@ namespace CharacterStudio.UI
                 return;
             }
 
-            var list = __result.ToList();
-            var visibleSlots = AbilityLoadoutRuntimeUtility.EnumerateVisibleAbilitySlots(__instance)
-                .Where(entry => entry != null && !string.IsNullOrWhiteSpace(entry.abilityDefName))
-                .ToList();
-            bool showShieldHud = ShouldShowShieldHud(__instance);
+            __result = ProcessGizmos(__instance, __result);
+        }
 
-            if (visibleSlots.Count == 0)
+        private static IEnumerable<Gizmo> ProcessGizmos(Pawn pawn, IEnumerable<Gizmo> originalGizmos)
+        {
+            var visibleSlots = AbilityLoadoutRuntimeUtility.EnumerateVisibleAbilitySlots(pawn);
+            bool hasCustomAbilities = false;
+            foreach (var slot in visibleSlots)
             {
-                if (showShieldHud)
+                if (slot != null && !string.IsNullOrWhiteSpace(slot.abilityDefName))
                 {
-                    list.Add(new Gizmo_CSShieldStatus(__instance));
-                    __result = list;
+                    hasCustomAbilities = true;
+                    break;
                 }
-                return;
             }
 
-            var vanillaCommandsByAbility = new Dictionary<string, Gizmo>(System.StringComparer.OrdinalIgnoreCase);
-            foreach (var gizmo in list)
+            bool showShieldHud = ShouldShowShieldHud(pawn);
+
+            if (!hasCustomAbilities)
+            {
+                foreach (var g in originalGizmos) yield return g;
+                if (showShieldHud) yield return new Gizmo_CSShieldStatus(pawn);
+                yield break;
+            }
+
+            if (!cachedVanillaCommandsByPawn.TryGetValue(pawn.thingIDNumber, out var vanillaCommandsByAbility))
+            {
+                vanillaCommandsByAbility = new Dictionary<string, Gizmo>(System.StringComparer.OrdinalIgnoreCase);
+                cachedVanillaCommandsByPawn[pawn.thingIDNumber] = vanillaCommandsByAbility;
+            }
+            vanillaCommandsByAbility.Clear();
+
+            // First pass, yield vanilla non-ability gizmos, and cache ability ones
+            foreach (var gizmo in originalGizmos)
             {
                 if (TryGetVanillaCSAbilityDefName(gizmo, out string defName))
                 {
                     vanillaCommandsByAbility[defName] = gizmo;
+                    // Do not yield the vanilla ability command, we replace it!
+                }
+                else
+                {
+                    yield return gizmo;
                 }
             }
 
-            cachedVanillaCommandsByPawn[__instance.thingIDNumber] =
-                new Dictionary<string, Gizmo>(vanillaCommandsByAbility, System.StringComparer.OrdinalIgnoreCase);
-
-            list.RemoveAll(gizmo => TryGetVanillaCSAbilityDefName(gizmo, out _));
-
             if (showShieldHud)
             {
-                list.Add(new Gizmo_CSShieldStatus(__instance));
+                yield return new Gizmo_CSShieldStatus(pawn);
             }
 
-            List<Gizmo_CSAbility> abilityGizmos = new List<Gizmo_CSAbility>();
+            // Yield our custom ability gizmos
             foreach (var entry in visibleSlots)
             {
+                if (entry == null || string.IsNullOrWhiteSpace(entry.abilityDefName)) continue;
+
                 string defName = entry.abilityDefName!;
                 var runtimeDef = AbilityGrantUtility.GetRuntimeAbilityDef(defName);
-                if (runtimeDef == null || __instance.abilities?.GetAbility(runtimeDef) == null)
+                if (runtimeDef == null || pawn.abilities?.GetAbility(runtimeDef) == null)
                 {
                     continue;
                 }
 
-                var resolvedAbility = AbilityLoadoutRuntimeUtility.ResolveAbilityByDefName(__instance, defName);
+                var resolvedAbility = AbilityLoadoutRuntimeUtility.ResolveAbilityByDefName(pawn, defName);
                 var placeholder = resolvedAbility?.Clone()
                     ?? AbilityGrantUtility.GetRuntimeAbilitySourceDef(defName)
                     ?? new ModularAbilityDef
@@ -1090,12 +1108,8 @@ namespace CharacterStudio.UI
                     };
 
                 vanillaCommandsByAbility.TryGetValue(defName, out Gizmo? vanillaCommand);
-                abilityGizmos.Add(new Gizmo_CSAbility(__instance, placeholder, entry, vanillaCommand));
+                yield return new Gizmo_CSAbility(pawn, placeholder, entry, vanillaCommand);
             }
-
-            list.AddRange(abilityGizmos);
-
-            __result = list;
         }
 
         private static bool ShouldShowShieldHud(Pawn pawn)
@@ -1123,6 +1137,9 @@ namespace CharacterStudio.UI
             return Gizmo_CSShieldStatus.ShouldKeepVisibleForFeedback(pawn, currentShield, now);
         }
 
+        private static System.Reflection.FieldInfo? cachedAbilityField = null;
+        private static bool cachedAbilityFieldResolved = false;
+
         private static bool TryGetVanillaCSAbilityDefName(Gizmo gizmo, out string defName)
         {
             defName = string.Empty;
@@ -1131,13 +1148,18 @@ namespace CharacterStudio.UI
                 return false;
             }
 
-            if (!string.Equals(gizmo.GetType().Name, "Command_Ability", System.StringComparison.Ordinal))
+            if (gizmo is not Command_Ability cmdAbility)
             {
                 return false;
             }
 
-            var abilityField = AccessTools.Field(gizmo.GetType(), "ability");
-            if (abilityField?.GetValue(gizmo) is not Ability ability || ability.def == null)
+            if (!cachedAbilityFieldResolved)
+            {
+                cachedAbilityField = AccessTools.Field(typeof(Command_Ability), "ability");
+                cachedAbilityFieldResolved = true;
+            }
+
+            if (cachedAbilityField?.GetValue(cmdAbility) is not Ability ability || ability.def == null)
             {
                 return false;
             }

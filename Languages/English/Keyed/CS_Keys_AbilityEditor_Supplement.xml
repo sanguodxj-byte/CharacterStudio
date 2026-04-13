@@ -269,7 +269,10 @@
     <CS_Studio_Runtime_FullHealthThresholdPercent>Full Health Threshold (%)</CS_Studio_Runtime_FullHealthThresholdPercent>
     <CS_Studio_Runtime_HitCooldownRefundPercent>Cooldown Refund (%)</CS_Studio_Runtime_HitCooldownRefundPercent>
     <CS_Studio_Runtime_HitHealAmount>Flat Heal Amount</CS_Studio_Runtime_HitHealAmount>
+    <CS_Studio_Runtime_Duration>Duration (Ticks)</CS_Studio_Runtime_Duration>
     <CS_Studio_Runtime_HitHealRatio>Heal Ratio From Damage</CS_Studio_Runtime_HitHealRatio>
+    <CS_Studio_Runtime_ComboTargetAbility>Combo Target Ability</CS_Studio_Runtime_ComboTargetAbility>
+    <CS_Studio_Runtime_ComboTargetSlot>Combo Trigger Slot</CS_Studio_Runtime_ComboTargetSlot>
     <CS_Studio_Runtime_HotkeyOverrideAbility>Override Ability</CS_Studio_Runtime_HotkeyOverrideAbility>
     <CS_Studio_Runtime_HotkeyOverrideAbilityDefName>Override Ability DefName</CS_Studio_Runtime_HotkeyOverrideAbilityDefName>
     <CS_Studio_Runtime_HotkeyOverrideDuration>Override Duration</CS_Studio_Runtime_HotkeyOverrideDuration>
@@ -442,6 +445,11 @@
     <CS_Ability_Validate_RuntimeConflict_FlightStateWithVanillaFlyer>{0} conflicts with {1}.</CS_Ability_Validate_RuntimeConflict_FlightStateWithVanillaFlyer>
     <CS_Ability_Validate_RuntimeConflict_LandingBurstNeedsVanillaFlyer>{0} requires VanillaPawnFlyer.</CS_Ability_Validate_RuntimeConflict_LandingBurstNeedsVanillaFlyer>
     <CS_Ability_Validate_RuntimeConflict_MovementDuplicate>Multiple movement runtime components detected: {0}</CS_Ability_Validate_RuntimeConflict_MovementDuplicate>
+    <CS_Studio_File_ExportSelected>Export XML</CS_Studio_File_ExportSelected>
+    <CS_Ability_Validate_RuntimeConflict_ProjectileSplitNeedsProjectile>{0} requires Projectile carrier type.</CS_Ability_Validate_RuntimeConflict_ProjectileSplitNeedsProjectile>
+    <CS_Ability_Validate_RuntimeConflict_ChainBounceNeedsProjectile>{0} requires Projectile carrier type.</CS_Ability_Validate_RuntimeConflict_ChainBounceNeedsProjectile>
+    <CS_Ability_Validate_RuntimeConflict_ShieldOverlap>{0} and {1} may overlap in functionality.</CS_Ability_Validate_RuntimeConflict_ShieldOverlap>
+    <CS_Ability_Validate_RuntimeConflict_HitEffectNeedsTarget>{0} has no effect with Self carrier type.</CS_Ability_Validate_RuntimeConflict_HitEffectNeedsTarget>
     <CS_Ability_Validate_SummonCount>Summon count must be greater than 0.</CS_Ability_Validate_SummonCount>
     <CS_Ability_Validate_SummonKindRequired>Summon effect requires a PawnKindDef.</CS_Ability_Validate_SummonKindRequired>
     <CS_Ability_Validate_TerraformSpawnCount>Terraform spawn count must be greater than 0.</CS_Ability_Validate_TerraformSpawnCount>
@@ -459,6 +467,15 @@
     <CS_Studio_Ability_Hotkey_Q>Q</CS_Studio_Ability_Hotkey_Q>
     <CS_Studio_Ability_Hotkey_R>R</CS_Studio_Ability_Hotkey_R>
     <CS_Studio_Ability_Hotkey_W>W</CS_Studio_Ability_Hotkey_W>
+    <CS_Studio_Ability_Hotkey_T>T</CS_Studio_Ability_Hotkey_T>
+    <CS_Studio_Ability_Hotkey_A>A</CS_Studio_Ability_Hotkey_A>
+    <CS_Studio_Ability_Hotkey_S>S</CS_Studio_Ability_Hotkey_S>
+    <CS_Studio_Ability_Hotkey_D>D</CS_Studio_Ability_Hotkey_D>
+    <CS_Studio_Ability_Hotkey_F>F</CS_Studio_Ability_Hotkey_F>
+    <CS_Studio_Ability_Hotkey_Z>Z</CS_Studio_Ability_Hotkey_Z>
+    <CS_Studio_Ability_Hotkey_X>X</CS_Studio_Ability_Hotkey_X>
+    <CS_Studio_Ability_Hotkey_C>C</CS_Studio_Ability_Hotkey_C>
+    <CS_Studio_Ability_Hotkey_V>V</CS_Studio_Ability_Hotkey_V>
     <CS_Studio_Ability_Hotkey_WCombo>W Combo</CS_Studio_Ability_Hotkey_WCombo>
     <CS_Studio_Ability_PreviewRuntimeFlightOnlyStateAlways>Always</CS_Studio_Ability_PreviewRuntimeFlightOnlyStateAlways>
     <CS_Studio_Ability_PreviewRuntimeFlightOnlyStateWindow>Flight Window Only</CS_Studio_Ability_PreviewRuntimeFlightOnlyStateWindow>

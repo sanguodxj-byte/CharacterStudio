@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CharacterStudio.Abilities;
 using UnityEngine;
 using Verse;
@@ -379,7 +380,8 @@ namespace CharacterStudio.UI
             Text.Font = GameFont.Tiny;
             Text.Anchor = TextAnchor.MiddleCenter;
             GUI.color = UIHelper.HeaderColor;
-            Widgets.Label(buttonRect, label);
+            string truncated = GenText.Truncate(label, buttonRect.width - 6f);
+            Widgets.Label(buttonRect.ContractedBy(3f, 0f), truncated);
             GUI.color = Color.white;
             Text.Anchor = TextAnchor.UpperLeft;
             Text.Font = oldFont;
@@ -426,6 +428,7 @@ namespace CharacterStudio.UI
                 AbilityRuntimeComponentType.FlightOnlyFollowup => 216f,
                 AbilityRuntimeComponentType.FlightLandingBurst => 242f,
                 AbilityRuntimeComponentType.TimeStop => 86f,
+                AbilityRuntimeComponentType.WeatherChange => 112f,
                 _ => 64f
             };
         }
@@ -458,8 +461,12 @@ namespace CharacterStudio.UI
                 GUI.color = Color.white;
                 Rect inner = block.ContractedBy(5f);
 
-                Widgets.Label(new Rect(inner.x, inner.y, inner.width - 100f, 24f),
-                    $"#{i + 1} {GetRuntimeComponentTypeLabel(comp.type)}");
+                GameFont prevRCFont = Text.Font;
+                Text.Font = GameFont.Tiny;
+                float titleW = inner.width - 100f;
+                Widgets.Label(new Rect(inner.x, inner.y, titleW, 24f),
+                    GenText.Truncate($"#{i + 1} {GetRuntimeComponentTypeLabel(comp.type)}", titleW));
+                Text.Font = prevRCFont;
                 bool enabled = comp.enabled;
                 Widgets.Checkbox(new Vector2(inner.x + inner.width - 96f, inner.y + 2f), ref enabled, 24f, false);
                 if (comp.enabled != enabled)
@@ -480,12 +487,20 @@ namespace CharacterStudio.UI
                 }
 
                 float rowY = inner.y + 28f;
-                float labelW = 160f;
+                float labelW = Mathf.Min(160f, inner.width * 0.48f);
                 float valueW = inner.width - labelW - 6f;
+
+                void DrawRCRowLabel(float rx, float ry, string text, float rw)
+                {
+                    GameFont rlf = Text.Font;
+                    Text.Font = GameFont.Tiny;
+                    Widgets.Label(new Rect(rx, ry + 2f, rw, 20f), GenText.Truncate(text, rw));
+                    Text.Font = rlf;
+                }
 
                 if (comp.type == AbilityRuntimeComponentType.SlotOverrideWindow)
                 {
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_HotkeyOverrideSlot".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_ComboTargetSlot".Translate(), labelW);
                     if (DrawSelectionFieldButton(new Rect(inner.x + labelW, rowY, valueW, 24f),
                         ($"CS_Studio_Ability_Hotkey_{comp.comboTargetHotkeySlot}").Translate(), () =>
                         {
@@ -505,7 +520,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_HotkeyOverrideAbility".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_ComboTargetAbility".Translate(), labelW);
                     string comboAbilityLabel = string.IsNullOrWhiteSpace(comp.comboTargetAbilityDefName)
                         ? "CS_Studio_None".Translate()
                         : comp.comboTargetAbilityDefName;
@@ -514,7 +529,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_QWindowTicks".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_QWindowTicks".Translate(), labelW);
                     string s = comp.comboWindowTicks.ToString();
                     int comboWindowBefore = comp.comboWindowTicks;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.comboWindowTicks, ref s, 1, 9999);
@@ -525,7 +540,7 @@ namespace CharacterStudio.UI
                 }
                 else if (comp.type == AbilityRuntimeComponentType.HotkeyOverride)
                 {
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_HotkeyOverrideSlot".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_HotkeyOverrideSlot".Translate(), labelW);
                     if (DrawSelectionFieldButton(new Rect(inner.x + labelW, rowY, valueW, 24f),
                         ($"CS_Studio_Ability_Hotkey_{comp.overrideHotkeySlot}").Translate(), () =>
                         {
@@ -545,7 +560,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_HotkeyOverrideAbility".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_HotkeyOverrideAbility".Translate(), labelW);
                     string overrideAbilityLabel = string.IsNullOrWhiteSpace(comp.overrideAbilityDefName)
                         ? "CS_Studio_None".Translate()
                         : comp.overrideAbilityDefName;
@@ -554,7 +569,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_HotkeyOverrideAbilityDefName".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_HotkeyOverrideAbilityDefName".Translate(), labelW);
                     string overrideAbilityDefName = comp.overrideAbilityDefName ?? string.Empty;
                     string overrideAbilityBefore = overrideAbilityDefName;
                     overrideAbilityDefName = Widgets.TextField(new Rect(inner.x + labelW, rowY, valueW, 24f), overrideAbilityDefName);
@@ -565,7 +580,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_HotkeyOverrideDuration".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_HotkeyOverrideDuration".Translate(), labelW);
                     string duration = comp.overrideDurationTicks.ToString();
                     int durationBefore = comp.overrideDurationTicks;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.overrideDurationTicks, ref duration, 1, 99999);
@@ -576,7 +591,7 @@ namespace CharacterStudio.UI
                 }
                 else if (comp.type == AbilityRuntimeComponentType.FollowupCooldownGate)
                 {
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_FollowupCooldownSlot".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_FollowupCooldownSlot".Translate(), labelW);
                     if (DrawSelectionFieldButton(new Rect(inner.x + labelW, rowY, valueW, 24f),
                         ($"CS_Studio_Ability_Hotkey_{comp.followupCooldownHotkeySlot}").Translate(), () =>
                         {
@@ -596,7 +611,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_FollowupCooldownTicks".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_FollowupCooldownTicks".Translate(), labelW);
                     string cooldownGate = comp.followupCooldownTicks.ToString();
                     int cooldownGateBefore = comp.followupCooldownTicks;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.followupCooldownTicks, ref cooldownGate, 1, 99999);
@@ -607,7 +622,7 @@ namespace CharacterStudio.UI
                 }
                 else if (comp.type == AbilityRuntimeComponentType.SmartJump || comp.type == AbilityRuntimeComponentType.EShortJump)
                 {
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_ECooldownTicks".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_ECooldownTicks".Translate(), labelW);
                     string cd = comp.cooldownTicks.ToString();
                     int cooldownBefore = comp.cooldownTicks;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.cooldownTicks, ref cd, 0, 99999);
@@ -617,7 +632,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_EJumpDistance".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_EJumpDistance".Translate(), labelW);
                     string dist = comp.jumpDistance.ToString();
                     int jumpDistanceBefore = comp.jumpDistance;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.jumpDistance, ref dist, 1, 100);
@@ -627,7 +642,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_EFindRadius".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_EFindRadius".Translate(), labelW);
                     string find = comp.findCellRadius.ToString();
                     int findRadiusBefore = comp.findCellRadius;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.findCellRadius, ref find, 0, 30);
@@ -637,7 +652,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_ETriggerEffects".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_ETriggerEffects".Translate(), labelW);
                     bool trigger = comp.triggerAbilityEffectsAfterJump;
                     Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref trigger, 24f, false);
                     if (comp.triggerAbilityEffectsAfterJump != trigger)
@@ -649,7 +664,7 @@ namespace CharacterStudio.UI
 
                     if (comp.type == AbilityRuntimeComponentType.SmartJump || comp.type == AbilityRuntimeComponentType.EShortJump)
                     {
-                        Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_SmartJumpUseMouse".Translate());
+                        DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_SmartJumpUseMouse".Translate(), labelW);
                         bool useMouse = comp.useMouseTargetCell;
                         Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref useMouse, 24f, false);
                         if (comp.useMouseTargetCell != useMouse)
@@ -659,7 +674,7 @@ namespace CharacterStudio.UI
                         }
                         rowY += 26f;
 
-                        Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_SmartJumpOffset".Translate());
+                        DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_SmartJumpOffset".Translate(), labelW);
                         string offset = comp.smartCastOffsetCells.ToString();
                         int offsetBefore = comp.smartCastOffsetCells;
                         UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.smartCastOffsetCells, ref offset, 1, 100);
@@ -669,7 +684,7 @@ namespace CharacterStudio.UI
                         }
                         rowY += 26f;
 
-                        Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_SmartJumpClamp".Translate());
+                        DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_SmartJumpClamp".Translate(), labelW);
                         bool clamp = comp.smartCastClampToMaxDistance;
                         Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref clamp, 24f, false);
                         if (comp.smartCastClampToMaxDistance != clamp)
@@ -679,7 +694,7 @@ namespace CharacterStudio.UI
                         }
                         rowY += 26f;
 
-                        Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_SmartJumpFallback".Translate());
+                        DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_SmartJumpFallback".Translate(), labelW);
                         bool fallback = comp.smartCastAllowFallbackForward;
                         Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref fallback, 24f, false);
                         if (comp.smartCastAllowFallbackForward != fallback)
@@ -691,7 +706,7 @@ namespace CharacterStudio.UI
                 }
                 else if (comp.type == AbilityRuntimeComponentType.RStackDetonation)
                 {
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_RRequiredStacks".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_RRequiredStacks".Translate(), labelW);
                     string stacks = comp.requiredStacks.ToString();
                     int requiredStacksBefore = comp.requiredStacks;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.requiredStacks, ref stacks, 1, 999);
@@ -701,7 +716,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_RDelayTicks".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_RDelayTicks".Translate(), labelW);
                     string delay = comp.delayTicks.ToString();
                     int delayBefore = comp.delayTicks;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.delayTicks, ref delay, 0, 99999);
@@ -711,7 +726,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_RWave1".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_RWave1".Translate(), labelW);
                     string w1r = comp.wave1Radius.ToString();
                     string w1d = comp.wave1Damage.ToString();
                     float wave1RadiusBefore = comp.wave1Radius;
@@ -724,7 +739,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_RWave2".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_RWave2".Translate(), labelW);
                     string w2r = comp.wave2Radius.ToString();
                     string w2d = comp.wave2Damage.ToString();
                     float wave2RadiusBefore = comp.wave2Radius;
@@ -737,7 +752,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_RWave3".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_RWave3".Translate(), labelW);
                     string w3r = comp.wave3Radius.ToString();
                     string w3d = comp.wave3Damage.ToString();
                     float wave3RadiusBefore = comp.wave3Radius;
@@ -750,7 +765,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_RDamageDef".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_RDamageDef".Translate(), labelW);
                     if (DrawSelectionFieldButton(new Rect(inner.x + labelW, rowY, valueW, 24f),
                         comp.waveDamageDef?.label ?? "CS_Studio_None".Translate(), () => ShowDamageDefSelectorForRuntime(comp)))
                     {
@@ -758,7 +773,7 @@ namespace CharacterStudio.UI
                 }
                 else if (comp.type == AbilityRuntimeComponentType.PeriodicPulse)
                 {
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_PulseInterval".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_PulseInterval".Translate(), labelW);
                     string interval = comp.pulseIntervalTicks.ToString();
                     int intervalBefore = comp.pulseIntervalTicks;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.pulseIntervalTicks, ref interval, 1, 99999);
@@ -768,7 +783,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_PulseDuration".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_PulseDuration".Translate(), labelW);
                     string duration = comp.pulseTotalTicks.ToString();
                     int durationBefore = comp.pulseTotalTicks;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.pulseTotalTicks, ref duration, 1, 99999);
@@ -778,7 +793,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_PulseImmediate".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_PulseImmediate".Translate(), labelW);
                     bool immediate = comp.pulseStartsImmediately;
                     Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref immediate, 24f, false);
                     if (comp.pulseStartsImmediately != immediate)
@@ -789,7 +804,7 @@ namespace CharacterStudio.UI
                 }
                 else if (comp.type == AbilityRuntimeComponentType.KillRefresh)
                 {
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_KillRefreshHotkeySlot".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_KillRefreshHotkeySlot".Translate(), labelW);
                     if (DrawSelectionFieldButton(new Rect(inner.x + labelW, rowY, valueW, 24f),
                         ($"CS_Studio_Ability_Hotkey_{comp.killRefreshHotkeySlot}").Translate(), () =>
                         {
@@ -809,7 +824,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_KillRefreshPercent".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_KillRefreshPercent".Translate(), labelW);
                     string refresh = comp.killRefreshCooldownPercent.ToString();
                     float refreshBefore = comp.killRefreshCooldownPercent;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.killRefreshCooldownPercent, ref refresh, 0.01f, 1f);
@@ -818,113 +833,15 @@ namespace CharacterStudio.UI
                         NotifyAbilityPreviewDirty(true);
                     }
                 }
-                else if (comp.type == AbilityRuntimeComponentType.ShieldAbsorb)
+                else if (comp.type == AbilityRuntimeComponentType.ShieldAbsorb ||
+                         comp.type == AbilityRuntimeComponentType.AttachedShieldVisual ||
+                         comp.type == AbilityRuntimeComponentType.ProjectileInterceptorShield)
                 {
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_ShieldMaxDamage".Translate());
-                    string maxDamage = comp.shieldMaxDamage.ToString();
-                    float maxDamageBefore = comp.shieldMaxDamage;
-                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.shieldMaxDamage, ref maxDamage, 1f, 99999f);
-                    if (Math.Abs(comp.shieldMaxDamage - maxDamageBefore) > 0.001f)
-                    {
-                        NotifyAbilityPreviewDirty(true);
-                    }
-                    rowY += 26f;
-
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_ShieldDuration".Translate());
-                    string shieldDuration = comp.shieldDurationTicks.ToString();
-                    float shieldDurationBefore = comp.shieldDurationTicks;
-                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.shieldDurationTicks, ref shieldDuration, 1f, 99999f);
-                    if (Math.Abs(comp.shieldDurationTicks - shieldDurationBefore) > 0.001f)
-                    {
-                        NotifyAbilityPreviewDirty(true);
-                    }
-                    rowY += 26f;
-
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_ShieldHealRatio".Translate());
-                    string healRatio = comp.shieldHealRatio.ToString();
-                    float healRatioBefore = comp.shieldHealRatio;
-                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.shieldHealRatio, ref healRatio, 0f, 10f);
-                    if (Math.Abs(comp.shieldHealRatio - healRatioBefore) > 0.001f)
-                    {
-                        NotifyAbilityPreviewDirty(true);
-                    }
-                    rowY += 26f;
-
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_ShieldBonusDamageRatio".Translate());
-                    string bonusRatio = comp.shieldBonusDamageRatio.ToString();
-                    float bonusRatioBefore = comp.shieldBonusDamageRatio;
-                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.shieldBonusDamageRatio, ref bonusRatio, 0f, 10f);
-                    if (Math.Abs(comp.shieldBonusDamageRatio - bonusRatioBefore) > 0.001f)
-                    {
-                        NotifyAbilityPreviewDirty(true);
-                    }
-                }
-                else if (comp.type == AbilityRuntimeComponentType.AttachedShieldVisual)
-                {
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_ShieldVisualScale".Translate());
-                    string visualScale = comp.shieldVisualScale.ToString();
-                    float visualScaleBefore = comp.shieldVisualScale;
-                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.shieldVisualScale, ref visualScale, 0.1f, 10f);
-                    if (Math.Abs(comp.shieldVisualScale - visualScaleBefore) > 0.001f)
-                    {
-                        NotifyAbilityPreviewDirty(true);
-                    }
-                    rowY += 26f;
-
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_ShieldVisualHeightOffset".Translate());
-                    string visualHeight = comp.shieldVisualHeightOffset.ToString();
-                    float visualHeightBefore = comp.shieldVisualHeightOffset;
-                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.shieldVisualHeightOffset, ref visualHeight, -5f, 5f);
-                    if (Math.Abs(comp.shieldVisualHeightOffset - visualHeightBefore) > 0.001f)
-                    {
-                        NotifyAbilityPreviewDirty(true);
-                    }
-                    rowY += 26f;
-
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_ShieldDuration".Translate());
-                    string attachedDuration = comp.shieldDurationTicks.ToString();
-                    float attachedDurationBefore = comp.shieldDurationTicks;
-                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.shieldDurationTicks, ref attachedDuration, 1f, 99999f);
-                    if (Math.Abs(comp.shieldDurationTicks - attachedDurationBefore) > 0.001f)
-                    {
-                        NotifyAbilityPreviewDirty(true);
-                    }
-                }
-                else if (comp.type == AbilityRuntimeComponentType.ProjectileInterceptorShield)
-                {
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_ShieldInterceptorThingDef".Translate());
-                    string interceptorThingDefName = comp.shieldInterceptorThingDefName ?? string.Empty;
-                    string interceptorThingDefBefore = interceptorThingDefName;
-                    interceptorThingDefName = Widgets.TextField(new Rect(inner.x + labelW, rowY, valueW, 24f), interceptorThingDefName);
-                    if (!string.Equals(interceptorThingDefBefore, interceptorThingDefName, StringComparison.Ordinal))
-                    {
-                        comp.shieldInterceptorThingDefName = interceptorThingDefName;
-                        NotifyAbilityPreviewDirty(true);
-                    }
-                    rowY += 26f;
-
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_ShieldInterceptorDuration".Translate());
-                    string interceptorDuration = comp.shieldInterceptorDurationTicks.ToString();
-                    int interceptorDurationBefore = comp.shieldInterceptorDurationTicks;
-                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.shieldInterceptorDurationTicks, ref interceptorDuration, 1, 99999);
-                    if (comp.shieldInterceptorDurationTicks != interceptorDurationBefore)
-                    {
-                        NotifyAbilityPreviewDirty(true);
-                    }
-                    rowY += 26f;
-
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_ShieldVisualScale".Translate());
-                    string interceptorScale = comp.shieldVisualScale.ToString();
-                    float interceptorScaleBefore = comp.shieldVisualScale;
-                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.shieldVisualScale, ref interceptorScale, 0.1f, 10f);
-                    if (Math.Abs(comp.shieldVisualScale - interceptorScaleBefore) > 0.001f)
-                    {
-                        NotifyAbilityPreviewDirty(true);
-                    }
+                    DrawReflectionFields(inner, ref rowY, labelW, valueW, comp);
                 }
                 else if (comp.type == AbilityRuntimeComponentType.ChainBounce)
                 {
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_ChainBounceCount".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_ChainBounceCount".Translate(), labelW);
                     string bounceCount = comp.maxBounceCount.ToString();
                     int bounceCountBefore = comp.maxBounceCount;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.maxBounceCount, ref bounceCount, 1, 99);
@@ -934,7 +851,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_ChainBounceRange".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_ChainBounceRange".Translate(), labelW);
                     string bounceRange = comp.bounceRange.ToString();
                     float bounceRangeBefore = comp.bounceRange;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.bounceRange, ref bounceRange, 0.1f, 99f);
@@ -944,7 +861,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_ChainBounceFalloff".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_ChainBounceFalloff".Translate(), labelW);
                     string falloff = comp.bounceDamageFalloff.ToString();
                     float falloffBefore = comp.bounceDamageFalloff;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.bounceDamageFalloff, ref falloff, -0.95f, 0.95f);
@@ -955,7 +872,7 @@ namespace CharacterStudio.UI
                 }
                 else if (comp.type == AbilityRuntimeComponentType.ExecuteBonusDamage)
                 {
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_ExecuteThresholdPercent".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_ExecuteThresholdPercent".Translate(), labelW);
                     string threshold = comp.executeThresholdPercent.ToString();
                     float thresholdBefore = comp.executeThresholdPercent;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.executeThresholdPercent, ref threshold, 0.01f, 0.99f);
@@ -965,7 +882,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_ExecuteBonusDamageScale".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_ExecuteBonusDamageScale".Translate(), labelW);
                     string bonusScale = comp.executeBonusDamageScale.ToString();
                     float bonusScaleBefore = comp.executeBonusDamageScale;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.executeBonusDamageScale, ref bonusScale, 0.01f, 10f);
@@ -976,7 +893,7 @@ namespace CharacterStudio.UI
                 }
                 else if (comp.type == AbilityRuntimeComponentType.MissingHealthBonusDamage)
                 {
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_MissingHealthBonusPerTenPercent".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_MissingHealthBonusPerTenPercent".Translate(), labelW);
                     string bonusPerTen = comp.missingHealthBonusPerTenPercent.ToString();
                     float bonusPerTenBefore = comp.missingHealthBonusPerTenPercent;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.missingHealthBonusPerTenPercent, ref bonusPerTen, 0.01f, 10f);
@@ -986,7 +903,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_MissingHealthBonusMaxScale".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_MissingHealthBonusMaxScale".Translate(), labelW);
                     string maxScale = comp.missingHealthBonusMaxScale.ToString();
                     float maxScaleBefore = comp.missingHealthBonusMaxScale;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.missingHealthBonusMaxScale, ref maxScale, 0.01f, 10f);
@@ -997,7 +914,7 @@ namespace CharacterStudio.UI
                 }
                 else if (comp.type == AbilityRuntimeComponentType.FullHealthBonusDamage)
                 {
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_FullHealthThresholdPercent".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_FullHealthThresholdPercent".Translate(), labelW);
                     string threshold = comp.fullHealthThresholdPercent.ToString();
                     float thresholdBefore = comp.fullHealthThresholdPercent;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.fullHealthThresholdPercent, ref threshold, 0.01f, 1f);
@@ -1007,7 +924,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_FullHealthBonusDamageScale".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_FullHealthBonusDamageScale".Translate(), labelW);
                     string bonusScale = comp.fullHealthBonusDamageScale.ToString();
                     float bonusScaleBefore = comp.fullHealthBonusDamageScale;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.fullHealthBonusDamageScale, ref bonusScale, 0.01f, 10f);
@@ -1018,7 +935,7 @@ namespace CharacterStudio.UI
                 }
                 else if (comp.type == AbilityRuntimeComponentType.NearbyEnemyBonusDamage)
                 {
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_NearbyEnemyBonusMaxTargets".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_NearbyEnemyBonusMaxTargets".Translate(), labelW);
                     string nearbyCount = comp.nearbyEnemyBonusMaxTargets.ToString();
                     int nearbyCountBefore = comp.nearbyEnemyBonusMaxTargets;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.nearbyEnemyBonusMaxTargets, ref nearbyCount, 1, 99);
@@ -1028,7 +945,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_NearbyEnemyBonusPerTarget".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_NearbyEnemyBonusPerTarget".Translate(), labelW);
                     string nearbyBonus = comp.nearbyEnemyBonusPerTarget.ToString();
                     float nearbyBonusBefore = comp.nearbyEnemyBonusPerTarget;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.nearbyEnemyBonusPerTarget, ref nearbyBonus, 0.01f, 10f);
@@ -1038,7 +955,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_NearbyEnemyBonusRadius".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_NearbyEnemyBonusRadius".Translate(), labelW);
                     string nearbyRadius = comp.nearbyEnemyBonusRadius.ToString();
                     float nearbyRadiusBefore = comp.nearbyEnemyBonusRadius;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.nearbyEnemyBonusRadius, ref nearbyRadius, 0.1f, 99f);
@@ -1049,7 +966,7 @@ namespace CharacterStudio.UI
                 }
                 else if (comp.type == AbilityRuntimeComponentType.IsolatedTargetBonusDamage)
                 {
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_IsolatedTargetRadius".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_IsolatedTargetRadius".Translate(), labelW);
                     string isolatedRadius = comp.isolatedTargetRadius.ToString();
                     float isolatedRadiusBefore = comp.isolatedTargetRadius;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.isolatedTargetRadius, ref isolatedRadius, 0.1f, 99f);
@@ -1059,7 +976,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_IsolatedTargetBonusDamageScale".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_IsolatedTargetBonusDamageScale".Translate(), labelW);
                     string isolatedBonus = comp.isolatedTargetBonusDamageScale.ToString();
                     float isolatedBonusBefore = comp.isolatedTargetBonusDamageScale;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.isolatedTargetBonusDamageScale, ref isolatedBonus, 0.01f, 10f);
@@ -1070,7 +987,7 @@ namespace CharacterStudio.UI
                 }
                 else if (comp.type == AbilityRuntimeComponentType.MarkDetonation)
                 {
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_MarkDurationTicks".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_MarkDurationTicks".Translate(), labelW);
                     string markDuration = comp.markDurationTicks.ToString();
                     int markDurationBefore = comp.markDurationTicks;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.markDurationTicks, ref markDuration, 1, 99999);
@@ -1080,7 +997,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_MarkMaxStacks".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_MarkMaxStacks".Translate(), labelW);
                     string markStacks = comp.markMaxStacks.ToString();
                     int markStacksBefore = comp.markMaxStacks;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.markMaxStacks, ref markStacks, 1, 99);
@@ -1090,7 +1007,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_MarkDetonationDamage".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_MarkDetonationDamage".Translate(), labelW);
                     string detonationDamage = comp.markDetonationDamage.ToString();
                     float detonationDamageBefore = comp.markDetonationDamage;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, (valueW - 6f) / 2f, 24f), ref comp.markDetonationDamage, ref detonationDamage, 0.01f, 99999f);
@@ -1105,7 +1022,7 @@ namespace CharacterStudio.UI
                 }
                 else if (comp.type == AbilityRuntimeComponentType.ComboStacks)
                 {
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_ComboStackWindowTicks".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_ComboStackWindowTicks".Translate(), labelW);
                     string comboWindow = comp.comboStackWindowTicks.ToString();
                     int comboWindowTicksBefore = comp.comboStackWindowTicks;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.comboStackWindowTicks, ref comboWindow, 1, 99999);
@@ -1115,7 +1032,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_ComboStackMax".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_ComboStackMax".Translate(), labelW);
                     string comboMax = comp.comboStackMax.ToString();
                     int comboMaxBefore = comp.comboStackMax;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.comboStackMax, ref comboMax, 1, 99);
@@ -1125,7 +1042,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_ComboStackBonusDamagePerStack".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_ComboStackBonusDamagePerStack".Translate(), labelW);
                     string comboBonus = comp.comboStackBonusDamagePerStack.ToString();
                     float comboBonusBefore = comp.comboStackBonusDamagePerStack;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.comboStackBonusDamagePerStack, ref comboBonus, 0.01f, 10f);
@@ -1136,7 +1053,7 @@ namespace CharacterStudio.UI
                 }
                 else if (comp.type == AbilityRuntimeComponentType.HitSlowField)
                 {
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_SlowFieldDurationTicks".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_SlowFieldDurationTicks".Translate(), labelW);
                     string slowDuration = comp.slowFieldDurationTicks.ToString();
                     int slowDurationBefore = comp.slowFieldDurationTicks;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.slowFieldDurationTicks, ref slowDuration, 1, 99999);
@@ -1146,7 +1063,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_SlowFieldRadius".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_SlowFieldRadius".Translate(), labelW);
                     string slowRadius = comp.slowFieldRadius.ToString();
                     float slowRadiusBefore = comp.slowFieldRadius;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.slowFieldRadius, ref slowRadius, 0.1f, 99f);
@@ -1156,7 +1073,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_SlowFieldHediff".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_SlowFieldHediff".Translate(), labelW);
                     string slowHediffLabel = string.IsNullOrWhiteSpace(comp.slowFieldHediffDefName)
                         ? "CS_Studio_None".Translate()
                         : comp.slowFieldHediffDefName;
@@ -1165,7 +1082,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_SlowFieldHediffDefName".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_SlowFieldHediffDefName".Translate(), labelW);
                     string slowHediffDefName = comp.slowFieldHediffDefName ?? string.Empty;
                     string slowHediffBefore = slowHediffDefName;
                     slowHediffDefName = Widgets.TextField(new Rect(inner.x + labelW, rowY, valueW, 24f), slowHediffDefName);
@@ -1177,7 +1094,7 @@ namespace CharacterStudio.UI
                 }
                 else if (comp.type == AbilityRuntimeComponentType.PierceBonusDamage)
                 {
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_PierceMaxTargets".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_PierceMaxTargets".Translate(), labelW);
                     string pierceCount = comp.pierceMaxTargets.ToString();
                     int pierceCountBefore = comp.pierceMaxTargets;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.pierceMaxTargets, ref pierceCount, 1, 99);
@@ -1187,7 +1104,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_PierceBonusDamagePerTarget".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_PierceBonusDamagePerTarget".Translate(), labelW);
                     string pierceBonus = comp.pierceBonusDamagePerTarget.ToString();
                     float pierceBonusBefore = comp.pierceBonusDamagePerTarget;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.pierceBonusDamagePerTarget, ref pierceBonus, 0.01f, 10f);
@@ -1197,7 +1114,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_PierceSearchRange".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_PierceSearchRange".Translate(), labelW);
                     string pierceRange = comp.pierceSearchRange.ToString();
                     float pierceRangeBefore = comp.pierceSearchRange;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.pierceSearchRange, ref pierceRange, 0.1f, 99f);
@@ -1208,7 +1125,7 @@ namespace CharacterStudio.UI
                 }
                 else if (comp.type == AbilityRuntimeComponentType.DashEmpoweredStrike)
                 {
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_DashEmpowerDurationTicks".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_DashEmpowerDurationTicks".Translate(), labelW);
                     string dashDuration = comp.dashEmpowerDurationTicks.ToString();
                     int dashDurationBefore = comp.dashEmpowerDurationTicks;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.dashEmpowerDurationTicks, ref dashDuration, 1, 99999);
@@ -1218,7 +1135,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_DashEmpowerBonusDamageScale".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_DashEmpowerBonusDamageScale".Translate(), labelW);
                     string dashBonus = comp.dashEmpowerBonusDamageScale.ToString();
                     float dashBonusBefore = comp.dashEmpowerBonusDamageScale;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.dashEmpowerBonusDamageScale, ref dashBonus, 0.01f, 10f);
@@ -1229,7 +1146,7 @@ namespace CharacterStudio.UI
                 }
                 else if (comp.type == AbilityRuntimeComponentType.HitHeal)
                 {
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_HitHealAmount".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_HitHealAmount".Translate(), labelW);
                     string healAmount = comp.hitHealAmount.ToString();
                     float healAmountBefore = comp.hitHealAmount;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.hitHealAmount, ref healAmount, 0f, 99999f);
@@ -1239,7 +1156,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_HitHealRatio".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_HitHealRatio".Translate(), labelW);
                     string healRatio = comp.hitHealRatio.ToString();
                     float hitHealRatioBefore = comp.hitHealRatio;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.hitHealRatio, ref healRatio, 0f, 10f);
@@ -1250,7 +1167,7 @@ namespace CharacterStudio.UI
                 }
                 else if (comp.type == AbilityRuntimeComponentType.HitCooldownRefund)
                 {
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_RefundHotkeySlot".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_RefundHotkeySlot".Translate(), labelW);
                     if (DrawSelectionFieldButton(new Rect(inner.x + labelW, rowY, valueW, 24f),
                         ($"CS_Studio_Ability_Hotkey_{comp.refundHotkeySlot}").Translate(), () =>
                         {
@@ -1270,7 +1187,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_HitCooldownRefundPercent".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_HitCooldownRefundPercent".Translate(), labelW);
                     string refundPercent = comp.hitCooldownRefundPercent.ToString();
                     float refundPercentBefore = comp.hitCooldownRefundPercent;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.hitCooldownRefundPercent, ref refundPercent, 0.01f, 1f);
@@ -1281,7 +1198,7 @@ namespace CharacterStudio.UI
                 }
                 else if (comp.type == AbilityRuntimeComponentType.ProjectileSplit)
                 {
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_SplitProjectileCount".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_SplitProjectileCount".Translate(), labelW);
                     string splitCount = comp.splitProjectileCount.ToString();
                     int splitCountBefore = comp.splitProjectileCount;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.splitProjectileCount, ref splitCount, 1, 99);
@@ -1291,7 +1208,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_SplitDamageScale".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_SplitDamageScale".Translate(), labelW);
                     string splitScale = comp.splitDamageScale.ToString();
                     float splitScaleBefore = comp.splitDamageScale;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.splitDamageScale, ref splitScale, 0.01f, 10f);
@@ -1301,7 +1218,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_SplitSearchRange".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_SplitSearchRange".Translate(), labelW);
                     string splitRange = comp.splitSearchRange.ToString();
                     float splitRangeBefore = comp.splitSearchRange;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.splitSearchRange, ref splitRange, 0.1f, 99f);
@@ -1312,7 +1229,7 @@ namespace CharacterStudio.UI
                 }
                 else if (comp.type == AbilityRuntimeComponentType.FlightState)
                 {
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_FlightDurationTicks".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_FlightDurationTicks".Translate(), labelW);
                     string flightDuration = comp.flightDurationTicks.ToString();
                     int flightDurationBefore = comp.flightDurationTicks;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.flightDurationTicks, ref flightDuration, 1, 99999);
@@ -1322,7 +1239,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_FlightHeightFactor".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_FlightHeightFactor".Translate(), labelW);
                     string flightHeight = comp.flightHeightFactor.ToString();
                     float flightHeightBefore = comp.flightHeightFactor;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.flightHeightFactor, ref flightHeight, 0f, 5f);
@@ -1332,7 +1249,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_FlightSuppressCombat".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_FlightSuppressCombat".Translate(), labelW);
                     bool suppressCombat = comp.suppressCombatActionsDuringFlightState;
                     Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref suppressCombat, 24f, false);
                     if (comp.suppressCombatActionsDuringFlightState != suppressCombat)
@@ -1343,7 +1260,7 @@ namespace CharacterStudio.UI
                 }
                 else if (comp.type == AbilityRuntimeComponentType.FlightOnlyFollowup)
                 {
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_RequiredFlightSourceAbility".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_RequiredFlightSourceAbility".Translate(), labelW);
                     string requiredSourceAbilityLabel = string.IsNullOrWhiteSpace(comp.requiredFlightSourceAbilityDefName)
                         ? "CS_Studio_None".Translate()
                         : comp.requiredFlightSourceAbilityDefName;
@@ -1352,7 +1269,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_RequireReservedTargetCell".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_RequireReservedTargetCell".Translate(), labelW);
                     bool requireReservedTargetCell = comp.requireReservedTargetCell;
                     Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref requireReservedTargetCell, 24f, false);
                     if (comp.requireReservedTargetCell != requireReservedTargetCell)
@@ -1362,7 +1279,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_ConsumeFlightStateOnCast".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_ConsumeFlightStateOnCast".Translate(), labelW);
                     bool consumeFlightStateOnCast = comp.consumeFlightStateOnCast;
                     Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref consumeFlightStateOnCast, 24f, false);
                     if (comp.consumeFlightStateOnCast != consumeFlightStateOnCast)
@@ -1372,7 +1289,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_OnlyUseDuringFlightWindow".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_OnlyUseDuringFlightWindow".Translate(), labelW);
                     bool onlyUseDuringFlightWindow = comp.onlyUseDuringFlightWindow;
                     Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref onlyUseDuringFlightWindow, 24f, false);
                     if (comp.onlyUseDuringFlightWindow != onlyUseDuringFlightWindow)
@@ -1383,7 +1300,7 @@ namespace CharacterStudio.UI
                 }
                 else if (comp.type == AbilityRuntimeComponentType.FlightLandingBurst)
                 {
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_LandingBurstRadius".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_LandingBurstRadius".Translate(), labelW);
                     string landingBurstRadius = comp.landingBurstRadius.ToString();
                     float landingBurstRadiusBefore = comp.landingBurstRadius;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.landingBurstRadius, ref landingBurstRadius, 0.1f, 99f);
@@ -1393,7 +1310,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_LandingBurstDamage".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_LandingBurstDamage".Translate(), labelW);
                     string landingBurstDamage = comp.landingBurstDamage.ToString();
                     float landingBurstDamageBefore = comp.landingBurstDamage;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, (valueW - 6f) / 2f, 24f), ref comp.landingBurstDamage, ref landingBurstDamage, 0.01f, 99999f);
@@ -1407,7 +1324,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_LandingEffecterDefName".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_LandingEffecterDefName".Translate(), labelW);
                     string landingEffecterDefName = comp.landingEffecterDefName ?? string.Empty;
                     string landingEffecterDefNameBefore = landingEffecterDefName;
                     landingEffecterDefName = Widgets.TextField(new Rect(inner.x + labelW, rowY, valueW, 24f), landingEffecterDefName);
@@ -1418,7 +1335,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_LandingSoundDefName".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_LandingSoundDefName".Translate(), labelW);
                     string landingSoundDefName = comp.landingSoundDefName ?? string.Empty;
                     string landingSoundDefNameBefore = landingSoundDefName;
                     landingSoundDefName = Widgets.TextField(new Rect(inner.x + labelW, rowY, valueW, 24f), landingSoundDefName);
@@ -1429,7 +1346,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_LandingAffectBuildings".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_LandingAffectBuildings".Translate(), labelW);
                     bool affectBuildings = comp.affectBuildings;
                     Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref affectBuildings, 24f, false);
                     if (comp.affectBuildings != affectBuildings)
@@ -1439,7 +1356,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_LandingAffectCells".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_LandingAffectCells".Translate(), labelW);
                     bool affectCells = comp.affectCells;
                     Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref affectCells, 24f, false);
                     if (comp.affectCells != affectCells)
@@ -1449,7 +1366,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_LandingKnockbackTargets".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_LandingKnockbackTargets".Translate(), labelW);
                     bool knockbackTargets = comp.knockbackTargets;
                     Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref knockbackTargets, 24f, false);
                     if (comp.knockbackTargets != knockbackTargets)
@@ -1459,7 +1376,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_LandingKnockbackDistance".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_LandingKnockbackDistance".Translate(), labelW);
                     string landingKnockbackDistance = comp.knockbackDistance.ToString();
                     float landingKnockbackDistanceBefore = comp.knockbackDistance;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.knockbackDistance, ref landingKnockbackDistance, 0f, 99f);
@@ -1470,7 +1387,7 @@ namespace CharacterStudio.UI
                 }
                 else if (comp.type == AbilityRuntimeComponentType.TimeStop)
                 {
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_TimeStopDurationTicks".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_TimeStopDurationTicks".Translate(), labelW);
                     string stopDuration = comp.timeStopDurationTicks.ToString();
                     int timeStopDurationBefore = comp.timeStopDurationTicks;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.timeStopDurationTicks, ref stopDuration, 1, 99999);
@@ -1480,7 +1397,7 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    Widgets.Label(new Rect(inner.x, rowY, labelW, 24f), "CS_Studio_Runtime_TimeStopFreezeVisuals".Translate());
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_TimeStopFreezeVisuals".Translate(), labelW);
                     bool freezeVisuals = comp.freezeVisualsDuringTimeStop;
                     Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref freezeVisuals, 24f, false);
                     if (comp.freezeVisualsDuringTimeStop != freezeVisuals)
@@ -1489,8 +1406,93 @@ namespace CharacterStudio.UI
                         NotifyAbilityPreviewDirty(true);
                     }
                 }
+                else if (comp.type == AbilityRuntimeComponentType.WeatherChange)
+                {
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Effect_WeatherDef".Translate(), labelW);
+                    string weatherLabel = string.IsNullOrWhiteSpace(comp.weatherDefName)
+                        ? "CS_Studio_None".Translate()
+                        : comp.weatherDefName;
+                    if (DrawSelectionFieldButton(new Rect(inner.x + labelW, rowY, valueW, 24f), weatherLabel, () => ShowWeatherDefSelectorForRuntime(comp)))
+                    {
+                    }
+                    rowY += 26f;
+
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Effect_WeatherDuration".Translate(), labelW);
+                    string durStr = comp.weatherDurationTicks.ToString();
+                    int durBefore = comp.weatherDurationTicks;
+                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.weatherDurationTicks, ref durStr, 1, 9999999);
+                    if (comp.weatherDurationTicks != durBefore)
+                    {
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Effect_WeatherTransition".Translate(), labelW);
+                    string transStr = comp.weatherTransitionTicks.ToString();
+                    int transBefore = comp.weatherTransitionTicks;
+                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.weatherTransitionTicks, ref transStr, 0, 99999);
+                    if (comp.weatherTransitionTicks != transBefore)
+                    {
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                }
 
                 y += blockHeight + 6f;
+            }
+        }
+
+        private void DrawReflectionFields(Rect inner, ref float rowY, float labelW, float valueW, AbilityRuntimeComponentConfig comp)
+        {
+            var fields = comp.GetType().GetFields()
+                .Where(f => f.GetCustomAttributes(typeof(CharacterStudio.Core.EditorFieldAttribute), false).Length > 0)
+                .ToArray();
+
+            foreach (var field in fields)
+            {
+                var attr = (CharacterStudio.Core.EditorFieldAttribute)field.GetCustomAttributes(typeof(CharacterStudio.Core.EditorFieldAttribute), false)[0];
+                if (attr.ValidTypes != null && attr.ValidTypes.Length > 0 && !attr.ValidTypes.Contains(comp.type)) continue;
+
+                GameFont prevRefFont = Text.Font;
+                Text.Font = GameFont.Tiny;
+                string labelText = GenText.Truncate(attr.LabelKey.Translate(), labelW);
+                Widgets.Label(new Rect(inner.x, rowY + 2f, labelW, 20f), labelText);
+                Text.Font = prevRefFont;
+                if (field.FieldType == typeof(float))
+                {
+                    float val = (float)field.GetValue(comp);
+                    float oldVal = val;
+                    string strVal = val.ToString();
+                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref val, ref strVal, attr.Min, attr.Max);
+                    if (Math.Abs(val - oldVal) > 0.001f)
+                    {
+                        field.SetValue(comp, val);
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                }
+                else if (field.FieldType == typeof(int))
+                {
+                    int val = (int)field.GetValue(comp);
+                    int oldVal = val;
+                    string strVal = val.ToString();
+                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref val, ref strVal, (int)attr.Min, (int)attr.Max);
+                    if (val != oldVal)
+                    {
+                        field.SetValue(comp, val);
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                }
+                else if (field.FieldType == typeof(string))
+                {
+                    string val = (string)field.GetValue(comp) ?? string.Empty;
+                    string oldVal = val;
+                    val = Widgets.TextField(new Rect(inner.x + labelW, rowY, valueW, 24f), val);
+                    if (!string.Equals(val, oldVal, StringComparison.Ordinal))
+                    {
+                        field.SetValue(comp, val);
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                }
+                rowY += 26f;
             }
         }
     }

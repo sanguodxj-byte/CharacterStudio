@@ -47,6 +47,15 @@
     <CS_Studio_Panel_RemoveLayer>移除图层</CS_Studio_Panel_RemoveLayer>
     <CS_Studio_Preview_Summary>朝向：{0}  |  缩放：{1}x  |  自动流程：{2}</CS_Studio_Preview_Summary>
     <CS_Studio_Preview_SummaryFlow_On>开启</CS_Studio_Preview_SummaryFlow_On>
+    <CS_Studio_Tab_Animation>动画</CS_Studio_Tab_Animation>
+    <CS_Studio_Tab_Items>物品</CS_Studio_Tab_Items>
+    <CS_Studio_Section_Animation>程序化动画</CS_Studio_Section_Animation>
+    <CS_Studio_Section_AnimationCarryVisual>状态视觉</CS_Studio_Section_AnimationCarryVisual>
+    <CS_Studio_Section_AnimationRender>全局姿态覆写</CS_Studio_Section_AnimationRender>
+    <CS_Studio_Anim_Breathe>开启呼吸效果</CS_Studio_Anim_Breathe>
+    <CS_Studio_Anim_IdleSway>开启悬浮/晃动</CS_Studio_Anim_IdleSway>
+    <CS_Studio_Anim_Speed>速度</CS_Studio_Anim_Speed>
+    <CS_Studio_Anim_Amplitude>幅度</CS_Studio_Anim_Amplitude>
     <CS_Studio_Preview_SummaryFlow_Off>关闭</CS_Studio_Preview_SummaryFlow_Off>
     <CS_Studio_Preview_Channel_Brow>眉</CS_Studio_Preview_Channel_Brow>
     <CS_Studio_Preview_Channel_Emotion>情绪</CS_Studio_Preview_Channel_Emotion>
@@ -119,6 +128,21 @@
     <CS_Studio_Prop_Scale>缩放</CS_Studio_Prop_Scale>
     <CS_Studio_Prop_TexturePath>纹理路径</CS_Studio_Prop_TexturePath>
     <CS_Studio_Prop_Visible>可见</CS_Studio_Prop_Visible>
+    <CS_Studio_Prop_Shader>材质类型 (Shader)</CS_Studio_Prop_Shader>
+    <CS_Studio_Prop_Shader_Tooltip>决定图层如何处理半透明与深度排序：
+• Cutout: 硬边缘，写入深度（原版角色、普通服装的标准配置）。
+• CutoutComplex: 硬边缘，附加支持第二颜色通道（Mask）。
+• Transparent: 柔和半透明边缘，不写入深度（由于无遮挡能力，仅限用于墨镜、特效、面纱等确实需要全透叠色的部件，否则会导致底部影子透上来）。
+• TransparentPostLight: 同上，但不接受场景阴影。
+• MetaOverlay: 用于特殊不可见渲染通道。</CS_Studio_Prop_Shader_Tooltip>
+    <CS_Studio_Prop_CustomShaderPath>自定义Shader路径</CS_Studio_Prop_CustomShaderPath>
+    <CS_Studio_Prop_CustomShaderPath_Tooltip>自定义着色器路径（如 Hidden/RimWorld/TransparentZWrite）。仅在Shader设置为Custom时生效。</CS_Studio_Prop_CustomShaderPath_Tooltip>
+    <CS_Studio_Prop_Alpha>不透明度</CS_Studio_Prop_Alpha>
+    <CS_Studio_Prop_Alpha_Tooltip>控制图层的透明度。1=完全不透明，0=完全透明。仅在使用透明Shader时可用。</CS_Studio_Prop_Alpha_Tooltip>
+    <CS_Studio_Prop_ZWrite>深度写入</CS_Studio_Prop_ZWrite>
+    <CS_Studio_Prop_ZWrite_Tooltip>启用后，透明图层会写入深度缓存，使其他透明物体能正确遮挡。适用于半透明装备需要遮挡身体部位的场景。</CS_Studio_Prop_ZWrite_Tooltip>
+    <CS_Studio_Prop_MaskTexPath>遮罩纹理路径</CS_Studio_Prop_MaskTexPath>
+    <CS_Studio_Prop_MaskTexPath_Tooltip>可选遮罩纹理，控制逐像素透明度。白色=完全不透明，黑色=完全透明。遮罩颜色与主纹理alpha相乘。</CS_Studio_Prop_MaskTexPath_Tooltip>
     <CS_Studio_Properties_Summary_Node>当前正在编辑所选渲染节点。</CS_Studio_Properties_Summary_Node>
     <CS_Studio_Properties_Summary_BaseSlot>当前正在编辑所选基础槽位。</CS_Studio_Properties_Summary_BaseSlot>
     <CS_Studio_Properties_Summary_Equipment>当前正在编辑所选装备条目。</CS_Studio_Properties_Summary_Equipment>

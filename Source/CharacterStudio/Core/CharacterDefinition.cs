@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CharacterStudio.AI;
 using RimWorld;
+using UnityEngine;
 using Verse;
 
 namespace CharacterStudio.Core
@@ -28,7 +29,9 @@ namespace CharacterStudio.Core
     {
         public string defName = string.Empty;
         public string displayName = string.Empty;
+        public string title = string.Empty;
         public Gender gender = Gender.None;
+        public Color? favoriteColor;
         public float biologicalAge = 25f;
         public float chronologicalAge = 25f;
         public string raceDefName = ThingDefOf.Human.defName;
@@ -42,6 +45,7 @@ namespace CharacterStudio.Core
         public List<string> startingApparelDefNames = new List<string>();
         public List<CharacterSkillEntry> skills = new List<CharacterSkillEntry>();
         public List<CharacterRuntimeTriggerDef> runtimeTriggers = new List<CharacterRuntimeTriggerDef>();
+        public CharacterStudio.Attributes.CharacterStatModifierProfile statModifiers = new CharacterStudio.Attributes.CharacterStatModifierProfile();
 
         public CharacterDefinition Clone()
         {
@@ -49,7 +53,9 @@ namespace CharacterStudio.Core
             {
                 defName = defName ?? string.Empty,
                 displayName = displayName ?? string.Empty,
+                title = title ?? string.Empty,
                 gender = gender,
+                favoriteColor = favoriteColor,
                 biologicalAge = biologicalAge,
                 chronologicalAge = chronologicalAge,
                 raceDefName = raceDefName ?? ThingDefOf.Human.defName,
@@ -65,7 +71,8 @@ namespace CharacterStudio.Core
                 runtimeTriggers = (runtimeTriggers ?? new List<CharacterRuntimeTriggerDef>())
                     .Where(static trigger => trigger != null)
                     .Select(static trigger => trigger.Clone())
-                    .ToList()
+                    .ToList(),
+                statModifiers = statModifiers?.Clone() ?? new CharacterStudio.Attributes.CharacterStatModifierProfile()
             };
         }
 
@@ -73,6 +80,7 @@ namespace CharacterStudio.Core
         {
             defName = string.IsNullOrWhiteSpace(defName) ? fallbackDefName : defName.Trim();
             displayName = string.IsNullOrWhiteSpace(displayName) ? (attributes?.title ?? fallbackDefName) : displayName.Trim();
+            title = string.IsNullOrWhiteSpace(title) ? (attributes?.title ?? string.Empty) : title.Trim();
             raceDefName = string.IsNullOrWhiteSpace(raceDefName)
                 ? (fallbackRaceDef?.defName ?? ThingDefOf.Human.defName)
                 : raceDefName.Trim();
@@ -87,6 +95,7 @@ namespace CharacterStudio.Core
             startingApparelDefNames ??= new List<string>();
             skills ??= new List<CharacterSkillEntry>();
             runtimeTriggers ??= new List<CharacterRuntimeTriggerDef>();
+            statModifiers ??= new CharacterStudio.Attributes.CharacterStatModifierProfile();
 
             if (traitDefNames.Count == 0 && attributes?.keyTraits != null)
             {

@@ -51,6 +51,11 @@ namespace CharacterStudio.UI
             {
                 Directory.CreateDirectory(exportDir);
 
+                // 记录预览人偶的 Head Z 偏移基准值，用于后续自动补偿不同体型的面部 Z 差异
+                float mannequinHeadZ = GetMannequinHeadOffsetZ();
+                if (mannequinHeadZ != 0f)
+                    workingSkin.previewHeadOffsetZ = mannequinHeadZ;
+
                 var savePlanSkin = BuildRuntimeSkinForExecution();
                 if (savePlanSkin == null)
                 {
@@ -266,6 +271,56 @@ namespace CharacterStudio.UI
             return targetPawn?.def
                 ?? mannequin?.CurrentPawn?.def
                 ?? ThingDefOf.Human;
+        }
+
+        /// <summary>
+        /// 从预览人偶的 RenderTree 中读取 Head 节点的 Z 偏移。
+        /// 用于记录皮肤创建时的体型基准，后续渲染时自动补偿不同体型的差异。
+        /// </summary>
+        private float GetMannequinHeadOffsetZ()
+        {
+            Pawn? previewPawn = mannequin?.CurrentPawn;
+            if (previewPawn == null)
+                return 0f;
+
+            try
+            {
+                // renderTree 是 PawnRenderer 的私有字段，通过反射获取
+                var renderer = previewPawn.Drawer?.renderer;
+                if (renderer == null) return 0f;
+                var renderTreeField = typeof(PawnRenderer).GetField("renderTree",
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
+                var renderTree = renderTreeField?.GetValue(renderer) as PawnRenderTree;
+                if (renderTree == null)
+                    return 0f;
+
+                // 递归遍历节点树查找 Head 节点并获取其 debugOffset.z
+                PawnRenderNode? headNode = FindHeadNode(renderTree.rootNode);
+                if (headNode != null)
+                {
+                    return headNode.debugOffset.z;
+                }
+            }
+            catch { }
+
+            return 0f;
+        }
+
+        private static PawnRenderNode? FindHeadNode(PawnRenderNode? node)
+        {
+            if (node == null) return null;
+            if (node.Props?.workerClass?.Name == "PawnRenderNodeWorker_Head")
+                return node;
+            if (node.children != null)
+            {
+                foreach (PawnRenderNode child in node.children)
+                {
+                    var found = FindHeadNode(child);
+                    if (found != null)
+                        return found;
+                }
+            }
+            return null;
         }
     }
 }

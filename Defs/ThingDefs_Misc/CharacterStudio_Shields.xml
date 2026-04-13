@@ -29,7 +29,7 @@
   <ThingDef ParentName="BuildingBase">
     <defName>CS_ProjectileInterceptorShield</defName>
     <label>projectile interceptor shield</label>
-    <thingClass>ThingWithComps</thingClass>
+    <thingClass>CharacterStudio.Abilities.ProjectileInterceptorThing</thingClass>
     <category>PsychicEmitter</category>
     <tickerType>Normal</tickerType>
     <drawerType>RealtimeOnly</drawerType>

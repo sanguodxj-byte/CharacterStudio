@@ -26,7 +26,8 @@
     <CS_Ability_EffectType_Summon>Summon</CS_Ability_EffectType_Summon>
     <CS_Ability_EffectType_Control>Control</CS_Ability_EffectType_Control>
     <CS_Ability_EffectType_Terraform>Terraform</CS_Ability_EffectType_Terraform>
-    <CS_Ability_RuntimeComponentType_QComboWindow>Q Combo Window</CS_Ability_RuntimeComponentType_QComboWindow>
+    <CS_Ability_EffectType_WeatherChange>Weather Change</CS_Ability_EffectType_WeatherChange>
+    <CS_Ability_RuntimeComponentType_SlotOverrideWindow>Combo Window</CS_Ability_RuntimeComponentType_SlotOverrideWindow>
     <CS_Ability_RuntimeComponentType_HotkeyOverride>Hotkey Override</CS_Ability_RuntimeComponentType_HotkeyOverride>
     <CS_Ability_RuntimeComponentType_FollowupCooldownGate>Followup Cooldown Gate</CS_Ability_RuntimeComponentType_FollowupCooldownGate>
     <CS_Ability_RuntimeComponentType_SmartJump>Smart Jump</CS_Ability_RuntimeComponentType_SmartJump>
@@ -58,7 +59,8 @@
     <CS_Ability_RuntimeComponentType_VanillaPawnFlyer>Real PawnFlyer</CS_Ability_RuntimeComponentType_VanillaPawnFlyer>
     <CS_Ability_RuntimeComponentType_VanillaPawnFlyer_Short>Real Flight</CS_Ability_RuntimeComponentType_VanillaPawnFlyer_Short>
     <CS_Ability_RuntimeComponentType_TimeStop>Time Stop</CS_Ability_RuntimeComponentType_TimeStop>
-    <CS_Ability_RuntimeComponentType_TimeStop_Short>Time Stop</CS_Ability_RuntimeComponentType_TimeStop_Short>
+    <CS_Ability_RuntimeComponentType_WeatherChange>Weather Change</CS_Ability_RuntimeComponentType_WeatherChange>
+    <CS_Ability_RuntimeComponentType_TimeStop_Short>TimeStop</CS_Ability_RuntimeComponentType_TimeStop_Short>
     <CS_Ability_SelectPawn>Select Pawn</CS_Ability_SelectPawn>
     <CS_Ability_SelectArea>Target Area</CS_Ability_SelectArea>
     <CS_Ability_Summary_Damage>Damage: {0}</CS_Ability_Summary_Damage>
@@ -69,10 +71,12 @@
     <CS_Ability_Summary_Summon>Summon: {0}</CS_Ability_Summary_Summon>
     <CS_Ability_Summary_Control>Control: {0}</CS_Ability_Summary_Control>
     <CS_Ability_Summary_Terraform>Terraform: {0}</CS_Ability_Summary_Terraform>
+    <CS_Ability_Summary_WeatherChange>Weather Change: {0}</CS_Ability_Summary_WeatherChange>
     <CS_Ability_ClearBinding>Clear Binding</CS_Ability_ClearBinding>
     <CS_Ability_BoundPawn>Bound Pawn</CS_Ability_BoundPawn>
     <CS_Ability_Grant>Grant Ability</CS_Ability_Grant>
     <CS_Ability_GrantSuccess>Abilities granted successfully.</CS_Ability_GrantSuccess>
+    <CS_Ability_WeatherChanged>Weather changed to: {0}</CS_Ability_WeatherChanged>
     <CS_Ability_NoPawnBound>No pawn bound.</CS_Ability_NoPawnBound>
     <CS_Ability_Revoke>Revoke Ability</CS_Ability_Revoke>
     <CS_Ability_RevokeSuccess>Abilities revoked successfully.</CS_Ability_RevokeSuccess>
@@ -106,10 +110,18 @@
     <CS_Studio_Runtime_Desc_FlightLandingBurst>Trigger a landing burst when the real flight ends.</CS_Studio_Runtime_Desc_FlightLandingBurst>
     <CS_Studio_Runtime_Desc_ProjectileSplit>Split into additional follow-up hits against nearby targets.</CS_Studio_Runtime_Desc_ProjectileSplit>
     <CS_Studio_Runtime_Desc_TimeStop>Freeze other pawn and map updates for a short duration, keep only the caster acting, and stop as many other animations as possible.</CS_Studio_Runtime_Desc_TimeStop>
+    <CS_Studio_Runtime_Desc_WeatherChange>Force change the current map's weather definition when the ability is cast.</CS_Studio_Runtime_Desc_WeatherChange>
     <CS_Studio_Runtime_DuplicateSingletonBlocked>{0} already exists; duplicate singleton-like runtime components are blocked.</CS_Studio_Runtime_DuplicateSingletonBlocked>
     <CS_Studio_Runtime_TimeStopDurationTicks>Time Stop Duration (Ticks)</CS_Studio_Runtime_TimeStopDurationTicks>
     <CS_Studio_Runtime_TimeStopFreezeVisuals>Freeze Other Visuals</CS_Studio_Runtime_TimeStopFreezeVisuals>
     <CS_Ability_Validate_TimeStopDurationTicks>Time stop duration must be greater than 0.</CS_Ability_Validate_TimeStopDurationTicks>
+    <CS_Studio_Effect_WeatherDef>Weather Def</CS_Studio_Effect_WeatherDef>
+    <CS_Studio_Effect_WeatherDuration>Duration (Ticks)</CS_Studio_Effect_WeatherDuration>
+    <CS_Studio_Effect_WeatherTransition>Transition (Ticks)</CS_Studio_Effect_WeatherTransition>
+    <CS_Ability_Validate_WeatherDefNameRequired>Weather def name cannot be empty.</CS_Ability_Validate_WeatherDefNameRequired>
+    <CS_Ability_Validate_WeatherDurationPositive>Weather duration must be positive.</CS_Ability_Validate_WeatherDurationPositive>
+    <CS_Ability_Validate_WeatherTransitionNonNegative>Weather transition cannot be negative.</CS_Ability_Validate_WeatherTransitionNonNegative>
+    <CS_Ability_Validate_ComboTargetAbilityRequired>Combo target ability DefName cannot be empty.</CS_Ability_Validate_ComboTargetAbilityRequired>
     <CS_Studio_VFX_Type_LineTexture>Line Texture</CS_Studio_VFX_Type_LineTexture>
     <CS_Studio_VFX_Type_WallTexture>Wall Texture</CS_Studio_VFX_Type_WallTexture>
     <CS_Studio_VFX_Type_DustPuff>Dust Puff</CS_Studio_VFX_Type_DustPuff>

@@ -767,26 +767,16 @@ namespace CharacterStudio.Abilities
         {
             if (caster.Map == null) return;
 
-            // 复用缓存对象，仅更新变化字段
-            _waveEffectCache.amount    = amount;
-            _waveEffectCache.damageDef = damageDef;
-
-            var worker = EffectWorkerFactory.GetWorker(AbilityEffectType.Damage);
-            var map    = caster.Map;
-
-            foreach (var cell in GenRadial.RadialCellsAround(center, radius, true))
-            {
-                if (!cell.InBounds(map)) continue;
-
-                _thingBuffer.Clear();
-                _thingBuffer.AddRange(cell.GetThingList(map));
-                foreach (var thing in _thingBuffer)
-                {
-                    // 过滤自身：R 技能爆发波不应伤害施法者
-                    if (thing == caster) continue;
-                    worker.Apply(_waveEffectCache, new LocalTargetInfo(thing), caster);
-                }
-            }
+            GenExplosion.DoExplosion(
+                center: center,
+                map: caster.Map,
+                radius: radius,
+                damType: damageDef,
+                instigator: caster,
+                damAmount: Mathf.RoundToInt(amount),
+                ignoredThings: new List<Thing> { caster },
+                propagationSpeed: 1.5f
+            );
         }
 
         private static bool TryCastDefaultAbility(Pawn caster, ModularAbilityDef ability)
@@ -1147,84 +1137,7 @@ namespace CharacterStudio.Abilities
 
         private static IEnumerable<IntVec3> BuildAbilityAreaCells(Pawn caster, ModularAbilityDef ability, IntVec3 impactCenter)
         {
-            Map? map = caster.Map;
-            if (map == null)
-            {
-                return new List<IntVec3>();
-            }
-
-            IntVec3 anchor = ModularAbilityDefExtensions.NormalizeAreaCenter(ability) == AbilityAreaCenter.Self
-                ? caster.Position
-                : impactCenter;
-            IntVec3 forward = GetFacingDirection(caster.Position, impactCenter, caster.Rotation.FacingCell);
-            IntVec3 right = GetRight(forward);
-            AbilityAreaShape shape = ModularAbilityDefExtensions.NormalizeAreaShape(ability);
-            float rawRadius = shape == AbilityAreaShape.Irregular
-                ? Mathf.Max(0f, ability.radius)
-                : Mathf.Max(ability.radius, 1f);
-            int discreteRadius = Mathf.Max(1, Mathf.CeilToInt(rawRadius));
-            var cells = new HashSet<IntVec3>();
-
-            switch (shape)
-            {
-                case AbilityAreaShape.Line:
-                    for (int step = 0; step <= discreteRadius; step++)
-                    {
-                        cells.Add(anchor + forward * step);
-                    }
-                    break;
-                case AbilityAreaShape.Cone:
-                    for (int distance = 0; distance <= discreteRadius; distance++)
-                    {
-                        IntVec3 rowCenter = anchor + forward * distance;
-                        int halfWidth = distance;
-                        for (int side = -halfWidth; side <= halfWidth; side++)
-                        {
-                            cells.Add(rowCenter + right * side);
-                        }
-                    }
-                    break;
-                case AbilityAreaShape.Cross:
-                    cells.Add(anchor);
-                    for (int step = 1; step <= discreteRadius; step++)
-                    {
-                        cells.Add(anchor + forward * step);
-                        cells.Add(anchor - forward * step);
-                        cells.Add(anchor + right * step);
-                        cells.Add(anchor - right * step);
-                    }
-                    break;
-                case AbilityAreaShape.Square:
-                    for (int forwardOffset = -discreteRadius; forwardOffset <= discreteRadius; forwardOffset++)
-                    {
-                        for (int sideOffset = -discreteRadius; sideOffset <= discreteRadius; sideOffset++)
-                        {
-                            cells.Add(anchor + forward * forwardOffset + right * sideOffset);
-                        }
-                    }
-                    break;
-                case AbilityAreaShape.Irregular:
-                    bool addedIrregular = false;
-                    foreach (IntVec3 cell in BuildIrregularPatternCells(anchor, forward, right, ability.irregularAreaPattern))
-                    {
-                        cells.Add(cell);
-                        addedIrregular = true;
-                    }
-
-                    if (!addedIrregular)
-                    {
-                        cells.Add(anchor);
-                    }
-                    break;
-                default:
-                    foreach (IntVec3 cell in GenRadial.RadialCellsAround(anchor, rawRadius, true))
-                    {
-                        cells.Add(cell);
-                    }
-                    break;
-            }
-
-            return cells.Where(c => c.InBounds(map));
+            return AbilityAreaUtility.BuildAbilityAreaCells(caster, ability, impactCenter);
         }
 
         private static IEnumerable<IntVec3> BuildIrregularPatternCells(IntVec3 anchor, IntVec3 forward, IntVec3 right, string? pattern)

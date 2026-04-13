@@ -193,7 +193,8 @@ namespace CharacterStudio.Abilities
         VanillaPawnFlyer,
         FlightOnlyFollowup,
         FlightLandingBurst,
-        TimeStop
+        TimeStop,
+        WeatherChange
     }
 
     public enum AbilityRuntimeHotkeySlot
@@ -248,13 +249,21 @@ namespace CharacterStudio.Abilities
         public int pulseTotalTicks = 240;
         public bool pulseStartsImmediately = true;
         public float killRefreshCooldownPercent = 1f;
+        [EditorField("CS_Studio_Runtime_ShieldMaxDamage", AbilityRuntimeComponentType.ShieldAbsorb, Min = 1f, Max = 99999f)]
         public float shieldMaxDamage = 120f;
+        [EditorField("CS_Studio_Runtime_Duration", AbilityRuntimeComponentType.ShieldAbsorb, AbilityRuntimeComponentType.AttachedShieldVisual, Min = 1f, Max = 99999f)]
         public float shieldDurationTicks = 240f;
+        [EditorField("CS_Studio_Runtime_ShieldHealRatio", AbilityRuntimeComponentType.ShieldAbsorb, Min = 0f, Max = 10f)]
         public float shieldHealRatio = 0.5f;
+        [EditorField("CS_Studio_Runtime_ShieldBonusDamageRatio", AbilityRuntimeComponentType.ShieldAbsorb, Min = 0f, Max = 10f)]
         public float shieldBonusDamageRatio = 0.25f;
+        [EditorField("CS_Studio_Runtime_ShieldVisualScale", AbilityRuntimeComponentType.AttachedShieldVisual, AbilityRuntimeComponentType.ProjectileInterceptorShield, Min = 0.1f, Max = 10f)]
         public float shieldVisualScale = 1f;
+        [EditorField("CS_Studio_Runtime_ShieldVisualHeightOffset", AbilityRuntimeComponentType.AttachedShieldVisual, Min = -5f, Max = 5f)]
         public float shieldVisualHeightOffset = 0f;
+        [EditorField("CS_Studio_Runtime_ShieldInterceptorThingDefName", AbilityRuntimeComponentType.ProjectileInterceptorShield)]
         public string shieldInterceptorThingDefName = string.Empty;
+        [EditorField("CS_Studio_Runtime_Duration", AbilityRuntimeComponentType.ProjectileInterceptorShield, Min = 1f, Max = 99999f)]
         public int shieldInterceptorDurationTicks = 240;
         public int maxBounceCount = 4;
         public float bounceRange = 6f;
@@ -323,6 +332,13 @@ namespace CharacterStudio.Abilities
         public float knockbackDistance = 1.5f;
         public int timeStopDurationTicks = 60;
         public bool freezeVisualsDuringTimeStop = true;
+
+        [EditorField("CS_Studio_Effect_WeatherDef", AbilityRuntimeComponentType.WeatherChange)]
+        public string weatherDefName = string.Empty;
+        [EditorField("CS_Studio_Effect_WeatherDuration", AbilityRuntimeComponentType.WeatherChange, Min = 1f, Max = 9999999f)]
+        public int weatherDurationTicks = 60000;
+        [EditorField("CS_Studio_Effect_WeatherTransition", AbilityRuntimeComponentType.WeatherChange, Min = 0f, Max = 99999f)]
+        public int weatherTransitionTicks = 3000;
 
         public AbilityRuntimeComponentConfig Clone()
         {
@@ -651,7 +667,8 @@ namespace CharacterStudio.Abilities
         Summon,
         Teleport,
         Control,
-        Terraform
+        Terraform,
+        WeatherChange
     }
 
     public enum AbilityVisualEffectType
@@ -1031,6 +1048,10 @@ namespace CharacterStudio.Abilities
         public int terraformSpawnCount = 1;
         public bool canHurtSelf = false;
 
+        public string weatherDefName = string.Empty; // Added for WeatherChange
+        public int weatherDurationTicks = 60000; // Added for WeatherChange (default 1 day)
+        public int weatherTransitionTicks = 3000; // Added for WeatherChange (default 0.5 hour)
+
         public AbilityEffectConfig Clone()
         {
             return (AbilityEffectConfig)MemberwiseClone();
@@ -1043,6 +1064,11 @@ namespace CharacterStudio.Abilities
             summonCount = AbilityEditorNormalizationUtility.ClampInt(summonCount, 1, 99);
             controlMoveDistance = AbilityEditorNormalizationUtility.ClampInt(controlMoveDistance, 1, 99);
             terraformSpawnCount = AbilityEditorNormalizationUtility.ClampInt(terraformSpawnCount, 1, 999);
+
+            // Added for WeatherChange
+            weatherDefName = AbilityEditorNormalizationUtility.TrimOrEmpty(weatherDefName);
+            weatherDurationTicks = AbilityEditorNormalizationUtility.ClampInt(weatherDurationTicks, 1, 9999999);
+            weatherTransitionTicks = AbilityEditorNormalizationUtility.ClampInt(weatherTransitionTicks, 0, 99999);
         }
 
         public AbilityValidationResult Validate()
@@ -1090,6 +1116,14 @@ namespace CharacterStudio.Abilities
                                 result.AddError("CS_Ability_Validate_TerraformTerrainRequired".Translate());
                             break;
                     }
+                    break;
+                case AbilityEffectType.WeatherChange: // Added validation for WeatherChange
+                    if (string.IsNullOrWhiteSpace(weatherDefName))
+                        result.AddError("CS_Ability_Validate_WeatherDefNameRequired".Translate());
+                    if (weatherDurationTicks <= 0)
+                        result.AddError("CS_Ability_Validate_WeatherDurationPositive".Translate());
+                    if (weatherTransitionTicks < 0)
+                        result.AddError("CS_Ability_Validate_WeatherTransitionNonNegative".Translate());
                     break;
             }
 
@@ -1184,7 +1218,7 @@ namespace CharacterStudio.Abilities
                         result.AddWarning("CS_Ability_Validate_RuntimeComponentWarning".Translate(i + 1, componentLabel, warning));
                 }
 
-                AddRuntimeComponentConflictWarnings(ability.runtimeComponents, result);
+                AddRuntimeComponentConflictWarnings(ability.runtimeComponents, ability.carrierType, result);
             }
 
             if (ability.visualEffects != null)
@@ -1287,7 +1321,7 @@ namespace CharacterStudio.Abilities
             return true;
         }
 
-        private static void AddRuntimeComponentConflictWarnings(List<AbilityRuntimeComponentConfig> runtimeComponents, AbilityValidationResult result)
+        private static void AddRuntimeComponentConflictWarnings(List<AbilityRuntimeComponentConfig> runtimeComponents, AbilityCarrierType carrierType, AbilityValidationResult result)
         {
             List<(AbilityRuntimeComponentConfig component, int index)> enabledComponents = runtimeComponents
                 .Select((component, index) => new { component, index })
@@ -1306,6 +1340,8 @@ namespace CharacterStudio.Abilities
             WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.KillRefresh);
             WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.PeriodicPulse);
             WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.ShieldAbsorb);
+            WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.AttachedShieldVisual);
+            WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.ProjectileInterceptorShield);
             WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.MarkDetonation);
             WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.ComboStacks);
             WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.DashEmpoweredStrike);
@@ -1313,6 +1349,7 @@ namespace CharacterStudio.Abilities
             WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.VanillaPawnFlyer);
             WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.FlightOnlyFollowup);
             WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.FlightLandingBurst);
+            WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.TimeStop);
 
             List<(AbilityRuntimeComponentConfig component, int index)> movementComponents = enabledComponents
                 .Where(entry => entry.component.type == AbilityRuntimeComponentType.SmartJump || entry.component.type == AbilityRuntimeComponentType.EShortJump)
@@ -1337,7 +1374,26 @@ namespace CharacterStudio.Abilities
             List<(AbilityRuntimeComponentConfig component, int index)> dashEmpoweredStrikeComponents = enabledComponents
                 .Where(entry => entry.component.type == AbilityRuntimeComponentType.DashEmpoweredStrike)
                 .ToList();
+            List<(AbilityRuntimeComponentConfig component, int index)> projectileSplitComponents = enabledComponents
+                .Where(entry => entry.component.type == AbilityRuntimeComponentType.ProjectileSplit)
+                .ToList();
+            List<(AbilityRuntimeComponentConfig component, int index)> chainBounceComponents = enabledComponents
+                .Where(entry => entry.component.type == AbilityRuntimeComponentType.ChainBounce)
+                .ToList();
+            List<(AbilityRuntimeComponentConfig component, int index)> shieldAbsorbComponents = enabledComponents
+                .Where(entry => entry.component.type == AbilityRuntimeComponentType.ShieldAbsorb)
+                .ToList();
+            List<(AbilityRuntimeComponentConfig component, int index)> interceptorShieldComponents = enabledComponents
+                .Where(entry => entry.component.type == AbilityRuntimeComponentType.ProjectileInterceptorShield)
+                .ToList();
+            List<(AbilityRuntimeComponentConfig component, int index)> hitHealComponents = enabledComponents
+                .Where(entry => entry.component.type == AbilityRuntimeComponentType.HitHeal)
+                .ToList();
+            List<(AbilityRuntimeComponentConfig component, int index)> hitCooldownRefundComponents = enabledComponents
+                .Where(entry => entry.component.type == AbilityRuntimeComponentType.HitCooldownRefund)
+                .ToList();
             bool hasMovement = movementComponents.Count > 0;
+            AbilityCarrierType normalizedCarrier = NormalizeCarrierType(carrierType);
 
             if (dashEmpoweredStrikeComponents.Count > 0 && !hasMovement)
             {
@@ -1361,6 +1417,40 @@ namespace CharacterStudio.Abilities
             {
                 result.AddWarning("CS_Ability_Validate_RuntimeConflict_LandingBurstNeedsVanillaFlyer".Translate(
                     FormatRuntimeComponentEntries(flightLandingBurstComponents)));
+            }
+
+            // 投射物分裂和连锁弹跳需要投射物载具类型
+            if (projectileSplitComponents.Count > 0 && normalizedCarrier != AbilityCarrierType.Projectile)
+            {
+                result.AddWarning("CS_Ability_Validate_RuntimeConflict_ProjectileSplitNeedsProjectile".Translate(
+                    FormatRuntimeComponentEntries(projectileSplitComponents)));
+            }
+
+            if (chainBounceComponents.Count > 0 && normalizedCarrier != AbilityCarrierType.Projectile)
+            {
+                result.AddWarning("CS_Ability_Validate_RuntimeConflict_ChainBounceNeedsProjectile".Translate(
+                    FormatRuntimeComponentEntries(chainBounceComponents)));
+            }
+
+            // 护盾吸收 + 拦截护盾同时存在可能功能重叠
+            if (shieldAbsorbComponents.Count > 0 && interceptorShieldComponents.Count > 0)
+            {
+                result.AddWarning("CS_Ability_Validate_RuntimeConflict_ShieldOverlap".Translate(
+                    FormatRuntimeComponentEntries(shieldAbsorbComponents),
+                    FormatRuntimeComponentEntries(interceptorShieldComponents)));
+            }
+
+            // 命中触发类组件（HitHeal、HitCooldownRefund）对自身载具无意义
+            if (hitHealComponents.Count > 0 && normalizedCarrier == AbilityCarrierType.Self)
+            {
+                result.AddWarning("CS_Ability_Validate_RuntimeConflict_HitEffectNeedsTarget".Translate(
+                    FormatRuntimeComponentEntries(hitHealComponents)));
+            }
+
+            if (hitCooldownRefundComponents.Count > 0 && normalizedCarrier == AbilityCarrierType.Self)
+            {
+                result.AddWarning("CS_Ability_Validate_RuntimeConflict_HitEffectNeedsTarget".Translate(
+                    FormatRuntimeComponentEntries(hitCooldownRefundComponents)));
             }
         }
 

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
     <CS_Studio_Browser_Search>搜索...</CS_Studio_Browser_Search>
+    <CS_Studio_Browser_ModsDir>转到 RimWorld Mods 目录</CS_Studio_Browser_ModsDir>
     <CS_Studio_Browser_Title>文件浏览</CS_Studio_Browser_Title>
     <CS_Studio_Browser_Up>上级</CS_Studio_Browser_Up>
     <CS_Studio_Export_AsGene>导出为基因</CS_Studio_Export_AsGene>

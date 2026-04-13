@@ -55,9 +55,9 @@ namespace CharacterStudio.UI
 
         public override Vector2 InitialSize => new Vector2(640f, 680f);
 
-        public Dialog_FileBrowser(string initialPath, Action<string> onSelect, string fileFilter = "*.png")
+        public Dialog_FileBrowser(string initialPath, Action<string> onSelect, string fileFilter = "*.png", string? defaultRoot = null)
         {
-            string fallbackPath = Path.Combine(GenFilePaths.ConfigFolderPath, "CharacterStudio");
+            string fallbackPath = !string.IsNullOrWhiteSpace(defaultRoot) ? defaultRoot! : Path.Combine(GenFilePaths.ConfigFolderPath, "CharacterStudio");
             try
             {
                 if (!Directory.Exists(fallbackPath))
@@ -67,11 +67,7 @@ namespace CharacterStudio.UI
             }
             catch { }
 
-            currentPath = (!string.IsNullOrWhiteSpace(initialPath)
-                && Path.IsPathRooted(initialPath)
-                && Directory.Exists(initialPath))
-                ? initialPath
-                : fallbackPath;
+            currentPath = ResolveStartingPath(initialPath, fallbackPath);
 
             onFileSelected = onSelect;
             filter = fileFilter;
@@ -84,9 +80,9 @@ namespace CharacterStudio.UI
             RefreshFileList();
         }
 
-        public Dialog_FileBrowser(string initialPath, Action<List<string>> onSelectMulti, string fileFilter = "*.xml")
+        public Dialog_FileBrowser(string initialPath, Action<List<string>> onSelectMulti, string fileFilter = "*.xml", string? defaultRoot = null)
         {
-            string fallbackPath = Path.Combine(GenFilePaths.ConfigFolderPath, "CharacterStudio");
+            string fallbackPath = !string.IsNullOrWhiteSpace(defaultRoot) ? defaultRoot! : Path.Combine(GenFilePaths.ConfigFolderPath, "CharacterStudio");
             try
             {
                 if (!Directory.Exists(fallbackPath))
@@ -96,11 +92,7 @@ namespace CharacterStudio.UI
             }
             catch { }
 
-            currentPath = (!string.IsNullOrWhiteSpace(initialPath)
-                && Path.IsPathRooted(initialPath)
-                && Directory.Exists(initialPath))
-                ? initialPath
-                : fallbackPath;
+            currentPath = ResolveStartingPath(initialPath, fallbackPath);
 
             this.onFilesSelected = onSelectMulti;
             this.multiSelect = true;
@@ -113,6 +105,48 @@ namespace CharacterStudio.UI
             optionalTitle = "CS_Studio_Browser_Title".Translate();
 
             RefreshFileList();
+        }
+
+        private static string ResolveStartingPath(string? path, string fallback)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return fallback;
+            }
+
+            try
+            {
+                string trimmed = path!.Trim();
+                if (Directory.Exists(trimmed))
+                {
+                    return trimmed;
+                }
+
+                if (File.Exists(trimmed))
+                {
+                    string? dir = Path.GetDirectoryName(trimmed);
+                    if (!string.IsNullOrWhiteSpace(dir) && Directory.Exists(dir))
+                    {
+                        return dir;
+                    }
+                }
+
+                // Try to see if the path is a valid absolute path format but doesn't exist yet
+                if (Path.IsPathRooted(trimmed))
+                {
+                    string? dir = Path.GetDirectoryName(trimmed);
+                    if (!string.IsNullOrWhiteSpace(dir) && Directory.Exists(dir))
+                    {
+                        return dir;
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore parsing errors
+            }
+
+            return fallback;
         }
 
         private void RefreshFileList()
@@ -230,8 +264,23 @@ namespace CharacterStudio.UI
             Widgets.DrawBox(searchRect, 1);
             GUI.color = Color.white;
 
-            Rect searchInnerRect = searchRect.ContractedBy(6f);
-            searchText = Widgets.TextEntryLabeled(searchInnerRect, "CS_Studio_Browser_Search".Translate(), searchText);
+            Rect inner = searchRect.ContractedBy(4f);
+            float modsBtnWidth = 64f;
+            
+            // Mods 快速访问按钮
+            Rect modsBtnRect = new Rect(inner.x, inner.y, modsBtnWidth, inner.height);
+            if (DrawBrowserButton(modsBtnRect, "Mods", accent: true))
+            {
+                currentPath = GenFilePaths.ModsFolderPath;
+                searchText = "";
+                scrollPos = Vector2.zero;
+                RefreshFileList();
+            }
+            TooltipHandler.TipRegion(modsBtnRect, "CS_Studio_Browser_ModsDir".Translate());
+
+            // 搜索输入框
+            Rect searchInnerRect = new Rect(modsBtnRect.xMax + 8f, inner.y, inner.width - modsBtnWidth - 8f, inner.height);
+            searchText = Widgets.TextEntryLabeled(searchInnerRect, "CS_Studio_Browser_Search".Translate() + " ", searchText);
             y += searchRect.height + SectionGap;
         }
 

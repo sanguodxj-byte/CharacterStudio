@@ -472,7 +472,7 @@ namespace CharacterStudio.UI
 
         private string GetSelectedEquipmentAnimationTriggerKey()
         {
-            if (currentTab != EditorTab.Equipment)
+            if (currentTab != EditorTab.Items)
             {
                 return string.Empty;
             }
@@ -515,7 +515,7 @@ namespace CharacterStudio.UI
 
         private int GetSelectedEquipmentAnimationDurationTicks()
         {
-            if (currentTab != EditorTab.Equipment)
+            if (currentTab != EditorTab.Items)
             {
                 return 0;
             }
@@ -1117,7 +1117,6 @@ namespace CharacterStudio.UI
             if (mannequin != null)
             {
                 mannequin.DrawPreview(previewInnerRect, previewRotation, previewZoom);
-                DrawWeaponPreviewOverlay(previewInnerRect);
                 DrawReferenceGhostOverlay(previewInnerRect);
                 DrawMapTileReferenceGrid(previewInnerRect);
                 DrawFaceGazeCursorOverlay(previewInnerRect);
@@ -1327,50 +1326,6 @@ namespace CharacterStudio.UI
             return (Mathf.Min(previewRect.width, previewRect.height) / 1.5f) * previewZoom;
         }
 
-        private void DrawWeaponPreviewOverlay(Rect previewRect)
-        {
-            var cfg = workingSkin.weaponRenderConfig?.carryVisual;
-            if (cfg == null || !cfg.enabled)
-            {
-                return;
-            }
-
-            string texPath = cfg.GetTexPath(previewWeaponCarryState);
-            Texture2D? texture = LoadPreviewWeaponTexture(texPath);
-            if (texture == null)
-            {
-                return;
-            }
-
-            float pixelsPerUnit = GetPreviewPixelsPerUnit(previewRect);
-            Vector3 offset = cfg.GetOffsetForRotation(previewRotation);
-            Vector2 screenCenter = previewRect.center + new Vector2(offset.x, -(offset.y + offset.z)) * pixelsPerUnit;
-
-            float baseHeight = Mathf.Max(18f, pixelsPerUnit * 0.55f * Mathf.Max(0.1f, cfg.scale.y));
-            float aspect = texture.height > 0 ? texture.width / (float)texture.height : 1f;
-            float width = Mathf.Max(18f, baseHeight * Mathf.Max(0.1f, cfg.scale.x) * aspect);
-            Rect drawRect = new Rect(screenCenter.x - width * 0.5f, screenCenter.y - baseHeight * 0.5f, width, baseHeight);
-
-            Color oldColor = GUI.color;
-            GUI.color = new Color(1f, 1f, 1f, 0.95f);
-            GUI.DrawTexture(drawRect, texture, ScaleMode.ScaleToFit, true);
-            GUI.color = oldColor;
-        }
-
-        private Texture2D? LoadPreviewWeaponTexture(string texPath)
-        {
-            if (string.IsNullOrWhiteSpace(texPath))
-            {
-                return null;
-            }
-
-            if (System.IO.Path.IsPathRooted(texPath) || texPath.StartsWith("/"))
-            {
-                return CharacterStudio.Rendering.RuntimeAssetLoader.LoadTextureRaw(texPath);
-            }
-
-            return ContentFinder<Texture2D>.Get(texPath, false);
-        }
 
         private void DrawSelectedLayerHighlight(Rect previewRect)
         {
@@ -1402,7 +1357,7 @@ namespace CharacterStudio.UI
 
         private void DrawSelectedEquipmentPivotOverlay(Rect previewRect)
         {
-            if (currentTab != EditorTab.Equipment)
+            if (currentTab != EditorTab.Items)
             {
                 return;
             }
@@ -1466,7 +1421,7 @@ namespace CharacterStudio.UI
             renderData = null;
             pivotScreenPos = Vector2.zero;
 
-            if (currentTab != EditorTab.Equipment)
+            if (currentTab != EditorTab.Items)
             {
                 return false;
             }
@@ -1512,7 +1467,7 @@ namespace CharacterStudio.UI
         private void UpdateEquipmentPivotDragState(Rect previewRect)
         {
             Event evt = Event.current;
-            if (!equipmentPivotEditMode || currentTab != EditorTab.Equipment)
+            if (!equipmentPivotEditMode || currentTab != EditorTab.Items)
             {
                 isDraggingEquipmentPivot = false;
                 return;
@@ -1534,7 +1489,7 @@ namespace CharacterStudio.UI
 
         private bool TryApplyDragToSelectedEquipmentPivot(Rect previewRect)
         {
-            if (!equipmentPivotEditMode || currentTab != EditorTab.Equipment || !isDraggingEquipmentPivot)
+            if (!equipmentPivotEditMode || currentTab != EditorTab.Items || !isDraggingEquipmentPivot)
             {
                 return false;
             }
@@ -1772,14 +1727,14 @@ namespace CharacterStudio.UI
 
         private bool TryApplyDragToWeaponPreview(float dx, float dz)
         {
-            if (currentTab != EditorTab.Weapon)
+            if (currentTab != EditorTab.Animation)
             {
                 return false;
             }
 
-            workingSkin.weaponRenderConfig ??= new WeaponRenderConfig();
-            workingSkin.weaponRenderConfig.carryVisual ??= new WeaponCarryVisualConfig();
-            ApplyPreviewDeltaToWeaponConfig(workingSkin.weaponRenderConfig.carryVisual, dx, dz);
+            workingSkin.animationConfig ??= new PawnAnimationConfig();
+            workingSkin.animationConfig.carryVisual ??= new WeaponCarryVisualConfig();
+            ApplyPreviewDeltaToWeaponConfig(workingSkin.animationConfig.carryVisual, dx, dz);
             isDirty = true;
             RefreshPreview();
             return true;
@@ -1787,14 +1742,14 @@ namespace CharacterStudio.UI
 
         private bool TryApplyNudgeToWeaponPreview(float dx, float dz)
         {
-            if (currentTab != EditorTab.Weapon)
+            if (currentTab != EditorTab.Animation)
             {
                 return false;
             }
 
-            workingSkin.weaponRenderConfig ??= new WeaponRenderConfig();
-            workingSkin.weaponRenderConfig.carryVisual ??= new WeaponCarryVisualConfig();
-            ApplyPreviewDeltaToWeaponConfig(workingSkin.weaponRenderConfig.carryVisual, dx, dz);
+            workingSkin.animationConfig ??= new PawnAnimationConfig();
+            workingSkin.animationConfig.carryVisual ??= new WeaponCarryVisualConfig();
+            ApplyPreviewDeltaToWeaponConfig(workingSkin.animationConfig.carryVisual, dx, dz);
             isDirty = true;
             RefreshPreview();
             return true;
@@ -1802,7 +1757,7 @@ namespace CharacterStudio.UI
 
         private bool TryApplyDragToSelectedEquipmentPreview(float dx, float dz)
         {
-            if (currentTab != EditorTab.Equipment)
+            if (currentTab != EditorTab.Items)
             {
                 return false;
             }
@@ -1826,7 +1781,7 @@ namespace CharacterStudio.UI
 
         private bool TryApplyNudgeToSelectedEquipmentPreview(float dx, float dz)
         {
-            if (currentTab != EditorTab.Equipment)
+            if (currentTab != EditorTab.Items)
             {
                 return false;
             }

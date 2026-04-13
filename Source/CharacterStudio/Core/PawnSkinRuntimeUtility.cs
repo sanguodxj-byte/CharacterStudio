@@ -148,9 +148,9 @@ namespace CharacterStudio.Core
                 }
             }
 
-            if (skin.weaponRenderConfig?.carryVisual != null)
+            if (skin.animationConfig?.carryVisual != null)
             {
-                WeaponCarryVisualConfig carryVisual = skin.weaponRenderConfig.carryVisual;
+                WeaponCarryVisualConfig carryVisual = skin.animationConfig.carryVisual;
                 YieldIfExternal(carryVisual.texUndrafted);
                 YieldIfExternal(carryVisual.texDrafted);
                 YieldIfExternal(carryVisual.texCasting);

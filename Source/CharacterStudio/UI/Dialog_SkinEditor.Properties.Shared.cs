@@ -17,6 +17,8 @@ namespace CharacterStudio.UI
             "CutoutComplex",
             "Transparent",
             "TransparentPostLight",
+            "TransparentZWrite",
+            "ItemTransparent",
             "MetaOverlay"
         };
 

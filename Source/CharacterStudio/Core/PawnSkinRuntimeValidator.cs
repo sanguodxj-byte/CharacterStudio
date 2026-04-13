@@ -37,7 +37,7 @@ namespace CharacterStudio.Core
             prepared.abilityHotkeys ??= new SkinAbilityHotkeyConfig();
             prepared.attributes ??= new CharacterAttributeProfile();
             prepared.statModifiers ??= new CharacterStatModifierProfile();
-            prepared.weaponRenderConfig ??= new WeaponRenderConfig();
+            prepared.animationConfig ??= new PawnAnimationConfig();
             prepared.faceConfig ??= new PawnFaceConfig();
             prepared.baseAppearance ??= new BaseAppearanceConfig();
             prepared.baseAppearance.EnsureAllSlotsExist();

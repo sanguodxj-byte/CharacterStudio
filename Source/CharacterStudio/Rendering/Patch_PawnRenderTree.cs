@@ -247,6 +247,11 @@ namespace CharacterStudio.Rendering
         /// 对所有渲染节点（含原版身体、头发、装备等）统一乘以 globalTextureScale。
         /// CS 自定义图层（PawnRenderNode_Custom）跳过，因为它们的 Worker 中已经单独应用了。
         /// </summary>
+        // P9: 缓存最近一次 GlobalPostfix 的 (Pawn, CompPawnSkin) 对，
+        // 因为同一帧内所有原版节点都属于同一个 pawn，避免重复 GetComp。
+        private static Pawn? _globalPostfixLastPawn;
+        private static CompPawnSkin? _globalPostfixLastComp;
+
         public static void ScaleFor_GlobalPostfix(PawnRenderNode node, PawnDrawParms parms, ref Vector3 __result)
         {
             if (node == null || node is PawnRenderNode_Custom) return;
@@ -256,7 +261,19 @@ namespace CharacterStudio.Rendering
                 Pawn? pawn = parms.pawn ?? node.tree?.pawn;
                 if (pawn == null) return;
 
-                var skinComp = pawn.GetComp<CompPawnSkin>();
+                // P9: 使用缓存避免每个节点都调用 GetComp
+                CompPawnSkin? skinComp;
+                if (pawn == _globalPostfixLastPawn)
+                {
+                    skinComp = _globalPostfixLastComp;
+                }
+                else
+                {
+                    skinComp = pawn.GetComp<CompPawnSkin>();
+                    _globalPostfixLastPawn = pawn;
+                    _globalPostfixLastComp = skinComp;
+                }
+
                 if (skinComp?.ActiveSkin == null) return;
 
                 float gs = skinComp.ActiveSkin.globalTextureScale;

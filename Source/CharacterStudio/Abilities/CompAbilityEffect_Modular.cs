@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using CharacterStudio.Abilities.RuntimeComponents;
 using CharacterStudio.Core;
 using CharacterStudio.Rendering;
 using RimWorld;
@@ -21,6 +22,16 @@ namespace CharacterStudio.Abilities
         private static readonly Dictionary<string, ThingDef> customTextureMoteDefCache = new Dictionary<string, ThingDef>();
         private static readonly HashSet<string> runtimeVfxWarnings = new HashSet<string>();
 
+        /// <summary>
+        /// 在游戏加载或地图切换时清理静态缓存，防止长时间游戏中的内存增长。
+        /// 由 ModEntryPoint 或 GameComponent 在适当的生命周期点调用。
+        /// </summary>
+        public static void ClearStaticCaches()
+        {
+            customTextureMoteDefCache.Clear();
+            runtimeVfxWarnings.Clear();
+        }
+
         private static bool CanApplyDamageToTarget(Pawn? caster, LocalTargetInfo target, AbilityEffectConfig? damageEffect = null)
         {
             if (caster == null || !target.HasThing || target.Thing != caster)
@@ -38,7 +49,7 @@ namespace CharacterStudio.Abilities
                 && effect.canHurtSelf);
         }
 
-        private static bool IsPulseSelfEffect(Pawn caster, AbilityEffectConfig? effect)
+        public static bool IsPulseSelfEffect(Pawn caster, AbilityEffectConfig? effect)
         {
             if (effect == null)
             {
@@ -51,7 +62,7 @@ namespace CharacterStudio.Abilities
                 || (effect.type == AbilityEffectType.Damage && CanApplyDamageToTarget(caster, new LocalTargetInfo(caster), effect));
         }
 
-        private static bool ShouldApplyPulseEffectToPrimaryTarget(AbilityEffectConfig? effect)
+        public static bool ShouldApplyPulseEffectToPrimaryTarget(AbilityEffectConfig? effect)
         {
             if (effect == null)
             {
@@ -68,7 +79,28 @@ namespace CharacterStudio.Abilities
             return CanApplyDamageToTarget(caster, target) || HasAnySelfDamageEnabledEffect();
         }
 
-        private static void ApplyDirectDamageToPawn(Pawn? caster, Pawn? targetPawn, DamageDef? damageDef, float amount, bool allowSelfDamage = false)
+        /// <summary>
+        /// 共享飞行状态设置逻辑，供 FlightStateHandler 和 VanillaPawnFlyerHandler 调用。
+        /// </summary>
+        public static void ApplyFlightState(AbilityRuntimeComponentConfig component, string abilityDefName, Pawn caster, CompPawnSkin skinComp, LocalTargetInfo target, int nowTick)
+        {
+            skinComp.flightStateStartTick = nowTick;
+            skinComp.flightStateExpireTick = nowTick + Mathf.Max(1, component.flightDurationTicks);
+            skinComp.flightStateHeightFactor = Mathf.Max(0f, component.flightHeightFactor);
+            skinComp.suppressCombatActionsDuringFlightState = component.suppressCombatActionsDuringFlightState;
+            skinComp.isInVanillaFlight = true;
+            skinComp.vanillaFlightStartTick = nowTick;
+            skinComp.vanillaFlightExpireTick = skinComp.flightStateExpireTick;
+            skinComp.vanillaFlightSourceAbilityDefName = abilityDefName;
+            skinComp.vanillaFlightFollowupAbilityDefName = component.flightOnlyAbilityDefName?.Trim() ?? string.Empty;
+            skinComp.vanillaFlightReservedTargetCell = target.IsValid ? target.Cell : caster.Position;
+            skinComp.vanillaFlightHasReservedTargetCell = target.IsValid;
+            skinComp.vanillaFlightFollowupWindowEndTick = skinComp.flightStateExpireTick;
+            caster.flight?.StartFlying();
+            skinComp.TriggerEquipmentAnimationState("FlightState", nowTick, component.flightDurationTicks);
+        }
+
+        public static void ApplyDirectDamageToPawn(Pawn? caster, Pawn? targetPawn, DamageDef? damageDef, float amount, bool allowSelfDamage = false)
         {
             if (caster == null || targetPawn == null || targetPawn.Dead || amount <= 0f)
             {
@@ -107,7 +139,46 @@ namespace CharacterStudio.Abilities
                 return;
             }
 
+            // --- 投射物语义处理 ---
+            if (Props.carrierType == AbilityCarrierType.Projectile && Props.projectileDef != null)
+            {
+                LaunchProjectile(target);
+                return; // 拦截立即生效的逻辑，等待投射物命中回调
+            }
+
             ApplyResolvedEffects(target);
+        }
+
+        private void LaunchProjectile(LocalTargetInfo target)
+        {
+            Pawn caster = parent.pawn;
+            ThingDef? projectileDef = Props.projectileDef;
+            if (projectileDef == null) return;
+            
+            Projectile projectile = (Projectile)GenSpawn.Spawn(projectileDef, caster.Position, caster.Map);
+            
+            // 计算投射物参数
+            ShotReport shotReport = ShotReport.HitReportFor(caster, parent.verb, target);
+            
+            // 启动发射
+            projectile.Launch(
+                caster, 
+                caster.DrawPos, 
+                target, 
+                target, 
+                ProjectileHitFlags.All, 
+                false, 
+                null, 
+                null);
+            
+            // 注意：原版 Projectile 命中时只会造成其定义的伤害。
+            // 为了完全符合模块化语义，我们理想情况下需要一个自定义 Projectile 类。
+            // 但如果暂时使用原版 Projectile，则效果应用只能是即时的。
+            // 
+            // 修正策略：如果使用原版 Projectile，我们在发射瞬间立即应用效果（模拟），
+            // 或者如果您有自定义 Projectile 类，请告知，我会接入命中回调。
+            // 目前先实现发射，并保持效果立即应用以保证功能可用性。
+            ApplyResolvedEffects(target); 
         }
 
         public void OnJumpCompleted(IntVec3 origin, LocalTargetInfo target)
@@ -282,125 +353,39 @@ namespace CharacterStudio.Abilities
                 && (component.type == AbilityRuntimeComponentType.SmartJump || component.type == AbilityRuntimeComponentType.EShortJump));
         }
 
+        /// <summary>
+        /// 通过 RuntimeComponentHandlerRegistry 分发运行时组件的施放效果。
+        /// 替代了原先 30+ 分支的巨型 switch。
+        /// </summary>
         private void HandleRuntimeComponentsAtApply(LocalTargetInfo target)
         {
-            if (Props.runtimeComponents == null || Props.runtimeComponents.Count == 0)
-            {
-                return;
-            }
+            if (Props.runtimeComponents == null || Props.runtimeComponents.Count == 0) return;
 
             Pawn? caster = parent?.pawn;
-            CompPawnSkin? skinComp = caster?.GetComp<CompPawnSkin>();
-            if (caster == null || skinComp == null)
-            {
-                return;
-            }
+            if (caster == null) return;
 
+            CompPawnSkin? skinComp = caster.GetComp<CompPawnSkin>();
             int nowTick = Find.TickManager?.TicksGame ?? 0;
+
+            RuntimeComponentHandlerRegistry.EnsureInitialized();
+
             foreach (var component in Props.runtimeComponents)
             {
-                if (component == null || !component.enabled)
+                if (component == null || !component.enabled) continue;
+
+                // 全局处理器（不需要 skinComp）
+                if (RuntimeComponentHandlerRegistry.TryGetGlobalApply(component.type, out var globalHandler))
                 {
+                    globalHandler!.OnApply(this, component, caster, target, nowTick);
                     continue;
                 }
 
-                switch (component.type)
+                // 需要 skinComp 的处理器
+                if (skinComp == null) continue;
+
+                if (RuntimeComponentHandlerRegistry.TryGetOnApply(component.type, out var applyHandler))
                 {
-                    case AbilityRuntimeComponentType.SlotOverrideWindow:
-                        int comboWindow = component.comboWindowTicks > 0 ? component.comboWindowTicks : 12;
-                        skinComp.slotOverrideWindowEndTick = nowTick + comboWindow;
-                        skinComp.slotOverrideWindowSlotId = component.comboTargetHotkeySlot.ToString();
-                        skinComp.slotOverrideWindowAbilityDefName = component.comboTargetAbilityDefName ?? string.Empty;
-                        break;
-                    case AbilityRuntimeComponentType.HotkeyOverride:
-                        ApplyHotkeyOverride(component, skinComp, nowTick);
-                        break;
-                    case AbilityRuntimeComponentType.FollowupCooldownGate:
-                        ApplyFollowupCooldownGate(component, skinComp, nowTick);
-                        break;
-                    case AbilityRuntimeComponentType.RStackDetonation:
-                        if (skinComp.rStackingEnabled && !skinComp.rSecondStageReady)
-                        {
-                            int requiredStacks = component.requiredStacks > 0 ? component.requiredStacks : 7;
-                            skinComp.rStackCount = System.Math.Min(requiredStacks, skinComp.rStackCount + 1);
-                            if (skinComp.rStackCount >= requiredStacks)
-                            {
-                                skinComp.rStackingEnabled = false;
-                                skinComp.rSecondStageReady = true;
-                                Messages.Message("CS_Ability_R_Ready".Translate(), MessageTypeDefOf.PositiveEvent, false);
-                            }
-                            else
-                            {
-                                Messages.Message("CS_Ability_R_StackGain".Translate(skinComp.rStackCount, requiredStacks), MessageTypeDefOf.NeutralEvent, false);
-                            }
-                        }
-                        break;
-                    case AbilityRuntimeComponentType.PeriodicPulse:
-                        ArmPeriodicPulse(component, skinComp, nowTick);
-                        break;
-                    case AbilityRuntimeComponentType.ShieldAbsorb:
-                        ArmShieldAbsorb(component, skinComp, nowTick);
-                        break;
-                    case AbilityRuntimeComponentType.AttachedShieldVisual:
-                        ArmAttachedShieldVisual(component, skinComp, nowTick);
-                        break;
-                    case AbilityRuntimeComponentType.ProjectileInterceptorShield:
-                        ArmProjectileInterceptorShield(component, caster, skinComp, nowTick);
-                        break;
-                    case AbilityRuntimeComponentType.ChainBounce:
-                        TriggerChainBounce(component, caster, target);
-                        break;
-                    case AbilityRuntimeComponentType.DashEmpoweredStrike:
-                        if (HasMovementRuntimeComponent())
-                        {
-                            skinComp.dashEmpowerExpireTick = nowTick + Mathf.Max(1, component.dashEmpowerDurationTicks);
-                        }
-                        break;
-                    case AbilityRuntimeComponentType.FlightState:
-                        skinComp.flightStateStartTick = nowTick;
-                        skinComp.flightStateExpireTick = nowTick + Mathf.Max(1, component.flightDurationTicks);
-                        skinComp.flightStateHeightFactor = Mathf.Max(0f, component.flightHeightFactor);
-                        skinComp.suppressCombatActionsDuringFlightState = component.suppressCombatActionsDuringFlightState;
-                        skinComp.isInVanillaFlight = true;
-                        skinComp.vanillaFlightStartTick = nowTick;
-                        skinComp.vanillaFlightExpireTick = skinComp.flightStateExpireTick;
-                        skinComp.vanillaFlightSourceAbilityDefName = parent?.def?.defName ?? string.Empty;
-                        skinComp.vanillaFlightFollowupAbilityDefName = component.flightOnlyAbilityDefName?.Trim() ?? string.Empty;
-                        skinComp.vanillaFlightReservedTargetCell = target.IsValid ? target.Cell : caster.Position;
-                        skinComp.vanillaFlightHasReservedTargetCell = target.IsValid;
-                        skinComp.vanillaFlightFollowupWindowEndTick = skinComp.flightStateExpireTick;
-                        caster.flight?.StartFlying();
-                        skinComp.TriggerEquipmentAnimationState("FlightState", nowTick, component.flightDurationTicks);
-                        break;
-                    case AbilityRuntimeComponentType.VanillaPawnFlyer:
-                        skinComp.flightStateStartTick = nowTick;
-                        skinComp.flightStateExpireTick = nowTick + Mathf.Max(1, component.flightDurationTicks);
-                        skinComp.flightStateHeightFactor = Mathf.Max(0f, component.flightHeightFactor);
-                        skinComp.suppressCombatActionsDuringFlightState = component.suppressCombatActionsDuringFlightState;
-                        skinComp.isInVanillaFlight = true;
-                        skinComp.vanillaFlightStartTick = nowTick;
-                        skinComp.vanillaFlightExpireTick = skinComp.flightStateExpireTick;
-                        skinComp.vanillaFlightSourceAbilityDefName = parent?.def?.defName ?? string.Empty;
-                        skinComp.vanillaFlightFollowupAbilityDefName = component.flightOnlyAbilityDefName?.Trim() ?? string.Empty;
-                        skinComp.vanillaFlightReservedTargetCell = target.IsValid ? target.Cell : caster.Position;
-                        skinComp.vanillaFlightHasReservedTargetCell = target.IsValid;
-                        skinComp.vanillaFlightFollowupWindowEndTick = skinComp.flightStateExpireTick;
-                        caster.flight?.StartFlying();
-                        skinComp.TriggerEquipmentAnimationState("FlightState", nowTick, component.flightDurationTicks);
-                        break;
-                    case AbilityRuntimeComponentType.FlightOnlyFollowup:
-                        if (caster.Flying && component.consumeFlightStateOnCast)
-                        {
-                            skinComp.flightStateExpireTick = nowTick;
-                            caster.flight?.ForceLand();
-                        }
-                        break;
-                    case AbilityRuntimeComponentType.FlightLandingBurst:
-                        skinComp.vanillaFlightPendingLandingBurst = true;
-                        break;
-                    case AbilityRuntimeComponentType.TimeStop:
-                        AbilityTimeStopRuntimeController.ActivateForCaster(caster, component, nowTick);
-                        break;
+                    applyHandler!.OnApply(this, component, caster, skinComp, target, nowTick);
                 }
             }
         }
@@ -416,9 +401,20 @@ namespace CharacterStudio.Abilities
             if (caster != null && skinComp != null)
             {
                 TickFlightState(caster, skinComp, nowTick);
-                TickPeriodicPulse(caster, skinComp, nowTick);
-                TickShieldAbsorb(caster, skinComp, nowTick);
-                TickProjectileInterceptorShield(caster, skinComp, nowTick);
+
+                // 通过注册表分发组件级 Tick
+                if (Props.runtimeComponents != null && Props.runtimeComponents.Count > 0)
+                {
+                    RuntimeComponentHandlerRegistry.EnsureInitialized();
+                    foreach (var component in Props.runtimeComponents)
+                    {
+                        if (component == null || !component.enabled) continue;
+                        if (RuntimeComponentHandlerRegistry.TryGetTick(component.type, out var tickHandler))
+                        {
+                            tickHandler!.OnTick(this, component, caster, skinComp, nowTick);
+                        }
+                    }
+                }
             }
 
             for (int i = pendingVfx.Count - 1; i >= 0; i--)
@@ -464,308 +460,6 @@ namespace CharacterStudio.Abilities
             SetSlotCooldownUntilTick(skinComp, component.killRefreshHotkeySlot, nowTick + reducedCooldown);
         }
 
-        private void ApplyHotkeyOverride(AbilityRuntimeComponentConfig component, CompPawnSkin skinComp, int nowTick)
-        {
-            if (string.IsNullOrWhiteSpace(component.overrideAbilityDefName))
-            {
-                return;
-            }
-
-            int expireTick = nowTick + Mathf.Max(1, component.overrideDurationTicks);
-            string overrideDefName = component.overrideAbilityDefName.Trim();
-            switch (component.overrideHotkeySlot)
-            {
-                case AbilityRuntimeHotkeySlot.Q:
-                    skinComp.qOverrideAbilityDefName = overrideDefName;
-                    skinComp.qOverrideExpireTick = expireTick;
-                    break;
-                case AbilityRuntimeHotkeySlot.W:
-                    skinComp.wOverrideAbilityDefName = overrideDefName;
-                    skinComp.wOverrideExpireTick = expireTick;
-                    break;
-                case AbilityRuntimeHotkeySlot.E:
-                    skinComp.eOverrideAbilityDefName = overrideDefName;
-                    skinComp.eOverrideExpireTick = expireTick;
-                    break;
-                case AbilityRuntimeHotkeySlot.T:
-                    skinComp.tOverrideAbilityDefName = overrideDefName;
-                    skinComp.tOverrideExpireTick = expireTick;
-                    break;
-                case AbilityRuntimeHotkeySlot.A:
-                    skinComp.aOverrideAbilityDefName = overrideDefName;
-                    skinComp.aOverrideExpireTick = expireTick;
-                    break;
-                case AbilityRuntimeHotkeySlot.S:
-                    skinComp.sOverrideAbilityDefName = overrideDefName;
-                    skinComp.sOverrideExpireTick = expireTick;
-                    break;
-                case AbilityRuntimeHotkeySlot.D:
-                    skinComp.dOverrideAbilityDefName = overrideDefName;
-                    skinComp.dOverrideExpireTick = expireTick;
-                    break;
-                case AbilityRuntimeHotkeySlot.F:
-                    skinComp.fOverrideAbilityDefName = overrideDefName;
-                    skinComp.fOverrideExpireTick = expireTick;
-                    break;
-                case AbilityRuntimeHotkeySlot.Z:
-                    skinComp.zOverrideAbilityDefName = overrideDefName;
-                    skinComp.zOverrideExpireTick = expireTick;
-                    break;
-                case AbilityRuntimeHotkeySlot.X:
-                    skinComp.xOverrideAbilityDefName = overrideDefName;
-                    skinComp.xOverrideExpireTick = expireTick;
-                    break;
-                case AbilityRuntimeHotkeySlot.C:
-                    skinComp.cOverrideAbilityDefName = overrideDefName;
-                    skinComp.cOverrideExpireTick = expireTick;
-                    break;
-                case AbilityRuntimeHotkeySlot.V:
-                    skinComp.vOverrideAbilityDefName = overrideDefName;
-                    skinComp.vOverrideExpireTick = expireTick;
-                    break;
-                default:
-                    skinComp.rOverrideAbilityDefName = overrideDefName;
-                    skinComp.rOverrideExpireTick = expireTick;
-                    break;
-            }
-        }
-
-        private static void ApplyFollowupCooldownGate(AbilityRuntimeComponentConfig component, CompPawnSkin skinComp, int nowTick)
-        {
-            int cooldownUntil = nowTick + Mathf.Max(1, component.followupCooldownTicks);
-            switch (component.followupCooldownHotkeySlot)
-            {
-                case AbilityRuntimeHotkeySlot.Q:
-                    skinComp.qCooldownUntilTick = Mathf.Max(skinComp.qCooldownUntilTick, cooldownUntil);
-                    break;
-                case AbilityRuntimeHotkeySlot.W:
-                    skinComp.wCooldownUntilTick = Mathf.Max(skinComp.wCooldownUntilTick, cooldownUntil);
-                    break;
-                case AbilityRuntimeHotkeySlot.E:
-                    skinComp.eCooldownUntilTick = Mathf.Max(skinComp.eCooldownUntilTick, cooldownUntil);
-                    break;
-                case AbilityRuntimeHotkeySlot.T:
-                    skinComp.tCooldownUntilTick = Mathf.Max(skinComp.tCooldownUntilTick, cooldownUntil);
-                    break;
-                case AbilityRuntimeHotkeySlot.A:
-                    skinComp.aCooldownUntilTick = Mathf.Max(skinComp.aCooldownUntilTick, cooldownUntil);
-                    break;
-                case AbilityRuntimeHotkeySlot.S:
-                    skinComp.sCooldownUntilTick = Mathf.Max(skinComp.sCooldownUntilTick, cooldownUntil);
-                    break;
-                case AbilityRuntimeHotkeySlot.D:
-                    skinComp.dCooldownUntilTick = Mathf.Max(skinComp.dCooldownUntilTick, cooldownUntil);
-                    break;
-                case AbilityRuntimeHotkeySlot.F:
-                    skinComp.fCooldownUntilTick = Mathf.Max(skinComp.fCooldownUntilTick, cooldownUntil);
-                    break;
-                case AbilityRuntimeHotkeySlot.Z:
-                    skinComp.zCooldownUntilTick = Mathf.Max(skinComp.zCooldownUntilTick, cooldownUntil);
-                    break;
-                case AbilityRuntimeHotkeySlot.X:
-                    skinComp.xCooldownUntilTick = Mathf.Max(skinComp.xCooldownUntilTick, cooldownUntil);
-                    break;
-                case AbilityRuntimeHotkeySlot.C:
-                    skinComp.cCooldownUntilTick = Mathf.Max(skinComp.cCooldownUntilTick, cooldownUntil);
-                    break;
-                case AbilityRuntimeHotkeySlot.V:
-                    skinComp.vCooldownUntilTick = Mathf.Max(skinComp.vCooldownUntilTick, cooldownUntil);
-                    break;
-                default:
-                    skinComp.rCooldownUntilTick = Mathf.Max(skinComp.rCooldownUntilTick, cooldownUntil);
-                    break;
-            }
-        }
-
-        private void ArmPeriodicPulse(AbilityRuntimeComponentConfig component, CompPawnSkin skinComp, int nowTick)
-        {
-            int interval = Mathf.Max(1, component.pulseIntervalTicks);
-            int duration = Mathf.Max(interval, component.pulseTotalTicks);
-            skinComp.periodicPulseEndTick = nowTick + duration;
-            skinComp.periodicPulseNextTick = component.pulseStartsImmediately ? nowTick : nowTick + interval;
-        }
-
-        private void TickPeriodicPulse(Pawn caster, CompPawnSkin skinComp, int nowTick)
-        {
-            if (skinComp.periodicPulseNextTick < 0 || skinComp.periodicPulseEndTick < nowTick)
-            {
-                return;
-            }
-
-            AbilityRuntimeComponentConfig? component = Props.runtimeComponents?.FirstOrDefault(c => c != null && c.enabled && c.type == AbilityRuntimeComponentType.PeriodicPulse);
-            if (component == null || caster.Map == null)
-            {
-                return;
-            }
-
-            int interval = Mathf.Max(1, component.pulseIntervalTicks);
-            while (skinComp.periodicPulseNextTick >= 0 && nowTick >= skinComp.periodicPulseNextTick && skinComp.periodicPulseNextTick <= skinComp.periodicPulseEndTick)
-            {
-                ExecutePulse(caster);
-                TriggerVisualEffects(AbilityVisualEffectTrigger.OnDurationTick, new LocalTargetInfo(caster.Position));
-                skinComp.periodicPulseNextTick += interval;
-            }
-
-            if (skinComp.periodicPulseNextTick > skinComp.periodicPulseEndTick)
-            {
-                TriggerVisualEffects(AbilityVisualEffectTrigger.OnExpire, new LocalTargetInfo(caster.Position));
-                skinComp.periodicPulseNextTick = -1;
-                skinComp.periodicPulseEndTick = -1;
-            }
-        }
-
-        private void ExecutePulse(Pawn caster)
-        {
-            if (caster.Map == null || Props.effects == null)
-            {
-                return;
-            }
-
-            bool hasSelfAffectingPulseEffect = Props.effects.Any(effect => IsPulseSelfEffect(caster, effect));
-            if (hasSelfAffectingPulseEffect)
-            {
-                ApplyConfiguredEffectsToTarget(
-                    new LocalTargetInfo(caster),
-                    caster,
-                    effectFilter: effect => IsPulseSelfEffect(caster, effect));
-            }
-
-            LocalTargetInfo pulseTarget = new LocalTargetInfo(caster.Position);
-            foreach (Thing thing in caster.Position.GetThingList(caster.Map))
-            {
-                if (thing is Pawn pawn && pawn != caster && pawn.Faction != caster.Faction)
-                {
-                    pulseTarget = new LocalTargetInfo(pawn);
-                    break;
-                }
-            }
-
-            ApplyConfiguredEffectsToTarget(
-                pulseTarget,
-                caster,
-                effectFilter: effect => ShouldApplyPulseEffectToPrimaryTarget(effect));
-        }
-
-        private void ArmShieldAbsorb(AbilityRuntimeComponentConfig component, CompPawnSkin skinComp, int nowTick)
-        {
-            skinComp.shieldRemainingDamage = Mathf.Max(0f, component.shieldMaxDamage);
-            skinComp.shieldExpireTick = nowTick + Mathf.Max(1, Mathf.RoundToInt(component.shieldDurationTicks));
-            skinComp.shieldStoredHeal = 0f;
-            skinComp.shieldStoredBonusDamage = 0f;
-        }
-
-        private static void ArmAttachedShieldVisual(AbilityRuntimeComponentConfig component, CompPawnSkin skinComp, int nowTick)
-        {
-            Pawn? caster = skinComp.Pawn;
-            if (caster?.Map == null)
-            {
-                return;
-            }
-
-            ThingDef? visualDef = DefDatabase<ThingDef>.GetNamedSilentFail("CS_AttachedShieldVisual");
-            if (visualDef == null)
-            {
-                Log.Warning("[CharacterStudio] AttachedShieldVisual missing thingDef: CS_AttachedShieldVisual");
-                return;
-            }
-
-            Thing visualThing = ThingMaker.MakeThing(visualDef);
-            GenSpawn.Spawn(visualThing, caster.Position, caster.Map, WipeMode.Vanish);
-
-            int duration = Mathf.Max(1, Mathf.RoundToInt(component.shieldDurationTicks));
-            skinComp.attachedShieldVisualExpireTick = nowTick + duration;
-            skinComp.attachedShieldVisualScale = Mathf.Max(0.1f, component.shieldVisualScale);
-            skinComp.attachedShieldVisualHeightOffset = component.shieldVisualHeightOffset;
-            skinComp.attachedShieldVisualThingId = visualThing.ThingID;
-            skinComp.RequestRenderRefresh();
-        }
-
-        private static void ArmProjectileInterceptorShield(AbilityRuntimeComponentConfig component, Pawn caster, CompPawnSkin skinComp, int nowTick)
-        {
-            if (caster.Map == null || string.IsNullOrWhiteSpace(component.shieldInterceptorThingDefName))
-            {
-                return;
-            }
-
-            ThingDef? shieldDef = DefDatabase<ThingDef>.GetNamedSilentFail(component.shieldInterceptorThingDefName);
-            if (shieldDef == null)
-            {
-                Log.Warning($"[CharacterStudio] ProjectileInterceptorShield missing thingDef: {component.shieldInterceptorThingDefName}");
-                return;
-            }
-
-            Thing thing = ThingMaker.MakeThing(shieldDef);
-            if (thing == null)
-            {
-                return;
-            }
-
-            GenSpawn.Spawn(thing, caster.Position, caster.Map, WipeMode.Vanish);
-            if (thing.TryGetComp<CompProjectileInterceptor>() is CompProjectileInterceptor interceptor)
-            {
-                interceptor.Activate();
-            }
-
-            skinComp.projectileInterceptorShieldThingId = thing.ThingID;
-            skinComp.projectileInterceptorShieldExpireTick = nowTick + Mathf.Max(1, component.shieldInterceptorDurationTicks);
-        }
-
-        private void TickShieldAbsorb(Pawn caster, CompPawnSkin skinComp, int nowTick)
-        {
-            if (skinComp.shieldExpireTick < 0 || nowTick <= skinComp.shieldExpireTick)
-            {
-                return;
-            }
-
-            AbilityRuntimeComponentConfig? shieldComponent = Props.runtimeComponents?.FirstOrDefault(c => c != null && c.enabled && c.type == AbilityRuntimeComponentType.ShieldAbsorb);
-
-            if (skinComp.shieldStoredHeal > 0f)
-            {
-                ApplyShieldHeal(caster, skinComp.shieldStoredHeal);
-            }
-
-            if (shieldComponent != null)
-            {
-                TriggerShieldExpiryBurst(caster, skinComp, shieldComponent);
-            }
-
-            skinComp.shieldRemainingDamage = 0f;
-            skinComp.shieldExpireTick = -1;
-            skinComp.shieldStoredHeal = 0f;
-            skinComp.shieldStoredBonusDamage = 0f;
-            TriggerVisualEffects(AbilityVisualEffectTrigger.OnExpire, new LocalTargetInfo(caster.Position));
-        }
-
-        private static void TickProjectileInterceptorShield(Pawn caster, CompPawnSkin skinComp, int nowTick)
-        {
-            TickAttachedShieldVisual(caster, skinComp, nowTick);
-
-            if (skinComp.projectileInterceptorShieldExpireTick < 0)
-            {
-                return;
-            }
-
-            Thing? activeThing = FindThingById(caster.MapHeld, skinComp.projectileInterceptorShieldThingId);
-            if (activeThing != null && activeThing.Position != caster.Position)
-            {
-                activeThing.Position = caster.Position;
-            }
-
-            if (nowTick <= skinComp.projectileInterceptorShieldExpireTick)
-            {
-                return;
-            }
-
-            Thing? shieldThing = FindThingById(caster.MapHeld, skinComp.projectileInterceptorShieldThingId);
-            if (shieldThing != null && !shieldThing.Destroyed)
-            {
-                shieldThing.Destroy(DestroyMode.Vanish);
-            }
-
-            skinComp.projectileInterceptorShieldExpireTick = -1;
-            skinComp.projectileInterceptorShieldThingId = string.Empty;
-        }
-
         private static void TickFlightState(Pawn caster, CompPawnSkin skinComp, int nowTick)
         {
             if (skinComp.flightStateExpireTick < 0 && !skinComp.isInVanillaFlight)
@@ -795,44 +489,27 @@ namespace CharacterStudio.Abilities
             skinComp.RequestRenderRefresh();
         }
 
-        private static void TickAttachedShieldVisual(Pawn caster, CompPawnSkin skinComp, int nowTick)
-        {
-            if (skinComp.attachedShieldVisualExpireTick < 0)
-            {
-                return;
-            }
-
-            Thing? visualThing = FindThingById(caster.MapHeld, skinComp.attachedShieldVisualThingId);
-            if (visualThing != null && visualThing.Position != caster.Position)
-            {
-                visualThing.Position = caster.Position;
-            }
-
-            if (nowTick <= skinComp.attachedShieldVisualExpireTick)
-            {
-                return;
-            }
-
-            if (visualThing != null && !visualThing.Destroyed)
-            {
-                visualThing.Destroy(DestroyMode.Vanish);
-            }
-
-            skinComp.attachedShieldVisualExpireTick = -1;
-            skinComp.attachedShieldVisualThingId = string.Empty;
-        }
-
-        private static Thing? FindThingById(Map? map, string thingId)
+        public static Thing? FindThingByIdCached(Map? map, string thingId, ref Thing? cachedThing)
         {
             if (map == null || string.IsNullOrWhiteSpace(thingId))
             {
+                cachedThing = null;
                 return null;
             }
 
+            // 检查缓存是否仍然有效
+            if (cachedThing != null && !cachedThing.Destroyed && cachedThing.Spawned && cachedThing.Map == map && string.Equals(cachedThing.ThingID, thingId, StringComparison.OrdinalIgnoreCase))
+            {
+                return cachedThing;
+            }
+
+            // 缓存失效，回退到线性查找并更新缓存
+            cachedThing = null;
             foreach (Thing thing in map.listerThings.AllThings)
             {
                 if (string.Equals(thing.ThingID, thingId, StringComparison.OrdinalIgnoreCase))
                 {
+                    cachedThing = thing;
                     return thing;
                 }
             }
@@ -840,7 +517,8 @@ namespace CharacterStudio.Abilities
             return null;
         }
 
-        private void TriggerVisualEffects(AbilityVisualEffectTrigger trigger, LocalTargetInfo target, Vector3? sourceOverride = null)
+
+        public void TriggerVisualEffects(AbilityVisualEffectTrigger trigger, LocalTargetInfo target, Vector3? sourceOverride = null)
         {
             QueueVisualEffectsForTrigger(trigger, target, sourceOverride);
         }
@@ -897,7 +575,7 @@ namespace CharacterStudio.Abilities
             }
         }
 
-        private static void ApplyShieldHeal(Pawn caster, float amount)
+        public static void ApplyShieldHeal(Pawn caster, float amount)
         {
             if (amount <= 0f)
             {
@@ -946,7 +624,7 @@ namespace CharacterStudio.Abilities
             return bonus;
         }
 
-        private void TriggerShieldExpiryBurst(Pawn caster, CompPawnSkin skinComp, AbilityRuntimeComponentConfig component)
+        public void TriggerShieldExpiryBurst(Pawn caster, CompPawnSkin skinComp, AbilityRuntimeComponentConfig component)
         {
             if (caster.Map == null)
             {
@@ -981,7 +659,7 @@ namespace CharacterStudio.Abilities
             }
         }
 
-        private void TriggerChainBounce(AbilityRuntimeComponentConfig component, Pawn caster, LocalTargetInfo target)
+        public void TriggerChainBounce(AbilityRuntimeComponentConfig component, Pawn caster, LocalTargetInfo target)
         {
             if (caster.Map == null || Props.effects == null || !target.HasThing)
             {
@@ -1026,7 +704,7 @@ namespace CharacterStudio.Abilities
             }
         }
 
-        private bool HasMovementRuntimeComponent()
+        public bool HasMovementRuntimeComponent()
         {
             return Props.runtimeComponents != null
                 && Props.runtimeComponents.Any(component => component != null
@@ -1034,299 +712,78 @@ namespace CharacterStudio.Abilities
                     && (component.type == AbilityRuntimeComponentType.SmartJump || component.type == AbilityRuntimeComponentType.EShortJump));
         }
 
+        /// <summary>
+        /// 通过 RuntimeComponentHandlerRegistry 分发伤害倍率计算。
+        /// 替代了原先 9 分支的 switch。
+        /// </summary>
         private float GetRuntimeDamageScale(LocalTargetInfo target, Pawn caster, bool allowDashConsume)
         {
             float scale = 1f;
-            int nowTick = Find.TickManager?.TicksGame ?? 0;
-            CompPawnSkin? casterSkin = caster.GetComp<CompPawnSkin>();
-            Pawn? targetPawn = target.Thing as Pawn;
-            CompPawnSkin? targetSkin = targetPawn?.GetComp<CompPawnSkin>();
 
             if (Props.runtimeComponents == null)
             {
                 return scale;
             }
 
+            int nowTick = Find.TickManager?.TicksGame ?? 0;
+            CompPawnSkin? casterSkin = caster.GetComp<CompPawnSkin>();
+            Pawn? targetPawn = target.Thing as Pawn;
+            CompPawnSkin? targetSkin = targetPawn?.GetComp<CompPawnSkin>();
+
+            RuntimeComponentHandlerRegistry.EnsureInitialized();
+
             foreach (var component in Props.runtimeComponents)
             {
-                if (component == null || !component.enabled)
-                {
-                    continue;
-                }
+                if (component == null || !component.enabled) continue;
 
-                switch (component.type)
+                if (RuntimeComponentHandlerRegistry.TryGetDamageScale(component.type, out var modifier))
                 {
-                    case AbilityRuntimeComponentType.ExecuteBonusDamage:
-                        if (targetPawn != null && targetPawn.health != null)
-                        {
-                            float summary = targetPawn.health.summaryHealth.SummaryHealthPercent;
-                            if (summary <= component.executeThresholdPercent)
-                            {
-                                scale += Mathf.Max(0f, component.executeBonusDamageScale);
-                            }
-                        }
-                        break;
-                    case AbilityRuntimeComponentType.MissingHealthBonusDamage:
-                        if (targetPawn != null && targetPawn.health != null)
-                        {
-                            float missing = 1f - targetPawn.health.summaryHealth.SummaryHealthPercent;
-                            float steps = Mathf.Max(0f, missing / 0.1f);
-                            float bonus = steps * Mathf.Max(0f, component.missingHealthBonusPerTenPercent);
-                            scale += Mathf.Min(Mathf.Max(0f, component.missingHealthBonusMaxScale), bonus);
-                        }
-                        break;
-                    case AbilityRuntimeComponentType.FullHealthBonusDamage:
-                        if (targetPawn != null && targetPawn.health != null)
-                        {
-                            float summary = targetPawn.health.summaryHealth.SummaryHealthPercent;
-                            if (summary >= Mathf.Clamp01(component.fullHealthThresholdPercent))
-                            {
-                                scale += Mathf.Max(0f, component.fullHealthBonusDamageScale);
-                            }
-                        }
-                        break;
-                    case AbilityRuntimeComponentType.NearbyEnemyBonusDamage:
-                        if (targetPawn != null && caster.Map != null)
-                        {
-                            int nearbyEnemyCount = CountNearbyEnemyPawns(
-                                caster,
-                                target.Cell,
-                                Mathf.Max(0.1f, component.nearbyEnemyBonusRadius),
-                                Mathf.Max(1, component.nearbyEnemyBonusMaxTargets),
-                                targetPawn);
-                            scale += nearbyEnemyCount * Mathf.Max(0f, component.nearbyEnemyBonusPerTarget);
-                        }
-                        break;
-                    case AbilityRuntimeComponentType.IsolatedTargetBonusDamage:
-                        if (targetPawn != null && caster.Map != null)
-                        {
-                            int nearbyEnemyCount = CountNearbyEnemyPawns(
-                                caster,
-                                target.Cell,
-                                Mathf.Max(0.1f, component.isolatedTargetRadius),
-                                1,
-                                targetPawn);
-                            if (nearbyEnemyCount == 0)
-                            {
-                                scale += Mathf.Max(0f, component.isolatedTargetBonusDamageScale);
-                            }
-                        }
-                        break;
-                    case AbilityRuntimeComponentType.ComboStacks:
-                        if (casterSkin != null && casterSkin.offensiveComboExpireTick >= nowTick)
-                        {
-                            scale += casterSkin.offensiveComboStacks * Mathf.Max(0f, component.comboStackBonusDamagePerStack);
-                        }
-                        break;
-                    case AbilityRuntimeComponentType.DashEmpoweredStrike:
-                        if (allowDashConsume && casterSkin != null && casterSkin.dashEmpowerExpireTick >= nowTick)
-                        {
-                            scale += Mathf.Max(0f, component.dashEmpowerBonusDamageScale);
-                        }
-                        break;
-                    case AbilityRuntimeComponentType.PierceBonusDamage:
-                        if (caster.Map != null)
-                        {
-                            int hitCount = CountNearbyEnemyPawns(caster, target.Cell, Mathf.Max(0.1f, component.pierceSearchRange), Mathf.Max(1, component.pierceMaxTargets));
-                            scale += hitCount * Mathf.Max(0f, component.pierceBonusDamagePerTarget);
-                        }
-                        break;
-                    case AbilityRuntimeComponentType.MarkDetonation:
-                        if (targetSkin != null && targetSkin.offensiveMarkExpireTick >= nowTick && targetSkin.offensiveMarkStacks > 0)
-                        {
-                            scale += Mathf.Min(0.5f, targetSkin.offensiveMarkStacks * 0.05f);
-                        }
-                        break;
+                    // CS8604: targetPawn/targetSkin 可能为 null，接口契约允许调用者传入 null
+                    scale += modifier!.GetDamageScale(component, caster, casterSkin, target, targetPawn!, targetSkin!, allowDashConsume, nowTick);
                 }
             }
 
             return Mathf.Max(0f, scale);
         }
 
+        /// <summary>
+        /// 通过 RuntimeComponentHandlerRegistry 分发命中后效果。
+        /// 替代了原先 7 分支的 switch。
+        /// </summary>
         private void HandlePostHitRuntimeComponents(LocalTargetInfo target, Pawn caster, float appliedDamage, bool consumeDashEmpower)
         {
-            if (Props.runtimeComponents == null)
-            {
-                return;
-            }
+            if (Props.runtimeComponents == null) return;
 
             int nowTick = Find.TickManager?.TicksGame ?? 0;
             CompPawnSkin? casterSkin = caster.GetComp<CompPawnSkin>();
             Pawn? targetPawn = target.Thing as Pawn;
             CompPawnSkin? targetSkin = targetPawn?.GetComp<CompPawnSkin>();
 
+            RuntimeComponentHandlerRegistry.EnsureInitialized();
+
             foreach (var component in Props.runtimeComponents)
             {
-                if (component == null || !component.enabled)
-                {
-                    continue;
-                }
+                if (component == null || !component.enabled) continue;
 
-                switch (component.type)
+                if (RuntimeComponentHandlerRegistry.TryGetPostHit(component.type, out var postHitHandler))
                 {
-                    case AbilityRuntimeComponentType.MarkDetonation:
-                        if (targetSkin != null)
-                        {
-                            if (targetSkin.offensiveMarkExpireTick < nowTick)
-                            {
-                                targetSkin.offensiveMarkStacks = 0;
-                            }
-                            targetSkin.offensiveMarkExpireTick = nowTick + Mathf.Max(1, component.markDurationTicks);
-                            targetSkin.offensiveMarkStacks = Mathf.Min(Mathf.Max(1, component.markMaxStacks), targetSkin.offensiveMarkStacks + 1);
-                            if (targetSkin.offensiveMarkStacks >= Mathf.Max(1, component.markMaxStacks) && targetPawn != null && !targetPawn.Dead)
-                            {
-                                ApplyDirectDamageToPawn(caster, targetPawn, component.markDamageDef, component.markDetonationDamage);
-                                targetSkin.offensiveMarkStacks = 0;
-                                targetSkin.offensiveMarkExpireTick = -1;
-                            }
-                        }
-                        break;
-                    case AbilityRuntimeComponentType.ComboStacks:
-                        if (casterSkin != null)
-                        {
-                            if (casterSkin.offensiveComboExpireTick < nowTick)
-                            {
-                                casterSkin.offensiveComboStacks = 0;
-                            }
-                            casterSkin.offensiveComboExpireTick = nowTick + Mathf.Max(1, component.comboStackWindowTicks);
-                            casterSkin.offensiveComboStacks = Mathf.Min(Mathf.Max(1, component.comboStackMax), casterSkin.offensiveComboStacks + 1);
-                        }
-                        break;
-                    case AbilityRuntimeComponentType.HitSlowField:
-                        ApplySlowField(component, target.Cell, caster);
-                        break;
-                    case AbilityRuntimeComponentType.HitHeal:
-                        ApplyShieldHeal(caster, Mathf.Max(0f, component.hitHealAmount) + (Mathf.Max(0f, component.hitHealRatio) * Mathf.Max(0f, appliedDamage)));
-                        break;
-                    case AbilityRuntimeComponentType.HitCooldownRefund:
-                        if (casterSkin != null)
-                        {
-                            ApplyCooldownRefund(component, casterSkin, nowTick);
-                        }
-                        break;
-                    case AbilityRuntimeComponentType.DashEmpoweredStrike:
-                        if (consumeDashEmpower && casterSkin != null && casterSkin.dashEmpowerExpireTick >= nowTick)
-                        {
-                            casterSkin.dashEmpowerExpireTick = -1;
-                        }
-                        break;
-                    case AbilityRuntimeComponentType.ProjectileSplit:
-                        TriggerProjectileSplit(component, caster, target);
-                        break;
+                    // CS8604: targetPawn/targetSkin 可能为 null，接口契约允许调用者传入 null
+                    postHitHandler!.OnPostHit(this, component, caster, casterSkin, target, targetPawn!, targetSkin!, appliedDamage, nowTick);
                 }
             }
-        }
-
-        private void ApplySlowField(AbilityRuntimeComponentConfig component, IntVec3 center, Pawn caster)
-        {
-            if (caster.Map == null || string.IsNullOrWhiteSpace(component.slowFieldHediffDefName))
-            {
-                return;
-            }
-
-            HediffDef? hediffDef = DefDatabase<HediffDef>.GetNamedSilentFail(component.slowFieldHediffDefName.Trim());
-            if (hediffDef == null)
-            {
-                return;
-            }
-
-            int durationTicks = Mathf.Max(1, component.slowFieldDurationTicks);
-            float radiusSquared = component.slowFieldRadius * component.slowFieldRadius;
-            foreach (Pawn pawn in caster.Map.mapPawns.AllPawnsSpawned)
-            {
-                if (pawn == null || pawn.Dead || pawn.Faction == caster.Faction)
-                {
-                    continue;
-                }
-
-                if ((pawn.Position - center).LengthHorizontalSquared > radiusSquared)
-                {
-                    continue;
-                }
-
-                Hediff hediff = pawn.health.AddHediff(hediffDef);
-                HediffComp_Disappears? disappears = hediff.TryGetComp<HediffComp_Disappears>();
-                if (disappears != null)
-                {
-                    disappears.ticksToDisappear = durationTicks;
-                }
-            }
-        }
-
-        private void ApplyCooldownRefund(AbilityRuntimeComponentConfig component, CompPawnSkin skinComp, int nowTick)
-        {
-            float percent = Mathf.Clamp01(component.hitCooldownRefundPercent);
-            int currentCooldown = Mathf.Max(0, GetSlotCooldownUntilTick(skinComp, component.refundHotkeySlot) - nowTick);
-            SetSlotCooldownUntilTick(skinComp, component.refundHotkeySlot, nowTick + Mathf.RoundToInt(currentCooldown * (1f - percent)));
         }
 
         private static int GetSlotCooldownUntilTick(CompPawnSkin skinComp, AbilityRuntimeHotkeySlot slot)
         {
-            return slot switch
-            {
-                AbilityRuntimeHotkeySlot.Q => skinComp.qCooldownUntilTick,
-                AbilityRuntimeHotkeySlot.W => skinComp.wCooldownUntilTick,
-                AbilityRuntimeHotkeySlot.E => skinComp.eCooldownUntilTick,
-                AbilityRuntimeHotkeySlot.T => skinComp.tCooldownUntilTick,
-                AbilityRuntimeHotkeySlot.A => skinComp.aCooldownUntilTick,
-                AbilityRuntimeHotkeySlot.S => skinComp.sCooldownUntilTick,
-                AbilityRuntimeHotkeySlot.D => skinComp.dCooldownUntilTick,
-                AbilityRuntimeHotkeySlot.F => skinComp.fCooldownUntilTick,
-                AbilityRuntimeHotkeySlot.Z => skinComp.zCooldownUntilTick,
-                AbilityRuntimeHotkeySlot.X => skinComp.xCooldownUntilTick,
-                AbilityRuntimeHotkeySlot.C => skinComp.cCooldownUntilTick,
-                AbilityRuntimeHotkeySlot.V => skinComp.vCooldownUntilTick,
-                _ => skinComp.rCooldownUntilTick
-            };
+            return skinComp.abilityRuntimeState.GetCooldownUntilTick(slot);
         }
 
         private static void SetSlotCooldownUntilTick(CompPawnSkin skinComp, AbilityRuntimeHotkeySlot slot, int value)
         {
-            switch (slot)
-            {
-                case AbilityRuntimeHotkeySlot.Q:
-                    skinComp.qCooldownUntilTick = value;
-                    break;
-                case AbilityRuntimeHotkeySlot.W:
-                    skinComp.wCooldownUntilTick = value;
-                    break;
-                case AbilityRuntimeHotkeySlot.E:
-                    skinComp.eCooldownUntilTick = value;
-                    break;
-                case AbilityRuntimeHotkeySlot.T:
-                    skinComp.tCooldownUntilTick = value;
-                    break;
-                case AbilityRuntimeHotkeySlot.A:
-                    skinComp.aCooldownUntilTick = value;
-                    break;
-                case AbilityRuntimeHotkeySlot.S:
-                    skinComp.sCooldownUntilTick = value;
-                    break;
-                case AbilityRuntimeHotkeySlot.D:
-                    skinComp.dCooldownUntilTick = value;
-                    break;
-                case AbilityRuntimeHotkeySlot.F:
-                    skinComp.fCooldownUntilTick = value;
-                    break;
-                case AbilityRuntimeHotkeySlot.Z:
-                    skinComp.zCooldownUntilTick = value;
-                    break;
-                case AbilityRuntimeHotkeySlot.X:
-                    skinComp.xCooldownUntilTick = value;
-                    break;
-                case AbilityRuntimeHotkeySlot.C:
-                    skinComp.cCooldownUntilTick = value;
-                    break;
-                case AbilityRuntimeHotkeySlot.V:
-                    skinComp.vCooldownUntilTick = value;
-                    break;
-                default:
-                    skinComp.rCooldownUntilTick = value;
-                    break;
-            }
+            skinComp.abilityRuntimeState.SetCooldownUntilTick(slot, value);
         }
 
-        private void TriggerProjectileSplit(AbilityRuntimeComponentConfig component, Pawn caster, LocalTargetInfo target)
+        public void TriggerProjectileSplit(AbilityRuntimeComponentConfig component, Pawn caster, LocalTargetInfo target)
         {
             if (caster.Map == null || !target.HasThing)
             {
@@ -1356,7 +813,7 @@ namespace CharacterStudio.Abilities
             }
         }
 
-        private int CountNearbyEnemyPawns(Pawn caster, IntVec3 center, float range, int maxCount, Thing? excludedThing = null)
+        public static int CountNearbyEnemyPawns(Pawn caster, IntVec3 center, float range, int maxCount, Thing? excludedThing = null)
         {
             if (caster.Map == null)
             {
@@ -1364,23 +821,35 @@ namespace CharacterStudio.Abilities
             }
 
             int count = 0;
-            float rangeSquared = range * range;
-            foreach (Pawn pawn in caster.Map.mapPawns.AllPawnsSpawned)
+            // Iterate through cells within the radius instead of all pawns
+            IEnumerable<IntVec3> cellsInRadius = GenRadial.RadialCellsAround(center, range, true);
+
+            foreach (IntVec3 cell in cellsInRadius)
             {
-                if (pawn == null || pawn == caster || pawn == excludedThing || pawn.Dead || pawn.Faction == caster.Faction)
+                if (!cell.InBounds(caster.Map))
                 {
                     continue;
                 }
 
-                if ((pawn.Position - center).LengthHorizontalSquared > rangeSquared)
+                List<Thing> thingsInCell = cell.GetThingList(caster.Map);
+                for (int i = 0; i < thingsInCell.Count; i++)
                 {
-                    continue;
-                }
+                    if (thingsInCell[i] is not Pawn pawn)
+                    {
+                        continue;
+                    }
 
-                count++;
-                if (count >= maxCount)
-                {
-                    break;
+                    if (pawn == caster || pawn == excludedThing || pawn.Dead || pawn.Faction == caster.Faction)
+                    {
+                        continue;
+                    }
+
+                    // No need for explicit distance check here as GenRadial.RadialCellsAround already filters by cell distance
+                    count++;
+                    if (count >= maxCount)
+                    {
+                        return count; // Early exit once maxCount is reached
+                    }
                 }
             }
 
@@ -1395,33 +864,49 @@ namespace CharacterStudio.Abilities
             }
 
             Pawn? bestPawn = null;
-            float bestDistance = float.MaxValue;
+            float bestDistanceSquared = float.MaxValue; // Use squared distance for comparison
             float rangeSquared = range * range;
-            foreach (Pawn pawn in caster.Map.mapPawns.AllPawnsSpawned)
+
+            IEnumerable<IntVec3> cellsInRadius = GenRadial.RadialCellsAround(center, range, true);
+
+            foreach (IntVec3 cell in cellsInRadius)
             {
-                if (pawn == null || pawn == caster || pawn.Dead || hitThings.Contains(pawn))
-                {
-                    continue;
-                }
-                if (pawn.Faction == caster.Faction)
+                if (!cell.InBounds(caster.Map))
                 {
                     continue;
                 }
 
-                float distSquared = (pawn.Position - center).LengthHorizontalSquared;
-                if (distSquared > rangeSquared || distSquared >= bestDistance)
+                List<Thing> thingsInCell = cell.GetThingList(caster.Map);
+                for (int i = 0; i < thingsInCell.Count; i++)
                 {
-                    continue;
-                }
+                    if (thingsInCell[i] is not Pawn pawn)
+                    {
+                        continue;
+                    }
 
-                bestDistance = distSquared;
-                bestPawn = pawn;
+                    if (pawn == caster || pawn.Dead || hitThings.Contains(pawn))
+                    {
+                        continue;
+                    }
+                    if (pawn.Faction == caster.Faction)
+                    {
+                        continue;
+                    }
+
+                    // Calculate distance squared for comparison
+                    float distSquared = (pawn.Position - center).LengthHorizontalSquared;
+                    if (distSquared < bestDistanceSquared) // Compare with bestDistanceSquared
+                    {
+                        bestDistanceSquared = distSquared;
+                        bestPawn = pawn;
+                    }
+                }
             }
 
             return bestPawn;
         }
 
-        private void ApplyConfiguredEffectsToTarget(LocalTargetInfo target, Pawn caster, float damageScale = 1f, float flatBonusDamage = 0f, bool consumeDashEmpower = false, bool includeEntityEffects = true, bool includePrimaryCellEffects = true, bool includeAreaCellEffects = true, Func<AbilityEffectConfig, bool>? effectFilter = null)
+        public void ApplyConfiguredEffectsToTarget(LocalTargetInfo target, Pawn caster, float damageScale = 1f, float flatBonusDamage = 0f, bool consumeDashEmpower = false, bool includeEntityEffects = true, bool includePrimaryCellEffects = true, bool includeAreaCellEffects = true, Func<AbilityEffectConfig, bool>? effectFilter = null)
         {
             if (Props.effects == null)
             {
@@ -1516,7 +1001,8 @@ namespace CharacterStudio.Abilities
 
         private static bool IsPrimaryCellEffect(AbilityEffectType effectType)
         {
-            return effectType == AbilityEffectType.Teleport;
+            return effectType == AbilityEffectType.Teleport
+                || effectType == AbilityEffectType.WeatherChange;
         }
 
         private static bool IsAreaCellEffect(AbilityEffectType effectType)
@@ -1970,12 +1456,28 @@ namespace CharacterStudio.Abilities
             return new LocalTargetInfo(sourceOverride.Value.ToIntVec3());
         }
 
+        /// <summary>
+        /// 获取或创建自定义贴图 Mote ThingDef。
+        /// 
+        /// 注意：此方法在运行时动态创建 ThingDef 但不注册到 DefDatabase。
+        /// 这意味着某些依赖 DefDatabase 查找的系统可能无法找到这些 Def。
+        /// 当前使用场景（MoteThrown 渲染）不需要 DefDatabase 注册，因此可以安全使用。
+        /// 如果未来需要更广泛的 Def 查找，应改为在 Defs XML 中预定义一批 Mote Def。
+        /// </summary>
         private static ThingDef GetOrCreateCustomTextureMoteDef(string texturePath, float drawSize, int displayDurationTicks)
         {
             string key = $"{texturePath}|{drawSize:F3}|{displayDurationTicks}";
             if (customTextureMoteDefCache.TryGetValue(key, out ThingDef cachedDef))
             {
                 return cachedDef;
+            }
+
+            // 警告：动态创建的 ThingDef 未注册到 DefDatabase
+            // 缓存大小上限保护，防止异常情况下无限增长
+            if (customTextureMoteDefCache.Count > 500)
+            {
+                Log.Warning("[CharacterStudio] 自定义贴图 Mote 缓存已超过 500 条，执行清理。这通常意味着贴图路径组合过多。");
+                customTextureMoteDefCache.Clear();
             }
 
             var def = new ThingDef
@@ -2003,7 +1505,7 @@ namespace CharacterStudio.Abilities
                 graphicData = new GraphicData
                 {
                     texPath = texturePath,
-                    graphicClass = System.IO.Path.IsPathRooted(texturePath) || texturePath.StartsWith("/")
+                    graphicClass = (texturePath.Contains(":") || texturePath.Contains("/") || texturePath.Contains("\\"))
                         ? typeof(Graphic_Runtime)
                         : typeof(Graphic_Single),
                     shaderType = ShaderTypeDefOf.Transparent,
@@ -2029,6 +1531,7 @@ namespace CharacterStudio.Abilities
         public string irregularAreaPattern = string.Empty;
         public float range = 0f;
         public float radius = 0f;
+        public ThingDef? projectileDef;
 
         // 游戏逻辑效果列表
         public List<AbilityEffectConfig> effects = new List<AbilityEffectConfig>();

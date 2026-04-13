@@ -166,7 +166,11 @@ namespace CharacterStudio.Rendering
 
         public override Graphic GetColoredVersion(Shader newShader, Color newColor, Color newColorTwo)
         {
-            return GraphicDatabase.Get<Graphic_Runtime>(this.path, newShader, this.drawSize, newColor, newColorTwo, this.data);
+            // 彻底绕过 GraphicDatabase.Get，因为该方法内部会强制调用 ContentFinder 校验路径，
+            // 导致绝对路径直接触发原版报错。
+            var newGraphic = Activator.CreateInstance<Graphic_Runtime>();
+            newGraphic.Init(new GraphicRequest(typeof(Graphic_Runtime), this.path, newShader, this.drawSize, newColor, newColorTwo, this.data, 0, null, null));
+            return newGraphic;
         }
         
         public override string ToString()

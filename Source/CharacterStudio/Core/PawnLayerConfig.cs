@@ -180,6 +180,28 @@ namespace CharacterStudio.Core
         /// <summary>着色器名称（用于 ShaderDatabase.LoadShader 加载，如 "Cutout", "CutoutComplex"）</summary>
         public string shaderDefName = "Cutout";
 
+        /// <summary>自定义 Shader 路径（当 shaderDefName 为 "Custom" 时使用）</summary>
+        /// <remarks>
+        /// 格式示例: "RimWorld/ItemTransparent", "Map/Transparent"
+        /// 使用 Shader.Find() 加载
+        /// </remarks>
+        public string customShaderPath = "";
+
+        /// <summary>全局透明度（0=完全透明, 1=完全不透明）</summary>
+        /// <remarks>
+        /// 仅在 Shader 为 Transparent / TransparentPostLight / TransparentZWrite / ItemTransparent 时生效。
+        /// Cutout 系列 Shader 使用 Alpha Cutoff，不支持半透明。
+        /// </remarks>
+        public float alpha = 1f;
+
+        /// <summary>是否写入深度缓存（ZWrite）</summary>
+        /// <remarks>
+        /// 启用后，该图层在渲染时会写入深度缓冲，可被前方物体正确遮挡。
+        /// 仅在 Shader 为 Transparent / TransparentPostLight 时有意义（Cutout 默认写入深度）。
+        /// 等效于 shaderDefName == "TransparentZWrite"，但更加灵活。
+        /// </remarks>
+        public bool zWrite = false;
+
         /// <summary>
         /// 颜色来源。
         /// 默认 PawnHair：尾巴、耳朵、呆毛等附加图层绝大多数情况下应跟随发色，
@@ -366,6 +388,9 @@ namespace CharacterStudio.Core
                 shaderTypeDef = this.shaderTypeDef,
 #pragma warning restore CS0618
                 shaderDefName = this.shaderDefName,
+                customShaderPath = this.customShaderPath,
+                alpha = this.alpha,
+                zWrite = this.zWrite,
                 colorSource = this.colorSource,
                 customColor = this.customColor,
                 colorTwoSource = this.colorTwoSource,

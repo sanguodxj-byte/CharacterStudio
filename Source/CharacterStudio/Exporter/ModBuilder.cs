@@ -7,6 +7,7 @@ using CharacterStudio.Items;
 using CharacterStudio.Abilities;
 using CharacterStudio.Core;
 using RimWorld;
+using UnityEngine;
 using Verse;
 
 namespace CharacterStudio.Exporter
@@ -349,26 +350,52 @@ namespace CharacterStudio.Exporter
 
         private void GenerateDefinitionFiles(string modPath, ModExportConfig exportConfig)
         {
+            // 1. 处理皮肤定义
             if (exportConfig.IncludeSkinDef)
             {
+                GenerateSkinDefXml(modPath, exportConfig);
                 if (exportConfig.SkinDefXmlPaths != null && exportConfig.SkinDefXmlPaths.Count > 0)
                     CopyExternalXmls(modPath, exportConfig.SkinDefXmlPaths);
             }
 
+            // 2. 处理基因定义
+            if (exportConfig.IncludeGeneDef)
+            {
+                GenerateGeneDefXml(modPath, exportConfig);
+            }
+
+            // 3. 处理单位/角色定义 (PawnKind)
             if (exportConfig.IncludePawnKind)
             {
+                GenerateUnitDefXml(modPath, exportConfig);
+                GenerateCharacterDefinitionXml(modPath, exportConfig);
+                
                 if (exportConfig.PawnKindDefXmlPaths != null && exportConfig.PawnKindDefXmlPaths.Count > 0)
                     CopyExternalXmls(modPath, exportConfig.PawnKindDefXmlPaths);
             }
 
+            // 4. 处理运行时触发器
+            if (exportConfig.IncludeRuntimeTriggers)
+            {
+                GenerateRuntimeTriggerXml(modPath, exportConfig);
+            }
+
+            // 5. 处理装备/召唤物
             if (exportConfig.IncludeSummonItem)
             {
+                GenerateEquipmentThingDefXml(modPath, exportConfig);
+                GenerateEquipmentRecipeDefXml(modPath, exportConfig);
+                GenerateEquipmentBundleManifestXml(modPath, exportConfig);
+                
                 if (exportConfig.SummonItemXmlPaths != null && exportConfig.SummonItemXmlPaths.Count > 0)
                     CopyExternalXmls(modPath, exportConfig.SummonItemXmlPaths);
             }
 
+            // 6. 处理技能
             if (exportConfig.IncludeAbilities)
             {
+                GenerateAbilityDefXml(modPath, exportConfig);
+                
                 if (exportConfig.AbilityXmlPaths != null && exportConfig.AbilityXmlPaths.Count > 0)
                     CopyExternalXmls(modPath, exportConfig.AbilityXmlPaths);
             }
@@ -762,6 +789,7 @@ namespace CharacterStudio.Exporter
                 SanitizeFileName);
 
             string defsPath = Path.Combine(modPath, "Defs", "SkinDefs", $"{SanitizeFileName(config.ModName)}_SkinDefs.xml");
+            Directory.CreateDirectory(Path.GetDirectoryName(defsPath));
             doc.Save(defsPath);
         }
 
@@ -783,6 +811,7 @@ namespace CharacterStudio.Exporter
                 equipments.Where(equipment => equipment != null && equipment.enabled).ToList());
 
             string defsPath = Path.Combine(modPath, "Defs", "ThingDef", $"{SanitizeFileName(config.ModName)}_Apparels.xml");
+            Directory.CreateDirectory(Path.GetDirectoryName(defsPath));
             doc.Save(defsPath);
 
             Log.Message($"[CharacterStudio] 装备 ThingDef 已生成: {defsPath}");
@@ -813,6 +842,7 @@ namespace CharacterStudio.Exporter
                 new XElement("Defs", recipeDefs));
 
             string defsPath = Path.Combine(modPath, "Defs", "RecipeDefs", $"{SanitizeFileName(config.ModName)}_EquipmentRecipes.xml");
+            Directory.CreateDirectory(Path.GetDirectoryName(defsPath));
             doc.Save(defsPath);
 
             Log.Message($"[CharacterStudio] 装备 RecipeDef 已生成: {defsPath}");
@@ -832,6 +862,7 @@ namespace CharacterStudio.Exporter
                 equipments.Where(equipment => equipment != null && equipment.enabled).ToList());
 
             string defsPath = Path.Combine(modPath, "Defs", "ThingDef", $"{SanitizeFileName(config.ModName)}_EquipmentBundles.xml");
+            Directory.CreateDirectory(Path.GetDirectoryName(defsPath));
             doc.Save(defsPath);
 
             Log.Message($"[CharacterStudio] 装备包清单已生成: {defsPath}");
@@ -849,6 +880,7 @@ namespace CharacterStudio.Exporter
             var doc = ModExportXmlWriter.CreateGeneDefDocument(config, safeName);
 
             string geneDefsPath = Path.Combine(modPath, "Defs", "GeneDefs", $"{safeName}_GeneDefs.xml");
+            Directory.CreateDirectory(Path.GetDirectoryName(geneDefsPath));
             doc.Save(geneDefsPath);
 
             Log.Message($"[CharacterStudio] 基因定义已生成: {geneDefsPath}");
@@ -867,6 +899,7 @@ namespace CharacterStudio.Exporter
             var doc = ModExportXmlWriter.CreateUnitDefDocument(config, safeName);
 
             string unitDefsPath = Path.Combine(modPath, "Defs", "PawnKindDefs", $"{safeName}_PawnKinds.xml");
+            Directory.CreateDirectory(Path.GetDirectoryName(unitDefsPath));
             doc.Save(unitDefsPath);
 
             // ── XenotypeDef 独立文件（可选）────────────────────────────────
@@ -882,6 +915,7 @@ namespace CharacterStudio.Exporter
                     config.SkinDef.defName);
 
                 string xenoDefsPath = Path.Combine(modPath, "Defs", "PawnKindDefs", $"{safeName}_Xenotypes.xml");
+                Directory.CreateDirectory(Path.GetDirectoryName(xenoDefsPath));
                 xenoDoc.Save(xenoDefsPath);
 
                 Log.Message($"[CharacterStudio] XenotypeDef 已生成: {xenoDefsPath}");
@@ -902,9 +936,22 @@ namespace CharacterStudio.Exporter
                 ? DefDatabase<ThingDef>.GetNamedSilentFail(config.SkinDef.targetRaces[0]) ?? ThingDefOf.Human
                 : ThingDefOf.Human;
             definition.EnsureDefaults(config.SkinDef.defName ?? SanitizeFileName(config.ModName), fallbackRace, config.SkinDef.attributes);
+            
+            // 同步皮肤中的进阶属性
+            definition.statModifiers = config.SkinDef.statModifiers?.Clone() ?? new Attributes.CharacterStatModifierProfile();
+            definition.gender = config.CharacterDefinition?.gender ?? Gender.None;
+            var attrs = config.SkinDef.attributes;
+            if (attrs != null && !string.IsNullOrWhiteSpace(attrs.favoriteColorHex))
+            {
+                if (UnityEngine.ColorUtility.TryParseHtmlString(attrs.favoriteColorHex, out Color color))
+                {
+                    definition.favoriteColor = color;
+                }
+            }
 
             string safeName = SanitizeFileName(config.ModName);
             string path = Path.Combine(modPath, "Defs", "PawnKindDefs", $"{safeName}_Character.xml");
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
             CharacterDefinitionXmlUtility.Save(definition, path);
             Log.Message($"[CharacterStudio] 角色定义已生成: {path}");
         }
@@ -959,6 +1006,10 @@ namespace CharacterStudio.Exporter
             string safeName = SanitizeFileName(config.ModName);
             string profilePath = Path.Combine(modPath, "Defs", "SpawnProfileDefs", $"{safeName}_SpawnProfiles.xml");
             string triggerPath = Path.Combine(modPath, "Defs", "CharacterTriggers", $"{safeName}_RuntimeTriggers.xml");
+            
+            Directory.CreateDirectory(Path.GetDirectoryName(profilePath));
+            Directory.CreateDirectory(Path.GetDirectoryName(triggerPath));
+            
             CharacterRuntimeTriggerXmlUtility.SaveSpawnProfiles(new[] { profile }, profilePath);
             CharacterRuntimeTriggerXmlUtility.SaveRuntimeTriggers(triggers, triggerPath);
             Log.Message($"[CharacterStudio] 运行时角色配置已生成: {profilePath}");
@@ -973,10 +1024,12 @@ namespace CharacterStudio.Exporter
         {
             var doc = ModExportXmlWriter.CreateAbilityDefDocument(config.Abilities);
             string abilityDefsPath = Path.Combine(modPath, "Defs", "AbilityDefs", $"{SanitizeFileName(config.ModName)}_Abilities.xml");
+            Directory.CreateDirectory(Path.GetDirectoryName(abilityDefsPath));
             doc.Save(abilityDefsPath);
 
             Log.Message($"[CharacterStudio] 技能定义已生成: {abilityDefsPath}");
         }
+
 
         // ─────────────────────────────────────────────
         // Manifest.xml 生成

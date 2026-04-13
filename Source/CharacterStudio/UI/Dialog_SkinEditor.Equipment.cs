@@ -264,7 +264,7 @@ namespace CharacterStudio.UI
             selectedLayerIndices.Clear();
             selectedNodePath = string.Empty;
             selectedBaseSlotType = null;
-            currentTab = EditorTab.Equipment;
+            currentTab = EditorTab.Items;
             equipmentPivotEditMode = false;
             isDraggingEquipmentPivot = false;
         }
@@ -428,6 +428,19 @@ namespace CharacterStudio.UI
             }
         }
 
+        private static void CopyVerbs(ThingDef source, ThingDef target)
+        {
+            var verbsField = typeof(ThingDef).GetField("verbs", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (verbsField != null)
+            {
+                var sourceVerbs = verbsField.GetValue(source) as List<VerbProperties>;
+                if (sourceVerbs != null)
+                {
+                    verbsField.SetValue(target, new List<VerbProperties>(sourceVerbs));
+                }
+            }
+        }
+
         private static ThingDef? ResolveEquipmentThingDefForTest(CharacterEquipmentDef equipment)
         {
             string resolvedThingDefName = equipment.GetResolvedThingDefName();
@@ -436,21 +449,49 @@ namespace CharacterStudio.UI
                 return null;
             }
 
+            ThingDef? runtimeDef = CreateRuntimeTestEquipmentThingDef(equipment, resolvedThingDefName);
+            if (runtimeDef == null)
+            {
+                return null;
+            }
+
             ThingDef? existing = DefDatabase<ThingDef>.GetNamedSilentFail(resolvedThingDefName);
             if (existing != null)
             {
+                existing.label = runtimeDef.label;
+                existing.description = runtimeDef.description;
+                existing.statBases = runtimeDef.statBases;
+                existing.equippedStatOffsets = runtimeDef.equippedStatOffsets;
+                existing.apparel = runtimeDef.apparel;
+                existing.tools = runtimeDef.tools;
+                existing.equipmentType = runtimeDef.equipmentType;
+                existing.weaponTags = runtimeDef.weaponTags;
+                existing.weaponClasses = runtimeDef.weaponClasses;
+                existing.comps = runtimeDef.comps;
+                existing.graphicData = runtimeDef.graphicData;
+                existing.uiIcon = runtimeDef.uiIcon;
+                existing.thingCategories = runtimeDef.thingCategories;
+                CopyVerbs(runtimeDef, existing);
                 return existing;
             }
 
             if (runtimeTestEquipmentDefs.TryGetValue(resolvedThingDefName, out ThingDef cached))
             {
+                cached.label = runtimeDef.label;
+                cached.description = runtimeDef.description;
+                cached.statBases = runtimeDef.statBases;
+                cached.equippedStatOffsets = runtimeDef.equippedStatOffsets;
+                cached.apparel = runtimeDef.apparel;
+                cached.tools = runtimeDef.tools;
+                cached.equipmentType = runtimeDef.equipmentType;
+                cached.weaponTags = runtimeDef.weaponTags;
+                cached.weaponClasses = runtimeDef.weaponClasses;
+                cached.comps = runtimeDef.comps;
+                cached.graphicData = runtimeDef.graphicData;
+                cached.uiIcon = runtimeDef.uiIcon;
+                cached.thingCategories = runtimeDef.thingCategories;
+                CopyVerbs(runtimeDef, cached);
                 return cached;
-            }
-
-            ThingDef? runtimeDef = CreateRuntimeTestEquipmentThingDef(equipment, resolvedThingDefName);
-            if (runtimeDef == null)
-            {
-                return null;
             }
 
             DefDatabase<ThingDef>.Add(runtimeDef);
@@ -520,22 +561,57 @@ namespace CharacterStudio.UI
                 .Cast<ThingCategoryDef>()
                 .ToList();
 
-            runtimeDef.apparel = new ApparelProperties
+            if (equipment.itemType == CharacterStudio.Core.EquipmentType.Apparel)
             {
-                wornGraphicPath = string.IsNullOrWhiteSpace(equipment.wornTexPath) ? texPath : equipment.wornTexPath,
-                useWornGraphicMask = equipment.useWornGraphicMask,
-                bodyPartGroups = equipment.bodyPartGroups?
-                    .Select(name => DefDatabase<BodyPartGroupDef>.GetNamedSilentFail(name))
+                runtimeDef.apparel = new ApparelProperties
+                {
+                    wornGraphicPath = string.IsNullOrWhiteSpace(equipment.wornTexPath) ? texPath : equipment.wornTexPath,
+                    useWornGraphicMask = equipment.useWornGraphicMask,
+                    bodyPartGroups = equipment.bodyPartGroups?
+                        .Select(name => DefDatabase<BodyPartGroupDef>.GetNamedSilentFail(name))
+                        .Where(def => def != null)
+                        .Cast<BodyPartGroupDef>()
+                        .ToList() ?? new List<BodyPartGroupDef>(),
+                    layers = equipment.apparelLayers?
+                        .Select(name => DefDatabase<ApparelLayerDef>.GetNamedSilentFail(name))
+                        .Where(def => def != null)
+                        .Cast<ApparelLayerDef>()
+                        .ToList() ?? new List<ApparelLayerDef>(),
+                    tags = equipment.apparelTags != null ? new List<string>(equipment.apparelTags) : new List<string>()
+                };
+            }
+            else if (equipment.itemType == CharacterStudio.Core.EquipmentType.WeaponMelee || equipment.itemType == CharacterStudio.Core.EquipmentType.WeaponRanged)
+            {
+                if (parentDef != null)
+                {
+                    runtimeDef.equipmentType = parentDef.equipmentType;
+                    var parentVerbsField = typeof(ThingDef).GetField("verbs", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (parentVerbsField != null)
+                    {
+                        var parentVerbs = parentVerbsField.GetValue(parentDef) as List<VerbProperties>;
+                        if (parentVerbs != null)
+                        {
+                            var verbsField = typeof(ThingDef).GetField("verbs", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                            verbsField?.SetValue(runtimeDef, new List<VerbProperties>(parentVerbs));
+                        }
+                    }
+                    if (parentDef.tools != null)
+                    {
+                        runtimeDef.tools = new List<Tool>(parentDef.tools);
+                    }
+                    if (parentDef.comps != null)
+                    {
+                        runtimeDef.comps = new List<CompProperties>(parentDef.comps);
+                    }
+                }
+                
+                runtimeDef.weaponTags = equipment.weaponTags != null ? new List<string>(equipment.weaponTags) : new List<string>();
+                runtimeDef.weaponClasses = equipment.weaponClasses?
+                    .Select(name => DefDatabase<WeaponClassDef>.GetNamedSilentFail(name))
                     .Where(def => def != null)
-                    .Cast<BodyPartGroupDef>()
-                    .ToList() ?? new List<BodyPartGroupDef>(),
-                layers = equipment.apparelLayers?
-                    .Select(name => DefDatabase<ApparelLayerDef>.GetNamedSilentFail(name))
-                    .Where(def => def != null)
-                    .Cast<ApparelLayerDef>()
-                    .ToList() ?? new List<ApparelLayerDef>(),
-                tags = equipment.apparelTags != null ? new List<string>(equipment.apparelTags) : new List<string>()
-            };
+                    .Cast<WeaponClassDef>()
+                    .ToList() ?? new List<WeaponClassDef>();
+            }
 
             foreach (CharacterEquipmentStatEntry entry in equipment.statBases ?? new List<CharacterEquipmentStatEntry>())
             {
@@ -684,7 +760,7 @@ namespace CharacterStudio.UI
             {
                 workingSkin.equipments.AddRange(presets);
                 SelectEquipment(Mathf.Max(0, workingSkin.equipments.Count - presets.Count));
-                currentTab = EditorTab.Equipment;
+                currentTab = EditorTab.Items;
             }, refreshPreview: true, refreshRenderTree: true);
             ShowStatus("CS_Studio_Equip_PresetAdded".Translate());
         }

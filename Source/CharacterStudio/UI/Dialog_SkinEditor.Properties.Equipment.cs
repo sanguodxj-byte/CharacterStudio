@@ -59,6 +59,19 @@ namespace CharacterStudio.UI
 
             if (DrawCollapsibleSection(ref y, width, "CS_Studio_Equip_Section_Base".Translate(), "EquipmentBase"))
             {
+                CharacterStudio.Core.EquipmentType currentItemType = equipment.itemType;
+                var equipmentTypeOptions = (CharacterStudio.Core.EquipmentType[])Enum.GetValues(typeof(CharacterStudio.Core.EquipmentType));
+                UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Equip_ItemType".Translate(), currentItemType,
+                    equipmentTypeOptions,
+                    option => option.ToString(),
+                    val =>
+                    {
+                        if (val != equipment.itemType)
+                        {
+                            MutateWithUndo(() => equipment.itemType = val, refreshPreview: true, refreshRenderTree: false);
+                        }
+                    });
+
                 bool enabled = equipment.enabled;
                 UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_BaseSlot_Enable".Translate(), ref enabled);
                 if (enabled != equipment.enabled)
@@ -329,6 +342,25 @@ namespace CharacterStudio.UI
                 if (tradeTagsText != normalizedTradeTagsText)
                 {
                     MutateEquipmentWithUndo(() => equipment.tradeTags = ParseCommaSeparatedList(tradeTagsText).ToList(), refreshRenderTree: false);
+                }
+
+                if (equipment.itemType == CharacterStudio.Core.EquipmentType.WeaponMelee || equipment.itemType == CharacterStudio.Core.EquipmentType.WeaponRanged)
+                {
+                    string weaponTagsText = string.Join(", ", equipment.weaponTags ?? new List<string>());
+                    UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_WeaponTags".Translate(), ref weaponTagsText);
+                    string normalizedWeaponTagsText = string.Join(", ", equipment.weaponTags ?? new List<string>());
+                    if (weaponTagsText != normalizedWeaponTagsText)
+                    {
+                        MutateEquipmentWithUndo(() => equipment.weaponTags = ParseCommaSeparatedList(weaponTagsText).ToList(), refreshRenderTree: false);
+                    }
+
+                    string weaponClassesText = string.Join(", ", equipment.weaponClasses ?? new List<string>());
+                    UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_WeaponClasses".Translate(), ref weaponClassesText);
+                    string normalizedWeaponClassesText = string.Join(", ", equipment.weaponClasses ?? new List<string>());
+                    if (weaponClassesText != normalizedWeaponClassesText)
+                    {
+                        MutateEquipmentWithUndo(() => equipment.weaponClasses = ParseCommaSeparatedList(weaponClassesText).ToList(), refreshRenderTree: false);
+                    }
                 }
             }
 

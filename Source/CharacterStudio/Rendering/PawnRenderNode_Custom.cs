@@ -33,6 +33,18 @@ namespace CharacterStudio.Rendering
         {
             _cachedSkinCompTick = -1;
             _cachedSkinComp = null;
+            _cachedCanDrawTick = -1;
+        }
+
+        // P-PERF: CanDrawNow 结果缓存（避免 ReplacementMouth/Mouth 每帧重复解析纹理路径）
+        internal int _cachedCanDrawTick = -1;
+        internal int _cachedCanDrawFacing = -1;
+        internal bool _cachedCanDrawResult = true;
+
+        /// <summary>P-PERF: 使 CanDrawNow 缓存失效</summary>
+        public void InvalidateCanDrawCache()
+        {
+            _cachedCanDrawTick = -1;
         }
 
         /// <summary>关联的图层配置</summary>
@@ -100,6 +112,7 @@ namespace CharacterStudio.Rendering
 
         /// <summary>面部分层程序化变形上次更新 Tick</summary>
         public int lastProgrammaticFaceTick = int.MinValue;
+        public int lastAnimCalcTick = int.MinValue;
 
         /// <summary>程序化表情附加旋转角</summary>
         public float currentProgrammaticAngle = 0f;
@@ -130,6 +143,24 @@ namespace CharacterStudio.Rendering
 
         /// <summary>外部图层动画附加缩放乘数</summary>
         public Vector3 currentExternalLayerScale = Vector3.one;
+
+        // ─────────────────────────────────────────────
+        // P8: 节点级图形缓存（避免 GetGraphic 每帧完整重算）
+        // 当 tick 和 facing 未变时直接返回缓存的 Graphic，跳过
+        // 完整的路径解析、TextureExists 查找和 GraphicDatabase.Get。
+        // ─────────────────────────────────────────────
+        internal Graphic? _cachedGraphicResult;
+        internal bool _cachedGraphicHasResult;       // true = 有缓存结果（包括 null）
+        internal int _cachedGraphicTick = -1;
+        internal int _cachedGraphicFacing = -1;
+
+        /// <summary>P8: 使节点级图形缓存失效（皮肤切换/表情变更时调用）</summary>
+        public void InvalidateGraphicCache()
+        {
+            _cachedGraphicHasResult = false;
+            _cachedGraphicResult = null;
+            _cachedGraphicTick = -1;
+        }
 
         public PawnRenderNode_Custom(Pawn pawn, PawnRenderNodeProperties props, PawnRenderTree tree)
             : base(pawn, props, tree)

@@ -139,11 +139,11 @@ namespace CharacterStudio.UI
 
             // 武器渲染覆写
             UIHelper.DrawSectionTitle(ref vy, width, "CS_Studio_Section_WeaponRender".Translate());
-            if (skinDef.weaponRenderConfig == null)
-                skinDef.weaponRenderConfig = new CharacterStudio.Core.WeaponRenderConfig();
-            var wrc = skinDef.weaponRenderConfig;
-            UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_WeaponRender_Enable".Translate(), ref wrc.enabled);
-            if (wrc.enabled)
+            if (skinDef.animationConfig == null)
+                skinDef.animationConfig = new CharacterStudio.Core.PawnAnimationConfig();
+            var wrc = skinDef.animationConfig;
+            UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_WeaponRender_Enable".Translate(), ref wrc.weaponOverrideEnabled);
+            if (wrc.weaponOverrideEnabled)
             {
                 UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_WeaponRender_ApplyOffHand".Translate(), ref wrc.applyToOffHand);
                 UIHelper.DrawPropertySlider(ref vy, width, "CS_Studio_WeaponRender_ScaleX".Translate(), ref wrc.scale.x, 0.1f, 3f, "F2");
@@ -163,7 +163,7 @@ namespace CharacterStudio.UI
                 // 重置按钮
                 if (UIHelper.DrawToolbarButton(new Rect(0, vy, 120, 24), "CS_Studio_WeaponRender_Reset".Translate()))
                 {
-                    skinDef.weaponRenderConfig = new CharacterStudio.Core.WeaponRenderConfig { enabled = true };
+                    skinDef.animationConfig = new CharacterStudio.Core.PawnAnimationConfig { weaponOverrideEnabled = true };
                     onChanged?.Invoke();
                 }
                 vy += 30f;

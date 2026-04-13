@@ -342,7 +342,8 @@ namespace CharacterStudio.Abilities
             { AbilityEffectType.Summon, new EffectWorker_Summon() },
             { AbilityEffectType.Teleport, new EffectWorker_Teleport() },
             { AbilityEffectType.Control, new EffectWorker_Control() },
-            { AbilityEffectType.Terraform, new EffectWorker_Terraform() }
+            { AbilityEffectType.Terraform, new EffectWorker_Terraform() },
+            { AbilityEffectType.WeatherChange, new EffectWorker_WeatherChange() }
         };
 
         /// <summary>

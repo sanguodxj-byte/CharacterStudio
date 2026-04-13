@@ -290,7 +290,8 @@ namespace CharacterStudio.Abilities
                     areaShape = ModularAbilityDefExtensions.NormalizeAreaShape(modAbility),
                     irregularAreaPattern = modAbility.irregularAreaPattern ?? string.Empty,
                     range = modAbility.range,
-                    radius = modAbility.radius
+                    radius = modAbility.radius,
+                    projectileDef = modAbility.projectileDef
                 };
 
                 if (hasEffects)
@@ -429,18 +430,16 @@ namespace CharacterStudio.Abilities
 
         /// <summary>
         /// 构建投射物载体的 VerbProperties
-        /// 使用 Verb_LaunchProjectile 实现真正的投射物发射
+        /// 使用 Verb_CastAbility 以支持完整的技能效果流水线。
+        /// 实际的投射物发射逻辑由 CompAbilityEffect_Modular 接管。
         /// </summary>
         private static VerbProperties BuildVerbProps_Projectile(float range, AbilityTargetType targetType, ThingDef? projectileDef)
         {
-            var projectile = projectileDef ?? DefDatabase<ThingDef>.GetNamedSilentFail("Bullet_Basic");
-
             return new VerbProperties
             {
-                verbClass         = typeof(Verb_LaunchProjectile),
+                verbClass         = typeof(Verb_CastAbility),
                 range             = Mathf.Max(range, 1f),
-                targetParams      = BuildTargetingParameters(targetType),
-                defaultProjectile = projectile
+                targetParams      = BuildTargetingParameters(targetType)
             };
         }
 

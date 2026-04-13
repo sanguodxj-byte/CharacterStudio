@@ -71,11 +71,15 @@ namespace CharacterStudio.UI
                 summaryText = "CS_Studio_Properties_Summary_BaseSlot".Translate();
             }
             else if (!layerModificationWorkflowActive &&
-                currentTab == EditorTab.Equipment &&
+                currentTab == EditorTab.Items &&
                 selectedEquipmentIndex >= 0 &&
                 selectedEquipmentIndex < (workingSkin.equipments?.Count ?? 0))
             {
                 summaryText = "CS_Studio_Properties_Summary_Equipment".Translate();
+            }
+            else if (!layerModificationWorkflowActive && currentTab == EditorTab.Animation)
+            {
+                summaryText = "CS_Studio_Tab_Animation".Translate();
             }
             else
             {
@@ -104,11 +108,17 @@ namespace CharacterStudio.UI
 
             SanitizeEquipmentSelection();
             if (!layerModificationWorkflowActive &&
-                currentTab == EditorTab.Equipment &&
+                currentTab == EditorTab.Items &&
                 selectedEquipmentIndex >= 0 &&
                 selectedEquipmentIndex < (workingSkin.equipments?.Count ?? 0))
             {
                 DrawEquipmentProperties(rect);
+                return;
+            }
+
+            if (!layerModificationWorkflowActive && currentTab == EditorTab.Animation)
+            {
+                DrawAnimationProperties(rect);
                 return;
             }
 

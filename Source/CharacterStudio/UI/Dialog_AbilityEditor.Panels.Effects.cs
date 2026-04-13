@@ -55,67 +55,131 @@ namespace CharacterStudio.UI
 
         private float GetEffectItemHeight(AbilityEffectConfig effect)
         {
-            float height = 34f + 28f;
+            // Header: title(22) + summary(16) + separator(1) + spacing(7) = 46
+            float height = 46f;
+            // Amount + Chance row
+            height += RowHeight;
             switch (effect.type)
             {
                 case AbilityEffectType.Summon:
+                    height += RowHeight;  // SummonKind + SummonCount
+                    height += RowHeight;  // SummonFaction
+                    break;
                 case AbilityEffectType.Terraform:
-                    height += 28f;
+                    height += RowHeight;  // TerraformMode
+                    if (effect.terraformMode == TerraformEffectMode.SpawnThing)
+                    {
+                        height += RowHeight; // TerraformThing
+                        height += RowHeight; // SpawnCount
+                    }
+                    else if (effect.terraformMode == TerraformEffectMode.ReplaceTerrain)
+                    {
+                        height += RowHeight; // TerraformTerrain
+                    }
                     break;
             }
 
             if (effect.type == AbilityEffectType.Damage)
             {
-                height += 28f;
+                height += RowHeight; // DamageDef
+                height += RowHeight; // CanHurtSelf
             }
 
-            if (effect.type == AbilityEffectType.Control && effect.controlMode != ControlEffectMode.Stun)
+            if (effect.type == AbilityEffectType.Buff || effect.type == AbilityEffectType.Debuff)
             {
-                height += 28f;
+                // Hediff + Duration on the same row as Amount + Chance - already counted
             }
 
-            if (effect.type == AbilityEffectType.Terraform && effect.terraformMode == TerraformEffectMode.SpawnThing)
+            if (effect.type == AbilityEffectType.Control)
             {
-                height += 28f;
+                // ControlMode + Duration on same row - no extra
+                if (effect.controlMode != ControlEffectMode.Stun)
+                {
+                    height += RowHeight; // ControlMoveDistance
+                }
             }
 
-            return height + 6f;
+            if (effect.type == AbilityEffectType.WeatherChange)
+            {
+                height += RowHeight; // WeatherDef
+                height += RowHeight; // Duration + Transition
+            }
+
+            return height + 10f;
+        }
+
+        private static string BuildEffectItemSummary(AbilityEffectConfig effect)
+        {
+            string amountText = effect.amount.ToString("F1");
+            string chanceText = (effect.chance * 100f).ToString("F0") + "%";
+            return $"{GetEffectTypeLabel(effect.type)}  ·  {amountText}  ·  {chanceText}";
         }
 
         private void DrawEffectItem(Rect rect, AbilityEffectConfig effect, int index)
         {
-            Widgets.DrawMenuSection(rect);
-            Rect inner = rect.ContractedBy(5f);
+            // Draw card background
+            Widgets.DrawBoxSolid(rect, UIHelper.PanelFillSoftColor);
+            GUI.color = UIHelper.BorderColor;
+            Widgets.DrawBox(rect, 1);
+            GUI.color = Color.white;
+
+            Rect inner = rect.ContractedBy(6f);
             float y = inner.y;
 
-            float actionButtonsWidth = 100f;
-            if (DrawSelectionFieldButton(new Rect(inner.x, y, Mathf.Max(100f, inner.width - actionButtonsWidth - 4f), 24f), GetEffectTypeLabel(effect.type), () => ShowEffectTypeSelector(effect)))
+            // ── Row 1: Title (effect type selector) + action buttons ──
+            GameFont prevFont = Text.Font;
+            float actionButtonsWidth = 96f;
+            float typeSelectorWidth = Mathf.Max(100f, inner.width - actionButtonsWidth - 4f);
+            if (DrawSelectionFieldButton(new Rect(inner.x, y, typeSelectorWidth, 22f), GetEffectTypeLabel(effect.type), () => ShowEffectTypeSelector(effect)))
             {
             }
-            if (DrawCompactIconButton(new Rect(inner.x + inner.width - 100f, y, 30f, 24f), "↑", () => SwapEffects(index, index - 1)))
+
+            // Action buttons aligned to right
+            float btnX = inner.x + inner.width - 96f;
+            if (DrawCompactIconButton(new Rect(btnX, y, 28f, 22f), "▲", () => SwapEffects(index, index - 1)))
             {
+                return;
             }
-            if (DrawCompactIconButton(new Rect(inner.x + inner.width - 66f, y, 30f, 24f), "↓", () => SwapEffects(index, index + 1)))
+            btnX += 30f;
+            if (DrawCompactIconButton(new Rect(btnX, y, 28f, 22f), "▼", () => SwapEffects(index, index + 1)))
             {
+                return;
             }
-            if (DrawCompactIconButton(new Rect(inner.x + inner.width - 32f, y, 30f, 24f), "X", () =>
+            btnX += 30f;
+            if (DrawCompactIconButton(new Rect(btnX, y, 34f, 22f), "X", () =>
             {
                 selectedAbility?.effects.RemoveAt(index);
                 NotifyAbilityPreviewDirty(true);
             }))
             {
+                return;
             }
-            y += 28f;
 
-            float gap = 8f;
+            // ── Row 2: Summary line ──
+            y += 22f;
+            Text.Font = GameFont.Tiny;
+            GUI.color = UIHelper.SubtleColor;
+            Widgets.Label(new Rect(inner.x, y, inner.width, 16f), BuildEffectItemSummary(effect));
+            GUI.color = Color.white;
+            Text.Font = prevFont;
+
+            // ── Separator ──
+            y += 17f;
+            Widgets.DrawBoxSolid(new Rect(inner.x, y, inner.width, 1f), UIHelper.AccentSoftColor);
+            y += 6f;
+
+            // ── Content area ──
+            float gap = 12f;
             float colWidth = (inner.width - gap) * 0.5f;
-            float labelW = Mathf.Clamp(inner.width * 0.18f, 54f, 82f);
-            float fieldW = Mathf.Max(60f, colWidth - labelW);
+            float labelW = Mathf.Clamp(inner.width * 0.20f, 58f, 90f);
+            float fieldW = Mathf.Max(60f, colWidth - labelW - 4f);
             float rightX = inner.x + colWidth + gap;
 
             void DrawNumericRow(float rowY, float x, string label, ref float value, ref string buffer, float min = float.MinValue, float max = float.MaxValue)
             {
-                Widgets.Label(new Rect(x, rowY, labelW, 24f), label);
+                Text.Font = GameFont.Tiny;
+                Widgets.Label(new Rect(x, rowY + 2f, labelW, 20f), GenText.Truncate(label, labelW));
+                Text.Font = prevFont;
                 float before = value;
                 UIHelper.TextFieldNumeric(new Rect(x + labelW, rowY, fieldW, 24f), ref value, ref buffer, min, max);
                 if (!Mathf.Approximately(value, before))
@@ -126,7 +190,9 @@ namespace CharacterStudio.UI
 
             void DrawNumericRowInt(float rowY, float x, string label, ref int value, ref string buffer, int min, int max)
             {
-                Widgets.Label(new Rect(x, rowY, labelW, 24f), label);
+                Text.Font = GameFont.Tiny;
+                Widgets.Label(new Rect(x, rowY + 2f, labelW, 20f), GenText.Truncate(label, labelW));
+                Text.Font = prevFont;
                 int before = value;
                 UIHelper.TextFieldNumeric(new Rect(x + labelW, rowY, fieldW, 24f), ref value, ref buffer, min, max);
                 if (value != before)
@@ -139,7 +205,9 @@ namespace CharacterStudio.UI
             {
                 float currentLabelW = overrideLabelWidth ?? labelW;
                 float currentFieldW = overrideFieldWidth ?? fieldW;
-                Widgets.Label(new Rect(x, rowY, currentLabelW, 24f), label);
+                Text.Font = GameFont.Tiny;
+                Widgets.Label(new Rect(x, rowY + 2f, currentLabelW, 20f), GenText.Truncate(label, currentLabelW));
+                Text.Font = prevFont;
                 if (DrawSelectionFieldButton(new Rect(x + currentLabelW, rowY, currentFieldW, 24f), value, onClick))
                 {
                 }
@@ -156,7 +224,9 @@ namespace CharacterStudio.UI
                 case AbilityEffectType.Damage:
                     DrawSelectRow(y, inner.x, "CS_Studio_Effect_DamageDef".Translate(), effect.damageDef?.label ?? "CS_Studio_None".Translate(), () => ShowDamageDefSelector(effect), overrideLabelWidth: labelW, overrideFieldWidth: inner.width - labelW);
                     y += 26f;
-                    Widgets.Label(new Rect(inner.x, y, labelW, 24f), "CS_Studio_Effect_CanHurtSelf".Translate());
+                    Text.Font = GameFont.Tiny;
+                    Widgets.Label(new Rect(inner.x, y + 2f, labelW, 20f), GenText.Truncate("CS_Studio_Effect_CanHurtSelf".Translate(), labelW));
+                    Text.Font = prevFont;
                     bool canHurtSelf = effect.canHurtSelf;
                     Widgets.Checkbox(new Vector2(inner.x + labelW, y + 2f), ref canHurtSelf, 24f, false);
                     if (effect.canHurtSelf != canHurtSelf)
@@ -205,7 +275,9 @@ namespace CharacterStudio.UI
                             y += 26f;
 
                             string spawnCountStr = effect.terraformSpawnCount.ToString();
-                            Widgets.Label(new Rect(inner.x, y, wideLabelW, 24f), "CS_Studio_Effect_TerraformSpawnCount".Translate());
+                            Text.Font = GameFont.Tiny;
+                            Widgets.Label(new Rect(inner.x, y + 2f, wideLabelW, 20f), GenText.Truncate("CS_Studio_Effect_TerraformSpawnCount".Translate(), wideLabelW));
+                            Text.Font = prevFont;
                             int spawnCountBefore = effect.terraformSpawnCount;
                             UIHelper.TextFieldNumeric(new Rect(inner.x + wideLabelW, y, wideFieldW, 24f), ref effect.terraformSpawnCount, ref spawnCountStr, 1, 999);
                             if (effect.terraformSpawnCount != spawnCountBefore)
@@ -219,6 +291,14 @@ namespace CharacterStudio.UI
                                 overrideLabelWidth: wideLabelW, overrideFieldWidth: wideFieldW);
                             break;
                     }
+                    break;
+                case AbilityEffectType.WeatherChange:
+                    DrawSelectRow(y, inner.x, "CS_Studio_Effect_WeatherDef".Translate(), !string.IsNullOrEmpty(effect.weatherDefName) ? effect.weatherDefName : "CS_Studio_None".Translate(), () => ShowWeatherDefSelector(effect), overrideLabelWidth: labelW, overrideFieldWidth: inner.width - labelW);
+                    y += 26f;
+                    string weatherDurStr = effect.weatherDurationTicks.ToString();
+                    DrawNumericRowInt(y, inner.x, "CS_Studio_Effect_WeatherDuration".Translate(), ref effect.weatherDurationTicks, ref weatherDurStr, 1, 9999999);
+                    string weatherTransStr = effect.weatherTransitionTicks.ToString();
+                    DrawNumericRowInt(y, rightX, "CS_Studio_Effect_WeatherTransition".Translate(), ref effect.weatherTransitionTicks, ref weatherTransStr, 0, 99999);
                     break;
             }
         }
@@ -263,6 +343,10 @@ namespace CharacterStudio.UI
                     break;
                 case AbilityEffectType.Control:
                     config.duration = 3f;
+                    break;
+                case AbilityEffectType.WeatherChange:
+                    config.weatherDurationTicks = 60000;
+                    config.weatherTransitionTicks = 3000;
                     break;
             }
 
@@ -581,6 +665,35 @@ namespace CharacterStudio.UI
                 TerraformEffectMode.ReplaceTerrain => "CS_Studio_Effect_TerraformMode_ReplaceTerrain".Translate(),
                 _ => "CS_Studio_Effect_TerraformMode_CleanFilth".Translate()
             };
+        }
+
+        private void ShowWeatherDefSelector(AbilityEffectConfig effect)
+        {
+            var options = new List<FloatMenuOption>
+            {
+                new FloatMenuOption("CS_Studio_None".Translate(), () =>
+                {
+                    effect.weatherDefName = string.Empty;
+                    NotifyAbilityPreviewDirty(true);
+                })
+            };
+
+            var defs = DefDatabase<WeatherDef>.AllDefsListForReading;
+            var sorted = new List<WeatherDef>(defs);
+            sorted.Sort((a, b) => string.Compare(a.label ?? a.defName, b.label ?? b.defName, StringComparison.OrdinalIgnoreCase));
+
+            foreach (var weatherDef in sorted)
+            {
+                var localDef = weatherDef;
+                string label = localDef.label ?? localDef.defName;
+                options.Add(new FloatMenuOption(label, () =>
+                {
+                    effect.weatherDefName = localDef.defName;
+                    NotifyAbilityPreviewDirty(true);
+                }));
+            }
+
+            Find.WindowStack.Add(new FloatMenu(options));
         }
 
         private void SwapEffects(int indexA, int indexB)

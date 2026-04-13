@@ -446,6 +446,16 @@ namespace CharacterStudio.Abilities
                 return true;
             }
 
+            IThingHolder? holder = thing.ParentHolder;
+            while (holder != null)
+          {
+                if (holder is Pawn p && p.thingIDNumber == state.casterThingId)
+                {
+                    return true;
+                }
+                holder = holder.ParentHolder;
+            }
+
             return false;
         }
 
@@ -496,6 +506,8 @@ namespace CharacterStudio.Abilities
             AccessTools.Field(typeof(PostTickVisuals), "map");
         private static readonly System.Reflection.FieldInfo? WeatherManagerMapField =
             AccessTools.Field(typeof(WeatherManager), "map");
+        private static readonly System.Reflection.FieldInfo? WindManagerMapField =
+            AccessTools.Field(typeof(WindManager), "map");
 
         public static void Apply(Harmony harmony)
         {
@@ -503,8 +515,10 @@ namespace CharacterStudio.Abilities
             PatchPrefix(harmony, typeof(ThingWithComps), nameof(ThingWithComps.TickLong), nameof(ThingWithComps_TickLong_Prefix));
             PatchPrefix(harmony, typeof(ThingWithComps), nameof(ThingWithComps.TickRare), nameof(ThingWithComps_TickRare_Prefix));
             PatchPrefix(harmony, typeof(Pawn), nameof(Pawn.TickRare), nameof(Pawn_TickRare_Prefix));
-            PatchPrefix(harmony, typeof(Map), nameof(Map.MapPreTick), nameof(Map_MapPreTick_Prefix));
-            PatchPrefix(harmony, typeof(Map), nameof(Map.MapPostTick), nameof(Map_MapPostTick_Prefix));
+            // Do NOT skip MapPreTick/MapPostTick entirely — doing so prevents
+            // ALL pawn ticks from running (including the caster).  Per-entity
+            // patches (Thing_DoTick, Pawn_TickRare, etc.) already freeze
+            // non-exempt pawns while letting the caster act freely.
             PatchPrefix(harmony,
                 AccessTools.PropertyGetter(typeof(Pawn_StanceTracker), nameof(Pawn_StanceTracker.FullBodyBusy)),
                 nameof(Pawn_StanceTracker_FullBodyBusy_Prefix));
@@ -512,6 +526,7 @@ namespace CharacterStudio.Abilities
             PatchPrefix(harmony, typeof(Mote), nameof(Mote.RealtimeUpdate), nameof(Mote_RealtimeUpdate_Prefix));
             PatchPrefix(harmony, typeof(PostTickVisuals), nameof(PostTickVisuals.ProcessPostTickVisuals), nameof(PostTickVisuals_ProcessPostTickVisuals_Prefix));
             PatchPrefix(harmony, typeof(WeatherManager), nameof(WeatherManager.WeatherManagerUpdate), nameof(WeatherManager_Update_Prefix));
+            PatchPrefix(harmony, typeof(WindManager), "WindManagerUpdate", nameof(WindManager_Update_Prefix));
             PatchPrefix(harmony, typeof(MapComponentUtility), nameof(MapComponentUtility.MapComponentUpdate), nameof(MapComponentUtility_MapComponentUpdate_Prefix));
 
             PatchScopedOverride(harmony,
@@ -574,15 +589,6 @@ namespace CharacterStudio.Abilities
             return !AbilityTimeStopRuntimeController.ShouldSkipThingTick(__instance);
         }
 
-        public static bool Map_MapPreTick_Prefix(Map __instance)
-        {
-            return !AbilityTimeStopRuntimeController.ShouldSkipMapTick(__instance);
-        }
-
-        public static bool Map_MapPostTick_Prefix(Map __instance)
-        {
-            return !AbilityTimeStopRuntimeController.ShouldSkipMapTick(__instance);
-        }
 
         public static bool Pawn_StanceTracker_FullBodyBusy_Prefix(Pawn_StanceTracker __instance, ref bool __result)
         {
@@ -628,6 +634,12 @@ namespace CharacterStudio.Abilities
         public static bool WeatherManager_Update_Prefix(WeatherManager __instance)
         {
             Map? map = WeatherManagerMapField?.GetValue(__instance) as Map;
+            return !AbilityTimeStopRuntimeController.ShouldFreezeMapVisuals(map);
+        }
+
+        public static bool WindManager_Update_Prefix(WindManager __instance)
+        {
+            Map? map = WindManagerMapField?.GetValue(__instance) as Map;
             return !AbilityTimeStopRuntimeController.ShouldFreezeMapVisuals(map);
         }
 

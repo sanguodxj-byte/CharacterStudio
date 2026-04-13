@@ -136,5 +136,8 @@
     <CS_Studio_Equip_VisualLayerName>Visual Layer Name</CS_Studio_Equip_VisualLayerName>
     <CS_Studio_Equip_WorkingSkinNull>workingSkin is null</CS_Studio_Equip_WorkingSkinNull>
     <CS_Studio_Equip_WorldTexPath>World Texture Path</CS_Studio_Equip_WorldTexPath>
+    <CS_Studio_Equip_ItemType>Item Type</CS_Studio_Equip_ItemType>
+    <CS_Studio_Equip_WeaponTags>Weapon Tags</CS_Studio_Equip_WeaponTags>
+    <CS_Studio_Equip_WeaponClasses>Weapon Classes</CS_Studio_Equip_WeaponClasses>
     <CS_Studio_Equip_WornTexPath>Worn Texture Path</CS_Studio_Equip_WornTexPath>
 </LanguageData>

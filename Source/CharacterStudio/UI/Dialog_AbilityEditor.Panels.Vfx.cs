@@ -135,28 +135,31 @@ namespace CharacterStudio.UI
 
         private float GetVfxItemHeight(AbilityVisualEffectConfig vfx)
         {
-            float height = 34f;
-            height += RowHeight;
+            float height = 50f; // header: title(22) + summary(18) + spacing(10)
+            height += RowHeight; // Type + SourceMode
             if (UsesPresetSource(vfx) || UsesTextureSourceSelector(vfx))
             {
                 height += RowHeight;
             }
 
-            height += RowHeight;
-            height += RowHeight;
+            height += RowHeight; // Target + Trigger
+            height += RowHeight; // Delay + Duration
+            height += RowHeight; // Scale + ExpressionDuration (always drawn)
 
             if (UsesCustomTextureSettings(vfx))
             {
-                height += RowHeight * 5f;
+                height += RowHeight * 5f; // DrawSize+Rotation, ScaleX+Y, Facing+Height, Forward+Side, Hint
             }
 
             if (vfx.type == AbilityVisualEffectType.LineTexture || vfx.type == AbilityVisualEffectType.WallTexture)
             {
-                height += RowHeight * 3f;
+                height += RowHeight * 3f; // Spatial+Path, Anchor+AnchorB, LineWidth/WallHeight+Segments
             }
 
-            height += RowHeight * 2f;
-            return height + 8f;
+            height += RowHeight; // RepeatCount + RepeatInterval
+            height += RowHeight; // LinkedExpression + PupilBrightness
+            height += RowHeight; // PupilContrast
+            return height + 10f;
         }
 
         private string BuildVfxTitleLabel(AbilityVisualEffectConfig vfx, int index)
@@ -198,48 +201,46 @@ namespace CharacterStudio.UI
 
         private void DrawVfxItem(Rect rect, AbilityVisualEffectConfig vfx, int index)
         {
-            Widgets.DrawMenuSection(rect);
-            Rect inner = rect.ContractedBy(5f);
+            // Draw background with subtle color coding
+            Color bgColor = vfx.enabled ? UIHelper.PanelFillSoftColor : new Color(0.12f, 0.12f, 0.14f, 0.9f);
+            Widgets.DrawBoxSolid(rect, bgColor);
+            GUI.color = UIHelper.BorderColor;
+            Widgets.DrawBox(rect, 1);
+            GUI.color = Color.white;
+
+            Rect inner = rect.ContractedBy(6f);
 
             if (NormalizeVfxEditorState(vfx))
             {
                 NotifyAbilityPreviewDirty(true);
             }
 
-            GUI.color = vfx.enabled ? Color.white : Color.gray;
-            Widgets.Label(new Rect(inner.x, inner.y, inner.width - 120f, 24f), BuildVfxTitleLabel(vfx, index));
-            GUI.color = Color.white;
-            Text.Font = GameFont.Tiny;
-            GUI.color = UIHelper.SubtleColor;
-            Widgets.Label(new Rect(inner.x, inner.y + 18f, inner.width - 120f, 18f), BuildVfxSecondarySummary(vfx));
-            GUI.color = Color.white;
+            // ── Row 1: Title + action buttons ──
+            float headerY = inner.y;
+
+            // Title label (left side)
+            GameFont prevFont = Text.Font;
             Text.Font = GameFont.Small;
+            GUI.color = vfx.enabled ? UIHelper.HeaderColor : Color.gray;
+            string titleText = BuildVfxTitleLabel(vfx, index);
+            float titleWidth = inner.width - 70f;
+            Widgets.Label(new Rect(inner.x, headerY, titleWidth, 22f), titleText);
+            GUI.color = Color.white;
+            Text.Font = prevFont;
 
-            float enabledWidth = 112f;
-            Rect enabledRect = new Rect(inner.x + inner.width - 186f, inner.y, enabledWidth, 24f);
-            bool enabled = vfx.enabled;
-            float enabledY = enabledRect.y;
-            UIHelper.DrawPropertyCheckbox(ref enabledY, enabledRect.width, "CS_Studio_VFX_Enabled".Translate(), ref enabled, labelWidth: enabledWidth - 28f);
-            if (vfx.enabled != enabled)
-            {
-                vfx.enabled = enabled;
-                NotifyAbilityPreviewDirty();
-            }
-
-            float buttonX = inner.x + inner.width - 66f;
-            if (selectedAbility != null && index > 0 && DrawCompactIconButton(new Rect(buttonX, inner.y, 20f, 24f), "▲", () => SwapVfx(index, index - 1)))
+            // Action buttons (right side, all in one row)
+            float btnX = inner.x + inner.width - 66f;
+            if (selectedAbility != null && index > 0 && DrawCompactIconButton(new Rect(btnX, headerY, 20f, 22f), "▲", () => SwapVfx(index, index - 1)))
             {
                 return;
             }
-
-            buttonX += 22f;
-            if (selectedAbility != null && index < selectedAbility.visualEffects.Count - 1 && DrawCompactIconButton(new Rect(buttonX, inner.y, 20f, 24f), "▼", () => SwapVfx(index, index + 1)))
+            btnX += 22f;
+            if (selectedAbility != null && index < selectedAbility.visualEffects.Count - 1 && DrawCompactIconButton(new Rect(btnX, headerY, 20f, 22f), "▼", () => SwapVfx(index, index + 1)))
             {
                 return;
             }
-
-            buttonX += 22f;
-            if (DrawCompactIconButton(new Rect(buttonX, inner.y, 20f, 24f), "X", () =>
+            btnX += 22f;
+            if (DrawCompactIconButton(new Rect(btnX, headerY, 22f, 22f), "X", () =>
             {
                 selectedAbility?.visualEffects.RemoveAt(index);
                 NotifyAbilityPreviewDirty(true);
@@ -248,16 +249,48 @@ namespace CharacterStudio.UI
                 return;
             }
 
-            float y = inner.y + 36f;
-            float gap = 8f;
+            // ── Row 2: Summary line (Tiny font, subtle color) ──
+            float summaryY = headerY + 22f;
+            Text.Font = GameFont.Tiny;
+            GUI.color = UIHelper.SubtleColor;
+            Widgets.Label(new Rect(inner.x, summaryY, inner.width - 120f, 16f), BuildVfxSecondarySummary(vfx));
+            GUI.color = Color.white;
+            Text.Font = prevFont;
+
+            // Enabled checkbox (right side of summary row)
+            bool enabled = vfx.enabled;
+            float checkboxX = inner.x + inner.width - 100f;
+            Rect checkboxRect = new Rect(checkboxX, summaryY, 100f, 16f);
+            Widgets.Label(new Rect(checkboxRect.x, checkboxRect.y, 60f, checkboxRect.height), "CS_Studio_VFX_Enabled".Translate());
+            Widgets.Checkbox(new Vector2(checkboxRect.x + 62f, checkboxRect.y - 2f), ref enabled, 18f, false);
+            if (vfx.enabled != enabled)
+            {
+                vfx.enabled = enabled;
+                NotifyAbilityPreviewDirty();
+            }
+
+            // ── Separator line ──
+            float sepY = summaryY + 18f;
+            Widgets.DrawBoxSolid(new Rect(inner.x, sepY, inner.width, 1f), UIHelper.AccentSoftColor);
+
+            // ── Content rows start after header ──
+            float y = sepY + 6f;
+
+            // Two-column layout with auto-sizing labels (Tiny font for content rows)
+            float gap = 10f;
             float colW = (inner.width - gap) * 0.5f;
-            float labelW = 42f;
-            float fieldW = colW - labelW - 4f;
+            Text.Font = GameFont.Tiny;
+            float labelW = 68f;
+            float fieldW = Mathf.Max(50f, colW - labelW - 4f);
             float rightX = inner.x + colW + gap;
+            Text.Font = prevFont;
 
             void DrawNumberRow(float rowY, float x, string label, ref float value, ref string buffer, float min, float max)
             {
-                Widgets.Label(new Rect(x, rowY, labelW, 24f), label);
+                Text.Font = GameFont.Tiny;
+                Rect labelRect = new Rect(x, rowY + 2f, labelW, 20f);
+                Widgets.Label(labelRect, label.Truncate(labelRect.width));
+                Text.Font = prevFont;
                 float before = value;
                 UIHelper.TextFieldNumeric(new Rect(x + labelW, rowY, fieldW, 24f), ref value, ref buffer, min, max);
                 if (Math.Abs(value - before) > 0.001f)
@@ -268,7 +301,10 @@ namespace CharacterStudio.UI
 
             void DrawIntRow(float rowY, float x, string label, ref int value, ref string buffer, int min, int max)
             {
-                Widgets.Label(new Rect(x, rowY, labelW, 24f), label);
+                Text.Font = GameFont.Tiny;
+                Rect labelRect = new Rect(x, rowY + 2f, labelW, 20f);
+                Widgets.Label(labelRect, label.Truncate(labelRect.width));
+                Text.Font = prevFont;
                 int before = value;
                 UIHelper.TextFieldNumeric(new Rect(x + labelW, rowY, fieldW, 24f), ref value, ref buffer, min, max);
                 if (value != before)
@@ -386,7 +422,7 @@ namespace CharacterStudio.UI
                         {
                             vfx.customTexturePath = path ?? string.Empty;
                             NotifyAbilityPreviewDirty();
-                        }));
+                        }, defaultRoot: GetAbilityTextureRootDir()));
                     }, true))
                     {
                     }
@@ -733,8 +769,11 @@ namespace CharacterStudio.UI
 
         private void DrawVfxDropdownRow(float x, float y, float labelW, float fieldW, string label, string value, Action onClick)
         {
-            Widgets.Label(new Rect(x, y, labelW, 24f), label);
-            if (DrawSelectionFieldButton(new Rect(x + labelW, y, fieldW, 24f), value, onClick))
+            GameFont prevFont = Text.Font;
+            Text.Font = GameFont.Tiny;
+            Widgets.Label(new Rect(x, y + 2f, labelW, 20f), label.Truncate(labelW));
+            Text.Font = prevFont;
+            if (DrawSelectionFieldButton(new Rect(x + labelW, y, fieldW, 24f), value.Truncate(fieldW), onClick))
             {
             }
         }

@@ -44,6 +44,9 @@ namespace CharacterStudio.Rendering
 
         // P1: 文件修改检查节流（避免每帧文件系统 I/O）
         private static DateTime lastFileModCheckTime = DateTime.MinValue;
+        // P-PERF: 编辑器模式下也使用节流（0.5秒），避免每帧 File.GetLastWriteTime
+        private static DateTime lastEditorFileModCheckTime = DateTime.MinValue;
+        private static readonly TimeSpan editorFileModCheckInterval = TimeSpan.FromSeconds(0.5);
 
         // 线程同步锁
         private static readonly object textureCacheLock = new object();
@@ -99,15 +102,20 @@ namespace CharacterStudio.Rendering
             string requestedPath = fullPath;
             string resolvedPath = ResolveExistingTexturePath(fullPath);
 
+            // P-PERF: 即使编辑器模式也使用 0.5 秒节流，避免每帧 File.GetLastWriteTime I/O
             bool aggressive = ShouldCheckFileModificationAggressively();
-            bool checkMod = aggressive;
-            if (!checkMod)
+            bool checkMod = false;
             {
                 DateTime now = DateTime.Now;
-                if ((now - lastFileModCheckTime).TotalSeconds >= 2.0)
+                TimeSpan elapsed = now - (aggressive ? lastEditorFileModCheckTime : lastFileModCheckTime);
+                double threshold = aggressive ? editorFileModCheckInterval.TotalSeconds : 2.0;
+                if (elapsed.TotalSeconds >= threshold)
                 {
-                    lastFileModCheckTime = now;
                     checkMod = true;
+                    if (aggressive)
+                        lastEditorFileModCheckTime = now;
+                    else
+                        lastFileModCheckTime = now;
                 }
             }
 
@@ -542,17 +550,12 @@ namespace CharacterStudio.Rendering
                 return resolvedShader;
             }
 
-            if (!TextureHasSemiTransparentPixels(texture))
-            {
-                return resolvedShader;
-            }
-
-            if (IsCutoutComplexShader(resolvedShader))
-            {
-                return ShaderDatabase.TransparentPostLight ?? ShaderDatabase.Transparent ?? resolvedShader;
-            }
-
-            return ShaderDatabase.Transparent ?? resolvedShader;
+            // 真实原因修复：
+            // 切勿因为贴图包含半透明像素就强制将 Shader 回退到 Transparent 或 TransparentPostLight！
+            // RimWorld 的角色渲染必须使用 Cutout 系列材质（ZWrite On）来写入深度缓冲区。
+            // 一旦回退到 Transparent（ZWrite Off），角色将无法阻挡更低层级的阴影（如自带脚底阴影 Graphic_Shadow，以及投射在草丛上的树影）。
+            // 这会导致角色的影子画在角色身上，或者透过半透明像素看到底部草丛上的阴影形状。
+            return resolvedShader;
         }
 
         private static bool IsCutoutLikeShader(Shader shader)
@@ -766,27 +769,19 @@ namespace CharacterStudio.Rendering
 
             if (accessTimes != null && accessTimes.Count > 0)
             {
-                var keysToEvict = new List<string>(toRemove);
-                for (int i = 0; i < toRemove; i++)
+                // O(N log N) 排序淘汰，替代原来的 O(N*toRemove) 重复线性扫描
+                var sorted = new List<KeyValuePair<string, DateTime>>(accessTimes.Count);
+                foreach (var kv in accessTimes)
                 {
-                    string? oldestKey = null;
-                    DateTime oldestTime = DateTime.MaxValue;
-                    foreach (var kv in accessTimes)
-                    {
-                        if (kv.Value < oldestTime && cache.ContainsKey(kv.Key) && !keysToEvict.Contains(kv.Key))
-                        {
-                            oldestTime = kv.Value;
-                            oldestKey = kv.Key;
-                        }
-                    }
-                    if (oldestKey != null)
-                    {
-                        keysToEvict.Add(oldestKey);
-                    }
+                    if (cache.ContainsKey(kv.Key))
+                        sorted.Add(kv);
                 }
+                sorted.Sort((a, b) => a.Value.CompareTo(b.Value));
 
-                foreach (var key in keysToEvict)
+                int evicted = 0;
+                for (int i = 0; i < sorted.Count && evicted < toRemove; i++)
                 {
+                    string key = sorted[i].Key;
                     if (cache.TryGetValue(key, out var item))
                     {
                         if (item is Texture2D tex)
@@ -801,6 +796,7 @@ namespace CharacterStudio.Rendering
                     }
                     accessTimes.Remove(key);
                     fileLastWriteTimes.Remove(key);
+                    evicted++;
                 }
             }
             else
@@ -933,7 +929,16 @@ namespace CharacterStudio.Rendering
                 return null;
             }
 
-            if (edgeBleedingProcessedPaths.Add(resolvedPath))
+            // P-PERF: 仅对使用 Transparent 类 Shader 的纹理执行边缘颜色修正。
+            // Cutout 纹理通过 alpha test 硬裁剪，不存在半透明边缘混合问题，
+            // 跳过可避免 ~2.3M 次像素遍历（512×512 纹理）的 CPU 开销。
+            bool needsEdgeFix = !resolvedPath.EndsWith("_north", StringComparison.OrdinalIgnoreCase)
+                && !resolvedPath.EndsWith("_east", StringComparison.OrdinalIgnoreCase)
+                && !resolvedPath.EndsWith("_south", StringComparison.OrdinalIgnoreCase)
+                && !resolvedPath.EndsWith("_west", StringComparison.OrdinalIgnoreCase)
+                && resolvedPath.IndexOf("Cutout", StringComparison.OrdinalIgnoreCase) < 0;
+
+            if (needsEdgeFix && edgeBleedingProcessedPaths.Add(resolvedPath))
             {
                 FixTransparentEdgeBleeding(tex);
             }

@@ -81,9 +81,27 @@ namespace CharacterStudio.Abilities
             switch (shape)
             {
                 case AbilityAreaShape.Line:
-                    for (int step = 0; step <= discreteRadius; step++)
+                    if (anchor == impactCenter)
                     {
-                        cells.Add(anchor + forward * step);
+                        cells.Add(anchor);
+                    }
+                    else
+                    {
+                        Vector3 dir = (impactCenter.ToVector3Shifted() - anchor.ToVector3Shifted()).normalized;
+                        if (dir.sqrMagnitude < 0.01f) dir = forward.ToVector3();
+                        IntVec3 extendedTarget = (anchor.ToVector3Shifted() + dir * rawRadius).ToIntVec3();
+                        foreach (IntVec3 cell in GenSight.PointsOnLineOfSight(anchor, extendedTarget))
+                        {
+                            if (cell.InHorDistOf(anchor, rawRadius))
+                            {
+                                cells.Add(cell);
+                            }
+                        }
+                        cells.Add(anchor);
+                        if (extendedTarget.InHorDistOf(anchor, rawRadius))
+                        {
+                            cells.Add(extendedTarget);
+                        }
                     }
                     break;
                 case AbilityAreaShape.Cone:

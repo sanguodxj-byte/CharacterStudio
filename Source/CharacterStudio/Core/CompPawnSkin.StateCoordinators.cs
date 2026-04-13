@@ -1,4 +1,5 @@
 using System;
+using CharacterStudio.Abilities;
 using CharacterStudio.Attributes;
 using CharacterStudio.Performance;
 using RimWorld;
@@ -1385,7 +1386,7 @@ namespace CharacterStudio.Core
             }
         }
 
-        private sealed class AbilityHotkeyRuntimeState
+        internal sealed class AbilityHotkeyRuntimeState
         {
             public int slotOverrideWindowEndTick = 0;
             public string slotOverrideWindowAbilityDefName = string.Empty;
@@ -1485,6 +1486,87 @@ namespace CharacterStudio.Core
             public int forcedMoveDirectionZ = 0;
             public int forcedMoveBusyUntilTick = -1;
             public bool forcedMoveCollisionTriggered = false;
+
+            public int GetCooldownUntilTick(AbilityRuntimeHotkeySlot slot)
+            {
+                return slot switch
+                {
+                    AbilityRuntimeHotkeySlot.Q => qCooldownUntilTick,
+                    AbilityRuntimeHotkeySlot.W => wCooldownUntilTick,
+                    AbilityRuntimeHotkeySlot.E => eCooldownUntilTick,
+                    AbilityRuntimeHotkeySlot.R => rCooldownUntilTick,
+                    AbilityRuntimeHotkeySlot.T => tCooldownUntilTick,
+                    AbilityRuntimeHotkeySlot.A => aCooldownUntilTick,
+                    AbilityRuntimeHotkeySlot.S => sCooldownUntilTick,
+                    AbilityRuntimeHotkeySlot.D => dCooldownUntilTick,
+                    AbilityRuntimeHotkeySlot.F => fCooldownUntilTick,
+                    AbilityRuntimeHotkeySlot.Z => zCooldownUntilTick,
+                    AbilityRuntimeHotkeySlot.X => xCooldownUntilTick,
+                    AbilityRuntimeHotkeySlot.C => cCooldownUntilTick,
+                    AbilityRuntimeHotkeySlot.V => vCooldownUntilTick,
+                    _ => 0
+                };
+            }
+
+            public void SetCooldownUntilTick(AbilityRuntimeHotkeySlot slot, int value)
+            {
+                switch (slot)
+                {
+                    case AbilityRuntimeHotkeySlot.Q: qCooldownUntilTick = value; break;
+                    case AbilityRuntimeHotkeySlot.W: wCooldownUntilTick = value; break;
+                    case AbilityRuntimeHotkeySlot.E: eCooldownUntilTick = value; break;
+                    case AbilityRuntimeHotkeySlot.R: rCooldownUntilTick = value; break;
+                    case AbilityRuntimeHotkeySlot.T: tCooldownUntilTick = value; break;
+                    case AbilityRuntimeHotkeySlot.A: aCooldownUntilTick = value; break;
+                    case AbilityRuntimeHotkeySlot.S: sCooldownUntilTick = value; break;
+                    case AbilityRuntimeHotkeySlot.D: dCooldownUntilTick = value; break;
+                    case AbilityRuntimeHotkeySlot.F: fCooldownUntilTick = value; break;
+                    case AbilityRuntimeHotkeySlot.Z: zCooldownUntilTick = value; break;
+                    case AbilityRuntimeHotkeySlot.X: xCooldownUntilTick = value; break;
+                    case AbilityRuntimeHotkeySlot.C: cCooldownUntilTick = value; break;
+                    case AbilityRuntimeHotkeySlot.V: vCooldownUntilTick = value; break;
+                }
+            }
+
+            public void SetOverrideDefName(AbilityRuntimeHotkeySlot slot, string defName)
+            {
+                switch (slot)
+                {
+                    case AbilityRuntimeHotkeySlot.Q: qOverrideAbilityDefName = defName; break;
+                    case AbilityRuntimeHotkeySlot.W: wOverrideAbilityDefName = defName; break;
+                    case AbilityRuntimeHotkeySlot.E: eOverrideAbilityDefName = defName; break;
+                    case AbilityRuntimeHotkeySlot.R: rOverrideAbilityDefName = defName; break;
+                    case AbilityRuntimeHotkeySlot.T: tOverrideAbilityDefName = defName; break;
+                    case AbilityRuntimeHotkeySlot.A: aOverrideAbilityDefName = defName; break;
+                    case AbilityRuntimeHotkeySlot.S: sOverrideAbilityDefName = defName; break;
+                    case AbilityRuntimeHotkeySlot.D: dOverrideAbilityDefName = defName; break;
+                    case AbilityRuntimeHotkeySlot.F: fOverrideAbilityDefName = defName; break;
+                    case AbilityRuntimeHotkeySlot.Z: zOverrideAbilityDefName = defName; break;
+                    case AbilityRuntimeHotkeySlot.X: xOverrideAbilityDefName = defName; break;
+                    case AbilityRuntimeHotkeySlot.C: cOverrideAbilityDefName = defName; break;
+                    case AbilityRuntimeHotkeySlot.V: vOverrideAbilityDefName = defName; break;
+                }
+            }
+
+            public void SetOverrideExpireTick(AbilityRuntimeHotkeySlot slot, int tick)
+            {
+                switch (slot)
+                {
+                    case AbilityRuntimeHotkeySlot.Q: qOverrideExpireTick = tick; break;
+                    case AbilityRuntimeHotkeySlot.W: wOverrideExpireTick = tick; break;
+                    case AbilityRuntimeHotkeySlot.E: eOverrideExpireTick = tick; break;
+                    case AbilityRuntimeHotkeySlot.R: rOverrideExpireTick = tick; break;
+                    case AbilityRuntimeHotkeySlot.T: tOverrideExpireTick = tick; break;
+                    case AbilityRuntimeHotkeySlot.A: aOverrideExpireTick = tick; break;
+                    case AbilityRuntimeHotkeySlot.S: sOverrideExpireTick = tick; break;
+                    case AbilityRuntimeHotkeySlot.D: dOverrideExpireTick = tick; break;
+                    case AbilityRuntimeHotkeySlot.F: fOverrideExpireTick = tick; break;
+                    case AbilityRuntimeHotkeySlot.Z: zOverrideExpireTick = tick; break;
+                    case AbilityRuntimeHotkeySlot.X: xOverrideExpireTick = tick; break;
+                    case AbilityRuntimeHotkeySlot.C: cOverrideExpireTick = tick; break;
+                    case AbilityRuntimeHotkeySlot.V: vOverrideExpireTick = tick; break;
+                }
+            }
 
             public void ExposeData()
             {

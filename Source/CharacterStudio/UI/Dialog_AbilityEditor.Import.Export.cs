@@ -43,7 +43,7 @@ namespace CharacterStudio.UI
                     new FloatMenuOption("CS_Studio_Ability_ImportAppend".Translate(), () => ImportAbilitiesFromXmlPath(normalizedPath, false)),
                     new FloatMenuOption("CS_Studio_Btn_Cancel".Translate(), () => { })
                 }));
-            }, "*.xml"));
+            }, "*.xml", defaultRoot: GetAbilityExportDir()));
         }
 
         private static string GetAbilityImportBrowseStartPath(string initialPath)
@@ -79,6 +79,36 @@ namespace CharacterStudio.UI
                 Directory.CreateDirectory(exportDir);
                 string exportPath = GetDefaultAbilityExportFilePath();
                 var doc = CreateAbilitiesDocument(abilities, GetCurrentHotkeyConfig());
+                doc.Save(exportPath);
+                lastExportedAbilityXmlPath = exportPath;
+                validationSummary = "CS_Studio_Ability_ExportSuccess".Translate(exportPath);
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"[CharacterStudio] 技能 XML 导出失败: {ex}");
+                validationSummary = "CS_Studio_Ability_ExportFailed".Translate(ex.Message);
+            }
+        }
+
+        private void ExportSelectedAbilityToXml()
+        {
+            if (selectedAbility == null)
+            {
+                validationSummary = "CS_Studio_Ability_SelectHint".Translate();
+                return;
+            }
+
+            try
+            {
+                string exportDir = GetAbilityExportDir();
+                Directory.CreateDirectory(exportDir);
+
+                string safeName = string.IsNullOrWhiteSpace(selectedAbility.defName)
+                    ? $"Ability_{Guid.NewGuid():N}"
+                    : string.Join("_", selectedAbility.defName.Split(System.IO.Path.GetInvalidFileNameChars()));
+                string exportPath = Path.Combine(exportDir, safeName + ".xml");
+
+                var doc = CreateAbilitiesDocument(new List<ModularAbilityDef> { selectedAbility }, null);
                 doc.Save(exportPath);
                 lastExportedAbilityXmlPath = exportPath;
                 validationSummary = "CS_Studio_Ability_ExportSuccess".Translate(exportPath);
@@ -200,7 +230,10 @@ namespace CharacterStudio.UI
                     effect.terraformThingDef != null ? new System.Xml.Linq.XElement("terraformThingDef", effect.terraformThingDef.defName) : null,
                     effect.terraformTerrainDef != null ? new System.Xml.Linq.XElement("terraformTerrainDef", effect.terraformTerrainDef.defName) : null,
                     new System.Xml.Linq.XElement("terraformSpawnCount", effect.terraformSpawnCount),
-                    new System.Xml.Linq.XElement("canHurtSelf", effect.canHurtSelf.ToString().ToLowerInvariant())
+                    new System.Xml.Linq.XElement("canHurtSelf", effect.canHurtSelf.ToString().ToLowerInvariant()),
+                    !string.IsNullOrWhiteSpace(effect.weatherDefName) ? new System.Xml.Linq.XElement("weatherDefName", effect.weatherDefName) : null,
+                    new System.Xml.Linq.XElement("weatherDurationTicks", effect.weatherDurationTicks),
+                    new System.Xml.Linq.XElement("weatherTransitionTicks", effect.weatherTransitionTicks)
                 ));
             }
             return effectsEl;
@@ -219,6 +252,11 @@ namespace CharacterStudio.UI
                 root.Add(new System.Xml.Linq.XElement("li",
                     new System.Xml.Linq.XElement("type", vfx.type.ToString()),
                     new System.Xml.Linq.XElement("sourceMode", vfx.sourceMode.ToString()),
+                    new System.Xml.Linq.XElement("spatialMode", vfx.spatialMode.ToString()),
+                    new System.Xml.Linq.XElement("anchorMode", vfx.anchorMode.ToString()),
+                    new System.Xml.Linq.XElement("secondaryAnchorMode", vfx.secondaryAnchorMode.ToString()),
+                    new System.Xml.Linq.XElement("pathMode", vfx.pathMode.ToString()),
+                    new System.Xml.Linq.XElement("facingMode", vfx.facingMode.ToString()),
                     vfx.UsesCustomTextureType ? new System.Xml.Linq.XElement("textureSource", vfx.textureSource.ToString()) : null,
                     !string.IsNullOrEmpty(vfx.presetDefName) ? new System.Xml.Linq.XElement("presetDefName", vfx.presetDefName) : null,
                     !string.IsNullOrEmpty(vfx.customTexturePath) ? new System.Xml.Linq.XElement("customTexturePath", vfx.customTexturePath) : null,
@@ -237,9 +275,20 @@ namespace CharacterStudio.UI
                     new System.Xml.Linq.XElement("sideOffset", vfx.sideOffset),
                     new System.Xml.Linq.XElement("heightOffset", vfx.heightOffset),
                     new System.Xml.Linq.XElement("rotation", vfx.rotation),
+                    new System.Xml.Linq.XElement("lineWidth", vfx.lineWidth),
+                    new System.Xml.Linq.XElement("wallHeight", vfx.wallHeight),
+                    new System.Xml.Linq.XElement("wallThickness", vfx.wallThickness),
+                    new System.Xml.Linq.XElement("tileByLength", vfx.tileByLength.ToString().ToLower()),
+                    new System.Xml.Linq.XElement("followGround", vfx.followGround.ToString().ToLower()),
+                    new System.Xml.Linq.XElement("segmentCount", vfx.segmentCount),
+                    new System.Xml.Linq.XElement("revealBySegments", vfx.revealBySegments.ToString().ToLower()),
+                    new System.Xml.Linq.XElement("segmentRevealIntervalTicks", vfx.segmentRevealIntervalTicks),
                     vfx.textureScale != UnityEngine.Vector2.one ? new System.Xml.Linq.XElement("textureScale", $"({vfx.textureScale.x:F3}, {vfx.textureScale.y:F3})") : null,
+                    vfx.offset != UnityEngine.Vector3.zero ? new System.Xml.Linq.XElement("offset", $"({vfx.offset.x:F3}, {vfx.offset.y:F3}, {vfx.offset.z:F3})") : null,
                     new System.Xml.Linq.XElement("repeatCount", vfx.repeatCount),
                     new System.Xml.Linq.XElement("repeatIntervalTicks", vfx.repeatIntervalTicks),
+                    new System.Xml.Linq.XElement("attachToPawn", vfx.attachToPawn.ToString().ToLower()),
+                    new System.Xml.Linq.XElement("attachToTargetCell", vfx.attachToTargetCell.ToString().ToLower()),
                     new System.Xml.Linq.XElement("playSound", vfx.playSound.ToString().ToLowerInvariant()),
                     !string.IsNullOrWhiteSpace(vfx.soundDefName) ? new System.Xml.Linq.XElement("soundDefName", vfx.soundDefName) : null,
                     new System.Xml.Linq.XElement("soundDelayTicks", vfx.soundDelayTicks),
@@ -263,6 +312,8 @@ namespace CharacterStudio.UI
                     new System.Xml.Linq.XElement("type", component.type.ToString()),
                     new System.Xml.Linq.XElement("enabled", component.enabled.ToString().ToLower()),
                     new System.Xml.Linq.XElement("comboWindowTicks", component.comboWindowTicks),
+                    new System.Xml.Linq.XElement("comboTargetHotkeySlot", component.comboTargetHotkeySlot.ToString()),
+                    !string.IsNullOrWhiteSpace(component.comboTargetAbilityDefName) ? new System.Xml.Linq.XElement("comboTargetAbilityDefName", component.comboTargetAbilityDefName) : null,
                     new System.Xml.Linq.XElement("cooldownTicks", component.cooldownTicks),
                     new System.Xml.Linq.XElement("jumpDistance", component.jumpDistance),
                     new System.Xml.Linq.XElement("findCellRadius", component.findCellRadius),
@@ -294,6 +345,10 @@ namespace CharacterStudio.UI
                     new System.Xml.Linq.XElement("shieldDurationTicks", component.shieldDurationTicks),
                     new System.Xml.Linq.XElement("shieldHealRatio", component.shieldHealRatio),
                     new System.Xml.Linq.XElement("shieldBonusDamageRatio", component.shieldBonusDamageRatio),
+                    new System.Xml.Linq.XElement("shieldVisualScale", component.shieldVisualScale),
+                    new System.Xml.Linq.XElement("shieldVisualHeightOffset", component.shieldVisualHeightOffset),
+                    !string.IsNullOrWhiteSpace(component.shieldInterceptorThingDefName) ? new System.Xml.Linq.XElement("shieldInterceptorThingDefName", component.shieldInterceptorThingDefName) : null,
+                    new System.Xml.Linq.XElement("shieldInterceptorDurationTicks", component.shieldInterceptorDurationTicks),
                     new System.Xml.Linq.XElement("maxBounceCount", component.maxBounceCount),
                     new System.Xml.Linq.XElement("bounceRange", component.bounceRange),
                     new System.Xml.Linq.XElement("bounceDamageFalloff", component.bounceDamageFalloff),
@@ -355,7 +410,12 @@ namespace CharacterStudio.UI
                     new System.Xml.Linq.XElement("affectBuildings", component.affectBuildings.ToString().ToLower()),
                     new System.Xml.Linq.XElement("affectCells", component.affectCells.ToString().ToLower()),
                     new System.Xml.Linq.XElement("knockbackTargets", component.knockbackTargets.ToString().ToLower()),
-                    new System.Xml.Linq.XElement("knockbackDistance", component.knockbackDistance)
+                    new System.Xml.Linq.XElement("knockbackDistance", component.knockbackDistance),
+                    new System.Xml.Linq.XElement("timeStopDurationTicks", component.timeStopDurationTicks),
+                    new System.Xml.Linq.XElement("freezeVisualsDuringTimeStop", component.freezeVisualsDuringTimeStop.ToString().ToLower()),
+                    !string.IsNullOrWhiteSpace(component.weatherDefName) ? new System.Xml.Linq.XElement("weatherDefName", component.weatherDefName) : null,
+                    new System.Xml.Linq.XElement("weatherDurationTicks", component.weatherDurationTicks),
+                    new System.Xml.Linq.XElement("weatherTransitionTicks", component.weatherTransitionTicks)
                 ));
             }
             return root;

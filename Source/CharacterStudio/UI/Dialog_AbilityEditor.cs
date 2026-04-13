@@ -49,7 +49,7 @@ namespace CharacterStudio.UI
         private const float LeftSidebarExpandedWidth = 250f;
         private const float LeftSidebarCollapsedWidth = 40f;
         private const float AbilityListPanelWidth = 280f;
-        private const float RightPanelWidth = 360f;
+        private const float RightPanelWidth = 430f;
         private new const float Margin = 10f;
         private const float RowHeight = 30f;
 

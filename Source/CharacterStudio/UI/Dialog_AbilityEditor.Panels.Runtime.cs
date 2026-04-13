@@ -38,7 +38,8 @@ namespace CharacterStudio.UI
             AbilityRuntimeComponentType.FlightState,
             AbilityRuntimeComponentType.FlightOnlyFollowup,
             AbilityRuntimeComponentType.FlightLandingBurst,
-            AbilityRuntimeComponentType.TimeStop
+            AbilityRuntimeComponentType.TimeStop,
+            AbilityRuntimeComponentType.WeatherChange
         };
 
         private static IEnumerable<AbilityRuntimeComponentType> GetRuntimeComponentLibraryTypes()
@@ -129,6 +130,7 @@ namespace CharacterStudio.UI
                 AbilityRuntimeComponentType.FlightLandingBurst => "CS_Studio_Runtime_Desc_FlightLandingBurst".Translate(),
                 AbilityRuntimeComponentType.ProjectileSplit => "CS_Studio_Runtime_Desc_ProjectileSplit".Translate(),
                 AbilityRuntimeComponentType.TimeStop => "CS_Studio_Runtime_Desc_TimeStop".Translate(),
+                AbilityRuntimeComponentType.WeatherChange => "CS_Studio_Runtime_Desc_WeatherChange".Translate(),
                 _ => type.ToString()
             };
         }
@@ -289,6 +291,10 @@ namespace CharacterStudio.UI
                     config.timeStopDurationTicks = 60;
                     config.freezeVisualsDuringTimeStop = true;
                     break;
+                case AbilityRuntimeComponentType.WeatherChange:
+                    config.weatherDurationTicks = 60000;
+                    config.weatherTransitionTicks = 3000;
+                    break;
             }
 
             return config;
@@ -445,6 +451,35 @@ namespace CharacterStudio.UI
                 options.Add(new FloatMenuOption(label, () =>
                 {
                     component.slowFieldHediffDefName = localDef.defName;
+                    NotifyAbilityPreviewDirty(true);
+                }));
+            }
+
+            Find.WindowStack.Add(new FloatMenu(options));
+        }
+
+        private void ShowWeatherDefSelectorForRuntime(AbilityRuntimeComponentConfig component)
+        {
+            var options = new List<FloatMenuOption>
+            {
+                new FloatMenuOption("CS_Studio_None".Translate(), () =>
+                {
+                    component.weatherDefName = string.Empty;
+                    NotifyAbilityPreviewDirty(true);
+                })
+            };
+
+            var defs = DefDatabase<WeatherDef>.AllDefsListForReading;
+            var sorted = new List<WeatherDef>(defs);
+            sorted.Sort((a, b) => string.Compare(a.label ?? a.defName, b.label ?? b.defName, StringComparison.OrdinalIgnoreCase));
+
+            foreach (var weatherDef in sorted)
+            {
+                var localDef = weatherDef;
+                string label = localDef.label ?? localDef.defName;
+                options.Add(new FloatMenuOption(label, () =>
+                {
+                    component.weatherDefName = localDef.defName;
                     NotifyAbilityPreviewDirty(true);
                 }));
             }

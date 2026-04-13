@@ -4,6 +4,14 @@ using UnityEngine;
 
 namespace CharacterStudio.Core
 {
+    public enum EquipmentType
+    {
+        Apparel,
+        WeaponMelee,
+        WeaponRanged,
+        Item
+    }
+
     /// <summary>
     /// 角色装备定义。
     /// 作为 PawnSkinDef 的嵌套编辑/保存对象存在，
@@ -15,6 +23,10 @@ namespace CharacterStudio.Core
         public const string DefaultAnchorTag = "Apparel";
         public const string DefaultShaderDefName = "Cutout";
         public const string DefaultParentThingDefName = "ApparelMakeableBase";
+
+        /// <summary>物品类型，决定导出格式</summary>
+        public EquipmentType itemType = EquipmentType.Apparel;
+        
         /// <summary>唯一标识名，建议使用 DefName 风格。</summary>
         public string defName = "";
 
@@ -98,6 +110,12 @@ namespace CharacterStudio.Core
 
         /// <summary>贸易标签（tradeTags）。</summary>
         public List<string> tradeTags = new List<string>();
+
+        /// <summary>武器标签（weaponTags）。</summary>
+        public List<string> weaponTags = new List<string>();
+
+        /// <summary>武器类别（weaponClasses）。</summary>
+        public List<string> weaponClasses = new List<string>();
 
         /// <summary>是否允许通过制作获得。</summary>
         public bool allowCrafting = false;
@@ -190,6 +208,7 @@ namespace CharacterStudio.Core
         {
             return new CharacterEquipmentDef
             {
+                itemType = itemType,
                 defName = defName,
                 label = label,
                 description = description,
@@ -216,6 +235,8 @@ namespace CharacterStudio.Core
                 apparelLayers = apparelLayers != null ? new List<string>(apparelLayers) : new List<string>(),
                 apparelTags = apparelTags != null ? new List<string>(apparelTags) : new List<string>(),
                 tradeTags = tradeTags != null ? new List<string>(tradeTags) : new List<string>(),
+                weaponTags = weaponTags != null ? new List<string>(weaponTags) : new List<string>(),
+                weaponClasses = weaponClasses != null ? new List<string>(weaponClasses) : new List<string>(),
                 allowCrafting = allowCrafting,
                 recipeDefName = recipeDefName,
                 recipeWorkbenchDefName = recipeWorkbenchDefName,
@@ -249,6 +270,8 @@ namespace CharacterStudio.Core
             apparelLayers ??= new List<string>();
             apparelTags ??= new List<string>();
             tradeTags ??= new List<string>();
+            weaponTags ??= new List<string>();
+            weaponClasses ??= new List<string>();
             statBases ??= new List<CharacterEquipmentStatEntry>();
             equippedStatOffsets ??= new List<CharacterEquipmentStatEntry>();
             recipeIngredients ??= new List<CharacterEquipmentCostEntry>();

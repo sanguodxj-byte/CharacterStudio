@@ -26,7 +26,8 @@
     <CS_Ability_EffectType_Summon>召唤</CS_Ability_EffectType_Summon>
     <CS_Ability_EffectType_Control>控制</CS_Ability_EffectType_Control>
     <CS_Ability_EffectType_Terraform>地形改造</CS_Ability_EffectType_Terraform>
-    <CS_Ability_RuntimeComponentType_QComboWindow>Q 连段窗口</CS_Ability_RuntimeComponentType_QComboWindow>
+    <CS_Ability_EffectType_WeatherChange>天气变化</CS_Ability_EffectType_WeatherChange>
+    <CS_Ability_RuntimeComponentType_SlotOverrideWindow>连段窗口</CS_Ability_RuntimeComponentType_SlotOverrideWindow>
     <CS_Ability_RuntimeComponentType_HotkeyOverride>热键覆盖</CS_Ability_RuntimeComponentType_HotkeyOverride>
     <CS_Ability_RuntimeComponentType_FollowupCooldownGate>后续技能冷却门</CS_Ability_RuntimeComponentType_FollowupCooldownGate>
     <CS_Ability_RuntimeComponentType_SmartJump>智能跳跃</CS_Ability_RuntimeComponentType_SmartJump>
@@ -58,6 +59,7 @@
     <CS_Ability_RuntimeComponentType_VanillaPawnFlyer>真实原版飞行</CS_Ability_RuntimeComponentType_VanillaPawnFlyer>
     <CS_Ability_RuntimeComponentType_VanillaPawnFlyer_Short>真实飞行</CS_Ability_RuntimeComponentType_VanillaPawnFlyer_Short>
     <CS_Ability_RuntimeComponentType_TimeStop>时停</CS_Ability_RuntimeComponentType_TimeStop>
+    <CS_Ability_RuntimeComponentType_WeatherChange>天气变化</CS_Ability_RuntimeComponentType_WeatherChange>
     <CS_Ability_RuntimeComponentType_TimeStop_Short>时停</CS_Ability_RuntimeComponentType_TimeStop_Short>
     <CS_Ability_SelectPawn>选择角色</CS_Ability_SelectPawn>
     <CS_Ability_SelectArea>目标区域</CS_Ability_SelectArea>
@@ -69,10 +71,12 @@
     <CS_Ability_Summary_Summon>召唤：{0}</CS_Ability_Summary_Summon>
     <CS_Ability_Summary_Control>控制：{0}</CS_Ability_Summary_Control>
     <CS_Ability_Summary_Terraform>地形改造：{0}</CS_Ability_Summary_Terraform>
+    <CS_Ability_Summary_WeatherChange>天气变化：{0}</CS_Ability_Summary_WeatherChange>
     <CS_Ability_ClearBinding>清除绑定</CS_Ability_ClearBinding>
     <CS_Ability_BoundPawn>已绑定角色</CS_Ability_BoundPawn>
     <CS_Ability_Grant>授予技能</CS_Ability_Grant>
     <CS_Ability_GrantSuccess>技能授予成功。</CS_Ability_GrantSuccess>
+    <CS_Ability_WeatherChanged>天气已改变为：{0}</CS_Ability_WeatherChanged>
     <CS_Ability_NoPawnBound>未绑定角色。</CS_Ability_NoPawnBound>
     <CS_Ability_Revoke>撤销技能</CS_Ability_Revoke>
     <CS_Ability_RevokeSuccess>技能撤销成功。</CS_Ability_RevokeSuccess>
@@ -110,6 +114,13 @@
     <CS_Studio_Runtime_TimeStopDurationTicks>时停时长（Tick）</CS_Studio_Runtime_TimeStopDurationTicks>
     <CS_Studio_Runtime_TimeStopFreezeVisuals>冻结其他动画</CS_Studio_Runtime_TimeStopFreezeVisuals>
     <CS_Ability_Validate_TimeStopDurationTicks>时停时长必须大于 0。</CS_Ability_Validate_TimeStopDurationTicks>
+    <CS_Studio_Effect_WeatherDef>天气定义</CS_Studio_Effect_WeatherDef>
+    <CS_Studio_Effect_WeatherDuration>持续时长 (Tick)</CS_Studio_Effect_WeatherDuration>
+    <CS_Studio_Effect_WeatherTransition>过渡时长 (Tick)</CS_Studio_Effect_WeatherTransition>
+    <CS_Ability_Validate_WeatherDefNameRequired>天气定义名称不能为空。</CS_Ability_Validate_WeatherDefNameRequired>
+    <CS_Ability_Validate_WeatherDurationPositive>天气持续时长必须大于 0。</CS_Ability_Validate_WeatherDurationPositive>
+    <CS_Ability_Validate_WeatherTransitionNonNegative>天气过渡时长不能为负数。</CS_Ability_Validate_WeatherTransitionNonNegative>
+    <CS_Ability_Validate_ComboTargetAbilityRequired>连段目标技能不能为空。</CS_Ability_Validate_ComboTargetAbilityRequired>
     <CS_Studio_VFX_Type_LineTexture>线状贴图</CS_Studio_VFX_Type_LineTexture>
     <CS_Studio_VFX_Type_WallTexture>墙状贴图</CS_Studio_VFX_Type_WallTexture>
     <CS_Studio_VFX_Type_DustPuff>尘雾</CS_Studio_VFX_Type_DustPuff>
