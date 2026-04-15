@@ -31,9 +31,9 @@ namespace CharacterStudio.UI
                 { "Base", LayeredFacePartType.Base },
                 { "Brow", LayeredFacePartType.Brow },
                 { "Brows", LayeredFacePartType.Brow },
-                { "Eye", LayeredFacePartType.Eye },
-                { "Eyes", LayeredFacePartType.Eye },
-                { "Sclera", LayeredFacePartType.Eye },
+                { "Eye", LayeredFacePartType.ReplacementEye },
+                { "Eyes", LayeredFacePartType.ReplacementEye },
+                { "Sclera", LayeredFacePartType.Sclera },
                 { "Pupil", LayeredFacePartType.Pupil },
                 { "Pupils", LayeredFacePartType.Pupil },
                 { "UpperLid", LayeredFacePartType.UpperLid },
@@ -506,9 +506,9 @@ namespace CharacterStudio.UI
                     new[] { "Brow_Left", "Brows_Left" },
                     new[] { "Brow_Right", "Brows_Right" });
 
-                TryApplyFirstAvailableStem(LayeredFacePartType.Eye, ExpressionType.Neutral, new[] { "Eye" });
+                TryApplyFirstAvailableStem(LayeredFacePartType.ReplacementEye, ExpressionType.Neutral, new[] { "Eye" });
                 TryApplyPairedNeutralParts(
-                    LayeredFacePartType.Eye,
+                    LayeredFacePartType.ReplacementEye,
                     new[] { "Eye_Left" },
                     new[] { "Eye_Right" });
 
@@ -1413,7 +1413,7 @@ namespace CharacterStudio.UI
             LayeredFacePartType[] pairedTypes =
             {
                 LayeredFacePartType.Brow,
-                LayeredFacePartType.Eye,
+                LayeredFacePartType.ReplacementEye,
                 LayeredFacePartType.Pupil,
                 LayeredFacePartType.UpperLid,
                 LayeredFacePartType.LowerLid,
@@ -1447,7 +1447,7 @@ namespace CharacterStudio.UI
             LayeredFacePartType[] pairedTypes =
             {
                 LayeredFacePartType.Brow,
-                LayeredFacePartType.Eye,
+                LayeredFacePartType.ReplacementEye,
                 LayeredFacePartType.Pupil,
                 LayeredFacePartType.UpperLid,
                 LayeredFacePartType.LowerLid,
@@ -1638,11 +1638,6 @@ namespace CharacterStudio.UI
                         break;
                     }
                 }
-            }
-
-            if (partType == LayeredFacePartType.Eye && !string.IsNullOrWhiteSpace(parsedExpressionSuffix))
-            {
-                partType = LayeredFacePartType.ReplacementEye;
             }
 
             if (partType == LayeredFacePartType.Mouth && !string.IsNullOrWhiteSpace(parsedExpressionSuffix))
