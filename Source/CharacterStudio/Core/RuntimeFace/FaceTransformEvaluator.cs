@@ -96,6 +96,10 @@ namespace CharacterStudio.Core
 
     internal static class FaceTransformEvaluator
     {
+        // ─────────────────────────────────────────────────────────────
+        // 旧接口：保持向后兼容，供未迁移的调用方使用
+        // ─────────────────────────────────────────────────────────────
+
         public static FaceTransformResult Evaluate(
             FaceTransformContext context,
             PawnFaceConfig.BrowMotionConfig browMotion,
@@ -122,6 +126,225 @@ namespace CharacterStudio.Core
                 LayeredFacePartType.Overlay => EvaluateOverlay(context),
                 _ => FaceTransformResult.Visible(0f, Vector3.zero, Vector3.one)
             };
+        }
+
+        // ─────────────────────────────────────────────────────────────
+        // 新接口：基于 FaceBlendState 的 profile 驱动求值
+        //
+        // 调用方需要为每个通道维护一个 FaceBlendState，
+        // 在通道状态变化时调用 BeginTransition，每帧调用此方法求值。
+        // ─────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// 基于 FaceBlendState 求值 Eye 通道。
+        /// Eye 通道的核心公式：
+        ///   angle = base + primaryWave * wave
+        ///   offset.x = base + sideBias * sideSign + variantAdjustments + primaryWave * wave
+        ///   offset.z = base + variantAdjustments + primaryWave * wave + slowWave * slowWave
+        ///   scale = (scaleXBase + |slowWave| * scaleXWave, 1, expressionScaleZ)
+        /// </summary>
+        public static FaceTransformResult EvaluateEyeFromProfile(
+            FaceBlendState blendState,
+            FaceTransformContext context,
+            int currentTick)
+        {
+            float sideSign = SideSign(context.side);
+
+            // 从 blendState 获取基础参数（含过渡插值）
+            float baseAngle = blendState.EvaluateAngle(currentTick, context.primaryWave);
+            Vector3 baseOffset = blendState.EvaluateOffset(currentTick, context.primaryWave, context.slowWave);
+            Vector3 baseScale = blendState.EvaluateScale(currentTick, context.primaryWave, context.slowWave);
+
+            // 叠加侧偏（从 profile 的 sideBiasX 字段）
+            float sideBias = blendState.GetSideBiasX();
+            baseOffset.x += sideSign * sideBias;
+
+            return FaceTransformResult.Visible(baseAngle, baseOffset, baseScale);
+        }
+
+        /// <summary>
+        /// 基于 FaceBlendState 求值 Pupil 通道。
+        /// Pupil 的方向偏移和 gazeOffset 由代码逻辑叠加，profile 只管基础参数。
+        /// </summary>
+        public static FaceTransformResult EvaluatePupilFromProfile(
+            FaceBlendState blendState,
+            FaceTransformContext context,
+            int currentTick)
+        {
+            float sideSign = SideSign(context.side);
+
+            // 从 profile 获取基础参数
+            float angle = blendState.EvaluateAngle(currentTick, context.primaryWave);
+            Vector3 offset = blendState.EvaluateOffset(currentTick, context.primaryWave, context.slowWave);
+            Vector3 scale = blendState.EvaluateScale(currentTick, context.primaryWave, context.slowWave);
+
+            // 叠加侧偏
+            float sideBias = blendState.GetSideBiasX();
+            offset.x += sideSign * sideBias;
+
+            return FaceTransformResult.Visible(angle, offset, scale);
+        }
+
+        /// <summary>
+        /// 基于 FaceBlendState 求值 UpperLid 通道。
+        /// upperLidMoveDown 由外部传入（来自 EyeDirectionConfig）。
+        /// </summary>
+        public static FaceTransformResult EvaluateUpperLidFromProfile(
+            FaceBlendState blendState,
+            FaceTransformContext context,
+            int currentTick,
+            float upperLidMoveDown)
+        {
+            float sideSign = SideSign(context.side);
+
+            float angle = blendState.EvaluateAngle(currentTick, context.primaryWave);
+            Vector3 offset = blendState.EvaluateOffset(currentTick, context.primaryWave, context.slowWave);
+            Vector3 scale = blendState.EvaluateScale(currentTick, context.primaryWave, context.slowWave);
+
+            // 叠加侧偏
+            float sideBias = blendState.GetSideBiasX();
+            offset.x += sideSign * sideBias;
+
+            // 叠加 moveDown（用于 Blink/Close 闭合位移）
+            float moveDown = blendState.GetMoveDown();
+            offset.z += moveDown;
+
+            return FaceTransformResult.Visible(angle, offset, scale);
+        }
+
+        /// <summary>
+        /// 基于 FaceBlendState 求值 LowerLid 通道。
+        /// </summary>
+        public static FaceTransformResult EvaluateLowerLidFromProfile(
+            FaceBlendState blendState,
+            FaceTransformContext context,
+            int currentTick)
+        {
+            float sideSign = SideSign(context.side);
+
+            float angle = blendState.EvaluateAngle(currentTick, context.primaryWave);
+            Vector3 offset = blendState.EvaluateOffset(currentTick, context.primaryWave, context.slowWave);
+            Vector3 scale = blendState.EvaluateScale(currentTick, context.primaryWave, context.slowWave);
+
+            // 叠加侧偏
+            float sideBias = blendState.GetSideBiasX();
+            offset.x += sideSign * sideBias;
+
+            // 叠加 moveDown（LowerLid 在 Blink/Close 时上移）
+            float moveDown = blendState.GetMoveDown();
+            offset.z += moveDown;
+
+            return FaceTransformResult.Visible(angle, offset, scale);
+        }
+
+        /// <summary>
+        /// 基于 FaceBlendState 求值 Brow 通道。
+        /// Brow 是最简单的通道：无侧偏、无 moveDown，只有 angle/offsetZ/scale。
+        /// </summary>
+        public static FaceTransformResult EvaluateBrowFromProfile(
+            FaceBlendState blendState,
+            FaceTransformContext context,
+            int currentTick)
+        {
+            float angle = blendState.EvaluateAngle(currentTick, context.primaryWave);
+            Vector3 offset = blendState.EvaluateOffset(currentTick, context.primaryWave, context.slowWave);
+            Vector3 scale = blendState.EvaluateScale(currentTick, context.primaryWave, context.slowWave);
+            return FaceTransformResult.Visible(angle, offset, scale);
+        }
+
+        /// <summary>
+        /// 基于 FaceBlendState 求值 Mouth 通道。
+        /// Mouth 与 Brow 类似，无侧偏。
+        /// </summary>
+        public static FaceTransformResult EvaluateMouthFromProfile(
+            FaceBlendState blendState,
+            FaceTransformContext context,
+            int currentTick)
+        {
+            float angle = blendState.EvaluateAngle(currentTick, context.primaryWave);
+            Vector3 offset = blendState.EvaluateOffset(currentTick, context.primaryWave, context.slowWave);
+            Vector3 scale = blendState.EvaluateScale(currentTick, context.primaryWave, context.slowWave);
+            return FaceTransformResult.Visible(angle, offset, scale);
+        }
+
+        // ─────────────────────────────────────────────────────────────
+        // 状态键解析：将运行时枚举映射到 JSON profile 的 stateName
+        // ─────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Eye 通道：按 EyeAnimationVariant + LidState 映射。
+        /// Close 隐藏，HappyClosedPeak 隐藏。
+        /// </summary>
+        public static string ResolveEyeStateKey(EyeAnimationVariant variant, LidState lidState, ExpressionType expression)
+        {
+            if (lidState == LidState.Close) return "Hidden";
+            if (variant == EyeAnimationVariant.HappyClosedPeak) return "Hidden";
+            return variant.ToString();
+        }
+
+        /// <summary>
+        /// Pupil 通道：按 PupilScaleVariant 映射，叠加 expression 约束。
+        /// </summary>
+        public static string ResolvePupilStateKey(PupilScaleVariant pupilVariant, ExpressionType expression, EyeAnimationVariant eyeVariant)
+        {
+            return pupilVariant.ToString();
+        }
+
+        /// <summary>
+        /// UpperLid 通道：按 LidState 映射，Half/Happy 状态还需考虑 EyeAnimationVariant。
+        /// 返回格式: "LidState" 或 "LidState_Variant"
+        /// </summary>
+        public static string ResolveUpperLidStateKey(LidState lidState, EyeAnimationVariant eyeVariant)
+        {
+            switch (lidState)
+            {
+                case LidState.Half:
+                {
+                    // Half 状态根据 variant 选择不同 profile
+                    if (eyeVariant == EyeAnimationVariant.NeutralSoft) return "Half_NeutralSoft";
+                    if (eyeVariant == EyeAnimationVariant.NeutralLookDown) return "Half_NeutralLookDown";
+                    if (eyeVariant == EyeAnimationVariant.ScaredFlinch) return "Half_ScaredFlinch";
+                    return "Half";
+                }
+                case LidState.Happy:
+                {
+                    if (eyeVariant == EyeAnimationVariant.HappySoft) return "Happy_Soft";
+                    if (eyeVariant == EyeAnimationVariant.HappyClosedPeak) return "Hidden";
+                    return "Happy_Open";
+                }
+                default:
+                    return lidState.ToString();
+            }
+        }
+
+        /// <summary>
+        /// LowerLid 通道：按 LidState 映射。
+        /// </summary>
+        public static string ResolveLowerLidStateKey(LidState lidState)
+        {
+            return lidState.ToString();
+        }
+
+        /// <summary>
+        /// Brow 通道：按 BrowState 映射。
+        /// </summary>
+        public static string ResolveBrowStateKey(BrowState browState)
+        {
+            return browState.ToString();
+        }
+
+        /// <summary>
+        /// Mouth 通道：按 MouthState + ExpressionType 映射。
+        /// Eating 和 Shock/Scared 由 expression 而非 mouthState 驱动。
+        /// </summary>
+        public static string ResolveMouthStateKey(MouthState mouthState, ExpressionType expression)
+        {
+            if (mouthState == MouthState.Normal)
+            {
+                if (expression == ExpressionType.Eating) return "Eating";
+                if (expression == ExpressionType.Shock || expression == ExpressionType.Scared) return "ShockScared";
+            }
+            return mouthState.ToString();
         }
 
         private static FaceTransformResult EvaluateBrow(FaceTransformContext context, PawnFaceConfig.BrowMotionConfig motion)

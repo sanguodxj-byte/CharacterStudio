@@ -739,6 +739,12 @@ namespace CharacterStudio.Abilities
         CastDirection
     }
 
+    public enum VfxBundleRenderStrategy
+    {
+        Default,
+        CustomMote
+    }
+
     public enum AbilityVisualEffectTrigger
     {
         OnCastStart,
@@ -796,6 +802,32 @@ namespace CharacterStudio.Abilities
         public bool attachToPawn = false;
         public bool attachToTargetCell = false;
         public bool enabled = true;
+
+        // AssetBundle / VFX fields
+        public string assetBundlePath = string.Empty;
+        public string assetBundleEffectName = string.Empty;
+        public string assetBundleTextureName = string.Empty;
+        public float assetBundleEffectScale = 1.0f;
+        public VfxBundleRenderStrategy bundleRenderStrategy = VfxBundleRenderStrategy.Default;
+
+        // Shader fields
+        public string shaderPath = string.Empty;
+        public string shaderAssetBundlePath = string.Empty;
+        public string shaderAssetBundleShaderName = string.Empty;
+        public bool shaderLoadFromAssetBundle = false;
+        public string shaderTexturePath = string.Empty;
+        public Color shaderTintColor = Color.white;
+        public float shaderIntensity = 1f;
+        public float shaderSpeed = 1f;
+        public float shaderParam1 = 0f;
+        public float shaderParam2 = 0f;
+        public float shaderParam3 = 0f;
+        public float shaderParam4 = 0f;
+
+        // Global filter
+        public string globalFilterMode = string.Empty;
+        public string globalFilterTransition = string.Empty;
+        public int globalFilterTransitionTicks = 0;
 
         public bool UsesBuiltInType => type != AbilityVisualEffectType.Preset && type != AbilityVisualEffectType.CustomTexture;
         public bool UsesPresetType => type == AbilityVisualEffectType.Preset;

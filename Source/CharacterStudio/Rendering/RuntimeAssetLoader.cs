@@ -26,8 +26,8 @@ namespace CharacterStudio.Rendering
         // 文件修改时间缓存（用于热加载检测）
         private static readonly Dictionary<string, DateTime> fileLastWriteTimes = new Dictionary<string, DateTime>();
 
-        // 缓存访问时间记录（用于LRU淘汰策略）
-        private static readonly Dictionary<string, DateTime> cacheAccessTimes = new Dictionary<string, DateTime>();
+        // P-PERF: 缓存访问时间记录（用于LRU淘汰策略），使用 Environment.TickCount 替代 DateTime.Now 降低系统调用开销
+        private static readonly Dictionary<string, int> cacheAccessTimes = new Dictionary<string, int>();
 
         // 最大缓存数量
         private const int MaxTextureCacheSize = 512;
@@ -134,7 +134,7 @@ namespace CharacterStudio.Rendering
                             }
                             else
                             {
-                                cacheAccessTimes[resolvedPath] = DateTime.Now;
+                                cacheAccessTimes[resolvedPath] = Environment.TickCount;
                                 return cachedTex;
                             }
                         }
@@ -760,7 +760,7 @@ namespace CharacterStudio.Rendering
         /// <summary>
         /// 确保缓存不超过最大容量（LRU淘汰策略）
         /// </summary>
-        private static void EnsureCacheCapacity<T>(Dictionary<string, T> cache, Dictionary<string, DateTime>? accessTimes, int maxSize)
+        private static void EnsureCacheCapacity<T>(Dictionary<string, T> cache, Dictionary<string, int>? accessTimes, int maxSize)
         {
             if (cache.Count < maxSize) return;
 
@@ -770,7 +770,7 @@ namespace CharacterStudio.Rendering
             if (accessTimes != null && accessTimes.Count > 0)
             {
                 // O(N log N) 排序淘汰，替代原来的 O(N*toRemove) 重复线性扫描
-                var sorted = new List<KeyValuePair<string, DateTime>>(accessTimes.Count);
+                var sorted = new List<KeyValuePair<string, int>>(accessTimes.Count);
                 foreach (var kv in accessTimes)
                 {
                     if (cache.ContainsKey(kv.Key))
@@ -820,7 +820,7 @@ namespace CharacterStudio.Rendering
         /// </summary>
         private static void UpdateAccessTime(string key)
         {
-            cacheAccessTimes[key] = DateTime.Now;
+            cacheAccessTimes[key] = Environment.TickCount;
         }
 
         /// <summary>
@@ -951,7 +951,7 @@ namespace CharacterStudio.Rendering
                     try { fileLastWriteTimes[resolvedPath] = File.GetLastWriteTime(resolvedPath); } catch {}
                     EnsureCacheCapacity(textureCache, cacheAccessTimes, MaxTextureCacheSize);
                     textureCache[resolvedPath] = tex;
-                    cacheAccessTimes[resolvedPath] = DateTime.Now;
+                    cacheAccessTimes[resolvedPath] = Environment.TickCount;
                     textureInstanceIdToPath[tex.GetInstanceID()] = resolvedPath;
                 }
             }

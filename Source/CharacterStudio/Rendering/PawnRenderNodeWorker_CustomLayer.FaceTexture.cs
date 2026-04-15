@@ -392,6 +392,7 @@ namespace CharacterStudio.Rendering
             {
                 case LayeredFacePartType.Brow:
                 case LayeredFacePartType.Eye:
+                case LayeredFacePartType.Sclera:
                 case LayeredFacePartType.Pupil:
                 case LayeredFacePartType.UpperLid:
                 case LayeredFacePartType.LowerLid:
@@ -407,6 +408,7 @@ namespace CharacterStudio.Rendering
             {
                 case LayeredFacePartType.Brow:
                 case LayeredFacePartType.Eye:
+                case LayeredFacePartType.Sclera:
                 case LayeredFacePartType.Pupil:
                 case LayeredFacePartType.UpperLid:
                 case LayeredFacePartType.LowerLid:
@@ -429,6 +431,7 @@ namespace CharacterStudio.Rendering
                 case LayeredFacePartType.Brow:
                     return LayerRole.Brow;
                 case LayeredFacePartType.Eye:
+                case LayeredFacePartType.Sclera:
                 case LayeredFacePartType.UpperLid:
                 case LayeredFacePartType.LowerLid:
                     return LayerRole.Lid;
@@ -657,15 +660,24 @@ namespace CharacterStudio.Rendering
             if (explicitOverlayIds.Count == 0)
                 return false;
 
+            // P-PERF: 用 for 循环替代 LINQ .Any(lambda)，避免闭包委托分配
             if (IsGenericOverlayGroupId(activeOverlayId))
             {
-                return explicitOverlayIds.Any(id =>
-                    string.Equals(PawnFaceConfig.NormalizeOverlayId(id), "Overlay", StringComparison.OrdinalIgnoreCase));
+                for (int i = 0; i < explicitOverlayIds.Count; i++)
+                {
+                    if (string.Equals(PawnFaceConfig.NormalizeOverlayId(explicitOverlayIds[i]), "Overlay", StringComparison.OrdinalIgnoreCase))
+                        return true;
+                }
+                return false;
             }
 
             string normalizedActiveOverlayId = PawnFaceConfig.NormalizeOverlayId(activeOverlayId);
-            return explicitOverlayIds.Any(id =>
-                string.Equals(PawnFaceConfig.NormalizeOverlayId(id), normalizedActiveOverlayId, StringComparison.OrdinalIgnoreCase));
+            for (int i = 0; i < explicitOverlayIds.Count; i++)
+            {
+                if (string.Equals(PawnFaceConfig.NormalizeOverlayId(explicitOverlayIds[i]), normalizedActiveOverlayId, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            return false;
         }
 
         private static bool IsEmotionOverlayVisualPart(LayeredFacePartType partType)
@@ -709,9 +721,24 @@ namespace CharacterStudio.Rendering
             string normalizedMappedOverlayId = PawnFaceConfig.NormalizeOverlayId(mappedOverlayId);
             if (!string.IsNullOrWhiteSpace(normalizedMappedOverlayId))
             {
-                PawnFaceConfig.EmotionOverlayRule? mappedRule = faceConfig.emotionOverlayRules
-                    .FirstOrDefault(rule => (rule.overlayIds ?? new List<string>())
-                        .Any(id => string.Equals(PawnFaceConfig.NormalizeOverlayId(id), normalizedMappedOverlayId, StringComparison.OrdinalIgnoreCase)));
+                // P-PERF: 用 for 循环替代 LINQ .FirstOrDefault/.Any 嵌套闭包，避免委托分配和 new List 分配
+                PawnFaceConfig.EmotionOverlayRule? mappedRule = null;
+                var rules = faceConfig.emotionOverlayRules;
+                for (int r = 0; r < rules.Count; r++)
+                {
+                    var rule = rules[r];
+                    var ids = rule.overlayIds;
+                    if (ids == null) continue;
+                    for (int j = 0; j < ids.Count; j++)
+                    {
+                        if (string.Equals(PawnFaceConfig.NormalizeOverlayId(ids[j]), normalizedMappedOverlayId, StringComparison.OrdinalIgnoreCase))
+                        {
+                            mappedRule = rule;
+                            goto MappedRuleFound;
+                        }
+                    }
+                }
+                MappedRuleFound:
                 if (mappedRule != null && !string.IsNullOrWhiteSpace(mappedRule.semanticKey))
                     return PawnFaceConfig.NormalizeOverlaySemanticKey(mappedRule.semanticKey);
             }
@@ -809,10 +836,21 @@ namespace CharacterStudio.Rendering
             if (faceConfig?.layeredParts == null)
                 return string.Empty;
 
+            // P-PERF: 用 for 循环替代 LINQ .FirstOrDefault(lambda)，避免闭包委托分配
             string normalizedOverlayId = PawnFaceConfig.NormalizeOverlayId(overlayId);
-            LayeredFacePartConfig? part = faceConfig.layeredParts.FirstOrDefault(existing => existing != null
-                && (existing.partType == LayeredFacePartType.Overlay || existing.partType == LayeredFacePartType.OverlayTop)
-                && string.Equals(PawnFaceConfig.NormalizeOverlayId(existing.overlayId), normalizedOverlayId, StringComparison.OrdinalIgnoreCase));
+            var parts = faceConfig.layeredParts;
+            LayeredFacePartConfig? part = null;
+            for (int i = 0; i < parts.Count; i++)
+            {
+                var existing = parts[i];
+                if (existing == null) continue;
+                if (existing.partType != LayeredFacePartType.Overlay && existing.partType != LayeredFacePartType.OverlayTop) continue;
+                if (string.Equals(PawnFaceConfig.NormalizeOverlayId(existing.overlayId), normalizedOverlayId, StringComparison.OrdinalIgnoreCase))
+                {
+                    part = existing;
+                    break;
+                }
+            }
             return (part?.followTarget ?? string.Empty).Trim();
         }
 

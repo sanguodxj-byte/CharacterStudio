@@ -1,0 +1,43 @@
+{
+    "channel": "overlay",
+    "profiles": [
+        {
+            "stateName": "Blush",
+            "blendIn": 12,
+            "offsetZBase": -0.001,
+            "scaleXBase": 1.04,
+            "scaleXWave": 0.05,
+            "scaleZBase": 1.02,
+            "scaleZWave": 0.02
+        },
+        {
+            "stateName": "Tear",
+            "blendIn": 10,
+            "angleWave": 0.5,
+            "offsetZBase": 0.002,
+            "offsetZWave": 0.0015,
+            "scaleXBase": 1.01,
+            "scaleXWave": 0.02,
+            "scaleZBase": 1.01,
+            "scaleZWave": 0.02
+        },
+        {
+            "stateName": "Sweat",
+            "blendIn": 8,
+            "angleWave": 2.5,
+            "offsetXWave": 0.0025,
+            "offsetZBase": 0.0015,
+            "offsetZSlowWave": 0.001,
+            "scaleXBase": 1.0,
+            "scaleXWave": 0.03,
+            "scaleZBase": 1.0,
+            "scaleZWave": 0.03
+        },
+        {
+            "stateName": "Default",
+            "blendIn": 0,
+            "scaleXBase": 1.0,
+            "scaleZBase": 1.0
+        }
+    ]
+}

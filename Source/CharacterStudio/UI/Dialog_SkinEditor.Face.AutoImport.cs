@@ -506,11 +506,17 @@ namespace CharacterStudio.UI
                     new[] { "Brow_Left", "Brows_Left" },
                     new[] { "Brow_Right", "Brows_Right" });
 
-                TryApplyFirstAvailableStem(LayeredFacePartType.Eye, ExpressionType.Neutral, new[] { "Sclera", "Eye" });
+                TryApplyFirstAvailableStem(LayeredFacePartType.Eye, ExpressionType.Neutral, new[] { "Eye" });
                 TryApplyPairedNeutralParts(
                     LayeredFacePartType.Eye,
-                    new[] { "Eye_Left", "Sclera_Left" },
-                    new[] { "Eye_Right", "Sclera_Right" });
+                    new[] { "Eye_Left" },
+                    new[] { "Eye_Right" });
+
+                TryApplyFirstAvailableStem(LayeredFacePartType.Sclera, ExpressionType.Neutral, new[] { "Sclera" });
+                TryApplyPairedNeutralParts(
+                    LayeredFacePartType.Sclera,
+                    new[] { "Sclera_Left" },
+                    new[] { "Sclera_Right" });
 
                 TryApplyFirstAvailableStem(LayeredFacePartType.UpperLid, ExpressionType.Neutral, new[] { "LidUpper", "UpperLid" });
                 TryApplyPairedNeutralParts(
@@ -1178,6 +1184,7 @@ namespace CharacterStudio.UI
             {
                 case LayeredFacePartType.Brow:
                 case LayeredFacePartType.Eye:
+                case LayeredFacePartType.Sclera:
                 case LayeredFacePartType.UpperLid:
                 case LayeredFacePartType.LowerLid:
                 case LayeredFacePartType.ReplacementEye:
@@ -1206,6 +1213,7 @@ namespace CharacterStudio.UI
                 case LayeredFacePartType.Brow:
                     return LayerRole.Brow;
                 case LayeredFacePartType.Eye:
+                case LayeredFacePartType.Sclera:
                 case LayeredFacePartType.UpperLid:
                 case LayeredFacePartType.LowerLid:
                 case LayeredFacePartType.ReplacementEye:
@@ -1240,6 +1248,8 @@ namespace CharacterStudio.UI
                 }
                 case LayeredFacePartType.Eye:
                     return 50.12f;
+                case LayeredFacePartType.Sclera:
+                    return 50.11f;
                 case LayeredFacePartType.Pupil:
                     return 50.14f;
                 case LayeredFacePartType.UpperLid:
@@ -1666,6 +1676,7 @@ namespace CharacterStudio.UI
             {
                 case LayeredFacePartType.Brow:
                 case LayeredFacePartType.Eye:
+                case LayeredFacePartType.Sclera:
                 case LayeredFacePartType.Pupil:
                 case LayeredFacePartType.UpperLid:
                 case LayeredFacePartType.LowerLid:

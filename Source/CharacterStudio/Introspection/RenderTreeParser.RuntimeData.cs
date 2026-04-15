@@ -10,7 +10,7 @@ namespace CharacterStudio.Introspection
     {
         // ─────────────────────────────────────────────
         // 运行时变换捕获
-        // 负责捕获节点的偏移、缩放、旋转及 HAR colorChannel
+        // 负责捕获节点的偏移、缩放、旋转及颜色通道
         // ─────────────────────────────────────────────
 
         /// <summary>
@@ -48,7 +48,7 @@ namespace CharacterStudio.Introspection
             ReadPropsOffsets(props, out Vector3 propsOffset, out Vector3 propsOffsetEast, out Vector3 propsOffsetNorth);
 
             if (shouldDebug)
-                EmitHarDebugPropsOffsets(label, tagDef, props, propsOffset, propsOffsetEast, propsOffsetNorth);
+                EmitPropsOffsetsDebugInfo(label, tagDef, props, propsOffset, propsOffsetEast, propsOffsetNorth);
 
             try
             {
@@ -113,7 +113,7 @@ namespace CharacterStudio.Introspection
             var northParms = MakeParms(pawn, Rot4.North);
 
             Vector3 southOffset = worker.OffsetFor(gameNode, southParms, out _);
-            if (shouldDebug) EmitHarDebugWorker(worker, southOffset);
+            if (shouldDebug) EmitWorkerDebugInfo(worker, southOffset);
 
             if (southOffset == Vector3.zero && propsOffset != Vector3.zero)
                 southOffset = propsOffset;
@@ -187,14 +187,14 @@ namespace CharacterStudio.Introspection
         }
 
         // ─────────────────────────────────────────────
-        // HAR colorChannel 捕获
+        // 外部颜色通道捕获
         // ─────────────────────────────────────────────
 
-        private static string CaptureHarColorChannel(PawnRenderNode gameNode, PawnRenderNodeProperties? props)
+        private static string CaptureExternalColorChannel(PawnRenderNode gameNode, PawnRenderNodeProperties? props)
         {
             try
             {
-                // 1. 从 BodyAddon 获取（HAR 标准方式）
+                // 1. 尝试通过反射获取外部定义的颜色映射 (兼容性逻辑)
                 var addonField = AccessTools.Field(gameNode.GetType(), "addon");
                 if (addonField != null)
                 {

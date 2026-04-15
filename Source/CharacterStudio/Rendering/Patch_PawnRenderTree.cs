@@ -159,6 +159,11 @@ namespace CharacterStudio.Rendering
                     lock (patchStateLock) { patchedWorkerMethods.Add(scaleForMethod); }
                     Log.Message("[CharacterStudio] PawnRenderNodeWorker.ScaleFor 全局缩放补丁已应用");
                 }
+
+                // 派生类可能重写了 ScaleFor（如 PawnRenderNodeWorker_Body/Head），
+                // 仅补丁基类不够，必须遍历所有派生 Worker 单独补丁。
+                if (scaleForPostfix != null)
+                    PatchAllDerivedWorkerScaleMethods(harmony, scaleForPostfix);
             }
             catch (Exception ex)
             {
@@ -209,6 +214,52 @@ namespace CharacterStudio.Rendering
             }
         }
 
+        /// <summary>
+        /// 遍历所有 PawnRenderNodeWorker 派生类，对其重写的 ScaleFor 方法应用全局缩放补丁。
+        /// 派生类（如 PawnRenderNodeWorker_Body/Head/Hair）如果重写了 ScaleFor，
+        /// 基类补丁不会生效，必须逐个补丁。
+        /// </summary>
+        private static void PatchAllDerivedWorkerScaleMethods(Harmony harmony, MethodInfo scalePostfix)
+        {
+            try
+            {
+                var workerType = typeof(PawnRenderNodeWorker);
+                var scaleParamTypes = new[] { typeof(PawnRenderNode), typeof(PawnDrawParms) };
+
+                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    try
+                    {
+                        foreach (var type in assembly.GetTypes())
+                        {
+                            if (type == workerType) continue;
+                            if (!workerType.IsAssignableFrom(type)) continue;
+                            if (type.IsAbstract) continue;
+                            // 跳过 CS 自定义图层 Worker（已内部处理 globalTextureScale）
+                            if (type == typeof(PawnRenderNodeWorker_CustomLayer)) continue;
+
+                            var scaleMethod = type.GetMethod("ScaleFor", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly, null, scaleParamTypes, null);
+                            if (scaleMethod != null)
+                            {
+                                try
+                                {
+                                    harmony.Patch(scaleMethod, postfix: new HarmonyMethod(scalePostfix));
+                                    lock (patchStateLock) { patchedWorkerMethods.Add(scaleMethod); }
+                                    Log.Message($"[CharacterStudio] 已补丁 {type.Name}.ScaleFor 全局缩放");
+                                }
+                                catch (Exception ex) { Log.Warning($"[CharacterStudio] 无法补丁 {type.FullName}.ScaleFor: {ex.Message}"); }
+                            }
+                        }
+                    }
+                    catch { }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warning($"[CharacterStudio] 补丁派生 Worker ScaleFor 时出错: {ex.Message}");
+            }
+        }
+
         public static void Unpatch(Harmony harmonyInstance)
         {
             try
@@ -256,6 +307,9 @@ namespace CharacterStudio.Rendering
         {
             if (node == null || node is PawnRenderNode_Custom) return;
 
+            // 只对根级原版节点应用全局缩放，子节点通过矩阵层级自动继承
+            if (HasAnyVanillaAncestor(node)) return;
+
             try
             {
                 Pawn? pawn = parms.pawn ?? node.tree?.pawn;
@@ -284,6 +338,33 @@ namespace CharacterStudio.Rendering
             catch { }
         }
 
+        /// <summary>
+        /// 判断节点是否有任何非Custom的祖先节点（无论该祖先是否被隐藏）。
+        /// 如果有，说明该祖先的 ScaleFor 已被 postfix 应用了全局缩放，
+        /// 子节点通过矩阵层级自动继承，无需重复应用。
+        /// </summary>
+        public static bool HasAnyVanillaAncestor(PawnRenderNode node)
+        {
+            PawnRenderNode? ancestor = node.parent;
+            while (ancestor != null)
+            {
+                if (!(ancestor is PawnRenderNode_Custom))
+                    return true;
+                ancestor = ancestor.parent;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 检查节点是否被CS系统隐藏（存在于 hiddenNodesByTree 中）。
+        /// </summary>
+        public static bool IsNodeHidden(PawnRenderNode node)
+        {
+            if (node?.tree == null) return false;
+            return hiddenNodesByTree.TryGetValue(node.tree, out var hidden)
+                && hidden != null && hidden.Contains(node);
+        }
+
         // ─────────────────────────────────────────────
         // Harmony 后缀：GetFinalizedMaterial
         // ─────────────────────────────────────────────
@@ -299,12 +380,10 @@ namespace CharacterStudio.Rendering
                 {
                     if (__result != null)
                     {
-                        // 核心破解方法：
-                        // 为了满足 AppendDrawRequests_Prefix() 不被空材质截断（截断会连坐子节点服装），
-                        // 我们必须返回一个合法材质。
-                        // 严禁使用 InvisibilityMatPool（那会变成游戏内的半透明幽灵，依旧带有原版轮廓和纹理！）。
-                        // 必须使用原版内置的最底层的 BaseContent.ClearMat (全宇宙最纯净的完全透明空材质)！
-                        // 这样实现了绝对透明 + 维持原版下行防剪裁的完美平衡，性能损耗约等于渲染空气。
+                        // 渲染绕过逻辑：
+                        // 为了确保节点完全透明且不影响子节点（如服装或自定义层），
+                        // 这里使用 BaseContent.ClearMat 替代默认材质。
+                        // 这实现了透明效果与渲染树结构完整性的平衡。
                         __result = BaseContent.ClearMat;
                     }
                 }

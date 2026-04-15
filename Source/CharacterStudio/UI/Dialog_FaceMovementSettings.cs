@@ -11,9 +11,9 @@ namespace CharacterStudio.UI
         private float viewHeight = 1200f;
         private readonly HashSet<string> expandedSections = new HashSet<string>
         {
-            "FaceSection",
-            "LidMotion",
-            "EyeMotion"
+            "GlobalAmplitude",
+            "UpperLid",
+            "LowerLid"
         };
 
         public override Vector2 InitialSize => new Vector2(540f, 700f);

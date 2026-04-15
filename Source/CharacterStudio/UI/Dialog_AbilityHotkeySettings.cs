@@ -29,19 +29,7 @@ namespace CharacterStudio.UI
         private Vector2 scrollPosition;
 
         private bool tempEnabled;
-        private string tempQAbilityDefName;
-        private string tempWAbilityDefName;
-        private string tempEAbilityDefName;
-        private string tempRAbilityDefName;
-        private string tempTAbilityDefName;
-        private string tempAAbilityDefName;
-        private string tempSAbilityDefName;
-        private string tempDAbilityDefName;
-        private string tempFAbilityDefName;
-        private string tempZAbilityDefName;
-        private string tempXAbilityDefName;
-        private string tempCAbilityDefName;
-        private string tempVAbilityDefName;
+        private Dictionary<string, string> tempSlotBindings;
 
         public override Vector2 InitialSize => new Vector2(560f, 560f);
 
@@ -67,32 +55,23 @@ namespace CharacterStudio.UI
             forcePause = true;
 
             tempEnabled = hotkeyConfig.enabled;
-            tempQAbilityDefName = hotkeyConfig.qAbilityDefName ?? string.Empty;
-            tempWAbilityDefName = hotkeyConfig.wAbilityDefName ?? string.Empty;
-            tempEAbilityDefName = hotkeyConfig.eAbilityDefName ?? string.Empty;
-            tempRAbilityDefName = hotkeyConfig.rAbilityDefName ?? string.Empty;
-            tempTAbilityDefName = hotkeyConfig.tAbilityDefName ?? string.Empty;
-            tempAAbilityDefName = hotkeyConfig.aAbilityDefName ?? string.Empty;
-            tempSAbilityDefName = hotkeyConfig.sAbilityDefName ?? string.Empty;
-            tempDAbilityDefName = hotkeyConfig.dAbilityDefName ?? string.Empty;
-            tempFAbilityDefName = hotkeyConfig.fAbilityDefName ?? string.Empty;
-            tempZAbilityDefName = hotkeyConfig.zAbilityDefName ?? string.Empty;
-            tempXAbilityDefName = hotkeyConfig.xAbilityDefName ?? string.Empty;
-            tempCAbilityDefName = hotkeyConfig.cAbilityDefName ?? string.Empty;
-            tempVAbilityDefName = hotkeyConfig.vAbilityDefName ?? string.Empty;
-            bindingEntries.Add(new HotkeyBindingEntry { labelKey = "CS_Studio_Ability_Hotkey_Q", getter = () => tempQAbilityDefName, setter = v => tempQAbilityDefName = v });
-            bindingEntries.Add(new HotkeyBindingEntry { labelKey = "CS_Studio_Ability_Hotkey_W", getter = () => tempWAbilityDefName, setter = v => tempWAbilityDefName = v });
-            bindingEntries.Add(new HotkeyBindingEntry { labelKey = "CS_Studio_Ability_Hotkey_E", getter = () => tempEAbilityDefName, setter = v => tempEAbilityDefName = v });
-            bindingEntries.Add(new HotkeyBindingEntry { labelKey = "CS_Studio_Ability_Hotkey_R", getter = () => tempRAbilityDefName, setter = v => tempRAbilityDefName = v });
-            bindingEntries.Add(new HotkeyBindingEntry { labelKey = "CS_Studio_Ability_Hotkey_T", getter = () => tempTAbilityDefName, setter = v => tempTAbilityDefName = v });
-            bindingEntries.Add(new HotkeyBindingEntry { labelKey = "CS_Studio_Ability_Hotkey_A", getter = () => tempAAbilityDefName, setter = v => tempAAbilityDefName = v });
-            bindingEntries.Add(new HotkeyBindingEntry { labelKey = "CS_Studio_Ability_Hotkey_S", getter = () => tempSAbilityDefName, setter = v => tempSAbilityDefName = v });
-            bindingEntries.Add(new HotkeyBindingEntry { labelKey = "CS_Studio_Ability_Hotkey_D", getter = () => tempDAbilityDefName, setter = v => tempDAbilityDefName = v });
-            bindingEntries.Add(new HotkeyBindingEntry { labelKey = "CS_Studio_Ability_Hotkey_F", getter = () => tempFAbilityDefName, setter = v => tempFAbilityDefName = v });
-            bindingEntries.Add(new HotkeyBindingEntry { labelKey = "CS_Studio_Ability_Hotkey_Z", getter = () => tempZAbilityDefName, setter = v => tempZAbilityDefName = v });
-            bindingEntries.Add(new HotkeyBindingEntry { labelKey = "CS_Studio_Ability_Hotkey_X", getter = () => tempXAbilityDefName, setter = v => tempXAbilityDefName = v });
-            bindingEntries.Add(new HotkeyBindingEntry { labelKey = "CS_Studio_Ability_Hotkey_C", getter = () => tempCAbilityDefName, setter = v => tempCAbilityDefName = v });
-            bindingEntries.Add(new HotkeyBindingEntry { labelKey = "CS_Studio_Ability_Hotkey_V", getter = () => tempVAbilityDefName, setter = v => tempVAbilityDefName = v });
+            tempSlotBindings = new Dictionary<string, string>(hotkeyConfig.slotBindings, StringComparer.OrdinalIgnoreCase);
+
+            string[] slotKeys = { "Q", "W", "E", "R", "T", "A", "S", "D", "F", "Z", "X", "C", "V" };
+            string[] labelKeys = {
+                "CS_Studio_Ability_Hotkey_Q", "CS_Studio_Ability_Hotkey_W", "CS_Studio_Ability_Hotkey_E",
+                "CS_Studio_Ability_Hotkey_R", "CS_Studio_Ability_Hotkey_T", "CS_Studio_Ability_Hotkey_A",
+                "CS_Studio_Ability_Hotkey_S", "CS_Studio_Ability_Hotkey_D", "CS_Studio_Ability_Hotkey_F",
+                "CS_Studio_Ability_Hotkey_Z", "CS_Studio_Ability_Hotkey_X", "CS_Studio_Ability_Hotkey_C",
+                "CS_Studio_Ability_Hotkey_V"
+            };
+
+            for (int i = 0; i < slotKeys.Length; i++)
+            {
+                string slot = slotKeys[i];
+                string lk = labelKeys[i];
+                bindingEntries.Add(new HotkeyBindingEntry { labelKey = lk, getter = () => tempSlotBindings.TryGetValue(slot, out string v) ? v : string.Empty, setter = v => tempSlotBindings[slot] = v });
+            }
         }
 
         public override void PreClose()
@@ -135,19 +114,11 @@ namespace CharacterStudio.UI
         private void ApplyChanges()
         {
             hotkeyConfig.enabled = tempEnabled;
-            hotkeyConfig.qAbilityDefName = tempQAbilityDefName ?? string.Empty;
-            hotkeyConfig.wAbilityDefName = tempWAbilityDefName ?? string.Empty;
-            hotkeyConfig.eAbilityDefName = tempEAbilityDefName ?? string.Empty;
-            hotkeyConfig.rAbilityDefName = tempRAbilityDefName ?? string.Empty;
-            hotkeyConfig.tAbilityDefName = tempTAbilityDefName ?? string.Empty;
-            hotkeyConfig.aAbilityDefName = tempAAbilityDefName ?? string.Empty;
-            hotkeyConfig.sAbilityDefName = tempSAbilityDefName ?? string.Empty;
-            hotkeyConfig.dAbilityDefName = tempDAbilityDefName ?? string.Empty;
-            hotkeyConfig.fAbilityDefName = tempFAbilityDefName ?? string.Empty;
-            hotkeyConfig.zAbilityDefName = tempZAbilityDefName ?? string.Empty;
-            hotkeyConfig.xAbilityDefName = tempXAbilityDefName ?? string.Empty;
-            hotkeyConfig.cAbilityDefName = tempCAbilityDefName ?? string.Empty;
-            hotkeyConfig.vAbilityDefName = tempVAbilityDefName ?? string.Empty;
+            hotkeyConfig.slotBindings.Clear();
+            foreach (var kvp in tempSlotBindings)
+            {
+                hotkeyConfig.slotBindings[kvp.Key] = kvp.Value ?? string.Empty;
+            }
             onChanged?.Invoke();
         }
 

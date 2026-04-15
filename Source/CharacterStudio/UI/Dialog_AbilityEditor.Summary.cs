@@ -227,10 +227,10 @@ namespace CharacterStudio.UI
 
             return string.Join(" / ", new[]
             {
-                FormatHotkeySlotSummary("CS_Studio_Ability_HotkeySlot_Q".Translate(), hotkeys.qAbilityDefName),
-                FormatHotkeySlotSummary("CS_Studio_Ability_HotkeySlot_W".Translate(), hotkeys.wAbilityDefName),
-                FormatHotkeySlotSummary("CS_Studio_Ability_HotkeySlot_E".Translate(), hotkeys.eAbilityDefName),
-                FormatHotkeySlotSummary("CS_Studio_Ability_HotkeySlot_R".Translate(), hotkeys.rAbilityDefName)
+                FormatHotkeySlotSummary("CS_Studio_Ability_HotkeySlot_Q".Translate(), hotkeys["Q"]),
+                FormatHotkeySlotSummary("CS_Studio_Ability_HotkeySlot_W".Translate(), hotkeys["W"]),
+                FormatHotkeySlotSummary("CS_Studio_Ability_HotkeySlot_E".Translate(), hotkeys["E"]),
+                FormatHotkeySlotSummary("CS_Studio_Ability_HotkeySlot_R".Translate(), hotkeys["R"])
             });
         }
 
@@ -243,10 +243,11 @@ namespace CharacterStudio.UI
             }
 
             var slots = new List<string>();
-            if (string.Equals(hotkeys.qAbilityDefName, selectedAbility.defName, StringComparison.OrdinalIgnoreCase)) slots.Add("CS_Studio_Ability_HotkeySlot_Q".Translate());
-            if (string.Equals(hotkeys.wAbilityDefName, selectedAbility.defName, StringComparison.OrdinalIgnoreCase)) slots.Add("CS_Studio_Ability_HotkeySlot_W".Translate());
-            if (string.Equals(hotkeys.eAbilityDefName, selectedAbility.defName, StringComparison.OrdinalIgnoreCase)) slots.Add("CS_Studio_Ability_HotkeySlot_E".Translate());
-            if (string.Equals(hotkeys.rAbilityDefName, selectedAbility.defName, StringComparison.OrdinalIgnoreCase)) slots.Add("CS_Studio_Ability_HotkeySlot_R".Translate());
+            foreach (var kvp in hotkeys.slotBindings)
+            {
+                if (string.Equals(kvp.Value, selectedAbility.defName, StringComparison.OrdinalIgnoreCase))
+                    slots.Add($"CS_Studio_Ability_HotkeySlot_{kvp.Key}".Translate());
+            }
             return slots.Count > 0 ? string.Join(", ", slots) : "CS_Studio_Ability_Hotkey_None".Translate();
         }
 

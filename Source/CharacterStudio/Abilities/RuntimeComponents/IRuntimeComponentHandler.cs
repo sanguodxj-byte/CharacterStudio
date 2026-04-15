@@ -1,4 +1,4 @@
-using CharacterStudio.Core;
+using CharacterStudio.Abilities;
 using RimWorld;
 using Verse;
 
@@ -19,11 +19,11 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     /// </summary>
     public interface IOnApplyHandler : IRuntimeComponentHandler
     {
-        void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompPawnSkin skinComp, LocalTargetInfo target, int nowTick);
+        void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, int nowTick);
     }
 
     /// <summary>
-    /// 不依赖 skinComp 的全局施放处理器（如 TimeStop、WeatherChange）
+    /// 不依赖 abilityComp 的全局施放处理器（如 TimeStop、WeatherChange）
     /// </summary>
     public interface IGlobalOnApplyHandler : IRuntimeComponentHandler
     {
@@ -35,7 +35,7 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     /// </summary>
     public interface IPostHitHandler : IRuntimeComponentHandler
     {
-        void OnPostHit(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompPawnSkin casterSkin, LocalTargetInfo target, Pawn targetPawn, CompPawnSkin targetSkin, float appliedDamage, int nowTick);
+        void OnPostHit(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime casterAbility, LocalTargetInfo target, Pawn targetPawn, CompCharacterAbilityRuntime targetAbility, float appliedDamage, int nowTick);
     }
 
     /// <summary>
@@ -43,7 +43,7 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     /// </summary>
     public interface IDamageScaleModifier : IRuntimeComponentHandler
     {
-        float GetDamageScale(AbilityRuntimeComponentConfig config, Pawn caster, CompPawnSkin casterSkin, LocalTargetInfo target, Pawn targetPawn, CompPawnSkin targetSkin, bool allowDashConsume, int nowTick);
+        float GetDamageScale(AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime casterAbility, LocalTargetInfo target, Pawn targetPawn, CompCharacterAbilityRuntime targetAbility, bool allowDashConsume, int nowTick);
     }
 
     /// <summary>
@@ -51,6 +51,6 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     /// </summary>
     public interface ITickHandler : IRuntimeComponentHandler
     {
-        void OnTick(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompPawnSkin skinComp, int nowTick);
+        void OnTick(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, int nowTick);
     }
 }

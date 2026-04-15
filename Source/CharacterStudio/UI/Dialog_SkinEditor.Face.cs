@@ -434,8 +434,6 @@ namespace CharacterStudio.UI
             PawnEyeDirectionConfig eyeCfg = fc.eyeDirectionConfig ??= new PawnEyeDirectionConfig();
             eyeCfg.pupilMotion ??= new PawnEyeDirectionConfig.PupilMotionConfig();
 
-            DrawPupilOffsetCoreSection(ref y, width, eyeCfg.pupilMotion);
-
             DrawFaceTuningSections(ref y, width, fc, isSectionExpanded, toggleSectionExpanded);
         }
 
@@ -2407,13 +2405,29 @@ namespace CharacterStudio.UI
         {
             return sectionKey switch
             {
-                "FaceSection" => 2,
-                "EyeMotion" => 22,
-                "PupilMotion" => 26,
-                "LidMotion" => 58,
-                "BrowMotion" => 13,
-                "MouthMotion" => 31,
+                "GlobalAmplitude" => 3,
+                "UpperLid" => 4,
+                "UpperLidHalfClose" => 12,
+                "UpperLidHappy" => 8,
+                "LowerLid" => 4,
+                "LowerLidHalfClose" => 8,
+                "LowerLidHappy" => 6,
+                "GenericLid" => 19,
+                "BrowMotion" => 0,
+                "BrowAngry" => 6,
+                "BrowSad" => 6,
+                "BrowHappy" => 6,
+                "BrowDefault" => 1,
+                "MouthMotion" => 0,
+                "MouthSmile" => 6,
+                "MouthOpen" => 6,
+                "MouthDown" => 6,
+                "MouthSleep" => 3,
+                "MouthEating" => 6,
+                "MouthShockScared" => 6,
+                "MouthDefault" => 1,
                 "EmotionOverlayMotion" => 17,
+                "PupilOffset" => 15,
                 _ => 0
             };
         }
@@ -2430,8 +2444,19 @@ namespace CharacterStudio.UI
             fc.emotionOverlayMotion ??= new PawnFaceConfig.EmotionOverlayMotionConfig();
             PawnEyeDirectionConfig eyeCfg = fc.eyeDirectionConfig ??= new PawnEyeDirectionConfig();
             eyeCfg.lidMotion ??= new PawnEyeDirectionConfig.LidMotionConfig();
+            eyeCfg.pupilMotion ??= new PawnEyeDirectionConfig.PupilMotionConfig();
 
-            if (DrawCollapsibleFaceSectionHeader(ref y, width, "LidMotion", GetFaceMotionSectionLabel("LidMotion"), isSectionExpanded, toggleSectionExpanded))
+            // ── 全局幅度 ──
+            if (DrawCollapsibleFaceSectionHeader(ref y, width, "GlobalAmplitude", GetFaceMotionSectionLabel("GlobalAmplitude"), isSectionExpanded, toggleSectionExpanded))
+            {
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Global_BrowAmplitude"), ref fc.browAmplitude, 0f, 3f, "F2");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Global_MouthAmplitude"), ref fc.mouthAmplitude, 0f, 3f, "F2");
+            DrawFloatProperty(ref y, width, GetFaceMotionLabel("Global_PupilScaleAmplitude"), ref fc.pupilScaleAmplitude, 0f, 3f, "F2");
+            y += 4f;
+            }
+
+            // ── 上眼睑 ──
+            if (DrawCollapsibleFaceSectionHeader(ref y, width, "UpperLid", GetFaceMotionSectionLabel("UpperLid"), isSectionExpanded, toggleSectionExpanded))
             {
             float upperLidMoveDown = eyeCfg.upperLidMoveDown;
             DrawFloatProperty(ref y, width, "CS_Studio_Face_EyeDir_UpperLidMoveDown".Translate(), ref upperLidMoveDown, 0f, 0.02f, "F4");
@@ -2441,13 +2466,11 @@ namespace CharacterStudio.UI
             }
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperBlinkScaleX".Translate(), ref eyeCfg.lidMotion.upperBlinkScaleX, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperBlinkScaleZ".Translate(), ref eyeCfg.lidMotion.upperBlinkScaleZ, 0f, 3f, "F4");
-            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerBlinkOffset".Translate(), ref eyeCfg.lidMotion.lowerBlinkOffset, -0.02f, 0.02f, "F6");
-            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerBlinkScaleX".Translate(), ref eyeCfg.lidMotion.lowerBlinkScaleX, 0f, 3f, "F4");
-            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerBlinkScaleZ".Translate(), ref eyeCfg.lidMotion.lowerBlinkScaleZ, 0f, 3f, "F4");
-            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericBlinkOffset".Translate(), ref eyeCfg.lidMotion.genericBlinkOffset, -0.02f, 0.02f, "F6");
-            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericBlinkScaleX".Translate(), ref eyeCfg.lidMotion.genericBlinkScaleX, 0f, 3f, "F4");
-            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericBlinkScaleZ".Translate(), ref eyeCfg.lidMotion.genericBlinkScaleZ, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperSideBiasX".Translate(), ref eyeCfg.lidMotion.upperSideBiasX, -0.01f, 0.01f, "F6");
+
+            // ▸ 半闭状态
+            if (DrawCollapsibleFaceSectionHeader(ref y, width, "UpperLidHalfClose", GetFaceMotionSectionLabel("UpperLidHalfClose"), isSectionExpanded, toggleSectionExpanded))
+            {
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperCloseScaleX".Translate(), ref eyeCfg.lidMotion.upperCloseScaleX, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperCloseScaleZ".Translate(), ref eyeCfg.lidMotion.upperCloseScaleZ, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperHalfBaseOffsetSubtract".Translate(), ref eyeCfg.lidMotion.upperHalfBaseOffsetSubtract, 0f, 0.02f, "F6");
@@ -2459,6 +2482,13 @@ namespace CharacterStudio.UI
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperHalfScaleSoft".Translate(), ref eyeCfg.lidMotion.upperHalfScaleNeutralSoft, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperHalfScaleLookDown".Translate(), ref eyeCfg.lidMotion.upperHalfScaleLookDown, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperHalfScaleScared".Translate(), ref eyeCfg.lidMotion.upperHalfScaleScared, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperDefaultSlowWaveOffset".Translate(), ref eyeCfg.lidMotion.upperDefaultSlowWaveOffset, -0.02f, 0.02f, "F6");
+            y += 4f;
+            }
+
+            // ▸ 快乐状态
+            if (DrawCollapsibleFaceSectionHeader(ref y, width, "UpperLidHappy", GetFaceMotionSectionLabel("UpperLidHappy"), isSectionExpanded, toggleSectionExpanded))
+            {
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperHappyOffsetSoft".Translate(), ref eyeCfg.lidMotion.upperHappySoftOffset, -0.02f, 0.02f, "F6");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperHappyOffsetOpen".Translate(), ref eyeCfg.lidMotion.upperHappyOpenOffset, -0.02f, 0.02f, "F6");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperHappyScaleSoft".Translate(), ref eyeCfg.lidMotion.upperHappySoftScale, 0f, 3f, "F4");
@@ -2467,8 +2497,21 @@ namespace CharacterStudio.UI
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperHappyAngleBase".Translate(), ref eyeCfg.lidMotion.upperHappyAngleBase, -20f, 20f, "F3");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperHappyAngleWave".Translate(), ref eyeCfg.lidMotion.upperHappyAngleWave, -5f, 5f, "F3");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperHappySlowWaveOffset".Translate(), ref eyeCfg.lidMotion.upperHappySlowWaveOffset, -0.02f, 0.02f, "F6");
-            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_UpperDefaultSlowWaveOffset".Translate(), ref eyeCfg.lidMotion.upperDefaultSlowWaveOffset, -0.02f, 0.02f, "F6");
+            y += 4f;
+            }
+            }
+
+            // ── 下眼睑 ──
+            if (DrawCollapsibleFaceSectionHeader(ref y, width, "LowerLid", GetFaceMotionSectionLabel("LowerLid"), isSectionExpanded, toggleSectionExpanded))
+            {
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerBlinkOffset".Translate(), ref eyeCfg.lidMotion.lowerBlinkOffset, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerBlinkScaleX".Translate(), ref eyeCfg.lidMotion.lowerBlinkScaleX, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerBlinkScaleZ".Translate(), ref eyeCfg.lidMotion.lowerBlinkScaleZ, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerSideBiasX".Translate(), ref eyeCfg.lidMotion.lowerSideBiasX, -0.01f, 0.01f, "F6");
+
+            // ▸ 半闭状态
+            if (DrawCollapsibleFaceSectionHeader(ref y, width, "LowerLidHalfClose", GetFaceMotionSectionLabel("LowerLidHalfClose"), isSectionExpanded, toggleSectionExpanded))
+            {
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerCloseOffset".Translate(), ref eyeCfg.lidMotion.lowerCloseOffset, -0.02f, 0.02f, "F6");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerCloseScaleX".Translate(), ref eyeCfg.lidMotion.lowerCloseScaleX, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerCloseScaleZ".Translate(), ref eyeCfg.lidMotion.lowerCloseScaleZ, 0f, 3f, "F4");
@@ -2476,13 +2519,29 @@ namespace CharacterStudio.UI
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerHalfSlowWaveOffset".Translate(), ref eyeCfg.lidMotion.lowerHalfSlowWaveOffset, -0.02f, 0.02f, "F6");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerHalfScaleX".Translate(), ref eyeCfg.lidMotion.lowerHalfScaleX, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerHalfScaleZ".Translate(), ref eyeCfg.lidMotion.lowerHalfScaleZ, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerDefaultSlowWaveOffset".Translate(), ref eyeCfg.lidMotion.lowerDefaultSlowWaveOffset, -0.02f, 0.02f, "F6");
+            y += 4f;
+            }
+
+            // ▸ 快乐状态
+            if (DrawCollapsibleFaceSectionHeader(ref y, width, "LowerLidHappy", GetFaceMotionSectionLabel("LowerLidHappy"), isSectionExpanded, toggleSectionExpanded))
+            {
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerHappyAngleBase".Translate(), ref eyeCfg.lidMotion.lowerHappyAngleBase, -20f, 20f, "F3");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerHappyAngleWave".Translate(), ref eyeCfg.lidMotion.lowerHappyAngleWave, -5f, 5f, "F3");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerHappyOffset".Translate(), ref eyeCfg.lidMotion.lowerHappyOffset, -0.02f, 0.02f, "F6");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerHappySlowWaveOffset".Translate(), ref eyeCfg.lidMotion.lowerHappySlowWaveOffset, -0.02f, 0.02f, "F6");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerHappyScaleX".Translate(), ref eyeCfg.lidMotion.lowerHappyScaleX, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerHappyScaleZ".Translate(), ref eyeCfg.lidMotion.lowerHappyScaleZ, 0f, 3f, "F4");
-            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_LowerDefaultSlowWaveOffset".Translate(), ref eyeCfg.lidMotion.lowerDefaultSlowWaveOffset, -0.02f, 0.02f, "F6");
+            y += 4f;
+            }
+            }
+
+            // ── 通用眼睑（Fallback） ──
+            if (DrawCollapsibleFaceSectionHeader(ref y, width, "GenericLid", GetFaceMotionSectionLabel("GenericLid"), isSectionExpanded, toggleSectionExpanded))
+            {
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericBlinkOffset".Translate(), ref eyeCfg.lidMotion.genericBlinkOffset, -0.02f, 0.02f, "F6");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericBlinkScaleX".Translate(), ref eyeCfg.lidMotion.genericBlinkScaleX, 0f, 3f, "F4");
+            DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericBlinkScaleZ".Translate(), ref eyeCfg.lidMotion.genericBlinkScaleZ, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericCloseOffset".Translate(), ref eyeCfg.lidMotion.genericCloseOffset, -0.02f, 0.02f, "F6");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericCloseScaleX".Translate(), ref eyeCfg.lidMotion.genericCloseScaleX, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, "CS_Studio_Face_LidMotion_GenericCloseScaleZ".Translate(), ref eyeCfg.lidMotion.genericCloseScaleZ, 0f, 3f, "F4");
@@ -2502,7 +2561,11 @@ namespace CharacterStudio.UI
             y += 4f;
             }
 
+            // ── 眉毛各状态 ──
             if (DrawCollapsibleFaceSectionHeader(ref y, width, "BrowMotion", GetFaceMotionSectionLabel("BrowMotion"), isSectionExpanded, toggleSectionExpanded))
+            {
+            // ▸ 愤怒
+            if (DrawCollapsibleFaceSectionHeader(ref y, width, "BrowAngry", GetFaceMotionSectionLabel("BrowAngry"), isSectionExpanded, toggleSectionExpanded))
             {
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_AngryAngleBase"), ref fc.browMotion.angryAngleBase, -20f, 20f, "F3");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_AngryAngleWave"), ref fc.browMotion.angryAngleWave, -5f, 5f, "F3");
@@ -2510,23 +2573,42 @@ namespace CharacterStudio.UI
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_AngrySlowWaveOffsetZ"), ref fc.browMotion.angrySlowWaveOffsetZ, -0.02f, 0.02f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_AngryScaleX"), ref fc.browMotion.angryScaleX, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_AngryScaleZ"), ref fc.browMotion.angryScaleZ, 0f, 3f, "F4");
+            y += 4f;
+            }
+
+            // ▸ 悲伤
+            if (DrawCollapsibleFaceSectionHeader(ref y, width, "BrowSad", GetFaceMotionSectionLabel("BrowSad"), isSectionExpanded, toggleSectionExpanded))
+            {
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_SadAngleBase"), ref fc.browMotion.sadAngleBase, -20f, 20f, "F3");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_SadAngleWave"), ref fc.browMotion.sadAngleWave, -5f, 5f, "F3");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_SadOffsetZBase"), ref fc.browMotion.sadOffsetZBase, -0.02f, 0.02f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_SadSlowWaveOffsetZ"), ref fc.browMotion.sadSlowWaveOffsetZ, -0.02f, 0.02f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_SadScaleX"), ref fc.browMotion.sadScaleX, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_SadScaleZ"), ref fc.browMotion.sadScaleZ, 0f, 3f, "F4");
+            y += 4f;
+            }
+
+            // ▸ 快乐
+            if (DrawCollapsibleFaceSectionHeader(ref y, width, "BrowHappy", GetFaceMotionSectionLabel("BrowHappy"), isSectionExpanded, toggleSectionExpanded))
+            {
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_HappyAngleBase"), ref fc.browMotion.happyAngleBase, -20f, 20f, "F3");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_HappyAngleWave"), ref fc.browMotion.happyAngleWave, -5f, 5f, "F3");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_HappyOffsetZBase"), ref fc.browMotion.happyOffsetZBase, -0.02f, 0.02f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_HappySlowWaveOffsetZ"), ref fc.browMotion.happySlowWaveOffsetZ, -0.02f, 0.02f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_HappyScaleX"), ref fc.browMotion.happyScaleX, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_HappyScaleZ"), ref fc.browMotion.happyScaleZ, 0f, 3f, "F4");
+            y += 4f;
+            }
+
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Brow_DefaultSlowWaveOffsetZ"), ref fc.browMotion.defaultSlowWaveOffsetZ, -0.02f, 0.02f, "F6");
             y += 4f;
             }
 
+            // ── 嘴部各状态 ──
             if (DrawCollapsibleFaceSectionHeader(ref y, width, "MouthMotion", GetFaceMotionSectionLabel("MouthMotion"), isSectionExpanded, toggleSectionExpanded))
+            {
+            // ▸ 微笑
+            if (DrawCollapsibleFaceSectionHeader(ref y, width, "MouthSmile", GetFaceMotionSectionLabel("MouthSmile"), isSectionExpanded, toggleSectionExpanded))
             {
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_SmileAngleWave"), ref fc.mouthMotion.smileAngleWave, -5f, 5f, "F3");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_SmileOffsetZBase"), ref fc.mouthMotion.smileOffsetZBase, -0.02f, 0.02f, "F6");
@@ -2534,37 +2616,71 @@ namespace CharacterStudio.UI
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_SmileScaleXBase"), ref fc.mouthMotion.smileScaleXBase, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_SmileScaleXWave"), ref fc.mouthMotion.smileScaleXWave, 0f, 1f, "F4");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_SmileScaleZ"), ref fc.mouthMotion.smileScaleZ, 0f, 3f, "F4");
+            y += 4f;
+            }
+
+            // ▸ 张嘴
+            if (DrawCollapsibleFaceSectionHeader(ref y, width, "MouthOpen", GetFaceMotionSectionLabel("MouthOpen"), isSectionExpanded, toggleSectionExpanded))
+            {
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_OpenAngleWave"), ref fc.mouthMotion.openAngleWave, -5f, 5f, "F3");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_OpenOffsetZBase"), ref fc.mouthMotion.openOffsetZBase, -0.02f, 0.02f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_OpenPrimaryWaveOffsetZ"), ref fc.mouthMotion.openPrimaryWaveOffsetZ, -0.02f, 0.02f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_OpenScaleX"), ref fc.mouthMotion.openScaleX, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_OpenScaleZBase"), ref fc.mouthMotion.openScaleZBase, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_OpenScaleZWave"), ref fc.mouthMotion.openScaleZWave, 0f, 1f, "F4");
+            y += 4f;
+            }
+
+            // ▸ 下垂
+            if (DrawCollapsibleFaceSectionHeader(ref y, width, "MouthDown", GetFaceMotionSectionLabel("MouthDown"), isSectionExpanded, toggleSectionExpanded))
+            {
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_DownAngleBase"), ref fc.mouthMotion.downAngleBase, -20f, 20f, "F3");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_DownAngleWave"), ref fc.mouthMotion.downAngleWave, -5f, 5f, "F3");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_DownOffsetZBase"), ref fc.mouthMotion.downOffsetZBase, -0.02f, 0.02f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_DownSlowWaveOffsetZ"), ref fc.mouthMotion.downSlowWaveOffsetZ, -0.02f, 0.02f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_DownScaleX"), ref fc.mouthMotion.downScaleX, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_DownScaleZ"), ref fc.mouthMotion.downScaleZ, 0f, 3f, "F4");
+            y += 4f;
+            }
+
+            // ▸ 睡眠
+            if (DrawCollapsibleFaceSectionHeader(ref y, width, "MouthSleep", GetFaceMotionSectionLabel("MouthSleep"), isSectionExpanded, toggleSectionExpanded))
+            {
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_SleepOffsetZ"), ref fc.mouthMotion.sleepOffsetZ, -0.02f, 0.02f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_SleepScaleX"), ref fc.mouthMotion.sleepScaleX, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_SleepScaleZ"), ref fc.mouthMotion.sleepScaleZ, 0f, 3f, "F4");
+            y += 4f;
+            }
+
+            // ▸ 进食
+            if (DrawCollapsibleFaceSectionHeader(ref y, width, "MouthEating", GetFaceMotionSectionLabel("MouthEating"), isSectionExpanded, toggleSectionExpanded))
+            {
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_EatingAngleWave"), ref fc.mouthMotion.eatingAngleWave, -5f, 5f, "F3");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_EatingOffsetZBase"), ref fc.mouthMotion.eatingOffsetZBase, -0.02f, 0.02f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_EatingPrimaryWaveOffsetZ"), ref fc.mouthMotion.eatingPrimaryWaveOffsetZ, -0.02f, 0.02f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_EatingScaleX"), ref fc.mouthMotion.eatingScaleX, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_EatingScaleZBase"), ref fc.mouthMotion.eatingScaleZBase, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_EatingScaleZWave"), ref fc.mouthMotion.eatingScaleZWave, 0f, 1f, "F4");
+            y += 4f;
+            }
+
+            // ▸ 震惊/恐惧
+            if (DrawCollapsibleFaceSectionHeader(ref y, width, "MouthShockScared", GetFaceMotionSectionLabel("MouthShockScared"), isSectionExpanded, toggleSectionExpanded))
+            {
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_ShockScaredAngleWave"), ref fc.mouthMotion.shockScaredAngleWave, -5f, 5f, "F3");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_ShockScaredOffsetZBase"), ref fc.mouthMotion.shockScaredOffsetZBase, -0.02f, 0.02f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_ShockScaredPrimaryWaveOffsetZ"), ref fc.mouthMotion.shockScaredPrimaryWaveOffsetZ, -0.02f, 0.02f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_ShockScaredScaleX"), ref fc.mouthMotion.shockScaredScaleX, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_ShockScaredScaleZBase"), ref fc.mouthMotion.shockScaredScaleZBase, 0f, 3f, "F4");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_ShockScaredScaleZWave"), ref fc.mouthMotion.shockScaredScaleZWave, 0f, 1f, "F4");
+            y += 4f;
+            }
+
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Mouth_DefaultSlowWaveOffsetZ"), ref fc.mouthMotion.defaultSlowWaveOffsetZ, -0.02f, 0.02f, "F6");
             y += 4f;
             }
 
+            // ── 情绪叠层运动 ──
             if (DrawCollapsibleFaceSectionHeader(ref y, width, "EmotionOverlayMotion", GetFaceMotionSectionLabel("EmotionOverlayMotion"), isSectionExpanded, toggleSectionExpanded))
             {
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Emotion_BlushPulseBase"), ref fc.emotionOverlayMotion.blushPulseBase, 0f, 3f, "F4");
@@ -2584,6 +2700,13 @@ namespace CharacterStudio.UI
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Emotion_SweatOffsetXWave"), ref fc.emotionOverlayMotion.sweatOffsetXWave, -0.02f, 0.02f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Emotion_SweatOffsetZBase"), ref fc.emotionOverlayMotion.sweatOffsetZBase, -0.02f, 0.02f, "F6");
             DrawFloatProperty(ref y, width, GetFaceMotionLabel("Emotion_SweatSlowWaveOffsetZ"), ref fc.emotionOverlayMotion.sweatSlowWaveOffsetZ, -0.02f, 0.02f, "F6");
+            y += 4f;
+            }
+
+            // ── 瞳孔方向偏移 ──
+            if (DrawCollapsibleFaceSectionHeader(ref y, width, "PupilOffset", GetFaceMotionSectionLabel("PupilOffset"), isSectionExpanded, toggleSectionExpanded))
+            {
+            DrawPupilOffsetCoreSection(ref y, width, eyeCfg.pupilMotion);
             y += 4f;
             }
         }
@@ -2714,4 +2837,4 @@ namespace CharacterStudio.UI
             Find.WindowStack.Add(new FloatMenu(options));
         }
     }
-}
+}

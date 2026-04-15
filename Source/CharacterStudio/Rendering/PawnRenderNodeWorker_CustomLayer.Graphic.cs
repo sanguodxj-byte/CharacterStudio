@@ -45,16 +45,13 @@ namespace CharacterStudio.Rendering
                 exists = ContentFinder<Texture2D>.Get(path + "_north", false) != null;
             }
 
-            // P-PERF: O(1) FIFO 淘汰 — 只移除一个最旧条目即可腾出空间
-            if (textureExistsCache.Count >= MaxTextureExistsCacheSize)
+            // P-PERF: Queue-based FIFO 淘汰，确保可靠的插入顺序淘汰
+            if (textureExistsCache.Count >= MaxTextureExistsCacheSize && textureExistsEvictionQueue.Count > 0)
             {
-                using (var enumerator = textureExistsCache.Keys.GetEnumerator())
-                {
-                    if (enumerator.MoveNext())
-                        textureExistsCache.Remove(enumerator.Current);
-                }
+                textureExistsCache.Remove(textureExistsEvictionQueue.Dequeue());
             }
 
+            textureExistsEvictionQueue.Enqueue(path);
             textureExistsCache[path] = exists;
             return exists;
         }
@@ -188,19 +185,17 @@ namespace CharacterStudio.Rendering
                 }
                 else
                 {
-                    // P-PERF: FIFO 淘汰，避免无界增长
-                    if (externalGraphicCache.Count >= MaxExternalGraphicCacheSize)
+                    // P-PERF: Queue-based FIFO 淘汰，确保可靠的插入顺序淘汰
+                    if (externalGraphicCache.Count >= MaxExternalGraphicCacheSize && externalGraphicEvictionQueue.Count > 0)
                     {
-                        using (var en = externalGraphicCache.Keys.GetEnumerator())
-                        {
-                            if (en.MoveNext()) externalGraphicCache.Remove(en.Current);
-                        }
+                        externalGraphicCache.Remove(externalGraphicEvictionQueue.Dequeue());
                     }
 
                     var graphic = new Graphic_Runtime();
                     graphic.Init(req);
                     if (graphic.IsInitializedSuccessfully)
                     {
+                        externalGraphicEvictionQueue.Enqueue(cacheKey);
                         externalGraphicCache[cacheKey] = graphic;
                         resultGraphic = graphic;
                     }
@@ -236,26 +231,22 @@ namespace CharacterStudio.Rendering
                             else if (ContentFinder<Texture2D>.Get(resolvedTexPath + "_north", false) != null)
                             {
                                 graphicType = typeof(Graphic_Multi);
-                                // P-PERF: FIFO 淘汰，避免无界增长
-                                if (graphicTypeProbeCache.Count >= MaxGraphicTypeProbeCacheSize)
+                                // P-PERF: Queue-based FIFO 淘汰，确保可靠的插入顺序淘汰
+                                if (graphicTypeProbeCache.Count >= MaxGraphicTypeProbeCacheSize && graphicTypeProbeEvictionQueue.Count > 0)
                                 {
-                                    using (var en = graphicTypeProbeCache.Keys.GetEnumerator())
-                                    {
-                                        if (en.MoveNext()) graphicTypeProbeCache.Remove(en.Current);
-                                    }
+                                    graphicTypeProbeCache.Remove(graphicTypeProbeEvictionQueue.Dequeue());
                                 }
+                                graphicTypeProbeEvictionQueue.Enqueue(resolvedTexPath);
                                 graphicTypeProbeCache[resolvedTexPath] = graphicType;
                             }
                             else if (ContentFinder<Texture2D>.Get(resolvedTexPath, false) != null)
                             {
                                 graphicType = typeof(Graphic_Single);
-                                if (graphicTypeProbeCache.Count >= MaxGraphicTypeProbeCacheSize)
+                                if (graphicTypeProbeCache.Count >= MaxGraphicTypeProbeCacheSize && graphicTypeProbeEvictionQueue.Count > 0)
                                 {
-                                    using (var en = graphicTypeProbeCache.Keys.GetEnumerator())
-                                    {
-                                        if (en.MoveNext()) graphicTypeProbeCache.Remove(en.Current);
-                                    }
+                                    graphicTypeProbeCache.Remove(graphicTypeProbeEvictionQueue.Dequeue());
                                 }
+                                graphicTypeProbeEvictionQueue.Enqueue(resolvedTexPath);
                                 graphicTypeProbeCache[resolvedTexPath] = graphicType;
                             }
 
@@ -459,6 +450,7 @@ namespace CharacterStudio.Rendering
         public static void ClearExternalGraphicCache()
         {
             externalGraphicCache.Clear();
+            externalGraphicEvictionQueue.Clear();
         }
 
         /// <summary>
@@ -602,9 +594,12 @@ namespace CharacterStudio.Rendering
         public static void ClearCache()
         {
             externalGraphicCache.Clear();
+            externalGraphicEvictionQueue.Clear();
             textureExistsCache.Clear();
+            textureExistsEvictionQueue.Clear();
             frameSequenceCountCache.Clear();
             graphicTypeProbeCache.Clear();
+            graphicTypeProbeEvictionQueue.Clear();
             // P-PERF: 清理 ZWrite 已处理记录，防止 HashSet 无界增长
             _zWriteAppliedInstanceIds.Clear();
         }

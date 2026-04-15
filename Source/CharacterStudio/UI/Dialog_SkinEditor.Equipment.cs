@@ -406,24 +406,60 @@ namespace CharacterStudio.UI
                 return;
             }
 
+            if (Find.Targeter == null)
+            {
+                Log.Warning("[CharacterStudio] Targeter 不可用，无法启动选格模式");
+                ShowStatus("CS_Studio_Equip_TestSpawnFailed".Translate("Targeter unavailable"));
+                return;
+            }
+
+            string equipLabel = selected.GetDisplayLabel();
             try
             {
-                Thing thing = ThingMaker.MakeThing(thingDef);
-                IntVec3 origin = targetPawn != null && targetPawn.Spawned && targetPawn.Map == map
-                    ? targetPawn.Position
-                    : map.Center;
-                IntVec3 spawnCell = origin;
-                if (!spawnCell.InBounds(map) || !spawnCell.Standable(map))
+                var parms = new TargetingParameters
                 {
-                    spawnCell = CellFinder.StandableCellNear(origin, map, 8);
-                }
+                    canTargetLocations = true,
+                    canTargetPawns = false,
+                    canTargetBuildings = false,
+                    canTargetItems = false,
+                    validator = target =>
+                    {
+                        IntVec3 cell = target.Cell;
+                        return cell.InBounds(map) && cell.Standable(map);
+                    }
+                };
 
-                GenSpawn.Spawn(thing, spawnCell, map, WipeMode.Vanish);
-                ShowStatus("CS_Studio_Equip_TestSpawned".Translate(selected.GetDisplayLabel()));
+                Find.Targeter.BeginTargeting(
+                    parms,
+                    target =>
+                    {
+                        try
+                        {
+                            IntVec3 spawnCell = target.Cell;
+                            if (!spawnCell.InBounds(map) || !spawnCell.Standable(map))
+                            {
+                                ShowStatus("CS_Studio_Equip_TestSpawnFailed".Translate("Cell not standable"));
+                                return;
+                            }
+
+                            Thing thing = ThingMaker.MakeThing(thingDef);
+                            GenSpawn.Spawn(thing, spawnCell, map, WipeMode.Vanish);
+                            ShowStatus("CS_Studio_Equip_TestSpawned".Translate(equipLabel));
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error($"[CharacterStudio] 地图测试生成装备失败: {ex}");
+                            ShowStatus("CS_Studio_Equip_TestSpawnFailed".Translate(ex.Message));
+                        }
+                    },
+                    targetPawn,
+                    null,
+                    null,
+                    true);
             }
             catch (Exception ex)
             {
-                Log.Error($"[CharacterStudio] 地图测试生成装备失败: {ex}");
+                Log.Error($"[CharacterStudio] 启动选格模式失败: {ex}");
                 ShowStatus("CS_Studio_Equip_TestSpawnFailed".Translate(ex.Message));
             }
         }
@@ -543,8 +579,8 @@ namespace CharacterStudio.UI
 
             runtimeDef.graphicData = new GraphicData
             {
-                texPath = usesExternalTexture ? string.Empty : texPath,
-                graphicClass = typeof(Graphic_Single),
+                texPath = texPath,
+                graphicClass = usesExternalTexture ? typeof(CharacterStudio.Rendering.Graphic_Runtime) : typeof(Graphic_Single),
                 shaderType = shader,
                 drawSize = Vector2.one
             };

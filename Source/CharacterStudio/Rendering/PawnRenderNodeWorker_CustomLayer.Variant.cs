@@ -76,7 +76,16 @@ namespace CharacterStudio.Rendering
 
             string? directionalToken = config.useDirectionalSuffix ? GetDirectionalToken(facing) : null;
             List<string> prefixes = BuildVariantPrefixes(basePath, logicalSuffixes, directionalToken);
-            attemptedVariant = prefixes.Any(prefix => !string.Equals(prefix, basePath, StringComparison.Ordinal));
+            // P-PERF: 用 for 循环替代 LINQ .Any(lambda)，避免闭包委托分配
+            attemptedVariant = false;
+            for (int i = 0; i < prefixes.Count; i++)
+            {
+                if (!string.Equals(prefixes[i], basePath, StringComparison.Ordinal))
+                {
+                    attemptedVariant = true;
+                    break;
+                }
+            }
 
             foreach (string prefix in prefixes)
             {
@@ -118,7 +127,7 @@ namespace CharacterStudio.Rendering
                     break;
 
                 case LayerVariantLogic.EyeDirectionOnly:
-                    AddUnique(results, (skinComp?.CurEyeDirection ?? EyeDirection.Center).ToString());
+                    AddUnique(results, EyeDirectionNames[(int)(skinComp?.CurEyeDirection ?? EyeDirection.Center)]);
                     break;
 
                 case LayerVariantLogic.BlinkOnly:
@@ -149,7 +158,7 @@ namespace CharacterStudio.Rendering
                 AddUnique(results, "Blink");
 
             if (config.useEyeDirectionSuffix && config.variantLogic != LayerVariantLogic.EyeDirectionOnly)
-                AddUnique(results, (skinComp?.CurEyeDirection ?? EyeDirection.Center).ToString());
+                AddUnique(results, EyeDirectionNames[(int)(skinComp?.CurEyeDirection ?? EyeDirection.Center)]);
 
             if (config.useExpressionSuffix
                 && config.variantLogic != LayerVariantLogic.ExpressionOnly
@@ -166,7 +175,8 @@ namespace CharacterStudio.Rendering
             if (!expression.HasValue)
                 return;
 
-            AddUnique(results, expression.Value.ToString());
+            // P-PERF: 用查找表替代 Enum.ToString()，避免反射和字符串分配
+            AddUnique(results, ExpressionTypeNames[(int)expression.Value]);
 
             switch (expression.Value)
             {
@@ -220,10 +230,41 @@ namespace CharacterStudio.Rendering
         {
             CompPawnSkin? skinComp = cachedSkinComp ?? pawn.TryGetComp<CompPawnSkin>();
             if (skinComp != null)
-                return skinComp.GetEffectiveExpression().ToString();
+                return ExpressionTypeNames[(int)skinComp.GetEffectiveExpression()];
 
-            return (TryGetFallbackExpression(pawn) ?? ExpressionType.Neutral).ToString();
+            return ExpressionTypeNames[(int)(TryGetFallbackExpression(pawn) ?? ExpressionType.Neutral)];
         }
+
+        // P-PERF: 预计算帧索引令牌，避免热路径每帧 $"f{i}" 字符串分配
+        private static readonly string[] FrameIndexTokens = new string[16]
+        {
+            "f0", "f1", "f2", "f3", "f4", "f5", "f6", "f7",
+            "f8", "f9", "f10", "f11", "f12", "f13", "f14", "f15"
+        };
+
+        // P-PERF: 枚举名称预计算查找表，替代热路径 Enum.ToString() 反射分配
+        // 前提：枚举值从 0 开始连续递增，无显式赋值
+        private static readonly string[] ExpressionTypeNames = new string[]
+        {
+            "Neutral", "Happy", "Cheerful", "Gloomy", "Sad", "Hopeless",
+            "Tired", "Pain", "Sleeping", "Angry", "Scared", "Shock",
+            "Wink", "WaitCombat", "AttackMelee", "AttackRanged",
+            "Eating", "Working", "Hauling", "Reading", "SocialRelax",
+            "Lovin", "Strip", "LayDown", "Dead", "Blink"
+        };
+
+        private static readonly string[] EyeDirectionNames = new string[]
+        {
+            "Center", "Left", "Right", "Up", "Down"
+        };
+
+        private static readonly string[] EyeAnimationVariantNames = new string[]
+        {
+            "NeutralOpen", "NeutralSoft", "NeutralLookDown", "NeutralGlance",
+            "WorkFocusCenter", "WorkFocusDown", "WorkFocusUp",
+            "HappyOpen", "HappySoft", "HappyClosedPeak",
+            "ShockWide", "ScaredWide", "ScaredFlinch", "BlinkClosed"
+        };
 
         private List<string> BuildVariantPrefixes(string basePath, List<string> logicalSuffixes, string? directionalToken)
         {
@@ -258,7 +299,7 @@ namespace CharacterStudio.Rendering
 
             if (!frameSequenceCountCache.TryGetValue(prefix, out int frameCount))
             {
-                string firstFramePath = AppendVariantToken(prefix, "f0");
+                string firstFramePath = AppendVariantToken(prefix, FrameIndexTokens[0]);
                 if (!TextureExists(firstFramePath))
                 {
                     frameSequenceCountCache[prefix] = 0;
@@ -268,7 +309,7 @@ namespace CharacterStudio.Rendering
                 frameCount = 1;
                 for (int i = 1; i < 16; i++)
                 {
-                    if (TextureExists(AppendVariantToken(prefix, $"f{i}")))
+                    if (TextureExists(AppendVariantToken(prefix, FrameIndexTokens[i])))
                         frameCount++;
                     else
                         break;
@@ -280,10 +321,12 @@ namespace CharacterStudio.Rendering
             if (frameCount <= 0)
                 return false;
 
-            int animTick = pawn.TryGetComp<CompPawnSkin>()?.GetExpressionAnimTick()
+            // P-PERF: 复用 ThreadStatic 缓存，避免每帧 TryGetComp O(N) 遍历
+            CompPawnSkin? skinComp = _lastTextureResolveCachedSkinComp ?? pawn.TryGetComp<CompPawnSkin>();
+            int animTick = skinComp?.GetExpressionAnimTick()
                 ?? AbilityTimeStopRuntimeController.ResolveVisualTickForPawn(pawn, Find.TickManager?.TicksGame ?? 0);
             int frameIndex = Mathf.Abs(animTick) % frameCount;
-            resolvedPath = AppendVariantToken(prefix, $"f{frameIndex}");
+            resolvedPath = AppendVariantToken(prefix, FrameIndexTokens[frameIndex]);
             return true;
         }
 
@@ -317,18 +360,18 @@ namespace CharacterStudio.Rendering
             }
         }
 
+        // P-PERF: 避免使用 Path.GetExtension（内部有额外路径验证开销），改用手动查找扩展名分隔符
         private static string AppendVariantToken(string basePath, string? token)
         {
             if (string.IsNullOrEmpty(basePath) || string.IsNullOrEmpty(token))
                 return basePath;
 
-            string nonNullToken = token!;
-            string cleanToken = nonNullToken.StartsWith("_", StringComparison.Ordinal) ? nonNullToken.Substring(1) : nonNullToken;
-            string extension = System.IO.Path.GetExtension(basePath);
-            if (!string.IsNullOrEmpty(extension))
+            string cleanToken = token!.StartsWith("_", StringComparison.Ordinal) ? token.Substring(1) : token!;
+            // P-PERF: 手动查找最后一个 '.' 作为扩展名分隔符，避免 Path.GetExtension 的方法调用链开销
+            int dotIndex = basePath.LastIndexOf('.');
+            if (dotIndex > 0)
             {
-                string withoutExtension = basePath.Substring(0, basePath.Length - extension.Length);
-                return withoutExtension + "_" + cleanToken + extension;
+                return basePath.Substring(0, dotIndex) + "_" + cleanToken + basePath.Substring(dotIndex);
             }
 
             return basePath + "_" + cleanToken;
@@ -411,7 +454,8 @@ namespace CharacterStudio.Rendering
         {
             var results = new List<string>();
 
-            AddUnique(results, eyeVariant.ToString());
+            // P-PERF: 用查找表替代 Enum.ToString()
+            AddUnique(results, EyeAnimationVariantNames[(int)eyeVariant]);
 
             switch (eyeVariant)
             {
@@ -456,13 +500,13 @@ namespace CharacterStudio.Rendering
                 case ExpressionType.Cheerful:
                 case ExpressionType.Lovin:
                 case ExpressionType.SocialRelax:
-                    AddUnique(results, expression.ToString());
+                    AddUnique(results, ExpressionTypeNames[(int)expression]);
                     AddUnique(results, "Happy");
                     break;
 
                 case ExpressionType.Working:
                 case ExpressionType.Reading:
-                    AddUnique(results, expression.ToString());
+                    AddUnique(results, ExpressionTypeNames[(int)expression]);
                     break;
 
                 case ExpressionType.Shock:

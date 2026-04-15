@@ -8,13 +8,13 @@ using HarmonyLib;
 namespace CharacterStudio.Introspection
 {
     /// <summary>
-    /// RenderTreeParser - 解析 Pawn 的渲染树
-    /// 支持原版 RimWorld 和 HAR (Humanoid Alien Races) 模组
+    /// RenderTreeParser - 解析 Pawn 的渲染树结构
+    /// 支持原版渲染树及第三方扩展（如 HAR）
     ///
     /// 子文件职责：
     ///   RenderTreeParser.TexturePath.cs  — 纹理路径多级回退解析
-    ///   RenderTreeParser.RuntimeData.cs  — 运行时偏移/缩放/颜色/HAR colorChannel 捕获
-    ///   RenderTreeParser.Debug.cs        — DevMode HAR 调试日志
+    ///   RenderTreeParser.RuntimeData.cs  — 运行时变换及颜色通道捕获
+    ///   RenderTreeParser.Debug.cs        — 渲染树内省调试日志
     /// </summary>
     public static partial class RenderTreeParser
     {
@@ -58,15 +58,15 @@ namespace CharacterStudio.Introspection
             return true;
         }
 
-        // 默认关闭大体量节点日志，避免 Player.log 被刷爆。
-        private static bool IsVerboseDebugEnabled => false;
+        // 调试开关：当开启原版开发者模式且显式开启时激活
+        private static bool IsVerboseDebugEnabled => Prefs.DevMode;
 
         // ─────────────────────────────────────────────
         // 公共入口
         // ─────────────────────────────────────────────
 
         /// <summary>
-        /// Entry point: Captures the entire tree of a Pawn.
+        /// 捕捉给定 Pawn 的完整渲染树快照。
         /// 包含强制树构建逻辑，确保渲染树已初始化
         /// </summary>
         public static RenderNodeSnapshot? Capture(Pawn pawn)
@@ -152,7 +152,7 @@ namespace CharacterStudio.Introspection
                     out graphicColor, out graphicColorTwo,
                     out shaderName, out maskPath);
 
-                colorChannel = CaptureHarColorChannel(gameNode, props);
+                colorChannel = CaptureExternalColorChannel(gameNode, props);
 
                 // 运行时颜色（主线程优先）
                 Color nodeColor = props?.color ?? Color.white;
@@ -161,12 +161,12 @@ namespace CharacterStudio.Introspection
                     try { nodeColor = gameNode.ColorFor(pawn); } catch { }
                 }
 
-                // HAR 调试输出（仅 DevMode）
-                bool shouldDebug = IsVerboseDebugEnabled && ShouldInspectHarDebugNode(label, tagDef);
+                // 内部调试输出（仅在显式启用时触发）
+                bool shouldDebug = IsVerboseDebugEnabled && ShouldInspectNodeDebug(label, tagDef);
                 if (shouldDebug)
-                    EmitHarDebugInfo(gameNode, label, tagDef, props, nodeColor);
+                    EmitNodeDebugInfo(gameNode, label, tagDef, props, nodeColor);
 
-                // 捕获运行时偏移/缩放/旋转
+                // 捕获运行时变换数据
                 CaptureRuntimeTransform(
                     gameNode, pawn, props, label, tagDef, shouldDebug,
                     out Vector3 nodeOffset,
@@ -182,7 +182,7 @@ namespace CharacterStudio.Introspection
                 Color runtimeColor = nodeColor;
 
                 if (shouldDebug)
-                    EmitHarDebugFinal(runtimeOffset, runtimeScale, runtimeColor);
+                    EmitFinalDebugInfo(runtimeOffset, runtimeScale, runtimeColor);
 
                 var snapshot = new RenderNodeSnapshot
                 {

@@ -89,7 +89,7 @@ namespace CharacterStudio.UI
         private string llmAbilityPrompt = string.Empty;
         private readonly SkinAbilityHotkeyConfig? boundHotkeys;
         private readonly SkinAbilityHotkeyConfig standaloneHotkeys = new();
-        // LLM 生成状态（异步）— 结果字段为 TODO：异步回调完成后读取
+        // LLM 生成状态（异步）
 #pragma warning disable CS0414
         private bool llmAbilitiesGenerating = false;
         private (bool replaceExisting, List<ModularAbilityDef> result)? llmAbilitiesPendingResult = null;
@@ -316,19 +316,11 @@ namespace CharacterStudio.UI
         private static void CopyHotkeyConfig(SkinAbilityHotkeyConfig source, SkinAbilityHotkeyConfig target)
         {
             target.enabled = source.enabled;
-            target.qAbilityDefName = source.qAbilityDefName ?? string.Empty;
-            target.wAbilityDefName = source.wAbilityDefName ?? string.Empty;
-            target.eAbilityDefName = source.eAbilityDefName ?? string.Empty;
-            target.rAbilityDefName = source.rAbilityDefName ?? string.Empty;
-            target.tAbilityDefName = source.tAbilityDefName ?? string.Empty;
-            target.aAbilityDefName = source.aAbilityDefName ?? string.Empty;
-            target.sAbilityDefName = source.sAbilityDefName ?? string.Empty;
-            target.dAbilityDefName = source.dAbilityDefName ?? string.Empty;
-            target.fAbilityDefName = source.fAbilityDefName ?? string.Empty;
-            target.zAbilityDefName = source.zAbilityDefName ?? string.Empty;
-            target.xAbilityDefName = source.xAbilityDefName ?? string.Empty;
-            target.cAbilityDefName = source.cAbilityDefName ?? string.Empty;
-            target.vAbilityDefName = source.vAbilityDefName ?? string.Empty;
+            target.slotBindings.Clear();
+            foreach (var kvp in source.slotBindings)
+            {
+                target.slotBindings[kvp.Key] = kvp.Value ?? string.Empty;
+            }
         }
 
         private void SanitizeHotkeyConfigAgainstAbilities(SkinAbilityHotkeyConfig? hotkeyConfig)
@@ -338,35 +330,13 @@ namespace CharacterStudio.UI
                 return;
             }
 
-            hotkeyConfig.qAbilityDefName = ResolveExistingAbilityDefName(hotkeyConfig.qAbilityDefName);
-            hotkeyConfig.wAbilityDefName = ResolveExistingAbilityDefName(hotkeyConfig.wAbilityDefName);
-            hotkeyConfig.eAbilityDefName = ResolveExistingAbilityDefName(hotkeyConfig.eAbilityDefName);
-            hotkeyConfig.rAbilityDefName = ResolveExistingAbilityDefName(hotkeyConfig.rAbilityDefName);
-            hotkeyConfig.tAbilityDefName = ResolveExistingAbilityDefName(hotkeyConfig.tAbilityDefName);
-            hotkeyConfig.aAbilityDefName = ResolveExistingAbilityDefName(hotkeyConfig.aAbilityDefName);
-            hotkeyConfig.sAbilityDefName = ResolveExistingAbilityDefName(hotkeyConfig.sAbilityDefName);
-            hotkeyConfig.dAbilityDefName = ResolveExistingAbilityDefName(hotkeyConfig.dAbilityDefName);
-            hotkeyConfig.fAbilityDefName = ResolveExistingAbilityDefName(hotkeyConfig.fAbilityDefName);
-            hotkeyConfig.zAbilityDefName = ResolveExistingAbilityDefName(hotkeyConfig.zAbilityDefName);
-            hotkeyConfig.xAbilityDefName = ResolveExistingAbilityDefName(hotkeyConfig.xAbilityDefName);
-            hotkeyConfig.cAbilityDefName = ResolveExistingAbilityDefName(hotkeyConfig.cAbilityDefName);
-            hotkeyConfig.vAbilityDefName = ResolveExistingAbilityDefName(hotkeyConfig.vAbilityDefName);
+            string[] keys = new List<string>(hotkeyConfig.slotBindings.Keys).ToArray();
+            foreach (string key in keys)
+            {
+                hotkeyConfig[key] = ResolveExistingAbilityDefName(hotkeyConfig[key]);
+            }
 
-            bool hasAnyBinding = !string.IsNullOrWhiteSpace(hotkeyConfig.qAbilityDefName)
-                || !string.IsNullOrWhiteSpace(hotkeyConfig.wAbilityDefName)
-                || !string.IsNullOrWhiteSpace(hotkeyConfig.eAbilityDefName)
-                || !string.IsNullOrWhiteSpace(hotkeyConfig.rAbilityDefName)
-                || !string.IsNullOrWhiteSpace(hotkeyConfig.tAbilityDefName)
-                || !string.IsNullOrWhiteSpace(hotkeyConfig.aAbilityDefName)
-                || !string.IsNullOrWhiteSpace(hotkeyConfig.sAbilityDefName)
-                || !string.IsNullOrWhiteSpace(hotkeyConfig.dAbilityDefName)
-                || !string.IsNullOrWhiteSpace(hotkeyConfig.fAbilityDefName)
-                || !string.IsNullOrWhiteSpace(hotkeyConfig.zAbilityDefName)
-                || !string.IsNullOrWhiteSpace(hotkeyConfig.xAbilityDefName)
-                || !string.IsNullOrWhiteSpace(hotkeyConfig.cAbilityDefName)
-                || !string.IsNullOrWhiteSpace(hotkeyConfig.vAbilityDefName);
-
-            if (!hasAnyBinding)
+            if (!hotkeyConfig.HasAnyBinding())
             {
                 hotkeyConfig.enabled = false;
             }

@@ -24,10 +24,7 @@ namespace CharacterStudio.UI
         private bool tempHotkeysEnabled;
         private string tempXenotypeDefName;
         private string tempRaceDisplayName;
-        private string tempQAbilityDefName;
-        private string tempWAbilityDefName;
-        private string tempEAbilityDefName;
-        private string tempRAbilityDefName;
+        private Dictionary<string, string> tempHotkeySlotBindings;
 
         public override Vector2 InitialSize => new Vector2(500f, 560f);
 
@@ -50,10 +47,7 @@ namespace CharacterStudio.UI
             tempHotkeysEnabled = skin.abilityHotkeys?.enabled ?? false;
             tempXenotypeDefName = skin.xenotypeDefName ?? "";
             tempRaceDisplayName = skin.raceDisplayName ?? "";
-            tempQAbilityDefName = skin.abilityHotkeys?.qAbilityDefName ?? "";
-            tempWAbilityDefName = skin.abilityHotkeys?.wAbilityDefName ?? "";
-            tempEAbilityDefName = skin.abilityHotkeys?.eAbilityDefName ?? "";
-            tempRAbilityDefName = skin.abilityHotkeys?.rAbilityDefName ?? "";
+            tempHotkeySlotBindings = new Dictionary<string, string>(skin.abilityHotkeys?.slotBindings ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase), StringComparer.OrdinalIgnoreCase);
         }
 
         public override void PreClose()
@@ -132,10 +126,10 @@ namespace CharacterStudio.UI
             UIHelper.DrawSectionTitle(ref vy, width, "CS_Studio_Section_AbilityHotkeys".Translate());
             UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Ability_Hotkey_Enable".Translate(), ref tempHotkeysEnabled);
 
-            DrawHotkeyMappingField(ref vy, width, "CS_Studio_Ability_Hotkey_Q".Translate(), () => tempQAbilityDefName, v => tempQAbilityDefName = v);
-            DrawHotkeyMappingField(ref vy, width, "CS_Studio_Ability_Hotkey_W".Translate(), () => tempWAbilityDefName, v => tempWAbilityDefName = v);
-            DrawHotkeyMappingField(ref vy, width, "CS_Studio_Ability_Hotkey_E".Translate(), () => tempEAbilityDefName, v => tempEAbilityDefName = v);
-            DrawHotkeyMappingField(ref vy, width, "CS_Studio_Ability_Hotkey_R".Translate(), () => tempRAbilityDefName, v => tempRAbilityDefName = v);
+            DrawHotkeyMappingField(ref vy, width, "CS_Studio_Ability_Hotkey_Q".Translate(), () => tempHotkeySlotBindings.TryGetValue("Q", out string v) ? v : string.Empty, v => tempHotkeySlotBindings["Q"] = v);
+            DrawHotkeyMappingField(ref vy, width, "CS_Studio_Ability_Hotkey_W".Translate(), () => tempHotkeySlotBindings.TryGetValue("W", out string v) ? v : string.Empty, v => tempHotkeySlotBindings["W"] = v);
+            DrawHotkeyMappingField(ref vy, width, "CS_Studio_Ability_Hotkey_E".Translate(), () => tempHotkeySlotBindings.TryGetValue("E", out string v) ? v : string.Empty, v => tempHotkeySlotBindings["E"] = v);
+            DrawHotkeyMappingField(ref vy, width, "CS_Studio_Ability_Hotkey_R".Translate(), () => tempHotkeySlotBindings.TryGetValue("R", out string v) ? v : string.Empty, v => tempHotkeySlotBindings["R"] = v);
 
             // 武器渲染覆写
             UIHelper.DrawSectionTitle(ref vy, width, "CS_Studio_Section_WeaponRender".Translate());
@@ -197,10 +191,11 @@ namespace CharacterStudio.UI
             }
 
             skinDef.abilityHotkeys.enabled = tempHotkeysEnabled;
-            skinDef.abilityHotkeys.qAbilityDefName = tempQAbilityDefName;
-            skinDef.abilityHotkeys.wAbilityDefName = tempWAbilityDefName;
-            skinDef.abilityHotkeys.eAbilityDefName = tempEAbilityDefName;
-            skinDef.abilityHotkeys.rAbilityDefName = tempRAbilityDefName;
+            skinDef.abilityHotkeys.slotBindings.Clear();
+            foreach (var kvp in tempHotkeySlotBindings)
+            {
+                skinDef.abilityHotkeys.slotBindings[kvp.Key] = kvp.Value ?? string.Empty;
+            }
 
             skinDef.xenotypeDefName = tempXenotypeDefName;
             skinDef.raceDisplayName = tempRaceDisplayName;

@@ -534,14 +534,6 @@ namespace CharacterStudio.UI
                 float effectiveZoom = zoom;
                 var skinComp = mannequinPawn.GetComp<CompPawnSkin>();
                 PawnSkinDef? activeSkin = skinComp?.ActiveSkin;
-                if (activeSkin != null
-                    && !float.IsNaN(activeSkin.globalTextureScale)
-                    && !float.IsInfinity(activeSkin.globalTextureScale)
-                    && activeSkin.globalTextureScale > 0.01f)
-                {
-                    // Portrait zoom scales the whole pawn as one unit. Smaller scale means zoom out.
-                    effectiveZoom /= activeSkin.globalTextureScale;
-                }
 
                 var portrait = PortraitsCache.Get(
                     mannequinPawn,
@@ -597,7 +589,7 @@ namespace CharacterStudio.UI
                 return PawnKindDefOf.Colonist;
             }
 
-            // 对于其他种族（如 HAR），尝试查找匹配的 PawnKindDef
+            // 对于其他种族，尝试查找匹配的 PawnKindDef
             // 优先查找没有派系绑定的 PawnKindDef（更适合用作人偶）
             var matchingKind = DefDatabase<PawnKindDef>.AllDefs
                 .FirstOrDefault(k => k.race == raceDef && k.defaultFactionDef == null);

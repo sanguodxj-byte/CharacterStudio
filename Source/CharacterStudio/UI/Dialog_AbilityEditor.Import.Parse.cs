@@ -415,40 +415,31 @@ namespace CharacterStudio.UI
                 return null;
             }
 
-            return new SkinAbilityHotkeyConfig
+            var config = new SkinAbilityHotkeyConfig
             {
-                enabled = ParseBool(GetChildText(node, "enabled"), false),
-                qAbilityDefName = GetChildText(node, "qAbilityDefName"),
-                wAbilityDefName = GetChildText(node, "wAbilityDefName"),
-                eAbilityDefName = GetChildText(node, "eAbilityDefName"),
-                rAbilityDefName = GetChildText(node, "rAbilityDefName"),
-                tAbilityDefName = GetChildText(node, "tAbilityDefName"),
-                aAbilityDefName = GetChildText(node, "aAbilityDefName"),
-                sAbilityDefName = GetChildText(node, "sAbilityDefName"),
-                dAbilityDefName = GetChildText(node, "dAbilityDefName"),
-                fAbilityDefName = GetChildText(node, "fAbilityDefName"),
-                zAbilityDefName = GetChildText(node, "zAbilityDefName"),
-                xAbilityDefName = GetChildText(node, "xAbilityDefName"),
-                cAbilityDefName = GetChildText(node, "cAbilityDefName"),
-                vAbilityDefName = GetChildText(node, "vAbilityDefName")
+                enabled = ParseBool(GetChildText(node, "enabled"), false)
             };
+
+            foreach (string slotKey in new[] { "Q", "W", "E", "R", "T", "A", "S", "D", "F", "Z", "X", "C", "V" })
+            {
+                string elementName = slotKey.ToLowerInvariant() + "AbilityDefName";
+                string value = GetChildText(node, elementName);
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    config[slotKey] = value;
+                }
+            }
+
+            return config;
         }
 
         private static void RemapImportedHotkeyConfig(SkinAbilityHotkeyConfig hotkeys, Dictionary<ModularAbilityDef, string> originalDefNames)
         {
-            hotkeys.qAbilityDefName = RemapImportedHotkeyDefName(hotkeys.qAbilityDefName, originalDefNames);
-            hotkeys.wAbilityDefName = RemapImportedHotkeyDefName(hotkeys.wAbilityDefName, originalDefNames);
-            hotkeys.eAbilityDefName = RemapImportedHotkeyDefName(hotkeys.eAbilityDefName, originalDefNames);
-            hotkeys.rAbilityDefName = RemapImportedHotkeyDefName(hotkeys.rAbilityDefName, originalDefNames);
-            hotkeys.tAbilityDefName = RemapImportedHotkeyDefName(hotkeys.tAbilityDefName, originalDefNames);
-            hotkeys.aAbilityDefName = RemapImportedHotkeyDefName(hotkeys.aAbilityDefName, originalDefNames);
-            hotkeys.sAbilityDefName = RemapImportedHotkeyDefName(hotkeys.sAbilityDefName, originalDefNames);
-            hotkeys.dAbilityDefName = RemapImportedHotkeyDefName(hotkeys.dAbilityDefName, originalDefNames);
-            hotkeys.fAbilityDefName = RemapImportedHotkeyDefName(hotkeys.fAbilityDefName, originalDefNames);
-            hotkeys.zAbilityDefName = RemapImportedHotkeyDefName(hotkeys.zAbilityDefName, originalDefNames);
-            hotkeys.xAbilityDefName = RemapImportedHotkeyDefName(hotkeys.xAbilityDefName, originalDefNames);
-            hotkeys.cAbilityDefName = RemapImportedHotkeyDefName(hotkeys.cAbilityDefName, originalDefNames);
-            hotkeys.vAbilityDefName = RemapImportedHotkeyDefName(hotkeys.vAbilityDefName, originalDefNames);
+            string[] keys = new List<string>(hotkeys.slotBindings.Keys).ToArray();
+            foreach (string key in keys)
+            {
+                hotkeys[key] = RemapImportedHotkeyDefName(hotkeys[key], originalDefNames);
+            }
         }
 
         private static string RemapImportedHotkeyDefName(string? defName, Dictionary<ModularAbilityDef, string> originalDefNames)

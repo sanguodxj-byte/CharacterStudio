@@ -598,8 +598,8 @@ namespace CharacterStudio.Abilities
                 return true;
             }
 
-            CompPawnSkin? skinComp = pawn?.GetComp<CompPawnSkin>();
-            if (skinComp != null && skinComp.IsForcedMoveBusy())
+            CompCharacterAbilityRuntime? abilityComp = pawn?.GetComp<CompCharacterAbilityRuntime>();
+            if (abilityComp != null && abilityComp.IsForcedMoveBusy())
             {
                 __result = true;
                 return false;

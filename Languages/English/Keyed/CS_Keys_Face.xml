@@ -228,6 +228,27 @@
     <CS_Studio_Face_MotionSection_BrowMotion>Brow Motion</CS_Studio_Face_MotionSection_BrowMotion>
     <CS_Studio_Face_MotionSection_MouthMotion>Mouth Motion</CS_Studio_Face_MotionSection_MouthMotion>
     <CS_Studio_Face_MotionSection_EmotionOverlayMotion>Emotion Overlay Motion</CS_Studio_Face_MotionSection_EmotionOverlayMotion>
+    <CS_Studio_Face_MotionSection_GlobalAmplitude>Global Amplitude</CS_Studio_Face_MotionSection_GlobalAmplitude>
+    <CS_Studio_Face_MotionSection_UpperLid>Upper Eyelid</CS_Studio_Face_MotionSection_UpperLid>
+    <CS_Studio_Face_MotionSection_UpperLidHalfClose>Half-Close State</CS_Studio_Face_MotionSection_UpperLidHalfClose>
+    <CS_Studio_Face_MotionSection_UpperLidHappy>Happy State</CS_Studio_Face_MotionSection_UpperLidHappy>
+    <CS_Studio_Face_MotionSection_LowerLid>Lower Eyelid</CS_Studio_Face_MotionSection_LowerLid>
+    <CS_Studio_Face_MotionSection_LowerLidHalfClose>Half-Close State</CS_Studio_Face_MotionSection_LowerLidHalfClose>
+    <CS_Studio_Face_MotionSection_LowerLidHappy>Happy State</CS_Studio_Face_MotionSection_LowerLidHappy>
+    <CS_Studio_Face_MotionSection_GenericLid>Fallback Eyelid</CS_Studio_Face_MotionSection_GenericLid>
+    <CS_Studio_Face_MotionSection_BrowAngry>Angry</CS_Studio_Face_MotionSection_BrowAngry>
+    <CS_Studio_Face_MotionSection_BrowSad>Sad</CS_Studio_Face_MotionSection_BrowSad>
+    <CS_Studio_Face_MotionSection_BrowHappy>Happy</CS_Studio_Face_MotionSection_BrowHappy>
+    <CS_Studio_Face_MotionSection_MouthSmile>Smile</CS_Studio_Face_MotionSection_MouthSmile>
+    <CS_Studio_Face_MotionSection_MouthOpen>Open</CS_Studio_Face_MotionSection_MouthOpen>
+    <CS_Studio_Face_MotionSection_MouthDown>Droop</CS_Studio_Face_MotionSection_MouthDown>
+    <CS_Studio_Face_MotionSection_MouthSleep>Sleep</CS_Studio_Face_MotionSection_MouthSleep>
+    <CS_Studio_Face_MotionSection_MouthEating>Eating</CS_Studio_Face_MotionSection_MouthEating>
+    <CS_Studio_Face_MotionSection_MouthShockScared>Shock / Scared</CS_Studio_Face_MotionSection_MouthShockScared>
+    <CS_Studio_Face_MotionSection_PupilOffset>Pupil Direction Offset</CS_Studio_Face_MotionSection_PupilOffset>
+    <CS_Studio_Face_Motion_Global_BrowAmplitude>Brow Amplitude</CS_Studio_Face_Motion_Global_BrowAmplitude>
+    <CS_Studio_Face_Motion_Global_MouthAmplitude>Mouth Amplitude</CS_Studio_Face_Motion_Global_MouthAmplitude>
+    <CS_Studio_Face_Motion_Global_PupilScaleAmplitude>Pupil Scale Amplitude</CS_Studio_Face_Motion_Global_PupilScaleAmplitude>
     <CS_Studio_Face_Motion_Lid_GenericDefaultScaleZWaveAmplitude>Fallback Default Scale Z Wave</CS_Studio_Face_Motion_Lid_GenericDefaultScaleZWaveAmplitude>
     <CS_Studio_Face_Motion_Eye_SideBiasX>Eye Side Bias X</CS_Studio_Face_Motion_Eye_SideBiasX>
     <CS_Studio_Face_Motion_Eye_PrimaryWaveOffsetZ>Eye Primary Wave Offset Z</CS_Studio_Face_Motion_Eye_PrimaryWaveOffsetZ>
@@ -414,4 +435,28 @@
     <CS_Studio_Preview_MouthState_Open>Open</CS_Studio_Preview_MouthState_Open>
     <CS_Studio_Preview_MouthState_Sleep>Sleep</CS_Studio_Preview_MouthState_Sleep>
     <CS_Studio_Preview_MouthState_Smile>Smile</CS_Studio_Preview_MouthState_Smile>
+
+    <!-- ── Face Motion Settings · Group Titles ── -->
+    <CS_Studio_FaceMotion_GlobalAmplitude>Global Amplitude</CS_Studio_FaceMotion_GlobalAmplitude>
+    <CS_Studio_FaceMotion_BrowAmplitude>Brow Motion Amplitude</CS_Studio_FaceMotion_BrowAmplitude>
+    <CS_Studio_FaceMotion_MouthAmplitude>Mouth Motion Amplitude</CS_Studio_FaceMotion_MouthAmplitude>
+    <CS_Studio_FaceMotion_PupilScaleAmplitude>Pupil Scale Amplitude</CS_Studio_FaceMotion_PupilScaleAmplitude>
+    <CS_Studio_FaceMotion_UpperLid>Upper Lid</CS_Studio_FaceMotion_UpperLid>
+    <CS_Studio_FaceMotion_LowerLid>Lower Lid</CS_Studio_FaceMotion_LowerLid>
+    <CS_Studio_FaceMotion_UpperLidCloseDown>Closure Move Down</CS_Studio_FaceMotion_UpperLidCloseDown>
+    <CS_Studio_FaceMotion_LidBlinkScaleX>Blink Scale X</CS_Studio_FaceMotion_LidBlinkScaleX>
+    <CS_Studio_FaceMotion_LidBlinkScaleZ>Blink Scale Z</CS_Studio_FaceMotion_LidBlinkScaleZ>
+    <CS_Studio_FaceMotion_LidSideBias>Side Bias</CS_Studio_FaceMotion_LidSideBias>
+    <CS_Studio_FaceMotion_LowerLidBlinkOffset>Blink Move Up</CS_Studio_FaceMotion_LowerLidBlinkOffset>
+    <CS_Studio_FaceMotion_State_Half>Half State</CS_Studio_FaceMotion_State_Half>
+    <CS_Studio_FaceMotion_State_Happy>Happy State</CS_Studio_FaceMotion_State_Happy>
+    <CS_Studio_FaceMotion_State_Close>Close State</CS_Studio_FaceMotion_State_Close>
+    <CS_Studio_FaceMotion_State_Angry>Angry</CS_Studio_FaceMotion_State_Angry>
+    <CS_Studio_FaceMotion_State_Sad>Sad</CS_Studio_FaceMotion_State_Sad>
+    <CS_Studio_FaceMotion_State_Smile>Smile</CS_Studio_FaceMotion_State_Smile>
+    <CS_Studio_FaceMotion_State_Open>Open</CS_Studio_FaceMotion_State_Open>
+    <CS_Studio_FaceMotion_State_Down>Downturned</CS_Studio_FaceMotion_State_Down>
+    <CS_Studio_FaceMotion_State_Sleep>Sleep</CS_Studio_FaceMotion_State_Sleep>
+    <CS_Studio_FaceMotion_State_Eating>Eating</CS_Studio_FaceMotion_State_Eating>
+    <CS_Studio_FaceMotion_State_ShockScared>Shock / Scared</CS_Studio_FaceMotion_State_ShockScared>
 </LanguageData>

@@ -233,6 +233,27 @@
     <CS_Studio_Face_MotionSection_BrowMotion>眉毛运动参数</CS_Studio_Face_MotionSection_BrowMotion>
     <CS_Studio_Face_MotionSection_MouthMotion>嘴部运动参数</CS_Studio_Face_MotionSection_MouthMotion>
     <CS_Studio_Face_MotionSection_EmotionOverlayMotion>情绪叠层运动参数</CS_Studio_Face_MotionSection_EmotionOverlayMotion>
+    <CS_Studio_Face_MotionSection_GlobalAmplitude>全局幅度</CS_Studio_Face_MotionSection_GlobalAmplitude>
+    <CS_Studio_Face_MotionSection_UpperLid>上眼睑</CS_Studio_Face_MotionSection_UpperLid>
+    <CS_Studio_Face_MotionSection_UpperLidHalfClose>半闭状态</CS_Studio_Face_MotionSection_UpperLidHalfClose>
+    <CS_Studio_Face_MotionSection_UpperLidHappy>快乐状态</CS_Studio_Face_MotionSection_UpperLidHappy>
+    <CS_Studio_Face_MotionSection_LowerLid>下眼睑</CS_Studio_Face_MotionSection_LowerLid>
+    <CS_Studio_Face_MotionSection_LowerLidHalfClose>半闭状态</CS_Studio_Face_MotionSection_LowerLidHalfClose>
+    <CS_Studio_Face_MotionSection_LowerLidHappy>快乐状态</CS_Studio_Face_MotionSection_LowerLidHappy>
+    <CS_Studio_Face_MotionSection_GenericLid>通用眼睑 (Fallback)</CS_Studio_Face_MotionSection_GenericLid>
+    <CS_Studio_Face_MotionSection_BrowAngry>愤怒</CS_Studio_Face_MotionSection_BrowAngry>
+    <CS_Studio_Face_MotionSection_BrowSad>悲伤</CS_Studio_Face_MotionSection_BrowSad>
+    <CS_Studio_Face_MotionSection_BrowHappy>快乐</CS_Studio_Face_MotionSection_BrowHappy>
+    <CS_Studio_Face_MotionSection_MouthSmile>微笑</CS_Studio_Face_MotionSection_MouthSmile>
+    <CS_Studio_Face_MotionSection_MouthOpen>张嘴</CS_Studio_Face_MotionSection_MouthOpen>
+    <CS_Studio_Face_MotionSection_MouthDown>下垂</CS_Studio_Face_MotionSection_MouthDown>
+    <CS_Studio_Face_MotionSection_MouthSleep>睡眠</CS_Studio_Face_MotionSection_MouthSleep>
+    <CS_Studio_Face_MotionSection_MouthEating>进食</CS_Studio_Face_MotionSection_MouthEating>
+    <CS_Studio_Face_MotionSection_MouthShockScared>震惊/恐惧</CS_Studio_Face_MotionSection_MouthShockScared>
+    <CS_Studio_Face_MotionSection_PupilOffset>瞳孔方向偏移</CS_Studio_Face_MotionSection_PupilOffset>
+    <CS_Studio_Face_Motion_Global_BrowAmplitude>眉毛运动幅度</CS_Studio_Face_Motion_Global_BrowAmplitude>
+    <CS_Studio_Face_Motion_Global_MouthAmplitude>嘴部运动幅度</CS_Studio_Face_Motion_Global_MouthAmplitude>
+    <CS_Studio_Face_Motion_Global_PupilScaleAmplitude>瞳孔缩放幅度</CS_Studio_Face_Motion_Global_PupilScaleAmplitude>
     <CS_Studio_Face_GazeCursor_Title>注视点测试</CS_Studio_Face_GazeCursor_Title>
     <CS_Studio_Face_GazeCursor_Hint>在此区域点击或拖拽光标，测试程序动画配置下瞳孔的连续跟随偏移范围。仅影响表情编辑页面预览。</CS_Studio_Face_GazeCursor_Hint>
     <CS_Studio_Face_GazeCursor_State>注视点光标</CS_Studio_Face_GazeCursor_State>
@@ -399,4 +420,28 @@
     <CS_Studio_Face_Motion_Emotion_SweatOffsetXWave>汗滴横向波动偏移</CS_Studio_Face_Motion_Emotion_SweatOffsetXWave>
     <CS_Studio_Face_Motion_Emotion_SweatOffsetZBase>汗滴纵向偏移基值</CS_Studio_Face_Motion_Emotion_SweatOffsetZBase>
     <CS_Studio_Face_Motion_Emotion_SweatSlowWaveOffsetZ>汗滴缓动纵向偏移</CS_Studio_Face_Motion_Emotion_SweatSlowWaveOffsetZ>
+
+    <!-- ── 面部运动设置 · 分组标题 ── -->
+    <CS_Studio_FaceMotion_GlobalAmplitude>全局幅度</CS_Studio_FaceMotion_GlobalAmplitude>
+    <CS_Studio_FaceMotion_BrowAmplitude>眉毛运动幅度</CS_Studio_FaceMotion_BrowAmplitude>
+    <CS_Studio_FaceMotion_MouthAmplitude>嘴部运动幅度</CS_Studio_FaceMotion_MouthAmplitude>
+    <CS_Studio_FaceMotion_PupilScaleAmplitude>瞳孔缩放幅度</CS_Studio_FaceMotion_PupilScaleAmplitude>
+    <CS_Studio_FaceMotion_UpperLid>上眼睑</CS_Studio_FaceMotion_UpperLid>
+    <CS_Studio_FaceMotion_LowerLid>下眼睑</CS_Studio_FaceMotion_LowerLid>
+    <CS_Studio_FaceMotion_UpperLidCloseDown>闭合下移量</CS_Studio_FaceMotion_UpperLidCloseDown>
+    <CS_Studio_FaceMotion_LidBlinkScaleX>眨眼横向缩放</CS_Studio_FaceMotion_LidBlinkScaleX>
+    <CS_Studio_FaceMotion_LidBlinkScaleZ>眨眼纵向缩放</CS_Studio_FaceMotion_LidBlinkScaleZ>
+    <CS_Studio_FaceMotion_LidSideBias>侧向偏移</CS_Studio_FaceMotion_LidSideBias>
+    <CS_Studio_FaceMotion_LowerLidBlinkOffset>眨眼上移量</CS_Studio_FaceMotion_LowerLidBlinkOffset>
+    <CS_Studio_FaceMotion_State_Half>半闭状态</CS_Studio_FaceMotion_State_Half>
+    <CS_Studio_FaceMotion_State_Happy>快乐状态</CS_Studio_FaceMotion_State_Happy>
+    <CS_Studio_FaceMotion_State_Close>闭合状态</CS_Studio_FaceMotion_State_Close>
+    <CS_Studio_FaceMotion_State_Angry>愤怒</CS_Studio_FaceMotion_State_Angry>
+    <CS_Studio_FaceMotion_State_Sad>悲伤</CS_Studio_FaceMotion_State_Sad>
+    <CS_Studio_FaceMotion_State_Smile>微笑</CS_Studio_FaceMotion_State_Smile>
+    <CS_Studio_FaceMotion_State_Open>张嘴</CS_Studio_FaceMotion_State_Open>
+    <CS_Studio_FaceMotion_State_Down>下垂</CS_Studio_FaceMotion_State_Down>
+    <CS_Studio_FaceMotion_State_Sleep>睡眠</CS_Studio_FaceMotion_State_Sleep>
+    <CS_Studio_FaceMotion_State_Eating>进食</CS_Studio_FaceMotion_State_Eating>
+    <CS_Studio_FaceMotion_State_ShockScared>震惊/恐惧</CS_Studio_FaceMotion_State_ShockScared>
 </LanguageData>

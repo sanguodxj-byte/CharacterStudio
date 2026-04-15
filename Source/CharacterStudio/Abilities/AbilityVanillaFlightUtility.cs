@@ -92,8 +92,8 @@ namespace CharacterStudio.Abilities
                     return false;
                 }
 
-                CompPawnSkin? skinComp = caster.GetComp<CompPawnSkin>();
-                if (skinComp?.isInVanillaFlight == true)
+                CompCharacterAbilityRuntime? abilityComp = caster.GetComp<CompCharacterAbilityRuntime>();
+                if (abilityComp?.IsInVanillaFlight == true)
                 {
                     CSLogger.Warn($"检测到 {caster.LabelShortCap} 在旧飞行状态未清理时再次启动真实飞行，已强制重置状态。", "VanillaFlight");
                     ClearVanillaFlightState(caster);
@@ -132,7 +132,7 @@ namespace CharacterStudio.Abilities
                     return false;
                 }
 
-                if (skinComp != null)
+                if (abilityComp != null)
                 {
                     int nowTick = Find.TickManager?.TicksGame ?? 0;
                     string followupAbilityDefName = component.flightOnlyAbilityDefName;
@@ -140,27 +140,27 @@ namespace CharacterStudio.Abilities
                     {
                         CharacterAbilityLoadout? loadout = AbilityLoadoutRuntimeUtility.GetEffectiveLoadout(caster);
                         SkinAbilityHotkeyConfig? hotkeys = loadout?.hotkeys;
-                        if (hotkeys != null && !string.IsNullOrWhiteSpace(hotkeys.eAbilityDefName)
-                            && !string.Equals(hotkeys.eAbilityDefName, sourceAbilityDefName, StringComparison.OrdinalIgnoreCase))
+                        if (hotkeys != null && !string.IsNullOrWhiteSpace(hotkeys["E"])
+                            && !string.Equals(hotkeys["E"], sourceAbilityDefName, StringComparison.OrdinalIgnoreCase))
                         {
-                            followupAbilityDefName = hotkeys.eAbilityDefName;
+                            followupAbilityDefName = hotkeys["E"];
                         }
                     }
 
                     int resolvedFlightDurationTicks = Math.Max(1, component.flightDurationTicks);
-                    skinComp.isInVanillaFlight = true;
-                    skinComp.vanillaFlightStartTick = nowTick;
-                    skinComp.vanillaFlightExpireTick = nowTick + resolvedFlightDurationTicks;
-                    skinComp.vanillaFlightSourceAbilityDefName = sourceAbilityDefName ?? string.Empty;
-                    skinComp.vanillaFlightFollowupAbilityDefName = followupAbilityDefName ?? string.Empty;
-                    skinComp.vanillaFlightReservedTargetCell = destination;
-                    skinComp.vanillaFlightHasReservedTargetCell = target.IsValid && component.storeTargetForFollowup;
-                    skinComp.vanillaFlightFollowupWindowEndTick = component.enableFlightOnlyWindow
+                    abilityComp.IsInVanillaFlight = true;
+                    abilityComp.VanillaFlightStartTick = nowTick;
+                    abilityComp.VanillaFlightExpireTick = nowTick + resolvedFlightDurationTicks;
+                    abilityComp.VanillaFlightSourceAbilityDefName = sourceAbilityDefName ?? string.Empty;
+                    abilityComp.VanillaFlightFollowupAbilityDefName = followupAbilityDefName ?? string.Empty;
+                    abilityComp.VanillaFlightReservedTargetCell = destination;
+                    abilityComp.VanillaFlightHasReservedTargetCell = target.IsValid && component.storeTargetForFollowup;
+                    abilityComp.VanillaFlightFollowupWindowEndTick = component.enableFlightOnlyWindow
                         ? nowTick + Math.Max(1, component.flightOnlyWindowTicks)
                         : -1;
-                    skinComp.vanillaFlightPendingLandingBurst = false;
-                    skinComp.RequestRenderRefresh();
-                    CSLogger.Debug($"启动真实飞行: pawn={caster.LabelShortCap}, flyer={flyerDef.defName}, from={caster.Position}, to={destination}, flightExpireTick={skinComp.vanillaFlightExpireTick}, followupWindowEndTick={skinComp.vanillaFlightFollowupWindowEndTick}", "VanillaFlight");
+                    abilityComp.VanillaFlightPendingLandingBurst = false;
+                    caster.GetComp<Core.CompPawnSkin>()?.RequestRenderRefresh();
+                    CSLogger.Debug($"启动真实飞行: pawn={caster.LabelShortCap}, flyer={flyerDef.defName}, from={caster.Position}, to={destination}, flightExpireTick={abilityComp.VanillaFlightExpireTick}, followupWindowEndTick={abilityComp.VanillaFlightFollowupWindowEndTick}", "VanillaFlight");
                 }
 
                 return true;
@@ -188,10 +188,10 @@ namespace CharacterStudio.Abilities
                 return true;
             }
 
-            CompPawnSkin? skinComp = pawn.GetComp<CompPawnSkin>();
-            if (skinComp == null)
+            CompCharacterAbilityRuntime? abilityComp = pawn.GetComp<CompCharacterAbilityRuntime>();
+            if (abilityComp == null)
             {
-                failureReason = "missing CompPawnSkin";
+                failureReason = "missing CompCharacterAbilityRuntime";
                 return false;
             }
 
@@ -202,49 +202,49 @@ namespace CharacterStudio.Abilities
             }
 
             int nowTick = Find.TickManager?.TicksGame ?? 0;
-            if (skinComp.vanillaFlightExpireTick >= 0 && nowTick > skinComp.vanillaFlightExpireTick)
+            if (abilityComp.VanillaFlightExpireTick >= 0 && nowTick > abilityComp.VanillaFlightExpireTick)
             {
                 failureReason = "flight session expired";
                 return false;
             }
 
             if (followupComponent.onlyUseDuringFlightWindow
-                && skinComp.vanillaFlightFollowupWindowEndTick >= 0
-                && nowTick > skinComp.vanillaFlightFollowupWindowEndTick)
+                && abilityComp.VanillaFlightFollowupWindowEndTick >= 0
+                && nowTick > abilityComp.VanillaFlightFollowupWindowEndTick)
             {
                 failureReason = "flight followup window expired";
                 return false;
             }
 
-            if (!string.IsNullOrWhiteSpace(skinComp.vanillaFlightFollowupAbilityDefName)
+            if (!string.IsNullOrWhiteSpace(abilityComp.VanillaFlightFollowupAbilityDefName)
                 && !string.Equals(
                     ability?.defName,
-                    skinComp.vanillaFlightFollowupAbilityDefName,
+                    abilityComp.VanillaFlightFollowupAbilityDefName,
                     StringComparison.OrdinalIgnoreCase))
             {
-                failureReason = $"followup ability mismatch: expected {skinComp.vanillaFlightFollowupAbilityDefName}";
+                failureReason = $"followup ability mismatch: expected {abilityComp.VanillaFlightFollowupAbilityDefName}";
                 return false;
             }
 
             if (!string.IsNullOrWhiteSpace(followupComponent.requiredFlightSourceAbilityDefName)
                 && !string.Equals(
-                    skinComp.vanillaFlightSourceAbilityDefName,
+                    abilityComp.VanillaFlightSourceAbilityDefName,
                     followupComponent.requiredFlightSourceAbilityDefName,
                     StringComparison.OrdinalIgnoreCase))
             {
-                failureReason = $"flight source mismatch: {skinComp.vanillaFlightSourceAbilityDefName}";
+                failureReason = $"flight source mismatch: {abilityComp.VanillaFlightSourceAbilityDefName}";
                 return false;
             }
 
             if (followupComponent.requireReservedTargetCell)
             {
-                if (!skinComp.vanillaFlightHasReservedTargetCell)
+                if (!abilityComp.VanillaFlightHasReservedTargetCell)
                 {
                     failureReason = "reserved target cell missing";
                     return false;
                 }
 
-                if (pawn.Map == null || !skinComp.vanillaFlightReservedTargetCell.InBounds(pawn.Map))
+                if (pawn.Map == null || !abilityComp.VanillaFlightReservedTargetCell.InBounds(pawn.Map))
                 {
                     failureReason = "reserved target cell invalid";
                     return false;
@@ -268,13 +268,13 @@ namespace CharacterStudio.Abilities
                 return fallbackTarget;
             }
 
-            CompPawnSkin? skinComp = pawn?.GetComp<CompPawnSkin>();
-            if (skinComp == null || !skinComp.vanillaFlightHasReservedTargetCell)
+            CompCharacterAbilityRuntime? abilityComp = pawn?.GetComp<CompCharacterAbilityRuntime>();
+            if (abilityComp == null || !abilityComp.VanillaFlightHasReservedTargetCell)
             {
                 return fallbackTarget;
             }
 
-            return new LocalTargetInfo(skinComp.vanillaFlightReservedTargetCell);
+            return new LocalTargetInfo(abilityComp.VanillaFlightReservedTargetCell);
         }
 
         public static bool TryNotifyFlightFollowupFailure(Pawn? pawn, ModularAbilityDef? ability)
@@ -317,8 +317,8 @@ namespace CharacterStudio.Abilities
                 return;
             }
 
-            CompPawnSkin? skinComp = pawn.GetComp<CompPawnSkin>();
-            if (skinComp == null || !skinComp.vanillaFlightPendingLandingBurst)
+            CompCharacterAbilityRuntime? abilityComp = pawn.GetComp<CompCharacterAbilityRuntime>();
+            if (abilityComp == null || !abilityComp.VanillaFlightPendingLandingBurst)
             {
                 return;
             }
@@ -333,7 +333,7 @@ namespace CharacterStudio.Abilities
             AbilityRuntimeComponentConfig? component = ResolveLandingBurstComponent(pawn, sourceAbilityDefName);
             if (component == null)
             {
-                skinComp.vanillaFlightPendingLandingBurst = false;
+                abilityComp.VanillaFlightPendingLandingBurst = false;
                 return;
             }
 
@@ -347,7 +347,7 @@ namespace CharacterStudio.Abilities
             }
             finally
             {
-                skinComp.vanillaFlightPendingLandingBurst = false;
+                abilityComp.VanillaFlightPendingLandingBurst = false;
             }
         }
 
@@ -465,10 +465,10 @@ namespace CharacterStudio.Abilities
                 direction = sourcePawn.Rotation.FacingCell;
             }
 
-            CompPawnSkin? skinComp = targetPawn.GetComp<CompPawnSkin>();
-            if (skinComp != null)
+            CompCharacterAbilityRuntime? targetAbilityComp = targetPawn.GetComp<CompCharacterAbilityRuntime>();
+            if (targetAbilityComp != null)
             {
-                skinComp.BeginForcedMove(direction, steps);
+                targetAbilityComp.BeginForcedMove(direction, steps);
                 return;
             }
 
@@ -493,22 +493,22 @@ namespace CharacterStudio.Abilities
 
         public static void ClearVanillaFlightState(Pawn? pawn)
         {
-            CompPawnSkin? skinComp = pawn?.GetComp<CompPawnSkin>();
-            if (skinComp == null)
+            CompCharacterAbilityRuntime? abilityComp = pawn?.GetComp<CompCharacterAbilityRuntime>();
+            if (abilityComp == null)
             {
                 return;
             }
 
-            skinComp.isInVanillaFlight = false;
-            skinComp.vanillaFlightStartTick = -1;
-            skinComp.vanillaFlightExpireTick = -1;
-            skinComp.vanillaFlightSourceAbilityDefName = string.Empty;
-            skinComp.vanillaFlightFollowupAbilityDefName = string.Empty;
-            skinComp.vanillaFlightReservedTargetCell = IntVec3.Invalid;
-            skinComp.vanillaFlightHasReservedTargetCell = false;
-            skinComp.vanillaFlightFollowupWindowEndTick = -1;
-            skinComp.vanillaFlightPendingLandingBurst = false;
-            skinComp.RequestRenderRefresh();
+            abilityComp.IsInVanillaFlight = false;
+            abilityComp.VanillaFlightStartTick = -1;
+            abilityComp.VanillaFlightExpireTick = -1;
+            abilityComp.VanillaFlightSourceAbilityDefName = string.Empty;
+            abilityComp.VanillaFlightFollowupAbilityDefName = string.Empty;
+            abilityComp.VanillaFlightReservedTargetCell = IntVec3.Invalid;
+            abilityComp.VanillaFlightHasReservedTargetCell = false;
+            abilityComp.VanillaFlightFollowupWindowEndTick = -1;
+            abilityComp.VanillaFlightPendingLandingBurst = false;
+            pawn?.GetComp<Core.CompPawnSkin>()?.RequestRenderRefresh();
         }
     }
 

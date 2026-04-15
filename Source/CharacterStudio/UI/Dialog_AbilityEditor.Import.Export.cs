@@ -294,6 +294,29 @@ namespace CharacterStudio.UI
                     new System.Xml.Linq.XElement("soundDelayTicks", vfx.soundDelayTicks),
                     new System.Xml.Linq.XElement("soundVolume", vfx.soundVolume),
                     new System.Xml.Linq.XElement("soundPitch", vfx.soundPitch),
+                    // AssetBundle / VFX fields
+                    !string.IsNullOrWhiteSpace(vfx.assetBundlePath) ? new System.Xml.Linq.XElement("assetBundlePath", vfx.assetBundlePath) : null,
+                    !string.IsNullOrWhiteSpace(vfx.assetBundleEffectName) ? new System.Xml.Linq.XElement("assetBundleEffectName", vfx.assetBundleEffectName) : null,
+                    !string.IsNullOrWhiteSpace(vfx.assetBundleTextureName) ? new System.Xml.Linq.XElement("assetBundleTextureName", vfx.assetBundleTextureName) : null,
+                    new System.Xml.Linq.XElement("assetBundleEffectScale", vfx.assetBundleEffectScale),
+                    new System.Xml.Linq.XElement("bundleRenderStrategy", vfx.bundleRenderStrategy.ToString()),
+                    // Shader fields
+                    !string.IsNullOrWhiteSpace(vfx.shaderPath) ? new System.Xml.Linq.XElement("shaderPath", vfx.shaderPath) : null,
+                    !string.IsNullOrWhiteSpace(vfx.shaderAssetBundlePath) ? new System.Xml.Linq.XElement("shaderAssetBundlePath", vfx.shaderAssetBundlePath) : null,
+                    !string.IsNullOrWhiteSpace(vfx.shaderAssetBundleShaderName) ? new System.Xml.Linq.XElement("shaderAssetBundleShaderName", vfx.shaderAssetBundleShaderName) : null,
+                    new System.Xml.Linq.XElement("shaderLoadFromAssetBundle", vfx.shaderLoadFromAssetBundle.ToString().ToLower()),
+                    !string.IsNullOrWhiteSpace(vfx.shaderTexturePath) ? new System.Xml.Linq.XElement("shaderTexturePath", vfx.shaderTexturePath) : null,
+                    new System.Xml.Linq.XElement("shaderTintColor", $"({vfx.shaderTintColor.r:F3}, {vfx.shaderTintColor.g:F3}, {vfx.shaderTintColor.b:F3}, {vfx.shaderTintColor.a:F3})"),
+                    new System.Xml.Linq.XElement("shaderIntensity", vfx.shaderIntensity),
+                    new System.Xml.Linq.XElement("shaderSpeed", vfx.shaderSpeed),
+                    new System.Xml.Linq.XElement("shaderParam1", vfx.shaderParam1),
+                    new System.Xml.Linq.XElement("shaderParam2", vfx.shaderParam2),
+                    new System.Xml.Linq.XElement("shaderParam3", vfx.shaderParam3),
+                    new System.Xml.Linq.XElement("shaderParam4", vfx.shaderParam4),
+                    // Global filter
+                    new System.Xml.Linq.XElement("globalFilterMode", vfx.globalFilterMode),
+                    new System.Xml.Linq.XElement("globalFilterTransition", vfx.globalFilterTransition),
+                    new System.Xml.Linq.XElement("globalFilterTransitionTicks", vfx.globalFilterTransitionTicks),
                     new System.Xml.Linq.XElement("enabled", vfx.enabled.ToString().ToLower())
                 ));
             }
@@ -425,22 +448,13 @@ namespace CharacterStudio.UI
         {
             if (hotkeys == null) return null;
 
-            return new System.Xml.Linq.XElement("abilityHotkeys",
-                new System.Xml.Linq.XElement("enabled", hotkeys.enabled.ToString().ToLower()),
-                !string.IsNullOrEmpty(hotkeys.qAbilityDefName) ? new System.Xml.Linq.XElement("qAbilityDefName", hotkeys.qAbilityDefName) : null,
-                !string.IsNullOrEmpty(hotkeys.wAbilityDefName) ? new System.Xml.Linq.XElement("wAbilityDefName", hotkeys.wAbilityDefName) : null,
-                !string.IsNullOrEmpty(hotkeys.eAbilityDefName) ? new System.Xml.Linq.XElement("eAbilityDefName", hotkeys.eAbilityDefName) : null,
-                !string.IsNullOrEmpty(hotkeys.rAbilityDefName) ? new System.Xml.Linq.XElement("rAbilityDefName", hotkeys.rAbilityDefName) : null,
-                !string.IsNullOrEmpty(hotkeys.tAbilityDefName) ? new System.Xml.Linq.XElement("tAbilityDefName", hotkeys.tAbilityDefName) : null,
-                !string.IsNullOrEmpty(hotkeys.aAbilityDefName) ? new System.Xml.Linq.XElement("aAbilityDefName", hotkeys.aAbilityDefName) : null,
-                !string.IsNullOrEmpty(hotkeys.sAbilityDefName) ? new System.Xml.Linq.XElement("sAbilityDefName", hotkeys.sAbilityDefName) : null,
-                !string.IsNullOrEmpty(hotkeys.dAbilityDefName) ? new System.Xml.Linq.XElement("dAbilityDefName", hotkeys.dAbilityDefName) : null,
-                !string.IsNullOrEmpty(hotkeys.fAbilityDefName) ? new System.Xml.Linq.XElement("fAbilityDefName", hotkeys.fAbilityDefName) : null,
-                !string.IsNullOrEmpty(hotkeys.zAbilityDefName) ? new System.Xml.Linq.XElement("zAbilityDefName", hotkeys.zAbilityDefName) : null,
-                !string.IsNullOrEmpty(hotkeys.xAbilityDefName) ? new System.Xml.Linq.XElement("xAbilityDefName", hotkeys.xAbilityDefName) : null,
-                !string.IsNullOrEmpty(hotkeys.cAbilityDefName) ? new System.Xml.Linq.XElement("cAbilityDefName", hotkeys.cAbilityDefName) : null,
-                !string.IsNullOrEmpty(hotkeys.vAbilityDefName) ? new System.Xml.Linq.XElement("vAbilityDefName", hotkeys.vAbilityDefName) : null
-            );
+            var elements = new List<object> { new System.Xml.Linq.XElement("enabled", hotkeys.enabled.ToString().ToLower()) };
+            foreach (var kvp in hotkeys.slotBindings)
+            {
+                if (!string.IsNullOrEmpty(kvp.Value))
+                    elements.Add(new System.Xml.Linq.XElement(kvp.Key.ToLowerInvariant() + "AbilityDefName", kvp.Value));
+            }
+            return new System.Xml.Linq.XElement("abilityHotkeys", elements.ToArray());
         }
     }
 }

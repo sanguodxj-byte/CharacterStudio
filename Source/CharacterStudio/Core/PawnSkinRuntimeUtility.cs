@@ -233,6 +233,21 @@ namespace CharacterStudio.Core
             comps.Add(comp);
             comp.Initialize(new CompProperties_PawnSkin());
             comp.PostSpawnSetup(pawn.Spawned);
+
+            // Also ensure CompCharacterAbilityRuntime exists for ability state management
+            bool hasAbilityComp = false;
+            foreach (var thingComp in comps)
+            {
+                if (thingComp is Abilities.CompCharacterAbilityRuntime) { hasAbilityComp = true; break; }
+            }
+            if (!hasAbilityComp)
+            {
+                var abilityComp = new Abilities.CompCharacterAbilityRuntime { parent = pawn };
+                comps.Add(abilityComp);
+                abilityComp.Initialize(new Abilities.CompProperties_CharacterAbilityRuntime());
+                abilityComp.PostSpawnSetup(pawn.Spawned);
+            }
+
             return comp;
         }
     }

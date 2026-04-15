@@ -25,6 +25,7 @@ namespace CharacterStudio.Core
         Base,
         Brow,
         Eye,
+        Sclera,
         Pupil,
         UpperLid,
         LowerLid,
@@ -57,7 +58,7 @@ namespace CharacterStudio.Core
 
     /// <summary>
     /// 表情类型枚举
-    /// 完整覆盖 NL Facial Animation 所有状态类别 + CS 独有状态
+    /// 覆盖主流表情标准的所有状态类别 + CS 独有状态
     /// </summary>
     public enum ExpressionType
     {
@@ -480,6 +481,34 @@ namespace CharacterStudio.Core
         public BrowMotionConfig browMotion = new BrowMotionConfig();
         public MouthMotionConfig mouthMotion = new MouthMotionConfig();
         public EmotionOverlayMotionConfig emotionOverlayMotion = new EmotionOverlayMotionConfig();
+
+        /// <summary>全局眉毛运动幅度乘数。1.0 = 默认；>1 更夸张；<1 更柔和。</summary>
+        public float browAmplitude = 1f;
+
+        /// <summary>全局嘴部运动幅度乘数。1.0 = 默认；>1 更夸张；<1 更柔和。</summary>
+        public float mouthAmplitude = 1f;
+
+        /// <summary>全局瞳孔缩放幅度乘数。1.0 = 默认；>1 更夸张；<1 更柔和。</summary>
+        public float pupilScaleAmplitude = 1f;
+
+        // ── Profile 驱动的动画参数（JSON 可编辑）──
+        // null 时从旧 MotionConfig 字段实时构建（无缓存，编辑器修改立即生效）
+
+        /// <summary>眉毛通道动画参数。null 时从 browMotion 实时构建。</summary>
+        public FaceChannelProfileSet? browProfiles;
+
+        /// <summary>嘴部通道动画参数。null 时从 mouthMotion 实时构建。</summary>
+        public FaceChannelProfileSet? mouthProfiles;
+
+        public FaceChannelProfileSet GetOrBuildBrowProfiles()
+        {
+            return browProfiles ?? FaceProfileBuilder.BuildBrowDefaults(browMotion ?? new BrowMotionConfig());
+        }
+
+        public FaceChannelProfileSet GetOrBuildMouthProfiles()
+        {
+            return mouthProfiles ?? FaceProfileBuilder.BuildMouthDefaults(mouthMotion ?? new MouthMotionConfig());
+        }
         public List<ExpressionOverlayRule> expressionOverlayRules = new List<ExpressionOverlayRule>();
         public List<EmotionOverlayRule> emotionOverlayRules = new List<EmotionOverlayRule>();
 
@@ -690,6 +719,7 @@ namespace CharacterStudio.Core
             {
                 case LayeredFacePartType.Brow:
                 case LayeredFacePartType.Eye:
+                case LayeredFacePartType.Sclera:
                 case LayeredFacePartType.Pupil:
                 case LayeredFacePartType.UpperLid:
                 case LayeredFacePartType.LowerLid:

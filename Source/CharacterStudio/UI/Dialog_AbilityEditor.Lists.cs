@@ -202,10 +202,10 @@ namespace CharacterStudio.UI
 
             SkinAbilityHotkeyConfig hotkeyConfig = GetEditableHotkeyConfig();
             hotkeyConfig.enabled = true;
-            hotkeyConfig.qAbilityDefName = "CS_Example_Q1_ModeSlash";
-            hotkeyConfig.wAbilityDefName = "CS_Example_W_Pierce";
-            hotkeyConfig.eAbilityDefName = "CS_Example_E_ShadowStep";
-            hotkeyConfig.rAbilityDefName = "CS_Example_R_Annihilation";
+            hotkeyConfig["Q"] = "CS_Example_Q1_ModeSlash";
+            hotkeyConfig["W"] = "CS_Example_W_Pierce";
+            hotkeyConfig["E"] = "CS_Example_E_ShadowStep";
+            hotkeyConfig["R"] = "CS_Example_R_Annihilation";
             SanitizeHotkeyConfigAgainstAbilities(GetCurrentHotkeyConfig());
 
             validationSummary = "CS_Studio_Ability_ExamplesLoaded".Translate();

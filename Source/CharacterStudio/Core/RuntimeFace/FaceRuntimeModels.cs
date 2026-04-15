@@ -609,12 +609,63 @@ namespace CharacterStudio.Core
         /// <summary>当运行时缓存需要重新获取时置位。</summary>
         public bool compiledDataDirty = true;
 
+        // ── Profile 驱动的 blend 状态 ──
+        // Eye / Pupil / UpperLid / LowerLid / Brow / Mouth 六个有偏移动画的通道
+
+        /// <summary>眼球（Eye 白）通道 blend 状态，按 EyeAnimationVariant 索引</summary>
+        public FaceBlendState eyeBlend;
+
+        /// <summary>瞳孔（Pupil）通道 blend 状态，按 PupilScaleVariant 索引</summary>
+        public FaceBlendState pupilBlend;
+
+        /// <summary>上眼睑（UpperLid）通道 blend 状态，按 LidState 索引</summary>
+        public FaceBlendState upperLidBlend;
+
+        /// <summary>下眼睑（LowerLid）通道 blend 状态，按 LidState 索引</summary>
+        public FaceBlendState lowerLidBlend;
+
+        /// <summary>眉毛（Brow）通道 blend 状态，按 BrowState 索引</summary>
+        public FaceBlendState browBlend;
+
+        /// <summary>嘴部（Mouth）通道 blend 状态，按 MouthState 索引</summary>
+        public FaceBlendState mouthBlend;
+
+        // ── 状态追踪（用于检测变化、触发 BeginTransition）──
+
+        /// <summary>上一次 Eye 通道的变体</summary>
+        public EyeAnimationVariant lastEyeVariant = (EyeAnimationVariant)(-1);
+
+        /// <summary>上一次 Pupil 通道的缩放变体</summary>
+        public PupilScaleVariant lastPupilVariant = (PupilScaleVariant)(-1);
+
+        /// <summary>上一次 UpperLid 的 LidState</summary>
+        public LidState lastUpperLidState = (LidState)(-1);
+
+        /// <summary>上一次 UpperLid 在 Half/Happy 状态时的 EyeAnimationVariant</summary>
+        public EyeAnimationVariant lastUpperLidEyeVariant = (EyeAnimationVariant)(-1);
+
+        /// <summary>上一次 LowerLid 的 LidState</summary>
+        public LidState lastLowerLidState = (LidState)(-1);
+
+        /// <summary>上一次 Brow 的 BrowState</summary>
+        public BrowState lastBrowState = (BrowState)(-1);
+
+        /// <summary>上一次 Mouth 的 MouthState</summary>
+        public MouthState lastMouthState = (MouthState)(-1);
+
+        /// <summary>上一次 Mouth 的 ExpressionType（用于 Eating/Shock 等分支）</summary>
+        public ExpressionType lastMouthExpression = (ExpressionType)(-1);
+
+        /// <summary>blend 状态是否已初始化（首次求值时 ForceSet 而非 BeginTransition）</summary>
+        public bool blendStatesInitialized = false;
+
         public void MarkAllDirty()
         {
             trackDirty = true;
             lodDirty = true;
             expressionDirty = true;
             compiledDataDirty = true;
+            blendStatesInitialized = false;
         }
     }
 }

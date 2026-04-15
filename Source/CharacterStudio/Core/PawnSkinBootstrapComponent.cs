@@ -240,8 +240,24 @@ namespace CharacterStudio.Core
             comp.Initialize(new CompProperties_PawnSkin());
             comp.PostSpawnSetup(pawn.Spawned);
 
+            // Also ensure CompCharacterAbilityRuntime exists for ability state management
+            EnsureAbilityRuntimeComp(pawn, comps);
+
             Log.Message($"[CharacterStudio] Added CompPawnSkin to existing pawn: {pawn.LabelShort}");
             return true;
+        }
+
+        private static void EnsureAbilityRuntimeComp(Pawn pawn, List<ThingComp> comps)
+        {
+            foreach (ThingComp existing in comps)
+            {
+                if (existing is CompCharacterAbilityRuntime)
+                    return;
+            }
+
+            var abilityComp = new CompCharacterAbilityRuntime { parent = pawn };
+            comps.Add(abilityComp);
+            abilityComp.Initialize(new CompProperties_CharacterAbilityRuntime());
         }
 
         public static void ApplyDefaultSkinsToCurrentGame()

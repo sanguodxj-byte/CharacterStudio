@@ -1,4 +1,4 @@
-using CharacterStudio.Abilities;
+﻿using CharacterStudio.Abilities;
 using RimWorld;
 using Verse;
 
@@ -18,14 +18,16 @@ namespace CharacterStudio.Core
             }
         }
 
+        // ActiveAbilityLoadout is now on CompCharacterAbilityRuntime
+        // This property forwards for backward compatibility
         public CharacterAbilityLoadout? ActiveAbilityLoadout
         {
-            get => activeAbilityLoadout;
-            set => activeAbilityLoadout = value?.Clone();
+            get => AbilityComp?.ActiveAbilityLoadout;
+            set { if (AbilityComp != null) AbilityComp.ActiveAbilityLoadout = value; }
         }
 
         public bool HasActiveSkin => activeSkin != null;
-        public bool HasExplicitAbilityLoadout => activeAbilityLoadout != null;
+        public bool HasExplicitAbilityLoadout => AbilityComp?.HasExplicitAbilityLoadout ?? false;
         public bool ActiveSkinFromDefaultRaceBinding => activeSkinFromDefaultRaceBinding;
         public bool ActiveSkinPreviewMode => activeSkinPreviewMode;
         public string ActiveSkinApplicationSource => activeSkinApplicationSource ?? string.Empty;
@@ -109,16 +111,44 @@ namespace CharacterStudio.Core
             base.PostExposeData();
             Scribe_Values.Look(ref activeSkinDefName, "activeSkinDefName");
             Scribe_Values.Look(ref activeSkinFromDefaultRaceBinding, "activeSkinFromDefaultRaceBinding", false);
-            Scribe_Deep.Look(ref activeAbilityLoadout, "activeAbilityLoadout");
-            abilityRuntimeState.ExposeData();
+
+            // Migration: read old ability data from CompPawnSkin and forward to CompCharacterAbilityRuntime
+            if (Scribe.mode == LoadSaveMode.LoadingVars)
+            {
+                // Old saves had activeAbilityLoadout here - forward to new component
+                CharacterAbilityLoadout? migratedLoadout = null;
+                Scribe_Deep.Look(ref migratedLoadout, "activeAbilityLoadout");
+                if (migratedLoadout != null)
+                {
+                    // Will be applied after comps are initialized
+                    _migratedLoadout = migratedLoadout;
+                }
+
+                // Old saves had abilityRuntimeState.ExposeData() here
+                // Read and discard - the data is also saved in CompCharacterAbilityRuntime now
+                var legacyState = new AbilityHotkeyRuntimeState();
+                legacyState.ExposeData();
+            }
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
-                activeAbilityLoadout ??= null;
                 SkinLifecycleRecoveryCoordinator.RestoreAfterLoad(this);
-            }
 
-            abilityRuntimeState.Normalize();
+                // Apply migrated loadout (only clear if successfully forwarded)
+                if (_migratedLoadout != null)
+                {
+                    var abilityComp = Pawn?.GetComp<CompCharacterAbilityRuntime>();
+                    if (abilityComp != null)
+                    {
+                        abilityComp.ActiveAbilityLoadout = _migratedLoadout;
+                        _migratedLoadout = null;
+                    }
+                    // If abilityComp is null (old save before comp existed),
+                    // retain _migratedLoadout for later retry via PawnSkinBootstrapComponent
+                }
+            }
         }
+
+        private CharacterAbilityLoadout? _migratedLoadout;
     }
 }

@@ -187,10 +187,10 @@ namespace CharacterStudio.Abilities
             if (direction == IntVec3.Zero)
                 return;
 
-            CompPawnSkin? skinComp = targetPawn.GetComp<CompPawnSkin>();
-            if (skinComp != null)
+            CompCharacterAbilityRuntime? abilityComp = targetPawn.GetComp<CompCharacterAbilityRuntime>();
+            if (abilityComp != null)
             {
-                skinComp.BeginForcedMove(direction, distance);
+                abilityComp.BeginForcedMove(direction, distance);
                 return;
             }
 

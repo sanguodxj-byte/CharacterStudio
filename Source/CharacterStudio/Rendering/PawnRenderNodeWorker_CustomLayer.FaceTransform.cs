@@ -150,22 +150,35 @@ namespace CharacterStudio.Rendering
                 primaryWave,
                 slowWave);
 
-            switch (customNode.layeredFacePartType.Value)
+            // ── Profile 驱动路径：Eye, Pupil, UpperLid, LowerLid, Brow, Mouth ──
+            // 这六个通道有偏移动画，使用皮肤实例 profile + FaceBlendState
+            LayeredFacePartType partType = customNode.layeredFacePartType.Value;
+            bool useProfilePath = partType == LayeredFacePartType.Eye
+                || partType == LayeredFacePartType.Sclera
+                || partType == LayeredFacePartType.Pupil
+                || partType == LayeredFacePartType.UpperLid
+                || partType == LayeredFacePartType.LowerLid
+                || partType == LayeredFacePartType.Brow
+                || partType == LayeredFacePartType.Mouth;
+
+            if (useProfilePath)
             {
-                case LayeredFacePartType.Brow:
-                case LayeredFacePartType.Eye:
-                case LayeredFacePartType.Pupil:
-                case LayeredFacePartType.UpperLid:
-                case LayeredFacePartType.LowerLid:
-                case LayeredFacePartType.ReplacementEye:
-                case LayeredFacePartType.Mouth:
-                case LayeredFacePartType.Hair:
-                case LayeredFacePartType.Blush:
-                case LayeredFacePartType.Tear:
-                case LayeredFacePartType.Sweat:
-                case LayeredFacePartType.Overlay:
-                    ApplyEvaluatedFaceTransform(customNode, transformContext, GetLayeredLidMotionConfig(customNode));
-                    break;
+                ApplyProfileDrivenTransform(customNode, transformContext, skinComp, currentTick);
+            }
+            else
+            {
+                // ── 旧路径：ReplacementEye, Hair, Blush, Tear, Sweat, Overlay ──
+                switch (partType)
+                {
+                    case LayeredFacePartType.ReplacementEye:
+                    case LayeredFacePartType.Hair:
+                    case LayeredFacePartType.Blush:
+                    case LayeredFacePartType.Tear:
+                    case LayeredFacePartType.Sweat:
+                    case LayeredFacePartType.Overlay:
+                        ApplyEvaluatedFaceTransform(customNode, transformContext, GetLayeredLidMotionConfig(customNode));
+                        break;
+                }
             }
 
             customNode.currentProgrammaticOffset = ApplyLayeredFacePartMotionAmplitude(
@@ -175,6 +188,207 @@ namespace CharacterStudio.Rendering
                 slowWave);
 
             UpdateProgrammaticFaceAlpha(customNode);
+        }
+
+        /// <summary>
+        /// 基于 FaceChannelProfileSet（从皮肤实例读取）+ FaceBlendState 的数据驱动求值。
+        /// 用于 Eye, Pupil, UpperLid, LowerLid, Brow, Mouth 通道。
+        /// Profile 数据来自 skinComp.ActiveSkin.faceConfig，
+        /// 支持编辑器实时修改后立即反映到预览。
+        /// </summary>
+        private void ApplyProfileDrivenTransform(
+            PawnRenderNode_Custom customNode,
+            FaceTransformContext context,
+            CompPawnSkin skinComp,
+            int currentTick)
+        {
+            FaceRuntimeState runtimeState = skinComp.CurrentFaceRuntimeState;
+            PawnFaceConfig? faceCfg = skinComp.ActiveSkin?.faceConfig;
+            PawnEyeDirectionConfig? eyeDirCfg = faceCfg?.eyeDirectionConfig;
+
+            if (!runtimeState.blendStatesInitialized)
+            {
+                InitializeBlendStates(runtimeState, context, currentTick, faceCfg);
+                runtimeState.blendStatesInitialized = true;
+            }
+
+            FaceTransformResult result = FaceTransformResult.Visible(0f, Vector3.zero, Vector3.one);
+
+            switch (context.partType)
+            {
+                case LayeredFacePartType.Eye:
+                {
+                    string eyeKey = FaceTransformEvaluator.ResolveEyeStateKey(context.eyeVariant, context.lidState, context.expression);
+                    if (context.eyeVariant == EyeAnimationVariant.HappyClosedPeak
+                        || context.lidState == LidState.Close)
+                    {
+                        HideProgrammaticFacePart(customNode);
+                        return;
+                    }
+
+                    bool eyeChanged = runtimeState.lastEyeVariant != context.eyeVariant;
+                    if (eyeChanged && eyeDirCfg != null)
+                    {
+                        FaceStateProfile? profile = eyeDirCfg.GetOrBuildEyeProfiles().GetProfileOrDefault(eyeKey);
+                        runtimeState.eyeBlend.BeginTransition(profile, currentTick);
+                        runtimeState.lastEyeVariant = context.eyeVariant;
+                    }
+                    result = FaceTransformEvaluator.EvaluateEyeFromProfile(runtimeState.eyeBlend, context, currentTick);
+                    break;
+                }
+
+                case LayeredFacePartType.Sclera:
+                {
+                    // 眼白无专属程序动画，仅参与通用 motionAmplitude
+                    break;
+                }
+
+                case LayeredFacePartType.Pupil:
+                {
+                    if (context.pupilVariant == PupilScaleVariant.BlinkHidden
+                        || context.eyeVariant == EyeAnimationVariant.HappyClosedPeak
+                        || context.eyeVariant == EyeAnimationVariant.BlinkClosed
+                        || context.lidState == LidState.Close)
+                    {
+                        HideProgrammaticFacePart(customNode);
+                        return;
+                    }
+
+                    string pupilKey = FaceTransformEvaluator.ResolvePupilStateKey(context.pupilVariant, context.expression, context.eyeVariant);
+                    bool pupilChanged = runtimeState.lastPupilVariant != context.pupilVariant;
+                    if (pupilChanged && eyeDirCfg != null)
+                    {
+                        FaceStateProfile? profile = eyeDirCfg.GetOrBuildPupilProfiles().GetProfileOrDefault(pupilKey);
+                        runtimeState.pupilBlend.BeginTransition(profile, currentTick);
+                        runtimeState.lastPupilVariant = context.pupilVariant;
+                    }
+                    result = FaceTransformEvaluator.EvaluatePupilFromProfile(runtimeState.pupilBlend, context, currentTick);
+                    break;
+                }
+
+                case LayeredFacePartType.UpperLid:
+                {
+                    if (context.lidState == LidState.Blink && context.isBlinkActive)
+                    {
+                        ApplyEvaluatedFaceTransform(customNode, context, GetLayeredLidMotionConfig(customNode));
+                        return;
+                    }
+
+                    string upperLidKey = FaceTransformEvaluator.ResolveUpperLidStateKey(context.lidState, context.eyeVariant);
+                    bool upperLidChanged = runtimeState.lastUpperLidState != context.lidState
+                        || runtimeState.lastUpperLidEyeVariant != context.eyeVariant;
+                    if (upperLidChanged && eyeDirCfg != null)
+                    {
+                        FaceStateProfile? profile = eyeDirCfg.GetOrBuildUpperLidProfiles().GetProfileOrDefault(upperLidKey);
+                        runtimeState.upperLidBlend.BeginTransition(profile, currentTick);
+                        runtimeState.lastUpperLidState = context.lidState;
+                        runtimeState.lastUpperLidEyeVariant = context.eyeVariant;
+                    }
+                    result = FaceTransformEvaluator.EvaluateUpperLidFromProfile(runtimeState.upperLidBlend, context, currentTick, GetLayeredUpperLidMoveDown(customNode));
+                    break;
+                }
+
+                case LayeredFacePartType.LowerLid:
+                {
+                    if (context.lidState == LidState.Blink && context.isBlinkActive)
+                    {
+                        ApplyEvaluatedFaceTransform(customNode, context, GetLayeredLidMotionConfig(customNode));
+                        return;
+                    }
+
+                    string lowerLidKey = FaceTransformEvaluator.ResolveLowerLidStateKey(context.lidState);
+                    bool lowerLidChanged = runtimeState.lastLowerLidState != context.lidState;
+                    if (lowerLidChanged && eyeDirCfg != null)
+                    {
+                        FaceStateProfile? profile = eyeDirCfg.GetOrBuildLowerLidProfiles().GetProfileOrDefault(lowerLidKey);
+                        runtimeState.lowerLidBlend.BeginTransition(profile, currentTick);
+                        runtimeState.lastLowerLidState = context.lidState;
+                    }
+                    result = FaceTransformEvaluator.EvaluateLowerLidFromProfile(runtimeState.lowerLidBlend, context, currentTick);
+                    break;
+                }
+
+                case LayeredFacePartType.Brow:
+                {
+                    string browKey = FaceTransformEvaluator.ResolveBrowStateKey(context.browState);
+                    bool browChanged = runtimeState.lastBrowState != context.browState;
+                    if (browChanged && faceCfg != null)
+                    {
+                        FaceStateProfile? profile = faceCfg.GetOrBuildBrowProfiles().GetProfileOrDefault(browKey);
+                        runtimeState.browBlend.BeginTransition(profile, currentTick);
+                        runtimeState.lastBrowState = context.browState;
+                    }
+                    result = FaceTransformEvaluator.EvaluateBrowFromProfile(runtimeState.browBlend, context, currentTick);
+                    break;
+                }
+
+                case LayeredFacePartType.Mouth:
+                {
+                    string mouthKey = FaceTransformEvaluator.ResolveMouthStateKey(context.mouthState, context.expression);
+                    bool mouthChanged = runtimeState.lastMouthState != context.mouthState
+                        || runtimeState.lastMouthExpression != context.expression;
+                    if (mouthChanged && faceCfg != null)
+                    {
+                        FaceStateProfile? profile = faceCfg.GetOrBuildMouthProfiles().GetProfileOrDefault(mouthKey);
+                        runtimeState.mouthBlend.BeginTransition(profile, currentTick);
+                        runtimeState.lastMouthState = context.mouthState;
+                        runtimeState.lastMouthExpression = context.expression;
+                    }
+                    result = FaceTransformEvaluator.EvaluateMouthFromProfile(runtimeState.mouthBlend, context, currentTick);
+                    break;
+                }
+            }
+
+            if (result.hidden)
+            {
+                HideProgrammaticFacePart(customNode);
+                return;
+            }
+
+            SetProgrammaticFaceTransform(customNode, result.angle, result.offset, result.scale);
+        }
+
+        /// <summary>
+        /// 首次初始化所有 blend 状态（使用 ForceSet 而非 BeginTransition）。
+        /// 从皮肤实例的 faceConfig 读取 profile。
+        /// </summary>
+        private void InitializeBlendStates(FaceRuntimeState runtimeState, FaceTransformContext context, int currentTick, PawnFaceConfig? faceCfg)
+        {
+            PawnEyeDirectionConfig? eyeDirCfg = faceCfg?.eyeDirectionConfig;
+
+            // Eye / Pupil / UpperLid / LowerLid（需要 eyeDirectionConfig）
+            if (eyeDirCfg != null)
+            {
+                string eyeKey = FaceTransformEvaluator.ResolveEyeStateKey(context.eyeVariant, context.lidState, context.expression);
+                runtimeState.eyeBlend.ForceSet(eyeDirCfg.GetOrBuildEyeProfiles().GetProfileOrDefault(eyeKey));
+                runtimeState.lastEyeVariant = context.eyeVariant;
+
+                string pupilKey = FaceTransformEvaluator.ResolvePupilStateKey(context.pupilVariant, context.expression, context.eyeVariant);
+                runtimeState.pupilBlend.ForceSet(eyeDirCfg.GetOrBuildPupilProfiles().GetProfileOrDefault(pupilKey));
+                runtimeState.lastPupilVariant = context.pupilVariant;
+
+                string upperLidKey = FaceTransformEvaluator.ResolveUpperLidStateKey(context.lidState, context.eyeVariant);
+                runtimeState.upperLidBlend.ForceSet(eyeDirCfg.GetOrBuildUpperLidProfiles().GetProfileOrDefault(upperLidKey));
+                runtimeState.lastUpperLidState = context.lidState;
+                runtimeState.lastUpperLidEyeVariant = context.eyeVariant;
+
+                string lowerLidKey = FaceTransformEvaluator.ResolveLowerLidStateKey(context.lidState);
+                runtimeState.lowerLidBlend.ForceSet(eyeDirCfg.GetOrBuildLowerLidProfiles().GetProfileOrDefault(lowerLidKey));
+                runtimeState.lastLowerLidState = context.lidState;
+            }
+
+            // Brow / Mouth（需要 faceConfig）
+            if (faceCfg != null)
+            {
+                string browKey = FaceTransformEvaluator.ResolveBrowStateKey(context.browState);
+                runtimeState.browBlend.ForceSet(faceCfg.GetOrBuildBrowProfiles().GetProfileOrDefault(browKey));
+                runtimeState.lastBrowState = context.browState;
+
+                string mouthKey = FaceTransformEvaluator.ResolveMouthStateKey(context.mouthState, context.expression);
+                runtimeState.mouthBlend.ForceSet(faceCfg.GetOrBuildMouthProfiles().GetProfileOrDefault(mouthKey));
+                runtimeState.lastMouthState = context.mouthState;
+                runtimeState.lastMouthExpression = context.expression;
+            }
         }
 
         private void ApplyEvaluatedFaceTransform(
@@ -822,6 +1036,7 @@ namespace CharacterStudio.Rendering
             switch (partType.Value)
             {
                 case LayeredFacePartType.Eye:
+                case LayeredFacePartType.Sclera:
                 case LayeredFacePartType.Pupil:
                 case LayeredFacePartType.UpperLid:
                 case LayeredFacePartType.LowerLid:

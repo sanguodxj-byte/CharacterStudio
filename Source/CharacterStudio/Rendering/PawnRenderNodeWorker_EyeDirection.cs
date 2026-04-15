@@ -34,6 +34,10 @@ namespace CharacterStudio.Rendering
         private static readonly Dictionary<string, bool> isMultiCache
             = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
 
+        // P-PERF: WeakReference 缓存 CompPawnSkin，避免每帧 3x GetComp O(N) 遍历
+        private static readonly System.WeakReference<Pawn> _cachedSkinPawnRef = new System.WeakReference<Pawn>(null!);
+        private static CompPawnSkin? _cachedSkinComp;
+
         // ─────────────────────────────────────────────
         // Worker 覆写
         // ─────────────────────────────────────────────
@@ -47,7 +51,7 @@ namespace CharacterStudio.Rendering
         {
             if (!base.CanDrawNow(node, parms)) return false;
 
-            var skinComp = parms.pawn?.TryGetComp<CompPawnSkin>();
+            var skinComp = FastGetSkinComp(parms.pawn);
             var eyeData = skinComp?.CurrentFaceRuntimeCompiledData?.portraitTrack?.eyeDirection;
             if (eyeData == null || !eyeData.enabled) return false;
 
@@ -92,17 +96,28 @@ namespace CharacterStudio.Rendering
         // 辅助：配置 / 方向获取
         // ─────────────────────────────────────────────
 
+        // P-PERF: WeakReference 缓存，避免每帧多次 GetComp O(N) 遍历
+        private static CompPawnSkin? FastGetSkinComp(Pawn? pawn)
+        {
+            if (pawn == null) return null;
+            if (_cachedSkinPawnRef.TryGetTarget(out Pawn? cached) && cached == pawn)
+                return _cachedSkinComp;
+            _cachedSkinComp = pawn.GetComp<CompPawnSkin>();
+            _cachedSkinPawnRef.SetTarget(pawn);
+            return _cachedSkinComp;
+        }
+
         private static FaceEyeDirectionRuntimeData? GetRuntimeEyeDirectionData(Pawn? pawn)
         {
             if (pawn == null) return null;
-            var comp = pawn.GetComp<CompPawnSkin>();
+            var comp = FastGetSkinComp(pawn);
             return comp?.CurrentFaceRuntimeCompiledData?.portraitTrack?.eyeDirection;
         }
 
         private static EyeDirection GetCurrentDirection(Pawn? pawn)
         {
             if (pawn == null) return EyeDirection.Center;
-            var comp = pawn.GetComp<CompPawnSkin>();
+            var comp = FastGetSkinComp(pawn);
             return comp?.CurEyeDirection ?? EyeDirection.Center;
         }
 

@@ -350,27 +350,28 @@ namespace CharacterStudio.UI
 
         private int GetSlotCooldownRemainingTicks()
         {
-            var comp = pawn.GetComp<CompPawnSkin>();
+            var comp = pawn.GetComp<CompCharacterAbilityRuntime>();
             if (comp == null || slotEntry == null || string.IsNullOrWhiteSpace(slotEntry.slotId))
             {
                 return 0;
             }
 
+            var state = comp.RuntimeState;
             int cooldownUntilTick = slotEntry.slotId switch
             {
-                "Q" => comp.qCooldownUntilTick,
-                "W" => comp.wCooldownUntilTick,
-                "E" => comp.eCooldownUntilTick,
-                "T" => comp.tCooldownUntilTick,
-                "A" => comp.aCooldownUntilTick,
-                "S" => comp.sCooldownUntilTick,
-                "D" => comp.dCooldownUntilTick,
-                "F" => comp.fCooldownUntilTick,
-                "Z" => comp.zCooldownUntilTick,
-                "X" => comp.xCooldownUntilTick,
-                "C" => comp.cCooldownUntilTick,
-                "V" => comp.vCooldownUntilTick,
-                "R" => comp.rCooldownUntilTick,
+                "Q" => state.qCooldownUntilTick,
+                "W" => state.wCooldownUntilTick,
+                "E" => state.eCooldownUntilTick,
+                "T" => state.tCooldownUntilTick,
+                "A" => state.aCooldownUntilTick,
+                "S" => state.sCooldownUntilTick,
+                "D" => state.dCooldownUntilTick,
+                "F" => state.fCooldownUntilTick,
+                "Z" => state.zCooldownUntilTick,
+                "X" => state.xCooldownUntilTick,
+                "C" => state.cCooldownUntilTick,
+                "V" => state.vCooldownUntilTick,
+                "R" => state.rCooldownUntilTick,
                 _ => 0
             };
 
@@ -623,13 +624,13 @@ namespace CharacterStudio.UI
         public override GizmoResult GizmoOnGUI(Vector2 topLeft, float maxWidth, GizmoRenderParms parms)
         {
             Rect outerRect = new Rect(topLeft.x, topLeft.y, GetWidth(maxWidth), Gizmo_CSAbility.BaseHeight);
-            CompPawnSkin? skin = pawn.GetComp<CompPawnSkin>();
-            float currentShield = Mathf.Max(0f, skin?.shieldRemainingDamage ?? 0f);
-            float storedShield = Mathf.Max(0f, skin?.shieldStoredHeal ?? 0f);
+            CompCharacterAbilityRuntime? abilityComp = pawn.GetComp<CompCharacterAbilityRuntime>();
+            float currentShield = Mathf.Max(0f, abilityComp?.ShieldRemainingDamage ?? 0f);
+            float storedShield = Mathf.Max(0f, abilityComp?.ShieldStoredHeal ?? 0f);
             float totalShield = Mathf.Max(currentShield, currentShield + storedShield);
             float fillPercent = totalShield > 0.001f ? Mathf.Clamp01(currentShield / totalShield) : 0f;
             int nowTick = Find.TickManager?.TicksGame ?? 0;
-            int expireTick = skin?.shieldExpireTick ?? -1;
+            int expireTick = abilityComp?.ShieldExpireTick ?? -1;
             int ticksLeft = expireTick > nowTick ? expireTick - nowTick : 0;
             ShieldHudFxState fxState = UpdateAndGetFxState(pawn, currentShield, nowTick);
             float activateAlpha = fxState.activatePulseUntilTick > nowTick
@@ -1114,21 +1115,21 @@ namespace CharacterStudio.UI
 
         private static bool ShouldShowShieldHud(Pawn pawn)
         {
-            CompPawnSkin? skin = pawn.GetComp<CompPawnSkin>();
-            if (skin == null)
+            CompCharacterAbilityRuntime? abilityComp = pawn.GetComp<CompCharacterAbilityRuntime>();
+            if (abilityComp == null)
             {
                 return false;
             }
 
             int now = Find.TickManager?.TicksGame ?? 0;
-            float currentShield = Mathf.Max(0f, skin.shieldRemainingDamage);
+            float currentShield = Mathf.Max(0f, abilityComp.ShieldRemainingDamage);
             if (currentShield > 0.001f)
             {
                 Gizmo_CSShieldStatus.ShouldKeepVisibleForFeedback(pawn, currentShield, now);
                 return true;
             }
 
-            if (skin.shieldExpireTick >= now && (skin.shieldStoredHeal > 0.001f || skin.shieldStoredBonusDamage > 0.001f))
+            if (abilityComp.ShieldExpireTick >= now && (abilityComp.ShieldStoredHeal > 0.001f || abilityComp.ShieldStoredBonusDamage > 0.001f))
             {
                 Gizmo_CSShieldStatus.ShouldKeepVisibleForFeedback(pawn, currentShield, now);
                 return true;

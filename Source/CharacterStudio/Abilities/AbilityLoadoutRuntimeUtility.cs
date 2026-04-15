@@ -193,7 +193,7 @@ namespace CharacterStudio.Abilities
 
         public static CharacterAbilityLoadout? GetExplicitLoadout(Pawn? pawn)
         {
-            return pawn?.GetComp<CompPawnSkin>()?.ActiveAbilityLoadout;
+            return pawn?.GetComp<CompCharacterAbilityRuntime>()?.ActiveAbilityLoadout;
         }
 
         public static CharacterAbilityLoadout? GetEffectiveLoadout(Pawn? pawn)
@@ -203,10 +203,11 @@ namespace CharacterStudio.Abilities
                 return null;
             }
 
-            var comp = pawn.GetComp<CompPawnSkin>();
-            CharacterAbilityLoadout? explicitLoadout = comp?.ActiveAbilityLoadout;
+            var abilityComp = pawn.GetComp<CompCharacterAbilityRuntime>();
+            var skinComp = pawn.GetComp<CompPawnSkin>();
+            CharacterAbilityLoadout? explicitLoadout = abilityComp?.ActiveAbilityLoadout;
 
-            PawnSkinDef? skin = comp?.ActiveSkin;
+            PawnSkinDef? skin = skinComp?.ActiveSkin;
             explicitLoadout?.EnsureAbilitiesRehydrated(skin?.abilities);
 
             CharacterAbilityLoadout? skinLoadout = skin == null
@@ -329,24 +330,12 @@ namespace CharacterStudio.Abilities
                 return false;
             }
 
-            return !string.IsNullOrWhiteSpace(hotkeys.qAbilityDefName)
-                || !string.IsNullOrWhiteSpace(hotkeys.wAbilityDefName)
-                || !string.IsNullOrWhiteSpace(hotkeys.eAbilityDefName)
-                || !string.IsNullOrWhiteSpace(hotkeys.rAbilityDefName)
-                || !string.IsNullOrWhiteSpace(hotkeys.tAbilityDefName)
-                || !string.IsNullOrWhiteSpace(hotkeys.aAbilityDefName)
-                || !string.IsNullOrWhiteSpace(hotkeys.sAbilityDefName)
-                || !string.IsNullOrWhiteSpace(hotkeys.dAbilityDefName)
-                || !string.IsNullOrWhiteSpace(hotkeys.fAbilityDefName)
-                || !string.IsNullOrWhiteSpace(hotkeys.zAbilityDefName)
-                || !string.IsNullOrWhiteSpace(hotkeys.xAbilityDefName)
-                || !string.IsNullOrWhiteSpace(hotkeys.cAbilityDefName)
-                || !string.IsNullOrWhiteSpace(hotkeys.vAbilityDefName);
+            return hotkeys.HasAnyBinding();
         }
 
         public static void SetExplicitLoadout(Pawn? pawn, CharacterAbilityLoadout? loadout)
         {
-            var comp = pawn?.GetComp<CompPawnSkin>();
+            var comp = pawn?.GetComp<CompCharacterAbilityRuntime>();
             if (comp == null)
             {
                 return;
@@ -369,7 +358,7 @@ namespace CharacterStudio.Abilities
 
         public static void ClearExplicitLoadout(Pawn? pawn)
         {
-            var comp = pawn?.GetComp<CompPawnSkin>();
+            var comp = pawn?.GetComp<CompCharacterAbilityRuntime>();
             if (comp == null)
             {
                 return;
@@ -425,7 +414,7 @@ namespace CharacterStudio.Abilities
                 yield break;
             }
 
-            var comp = pawn.GetComp<CompPawnSkin>();
+            var abilityComp = pawn.GetComp<CompCharacterAbilityRuntime>();
             CharacterAbilityLoadout? loadout = GetEffectiveLoadout(pawn);
             if (loadout?.abilities == null || loadout.abilities.Count == 0)
             {
@@ -433,7 +422,7 @@ namespace CharacterStudio.Abilities
             }
 
             SkinAbilityHotkeyConfig? hotkeys = loadout.hotkeys;
-            if (comp == null || hotkeys == null || !hotkeys.enabled)
+            if (abilityComp == null || hotkeys == null || !hotkeys.enabled)
             {
                 yield break;
             }
@@ -441,13 +430,13 @@ namespace CharacterStudio.Abilities
             int tick = Find.TickManager?.TicksGame ?? 0;
             foreach (VisibleAbilitySlot slot in new[] { VisibleAbilitySlot.Q, VisibleAbilitySlot.W, VisibleAbilitySlot.E, VisibleAbilitySlot.R, VisibleAbilitySlot.T, VisibleAbilitySlot.A, VisibleAbilitySlot.S, VisibleAbilitySlot.D, VisibleAbilitySlot.F, VisibleAbilitySlot.Z, VisibleAbilitySlot.X, VisibleAbilitySlot.C, VisibleAbilitySlot.V })
             {
-                string defName = ResolveVisibleAbilityDefName(comp, loadout, slot, tick);
+                string defName = ResolveVisibleAbilityDefName(abilityComp, loadout, slot, tick);
                 if (string.IsNullOrWhiteSpace(defName))
                 {
                     continue;
                 }
 
-                yield return BuildVisibleAbilitySlotEntry(comp, loadout, slot, defName, tick);
+                yield return BuildVisibleAbilitySlotEntry(abilityComp, loadout, slot, defName, tick);
             }
         }
 
@@ -476,7 +465,7 @@ namespace CharacterStudio.Abilities
         }
 
         private static VisibleAbilitySlotEntry BuildVisibleAbilitySlotEntry(
-            CompPawnSkin comp,
+            CompCharacterAbilityRuntime comp,
             CharacterAbilityLoadout loadout,
             VisibleAbilitySlot slot,
             string defName,
@@ -487,13 +476,13 @@ namespace CharacterStudio.Abilities
                 && string.Equals(overrideDefName, defName, StringComparison.OrdinalIgnoreCase);
 
             bool isCombo = !isOverride
-                && tick <= comp.slotOverrideWindowEndTick
-                && !string.IsNullOrWhiteSpace(comp.slotOverrideWindowSlotId)
-                && string.Equals(comp.slotOverrideWindowSlotId, slot.ToString(), StringComparison.OrdinalIgnoreCase)
-                && !string.IsNullOrWhiteSpace(comp.slotOverrideWindowAbilityDefName)
-                && string.Equals(comp.slotOverrideWindowAbilityDefName, defName, StringComparison.OrdinalIgnoreCase);
+                && tick <= comp.SlotOverrideWindowEndTick
+                && !string.IsNullOrWhiteSpace(comp.SlotOverrideWindowSlotId)
+                && string.Equals(comp.SlotOverrideWindowSlotId, slot.ToString(), StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(comp.SlotOverrideWindowAbilityDefName)
+                && string.Equals(comp.SlotOverrideWindowAbilityDefName, defName, StringComparison.OrdinalIgnoreCase);
 
-            bool isSecondStage = slot == VisibleAbilitySlot.R && comp.rSecondStageReady;
+            bool isSecondStage = slot == VisibleAbilitySlot.R && comp.RSecondStageReady;
 
             return new VisibleAbilitySlotEntry
             {
@@ -504,7 +493,7 @@ namespace CharacterStudio.Abilities
                 isOverride = isOverride,
                 isSecondStage = isSecondStage,
                 qModeIndex = -1,
-                rStackCount = slot == VisibleAbilitySlot.R ? Math.Max(0, comp.rStackCount) : 0,
+                rStackCount = slot == VisibleAbilitySlot.R ? Math.Max(0, comp.RStackCount) : 0,
                 charges = Math.Max(1, ResolveAbilityByDefName(loadout, defName)?.charges ?? 1),
                 runtimeTag = BuildRuntimeTag(ResolveAbilityByDefName(loadout, defName)),
                 runtimeSummary = BuildRuntimeSummary(ResolveAbilityByDefName(loadout, defName))
@@ -544,7 +533,7 @@ namespace CharacterStudio.Abilities
             return string.Join(" / ", parts);
         }
 
-        private static string BuildSlotBadge(CompPawnSkin comp, VisibleAbilitySlot slot, bool isCombo, bool isSecondStage)
+        private static string BuildSlotBadge(CompCharacterAbilityRuntime comp, VisibleAbilitySlot slot, bool isCombo, bool isSecondStage)
         {
             switch (slot)
             {
@@ -577,7 +566,7 @@ namespace CharacterStudio.Abilities
             }
         }
 
-        private static string ResolveVisibleAbilityDefName(CompPawnSkin comp, CharacterAbilityLoadout loadout, VisibleAbilitySlot slot, int tick)
+        private static string ResolveVisibleAbilityDefName(CompCharacterAbilityRuntime comp, CharacterAbilityLoadout loadout, VisibleAbilitySlot slot, int tick)
         {
             SkinAbilityHotkeyConfig? hotkeys = loadout.hotkeys;
             if (hotkeys == null)
@@ -591,90 +580,76 @@ namespace CharacterStudio.Abilities
                 return overrideDefName;
             }
 
-            if (tick <= comp.slotOverrideWindowEndTick
-                && !string.IsNullOrWhiteSpace(comp.slotOverrideWindowSlotId)
-                && string.Equals(comp.slotOverrideWindowSlotId, slot.ToString(), StringComparison.OrdinalIgnoreCase)
-                && !string.IsNullOrWhiteSpace(comp.slotOverrideWindowAbilityDefName))
+            if (tick <= comp.SlotOverrideWindowEndTick
+                && !string.IsNullOrWhiteSpace(comp.SlotOverrideWindowSlotId)
+                && string.Equals(comp.SlotOverrideWindowSlotId, slot.ToString(), StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(comp.SlotOverrideWindowAbilityDefName))
             {
-                return comp.slotOverrideWindowAbilityDefName;
+                return comp.SlotOverrideWindowAbilityDefName;
             }
 
-            return slot switch
-            {
-                VisibleAbilitySlot.Q => hotkeys.qAbilityDefName ?? string.Empty,
-                VisibleAbilitySlot.W => hotkeys.wAbilityDefName ?? string.Empty,
-                VisibleAbilitySlot.E => hotkeys.eAbilityDefName ?? string.Empty,
-                VisibleAbilitySlot.T => hotkeys.tAbilityDefName ?? string.Empty,
-                VisibleAbilitySlot.A => hotkeys.aAbilityDefName ?? string.Empty,
-                VisibleAbilitySlot.S => hotkeys.sAbilityDefName ?? string.Empty,
-                VisibleAbilitySlot.D => hotkeys.dAbilityDefName ?? string.Empty,
-                VisibleAbilitySlot.F => hotkeys.fAbilityDefName ?? string.Empty,
-                VisibleAbilitySlot.Z => hotkeys.zAbilityDefName ?? string.Empty,
-                VisibleAbilitySlot.X => hotkeys.xAbilityDefName ?? string.Empty,
-                VisibleAbilitySlot.C => hotkeys.cAbilityDefName ?? string.Empty,
-                VisibleAbilitySlot.V => hotkeys.vAbilityDefName ?? string.Empty,
-                _ => hotkeys.rAbilityDefName ?? string.Empty
-            };
+            return hotkeys[slot.ToString()];
         }
 
-        private static string GetActiveSlotOverrideAbilityDefName(CompPawnSkin comp, VisibleAbilitySlot slot, int tick)
+        private static string GetActiveSlotOverrideAbilityDefName(CompCharacterAbilityRuntime comp, VisibleAbilitySlot slot, int tick)
         {
+            var runtimeState = comp.RuntimeState;
             string abilityDefName;
             int expireTick;
 
             switch (slot)
             {
                 case VisibleAbilitySlot.Q:
-                    abilityDefName = comp.qOverrideAbilityDefName;
-                    expireTick = comp.qOverrideExpireTick;
+                    abilityDefName = runtimeState.qOverrideAbilityDefName;
+                    expireTick = runtimeState.qOverrideExpireTick;
                     break;
                 case VisibleAbilitySlot.W:
-                    abilityDefName = comp.wOverrideAbilityDefName;
-                    expireTick = comp.wOverrideExpireTick;
+                    abilityDefName = runtimeState.wOverrideAbilityDefName;
+                    expireTick = runtimeState.wOverrideExpireTick;
                     break;
                 case VisibleAbilitySlot.E:
-                    abilityDefName = comp.eOverrideAbilityDefName;
-                    expireTick = comp.eOverrideExpireTick;
+                    abilityDefName = runtimeState.eOverrideAbilityDefName;
+                    expireTick = runtimeState.eOverrideExpireTick;
                     break;
                 case VisibleAbilitySlot.T:
-                    abilityDefName = comp.tOverrideAbilityDefName;
-                    expireTick = comp.tOverrideExpireTick;
+                    abilityDefName = runtimeState.tOverrideAbilityDefName;
+                    expireTick = runtimeState.tOverrideExpireTick;
                     break;
                 case VisibleAbilitySlot.A:
-                    abilityDefName = comp.aOverrideAbilityDefName;
-                    expireTick = comp.aOverrideExpireTick;
+                    abilityDefName = runtimeState.aOverrideAbilityDefName;
+                    expireTick = runtimeState.aOverrideExpireTick;
                     break;
                 case VisibleAbilitySlot.S:
-                    abilityDefName = comp.sOverrideAbilityDefName;
-                    expireTick = comp.sOverrideExpireTick;
+                    abilityDefName = runtimeState.sOverrideAbilityDefName;
+                    expireTick = runtimeState.sOverrideExpireTick;
                     break;
                 case VisibleAbilitySlot.D:
-                    abilityDefName = comp.dOverrideAbilityDefName;
-                    expireTick = comp.dOverrideExpireTick;
+                    abilityDefName = runtimeState.dOverrideAbilityDefName;
+                    expireTick = runtimeState.dOverrideExpireTick;
                     break;
                 case VisibleAbilitySlot.F:
-                    abilityDefName = comp.fOverrideAbilityDefName;
-                    expireTick = comp.fOverrideExpireTick;
+                    abilityDefName = runtimeState.fOverrideAbilityDefName;
+                    expireTick = runtimeState.fOverrideExpireTick;
                     break;
                 case VisibleAbilitySlot.Z:
-                    abilityDefName = comp.zOverrideAbilityDefName;
-                    expireTick = comp.zOverrideExpireTick;
+                    abilityDefName = runtimeState.zOverrideAbilityDefName;
+                    expireTick = runtimeState.zOverrideExpireTick;
                     break;
                 case VisibleAbilitySlot.X:
-                    abilityDefName = comp.xOverrideAbilityDefName;
-                    expireTick = comp.xOverrideExpireTick;
+                    abilityDefName = runtimeState.xOverrideAbilityDefName;
+                    expireTick = runtimeState.xOverrideExpireTick;
                     break;
                 case VisibleAbilitySlot.C:
-                    abilityDefName = comp.cOverrideAbilityDefName;
-                    expireTick = comp.cOverrideExpireTick;
+                    abilityDefName = runtimeState.cOverrideAbilityDefName;
+                    expireTick = runtimeState.cOverrideExpireTick;
                     break;
                 case VisibleAbilitySlot.V:
-                    abilityDefName = comp.vOverrideAbilityDefName;
-                    expireTick = comp.vOverrideExpireTick;
+                    abilityDefName = runtimeState.vOverrideAbilityDefName;
+                    expireTick = runtimeState.vOverrideExpireTick;
                     break;
                 default:
-                    abilityDefName = comp.rOverrideAbilityDefName;
-                    expireTick = comp.rOverrideExpireTick;
+                    abilityDefName = runtimeState.rOverrideAbilityDefName;
+                    expireTick = runtimeState.rOverrideExpireTick;
                     break;
             }
 

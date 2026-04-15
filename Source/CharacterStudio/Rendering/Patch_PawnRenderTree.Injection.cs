@@ -751,6 +751,7 @@ namespace CharacterStudio.Rendering
         private static IEnumerable<LayeredFacePartType> GetLayeredFaceInjectionOrder()
         {
             // Base 改由 baseAppearance Head 槽位接管，避免与 [Base] Head / [Face] Base 双重注入共存。
+            yield return LayeredFacePartType.Sclera;
             yield return LayeredFacePartType.Eye;
             yield return LayeredFacePartType.Pupil;
             yield return LayeredFacePartType.UpperLid;
@@ -934,6 +935,7 @@ namespace CharacterStudio.Rendering
             {
                 case LayeredFacePartType.Brow:
                 case LayeredFacePartType.Eye:
+                case LayeredFacePartType.Sclera:
                 case LayeredFacePartType.UpperLid:
                 case LayeredFacePartType.LowerLid:
                 case LayeredFacePartType.Mouth:
@@ -962,6 +964,7 @@ namespace CharacterStudio.Rendering
                 case LayeredFacePartType.Brow:
                     return LayerRole.Brow;
                 case LayeredFacePartType.Eye:
+                case LayeredFacePartType.Sclera:
                 case LayeredFacePartType.UpperLid:
                 case LayeredFacePartType.LowerLid:
                     return LayerRole.Lid;
@@ -999,6 +1002,8 @@ namespace CharacterStudio.Rendering
                 }
                 case LayeredFacePartType.Eye:
                     return 0.118f;
+                case LayeredFacePartType.Sclera:
+                    return 0.112f;
                 case LayeredFacePartType.Pupil:
                     return 0.128f;
                 case LayeredFacePartType.UpperLid:

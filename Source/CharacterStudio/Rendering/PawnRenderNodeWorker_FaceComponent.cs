@@ -30,6 +30,20 @@ namespace CharacterStudio.Rendering
         private static readonly Dictionary<string, bool> isMultiCache
             = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
 
+        // P-PERF: WeakReference 缓存 CompPawnSkin，避免每帧 GetComp O(N) 遍历
+        private static readonly System.WeakReference<Pawn> _cachedSkinPawnRef = new System.WeakReference<Pawn>(null!);
+        private static CompPawnSkin? _cachedSkinComp;
+
+        private static CompPawnSkin? FastGetSkinComp(Pawn? pawn)
+        {
+            if (pawn == null) return null;
+            if (_cachedSkinPawnRef.TryGetTarget(out Pawn? cached) && cached == pawn)
+                return _cachedSkinComp;
+            _cachedSkinComp = pawn.GetComp<CompPawnSkin>();
+            _cachedSkinPawnRef.SetTarget(pawn);
+            return _cachedSkinComp;
+        }
+
         // ─────────────────────────────────────────────
         // Worker 覆写
         // ─────────────────────────────────────────────
@@ -55,11 +69,14 @@ namespace CharacterStudio.Rendering
                 float sy = cfg.y <= 0f ? 1f : cfg.y;
                 baseScale = new Vector3(sx * baseScale.x, 1f, sy * baseScale.z);
 
-                // 应用全局 DrawSize 缩放（与 CustomLayer 一致）
-                float globalScale = GetGlobalDrawSizeScale(customNode);
-                if (globalScale != 1f)
+                // 仅当没有原版祖先（已通过矩阵层级传递全局缩放）时才自行应用
+                if (!Patch_PawnRenderTree.HasAnyVanillaAncestor(node))
                 {
-                    baseScale = new Vector3(baseScale.x * globalScale, baseScale.y, baseScale.z * globalScale);
+                    float globalScale = GetGlobalDrawSizeScale(customNode);
+                    if (globalScale != 1f)
+                    {
+                        baseScale = new Vector3(baseScale.x * globalScale, baseScale.y, baseScale.z * globalScale);
+                    }
                 }
             }
 
@@ -129,7 +146,7 @@ namespace CharacterStudio.Rendering
         /// </summary>
         protected override Graphic? GetGraphic(PawnRenderNode node, PawnDrawParms parms)
         {
-            var comp = parms.pawn.GetComp<CompPawnSkin>();
+            var comp = FastGetSkinComp(parms.pawn);
             var skin = comp?.ActiveSkin;
             var runtimeState = comp?.CurrentFaceRuntimeState;
             var compiledData = comp?.CurrentFaceRuntimeCompiledData;

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using CharacterStudio.Abilities;
@@ -10,71 +11,62 @@ namespace CharacterStudio.Core
     public class SkinAbilityHotkeyConfig : IExposable
     {
         public bool enabled = false;
-        public string qAbilityDefName = "";
-        public string wAbilityDefName = "";
-        public string eAbilityDefName = "";
-        public string rAbilityDefName = "";
-        public string tAbilityDefName = "";
-        public string aAbilityDefName = "";
-        public string sAbilityDefName = "";
-        public string dAbilityDefName = "";
-        public string fAbilityDefName = "";
-        public string zAbilityDefName = "";
-        public string xAbilityDefName = "";
-        public string cAbilityDefName = "";
-        public string vAbilityDefName = "";
+
+        /// <summary>Slot key (e.g. "Q", "W") to ability defName.</summary>
+        public Dictionary<string, string> slotBindings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        private static readonly string[] DefaultSlotKeys = { "Q", "W", "E", "R", "T", "A", "S", "D", "F", "Z", "X", "C", "V" };
+
+        /// <summary>Get or set the ability defName for a slot key. Returns empty string for unset slots.</summary>
+        public string this[string slotKey]
+        {
+            get => slotBindings.TryGetValue(slotKey ?? string.Empty, out string val) ? val : string.Empty;
+            set => slotBindings[slotKey ?? string.Empty] = value ?? string.Empty;
+        }
 
         public SkinAbilityHotkeyConfig Clone()
         {
             return new SkinAbilityHotkeyConfig
             {
                 enabled = enabled,
-                qAbilityDefName = qAbilityDefName,
-                wAbilityDefName = wAbilityDefName,
-                eAbilityDefName = eAbilityDefName,
-                rAbilityDefName = rAbilityDefName,
-                tAbilityDefName = tAbilityDefName,
-                aAbilityDefName = aAbilityDefName,
-                sAbilityDefName = sAbilityDefName,
-                dAbilityDefName = dAbilityDefName,
-                fAbilityDefName = fAbilityDefName,
-                zAbilityDefName = zAbilityDefName,
-                xAbilityDefName = xAbilityDefName,
-                cAbilityDefName = cAbilityDefName,
-                vAbilityDefName = vAbilityDefName
+                slotBindings = new Dictionary<string, string>(slotBindings, StringComparer.OrdinalIgnoreCase)
             };
         }
 
         public void ExposeData()
         {
             Scribe_Values.Look(ref enabled, "enabled", false);
-            Scribe_Values.Look(ref qAbilityDefName, "qAbilityDefName", "");
-            Scribe_Values.Look(ref wAbilityDefName, "wAbilityDefName", "");
-            Scribe_Values.Look(ref eAbilityDefName, "eAbilityDefName", "");
-            Scribe_Values.Look(ref rAbilityDefName, "rAbilityDefName", "");
-            Scribe_Values.Look(ref tAbilityDefName, "tAbilityDefName", "");
-            Scribe_Values.Look(ref aAbilityDefName, "aAbilityDefName", "");
-            Scribe_Values.Look(ref sAbilityDefName, "sAbilityDefName", "");
-            Scribe_Values.Look(ref dAbilityDefName, "dAbilityDefName", "");
-            Scribe_Values.Look(ref fAbilityDefName, "fAbilityDefName", "");
-            Scribe_Values.Look(ref zAbilityDefName, "zAbilityDefName", "");
-            Scribe_Values.Look(ref xAbilityDefName, "xAbilityDefName", "");
-            Scribe_Values.Look(ref cAbilityDefName, "cAbilityDefName", "");
-            Scribe_Values.Look(ref vAbilityDefName, "vAbilityDefName", "");
+            Scribe_Collections.Look(ref slotBindings, "slotBindings", LookMode.Value, LookMode.Value);
+            slotBindings ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-            qAbilityDefName ??= string.Empty;
-            wAbilityDefName ??= string.Empty;
-            eAbilityDefName ??= string.Empty;
-            rAbilityDefName ??= string.Empty;
-            tAbilityDefName ??= string.Empty;
-            aAbilityDefName ??= string.Empty;
-            sAbilityDefName ??= string.Empty;
-            dAbilityDefName ??= string.Empty;
-            fAbilityDefName ??= string.Empty;
-            zAbilityDefName ??= string.Empty;
-            xAbilityDefName ??= string.Empty;
-            cAbilityDefName ??= string.Empty;
-            vAbilityDefName ??= string.Empty;
+            foreach (string key in DefaultSlotKeys)
+            {
+                if (!slotBindings.ContainsKey(key))
+                    slotBindings[key] = string.Empty;
+                else if (slotBindings[key] == null)
+                    slotBindings[key] = string.Empty;
+            }
+        }
+
+        /// <summary>Returns true if any slot has a non-empty ability binding.</summary>
+        public bool HasAnyBinding()
+        {
+            foreach (var kvp in slotBindings)
+            {
+                if (!string.IsNullOrWhiteSpace(kvp.Value))
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>Enumerate all ability defNames that have a non-empty binding.</summary>
+        public IEnumerable<string> EnumerateBoundAbilityDefNames()
+        {
+            foreach (var kvp in slotBindings)
+            {
+                if (!string.IsNullOrWhiteSpace(kvp.Value))
+                    yield return kvp.Value;
+            }
         }
     }
 

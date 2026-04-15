@@ -529,22 +529,13 @@ namespace CharacterStudio.Exporter
         {
             if (hotkeys == null) return null;
 
-            return new XElement("abilityHotkeys",
-                new XElement("enabled", hotkeys.enabled.ToString().ToLower()),
-                !string.IsNullOrEmpty(hotkeys.qAbilityDefName) ? new XElement("qAbilityDefName", hotkeys.qAbilityDefName) : null,
-                !string.IsNullOrEmpty(hotkeys.wAbilityDefName) ? new XElement("wAbilityDefName", hotkeys.wAbilityDefName) : null,
-                !string.IsNullOrEmpty(hotkeys.eAbilityDefName) ? new XElement("eAbilityDefName", hotkeys.eAbilityDefName) : null,
-                !string.IsNullOrEmpty(hotkeys.rAbilityDefName) ? new XElement("rAbilityDefName", hotkeys.rAbilityDefName) : null,
-                !string.IsNullOrEmpty(hotkeys.tAbilityDefName) ? new XElement("tAbilityDefName", hotkeys.tAbilityDefName) : null,
-                !string.IsNullOrEmpty(hotkeys.aAbilityDefName) ? new XElement("aAbilityDefName", hotkeys.aAbilityDefName) : null,
-                !string.IsNullOrEmpty(hotkeys.sAbilityDefName) ? new XElement("sAbilityDefName", hotkeys.sAbilityDefName) : null,
-                !string.IsNullOrEmpty(hotkeys.dAbilityDefName) ? new XElement("dAbilityDefName", hotkeys.dAbilityDefName) : null,
-                !string.IsNullOrEmpty(hotkeys.fAbilityDefName) ? new XElement("fAbilityDefName", hotkeys.fAbilityDefName) : null,
-                !string.IsNullOrEmpty(hotkeys.zAbilityDefName) ? new XElement("zAbilityDefName", hotkeys.zAbilityDefName) : null,
-                !string.IsNullOrEmpty(hotkeys.xAbilityDefName) ? new XElement("xAbilityDefName", hotkeys.xAbilityDefName) : null,
-                !string.IsNullOrEmpty(hotkeys.cAbilityDefName) ? new XElement("cAbilityDefName", hotkeys.cAbilityDefName) : null,
-                !string.IsNullOrEmpty(hotkeys.vAbilityDefName) ? new XElement("vAbilityDefName", hotkeys.vAbilityDefName) : null
-            );
+            var elements = new List<object> { new XElement("enabled", hotkeys.enabled.ToString().ToLower()) };
+            foreach (var kvp in hotkeys.slotBindings)
+            {
+                if (!string.IsNullOrEmpty(kvp.Value))
+                    elements.Add(new XElement(kvp.Key.ToLowerInvariant() + "AbilityDefName", kvp.Value));
+            }
+            return new XElement("abilityHotkeys", elements.ToArray());
         }
 
         private static XElement? GenerateListElement(string tagName, List<string>? items)
@@ -914,7 +905,30 @@ namespace CharacterStudio.Exporter
                     !string.IsNullOrWhiteSpace(vfx.soundDefName) ? new XElement("soundDefName", vfx.soundDefName) : null,
                     new XElement("soundDelayTicks", vfx.soundDelayTicks),
                     new XElement("soundVolume", vfx.soundVolume),
-                    new XElement("soundPitch", vfx.soundPitch)
+                    new XElement("soundPitch", vfx.soundPitch),
+                    // AssetBundle / VFX fields
+                    !string.IsNullOrWhiteSpace(vfx.assetBundlePath) ? new XElement("assetBundlePath", vfx.assetBundlePath) : null,
+                    !string.IsNullOrWhiteSpace(vfx.assetBundleEffectName) ? new XElement("assetBundleEffectName", vfx.assetBundleEffectName) : null,
+                    !string.IsNullOrWhiteSpace(vfx.assetBundleTextureName) ? new XElement("assetBundleTextureName", vfx.assetBundleTextureName) : null,
+                    new XElement("assetBundleEffectScale", vfx.assetBundleEffectScale),
+                    new XElement("bundleRenderStrategy", vfx.bundleRenderStrategy.ToString()),
+                    // Shader fields
+                    !string.IsNullOrWhiteSpace(vfx.shaderPath) ? new XElement("shaderPath", vfx.shaderPath) : null,
+                    !string.IsNullOrWhiteSpace(vfx.shaderAssetBundlePath) ? new XElement("shaderAssetBundlePath", vfx.shaderAssetBundlePath) : null,
+                    !string.IsNullOrWhiteSpace(vfx.shaderAssetBundleShaderName) ? new XElement("shaderAssetBundleShaderName", vfx.shaderAssetBundleShaderName) : null,
+                    new XElement("shaderLoadFromAssetBundle", vfx.shaderLoadFromAssetBundle.ToString().ToLower()),
+                    !string.IsNullOrWhiteSpace(vfx.shaderTexturePath) ? new XElement("shaderTexturePath", vfx.shaderTexturePath) : null,
+                    new XElement("shaderTintColor", $"({vfx.shaderTintColor.r:F3}, {vfx.shaderTintColor.g:F3}, {vfx.shaderTintColor.b:F3}, {vfx.shaderTintColor.a:F3})"),
+                    new XElement("shaderIntensity", vfx.shaderIntensity),
+                    new XElement("shaderSpeed", vfx.shaderSpeed),
+                    new XElement("shaderParam1", vfx.shaderParam1),
+                    new XElement("shaderParam2", vfx.shaderParam2),
+                    new XElement("shaderParam3", vfx.shaderParam3),
+                    new XElement("shaderParam4", vfx.shaderParam4),
+                    // Global filter
+                    new XElement("globalFilterMode", vfx.globalFilterMode),
+                    new XElement("globalFilterTransition", vfx.globalFilterTransition),
+                    new XElement("globalFilterTransitionTicks", vfx.globalFilterTransitionTicks)
                 ));
             }
             return root;

@@ -21,6 +21,7 @@ namespace CharacterStudio.Core
             LayeredFacePartType.Base,
             LayeredFacePartType.Brow,
             LayeredFacePartType.Eye,
+            LayeredFacePartType.Sclera,
             LayeredFacePartType.Pupil,
             LayeredFacePartType.UpperLid,
             LayeredFacePartType.LowerLid,

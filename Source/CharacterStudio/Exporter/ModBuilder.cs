@@ -1094,6 +1094,18 @@ namespace CharacterStudio.Exporter
 
             return sanitized;
         }
+        public static string SanitizeDefName(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return "Unnamed";
+            var sb = new System.Text.StringBuilder(value!.Length);
+            foreach (char c in value)
+            {
+                if (char.IsLetterOrDigit(c) || c == '_')
+                    sb.Append(c);
+            }
+            return sb.Length == 0 ? "Unnamed" : sb.ToString();
+        }
+
         public static void ExportScatteredLooseFiles(PawnSkinDef activeSkin, CharacterDefinition characterDef)
         {
             try

@@ -26,3 +26,6 @@ build_out.log
 CharacterStudio.code-workspace
 .windsurfrules
 .gitnexus
+.claude/
+.limcode/
+.sisyphus/

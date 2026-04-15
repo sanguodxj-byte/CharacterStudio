@@ -9,8 +9,8 @@ namespace CharacterStudio.Introspection
     public static partial class RenderTreeParser
     {
         // ─────────────────────────────────────────────
-        // HAR 调试日志
-        // 所有调试输出仅在 Prefs.DevMode 下触发
+        // 渲染树内省调试日志
+        // 所有调试输出仅在 IsVerboseDebugEnabled 下触发
         // ─────────────────────────────────────────────
 
         private static void DebugLog(string message)
@@ -19,10 +19,10 @@ namespace CharacterStudio.Introspection
                 Log.Message(message);
         }
 
-        private static bool ShouldInspectHarDebugNode(string label, string tagDef)
-            => ContainsHarDebugKeyword(tagDef) || ContainsHarDebugKeyword(label);
+        private static bool ShouldInspectNodeDebug(string label, string tagDef)
+            => ContainsDebugKeyword(tagDef) || ContainsDebugKeyword(label);
 
-        private static bool ContainsHarDebugKeyword(string value)
+        private static bool ContainsDebugKeyword(string value)
         {
             if (string.IsNullOrEmpty(value)) return false;
             return value.IndexOf("head", StringComparison.OrdinalIgnoreCase) >= 0
@@ -31,7 +31,7 @@ namespace CharacterStudio.Introspection
         }
 
         /// <summary>输出节点自身字段及属性的调试信息</summary>
-        private static void EmitHarDebugInfo(
+        private static void EmitNodeDebugInfo(
             PawnRenderNode gameNode,
             string label,
             string tagDef,
@@ -39,13 +39,13 @@ namespace CharacterStudio.Introspection
             Color nodeColor)
         {
             string nodeTypeName = gameNode.GetType().Name;
-            Log.Message($"[CS.HAR.Debug] ====== 节点 '{label}' ({nodeTypeName}) ======");
-            Log.Message($"[CS.HAR.Debug] 节点类型完整名: {gameNode.GetType().FullName}");
+            DebugLog($"[CS.Studio.Debug] ====== 节点 '{label}' ({nodeTypeName}) ======");
+            DebugLog($"[CS.Studio.Debug] 节点类型完整名: {gameNode.GetType().FullName}");
 
             // 节点字段
             var allNodeFields = gameNode.GetType().GetFields(
                 BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-            Log.Message($"[CS.HAR.Debug] 节点字段数量: {allNodeFields.Length}");
+            DebugLog($"[CS.Studio.Debug] 节点字段数量: {allNodeFields.Length}");
             foreach (var field in allNodeFields)
             {
                 try
@@ -56,7 +56,7 @@ namespace CharacterStudio.Introspection
                         || fn.Contains("size") || fn.Contains("draw") || fn.Contains("mesh")
                         || fn.Contains("parent") || fn.Contains("anchor"))
                     {
-                        Log.Message($"[CS.HAR.Debug]   节点.{field.Name} ({field.FieldType.Name}): {field.GetValue(gameNode)}");
+                        DebugLog($"[CS.Studio.Debug]   节点.{field.Name} ({field.FieldType.Name}): {field.GetValue(gameNode)}");
                     }
                 }
                 catch { }
@@ -71,10 +71,10 @@ namespace CharacterStudio.Introspection
                     var parentNode = parentField.GetValue(gameNode) as PawnRenderNode;
                     if (parentNode != null)
                     {
-                        Log.Message($"[CS.HAR.Debug]   父节点类型: {parentNode.GetType().Name}");
-                        Log.Message($"[CS.HAR.Debug]   父节点label: {parentNode}");
-                        Log.Message($"[CS.HAR.Debug]   父节点debugScale: {parentNode.debugScale}");
-                        Log.Message($"[CS.HAR.Debug]   父节点debugOffset: {parentNode.debugOffset}");
+                        DebugLog($"[CS.Studio.Debug]   父节点类型: {parentNode.GetType().Name}");
+                        DebugLog($"[CS.Studio.Debug]   父节点label: {parentNode}");
+                        DebugLog($"[CS.Studio.Debug]   父节点debugScale: {parentNode.debugScale}");
+                        DebugLog($"[CS.Studio.Debug]   父节点debugOffset: {parentNode.debugOffset}");
                     }
                 }
             }
@@ -93,7 +93,7 @@ namespace CharacterStudio.Introspection
                         || pn.Contains("position") || pn.Contains("loc") || pn.Contains("pos")
                         || pn.Contains("size") || pn.Contains("draw"))
                     {
-                        Log.Message($"[CS.HAR.Debug]   节点属性.{p.Name} ({p.PropertyType.Name}): {p.GetValue(gameNode)}");
+                        DebugLog($"[CS.Studio.Debug]   节点属性.{p.Name} ({p.PropertyType.Name}): {p.GetValue(gameNode)}");
                     }
                 }
                 catch { }
@@ -101,16 +101,16 @@ namespace CharacterStudio.Introspection
         }
 
         /// <summary>输出 props 偏移的调试信息</summary>
-        private static void EmitHarDebugPropsOffsets(
+        private static void EmitPropsOffsetsDebugInfo(
             string label, string tagDef,
             PawnRenderNodeProperties? props,
             Vector3 propsOffset, Vector3 propsOffsetEast, Vector3 propsOffsetNorth)
         {
-            Log.Message($"[CS.HAR.Debug] 节点 '{label}' Tag={tagDef}");
-            Log.Message($"[CS.HAR.Debug]   - props类型: {props?.GetType().FullName ?? "null"}");
-            Log.Message($"[CS.HAR.Debug]   - props.offset: {propsOffset}");
-            Log.Message($"[CS.HAR.Debug]   - props.offsetEast: {propsOffsetEast}");
-            Log.Message($"[CS.HAR.Debug]   - props.offsetNorth: {propsOffsetNorth}");
+            DebugLog($"[CS.Studio.Debug] 节点 '{label}' Tag={tagDef}");
+            DebugLog($"[CS.Studio.Debug]   - props类型: {props?.GetType().FullName ?? "null"}");
+            DebugLog($"[CS.Studio.Debug]   - props.offset: {propsOffset}");
+            DebugLog($"[CS.Studio.Debug]   - props.offsetEast: {propsOffsetEast}");
+            DebugLog($"[CS.Studio.Debug]   - props.offsetNorth: {propsOffsetNorth}");
 
             if (props == null) return;
             var propsType = props.GetType();
@@ -123,7 +123,7 @@ namespace CharacterStudio.Introspection
                     if (fn.Contains("offset") || fn.Contains("color") || fn.Contains("scale")
                         || fn.Contains("size") || fn.Contains("draw"))
                     {
-                        Log.Message($"[CS.HAR.Debug]   - props.{field.Name}: {field.GetValue(props)}");
+                        DebugLog($"[CS.Studio.Debug]   - props.{field.Name}: {field.GetValue(props)}");
                     }
                 }
                 catch { }
@@ -131,18 +131,18 @@ namespace CharacterStudio.Introspection
         }
 
         /// <summary>输出 Worker 返回的偏移调试信息</summary>
-        private static void EmitHarDebugWorker(PawnRenderNodeWorker worker, Vector3 southOffset)
+        private static void EmitWorkerDebugInfo(PawnRenderNodeWorker worker, Vector3 southOffset)
         {
-            Log.Message($"[CS.HAR.Debug]   - Worker类型: {worker.GetType().FullName}");
-            Log.Message($"[CS.HAR.Debug]   - Worker.OffsetFor(South): {southOffset}");
+            DebugLog($"[CS.Studio.Debug]   - Worker类型: {worker.GetType().FullName}");
+            DebugLog($"[CS.Studio.Debug]   - Worker.OffsetFor(South): {southOffset}");
         }
 
         /// <summary>输出最终捕获数据的调试信息</summary>
-        private static void EmitHarDebugFinal(Vector3 offset, Vector3 scale, Color color)
+        private static void EmitFinalDebugInfo(Vector3 offset, Vector3 scale, Color color)
         {
-            Log.Message($"[CS.HAR.Debug]   - 最终 runtimeOffset: {offset}");
-            Log.Message($"[CS.HAR.Debug]   - 最终 runtimeScale: {scale}");
-            Log.Message($"[CS.HAR.Debug]   - 最终 runtimeColor: {color}");
+            DebugLog($"[CS.Studio.Debug]   - 最终 runtimeOffset: {offset}");
+            DebugLog($"[CS.Studio.Debug]   - 最终 runtimeScale: {scale}");
+            DebugLog($"[CS.Studio.Debug]   - 最终 runtimeColor: {color}");
         }
     }
 }

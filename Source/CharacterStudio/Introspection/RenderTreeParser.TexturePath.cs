@@ -11,7 +11,7 @@ namespace CharacterStudio.Introspection
         // 纹理路径解析
         // 多级回退策略：
         //   1. props.texPath（原版标准）
-        //   2. GraphicFor(pawn)（HAR 动态路径）
+        //   2. 第三方/内置 GraphicFor 逻辑
         //   3. PrimaryGraphic
         //   4. Graphics 列表
         //   5. GraphicData.texPath
@@ -38,19 +38,19 @@ namespace CharacterStudio.Introspection
                     return "Dynamic/Unknown";
                 }
 
-                // 2. HAR 动态路径
+                // 2. 第三方/动态路径解析
                 try
                 {
                     var graphicForPawn = node.GraphicFor(pawn);
                     if (graphicForPawn != null && !string.IsNullOrEmpty(graphicForPawn.path))
                     {
-                        DebugLog($"[CS.Debug] 节点 '{node}' 从 GraphicFor() 获取路径: {graphicForPawn.path}");
+                        DebugLog($"[CS.Studio.Debug] 节点 '{node}' 从内置方法获取路径: {graphicForPawn.path}");
                         return graphicForPawn.path;
                     }
                 }
                 catch (Exception ex)
                 {
-                    DebugLog($"[CS.Debug] 节点 '{node}' GraphicFor() 失败: {ex.Message}");
+                    DebugLog($"[CS.Studio.Debug] 节点 '{node}' 内置解析失败: {ex.Message}");
                 }
 
                 // 3. PrimaryGraphic
@@ -97,7 +97,7 @@ namespace CharacterStudio.Introspection
                             var g = f.GetValue(node) as Graphic;
                             if (g != null && !string.IsNullOrEmpty(g.path))
                             {
-                                DebugLog($"[CS.Debug] 节点 '{node}' 从 {fieldName} 字段获取路径: {g.path}");
+                                DebugLog($"[CS.Studio.Debug] 节点 '{node}' 从 {fieldName} 字段获取路径: {g.path}");
                                 return g.path;
                             }
                         }
@@ -109,7 +109,7 @@ namespace CharacterStudio.Introspection
                         var texPath = texPathField.GetValue(node) as string;
                         if (!string.IsNullOrEmpty(texPath))
                         {
-                            DebugLog($"[CS.Debug] 节点 '{node}' 从 texPath 字段获取路径: {texPath}");
+                            DebugLog($"[CS.Studio.Debug] 节点 '{node}' 从 texPath 字段获取路径: {texPath}");
                             return texPath!;
                         }
                     }
@@ -120,8 +120,8 @@ namespace CharacterStudio.Introspection
                 if (props?.useGraphic == false)
                     return "No Graphic (Logic Only)";
 
-                // 8. 兜底
-                DebugLog($"[CS.Debug] 节点 '{node}' ({node.GetType().FullName}) 无法获取纹理路径，标记为 Dynamic/Unknown");
+                // 8. 兜底策略
+                DebugLog($"[CS.Studio.Debug] 节点 '{node}' ({node.GetType().FullName}) 无法获取纹理路径，标记为 Dynamic/Unknown");
                 return "Dynamic/Unknown";
             }
             catch (Exception ex)

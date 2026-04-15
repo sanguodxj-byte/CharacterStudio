@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using CharacterStudio.Abilities.RuntimeComponents;
@@ -18,6 +18,25 @@ namespace CharacterStudio.Abilities
     public class CompAbilityEffect_Modular : CompAbilityEffect, ICompAbilityEffectOnJumpCompleted
     {
         public new CompProperties_AbilityModular Props => (CompProperties_AbilityModular)props;
+
+        // P-PERF: 缓存 GetComp 结果，避免每 tick 重复遍历 ThingComp 列表
+        private CompCharacterAbilityRuntime? _cachedAbilityComp;
+        private int _cachedAbilityCompPawnId = -1;
+
+        /// <summary>
+        /// P-PERF: 获取缓存的 CompCharacterAbilityRuntime，仅在 Pawn 实例变化时重新查找
+        /// </summary>
+        private CompCharacterAbilityRuntime? GetCachedAbilityComp()
+        {
+            Pawn? pawn = parent?.pawn;
+            if (pawn == null) return null;
+            int pawnId = pawn.thingIDNumber;
+            if (_cachedAbilityCompPawnId == pawnId && _cachedAbilityComp != null)
+                return _cachedAbilityComp;
+            _cachedAbilityComp = pawn.GetComp<CompCharacterAbilityRuntime>();
+            _cachedAbilityCompPawnId = pawnId;
+            return _cachedAbilityComp;
+        }
 
         private static readonly Dictionary<string, ThingDef> customTextureMoteDefCache = new Dictionary<string, ThingDef>();
         private static readonly HashSet<string> runtimeVfxWarnings = new HashSet<string>();
@@ -82,22 +101,22 @@ namespace CharacterStudio.Abilities
         /// <summary>
         /// 共享飞行状态设置逻辑，供 FlightStateHandler 和 VanillaPawnFlyerHandler 调用。
         /// </summary>
-        public static void ApplyFlightState(AbilityRuntimeComponentConfig component, string abilityDefName, Pawn caster, CompPawnSkin skinComp, LocalTargetInfo target, int nowTick)
+        public static void ApplyFlightState(AbilityRuntimeComponentConfig component, string abilityDefName, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, int nowTick)
         {
-            skinComp.flightStateStartTick = nowTick;
-            skinComp.flightStateExpireTick = nowTick + Mathf.Max(1, component.flightDurationTicks);
-            skinComp.flightStateHeightFactor = Mathf.Max(0f, component.flightHeightFactor);
-            skinComp.suppressCombatActionsDuringFlightState = component.suppressCombatActionsDuringFlightState;
-            skinComp.isInVanillaFlight = true;
-            skinComp.vanillaFlightStartTick = nowTick;
-            skinComp.vanillaFlightExpireTick = skinComp.flightStateExpireTick;
-            skinComp.vanillaFlightSourceAbilityDefName = abilityDefName;
-            skinComp.vanillaFlightFollowupAbilityDefName = component.flightOnlyAbilityDefName?.Trim() ?? string.Empty;
-            skinComp.vanillaFlightReservedTargetCell = target.IsValid ? target.Cell : caster.Position;
-            skinComp.vanillaFlightHasReservedTargetCell = target.IsValid;
-            skinComp.vanillaFlightFollowupWindowEndTick = skinComp.flightStateExpireTick;
+            abilityComp.FlightStateStartTick = nowTick;
+            abilityComp.FlightStateExpireTick = nowTick + Mathf.Max(1, component.flightDurationTicks);
+            abilityComp.FlightStateHeightFactor = Mathf.Max(0f, component.flightHeightFactor);
+            abilityComp.SuppressCombatActionsDuringFlightState = component.suppressCombatActionsDuringFlightState;
+            abilityComp.IsInVanillaFlight = true;
+            abilityComp.VanillaFlightStartTick = nowTick;
+            abilityComp.VanillaFlightExpireTick = abilityComp.FlightStateExpireTick;
+            abilityComp.VanillaFlightSourceAbilityDefName = abilityDefName;
+            abilityComp.VanillaFlightFollowupAbilityDefName = component.flightOnlyAbilityDefName?.Trim() ?? string.Empty;
+            abilityComp.VanillaFlightReservedTargetCell = target.IsValid ? target.Cell : caster.Position;
+            abilityComp.VanillaFlightHasReservedTargetCell = target.IsValid;
+            abilityComp.VanillaFlightFollowupWindowEndTick = abilityComp.FlightStateExpireTick;
             caster.flight?.StartFlying();
-            skinComp.TriggerEquipmentAnimationState("FlightState", nowTick, component.flightDurationTicks);
+            abilityComp.TriggerEquipmentAnimationState("FlightState", nowTick, component.flightDurationTicks);
         }
 
         public static void ApplyDirectDamageToPawn(Pawn? caster, Pawn? targetPawn, DamageDef? damageDef, float amount, bool allowSelfDamage = false)
@@ -262,10 +281,10 @@ namespace CharacterStudio.Abilities
 
             if (thingTargets.Count == 0)
             {
-                CompPawnSkin? skinComp = caster.GetComp<CompPawnSkin>();
-                if (skinComp != null)
+                CompCharacterAbilityRuntime? abilityComp = caster.GetComp<CompCharacterAbilityRuntime>();
+                if (abilityComp != null)
                 {
-                    skinComp.dashEmpowerExpireTick = -1;
+                    abilityComp.DashEmpowerExpireTick = -1;
                 }
             }
 
@@ -364,7 +383,8 @@ namespace CharacterStudio.Abilities
             Pawn? caster = parent?.pawn;
             if (caster == null) return;
 
-            CompPawnSkin? skinComp = caster.GetComp<CompPawnSkin>();
+            // P-PERF: 使用缓存查找
+            CompCharacterAbilityRuntime? abilityComp = GetCachedAbilityComp();
             int nowTick = Find.TickManager?.TicksGame ?? 0;
 
             RuntimeComponentHandlerRegistry.EnsureInitialized();
@@ -373,19 +393,19 @@ namespace CharacterStudio.Abilities
             {
                 if (component == null || !component.enabled) continue;
 
-                // 全局处理器（不需要 skinComp）
+                // 全局处理器（不需要 abilityComp）
                 if (RuntimeComponentHandlerRegistry.TryGetGlobalApply(component.type, out var globalHandler))
                 {
                     globalHandler!.OnApply(this, component, caster, target, nowTick);
                     continue;
                 }
 
-                // 需要 skinComp 的处理器
-                if (skinComp == null) continue;
+                // 需要 abilityComp 的处理器
+                if (abilityComp == null) continue;
 
                 if (RuntimeComponentHandlerRegistry.TryGetOnApply(component.type, out var applyHandler))
                 {
-                    applyHandler!.OnApply(this, component, caster, skinComp, target, nowTick);
+                    applyHandler!.OnApply(this, component, caster, abilityComp, target, nowTick);
                 }
             }
         }
@@ -396,11 +416,12 @@ namespace CharacterStudio.Abilities
 
             int nowTick = Find.TickManager?.TicksGame ?? 0;
             Pawn? caster = parent?.pawn;
-            CompPawnSkin? skinComp = caster?.GetComp<CompPawnSkin>();
+            // P-PERF: 使用缓存的 GetComp 查找，避免每 tick O(N) 遍历
+            CompCharacterAbilityRuntime? abilityComp = caster != null ? GetCachedAbilityComp() : null;
 
-            if (caster != null && skinComp != null)
+            if (caster != null && abilityComp != null)
             {
-                TickFlightState(caster, skinComp, nowTick);
+                TickFlightState(caster, abilityComp, nowTick);
 
                 // 通过注册表分发组件级 Tick
                 if (Props.runtimeComponents != null && Props.runtimeComponents.Count > 0)
@@ -411,29 +432,36 @@ namespace CharacterStudio.Abilities
                         if (component == null || !component.enabled) continue;
                         if (RuntimeComponentHandlerRegistry.TryGetTick(component.type, out var tickHandler))
                         {
-                            tickHandler!.OnTick(this, component, caster, skinComp, nowTick);
+                            tickHandler!.OnTick(this, component, caster, abilityComp, nowTick);
                         }
                     }
                 }
             }
 
-            for (int i = pendingVfx.Count - 1; i >= 0; i--)
+            // P-PERF: 仅在有挂起特效时才遍历列表
+            if (pendingVfx.Count > 0)
             {
-                var (triggerTick, vfxConfig, target, sourceOverride) = pendingVfx[i];
-                if (nowTick >= triggerTick)
+                for (int i = pendingVfx.Count - 1; i >= 0; i--)
                 {
-                    PlayVfx(vfxConfig, target, sourceOverride);
-                    pendingVfx.RemoveAt(i);
+                    var (triggerTick, vfxConfig, target, sourceOverride) = pendingVfx[i];
+                    if (nowTick >= triggerTick)
+                    {
+                        PlayVfx(vfxConfig, target, sourceOverride);
+                        pendingVfx.RemoveAt(i);
+                    }
                 }
             }
 
-            for (int i = pendingVfxSounds.Count - 1; i >= 0; i--)
+            if (pendingVfxSounds.Count > 0)
             {
-                var (triggerTick, vfxConfig, target, sourceOverride) = pendingVfxSounds[i];
-                if (nowTick >= triggerTick)
+                for (int i = pendingVfxSounds.Count - 1; i >= 0; i--)
                 {
-                    PlayVfxSound(vfxConfig, target, sourceOverride);
-                    pendingVfxSounds.RemoveAt(i);
+                    var (triggerTick, vfxConfig, target, sourceOverride) = pendingVfxSounds[i];
+                    if (nowTick >= triggerTick)
+                    {
+                        PlayVfxSound(vfxConfig, target, sourceOverride);
+                        pendingVfxSounds.RemoveAt(i);
+                    }
                 }
             }
         }
@@ -445,48 +473,74 @@ namespace CharacterStudio.Abilities
                 return;
             }
 
-            CompPawnSkin? skinComp = caster.GetComp<CompPawnSkin>();
+            CompCharacterAbilityRuntime? abilityComp = caster.GetComp<CompCharacterAbilityRuntime>();
             AbilityRuntimeComponentConfig? component = Props.runtimeComponents?.FirstOrDefault(c => c != null && c.enabled && c.type == AbilityRuntimeComponentType.KillRefresh);
-            if (skinComp == null || component == null)
+            if (abilityComp == null || component == null)
             {
                 return;
             }
 
             float ratio = Mathf.Clamp01(component.killRefreshCooldownPercent <= 0f ? 1f : component.killRefreshCooldownPercent);
             int nowTick = Find.TickManager?.TicksGame ?? 0;
-            int currentCooldown = GetSlotCooldownUntilTick(skinComp, component.killRefreshHotkeySlot) - nowTick;
+            int currentCooldown = abilityComp.GetCooldownUntilTick(component.killRefreshHotkeySlot) - nowTick;
             currentCooldown = Mathf.Max(0, currentCooldown);
             int reducedCooldown = Mathf.RoundToInt(currentCooldown * Mathf.Max(0f, 1f - ratio));
-            SetSlotCooldownUntilTick(skinComp, component.killRefreshHotkeySlot, nowTick + reducedCooldown);
+            abilityComp.SetCooldownUntilTick(component.killRefreshHotkeySlot, nowTick + reducedCooldown);
         }
 
-        private static void TickFlightState(Pawn caster, CompPawnSkin skinComp, int nowTick)
+        private static void TickFlightState(Pawn caster, CompCharacterAbilityRuntime abilityComp, int nowTick)
         {
-            if (skinComp.flightStateExpireTick < 0 && !skinComp.isInVanillaFlight)
+            if (abilityComp.FlightStateExpireTick < 0 && !abilityComp.IsInVanillaFlight)
             {
                 return;
             }
 
+            // FlightState expiry reached
+            if (abilityComp.FlightStateExpireTick >= 0 && nowTick > abilityComp.FlightStateExpireTick)
+            {
+                if (caster.Flying)
+                {
+                    // ForceLand is async — pawn lands next frame.
+                    // Defer all cleanup until the third branch detects landing.
+                    caster.flight?.ForceLand();
+                    return;
+                }
+
+                // Pawn is on the ground (visual-only flight expired): immediate cleanup
+                if (abilityComp.VanillaFlightPendingLandingBurst)
+                {
+                    AbilityVanillaFlightUtility.TryApplyLandingBurst(caster, caster.Position, abilityComp.VanillaFlightSourceAbilityDefName);
+                }
+
+                abilityComp.FlightStateExpireTick = -1;
+                abilityComp.FlightStateHeightFactor = 0f;
+                abilityComp.SuppressCombatActionsDuringFlightState = false;
+                abilityComp.ClearEquipmentAnimationState("FlightState");
+                AbilityVanillaFlightUtility.ClearVanillaFlightState(caster);
+                caster.GetComp<Core.CompPawnSkin>()?.RequestRenderRefresh();
+                return;
+            }
+
+            // PawnFlyer-based flight (VanillaPawnFlyer component): wait for landing
             if (caster.Flying)
             {
-                if (skinComp.flightStateExpireTick >= 0 && nowTick > skinComp.flightStateExpireTick)
-                {
-                    caster.flight?.ForceLand();
-                }
                 return;
             }
 
-            if (skinComp.vanillaFlightPendingLandingBurst)
+            // Landed from VanillaPawnFlyer — cleanup
+            if (abilityComp.IsInVanillaFlight)
             {
-                AbilityVanillaFlightUtility.TryApplyLandingBurst(caster, caster.Position, skinComp.vanillaFlightSourceAbilityDefName);
-            }
+                if (abilityComp.VanillaFlightPendingLandingBurst)
+                {
+                    AbilityVanillaFlightUtility.TryApplyLandingBurst(caster, caster.Position, abilityComp.VanillaFlightSourceAbilityDefName);
+                }
 
-            skinComp.flightStateExpireTick = -1;
-            skinComp.flightStateHeightFactor = 0f;
-            skinComp.suppressCombatActionsDuringFlightState = false;
-            skinComp.ClearEquipmentAnimationState("FlightState");
-            AbilityVanillaFlightUtility.ClearVanillaFlightState(caster);
-            skinComp.RequestRenderRefresh();
+                abilityComp.FlightStateHeightFactor = 0f;
+                abilityComp.SuppressCombatActionsDuringFlightState = false;
+                abilityComp.ClearEquipmentAnimationState("FlightState");
+                AbilityVanillaFlightUtility.ClearVanillaFlightState(caster);
+                caster.GetComp<Core.CompPawnSkin>()?.RequestRenderRefresh();
+            }
         }
 
         public static Thing? FindThingByIdCached(Map? map, string thingId, ref Thing? cachedThing)
@@ -607,31 +661,31 @@ namespace CharacterStudio.Abilities
 
         private float ResolveAndConsumeShieldBonusDamage(Pawn? caster)
         {
-            CompPawnSkin? skinComp = caster?.GetComp<CompPawnSkin>();
-            if (skinComp == null)
+            CompCharacterAbilityRuntime? abilityComp = caster?.GetComp<CompCharacterAbilityRuntime>();
+            if (abilityComp == null)
             {
                 return 0f;
             }
 
             int nowTick = Find.TickManager?.TicksGame ?? 0;
-            if (skinComp.shieldExpireTick < nowTick || skinComp.shieldStoredBonusDamage <= 0f)
+            if (abilityComp.ShieldExpireTick < nowTick || abilityComp.ShieldStoredBonusDamage <= 0f)
             {
                 return 0f;
             }
 
-            float bonus = skinComp.shieldStoredBonusDamage;
-            skinComp.shieldStoredBonusDamage = 0f;
+            float bonus = abilityComp.ShieldStoredBonusDamage;
+            abilityComp.ShieldStoredBonusDamage = 0f;
             return bonus;
         }
 
-        public void TriggerShieldExpiryBurst(Pawn caster, CompPawnSkin skinComp, AbilityRuntimeComponentConfig component)
+        public void TriggerShieldExpiryBurst(Pawn caster, CompCharacterAbilityRuntime abilityComp, AbilityRuntimeComponentConfig component)
         {
             if (caster.Map == null)
             {
                 return;
             }
 
-            float storedDamage = skinComp.shieldStoredBonusDamage;
+            float storedDamage = abilityComp.ShieldStoredBonusDamage;
             float burstDamage = storedDamage * Mathf.Max(0f, component.shieldBonusDamageRatio);
             if (burstDamage <= 0.001f)
             {
@@ -726,9 +780,9 @@ namespace CharacterStudio.Abilities
             }
 
             int nowTick = Find.TickManager?.TicksGame ?? 0;
-            CompPawnSkin? casterSkin = caster.GetComp<CompPawnSkin>();
+            CompCharacterAbilityRuntime? casterAbility = caster.GetComp<CompCharacterAbilityRuntime>();
             Pawn? targetPawn = target.Thing as Pawn;
-            CompPawnSkin? targetSkin = targetPawn?.GetComp<CompPawnSkin>();
+            CompCharacterAbilityRuntime? targetAbility = targetPawn?.GetComp<CompCharacterAbilityRuntime>();
 
             RuntimeComponentHandlerRegistry.EnsureInitialized();
 
@@ -738,8 +792,7 @@ namespace CharacterStudio.Abilities
 
                 if (RuntimeComponentHandlerRegistry.TryGetDamageScale(component.type, out var modifier))
                 {
-                    // CS8604: targetPawn/targetSkin 可能为 null，接口契约允许调用者传入 null
-                    scale += modifier!.GetDamageScale(component, caster, casterSkin, target, targetPawn!, targetSkin!, allowDashConsume, nowTick);
+                    scale += modifier!.GetDamageScale(component, caster, casterAbility, target, targetPawn!, targetAbility!, allowDashConsume, nowTick);
                 }
             }
 
@@ -755,9 +808,9 @@ namespace CharacterStudio.Abilities
             if (Props.runtimeComponents == null) return;
 
             int nowTick = Find.TickManager?.TicksGame ?? 0;
-            CompPawnSkin? casterSkin = caster.GetComp<CompPawnSkin>();
+            CompCharacterAbilityRuntime? casterAbility = caster.GetComp<CompCharacterAbilityRuntime>();
             Pawn? targetPawn = target.Thing as Pawn;
-            CompPawnSkin? targetSkin = targetPawn?.GetComp<CompPawnSkin>();
+            CompCharacterAbilityRuntime? targetAbility = targetPawn?.GetComp<CompCharacterAbilityRuntime>();
 
             RuntimeComponentHandlerRegistry.EnsureInitialized();
 
@@ -767,21 +820,11 @@ namespace CharacterStudio.Abilities
 
                 if (RuntimeComponentHandlerRegistry.TryGetPostHit(component.type, out var postHitHandler))
                 {
-                    // CS8604: targetPawn/targetSkin 可能为 null，接口契约允许调用者传入 null
-                    postHitHandler!.OnPostHit(this, component, caster, casterSkin, target, targetPawn!, targetSkin!, appliedDamage, nowTick);
+                    postHitHandler!.OnPostHit(this, component, caster, casterAbility, target, targetPawn!, targetAbility!, appliedDamage, nowTick);
                 }
             }
         }
 
-        private static int GetSlotCooldownUntilTick(CompPawnSkin skinComp, AbilityRuntimeHotkeySlot slot)
-        {
-            return skinComp.abilityRuntimeState.GetCooldownUntilTick(slot);
-        }
-
-        private static void SetSlotCooldownUntilTick(CompPawnSkin skinComp, AbilityRuntimeHotkeySlot slot, int value)
-        {
-            skinComp.abilityRuntimeState.SetCooldownUntilTick(slot, value);
-        }
 
         public void TriggerProjectileSplit(AbilityRuntimeComponentConfig component, Pawn caster, LocalTargetInfo target)
         {
@@ -982,10 +1025,10 @@ namespace CharacterStudio.Abilities
             }
             else if (consumeDashEmpower && includeEntityEffects)
             {
-                CompPawnSkin? skinComp = caster.GetComp<CompPawnSkin>();
-                if (skinComp != null)
+                CompCharacterAbilityRuntime? abilityComp = caster.GetComp<CompCharacterAbilityRuntime>();
+                if (abilityComp != null)
                 {
-                    skinComp.dashEmpowerExpireTick = -1;
+                    abilityComp.DashEmpowerExpireTick = -1;
                 }
             }
         }
@@ -1002,13 +1045,13 @@ namespace CharacterStudio.Abilities
         private static bool IsPrimaryCellEffect(AbilityEffectType effectType)
         {
             return effectType == AbilityEffectType.Teleport
-                || effectType == AbilityEffectType.WeatherChange;
+                || effectType == AbilityEffectType.WeatherChange
+                || effectType == AbilityEffectType.Summon;
         }
 
         private static bool IsAreaCellEffect(AbilityEffectType effectType)
         {
-            return effectType == AbilityEffectType.Summon
-                || effectType == AbilityEffectType.Terraform;
+            return effectType == AbilityEffectType.Terraform;
         }
 
         // NormalizeRuntimeTrigger removed: was a no-op identity function (review F-QUAL-03)

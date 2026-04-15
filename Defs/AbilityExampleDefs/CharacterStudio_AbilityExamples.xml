@@ -330,6 +330,30 @@
   </CharacterStudio.Abilities.ModularAbilityDef>
 
   <CharacterStudio.Abilities.ModularAbilityDef>
+    <defName>CS_Example_Space_Flight</defName>
+    <label>Space·起飞</label>
+    <description>示例：该技能使用 FlightState 运行时组件，施放后角色进入飞行悬停状态，持续 3 秒。期间角色视觉上浮并触发装备动画状态 FlightState。到期后自动降落。</description>
+    <cooldownTicks>300</cooldownTicks>
+    <warmupTicks>0</warmupTicks>
+    <charges>1</charges>
+    <carrierType>Self</carrierType>
+    <targetType>Self</targetType>
+    <useRadius>false</useRadius>
+    <areaCenter>Target</areaCenter>
+    <range>0</range>
+    <effects />
+    <runtimeComponents>
+      <li>
+        <type>FlightState</type>
+        <enabled>true</enabled>
+        <flightDurationTicks>180</flightDurationTicks>
+        <flightHeightFactor>0.35</flightHeightFactor>
+        <suppressCombatActionsDuringFlightState>true</suppressCombatActionsDuringFlightState>
+      </li>
+    </runtimeComponents>
+  </CharacterStudio.Abilities.ModularAbilityDef>
+
+  <CharacterStudio.Abilities.ModularAbilityDef>
     <defName>CS_Example_R_Annihilation</defName>
     <label>R·歼灭界域</label>
     <description>示例：该技能带有叠层/二段引爆运行时组件。绑定到任意槽位后，都可按组件配置进入叠层并执行延迟引爆。</description>

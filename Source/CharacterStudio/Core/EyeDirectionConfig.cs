@@ -254,6 +254,48 @@ namespace CharacterStudio.Core
         public PupilMotionConfig pupilMotion = new PupilMotionConfig();
 
         // ─────────────────────────────────────────────
+        // Profile 驱动的动画参数（JSON 可编辑）
+        // 每个 FaceChannelProfileSet 包含一个通道所有状态的参数。
+        // null 表示从旧 MotionConfig 字段实时构建（无缓存，保证编辑器修改立即生效）。
+        // ─────────────────────────────────────────────
+
+        /// <summary>眼球（Eye 白）通道动画参数。null 时从 eyeMotion 实时构建。</summary>
+        public FaceChannelProfileSet? eyeProfiles;
+
+        /// <summary>瞳孔（Pupil）通道动画参数。null 时从 pupilMotion 实时构建。</summary>
+        public FaceChannelProfileSet? pupilProfiles;
+
+        /// <summary>上眼睑（UpperLid）通道动画参数。null 时从 lidMotion 实时构建。</summary>
+        public FaceChannelProfileSet? upperLidProfiles;
+
+        /// <summary>下眼睑（LowerLid）通道动画参数。null 时从 lidMotion 实时构建。</summary>
+        public FaceChannelProfileSet? lowerLidProfiles;
+
+        /// <summary>
+        /// 获取 Eye 通道的 profile。如果 eyeProfiles 已设置则使用它，
+        /// 否则从 eyeMotion 字段实时构建（无缓存，编辑器修改立即反映）。
+        /// </summary>
+        public FaceChannelProfileSet GetOrBuildEyeProfiles()
+        {
+            return eyeProfiles ?? FaceProfileBuilder.BuildEyeDefaults(eyeMotion ?? new EyeMotionConfig());
+        }
+
+        public FaceChannelProfileSet GetOrBuildPupilProfiles()
+        {
+            return pupilProfiles ?? FaceProfileBuilder.BuildPupilDefaults(pupilMotion ?? new PupilMotionConfig());
+        }
+
+        public FaceChannelProfileSet GetOrBuildUpperLidProfiles()
+        {
+            return upperLidProfiles ?? FaceProfileBuilder.BuildUpperLidDefaults(lidMotion ?? new LidMotionConfig(), upperLidMoveDown);
+        }
+
+        public FaceChannelProfileSet GetOrBuildLowerLidProfiles()
+        {
+            return lowerLidProfiles ?? FaceProfileBuilder.BuildLowerLidDefaults(lidMotion ?? new LidMotionConfig());
+        }
+
+        // ─────────────────────────────────────────────
         // 查询 API
         // ─────────────────────────────────────────────
 
@@ -304,6 +346,10 @@ namespace CharacterStudio.Core
             lidMotion        = this.lidMotion?.Clone() ?? new LidMotionConfig(),
             eyeMotion        = this.eyeMotion?.Clone() ?? new EyeMotionConfig(),
             pupilMotion      = this.pupilMotion?.Clone() ?? new PupilMotionConfig(),
+            eyeProfiles      = this.eyeProfiles,
+            pupilProfiles    = this.pupilProfiles,
+            upperLidProfiles = this.upperLidProfiles,
+            lowerLidProfiles = this.lowerLidProfiles,
         };
     }
 }

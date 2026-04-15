@@ -429,7 +429,7 @@ namespace CharacterStudio.Rendering
                 return animationState.triggeredVisibleOutsideCycle;
 
             int now = AbilityTimeStopRuntimeController.ResolveVisualTickForPawn(pawn, Find.TickManager?.TicksGame ?? 0);
-            int localTick = Mathf.Max(0, now - skinComp.triggeredEquipmentAnimationStartTick);
+            int localTick = Mathf.Max(0, now - skinComp.TriggeredEquipmentAnimationStartTick);
             int deployTicks = Mathf.Max(1, animationState.triggeredDeployTicks);
             int holdTicks = Mathf.Max(0, animationState.triggeredHoldTicks);
 
@@ -475,7 +475,7 @@ namespace CharacterStudio.Rendering
             }
 
             int now = AbilityTimeStopRuntimeController.ResolveVisualTickForPawn(pawn, Find.TickManager?.TicksGame ?? 0);
-            int localTick = Mathf.Max(0, now - skinComp.triggeredEquipmentAnimationStartTick);
+            int localTick = Mathf.Max(0, now - skinComp.TriggeredEquipmentAnimationStartTick);
             int deployTicks = Mathf.Max(1, animationState.triggeredDeployTicks);
             int holdTicks = Mathf.Max(0, animationState.triggeredHoldTicks);
             int returnTicks = Mathf.Max(1, animationState.triggeredReturnTicks);

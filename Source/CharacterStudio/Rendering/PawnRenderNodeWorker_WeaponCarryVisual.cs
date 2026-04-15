@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CharacterStudio.Abilities;
 using CharacterStudio.Core;
 using UnityEngine;
 using Verse;
@@ -14,6 +15,20 @@ namespace CharacterStudio.Rendering
     {
         private static readonly Dictionary<string, Graphic> graphicCache = new Dictionary<string, Graphic>(StringComparer.Ordinal);
         private static readonly Dictionary<string, bool> isMultiCache = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+
+        // P-PERF: WeakReference 缓存 CompCharacterAbilityRuntime，避免每帧 GetComp O(N) 遍历
+        private static readonly System.WeakReference<Pawn> _cachedAbilityPawnRef = new System.WeakReference<Pawn>(null!);
+        private static CompCharacterAbilityRuntime? _cachedAbilityComp;
+
+        private static CompCharacterAbilityRuntime? FastGetAbilityComp(Pawn? pawn)
+        {
+            if (pawn == null) return null;
+            if (_cachedAbilityPawnRef.TryGetTarget(out Pawn? cached) && cached == pawn)
+                return _cachedAbilityComp;
+            _cachedAbilityComp = pawn.GetComp<CompCharacterAbilityRuntime>();
+            _cachedAbilityPawnRef.SetTarget(pawn);
+            return _cachedAbilityComp;
+        }
 
         public override bool CanDrawNow(PawnRenderNode node, PawnDrawParms parms)
         {
@@ -81,8 +96,8 @@ namespace CharacterStudio.Rendering
             if (pawn == null)
                 return WeaponCarryVisualState.Undrafted;
 
-            var skinComp = pawn.GetComp<CompPawnSkin>();
-            if (skinComp != null && skinComp.IsWeaponCarryCastingNow())
+            var abilityComp = FastGetAbilityComp(pawn);
+            if (abilityComp != null && abilityComp.IsWeaponCarryCastingNow())
                 return WeaponCarryVisualState.Casting;
 
             if (IsCastingAbility(pawn))

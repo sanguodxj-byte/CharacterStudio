@@ -11,7 +11,7 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     public class ExecuteBonusDamageHandler : IDamageScaleModifier
     {
         public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.ExecuteBonusDamage;
-        public float GetDamageScale(AbilityRuntimeComponentConfig config, Pawn caster, CompPawnSkin casterSkin, LocalTargetInfo target, Pawn targetPawn, CompPawnSkin targetSkin, bool allowDashConsume, int nowTick)
+        public float GetDamageScale(AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime casterAbility, LocalTargetInfo target, Pawn targetPawn, CompCharacterAbilityRuntime targetAbility, bool allowDashConsume, int nowTick)
         {
             if (targetPawn?.health == null) return 0f;
             float summary = targetPawn.health.summaryHealth.SummaryHealthPercent;
@@ -22,7 +22,7 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     public class MissingHealthBonusDamageHandler : IDamageScaleModifier
     {
         public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.MissingHealthBonusDamage;
-        public float GetDamageScale(AbilityRuntimeComponentConfig config, Pawn caster, CompPawnSkin casterSkin, LocalTargetInfo target, Pawn targetPawn, CompPawnSkin targetSkin, bool allowDashConsume, int nowTick)
+        public float GetDamageScale(AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime casterAbility, LocalTargetInfo target, Pawn targetPawn, CompCharacterAbilityRuntime targetAbility, bool allowDashConsume, int nowTick)
         {
             if (targetPawn?.health == null) return 0f;
             float missing = 1f - targetPawn.health.summaryHealth.SummaryHealthPercent;
@@ -35,7 +35,7 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     public class FullHealthBonusDamageHandler : IDamageScaleModifier
     {
         public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.FullHealthBonusDamage;
-        public float GetDamageScale(AbilityRuntimeComponentConfig config, Pawn caster, CompPawnSkin casterSkin, LocalTargetInfo target, Pawn targetPawn, CompPawnSkin targetSkin, bool allowDashConsume, int nowTick)
+        public float GetDamageScale(AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime casterAbility, LocalTargetInfo target, Pawn targetPawn, CompCharacterAbilityRuntime targetAbility, bool allowDashConsume, int nowTick)
         {
             if (targetPawn?.health == null) return 0f;
             float summary = targetPawn.health.summaryHealth.SummaryHealthPercent;
@@ -46,7 +46,7 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     public class NearbyEnemyBonusDamageHandler : IDamageScaleModifier
     {
         public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.NearbyEnemyBonusDamage;
-        public float GetDamageScale(AbilityRuntimeComponentConfig config, Pawn caster, CompPawnSkin casterSkin, LocalTargetInfo target, Pawn targetPawn, CompPawnSkin targetSkin, bool allowDashConsume, int nowTick)
+        public float GetDamageScale(AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime casterAbility, LocalTargetInfo target, Pawn targetPawn, CompCharacterAbilityRuntime targetAbility, bool allowDashConsume, int nowTick)
         {
             if (targetPawn == null || caster.Map == null) return 0f;
             int count = CompAbilityEffect_Modular.CountNearbyEnemyPawns(caster, target.Cell,
@@ -58,7 +58,7 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     public class IsolatedTargetBonusDamageHandler : IDamageScaleModifier
     {
         public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.IsolatedTargetBonusDamage;
-        public float GetDamageScale(AbilityRuntimeComponentConfig config, Pawn caster, CompPawnSkin casterSkin, LocalTargetInfo target, Pawn targetPawn, CompPawnSkin targetSkin, bool allowDashConsume, int nowTick)
+        public float GetDamageScale(AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime casterAbility, LocalTargetInfo target, Pawn targetPawn, CompCharacterAbilityRuntime targetAbility, bool allowDashConsume, int nowTick)
         {
             if (targetPawn == null || caster.Map == null) return 0f;
             int nearbyCount = CompAbilityEffect_Modular.CountNearbyEnemyPawns(caster, target.Cell,
@@ -70,10 +70,10 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     public class ComboStacksDamageHandler : IDamageScaleModifier
     {
         public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.ComboStacks;
-        public float GetDamageScale(AbilityRuntimeComponentConfig config, Pawn caster, CompPawnSkin casterSkin, LocalTargetInfo target, Pawn targetPawn, CompPawnSkin targetSkin, bool allowDashConsume, int nowTick)
+        public float GetDamageScale(AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime casterAbility, LocalTargetInfo target, Pawn targetPawn, CompCharacterAbilityRuntime targetAbility, bool allowDashConsume, int nowTick)
         {
-            if (casterSkin != null && casterSkin.offensiveComboExpireTick >= nowTick)
-                return casterSkin.offensiveComboStacks * Mathf.Max(0f, config.comboStackBonusDamagePerStack);
+            if (casterAbility != null && casterAbility.OffensiveComboExpireTick >= nowTick)
+                return casterAbility.OffensiveComboStacks * Mathf.Max(0f, config.comboStackBonusDamagePerStack);
             return 0f;
         }
     }
@@ -81,7 +81,7 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     public class PierceBonusDamageHandler : IDamageScaleModifier
     {
         public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.PierceBonusDamage;
-        public float GetDamageScale(AbilityRuntimeComponentConfig config, Pawn caster, CompPawnSkin casterSkin, LocalTargetInfo target, Pawn targetPawn, CompPawnSkin targetSkin, bool allowDashConsume, int nowTick)
+        public float GetDamageScale(AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime casterAbility, LocalTargetInfo target, Pawn targetPawn, CompCharacterAbilityRuntime targetAbility, bool allowDashConsume, int nowTick)
         {
             if (caster.Map == null) return 0f;
             int hitCount = CompAbilityEffect_Modular.CountNearbyEnemyPawns(caster, target.Cell,
@@ -93,10 +93,10 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     public class MarkDetonationDamageHandler : IDamageScaleModifier
     {
         public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.MarkDetonation;
-        public float GetDamageScale(AbilityRuntimeComponentConfig config, Pawn caster, CompPawnSkin casterSkin, LocalTargetInfo target, Pawn targetPawn, CompPawnSkin targetSkin, bool allowDashConsume, int nowTick)
+        public float GetDamageScale(AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime casterAbility, LocalTargetInfo target, Pawn targetPawn, CompCharacterAbilityRuntime targetAbility, bool allowDashConsume, int nowTick)
         {
-            if (targetSkin != null && targetSkin.offensiveMarkExpireTick >= nowTick && targetSkin.offensiveMarkStacks > 0)
-                return Mathf.Min(0.5f, targetSkin.offensiveMarkStacks * 0.05f);
+            if (targetAbility != null && targetAbility.OffensiveMarkExpireTick >= nowTick && targetAbility.OffensiveMarkStacks > 0)
+                return Mathf.Min(0.5f, targetAbility.OffensiveMarkStacks * 0.05f);
             return 0f;
         }
     }
@@ -106,21 +106,21 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     public class MarkDetonationPostHitHandler : IPostHitHandler
     {
         public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.MarkDetonation;
-        public void OnPostHit(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompPawnSkin casterSkin, LocalTargetInfo target, Pawn targetPawn, CompPawnSkin targetSkin, float appliedDamage, int nowTick)
+        public void OnPostHit(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime casterAbility, LocalTargetInfo target, Pawn targetPawn, CompCharacterAbilityRuntime targetAbility, float appliedDamage, int nowTick)
         {
-            if (targetSkin == null) return;
+            if (targetAbility == null) return;
 
-            if (targetSkin.offensiveMarkExpireTick < nowTick)
-                targetSkin.offensiveMarkStacks = 0;
+            if (targetAbility.OffensiveMarkExpireTick < nowTick)
+                targetAbility.OffensiveMarkStacks = 0;
 
-            targetSkin.offensiveMarkExpireTick = nowTick + Mathf.Max(1, config.markDurationTicks);
-            targetSkin.offensiveMarkStacks = Mathf.Min(Mathf.Max(1, config.markMaxStacks), targetSkin.offensiveMarkStacks + 1);
+            targetAbility.OffensiveMarkExpireTick = nowTick + Mathf.Max(1, config.markDurationTicks);
+            targetAbility.OffensiveMarkStacks = Mathf.Min(Mathf.Max(1, config.markMaxStacks), targetAbility.OffensiveMarkStacks + 1);
 
-            if (targetSkin.offensiveMarkStacks >= Mathf.Max(1, config.markMaxStacks) && targetPawn != null && !targetPawn.Dead)
+            if (targetAbility.OffensiveMarkStacks >= Mathf.Max(1, config.markMaxStacks) && targetPawn != null && !targetPawn.Dead)
             {
                 CompAbilityEffect_Modular.ApplyDirectDamageToPawn(caster, targetPawn, config.markDamageDef, config.markDetonationDamage);
-                targetSkin.offensiveMarkStacks = 0;
-                targetSkin.offensiveMarkExpireTick = -1;
+                targetAbility.OffensiveMarkStacks = 0;
+                targetAbility.OffensiveMarkExpireTick = -1;
             }
         }
     }
@@ -128,20 +128,20 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     public class ComboStacksPostHitHandler : IPostHitHandler
     {
         public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.ComboStacks;
-        public void OnPostHit(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompPawnSkin casterSkin, LocalTargetInfo target, Pawn targetPawn, CompPawnSkin targetSkin, float appliedDamage, int nowTick)
+        public void OnPostHit(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime casterAbility, LocalTargetInfo target, Pawn targetPawn, CompCharacterAbilityRuntime targetAbility, float appliedDamage, int nowTick)
         {
-            if (casterSkin == null) return;
-            if (casterSkin.offensiveComboExpireTick < nowTick)
-                casterSkin.offensiveComboStacks = 0;
-            casterSkin.offensiveComboExpireTick = nowTick + Mathf.Max(1, config.comboStackWindowTicks);
-            casterSkin.offensiveComboStacks = Mathf.Min(Mathf.Max(1, config.comboStackMax), casterSkin.offensiveComboStacks + 1);
+            if (casterAbility == null) return;
+            if (casterAbility.OffensiveComboExpireTick < nowTick)
+                casterAbility.OffensiveComboStacks = 0;
+            casterAbility.OffensiveComboExpireTick = nowTick + Mathf.Max(1, config.comboStackWindowTicks);
+            casterAbility.OffensiveComboStacks = Mathf.Min(Mathf.Max(1, config.comboStackMax), casterAbility.OffensiveComboStacks + 1);
         }
     }
 
     public class HitSlowFieldHandler : IPostHitHandler
     {
         public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.HitSlowField;
-        public void OnPostHit(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompPawnSkin casterSkin, LocalTargetInfo target, Pawn targetPawn, CompPawnSkin targetSkin, float appliedDamage, int nowTick)
+        public void OnPostHit(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime casterAbility, LocalTargetInfo target, Pawn targetPawn, CompCharacterAbilityRuntime targetAbility, float appliedDamage, int nowTick)
         {
             if (caster.Map == null || string.IsNullOrWhiteSpace(config.slowFieldHediffDefName)) return;
 
@@ -167,7 +167,7 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     public class HitHealHandler : IPostHitHandler
     {
         public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.HitHeal;
-        public void OnPostHit(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompPawnSkin casterSkin, LocalTargetInfo target, Pawn targetPawn, CompPawnSkin targetSkin, float appliedDamage, int nowTick)
+        public void OnPostHit(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime casterAbility, LocalTargetInfo target, Pawn targetPawn, CompCharacterAbilityRuntime targetAbility, float appliedDamage, int nowTick)
         {
             float heal = Mathf.Max(0f, config.hitHealAmount) + (Mathf.Max(0f, config.hitHealRatio) * Mathf.Max(0f, appliedDamage));
             CompAbilityEffect_Modular.ApplyShieldHeal(caster, heal);
@@ -177,19 +177,19 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     public class HitCooldownRefundHandler : IPostHitHandler
     {
         public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.HitCooldownRefund;
-        public void OnPostHit(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompPawnSkin casterSkin, LocalTargetInfo target, Pawn targetPawn, CompPawnSkin targetSkin, float appliedDamage, int nowTick)
+        public void OnPostHit(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime casterAbility, LocalTargetInfo target, Pawn targetPawn, CompCharacterAbilityRuntime targetAbility, float appliedDamage, int nowTick)
         {
-            if (casterSkin == null) return;
+            if (casterAbility == null) return;
             float percent = Mathf.Clamp01(config.hitCooldownRefundPercent);
-            int currentCooldown = Mathf.Max(0, casterSkin.abilityRuntimeState.GetCooldownUntilTick(config.refundHotkeySlot) - nowTick);
-            casterSkin.abilityRuntimeState.SetCooldownUntilTick(config.refundHotkeySlot, nowTick + Mathf.RoundToInt(currentCooldown * (1f - percent)));
+            int currentCooldown = Mathf.Max(0, casterAbility.GetCooldownUntilTick(config.refundHotkeySlot) - nowTick);
+            casterAbility.SetCooldownUntilTick(config.refundHotkeySlot, nowTick + Mathf.RoundToInt(currentCooldown * (1f - percent)));
         }
     }
 
     public class ProjectileSplitHandler : IPostHitHandler
     {
         public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.ProjectileSplit;
-        public void OnPostHit(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompPawnSkin casterSkin, LocalTargetInfo target, Pawn targetPawn, CompPawnSkin targetSkin, float appliedDamage, int nowTick)
+        public void OnPostHit(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime casterAbility, LocalTargetInfo target, Pawn targetPawn, CompCharacterAbilityRuntime targetAbility, float appliedDamage, int nowTick)
             => source.TriggerProjectileSplit(config, caster, target);
     }
 }

@@ -151,45 +151,47 @@ namespace CharacterStudio.Abilities
         }
 
         /// <summary>获取指定槽位的当前 CD 截止 Tick</summary>
-        private static int GetSlotCooldownUntil(CompPawnSkin comp, AbilityHotkeySlot slot)
+        private static int GetSlotCooldownUntil(CompCharacterAbilityRuntime comp, AbilityHotkeySlot slot)
         {
+            var state = comp.RuntimeState;
             switch (slot)
             {
-                case AbilityHotkeySlot.Q: return comp.qCooldownUntilTick;
-                case AbilityHotkeySlot.W: return comp.wCooldownUntilTick;
-                case AbilityHotkeySlot.E: return comp.eCooldownUntilTick;
-                case AbilityHotkeySlot.R: return comp.rCooldownUntilTick;
-                case AbilityHotkeySlot.T: return comp.tCooldownUntilTick;
-                case AbilityHotkeySlot.A: return comp.aCooldownUntilTick;
-                case AbilityHotkeySlot.S: return comp.sCooldownUntilTick;
-                case AbilityHotkeySlot.D: return comp.dCooldownUntilTick;
-                case AbilityHotkeySlot.F: return comp.fCooldownUntilTick;
-                case AbilityHotkeySlot.Z: return comp.zCooldownUntilTick;
-                case AbilityHotkeySlot.X: return comp.xCooldownUntilTick;
-                case AbilityHotkeySlot.C: return comp.cCooldownUntilTick;
-                case AbilityHotkeySlot.V: return comp.vCooldownUntilTick;
+                case AbilityHotkeySlot.Q: return state.qCooldownUntilTick;
+                case AbilityHotkeySlot.W: return state.wCooldownUntilTick;
+                case AbilityHotkeySlot.E: return state.eCooldownUntilTick;
+                case AbilityHotkeySlot.R: return state.rCooldownUntilTick;
+                case AbilityHotkeySlot.T: return state.tCooldownUntilTick;
+                case AbilityHotkeySlot.A: return state.aCooldownUntilTick;
+                case AbilityHotkeySlot.S: return state.sCooldownUntilTick;
+                case AbilityHotkeySlot.D: return state.dCooldownUntilTick;
+                case AbilityHotkeySlot.F: return state.fCooldownUntilTick;
+                case AbilityHotkeySlot.Z: return state.zCooldownUntilTick;
+                case AbilityHotkeySlot.X: return state.xCooldownUntilTick;
+                case AbilityHotkeySlot.C: return state.cCooldownUntilTick;
+                case AbilityHotkeySlot.V: return state.vCooldownUntilTick;
                 default: return 0;
             }
         }
 
         /// <summary>写入指定槽位的 CD 截止 Tick</summary>
-        private static void SetSlotCooldown(CompPawnSkin comp, AbilityHotkeySlot slot, int untilTick)
+        private static void SetSlotCooldown(CompCharacterAbilityRuntime comp, AbilityHotkeySlot slot, int untilTick)
         {
+            var state = comp.RuntimeState;
             switch (slot)
             {
-                case AbilityHotkeySlot.Q: comp.qCooldownUntilTick = untilTick; break;
-                case AbilityHotkeySlot.W: comp.wCooldownUntilTick = untilTick; break;
-                case AbilityHotkeySlot.E: comp.eCooldownUntilTick = untilTick; break;
-                case AbilityHotkeySlot.R: comp.rCooldownUntilTick = untilTick; break;
-                case AbilityHotkeySlot.T: comp.tCooldownUntilTick = untilTick; break;
-                case AbilityHotkeySlot.A: comp.aCooldownUntilTick = untilTick; break;
-                case AbilityHotkeySlot.S: comp.sCooldownUntilTick = untilTick; break;
-                case AbilityHotkeySlot.D: comp.dCooldownUntilTick = untilTick; break;
-                case AbilityHotkeySlot.F: comp.fCooldownUntilTick = untilTick; break;
-                case AbilityHotkeySlot.Z: comp.zCooldownUntilTick = untilTick; break;
-                case AbilityHotkeySlot.X: comp.xCooldownUntilTick = untilTick; break;
-                case AbilityHotkeySlot.C: comp.cCooldownUntilTick = untilTick; break;
-                case AbilityHotkeySlot.V: comp.vCooldownUntilTick = untilTick; break;
+                case AbilityHotkeySlot.Q: state.qCooldownUntilTick = untilTick; break;
+                case AbilityHotkeySlot.W: state.wCooldownUntilTick = untilTick; break;
+                case AbilityHotkeySlot.E: state.eCooldownUntilTick = untilTick; break;
+                case AbilityHotkeySlot.R: state.rCooldownUntilTick = untilTick; break;
+                case AbilityHotkeySlot.T: state.tCooldownUntilTick = untilTick; break;
+                case AbilityHotkeySlot.A: state.aCooldownUntilTick = untilTick; break;
+                case AbilityHotkeySlot.S: state.sCooldownUntilTick = untilTick; break;
+                case AbilityHotkeySlot.D: state.dCooldownUntilTick = untilTick; break;
+                case AbilityHotkeySlot.F: state.fCooldownUntilTick = untilTick; break;
+                case AbilityHotkeySlot.Z: state.zCooldownUntilTick = untilTick; break;
+                case AbilityHotkeySlot.X: state.xCooldownUntilTick = untilTick; break;
+                case AbilityHotkeySlot.C: state.cCooldownUntilTick = untilTick; break;
+                case AbilityHotkeySlot.V: state.vCooldownUntilTick = untilTick; break;
                 default: break;
             }
         }
@@ -226,17 +228,17 @@ namespace CharacterStudio.Abilities
                 return;
 
             Pawn pawn = selectedPawn;
-            var skinComp = pawn.GetComp<CompPawnSkin>();
+            var abilityComp = pawn.GetComp<CompCharacterAbilityRuntime>();
             CharacterAbilityLoadout? loadout = AbilityLoadoutRuntimeUtility.GetEffectiveLoadout(pawn);
             SkinAbilityHotkeyConfig? hotkeys = loadout?.hotkeys;
 
-            if (skinComp == null || hotkeys == null || !hotkeys.enabled)
+            if (abilityComp == null || hotkeys == null || !hotkeys.enabled)
             {
                 return;
             }
 
             // ── 最小槽位 CD 门控（0.5s）──
-            int slotCdUntil = GetSlotCooldownUntil(skinComp, slot);
+            int slotCdUntil = GetSlotCooldownUntil(abilityComp, slot);
             if (tick < slotCdUntil)
             {
                 int remain = slotCdUntil - tick;
@@ -246,7 +248,7 @@ namespace CharacterStudio.Abilities
                 return;
             }
 
-            string abilityDefName = ResolveAbilityDefNameBySlot(hotkeys, slot, skinComp, tick);
+            string abilityDefName = ResolveAbilityDefNameBySlot(hotkeys, slot, abilityComp, tick);
             ModularAbilityDef? ability = ResolveAbilityByDefName(loadout, abilityDefName);
             if (AbilityVanillaFlightUtility.TryNotifyFlightFollowupFailure(pawn, ability))
             {
@@ -265,14 +267,14 @@ namespace CharacterStudio.Abilities
                 return;
             }
 
-            bool casted = ability != null && TryCastConfiguredAbility(pawn, skinComp, ability, tick, slot);
+            bool casted = ability != null && TryCastConfiguredAbility(pawn, abilityComp, ability, tick, slot);
 
             if (casted)
             {
                 // 写入最小 CD（0.5s），取 max(当前CD, 最小CD) 以免覆盖 E 技能自己设置的更长 CD
                 int minCdEnd = tick + MinSlotCooldownTicks;
-                int curCdEnd = GetSlotCooldownUntil(skinComp, slot);
-                SetSlotCooldown(skinComp, slot, Mathf.Max(curCdEnd, minCdEnd));
+                int curCdEnd = GetSlotCooldownUntil(abilityComp, slot);
+                SetSlotCooldown(abilityComp, slot, Mathf.Max(curCdEnd, minCdEnd));
 
                 if (ability != null)
                 {
@@ -335,58 +337,31 @@ namespace CharacterStudio.Abilities
             return AbilityLoadoutRuntimeUtility.ResolveAbilityByDefName(loadout, abilityDefName);
         }
 
-        private static string ResolveAbilityDefNameBySlot(SkinAbilityHotkeyConfig hotkeys, AbilityHotkeySlot slot, CompPawnSkin skinComp, int tick)
+        private static string ResolveAbilityDefNameBySlot(SkinAbilityHotkeyConfig hotkeys, AbilityHotkeySlot slot, CompCharacterAbilityRuntime abilityComp, int tick)
         {
-            string overrideDefName = GetActiveSlotOverrideAbilityDefName(skinComp, slot, tick);
+            string overrideDefName = GetActiveSlotOverrideAbilityDefName(abilityComp, slot, tick);
             if (!string.IsNullOrEmpty(overrideDefName))
             {
                 return overrideDefName;
             }
 
-            if (tick <= skinComp.slotOverrideWindowEndTick
-                && !string.IsNullOrWhiteSpace(skinComp.slotOverrideWindowSlotId)
-                && string.Equals(skinComp.slotOverrideWindowSlotId, slot.ToString(), System.StringComparison.OrdinalIgnoreCase)
-                && !string.IsNullOrWhiteSpace(skinComp.slotOverrideWindowAbilityDefName))
+            if (tick <= abilityComp.SlotOverrideWindowEndTick
+                && !string.IsNullOrWhiteSpace(abilityComp.SlotOverrideWindowSlotId)
+                && string.Equals(abilityComp.SlotOverrideWindowSlotId, slot.ToString(), System.StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(abilityComp.SlotOverrideWindowAbilityDefName))
             {
-                return skinComp.slotOverrideWindowAbilityDefName;
+                return abilityComp.SlotOverrideWindowAbilityDefName;
             }
 
-            switch (slot)
-            {
-                case AbilityHotkeySlot.Q:
-                    return hotkeys.qAbilityDefName;
-                case AbilityHotkeySlot.W:
-                    return hotkeys.wAbilityDefName;
-                case AbilityHotkeySlot.E:
-                    return hotkeys.eAbilityDefName;
-                case AbilityHotkeySlot.T:
-                    return hotkeys.tAbilityDefName;
-                case AbilityHotkeySlot.A:
-                    return hotkeys.aAbilityDefName;
-                case AbilityHotkeySlot.S:
-                    return hotkeys.sAbilityDefName;
-                case AbilityHotkeySlot.D:
-                    return hotkeys.dAbilityDefName;
-                case AbilityHotkeySlot.F:
-                    return hotkeys.fAbilityDefName;
-                case AbilityHotkeySlot.Z:
-                    return hotkeys.zAbilityDefName;
-                case AbilityHotkeySlot.X:
-                    return hotkeys.xAbilityDefName;
-                case AbilityHotkeySlot.C:
-                    return hotkeys.cAbilityDefName;
-                case AbilityHotkeySlot.V:
-                    return hotkeys.vAbilityDefName;
-                default:
-                    return hotkeys.rAbilityDefName;
-            }
+            string result = hotkeys[slot.ToString()];
+            return !string.IsNullOrEmpty(result) ? result : hotkeys["R"];
         }
 
-        private static string GetActiveSlotOverrideAbilityDefName(CompPawnSkin skinComp, AbilityHotkeySlot slot, int tick)
+        private static string GetActiveSlotOverrideAbilityDefName(CompCharacterAbilityRuntime abilityComp, AbilityHotkeySlot slot, int tick)
         {
             string abilityDefName;
             int expireTick;
-            GetSlotOverrideState(skinComp, slot, out abilityDefName, out expireTick);
+            GetSlotOverrideState(abilityComp, slot, out abilityDefName, out expireTick);
             if (string.IsNullOrEmpty(abilityDefName))
             {
                 return string.Empty;
@@ -394,132 +369,134 @@ namespace CharacterStudio.Abilities
 
             if (expireTick >= 0 && tick > expireTick)
             {
-                ClearSlotOverrideState(skinComp, slot);
+                ClearSlotOverrideState(abilityComp, slot);
                 return string.Empty;
             }
 
             return abilityDefName;
         }
 
-        private static void GetSlotOverrideState(CompPawnSkin skinComp, AbilityHotkeySlot slot, out string abilityDefName, out int expireTick)
+        private static void GetSlotOverrideState(CompCharacterAbilityRuntime abilityComp, AbilityHotkeySlot slot, out string abilityDefName, out int expireTick)
         {
+            var state = abilityComp.RuntimeState;
             switch (slot)
             {
                 case AbilityHotkeySlot.Q:
-                    abilityDefName = skinComp.qOverrideAbilityDefName;
-                    expireTick = skinComp.qOverrideExpireTick;
+                    abilityDefName = state.qOverrideAbilityDefName;
+                    expireTick = state.qOverrideExpireTick;
                     break;
                 case AbilityHotkeySlot.W:
-                    abilityDefName = skinComp.wOverrideAbilityDefName;
-                    expireTick = skinComp.wOverrideExpireTick;
+                    abilityDefName = state.wOverrideAbilityDefName;
+                    expireTick = state.wOverrideExpireTick;
                     break;
                 case AbilityHotkeySlot.E:
-                    abilityDefName = skinComp.eOverrideAbilityDefName;
-                    expireTick = skinComp.eOverrideExpireTick;
+                    abilityDefName = state.eOverrideAbilityDefName;
+                    expireTick = state.eOverrideExpireTick;
                     break;
                 case AbilityHotkeySlot.T:
-                    abilityDefName = skinComp.tOverrideAbilityDefName;
-                    expireTick = skinComp.tOverrideExpireTick;
+                    abilityDefName = state.tOverrideAbilityDefName;
+                    expireTick = state.tOverrideExpireTick;
                     break;
                 case AbilityHotkeySlot.A:
-                    abilityDefName = skinComp.aOverrideAbilityDefName;
-                    expireTick = skinComp.aOverrideExpireTick;
+                    abilityDefName = state.aOverrideAbilityDefName;
+                    expireTick = state.aOverrideExpireTick;
                     break;
                 case AbilityHotkeySlot.S:
-                    abilityDefName = skinComp.sOverrideAbilityDefName;
-                    expireTick = skinComp.sOverrideExpireTick;
+                    abilityDefName = state.sOverrideAbilityDefName;
+                    expireTick = state.sOverrideExpireTick;
                     break;
                 case AbilityHotkeySlot.D:
-                    abilityDefName = skinComp.dOverrideAbilityDefName;
-                    expireTick = skinComp.dOverrideExpireTick;
+                    abilityDefName = state.dOverrideAbilityDefName;
+                    expireTick = state.dOverrideExpireTick;
                     break;
                 case AbilityHotkeySlot.F:
-                    abilityDefName = skinComp.fOverrideAbilityDefName;
-                    expireTick = skinComp.fOverrideExpireTick;
+                    abilityDefName = state.fOverrideAbilityDefName;
+                    expireTick = state.fOverrideExpireTick;
                     break;
                 case AbilityHotkeySlot.Z:
-                    abilityDefName = skinComp.zOverrideAbilityDefName;
-                    expireTick = skinComp.zOverrideExpireTick;
+                    abilityDefName = state.zOverrideAbilityDefName;
+                    expireTick = state.zOverrideExpireTick;
                     break;
                 case AbilityHotkeySlot.X:
-                    abilityDefName = skinComp.xOverrideAbilityDefName;
-                    expireTick = skinComp.xOverrideExpireTick;
+                    abilityDefName = state.xOverrideAbilityDefName;
+                    expireTick = state.xOverrideExpireTick;
                     break;
                 case AbilityHotkeySlot.C:
-                    abilityDefName = skinComp.cOverrideAbilityDefName;
-                    expireTick = skinComp.cOverrideExpireTick;
+                    abilityDefName = state.cOverrideAbilityDefName;
+                    expireTick = state.cOverrideExpireTick;
                     break;
                 case AbilityHotkeySlot.V:
-                    abilityDefName = skinComp.vOverrideAbilityDefName;
-                    expireTick = skinComp.vOverrideExpireTick;
+                    abilityDefName = state.vOverrideAbilityDefName;
+                    expireTick = state.vOverrideExpireTick;
                     break;
                 default:
-                    abilityDefName = skinComp.rOverrideAbilityDefName;
-                    expireTick = skinComp.rOverrideExpireTick;
+                    abilityDefName = state.rOverrideAbilityDefName;
+                    expireTick = state.rOverrideExpireTick;
                     break;
             }
         }
 
-        private static void ClearSlotOverrideState(CompPawnSkin skinComp, AbilityHotkeySlot slot)
+        private static void ClearSlotOverrideState(CompCharacterAbilityRuntime abilityComp, AbilityHotkeySlot slot)
         {
+            var state = abilityComp.RuntimeState;
             switch (slot)
             {
                 case AbilityHotkeySlot.Q:
-                    skinComp.qOverrideAbilityDefName = string.Empty;
-                    skinComp.qOverrideExpireTick = -1;
+                    state.qOverrideAbilityDefName = string.Empty;
+                    state.qOverrideExpireTick = -1;
                     break;
                 case AbilityHotkeySlot.W:
-                    skinComp.wOverrideAbilityDefName = string.Empty;
-                    skinComp.wOverrideExpireTick = -1;
+                    state.wOverrideAbilityDefName = string.Empty;
+                    state.wOverrideExpireTick = -1;
                     break;
                 case AbilityHotkeySlot.E:
-                    skinComp.eOverrideAbilityDefName = string.Empty;
-                    skinComp.eOverrideExpireTick = -1;
+                    state.eOverrideAbilityDefName = string.Empty;
+                    state.eOverrideExpireTick = -1;
                     break;
                 case AbilityHotkeySlot.T:
-                    skinComp.tOverrideAbilityDefName = string.Empty;
-                    skinComp.tOverrideExpireTick = -1;
+                    state.tOverrideAbilityDefName = string.Empty;
+                    state.tOverrideExpireTick = -1;
                     break;
                 case AbilityHotkeySlot.A:
-                    skinComp.aOverrideAbilityDefName = string.Empty;
-                    skinComp.aOverrideExpireTick = -1;
+                    state.aOverrideAbilityDefName = string.Empty;
+                    state.aOverrideExpireTick = -1;
                     break;
                 case AbilityHotkeySlot.S:
-                    skinComp.sOverrideAbilityDefName = string.Empty;
-                    skinComp.sOverrideExpireTick = -1;
+                    state.sOverrideAbilityDefName = string.Empty;
+                    state.sOverrideExpireTick = -1;
                     break;
                 case AbilityHotkeySlot.D:
-                    skinComp.dOverrideAbilityDefName = string.Empty;
-                    skinComp.dOverrideExpireTick = -1;
+                    state.dOverrideAbilityDefName = string.Empty;
+                    state.dOverrideExpireTick = -1;
                     break;
                 case AbilityHotkeySlot.F:
-                    skinComp.fOverrideAbilityDefName = string.Empty;
-                    skinComp.fOverrideExpireTick = -1;
+                    state.fOverrideAbilityDefName = string.Empty;
+                    state.fOverrideExpireTick = -1;
                     break;
                 case AbilityHotkeySlot.Z:
-                    skinComp.zOverrideAbilityDefName = string.Empty;
-                    skinComp.zOverrideExpireTick = -1;
+                    state.zOverrideAbilityDefName = string.Empty;
+                    state.zOverrideExpireTick = -1;
                     break;
                 case AbilityHotkeySlot.X:
-                    skinComp.xOverrideAbilityDefName = string.Empty;
-                    skinComp.xOverrideExpireTick = -1;
+                    state.xOverrideAbilityDefName = string.Empty;
+                    state.xOverrideExpireTick = -1;
                     break;
                 case AbilityHotkeySlot.C:
-                    skinComp.cOverrideAbilityDefName = string.Empty;
-                    skinComp.cOverrideExpireTick = -1;
+                    state.cOverrideAbilityDefName = string.Empty;
+                    state.cOverrideExpireTick = -1;
                     break;
                 case AbilityHotkeySlot.V:
-                    skinComp.vOverrideAbilityDefName = string.Empty;
-                    skinComp.vOverrideExpireTick = -1;
+                    state.vOverrideAbilityDefName = string.Empty;
+                    state.vOverrideExpireTick = -1;
                     break;
                 default:
-                    skinComp.rOverrideAbilityDefName = string.Empty;
-                    skinComp.rOverrideExpireTick = -1;
+                    state.rOverrideAbilityDefName = string.Empty;
+                    state.rOverrideExpireTick = -1;
                     break;
             }
         }
 
-        private static bool TryCastConfiguredAbility(Pawn caster, CompPawnSkin skinComp, ModularAbilityDef ability, int tick, AbilityHotkeySlot slot)
+        private static bool TryCastConfiguredAbility(Pawn caster, CompCharacterAbilityRuntime abilityComp, ModularAbilityDef ability, int tick, AbilityHotkeySlot slot)
         {
             if (ability == null)
             {
@@ -529,34 +506,34 @@ namespace CharacterStudio.Abilities
             AbilityRuntimeComponentConfig? jumpComp = GetSmartJumpComponent(ability);
             if (jumpComp != null && jumpComp.enabled)
             {
-                return TryCastSmartJumpAbility(caster, skinComp, ability, tick, jumpComp, slot);
+                return TryCastSmartJumpAbility(caster, abilityComp, ability, tick, jumpComp, slot);
             }
 
             AbilityRuntimeComponentConfig? rComp = GetRuntimeComponent(ability, AbilityRuntimeComponentType.RStackDetonation);
             if (rComp != null && rComp.enabled)
             {
-                return TryHandleGeneralizedRStackHotkey(caster, skinComp, ability, tick, slot, rComp);
+                return TryHandleGeneralizedRStackHotkey(caster, abilityComp, ability, tick, slot, rComp);
             }
 
             return TryCastDefaultAbility(caster, ability);
         }
 
-        private static bool TryHandleGeneralizedRStackHotkey(Pawn caster, CompPawnSkin skinComp, ModularAbilityDef ability, int tick, AbilityHotkeySlot slot, AbilityRuntimeComponentConfig rComp)
+        private static bool TryHandleGeneralizedRStackHotkey(Pawn caster, CompCharacterAbilityRuntime abilityComp, ModularAbilityDef ability, int tick, AbilityHotkeySlot slot, AbilityRuntimeComponentConfig rComp)
         {
             int delayTicks = rComp.delayTicks >= 0 ? rComp.delayTicks : DefaultRSecondStageDelayTicks;
             int delaySec = Mathf.RoundToInt(delayTicks / 60f);
 
-            if (!skinComp.rSecondStageReady || !string.Equals(skinComp.rStackAbilityDefName, ability.defName, System.StringComparison.OrdinalIgnoreCase))
+            if (!abilityComp.RSecondStageReady || !string.Equals(abilityComp.RStackAbilityDefName, ability.defName, System.StringComparison.OrdinalIgnoreCase))
             {
-                skinComp.rStackingEnabled = !skinComp.rStackingEnabled;
-                skinComp.rStackAbilityDefName = skinComp.rStackingEnabled ? (ability.defName ?? string.Empty) : string.Empty;
-                if (skinComp.rStackingEnabled)
+                abilityComp.RStackingEnabled = !abilityComp.RStackingEnabled;
+                abilityComp.RStackAbilityDefName = abilityComp.RStackingEnabled ? (ability.defName ?? string.Empty) : string.Empty;
+                if (abilityComp.RStackingEnabled)
                 {
-                    skinComp.rStackCount = 0;
-                    skinComp.rSecondStageHasTarget = false;
-                    skinComp.rSecondStageTargetCell = IntVec3.Invalid;
-                    skinComp.rSecondStageExecuteTick = -1;
-                    skinComp.rSecondStageReady = false;
+                    abilityComp.RStackCount = 0;
+                    abilityComp.RSecondStageHasTarget = false;
+                    abilityComp.RSecondStageTargetCell = IntVec3.Invalid;
+                    abilityComp.RSecondStageExecuteTick = -1;
+                    abilityComp.RSecondStageReady = false;
                     Messages.Message("CS_Ability_R_StackingOn".Translate(), MessageTypeDefOf.NeutralEvent, false);
                 }
                 else
@@ -573,11 +550,11 @@ namespace CharacterStudio.Abilities
                 return false;
             }
 
-            skinComp.rSecondStageHasTarget = true;
-            skinComp.rSecondStageTargetCell = targetCell;
-            skinComp.rSecondStageExecuteTick = tick + delayTicks;
-            skinComp.rSecondStageReady = false;
-            skinComp.rStackCount = 0;
+            abilityComp.RSecondStageHasTarget = true;
+            abilityComp.RSecondStageTargetCell = targetCell;
+            abilityComp.RSecondStageExecuteTick = tick + delayTicks;
+            abilityComp.RSecondStageReady = false;
+            abilityComp.RStackCount = 0;
 
             Messages.Message("CS_Ability_R_SecondStageArmed".Translate(delaySec), MessageTypeDefOf.NeutralEvent, false);
             return true;
@@ -612,19 +589,19 @@ namespace CharacterStudio.Abilities
                     continue;
                 }
 
-                var comp = pawn.GetComp<CompPawnSkin>();
+                var comp = pawn.GetComp<CompCharacterAbilityRuntime>();
                 if (comp == null)
                 {
                     LastBusyStanceByPawn.Remove(pawn);
                     continue;
                 }
 
-                if (comp.rSecondStageHasTarget && comp.rSecondStageExecuteTick >= 0)
+                if (comp.RSecondStageHasTarget && comp.RSecondStageExecuteTick >= 0)
                 {
                     anyRStackingActive = true;
                 }
 
-                if (!comp.rStackingEnabled || comp.rSecondStageReady)
+                if (!comp.RStackingEnabled || comp.RSecondStageReady)
                 {
                     LastBusyStanceByPawn.Remove(pawn);
                     continue;
@@ -658,18 +635,18 @@ namespace CharacterStudio.Abilities
                 if (!hadLast || lastBusy != busy)
                 {
                     LastBusyStanceByPawn[pawn] = busy;
-                    comp.rStackCount++;
+                    comp.RStackCount++;
 
-                    if (comp.rStackCount >= requiredStacks)
+                    if (comp.RStackCount >= requiredStacks)
                     {
-                        comp.rStackCount = requiredStacks;
-                        comp.rStackingEnabled = false;
-                        comp.rSecondStageReady = true;
+                        comp.RStackCount = requiredStacks;
+                        comp.RStackingEnabled = false;
+                        comp.RSecondStageReady = true;
                         Messages.Message("CS_Ability_R_Ready".Translate(), MessageTypeDefOf.PositiveEvent, false);
                     }
                     else
                     {
-                        Messages.Message("CS_Ability_R_StackGain".Translate(comp.rStackCount, requiredStacks), MessageTypeDefOf.NeutralEvent, false);
+                        Messages.Message("CS_Ability_R_StackGain".Translate(comp.RStackCount, requiredStacks), MessageTypeDefOf.NeutralEvent, false);
                     }
                 }
             }
@@ -690,15 +667,15 @@ namespace CharacterStudio.Abilities
                     if (pawn == null) continue;
                     if (!AbilityTimeStopRuntimeController.CanPawnAct(pawn)) continue;
 
-                    var comp = pawn.GetComp<CompPawnSkin>();
+                    var comp = pawn.GetComp<CompCharacterAbilityRuntime>();
                     if (comp == null) continue;
 
-                    if (!comp.rSecondStageHasTarget || comp.rSecondStageExecuteTick < 0)
+                    if (!comp.RSecondStageHasTarget || comp.RSecondStageExecuteTick < 0)
                     {
                         continue;
                     }
 
-                    if (tick < comp.rSecondStageExecuteTick)
+                    if (tick < comp.RSecondStageExecuteTick)
                     {
                         continue;
                     }
@@ -709,20 +686,20 @@ namespace CharacterStudio.Abilities
             }
         }
 
-        private static void ExecuteRSecondStage(Pawn caster, CompPawnSkin skinComp, AbilityRuntimeComponentConfig? rComp)
+        private static void ExecuteRSecondStage(Pawn caster, CompCharacterAbilityRuntime abilityComp, AbilityRuntimeComponentConfig? rComp)
         {
-            if (caster.Map == null || !skinComp.rSecondStageHasTarget || !skinComp.rSecondStageTargetCell.IsValid)
+            if (caster.Map == null || !abilityComp.RSecondStageHasTarget || !abilityComp.RSecondStageTargetCell.IsValid)
             {
-                ResetRSecondStageState(skinComp);
+                ResetRSecondStageState(abilityComp);
                 return;
             }
 
-            IntVec3 dest = skinComp.rSecondStageTargetCell;
+            IntVec3 dest = abilityComp.RSecondStageTargetCell;
             if (!dest.InBounds(caster.Map) || !dest.Standable(caster.Map))
             {
                 if (!CellFinder.TryFindRandomCellNear(dest, caster.Map, 3, c => c.Standable(caster.Map), out dest))
                 {
-                    ResetRSecondStageState(skinComp);
+                    ResetRSecondStageState(abilityComp);
                     return;
                 }
             }
@@ -744,16 +721,16 @@ namespace CharacterStudio.Abilities
             ApplyDamageWave(caster, dest, wave3Radius, wave3Damage, damageDef);
 
             Messages.Message("CS_Ability_R_SecondStageCast".Translate(), MessageTypeDefOf.PositiveEvent, false);
-            ResetRSecondStageState(skinComp);
+            ResetRSecondStageState(abilityComp);
         }
 
-        private static void ResetRSecondStageState(CompPawnSkin skinComp)
+        private static void ResetRSecondStageState(CompCharacterAbilityRuntime abilityComp)
         {
-            skinComp.rSecondStageHasTarget = false;
-            skinComp.rSecondStageTargetCell = IntVec3.Invalid;
-            skinComp.rSecondStageExecuteTick = -1;
-            skinComp.rSecondStageReady = false;
-            skinComp.rStackCount = 0;
+            abilityComp.RSecondStageHasTarget = false;
+            abilityComp.RSecondStageTargetCell = IntVec3.Invalid;
+            abilityComp.RSecondStageExecuteTick = -1;
+            abilityComp.RSecondStageReady = false;
+            abilityComp.RStackCount = 0;
         }
 
         // 复用的伤害波 effect 对象，避免每波 new 分配
@@ -815,11 +792,11 @@ namespace CharacterStudio.Abilities
                 }
             }
 
-            var skinComp = caster.GetComp<CompPawnSkin>();
-            if (skinComp != null)
+            var abilityComp = caster.GetComp<CompCharacterAbilityRuntime>();
+            if (abilityComp != null)
             {
                 int visualTicks = Mathf.Max((int)ability.warmupTicks, 8) + 8;
-                skinComp.SetWeaponCarryCastingWindow(visualTicks);
+                abilityComp.SetWeaponCarryCastingWindow(visualTicks);
             }
 
             AbilityTargetType normalizedTarget = ModularAbilityDefExtensions.NormalizeTargetType(ability);
@@ -1216,9 +1193,9 @@ namespace CharacterStudio.Abilities
             return smart ?? GetRuntimeComponent(ability, AbilityRuntimeComponentType.EShortJump);
         }
 
-        private static bool TryCastSmartJumpAbility(Pawn caster, CompPawnSkin skinComp, ModularAbilityDef ability, int tick, AbilityRuntimeComponentConfig jumpComp, AbilityHotkeySlot slot)
+        private static bool TryCastSmartJumpAbility(Pawn caster, CompCharacterAbilityRuntime abilityComp, ModularAbilityDef ability, int tick, AbilityRuntimeComponentConfig jumpComp, AbilityHotkeySlot slot)
         {
-            int cooldownUntil = GetSlotCooldownUntil(skinComp, slot);
+            int cooldownUntil = GetSlotCooldownUntil(abilityComp, slot);
             if (tick < cooldownUntil)
             {
                 int remain = cooldownUntil - tick;
@@ -1264,7 +1241,7 @@ namespace CharacterStudio.Abilities
             LocalTargetInfo jumpTarget = new LocalTargetInfo(jumpDestination);
             runtimeAbility.QueueCastingJob(jumpTarget, LocalTargetInfo.Invalid);
             int cooldownTicks = jumpComp.cooldownTicks > 0 ? jumpComp.cooldownTicks : 120;
-            SetSlotCooldown(skinComp, slot, tick + cooldownTicks);
+            SetSlotCooldown(abilityComp, slot, tick + cooldownTicks);
             return true;
         }
 
@@ -1424,18 +1401,18 @@ namespace CharacterStudio.Abilities
             return false;
         }
 
-        private static AbilityRuntimeComponentConfig? ResolveRStackComponentConfig(Pawn pawn, CompPawnSkin skinComp)
+        private static AbilityRuntimeComponentConfig? ResolveRStackComponentConfig(Pawn pawn, CompCharacterAbilityRuntime abilityComp)
         {
             CharacterAbilityLoadout? loadout = AbilityLoadoutRuntimeUtility.GetEffectiveLoadout(pawn);
             SkinAbilityHotkeyConfig? hotkeys = loadout?.hotkeys;
-            if (hotkeys == null || string.IsNullOrEmpty(hotkeys.rAbilityDefName))
+            if (hotkeys == null || string.IsNullOrEmpty(hotkeys["R"]))
             {
                 return null;
             }
 
-            string sourceDefName = !string.IsNullOrWhiteSpace(skinComp.rStackAbilityDefName)
-                ? skinComp.rStackAbilityDefName
-                : hotkeys.rAbilityDefName;
+            string sourceDefName = !string.IsNullOrWhiteSpace(abilityComp.RStackAbilityDefName)
+                ? abilityComp.RStackAbilityDefName
+                : hotkeys["R"];
 
             var rAbility = ResolveAbilityByDefName(loadout, sourceDefName);
             return GetRuntimeComponent(rAbility, AbilityRuntimeComponentType.RStackDetonation);

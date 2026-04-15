@@ -25,11 +25,14 @@ namespace CharacterStudio.Rendering
     {
         private static readonly Dictionary<string, Graphic> externalGraphicCache
             = new Dictionary<string, Graphic>(StringComparer.Ordinal);
+        // P-PERF: Queue 跟踪插入顺序，确保 FIFO 淘汰可靠性（Dictionary.Keys 顺序不保证）
+        private static readonly Queue<string> externalGraphicEvictionQueue = new Queue<string>();
         private const int MaxExternalGraphicCacheSize = 2048;
 
         // 避免在每帧重复打印同一节点的缩放回退日志
         private static readonly System.Collections.Generic.HashSet<int> _loggedScaleFallbackNodes = new System.Collections.Generic.HashSet<int>();
         private static readonly Dictionary<string, bool> textureExistsCache = new Dictionary<string, bool>(StringComparer.Ordinal);
+        private static readonly Queue<string> textureExistsEvictionQueue = new Queue<string>();
         private static readonly Dictionary<string, int> frameSequenceCountCache = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private static readonly HashSet<string> missingExternalTextureWarnings = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -39,6 +42,7 @@ namespace CharacterStudio.Rendering
 
         // P6: ContentFinder 图形类型探测结果缓存（避免重复资源查找）
         private static readonly Dictionary<string, Type> graphicTypeProbeCache = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
+        private static readonly Queue<string> graphicTypeProbeEvictionQueue = new Queue<string>();
         private const int MaxGraphicTypeProbeCacheSize = 4096;
 
         // P2: 方向匹配预解析缓存（避免每帧字符串比较和 Trim 分配）
@@ -104,7 +108,7 @@ namespace CharacterStudio.Rendering
         /// </summary>
         private bool EvaluateCanDrawNowInternal(PawnRenderNode_Custom customNode, PawnDrawParms parms)
         {
-            if (!customNode.config.visible)
+            if (customNode.config == null || !customNode.config.visible)
                 return false;
 
             if (!MatchesDirectionalFacing(customNode.config, parms.facing))
@@ -231,7 +235,7 @@ namespace CharacterStudio.Rendering
             if (skinComp != null && skinComp.IsFlightStateActive())
             {
                 float liftFactor = skinComp.GetFlightLiftFactor01();
-                float flightBaseHeight = skinComp.flightStateHeightFactor * liftFactor;
+                float flightBaseHeight = skinComp.FlightStateHeightFactor * liftFactor;
                 baseOffset.y += flightBaseHeight + skinComp.GetFlightHoverOffset();
             }
 
@@ -349,11 +353,14 @@ namespace CharacterStudio.Rendering
                     scale *= node.debugScale;
                 }
 
-                // 应用全局 DrawSize 缩放（类似原版 drawSize，统一放大/缩小角色在地图上的渲染尺寸）
-                float globalScale = GetGlobalDrawSizeScale(customNode);
-                if (globalScale != 1f)
+                // 仅当没有原版祖先（已通过矩阵层级传递全局缩放）时才自行应用
+                if (!Patch_PawnRenderTree.HasAnyVanillaAncestor(node))
                 {
-                    scale = new Vector3(scale.x * globalScale, scale.y, scale.z * globalScale);
+                    float globalScale = GetGlobalDrawSizeScale(customNode);
+                    if (globalScale != 1f)
+                    {
+                        scale = new Vector3(scale.x * globalScale, scale.y, scale.z * globalScale);
+                    }
                 }
 
                 return scale;
