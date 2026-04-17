@@ -128,6 +128,17 @@ namespace CharacterStudio.Abilities
         public int timeStopDurationTicks = 60;
         public bool freezeVisualsDuringTimeStop = true;
 
+        // ── Dash (直线冲刺) ──
+        public int dashDistance = 6;
+        public int dashStepDurationTicks = 3;
+        public bool dashTriggerEffects = true;
+        public bool dashUseAbilityRange = false;
+
+        // ── 联动标签 (Tag-based Linkage) ──
+        public bool triggerEquipmentAnimationOnApply = false;
+        public string equipmentAnimationTriggerKey = "Dash";
+        public int equipmentAnimationDurationTicks = 30;
+
         [EditorField("CS_Studio_Effect_WeatherDef", AbilityRuntimeComponentType.WeatherChange)]
         public string weatherDefName = string.Empty;
         [EditorField("CS_Studio_Effect_WeatherDuration", AbilityRuntimeComponentType.WeatherChange, Min = 1f, Max = 9999999f)]
@@ -217,6 +228,10 @@ namespace CharacterStudio.Abilities
             landingBurstDamage = AbilityEditorNormalizationUtility.ClampFloat(landingBurstDamage, 0.01f, 99999f);
             knockbackDistance = AbilityEditorNormalizationUtility.ClampFloat(knockbackDistance, 0f, 99f);
             timeStopDurationTicks = AbilityEditorNormalizationUtility.ClampInt(timeStopDurationTicks, 1, 99999);
+            dashDistance = AbilityEditorNormalizationUtility.ClampInt(dashDistance, 1, 100);
+            dashStepDurationTicks = AbilityEditorNormalizationUtility.ClampInt(dashStepDurationTicks, 1, 60);
+            equipmentAnimationDurationTicks = AbilityEditorNormalizationUtility.ClampInt(equipmentAnimationDurationTicks, 1, 99999);
+            equipmentAnimationTriggerKey = AbilityEditorNormalizationUtility.TrimOrEmpty(equipmentAnimationTriggerKey);
         }
 
         public AbilityValidationResult Validate()
@@ -413,6 +428,14 @@ namespace CharacterStudio.Abilities
                 case AbilityRuntimeComponentType.TimeStop:
                     if (timeStopDurationTicks <= 0)
                         result.AddError("CS_Ability_Validate_TimeStopDurationTicks".Translate());
+                    break;
+                case AbilityRuntimeComponentType.Dash:
+                    if (dashDistance <= 0)
+                        result.AddError("CS_Ability_Validate_DashDistance".Translate());
+                    if (dashStepDurationTicks <= 0)
+                        result.AddError("CS_Ability_Validate_DashStepDuration".Translate());
+                    if (triggerEquipmentAnimationOnApply && string.IsNullOrWhiteSpace(equipmentAnimationTriggerKey))
+                        result.AddError("CS_Ability_Validate_DashEquipAnimKey".Translate());
                     break;
             }
 

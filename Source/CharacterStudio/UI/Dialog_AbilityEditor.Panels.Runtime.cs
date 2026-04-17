@@ -15,6 +15,7 @@ namespace CharacterStudio.UI
             AbilityRuntimeComponentType.FollowupCooldownGate,
             AbilityRuntimeComponentType.SmartJump,
             AbilityRuntimeComponentType.EShortJump,
+            AbilityRuntimeComponentType.Dash,
             AbilityRuntimeComponentType.RStackDetonation,
             AbilityRuntimeComponentType.PeriodicPulse,
             AbilityRuntimeComponentType.KillRefresh,
@@ -106,6 +107,7 @@ namespace CharacterStudio.UI
                 AbilityRuntimeComponentType.FollowupCooldownGate => "CS_Studio_Runtime_Desc_FollowupCooldownGate".Translate(),
                 AbilityRuntimeComponentType.SmartJump => "CS_Studio_Runtime_Desc_SmartJump".Translate(),
                 AbilityRuntimeComponentType.EShortJump => "CS_Studio_Runtime_Desc_EShortJump".Translate(),
+                AbilityRuntimeComponentType.Dash => "CS_Studio_Runtime_Desc_Dash".Translate(),
                 AbilityRuntimeComponentType.RStackDetonation => "CS_Studio_Runtime_Desc_RStackDetonation".Translate(),
                 AbilityRuntimeComponentType.PeriodicPulse => "CS_Studio_Runtime_Desc_PeriodicPulse".Translate(),
                 AbilityRuntimeComponentType.KillRefresh => "CS_Studio_Runtime_Desc_KillRefresh".Translate(),
@@ -173,6 +175,15 @@ namespace CharacterStudio.UI
                     config.smartCastOffsetCells = 0;
                     config.smartCastClampToMaxDistance = true;
                     config.smartCastAllowFallbackForward = true;
+                    break;
+                case AbilityRuntimeComponentType.Dash:
+                    config.dashDistance = 6;
+                    config.dashStepDurationTicks = 3;
+                    config.dashTriggerEffects = true;
+                    config.dashUseAbilityRange = false;
+                    config.triggerEquipmentAnimationOnApply = false;
+                    config.equipmentAnimationTriggerKey = "Dash";
+                    config.equipmentAnimationDurationTicks = 30;
                     break;
                 case AbilityRuntimeComponentType.RStackDetonation:
                     config.waveDamageDef = DamageDefOf.Bomb;

@@ -367,8 +367,11 @@ namespace CharacterStudio.Abilities
 
             return Props.runtimeComponents.FirstOrDefault(component => component != null
                 && component.enabled
-                && component.triggerAbilityEffectsAfterJump
-                && (component.type == AbilityRuntimeComponentType.SmartJump || component.type == AbilityRuntimeComponentType.EShortJump));
+                && ((component.triggerAbilityEffectsAfterJump
+                        && (component.type == AbilityRuntimeComponentType.SmartJump
+                            || component.type == AbilityRuntimeComponentType.EShortJump))
+                    || (component.type == AbilityRuntimeComponentType.Dash
+                        && component.dashTriggerEffects)));
         }
 
         /// <summary>
@@ -734,7 +737,9 @@ namespace CharacterStudio.Abilities
             return Props.runtimeComponents != null
                 && Props.runtimeComponents.Any(component => component != null
                     && component.enabled
-                    && (component.type == AbilityRuntimeComponentType.SmartJump || component.type == AbilityRuntimeComponentType.EShortJump));
+                    && (component.type == AbilityRuntimeComponentType.SmartJump
+                        || component.type == AbilityRuntimeComponentType.EShortJump
+                        || component.type == AbilityRuntimeComponentType.Dash));
         }
 
         /// <summary>

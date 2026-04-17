@@ -561,7 +561,8 @@ namespace CharacterStudio.UI
             return ability.runtimeComponents.FirstOrDefault(component => component != null
                 && component.enabled
                 && (component.type == AbilityRuntimeComponentType.SmartJump
-                    || component.type == AbilityRuntimeComponentType.EShortJump));
+                    || component.type == AbilityRuntimeComponentType.EShortJump
+                    || component.type == AbilityRuntimeComponentType.Dash));
         }
     }
 

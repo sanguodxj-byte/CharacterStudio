@@ -404,6 +404,7 @@ namespace CharacterStudio.UI
                 AbilityRuntimeComponentType.FollowupCooldownGate => 112f,
                 AbilityRuntimeComponentType.SmartJump => 244f,
                 AbilityRuntimeComponentType.EShortJump => 244f,
+                AbilityRuntimeComponentType.Dash => 244f,
                 AbilityRuntimeComponentType.RStackDetonation => 250f,
                 AbilityRuntimeComponentType.PeriodicPulse => 112f,
                 AbilityRuntimeComponentType.KillRefresh => 112f,
@@ -618,6 +619,81 @@ namespace CharacterStudio.UI
                     if (comp.followupCooldownTicks != cooldownGateBefore)
                     {
                         NotifyAbilityPreviewDirty(true);
+                    }
+                }
+                else if (comp.type == AbilityRuntimeComponentType.Dash)
+                {
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_DashDistance".Translate(), labelW);
+                    string dashDist = comp.dashDistance.ToString();
+                    int dashDistBefore = comp.dashDistance;
+                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.dashDistance, ref dashDist, 1, 100);
+                    if (comp.dashDistance != dashDistBefore)
+                    {
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_DashSpeed".Translate(), labelW);
+                    string dashSpd = comp.dashStepDurationTicks.ToString();
+                    int dashSpdBefore = comp.dashStepDurationTicks;
+                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.dashStepDurationTicks, ref dashSpd, 1, 60);
+                    if (comp.dashStepDurationTicks != dashSpdBefore)
+                    {
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_DashUseAbilityRange".Translate(), labelW);
+                    bool dashUseRange = comp.dashUseAbilityRange;
+                    Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref dashUseRange, 24f, false);
+                    if (comp.dashUseAbilityRange != dashUseRange)
+                    {
+                        comp.dashUseAbilityRange = dashUseRange;
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_DashTriggerEffects".Translate(), labelW);
+                    bool dashTrigger = comp.dashTriggerEffects;
+                    Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref dashTrigger, 24f, false);
+                    if (comp.dashTriggerEffects != dashTrigger)
+                    {
+                        comp.dashTriggerEffects = dashTrigger;
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_DashEquipAnim".Translate(), labelW);
+                    bool dashEquipAnim = comp.triggerEquipmentAnimationOnApply;
+                    Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref dashEquipAnim, 24f, false);
+                    if (comp.triggerEquipmentAnimationOnApply != dashEquipAnim)
+                    {
+                        comp.triggerEquipmentAnimationOnApply = dashEquipAnim;
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    if (comp.triggerEquipmentAnimationOnApply)
+                    {
+                        DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_DashEquipAnimKey".Translate(), labelW);
+                        string animKey = comp.equipmentAnimationTriggerKey;
+                        string animKeyBefore = animKey;
+                        comp.equipmentAnimationTriggerKey = Widgets.TextField(new Rect(inner.x + labelW, rowY, valueW, 24f), animKey);
+                        if (comp.equipmentAnimationTriggerKey != animKeyBefore)
+                        {
+                            NotifyAbilityPreviewDirty(true);
+                        }
+                        rowY += 26f;
+
+                        DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_DashEquipAnimDuration".Translate(), labelW);
+                        string animDur = comp.equipmentAnimationDurationTicks.ToString();
+                        int animDurBefore = comp.equipmentAnimationDurationTicks;
+                        UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.equipmentAnimationDurationTicks, ref animDur, 1, 99999);
+                        if (comp.equipmentAnimationDurationTicks != animDurBefore)
+                        {
+                            NotifyAbilityPreviewDirty(true);
+                        }
+                        rowY += 26f;
                     }
                 }
                 else if (comp.type == AbilityRuntimeComponentType.SmartJump || comp.type == AbilityRuntimeComponentType.EShortJump)

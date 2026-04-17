@@ -86,7 +86,7 @@
     <CS_Studio_Ability_HotkeySlot_Q>Q</CS_Studio_Ability_HotkeySlot_Q>
     <CS_Studio_Ability_HotkeySlot_R>R</CS_Studio_Ability_HotkeySlot_R>
     <CS_Studio_Ability_HotkeySlot_W>W</CS_Studio_Ability_HotkeySlot_W>
-    <CS_Studio_Ability_HotkeySlot_WCombo>W Combo</CS_Studio_Ability_HotkeySlot_WCombo>
+    <CS_Studio_Ability_HotkeySlot_WCombo>Combo</CS_Studio_Ability_HotkeySlot_WCombo>
     <CS_Studio_Ability_HotkeySlotSummary>{0}: {1}</CS_Studio_Ability_HotkeySlotSummary>
     <CS_Studio_Ability_HotkeySummary>Hotkey Mapping: {0}</CS_Studio_Ability_HotkeySummary>
     <CS_Studio_Ability_IconPath>Icon Path</CS_Studio_Ability_IconPath>
@@ -147,7 +147,7 @@
     <CS_Studio_Ability_PreviewRuntimeEShortJump>Short jump: distance {0}, cooldown {1}t</CS_Studio_Ability_PreviewRuntimeEShortJump>
     <CS_Studio_Ability_PreviewRuntimeExecuteBonusDamage>Execute bonus: threshold {0}, scale {1}</CS_Studio_Ability_PreviewRuntimeExecuteBonusDamage>
     <CS_Studio_Ability_PreviewRuntimeFlightState>Flight state: {0}t, height {1}, combat {2}</CS_Studio_Ability_PreviewRuntimeFlightState>
-    <CS_Studio_Ability_PreviewRuntimeFollowupCooldownGate>Follow-up lock: {0}, duration {1}t</CS_Studio_Ability_PreviewRuntimeFollowupCooldownGate>
+    <CS_Studio_Ability_PreviewRuntimeFollowupCooldownGate>Followup cooldown gate: {0}, duration {1}t</CS_Studio_Ability_PreviewRuntimeFollowupCooldownGate>
     <CS_Studio_Ability_PreviewRuntimeFullHealthBonusDamage>Full health bonus: threshold {0}, scale {1}</CS_Studio_Ability_PreviewRuntimeFullHealthBonusDamage>
     <CS_Studio_Ability_PreviewRuntimeHitCooldownRefund>Cooldown refund on hit: {0}, refund {1}</CS_Studio_Ability_PreviewRuntimeHitCooldownRefund>
     <CS_Studio_Ability_PreviewRuntimeHitHeal>Heal on hit: flat {0}, ratio {1}</CS_Studio_Ability_PreviewRuntimeHitHeal>
@@ -159,7 +159,7 @@
     <CS_Studio_Ability_PreviewRuntimeNearbyEnemyBonusDamage>Nearby enemy bonus: up to {0}, +{1} each, radius {2}</CS_Studio_Ability_PreviewRuntimeNearbyEnemyBonusDamage>
     <CS_Studio_Ability_PreviewRuntimePierceBonusDamage>Pierce bonus: up to {0}, +{1} each, radius {2}</CS_Studio_Ability_PreviewRuntimePierceBonusDamage>
     <CS_Studio_Ability_PreviewRuntimeProjectileSplit>Projectile split: {0} projectiles, scale {1}, radius {2}</CS_Studio_Ability_PreviewRuntimeProjectileSplit>
-    <CS_Studio_Ability_PreviewRuntimeQCombo>Q combo window: {0}t</CS_Studio_Ability_PreviewRuntimeQCombo>
+    <CS_Studio_Ability_PreviewRuntimeQCombo>Combo window: {0}t</CS_Studio_Ability_PreviewRuntimeQCombo>
     <CS_Studio_Ability_PreviewRuntimeRStack>Stack detonation: {0} stacks, delay {1}t</CS_Studio_Ability_PreviewRuntimeRStack>
     <CS_Studio_Ability_PreviewRuntimeSmartJump>Smart jump: offset {0} cells, distance {1}, cooldown {2}t</CS_Studio_Ability_PreviewRuntimeSmartJump>
     <CS_Studio_Ability_PreviewSummaryLine>Carrier: {0} · Target: {1}</CS_Studio_Ability_PreviewSummaryLine>
@@ -384,18 +384,18 @@
     <CS_Ability_GrantSuccess>Abilities granted successfully.</CS_Ability_GrantSuccess>
     <CS_Ability_Hotkey_AbilityMissing>Assigned ability is missing.</CS_Ability_Hotkey_AbilityMissing>
     <CS_Ability_Hotkey_CastSuccess>Ability cast successfully.</CS_Ability_Hotkey_CastSuccess>
-    <CS_Ability_Hotkey_QMode>Q Mode</CS_Ability_Hotkey_QMode>
+    <CS_Ability_Hotkey_QMode>Hotkey Mode</CS_Ability_Hotkey_QMode>
     <CS_Ability_Hotkey_SlotCooldown>{0} cooldown: {1}t</CS_Ability_Hotkey_SlotCooldown>
     <CS_Ability_NoPawnBound>No pawn bound.</CS_Ability_NoPawnBound>
     <CS_Ability_NotReady>Not ready.</CS_Ability_NotReady>
     <CS_Ability_OnCooldown>On cooldown.</CS_Ability_OnCooldown>
-    <CS_Ability_R_Ready>R is ready.</CS_Ability_R_Ready>
-    <CS_Ability_R_SecondStageArmed>R second stage armed.</CS_Ability_R_SecondStageArmed>
-    <CS_Ability_R_SecondStageCast>R second stage cast.</CS_Ability_R_SecondStageCast>
-    <CS_Ability_R_StackGain>R stacks: {0}/{1}</CS_Ability_R_StackGain>
-    <CS_Ability_R_StackingOff>R stacking disabled.</CS_Ability_R_StackingOff>
-    <CS_Ability_R_StackingOn>R stacking enabled.</CS_Ability_R_StackingOn>
-    <CS_Ability_R_TargetInvalid>R target is invalid.</CS_Ability_R_TargetInvalid>
+    <CS_Ability_R_Ready>Stack ability is ready.</CS_Ability_R_Ready>
+    <CS_Ability_R_SecondStageArmed>Second stage armed.</CS_Ability_R_SecondStageArmed>
+    <CS_Ability_R_SecondStageCast>Second stage cast.</CS_Ability_R_SecondStageCast>
+    <CS_Ability_R_StackGain>Stacks: {0}/{1}</CS_Ability_R_StackGain>
+    <CS_Ability_R_StackingOff>Stacking disabled.</CS_Ability_R_StackingOff>
+    <CS_Ability_R_StackingOn>Stacking enabled.</CS_Ability_R_StackingOn>
+    <CS_Ability_R_TargetInvalid>Target is invalid.</CS_Ability_R_TargetInvalid>
     <CS_Ability_Revoke>Revoke Ability</CS_Ability_Revoke>
     <CS_Ability_RevokeSuccess>Abilities revoked successfully.</CS_Ability_RevokeSuccess>
     <CS_Ability_Validate_CarrierNeedsRange>{0} usually requires range greater than 0.</CS_Ability_Validate_CarrierNeedsRange>
@@ -476,7 +476,7 @@
     <CS_Studio_Ability_Hotkey_X>X</CS_Studio_Ability_Hotkey_X>
     <CS_Studio_Ability_Hotkey_C>C</CS_Studio_Ability_Hotkey_C>
     <CS_Studio_Ability_Hotkey_V>V</CS_Studio_Ability_Hotkey_V>
-    <CS_Studio_Ability_Hotkey_WCombo>W Combo</CS_Studio_Ability_Hotkey_WCombo>
+    <CS_Studio_Ability_Hotkey_WCombo>Combo</CS_Studio_Ability_Hotkey_WCombo>
     <CS_Studio_Ability_PreviewRuntimeFlightOnlyStateAlways>Always</CS_Studio_Ability_PreviewRuntimeFlightOnlyStateAlways>
     <CS_Studio_Ability_PreviewRuntimeFlightOnlyStateWindow>Flight Window Only</CS_Studio_Ability_PreviewRuntimeFlightOnlyStateWindow>
     <CS_Studio_Add>Add</CS_Studio_Add>
@@ -514,4 +514,15 @@
     <CS_Studio_Section_Targets>Targets</CS_Studio_Section_Targets>
     <CS_Studio_Status_Loading>Loading...</CS_Studio_Status_Loading>
     <CS_Studio_VFX_NoPresetsRegistered>No presets registered.</CS_Studio_VFX_NoPresetsRegistered>
+    <CS_Studio_Runtime_DashDistance>Dash Distance</CS_Studio_Runtime_DashDistance>
+    <CS_Studio_Runtime_DashSpeed>Ticks Per Cell</CS_Studio_Runtime_DashSpeed>
+    <CS_Studio_Runtime_DashUseAbilityRange>Use Ability Range</CS_Studio_Runtime_DashUseAbilityRange>
+    <CS_Studio_Runtime_DashTriggerEffects>Trigger Effects After Dash</CS_Studio_Runtime_DashTriggerEffects>
+    <CS_Studio_Runtime_DashEquipAnim>Trigger Weapon Animation</CS_Studio_Runtime_DashEquipAnim>
+    <CS_Studio_Runtime_DashEquipAnimKey>Animation Trigger Key</CS_Studio_Runtime_DashEquipAnimKey>
+    <CS_Studio_Runtime_DashEquipAnimDuration>Animation Duration (Ticks)</CS_Studio_Runtime_DashEquipAnimDuration>
+    <CS_Studio_Ability_PreviewRuntimeDash>Dash: distance {0}, {1}t per cell</CS_Studio_Ability_PreviewRuntimeDash>
+    <CS_Ability_Validate_DashDistance>Dash distance must be greater than 0.</CS_Ability_Validate_DashDistance>
+    <CS_Ability_Validate_DashStepDuration>Dash ticks per cell must be greater than 0.</CS_Ability_Validate_DashStepDuration>
+    <CS_Ability_Validate_DashEquipAnimKey>Weapon animation linkage enabled but trigger key is empty.</CS_Ability_Validate_DashEquipAnimKey>
 </LanguageData>

@@ -479,7 +479,7 @@ namespace CharacterStudio.Rendering
             PawnLayerConfig? config,
             CompPawnSkin skinComp)
         {
-            var results = new List<string>();
+            var results = GetReusableTokenList();
 
             EyeDirection eyeDirection = skinComp.CurEyeDirection;
             switch (eyeDirection)
@@ -522,7 +522,7 @@ namespace CharacterStudio.Rendering
             PawnLayerConfig? config,
             CompPawnSkin skinComp)
         {
-            var results = new List<string>();
+            var results = GetReusableTokenList();
 
             LayerRole role = config?.role ?? LayerRole.Decoration;
             string? channelState = skinComp.GetChannelStateSuffix(role);
@@ -779,7 +779,10 @@ namespace CharacterStudio.Rendering
                 normalizedSemanticKey = ResolveExplicitOverlaySemanticKey(faceConfig, skinComp, expression);
 
             if (string.IsNullOrWhiteSpace(normalizedSemanticKey))
-                return new List<string>();
+            {
+                var empty = GetReusableTokenList();
+                return empty;
+            }
 
             return faceConfig.ResolveOverlayIds(normalizedSemanticKey, expression);
         }

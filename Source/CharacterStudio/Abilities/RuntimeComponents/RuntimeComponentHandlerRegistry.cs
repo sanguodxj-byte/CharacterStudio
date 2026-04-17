@@ -49,6 +49,7 @@ namespace CharacterStudio.Abilities.RuntimeComponents
             Register(new FlightStateHandler());
             Register(new FlightOnlyFollowupHandler());
             Register(new FlightLandingBurstHandler());
+            Register(new DashHandler());
 
             // Damage Scale Modifiers
             Register(new ExecuteBonusDamageHandler());

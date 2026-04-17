@@ -277,7 +277,7 @@ namespace CharacterStudio.Abilities
             WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.TimeStop);
 
             List<(AbilityRuntimeComponentConfig component, int index)> movementComponents = enabledComponents
-                .Where(entry => entry.component.type == AbilityRuntimeComponentType.SmartJump || entry.component.type == AbilityRuntimeComponentType.EShortJump)
+                .Where(entry => entry.component.type == AbilityRuntimeComponentType.SmartJump || entry.component.type == AbilityRuntimeComponentType.EShortJump || entry.component.type == AbilityRuntimeComponentType.Dash)
                 .ToList();
             if (movementComponents.Count > 1)
             {

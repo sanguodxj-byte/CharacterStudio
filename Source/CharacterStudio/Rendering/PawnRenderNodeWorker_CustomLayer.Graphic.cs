@@ -275,11 +275,16 @@ namespace CharacterStudio.Rendering
                         }
                         else
                         {
-                            var method = typeof(GraphicDatabase).GetMethod("Get", new Type[] { typeof(string), typeof(Shader), typeof(Vector2), typeof(Color), typeof(Color) });
-                            if (method != null)
+                            // P-PERF: 缓存泛型 MethodInfo，避免每帧 MakeGenericMethod + new object[] 分配
+                            if (!_cachedGraphicDbMethods.TryGetValue(graphicType!, out System.Reflection.MethodInfo? cachedGeneric))
                             {
-                                var genericMethod = method.MakeGenericMethod(graphicType!);
-                                resultGraphic = (Graphic)genericMethod.Invoke(null, new object[] {
+                                cachedGeneric = _graphicDbGetTwoColors?.MakeGenericMethod(graphicType!);
+                                _cachedGraphicDbMethods[graphicType!] = cachedGeneric;
+                            }
+
+                            if (cachedGeneric != null)
+                            {
+                                resultGraphic = (Graphic)cachedGeneric.Invoke(null, new object[] {
                                     resolvedTexPath,
                                     shader,
                                     drawSize,
@@ -289,21 +294,7 @@ namespace CharacterStudio.Rendering
                             }
                             else
                             {
-                                method = typeof(GraphicDatabase).GetMethod("Get", new Type[] { typeof(string), typeof(Shader), typeof(Vector2), typeof(Color) });
-                                if (method != null)
-                                {
-                                    var genericMethod = method.MakeGenericMethod(graphicType!);
-                                    resultGraphic = (Graphic)genericMethod.Invoke(null, new object[] {
-                                        resolvedTexPath,
-                                        shader,
-                                        drawSize,
-                                        color
-                                    });
-                                }
-                                else
-                                {
-                                    Log.Warning($"[CharacterStudio] 无法找到匹配的 GraphicDatabase.Get 方法用于类型 {graphicType}");
-                                }
+                                Log.Warning($"[CharacterStudio] 无法找到匹配的 GraphicDatabase.Get 方法用于类型 {graphicType}");
                             }
                         }
                     }
@@ -453,6 +444,14 @@ namespace CharacterStudio.Rendering
         private static Shader? _cachedTransparentPostLight;
         private static Shader? _cachedItemTransparent;
         private static readonly Dictionary<string, Shader?> customShaderCache = new Dictionary<string, Shader?>(StringComparer.Ordinal);
+
+        // P-PERF: 缓存 GraphicDatabase.Get 的泛型 MethodInfo，避免每帧 MakeGenericMethod + new object[] 分配
+        private static readonly Dictionary<Type, System.Reflection.MethodInfo?> _cachedGraphicDbMethods
+            = new Dictionary<Type, System.Reflection.MethodInfo?>();
+        private static readonly System.Reflection.MethodInfo _graphicDbGetTwoColors
+            = typeof(GraphicDatabase).GetMethod("Get", new Type[] { typeof(string), typeof(Shader), typeof(Vector2), typeof(Color), typeof(Color) })!;
+        private static readonly System.Reflection.MethodInfo _graphicDbGetOneColor
+            = typeof(GraphicDatabase).GetMethod("Get", new Type[] { typeof(string), typeof(Shader), typeof(Vector2), typeof(Color) })!;
 
         // P-PERF: 复用 StringBuilder 避免每次 BuildExternalGraphicCacheKey 分配
         [ThreadStatic]

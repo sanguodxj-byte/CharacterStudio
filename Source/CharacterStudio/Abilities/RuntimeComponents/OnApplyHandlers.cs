@@ -330,4 +330,36 @@ namespace CharacterStudio.Abilities.RuntimeComponents
         public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, int nowTick)
             => abilityComp.VanillaFlightPendingLandingBurst = true;
     }
+
+    public class DashHandler : IOnApplyHandler
+    {
+        public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.Dash;
+
+        public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, int nowTick)
+        {
+            int distance = config.dashDistance > 0 ? config.dashDistance : 6;
+            int stepDuration = config.dashStepDurationTicks > 0 ? config.dashStepDurationTicks : 3;
+
+            // Resolve dash direction: toward target cell or forward
+            IntVec3 origin = caster.Position;
+            IntVec3 targetCell = target.IsValid ? target.Cell : (origin + caster.Rotation.FacingCell);
+            IntVec3 dir = new IntVec3(Math.Sign(targetCell.x - origin.x), 0, Math.Sign(targetCell.z - origin.z));
+            if (dir.x == 0 && dir.z == 0)
+                dir = caster.Rotation.FacingCell;
+
+            // Begin forced move
+            Core.CompPawnSkin? skinComp = caster.GetComp<Core.CompPawnSkin>();
+            if (skinComp != null)
+                skinComp.BeginForcedMove(dir, distance, stepDuration);
+
+            // Tag-based Equipment Animation linkage
+            if (config.triggerEquipmentAnimationOnApply && !string.IsNullOrWhiteSpace(config.equipmentAnimationTriggerKey))
+            {
+                int animDuration = config.equipmentAnimationDurationTicks > 0
+                    ? config.equipmentAnimationDurationTicks
+                    : distance * stepDuration;
+                abilityComp.TriggerEquipmentAnimationState(config.equipmentAnimationTriggerKey, nowTick, animDuration);
+            }
+        }
+    }
 }

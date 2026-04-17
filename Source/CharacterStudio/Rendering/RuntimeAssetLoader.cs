@@ -757,6 +757,9 @@ namespace CharacterStudio.Rendering
             return $"纹理缓存: {texCount}/{MaxTextureCacheSize} 项, 材质缓存: {matCount}/{MaxMaterialCacheSize} 项";
         }
 
+        // P-PERF: 复用排序缓冲区，避免 EnsureCacheCapacity 每次淘汰 new List + Sort 分配
+        private static List<KeyValuePair<string, int>>? _evictionSortBuffer;
+
         /// <summary>
         /// 确保缓存不超过最大容量（LRU淘汰策略）
         /// </summary>
@@ -769,8 +772,11 @@ namespace CharacterStudio.Rendering
 
             if (accessTimes != null && accessTimes.Count > 0)
             {
-                // O(N log N) 排序淘汰，替代原来的 O(N*toRemove) 重复线性扫描
-                var sorted = new List<KeyValuePair<string, int>>(accessTimes.Count);
+                // P-PERF: 复用排序缓冲区
+                var sorted = _evictionSortBuffer ?? new List<KeyValuePair<string, int>>(accessTimes.Count);
+                sorted.Clear();
+                _evictionSortBuffer = null; // 防止重入
+
                 foreach (var kv in accessTimes)
                 {
                     if (cache.ContainsKey(kv.Key))
@@ -798,22 +804,42 @@ namespace CharacterStudio.Rendering
                     fileLastWriteTimes.Remove(key);
                     evicted++;
                 }
+
+                sorted.Clear();
+                _evictionSortBuffer = sorted;
             }
             else
             {
-                // 无访问时间记录，简单移除最早添加的项
-                var keysToRemove = cache.Keys.Take(toRemove).ToList();
-                foreach (var key in keysToRemove)
+                // P-PERF: 用枚举器遍历代替 .Take().ToList() 分配
+                int removed = 0;
+                using (var enumerator = cache.GetEnumerator())
                 {
-                    if (cache.TryGetValue(key, out var item) && item is Material material && material.mainTexture is Texture2D texture)
+                    while (removed < toRemove && enumerator.MoveNext())
                     {
-                        RemoveMaterialCacheKeyInternal(texture.GetInstanceID(), key);
+                        string key = enumerator.Current.Key;
+                        if (cache.TryGetValue(key, out var item) && item is Material material && material.mainTexture is Texture2D texture)
+                        {
+                            RemoveMaterialCacheKeyInternal(texture.GetInstanceID(), key);
+                        }
+                        // 延迟收集要移除的 key（不能在枚举中直接 Remove）
+                        // 使用文件级复用列表
+                        if (_evictionKeysBuffer == null)
+                            _evictionKeysBuffer = new List<string>(toRemove);
+                        _evictionKeysBuffer.Add(key);
+                        removed++;
                     }
-
-                    cache.Remove(key);
+                }
+                if (_evictionKeysBuffer != null)
+                {
+                    for (int i = 0; i < _evictionKeysBuffer.Count; i++)
+                        cache.Remove(_evictionKeysBuffer[i]);
+                    _evictionKeysBuffer.Clear();
                 }
             }
         }
+
+        // P-PERF: 复用 key 淘汰缓冲区
+        private static List<string>? _evictionKeysBuffer;
 
         /// <summary>
         /// 更新缓存访问时间（需在锁内调用）

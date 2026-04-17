@@ -261,7 +261,8 @@ namespace CharacterStudio.Abilities
             bool usesJumpVerb = modAbility.runtimeComponents != null
                 && modAbility.runtimeComponents.Any(c => c != null && c.enabled
                     && (c.type == AbilityRuntimeComponentType.SmartJump
-                        || c.type == AbilityRuntimeComponentType.EShortJump));
+                        || c.type == AbilityRuntimeComponentType.EShortJump
+                        || c.type == AbilityRuntimeComponentType.Dash));
 
             VerbProperties verbProps = normalizedCarrier switch
             {

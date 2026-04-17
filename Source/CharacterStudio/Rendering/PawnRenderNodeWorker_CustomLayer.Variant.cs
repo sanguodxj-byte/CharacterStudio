@@ -14,6 +14,25 @@ namespace CharacterStudio.Rendering
     /// </summary>
     public partial class PawnRenderNodeWorker_CustomLayer : PawnRenderNodeWorker
     {
+        // P-PERF: ThreadStatic 复用 List<string>，避免 Variant/FaceTexture 路径每帧 new List 分配
+        [ThreadStatic]
+        private static List<string>? _reusableTokenList;
+
+        internal static List<string> GetReusableTokenList()
+        {
+            var list = _reusableTokenList;
+            if (list == null)
+            {
+                list = new List<string>(8);
+                _reusableTokenList = list;
+            }
+            else
+            {
+                list.Clear();
+            }
+            return list;
+        }
+
         private bool IsExpressionVisibleForLayer(PawnLayerConfig config, Pawn? pawn, CompPawnSkin? cachedSkinComp = null)
         {
             if (pawn == null)
@@ -109,7 +128,7 @@ namespace CharacterStudio.Rendering
 
         private List<string> GetLogicalSuffixCandidates(PawnLayerConfig config, Pawn? pawn, out bool suppressWhenNoLogicalSuffix)
         {
-            var results = new List<string>();
+            var results = GetReusableTokenList();
             suppressWhenNoLogicalSuffix = false;
 
             if (pawn == null)
@@ -279,7 +298,7 @@ namespace CharacterStudio.Rendering
 
         private List<string> BuildVariantPrefixes(string basePath, List<string> logicalSuffixes, string? directionalToken)
         {
-            var prefixes = new List<string>();
+            var prefixes = GetReusableTokenList();
 
             if (logicalSuffixes.Count > 0)
             {
@@ -463,7 +482,7 @@ namespace CharacterStudio.Rendering
 
         private List<string> GetEyeAnimationVariantTokens(EyeAnimationVariant eyeVariant, ExpressionType expression)
         {
-            var results = new List<string>();
+            var results = GetReusableTokenList();
 
             // P-PERF: 用查找表替代 Enum.ToString()
             AddUnique(results, EyeAnimationVariantNames[(int)eyeVariant]);

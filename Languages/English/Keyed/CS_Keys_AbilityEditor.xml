@@ -31,8 +31,8 @@
     <CS_Ability_RuntimeComponentType_HotkeyOverride>Hotkey Override</CS_Ability_RuntimeComponentType_HotkeyOverride>
     <CS_Ability_RuntimeComponentType_FollowupCooldownGate>Followup Cooldown Gate</CS_Ability_RuntimeComponentType_FollowupCooldownGate>
     <CS_Ability_RuntimeComponentType_SmartJump>Smart Jump</CS_Ability_RuntimeComponentType_SmartJump>
-    <CS_Ability_RuntimeComponentType_EShortJump>E Short Jump</CS_Ability_RuntimeComponentType_EShortJump>
-    <CS_Ability_RuntimeComponentType_RStackDetonation>R Stack Detonation</CS_Ability_RuntimeComponentType_RStackDetonation>
+    <CS_Ability_RuntimeComponentType_EShortJump>Short Jump</CS_Ability_RuntimeComponentType_EShortJump>
+    <CS_Ability_RuntimeComponentType_RStackDetonation>Stack Detonation</CS_Ability_RuntimeComponentType_RStackDetonation>
     <CS_Ability_RuntimeComponentType_PeriodicPulse>Periodic Pulse</CS_Ability_RuntimeComponentType_PeriodicPulse>
     <CS_Ability_RuntimeComponentType_KillRefresh>Kill Refresh</CS_Ability_RuntimeComponentType_KillRefresh>
     <CS_Ability_RuntimeComponentType_ShieldAbsorb>Shield Absorb</CS_Ability_RuntimeComponentType_ShieldAbsorb>
@@ -80,12 +80,12 @@
     <CS_Ability_NoPawnBound>No pawn bound.</CS_Ability_NoPawnBound>
     <CS_Ability_Revoke>Revoke Ability</CS_Ability_Revoke>
     <CS_Ability_RevokeSuccess>Abilities revoked successfully.</CS_Ability_RevokeSuccess>
-    <CS_Studio_Runtime_Desc_QComboWindow>Open a short Q combo acceptance window after casting.</CS_Studio_Runtime_Desc_QComboWindow>
+    <CS_Studio_Runtime_Desc_QComboWindow>Open a short combo acceptance window after casting.</CS_Studio_Runtime_Desc_QComboWindow>
     <CS_Studio_Runtime_Desc_HotkeyOverride>Temporarily replace a hotkey ability with another specific ability.</CS_Studio_Runtime_Desc_HotkeyOverride>
     <CS_Studio_Runtime_Desc_FollowupCooldownGate>Apply an extra cooldown gate to a chosen followup hotkey.</CS_Studio_Runtime_Desc_FollowupCooldownGate>
     <CS_Studio_Runtime_Desc_SmartJump>Smart jump that finds a valid landing cell and can fire effects after landing.</CS_Studio_Runtime_Desc_SmartJump>
     <CS_Studio_Runtime_Desc_EShortJump>Short jump variant, useful for quick reposition skills.</CS_Studio_Runtime_Desc_EShortJump>
-    <CS_Studio_Runtime_Desc_RStackDetonation>Track R stacks and detonate once the required stack count is reached.</CS_Studio_Runtime_Desc_RStackDetonation>
+    <CS_Studio_Runtime_Desc_RStackDetonation>Track stacks and detonate once the required stack count is reached.</CS_Studio_Runtime_Desc_RStackDetonation>
     <CS_Studio_Runtime_Desc_PeriodicPulse>Repeatedly emit pulse effects during a short duration.</CS_Studio_Runtime_Desc_PeriodicPulse>
     <CS_Studio_Runtime_Desc_KillRefresh>Refresh part of a hotkey cooldown when this ability kills a target.</CS_Studio_Runtime_Desc_KillRefresh>
     <CS_Studio_Runtime_Desc_ShieldAbsorb>Absorb incoming damage, then convert stored value into heal or bonus damage.</CS_Studio_Runtime_Desc_ShieldAbsorb>
@@ -174,4 +174,6 @@
     <CS_Ability_Validate_VfxNull>VFX #{0} is null.</CS_Ability_Validate_VfxNull>
     <CS_Ability_Validate_VfxIndexError>VFX #{0}: {1}</CS_Ability_Validate_VfxIndexError>
     <CS_Ability_Validate_VfxIndexWarning>VFX #{0}: {1}</CS_Ability_Validate_VfxIndexWarning>
+    <CS_Ability_RuntimeComponentType_Dash>Dash</CS_Ability_RuntimeComponentType_Dash>
+    <CS_Studio_Runtime_Desc_Dash>Perform a straight-line dash toward the target direction with adjustable speed and distance.</CS_Studio_Runtime_Desc_Dash>
 </LanguageData>

@@ -507,7 +507,7 @@ namespace CharacterStudio.Abilities
                 return string.Empty;
             }
 
-            if (ability.runtimeComponents.Any(c => c != null && c.enabled && (c.type == AbilityRuntimeComponentType.SmartJump || c.type == AbilityRuntimeComponentType.EShortJump))) return "跃";
+            if (ability.runtimeComponents.Any(c => c != null && c.enabled && (c.type == AbilityRuntimeComponentType.SmartJump || c.type == AbilityRuntimeComponentType.EShortJump || c.type == AbilityRuntimeComponentType.Dash))) return "跃";
             if (ability.runtimeComponents.Any(c => c != null && c.enabled && c.type == AbilityRuntimeComponentType.ShieldAbsorb)) return "盾";
             if (ability.runtimeComponents.Any(c => c != null && c.enabled && c.type == AbilityRuntimeComponentType.RStackDetonation)) return "爆";
             if (ability.runtimeComponents.Any(c => c != null && c.enabled && c.type == AbilityRuntimeComponentType.ChainBounce)) return "链";

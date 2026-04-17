@@ -12,6 +12,7 @@ namespace CharacterStudio.Abilities
         FollowupCooldownGate,
         SmartJump,
         EShortJump,
+        Dash,
         RStackDetonation,
         PeriodicPulse,
         KillRefresh,

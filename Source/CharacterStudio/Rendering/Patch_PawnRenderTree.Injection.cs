@@ -112,12 +112,18 @@ namespace CharacterStudio.Rendering
 
             if (hasCustomChild)
             {
-                // 先收集需要保留的子节点，再以数组形式写回（与 PawnRenderNode.children 类型一致）
-                var newChildren = new List<PawnRenderNode>(node.children.Length);
+                // P-PERF: 两遍计数 + 直接构建数组，避免 List + ToArray 双重分配
+                int keepCount = 0;
                 foreach (var child in node.children)
                     if (!(child is PawnRenderNode_Custom))
-                        newChildren.Add(child);
-                node.children = newChildren.ToArray();
+                        keepCount++;
+
+                var newChildren = new PawnRenderNode[keepCount];
+                int idx = 0;
+                foreach (var child in node.children)
+                    if (!(child is PawnRenderNode_Custom))
+                        newChildren[idx++] = child;
+                node.children = newChildren;
             }
         }
 
@@ -139,14 +145,29 @@ namespace CharacterStudio.Rendering
 
         private static void InjectCustomLayersIfNeeded(PawnRenderTree tree, Pawn pawn, PawnSkinDef skinDef)
         {
-            int configuredLayerCount = (skinDef.layers?.Count ?? 0) +
-                                       BaseAppearanceUtility.BuildSyntheticLayers(skinDef).Count();
-            if (configuredLayerCount == 0) return;
+            // P-PERF: 避免 .Count() 完整枚举 BuildSyntheticLayers 的 IEnumerable
+            int syntheticCount = 0;
+            int baseLayerCount = skinDef.layers?.Count ?? 0;
+            if (baseLayerCount == 0)
+            {
+                foreach (var _ in BaseAppearanceUtility.BuildSyntheticLayers(skinDef))
+                    syntheticCount++;
+                if (syntheticCount == 0) return;
+            }
 
             RemoveAllCustomNodes(tree);
             var injected = InjectCustomLayers(tree, pawn, skinDef);
+            int total = baseLayerCount + (syntheticCount > 0 ? syntheticCount : CountSyntheticLayers(skinDef));
             if (injected)
-                Log.Message($"[CharacterStudio] 注入了 {configuredLayerCount} 个自定义图层");
+                Log.Message($"[CharacterStudio] 注入了 {total} 个自定义图层");
+        }
+
+        private static int CountSyntheticLayers(PawnSkinDef skinDef)
+        {
+            int count = 0;
+            foreach (var _ in BaseAppearanceUtility.BuildSyntheticLayers(skinDef))
+                count++;
+            return count;
         }
 
         /// <summary>注入自定义图层，anchorPath 优先于 anchorTag</summary>
@@ -864,10 +885,24 @@ namespace CharacterStudio.Rendering
             
             string layerName = $"[Face] {displayPartType}{overlayLabel}{sideLabel}";
             string fallbackLayerName = $"[Face] {displayPartType}{overlayLabel}";
+            string trimmedLayerName = layerName.Trim();
+            string trimmedFallbackName = fallbackLayerName.Trim();
 
-            PawnLayerConfig? editableLayer = skinDef?.layers?.FirstOrDefault(layer =>
-                layer != null
-                && string.Equals(layer.layerName?.Trim(), layerName.Trim(), StringComparison.OrdinalIgnoreCase));
+            // P-PERF: 用 for 循环替代 LINQ .FirstOrDefault(lambda)，避免闭包委托分配
+            PawnLayerConfig? editableLayer = null;
+            if (skinDef?.layers != null)
+            {
+                var layers = skinDef.layers;
+                for (int i = 0; i < layers.Count; i++)
+                {
+                    var l = layers[i];
+                    if (l != null && string.Equals(l.layerName?.Trim(), trimmedLayerName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        editableLayer = l;
+                        break;
+                    }
+                }
+            }
 
             bool hasExplicitSidedContent = side != LayeredFacePartSide.None
                 && (faceConfig.CountLayeredParts(partType, LayeredFacePartSide.Left) > 0
@@ -875,9 +910,19 @@ namespace CharacterStudio.Rendering
 
             if (editableLayer == null && side != LayeredFacePartSide.None && !hasExplicitSidedContent)
             {
-                editableLayer = skinDef?.layers?.FirstOrDefault(layer =>
-                    layer != null
-                    && string.Equals(layer.layerName?.Trim(), fallbackLayerName.Trim(), StringComparison.OrdinalIgnoreCase));
+                if (skinDef?.layers != null)
+                {
+                    var layers = skinDef.layers;
+                    for (int i = 0; i < layers.Count; i++)
+                    {
+                        var l = layers[i];
+                        if (l != null && string.Equals(l.layerName?.Trim(), trimmedFallbackName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            editableLayer = l;
+                            break;
+                        }
+                    }
+                }
             }
 
             PawnLayerConfig resolvedLayer = editableLayer?.Clone() ?? new PawnLayerConfig();

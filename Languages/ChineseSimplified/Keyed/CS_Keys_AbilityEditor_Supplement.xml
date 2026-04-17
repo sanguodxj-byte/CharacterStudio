@@ -93,7 +93,7 @@
     <CS_Studio_Ability_HotkeySlot_Q>Q</CS_Studio_Ability_HotkeySlot_Q>
     <CS_Studio_Ability_HotkeySlot_R>R</CS_Studio_Ability_HotkeySlot_R>
     <CS_Studio_Ability_HotkeySlot_W>W</CS_Studio_Ability_HotkeySlot_W>
-    <CS_Studio_Ability_HotkeySlot_WCombo>W连段</CS_Studio_Ability_HotkeySlot_WCombo>
+    <CS_Studio_Ability_HotkeySlot_WCombo>连段</CS_Studio_Ability_HotkeySlot_WCombo>
     <CS_Studio_Ability_HotkeySlotSummary>{0}：{1}</CS_Studio_Ability_HotkeySlotSummary>
     <CS_Studio_Ability_HotkeySummary>热键映射：{0}</CS_Studio_Ability_HotkeySummary>
     <CS_Studio_Ability_IconPath>图标路径</CS_Studio_Ability_IconPath>
@@ -150,23 +150,23 @@
     <CS_Studio_Ability_PreviewProjectileGeneric>通用投射物</CS_Studio_Ability_PreviewProjectileGeneric>
     <CS_Studio_Ability_PreviewRepeatIndex>第 {0} 次重复</CS_Studio_Ability_PreviewRepeatIndex>
     <CS_Studio_Ability_PreviewRuntimeComboStacks>连击叠层：上限 {0}，每层 +{1}</CS_Studio_Ability_PreviewRuntimeComboStacks>
-    <CS_Studio_Ability_PreviewRuntimeDashEmpoweredStrike>冲刺强化：持续 {0}t，倍率 {1}</CS_Studio_Ability_PreviewRuntimeDashEmpoweredStrike>
-    <CS_Studio_Ability_PreviewRuntimeEShortJump>短跳：距离 {0}，冷却 {1}t</CS_Studio_Ability_PreviewRuntimeEShortJump>
+    <CS_Studio_Ability_PreviewRuntimeDashEmpoweredStrike>位移强化：持续 {0}t，倍率 {1}</CS_Studio_Ability_PreviewRuntimeDashEmpoweredStrike>
+    <CS_Studio_Ability_PreviewRuntimeEShortJump>短距跳跃：距离 {0}，冷却 {1}t</CS_Studio_Ability_PreviewRuntimeEShortJump>
     <CS_Studio_Ability_PreviewRuntimeExecuteBonusDamage>斩杀增伤：阈值 {0}，倍率 {1}</CS_Studio_Ability_PreviewRuntimeExecuteBonusDamage>
     <CS_Studio_Ability_PreviewRuntimeFlightState>飞行姿态：持续 {0}t，高度 {1}，限制战斗 {2}</CS_Studio_Ability_PreviewRuntimeFlightState>
-    <CS_Studio_Ability_PreviewRuntimeFollowupCooldownGate>后续禁用：{0}，持续 {1}t</CS_Studio_Ability_PreviewRuntimeFollowupCooldownGate>
+    <CS_Studio_Ability_PreviewRuntimeFollowupCooldownGate>后续冷却门：{0}，持续 {1}t</CS_Studio_Ability_PreviewRuntimeFollowupCooldownGate>
     <CS_Studio_Ability_PreviewRuntimeFullHealthBonusDamage>满血增伤：阈值 {0}，倍率 {1}</CS_Studio_Ability_PreviewRuntimeFullHealthBonusDamage>
-    <CS_Studio_Ability_PreviewRuntimeHitCooldownRefund>命中返冷：{0}，返还比例 {1}</CS_Studio_Ability_PreviewRuntimeHitCooldownRefund>
+    <CS_Studio_Ability_PreviewRuntimeHitCooldownRefund>命中退冷却：{0}，返还比例 {1}</CS_Studio_Ability_PreviewRuntimeHitCooldownRefund>
     <CS_Studio_Ability_PreviewRuntimeHitHeal>命中治疗：固定 {0}，比例 {1}</CS_Studio_Ability_PreviewRuntimeHitHeal>
-    <CS_Studio_Ability_PreviewRuntimeHitSlowField>命中减速场：持续 {0}t，半径 {1}，Hediff {2}</CS_Studio_Ability_PreviewRuntimeHitSlowField>
+    <CS_Studio_Ability_PreviewRuntimeHitSlowField>命中减速：持续 {0}t，半径 {1}，Hediff {2}</CS_Studio_Ability_PreviewRuntimeHitSlowField>
     <CS_Studio_Ability_PreviewRuntimeHotkeyOverride>热键覆盖：{0} → {1}（{2}t）</CS_Studio_Ability_PreviewRuntimeHotkeyOverride>
-    <CS_Studio_Ability_PreviewRuntimeIsolatedTargetBonusDamage>孤立目标增伤：半径 {0}，倍率 {1}</CS_Studio_Ability_PreviewRuntimeIsolatedTargetBonusDamage>
+    <CS_Studio_Ability_PreviewRuntimeIsolatedTargetBonusDamage>孤立增伤：半径 {0}，倍率 {1}</CS_Studio_Ability_PreviewRuntimeIsolatedTargetBonusDamage>
     <CS_Studio_Ability_PreviewRuntimeMarkDetonation>标记引爆：上限 {0} 层，持续 {1}t，伤害 {2}</CS_Studio_Ability_PreviewRuntimeMarkDetonation>
     <CS_Studio_Ability_PreviewRuntimeMissingHealthBonusDamage>残血增伤：每损失 10% +{0}，上限 {1}</CS_Studio_Ability_PreviewRuntimeMissingHealthBonusDamage>
     <CS_Studio_Ability_PreviewRuntimeNearbyEnemyBonusDamage>邻敌增伤：最多 {0} 个，每个 +{1}，半径 {2}</CS_Studio_Ability_PreviewRuntimeNearbyEnemyBonusDamage>
     <CS_Studio_Ability_PreviewRuntimePierceBonusDamage>穿透增伤：最多 {0} 次，每次 +{1}，半径 {2}</CS_Studio_Ability_PreviewRuntimePierceBonusDamage>
-    <CS_Studio_Ability_PreviewRuntimeProjectileSplit>投射物分裂：{0} 发，倍率 {1}，半径 {2}</CS_Studio_Ability_PreviewRuntimeProjectileSplit>
-    <CS_Studio_Ability_PreviewRuntimeQCombo>Q 连段窗口：{0}t</CS_Studio_Ability_PreviewRuntimeQCombo>
+    <CS_Studio_Ability_PreviewRuntimeProjectileSplit>弹射分裂：{0} 发，倍率 {1}，半径 {2}</CS_Studio_Ability_PreviewRuntimeProjectileSplit>
+    <CS_Studio_Ability_PreviewRuntimeQCombo>连段窗口：{0}t</CS_Studio_Ability_PreviewRuntimeQCombo>
     <CS_Studio_Ability_PreviewRuntimeRStack>叠层引爆：{0} 层，延迟 {1}t</CS_Studio_Ability_PreviewRuntimeRStack>
     <CS_Studio_Ability_PreviewRuntimeSmartJump>智能跳跃：偏移 {0} 格，距离 {1}，冷却 {2}t</CS_Studio_Ability_PreviewRuntimeSmartJump>
     <CS_Studio_Ability_PreviewSummaryLine>载体：{0} · 目标：{1}</CS_Studio_Ability_PreviewSummaryLine>
@@ -400,18 +400,18 @@
     <CS_Ability_GrantSuccess>技能授予成功。</CS_Ability_GrantSuccess>
     <CS_Ability_Hotkey_AbilityMissing>已绑定技能不存在。</CS_Ability_Hotkey_AbilityMissing>
     <CS_Ability_Hotkey_CastSuccess>技能施放成功。</CS_Ability_Hotkey_CastSuccess>
-    <CS_Ability_Hotkey_QMode>Q 模式</CS_Ability_Hotkey_QMode>
+    <CS_Ability_Hotkey_QMode>热键模式</CS_Ability_Hotkey_QMode>
     <CS_Ability_Hotkey_SlotCooldown>{0} 冷却：{1}t</CS_Ability_Hotkey_SlotCooldown>
     <CS_Ability_NoPawnBound>未绑定角色。</CS_Ability_NoPawnBound>
     <CS_Ability_NotReady>尚未就绪。</CS_Ability_NotReady>
     <CS_Ability_OnCooldown>正在冷却中。</CS_Ability_OnCooldown>
-    <CS_Ability_R_Ready>R 已就绪。</CS_Ability_R_Ready>
-    <CS_Ability_R_SecondStageArmed>R 二段已准备。</CS_Ability_R_SecondStageArmed>
-    <CS_Ability_R_SecondStageCast>R 二段已施放。</CS_Ability_R_SecondStageCast>
-    <CS_Ability_R_StackGain>R 层数：{0}/{1}</CS_Ability_R_StackGain>
-    <CS_Ability_R_StackingOff>R 叠层已关闭。</CS_Ability_R_StackingOff>
-    <CS_Ability_R_StackingOn>R 叠层已开启。</CS_Ability_R_StackingOn>
-    <CS_Ability_R_TargetInvalid>R 目标无效。</CS_Ability_R_TargetInvalid>
+    <CS_Ability_R_Ready>叠层技能就绪。</CS_Ability_R_Ready>
+    <CS_Ability_R_SecondStageArmed>二段已准备。</CS_Ability_R_SecondStageArmed>
+    <CS_Ability_R_SecondStageCast>二段已施放。</CS_Ability_R_SecondStageCast>
+    <CS_Ability_R_StackGain>叠层：{0}/{1}</CS_Ability_R_StackGain>
+    <CS_Ability_R_StackingOff>叠层已关闭。</CS_Ability_R_StackingOff>
+    <CS_Ability_R_StackingOn>叠层已开启。</CS_Ability_R_StackingOn>
+    <CS_Ability_R_TargetInvalid>目标无效。</CS_Ability_R_TargetInvalid>
     <CS_Ability_Revoke>撤销技能</CS_Ability_Revoke>
     <CS_Ability_RevokeSuccess>技能撤销成功。</CS_Ability_RevokeSuccess>
     <CS_Ability_Validate_CarrierNeedsRange>{0} 通常需要大于 0 的射程。</CS_Ability_Validate_CarrierNeedsRange>
@@ -492,7 +492,7 @@
     <CS_Studio_Ability_Hotkey_X>X</CS_Studio_Ability_Hotkey_X>
     <CS_Studio_Ability_Hotkey_C>C</CS_Studio_Ability_Hotkey_C>
     <CS_Studio_Ability_Hotkey_V>V</CS_Studio_Ability_Hotkey_V>
-    <CS_Studio_Ability_Hotkey_WCombo>W 连段</CS_Studio_Ability_Hotkey_WCombo>
+    <CS_Studio_Ability_Hotkey_WCombo>连段</CS_Studio_Ability_Hotkey_WCombo>
     <CS_Studio_Ability_PreviewRuntimeFlightOnlyStateAlways>始终可用</CS_Studio_Ability_PreviewRuntimeFlightOnlyStateAlways>
     <CS_Studio_Ability_PreviewRuntimeFlightOnlyStateWindow>仅飞行窗口</CS_Studio_Ability_PreviewRuntimeFlightOnlyStateWindow>
     <CS_Studio_Add>添加</CS_Studio_Add>
@@ -531,4 +531,15 @@
     <CS_Studio_Runtime_Scale>缩放</CS_Studio_Runtime_Scale>
     <CS_Studio_Section_Rendering>渲染</CS_Studio_Section_Rendering>
     <CS_Studio_VFX_NoPresetsRegistered>未注册任何预设。</CS_Studio_VFX_NoPresetsRegistered>
+    <CS_Studio_Runtime_DashDistance>冲刺距离</CS_Studio_Runtime_DashDistance>
+    <CS_Studio_Runtime_DashSpeed>每格耗时(Tick)</CS_Studio_Runtime_DashSpeed>
+    <CS_Studio_Runtime_DashUseAbilityRange>使用技能射程</CS_Studio_Runtime_DashUseAbilityRange>
+    <CS_Studio_Runtime_DashTriggerEffects>冲刺后触发效果</CS_Studio_Runtime_DashTriggerEffects>
+    <CS_Studio_Runtime_DashEquipAnim>触发武器动画</CS_Studio_Runtime_DashEquipAnim>
+    <CS_Studio_Runtime_DashEquipAnimKey>动画触发键</CS_Studio_Runtime_DashEquipAnimKey>
+    <CS_Studio_Runtime_DashEquipAnimDuration>动画持续(Tick)</CS_Studio_Runtime_DashEquipAnimDuration>
+    <CS_Studio_Ability_PreviewRuntimeDash>直线冲刺：距离 {0}，每格 {1}t</CS_Studio_Ability_PreviewRuntimeDash>
+    <CS_Ability_Validate_DashDistance>冲刺距离必须大于 0。</CS_Ability_Validate_DashDistance>
+    <CS_Ability_Validate_DashStepDuration>每格耗时必须大于 0。</CS_Ability_Validate_DashStepDuration>
+    <CS_Ability_Validate_DashEquipAnimKey>启用了武器动画联动但未填写触发键。</CS_Ability_Validate_DashEquipAnimKey>
 </LanguageData>

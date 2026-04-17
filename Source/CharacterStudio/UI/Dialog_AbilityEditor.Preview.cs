@@ -851,6 +851,8 @@ namespace CharacterStudio.UI
                         component.cooldownTicks.ToString());
                 case AbilityRuntimeComponentType.EShortJump:
                     return "CS_Studio_Ability_PreviewRuntimeEShortJump".Translate(component.jumpDistance.ToString(), component.cooldownTicks.ToString());
+                case AbilityRuntimeComponentType.Dash:
+                    return "CS_Studio_Ability_PreviewRuntimeDash".Translate(component.dashDistance.ToString(), component.dashStepDurationTicks.ToString());
                 case AbilityRuntimeComponentType.RStackDetonation:
                     return "CS_Studio_Ability_PreviewRuntimeRStack".Translate(component.requiredStacks.ToString(), component.delayTicks.ToString());
                 case AbilityRuntimeComponentType.PeriodicPulse:
