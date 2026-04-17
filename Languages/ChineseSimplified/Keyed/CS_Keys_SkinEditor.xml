@@ -117,6 +117,7 @@
     <CS_Studio_Prop_DrawOrder>绘制顺序</CS_Studio_Prop_DrawOrder>
     <CS_Studio_Prop_FaceComponent>面部组件</CS_Studio_Prop_FaceComponent>
     <CS_Studio_Prop_FlipHorizontal>水平翻转</CS_Studio_Prop_FlipHorizontal>
+    <CS_Studio_Prop_IndependentWest>独立西向偏移</CS_Studio_Prop_IndependentWest>
     <CS_Studio_Prop_LayerName>图层名称</CS_Studio_Prop_LayerName>
     <CS_Studio_Prop_NodeChildren>子节点数</CS_Studio_Prop_NodeChildren>
     <CS_Studio_Prop_NodeInfo>节点信息</CS_Studio_Prop_NodeInfo>

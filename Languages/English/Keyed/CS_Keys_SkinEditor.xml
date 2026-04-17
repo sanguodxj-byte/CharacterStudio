@@ -127,6 +127,7 @@
     <CS_Studio_Prop_DrawOrder>Draw Order</CS_Studio_Prop_DrawOrder>
     <CS_Studio_Prop_FaceComponent>Face Component</CS_Studio_Prop_FaceComponent>
     <CS_Studio_Prop_FlipHorizontal>Flip Horizontal</CS_Studio_Prop_FlipHorizontal>
+    <CS_Studio_Prop_IndependentWest>Independent West Offset</CS_Studio_Prop_IndependentWest>
     <CS_Studio_Prop_HideNode>Hide Node</CS_Studio_Prop_HideNode>
     <CS_Studio_Prop_LayerName>Layer Name</CS_Studio_Prop_LayerName>
     <CS_Studio_Prop_MountLayer>Mount Layer on Node</CS_Studio_Prop_MountLayer>

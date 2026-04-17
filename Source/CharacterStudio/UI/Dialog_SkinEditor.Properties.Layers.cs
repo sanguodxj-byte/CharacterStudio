@@ -180,25 +180,53 @@ namespace CharacterStudio.UI
             bool isEastActive = previewRotation == Rot4.East || previewRotation == Rot4.West;
             if (DrawCollapsibleSection(ref y, width, "CS_Studio_Section_EastOffset".Translate(), "EastOffset", isEastActive))
             {
-                float ex = layer.offsetEast.x;
-                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_OffsetX".Translate(), ref ex, -1f, 1f);
-                if (Math.Abs(ex - layer.offsetEast.x) > 0.0001f)
+                bool useWest = layer.useWestOffset;
+                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Prop_IndependentWest".Translate(), ref useWest);
+                if (useWest != layer.useWestOffset)
                 {
-                    MutateSelectedLayersWithUndo(layer, l => l.offsetEast.x = ex);
+                    bool newValue = useWest;
+                    MutateSelectedLayersWithUndo(layer, l =>
+                    {
+                        l.useWestOffset = newValue;
+                        if (newValue && l.offsetWest == Vector3.zero)
+                            l.offsetWest = new Vector3(-l.offsetEast.x, l.offsetEast.y, l.offsetEast.z);
+                    });
                 }
 
-                float ey = layer.offsetEast.y;
-                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_OffsetY".Translate(), ref ey, -1f, 1f);
-                if (Math.Abs(ey - layer.offsetEast.y) > 0.0001f)
+                bool editingWest = layer.useWestOffset && previewRotation == Rot4.West;
+                Vector3 sideOffset = editingWest ? layer.offsetWest : layer.offsetEast;
+
+                float sx = sideOffset.x;
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_OffsetX".Translate(), ref sx, -1f, 1f);
+                if (Math.Abs(sx - sideOffset.x) > 0.0001f)
                 {
-                    MutateSelectedLayersWithUndo(layer, l => l.offsetEast.y = ey);
+                    float val = sx;
+                    if (editingWest)
+                        MutateSelectedLayersWithUndo(layer, l => l.offsetWest.x = val);
+                    else
+                        MutateSelectedLayersWithUndo(layer, l => l.offsetEast.x = val);
                 }
 
-                float ez = layer.offsetEast.z;
-                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_OffsetZ".Translate(), ref ez, -1f, 1f);
-                if (Math.Abs(ez - layer.offsetEast.z) > 0.0001f)
+                float sy = sideOffset.y;
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_OffsetY".Translate(), ref sy, -1f, 1f);
+                if (Math.Abs(sy - sideOffset.y) > 0.0001f)
                 {
-                    MutateSelectedLayersWithUndo(layer, l => l.offsetEast.z = ez);
+                    float val = sy;
+                    if (editingWest)
+                        MutateSelectedLayersWithUndo(layer, l => l.offsetWest.y = val);
+                    else
+                        MutateSelectedLayersWithUndo(layer, l => l.offsetEast.y = val);
+                }
+
+                float sz = sideOffset.z;
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_OffsetZ".Translate(), ref sz, -1f, 1f);
+                if (Math.Abs(sz - sideOffset.z) > 0.0001f)
+                {
+                    float val = sz;
+                    if (editingWest)
+                        MutateSelectedLayersWithUndo(layer, l => l.offsetWest.z = val);
+                    else
+                        MutateSelectedLayersWithUndo(layer, l => l.offsetEast.z = val);
                 }
             }
 
