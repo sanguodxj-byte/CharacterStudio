@@ -48,6 +48,8 @@ namespace CharacterStudio.Core
         public readonly Vector2 gazeOffset;
         public readonly float primaryWave;
         public readonly float slowWave;
+        public readonly float absPrimaryWave;
+        public readonly float absSlowWave;
 
         public FaceTransformContext(
             LayeredFacePartType partType,
@@ -69,7 +71,9 @@ namespace CharacterStudio.Core
             Rot4 facing,
             Vector2 gazeOffset,
             float primaryWave,
-            float slowWave)
+            float slowWave,
+            float absPrimaryWave,
+            float absSlowWave)
         {
             this.partType = partType;
             this.side = side;
@@ -91,6 +95,8 @@ namespace CharacterStudio.Core
             this.gazeOffset = gazeOffset;
             this.primaryWave = primaryWave;
             this.slowWave = slowWave;
+            this.absPrimaryWave = absPrimaryWave;
+            this.absSlowWave = absSlowWave;
         }
     }
 
@@ -186,6 +192,73 @@ namespace CharacterStudio.Core
         }
 
         /// <summary>
+        /// 计算瞳孔注视方向偏移（从 PupilMotionConfig 读取方向参数）。
+        /// 独立于 Profile 系统，叠加在 Profile 驱动的基础变换之上。
+        ///
+        /// 包含：
+        ///   - gazeOffset 连续偏移（基于实际目标坐标映射）
+        ///   - eyeDirection 离散偏移（Left/Right/Up/Down）
+        ///   - 正面/侧面朝向的独立配置
+        ///   - 左右瞳孔独立配置
+        /// </summary>
+        public static Vector3 ComputePupilDirectionOffset(FaceTransformContext context, PawnEyeDirectionConfig.PupilMotionConfig motion)
+        {
+            float offsetX = 0f;
+            float offsetZ = 0f;
+            Vector2 clampedGazeOffset = Vector2.ClampMagnitude(context.gazeOffset, 1f);
+
+            bool isSideFacing = context.facing == Rot4.East || context.facing == Rot4.West;
+            bool isLeftEye = context.side == LayeredFacePartSide.Left;
+
+            // 根据朝向和瞳孔侧选择对应的方向偏移
+            float dirLeftX, dirRightX, dirUpZ, dirDownZ;
+            if (isSideFacing)
+            {
+                // 侧面朝向：使用侧面偏移配置
+                offsetX += SideBias(context.side, motion.side_baseX);
+                dirLeftX = motion.side_dirLeftX;
+                dirRightX = motion.side_dirRightX;
+                dirUpZ = motion.side_dirUpZ;
+                dirDownZ = motion.side_dirDownZ;
+            }
+            else
+            {
+                // 正面朝向：使用左/右瞳孔独立配置
+                if (isLeftEye)
+                {
+                    offsetX += motion.leftPupil_frontBaseX;
+                    dirLeftX = motion.leftPupil_dirLeftX;
+                    dirRightX = motion.leftPupil_dirRightX;
+                    dirUpZ = motion.leftPupil_dirUpZ;
+                    dirDownZ = motion.leftPupil_dirDownZ;
+                }
+                else
+                {
+                    offsetX += motion.rightPupil_frontBaseX;
+                    dirLeftX = motion.rightPupil_dirLeftX;
+                    dirRightX = motion.rightPupil_dirRightX;
+                    dirUpZ = motion.rightPupil_dirUpZ;
+                    dirDownZ = motion.rightPupil_dirDownZ;
+                }
+            }
+
+            // 叠加连续 gaze 偏移
+            offsetX += clampedGazeOffset.x * Mathf.Max(Mathf.Abs(dirLeftX), Mathf.Abs(dirRightX));
+            offsetZ += clampedGazeOffset.y * Mathf.Max(Mathf.Abs(dirUpZ), Mathf.Abs(dirDownZ));
+
+            // 叠加离散方向偏移
+            switch (context.eyeDirection)
+            {
+                case EyeDirection.Left: offsetX += dirLeftX; break;
+                case EyeDirection.Right: offsetX += dirRightX; break;
+                case EyeDirection.Up: offsetZ += dirUpZ; break;
+                case EyeDirection.Down: offsetZ += dirDownZ; break;
+            }
+
+            return new Vector3(offsetX, 0f, offsetZ);
+        }
+
+        /// <summary>
         /// 基于 FaceBlendState 求值 UpperLid 通道。
         /// upperLidMoveDown 由外部传入（来自 EyeDirectionConfig）。
         /// </summary>
@@ -197,17 +270,36 @@ namespace CharacterStudio.Core
         {
             float sideSign = SideSign(context.side);
 
+            // Blink 状态：使用 BlinkPhase 插值实现平滑闭眼-睁眼动画
+            // 注意：实际眨眼通过 isBlinkActive 触发，lidState 可能不是 Blink
+            // 使用 upperLidMoveDown 参数（来自 GetLayeredUpperLidMoveDown）而非 profile 的 moveDown，
+            // 因为上层已根据默认值/配置/编译数据计算了权威的 moveDown 值。
+            if (context.isBlinkActive)
+            {
+                float blinkProgress = ComputeBlinkProgress(context);
+                float moveDown = upperLidMoveDown * blinkProgress;
+                Vector3 blinkScale = blendState.EvaluateScale(currentTick, context.primaryWave, context.slowWave);
+                float sideBias = blendState.GetSideBiasX();
+
+                return FaceTransformResult.Visible(
+                    0f,
+                    new Vector3(sideSign * sideBias, 0f, moveDown),
+                    new Vector3(
+                        Mathf.Lerp(1f, blinkScale.x, blinkProgress),
+                        1f,
+                        Mathf.Lerp(1f, blinkScale.z, blinkProgress)));
+            }
+
             float angle = blendState.EvaluateAngle(currentTick, context.primaryWave);
             Vector3 offset = blendState.EvaluateOffset(currentTick, context.primaryWave, context.slowWave);
             Vector3 scale = blendState.EvaluateScale(currentTick, context.primaryWave, context.slowWave);
 
             // 叠加侧偏
-            float sideBias = blendState.GetSideBiasX();
-            offset.x += sideSign * sideBias;
+            float sideBias2 = blendState.GetSideBiasX();
+            offset.x += sideSign * sideBias2;
 
-            // 叠加 moveDown（用于 Blink/Close 闭合位移）
-            float moveDown = blendState.GetMoveDown();
-            offset.z += moveDown;
+            // 叠加 moveDown（用于 Close 闭合位移）
+            offset.z += blendState.GetMoveDown();
 
             return FaceTransformResult.Visible(angle, offset, scale);
         }
@@ -222,19 +314,57 @@ namespace CharacterStudio.Core
         {
             float sideSign = SideSign(context.side);
 
+            // Blink 状态：使用 BlinkPhase 插值实现平滑闭眼-睁眼动画
+            // 注意：实际眨眼通过 isBlinkActive 触发，lidState 可能不是 Blink
+            if (context.isBlinkActive)
+            {
+                float blinkProgress = ComputeBlinkProgress(context);
+                float moveDown = blendState.GetMoveDown() * blinkProgress;
+                Vector3 blinkScale = blendState.EvaluateScale(currentTick, context.primaryWave, context.slowWave);
+                float sideBias = blendState.GetSideBiasX();
+
+                return FaceTransformResult.Visible(
+                    0f,
+                    new Vector3(sideSign * sideBias, 0f, moveDown),
+                    new Vector3(
+                        Mathf.Lerp(1f, blinkScale.x, blinkProgress),
+                        1f,
+                        Mathf.Lerp(1f, blinkScale.z, blinkProgress)));
+            }
+
             float angle = blendState.EvaluateAngle(currentTick, context.primaryWave);
             Vector3 offset = blendState.EvaluateOffset(currentTick, context.primaryWave, context.slowWave);
             Vector3 scale = blendState.EvaluateScale(currentTick, context.primaryWave, context.slowWave);
 
             // 叠加侧偏
-            float sideBias = blendState.GetSideBiasX();
-            offset.x += sideSign * sideBias;
+            float sideBias2 = blendState.GetSideBiasX();
+            offset.x += sideSign * sideBias2;
 
-            // 叠加 moveDown（LowerLid 在 Blink/Close 时上移）
-            float moveDown = blendState.GetMoveDown();
-            offset.z += moveDown;
+            // 叠加 moveDown（LowerLid 在 Close 时上移）
+            float md = blendState.GetMoveDown();
+            offset.z += md;
 
             return FaceTransformResult.Visible(angle, offset, scale);
+        }
+
+        /// <summary>
+        /// 根据 BlinkPhase 和 blinkPhaseProgress 计算 0→1→0 的眨眼进度值。
+        /// ClosingLid: 0→1（闭眼阶段）, HideBaseEyeParts/ShowReplacementEye/RestoreBaseEyeParts: 1（完全闭合）,
+        /// OpeningLid: 1→0（睁眼阶段）。
+        /// </summary>
+        public static float DebugComputeBlinkProgress(FaceTransformContext context) => ComputeBlinkProgress(context);
+
+        private static float ComputeBlinkProgress(FaceTransformContext context)
+        {
+            return context.blinkPhase switch
+            {
+                BlinkPhase.ClosingLid => context.blinkPhaseProgress,
+                BlinkPhase.HideBaseEyeParts => 1f,
+                BlinkPhase.ShowReplacementEye => 1f,
+                BlinkPhase.RestoreBaseEyeParts => 1f,
+                BlinkPhase.OpeningLid => 1f - context.blinkPhaseProgress,
+                _ => context.isBlinkActive ? 1f : 0f,
+            };
         }
 
         /// <summary>
@@ -427,7 +557,7 @@ namespace CharacterStudio.Core
 
             float scaleZ = context.lidState == LidState.Half ? 0.92f : 1f;
             if (context.expression == ExpressionType.Shock || context.expression == ExpressionType.Scared)
-                scaleZ = Mathf.Max(scaleZ, 1.06f + Mathf.Abs(context.primaryWave) * 0.02f);
+                scaleZ = Mathf.Max(scaleZ, 1.06f + context.absPrimaryWave * 0.02f);
             else if (context.expression == ExpressionType.Sleeping)
                 scaleZ = Mathf.Min(scaleZ, 0.88f);
             else if (context.eyeVariant == EyeAnimationVariant.HappySoft)
@@ -438,16 +568,16 @@ namespace CharacterStudio.Core
             else if (context.eyeVariant == EyeAnimationVariant.NeutralLookDown)
                 scaleZ = Mathf.Min(scaleZ, 0.93f);
             else if (context.eyeVariant == EyeAnimationVariant.ShockWide)
-                scaleZ = Mathf.Max(scaleZ, 1.12f + Mathf.Abs(context.primaryWave) * 0.03f);
+                scaleZ = Mathf.Max(scaleZ, 1.12f + context.absPrimaryWave * 0.03f);
             else if (context.eyeVariant == EyeAnimationVariant.ScaredWide)
-                scaleZ = Mathf.Max(scaleZ, 1.08f + Mathf.Abs(context.slowWave) * 0.02f);
+                scaleZ = Mathf.Max(scaleZ, 1.08f + context.absSlowWave * 0.02f);
             else if (context.eyeVariant == EyeAnimationVariant.ScaredFlinch)
                 scaleZ = Mathf.Min(scaleZ, 0.94f);
 
             return FaceTransformResult.Visible(
                 context.primaryWave * motion.baseAngleWave,
                 new Vector3(offsetX, 0f, offsetZ + context.slowWave * motion.slowWaveOffsetZ),
-                new Vector3(motion.scaleXBase + Mathf.Abs(context.slowWave) * motion.scaleXWaveAmplitude, 1f, scaleZ));
+                new Vector3(motion.scaleXBase + context.absSlowWave * motion.scaleXWaveAmplitude, 1f, scaleZ));
         }
 
         private static FaceTransformResult EvaluatePupil(FaceTransformContext context, PawnEyeDirectionConfig.PupilMotionConfig motion)
@@ -543,20 +673,20 @@ namespace CharacterStudio.Core
 
             float scale = context.pupilVariant switch
             {
-                PupilScaleVariant.Focus => motion.focusScaleBase + Mathf.Abs(context.slowWave) * motion.focusScaleWave,
-                PupilScaleVariant.SlightlyContracted => motion.slightlyContractedScaleBase + Mathf.Abs(context.slowWave) * motion.slightlyContractedScaleWave,
-                PupilScaleVariant.Contracted => motion.contractedScaleBase + Mathf.Abs(context.slowWave) * motion.contractedScaleWave,
-                PupilScaleVariant.Dilated => motion.dilatedScaleBase + Mathf.Abs(context.primaryWave) * motion.dilatedScaleWave,
-                PupilScaleVariant.DilatedMax => motion.dilatedMaxScaleBase + Mathf.Abs(context.primaryWave) * motion.dilatedMaxScaleWave,
-                PupilScaleVariant.ScaredPulse => motion.scaredPulseScaleBase + Mathf.Abs(context.primaryWave) * motion.scaredPulseScaleWave,
+                PupilScaleVariant.Focus => motion.focusScaleBase + context.absSlowWave * motion.focusScaleWave,
+                PupilScaleVariant.SlightlyContracted => motion.slightlyContractedScaleBase + context.absSlowWave * motion.slightlyContractedScaleWave,
+                PupilScaleVariant.Contracted => motion.contractedScaleBase + context.absSlowWave * motion.contractedScaleWave,
+                PupilScaleVariant.Dilated => motion.dilatedScaleBase + context.absPrimaryWave * motion.dilatedScaleWave,
+                PupilScaleVariant.DilatedMax => motion.dilatedMaxScaleBase + context.absPrimaryWave * motion.dilatedMaxScaleWave,
+                PupilScaleVariant.ScaredPulse => motion.scaredPulseScaleBase + context.absPrimaryWave * motion.scaredPulseScaleWave,
                 PupilScaleVariant.BlinkHidden => 0f,
                 _ => 1f,
             };
 
             if (context.expression == ExpressionType.Shock || context.expression == ExpressionType.Scared)
-                scale = Mathf.Max(scale, motion.shockScaredMinScaleBase + Mathf.Abs(context.primaryWave) * motion.shockScaredMinScaleWave);
+                scale = Mathf.Max(scale, motion.shockScaredMinScaleBase + context.absPrimaryWave * motion.shockScaredMinScaleWave);
             else if (context.expression == ExpressionType.Happy || context.expression == ExpressionType.Cheerful)
-                scale = Mathf.Min(scale, motion.happyMaxScaleBase + Mathf.Abs(context.slowWave) * motion.happyMaxScaleWave);
+                scale = Mathf.Min(scale, motion.happyMaxScaleBase + context.absSlowWave * motion.happyMaxScaleWave);
             else if (context.expression == ExpressionType.Sleeping)
                 scale = motion.sleepingScale;
             else if (context.eyeVariant == EyeAnimationVariant.WorkFocusDown)
@@ -567,11 +697,11 @@ namespace CharacterStudio.Core
             else if (context.eyeVariant == EyeAnimationVariant.NeutralLookDown)
                 scale = Mathf.Min(scale, motion.neutralLookDownMaxScale);
             else if (context.eyeVariant == EyeAnimationVariant.ShockWide)
-                scale = Mathf.Max(scale, motion.shockWideMinScaleBase + Mathf.Abs(context.primaryWave) * motion.shockWideMinScaleWave);
+                scale = Mathf.Max(scale, motion.shockWideMinScaleBase + context.absPrimaryWave * motion.shockWideMinScaleWave);
             else if (context.eyeVariant == EyeAnimationVariant.ScaredWide)
-                scale = Mathf.Max(scale, motion.scaredWideMinScaleBase + Mathf.Abs(context.slowWave) * motion.scaredWideMinScaleWave);
+                scale = Mathf.Max(scale, motion.scaredWideMinScaleBase + context.absSlowWave * motion.scaredWideMinScaleWave);
             else if (context.eyeVariant == EyeAnimationVariant.ScaredFlinch)
-                scale = Mathf.Max(scale, motion.scaredFlinchMinScaleBase + Mathf.Abs(context.primaryWave) * motion.scaredFlinchMinScaleWave);
+                scale = Mathf.Max(scale, motion.scaredFlinchMinScaleBase + context.absPrimaryWave * motion.scaredFlinchMinScaleWave);
 
             if (context.pupilVariant == PupilScaleVariant.BlinkHidden)
                 return FaceTransformResult.Hidden();
@@ -689,11 +819,11 @@ namespace CharacterStudio.Core
                 MouthState.Smile => FaceTransformResult.Visible(
                     context.slowWave * motion.smileAngleWave,
                     new Vector3(0f, 0f, motion.smileOffsetZBase + context.primaryWave * motion.smilePrimaryWaveOffsetZ),
-                    new Vector3(motion.smileScaleXBase + Mathf.Abs(context.primaryWave) * motion.smileScaleXWave, 1f, motion.smileScaleZ)),
+                    new Vector3(motion.smileScaleXBase + context.absPrimaryWave * motion.smileScaleXWave, 1f, motion.smileScaleZ)),
                 MouthState.Open => FaceTransformResult.Visible(
                     context.primaryWave * motion.openAngleWave,
-                    new Vector3(0f, 0f, motion.openOffsetZBase + Mathf.Abs(context.primaryWave) * motion.openPrimaryWaveOffsetZ),
-                    new Vector3(motion.openScaleX, 1f, motion.openScaleZBase + Mathf.Abs(context.slowWave) * motion.openScaleZWave)),
+                    new Vector3(0f, 0f, motion.openOffsetZBase + context.absPrimaryWave * motion.openPrimaryWaveOffsetZ),
+                    new Vector3(motion.openScaleX, 1f, motion.openScaleZBase + context.absSlowWave * motion.openScaleZWave)),
                 MouthState.Down => FaceTransformResult.Visible(
                     motion.downAngleBase + context.primaryWave * motion.downAngleWave,
                     new Vector3(0f, 0f, motion.downOffsetZBase + context.slowWave * motion.downSlowWaveOffsetZ),
@@ -706,12 +836,12 @@ namespace CharacterStudio.Core
                 {
                     ExpressionType.Eating => FaceTransformResult.Visible(
                         context.primaryWave * motion.eatingAngleWave,
-                        new Vector3(0f, 0f, motion.eatingOffsetZBase + Mathf.Abs(context.primaryWave) * motion.eatingPrimaryWaveOffsetZ),
-                        new Vector3(motion.eatingScaleX, 1f, motion.eatingScaleZBase + Mathf.Abs(context.primaryWave) * motion.eatingScaleZWave)),
+                        new Vector3(0f, 0f, motion.eatingOffsetZBase + context.absPrimaryWave * motion.eatingPrimaryWaveOffsetZ),
+                        new Vector3(motion.eatingScaleX, 1f, motion.eatingScaleZBase + context.absPrimaryWave * motion.eatingScaleZWave)),
                     ExpressionType.Shock or ExpressionType.Scared => FaceTransformResult.Visible(
                         context.primaryWave * motion.shockScaredAngleWave,
-                        new Vector3(0f, 0f, motion.shockScaredOffsetZBase + Mathf.Abs(context.primaryWave) * motion.shockScaredPrimaryWaveOffsetZ),
-                        new Vector3(motion.shockScaredScaleX, 1f, motion.shockScaredScaleZBase + Mathf.Abs(context.slowWave) * motion.shockScaredScaleZWave)),
+                        new Vector3(0f, 0f, motion.shockScaredOffsetZBase + context.absPrimaryWave * motion.shockScaredPrimaryWaveOffsetZ),
+                        new Vector3(motion.shockScaredScaleX, 1f, motion.shockScaredScaleZBase + context.absSlowWave * motion.shockScaredScaleZWave)),
                     _ => FaceTransformResult.Visible(0f, new Vector3(0f, 0f, context.slowWave * motion.defaultSlowWaveOffsetZ), Vector3.one)
                 }
             };
@@ -719,19 +849,6 @@ namespace CharacterStudio.Core
 
         private static FaceTransformResult EvaluateHair(FaceTransformContext context)
         {
-            string overlayId = PawnFaceConfig.NormalizeOverlayId(context.overlayId);
-
-            // 后发节点会挂到 Body 父节点，而其它分层面部/头发节点普遍跟随 Head 体系做程序化起伏。
-            // 若后发完全不参与这类纵向位移，就会在上下动画时与前发/面部层产生明显撕裂。
-            // 这里仅为 back 组补一个轻微、稳定的慢波位移，避免扩大到其它 Hair 组的表现风险。
-            if (overlayId.Equals("back", System.StringComparison.OrdinalIgnoreCase))
-            {
-                return FaceTransformResult.Visible(
-                    0f,
-                    new Vector3(0f, 0f, context.slowWave * 0.0006f),
-                    Vector3.one);
-            }
-
             return FaceTransformResult.Visible(0f, Vector3.zero, Vector3.one);
         }
 
@@ -741,11 +858,11 @@ namespace CharacterStudio.Core
             if (!active)
                 return FaceTransformResult.Hidden();
 
-            float pulse = motion.blushPulseBase + Mathf.Abs(context.primaryWave) * motion.blushPulseWave;
+            float pulse = motion.blushPulseBase + context.absPrimaryWave * motion.blushPulseWave;
             return FaceTransformResult.Visible(
                 0f,
                 new Vector3(0f, 0f, motion.blushOffsetZBase + context.slowWave * motion.blushSlowWaveOffsetZ),
-                new Vector3(pulse, 1f, motion.blushScaleZBase + Mathf.Abs(context.slowWave) * motion.blushScaleZWave));
+                new Vector3(pulse, 1f, motion.blushScaleZBase + context.absSlowWave * motion.blushScaleZWave));
         }
 
         private static FaceTransformResult EvaluateTear(FaceTransformContext context, PawnFaceConfig.EmotionOverlayMotionConfig motion)
@@ -754,10 +871,10 @@ namespace CharacterStudio.Core
             if (!active)
                 return FaceTransformResult.Hidden();
 
-            float pulse = motion.tearPulseBase + Mathf.Abs(context.slowWave) * motion.tearPulseWave;
+            float pulse = motion.tearPulseBase + context.absSlowWave * motion.tearPulseWave;
             return FaceTransformResult.Visible(
                 context.primaryWave * motion.tearAngleWave,
-                new Vector3(0f, 0f, motion.tearOffsetZBase + Mathf.Abs(context.primaryWave) * motion.tearPrimaryWaveOffsetZ),
+                new Vector3(0f, 0f, motion.tearOffsetZBase + context.absPrimaryWave * motion.tearPrimaryWaveOffsetZ),
                 new Vector3(pulse, 1f, pulse));
         }
 
@@ -766,10 +883,10 @@ namespace CharacterStudio.Core
             if (context.emotionState != EmotionOverlayState.Sweat)
                 return FaceTransformResult.Hidden();
 
-            float pulse = motion.sweatPulseBase + Mathf.Abs(context.primaryWave) * motion.sweatPulseWave;
+            float pulse = motion.sweatPulseBase + context.absPrimaryWave * motion.sweatPulseWave;
             return FaceTransformResult.Visible(
                 context.primaryWave * motion.sweatAngleWave,
-                new Vector3(context.primaryWave * motion.sweatOffsetXWave, 0f, motion.sweatOffsetZBase + Mathf.Abs(context.slowWave) * motion.sweatSlowWaveOffsetZ),
+                new Vector3(context.primaryWave * motion.sweatOffsetXWave, 0f, motion.sweatOffsetZBase + context.absSlowWave * motion.sweatSlowWaveOffsetZ),
                 new Vector3(pulse, 1f, pulse));
         }
 

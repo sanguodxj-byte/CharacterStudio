@@ -6,6 +6,7 @@ using System.Linq;
 using System.Xml;
 using CharacterStudio.Abilities;
 using CharacterStudio.Attributes;
+using RimWorld;
 using Verse;
 
 namespace CharacterStudio.Core
@@ -207,6 +208,8 @@ namespace CharacterStudio.Core
                 }
 
                 RestoreStatModifiersFromXml(defNode, def);
+                RestoreAbilitiesFromXml(defNode, def);
+                RestoreAbilityHotkeysFromXml(defNode, def);
                 EnsureDefIdentity(def);
                 return def;
             }
@@ -287,6 +290,192 @@ namespace CharacterStudio.Core
             }
 
             def.statModifiers = parsedProfile;
+        }
+
+        /// <summary>
+        /// 从皮肤 XML 节点手动恢复技能列表。
+        /// DirectXmlToObject 对嵌套 ModularAbilityDef（继承 Def）的子对象
+        /// 反序列化不完整，需要手动解析并解析 Def 引用。
+        /// </summary>
+        private static void RestoreAbilitiesFromXml(XmlNode defNode, PawnSkinDef def)
+        {
+            if (defNode == null || def == null)
+            {
+                return;
+            }
+
+            XmlNode? abilitiesNode = defNode.SelectSingleNode("abilities");
+            if (abilitiesNode == null)
+            {
+                def.abilities ??= new List<ModularAbilityDef>();
+                return;
+            }
+
+            var restored = new List<ModularAbilityDef>();
+            foreach (XmlNode child in abilitiesNode.ChildNodes)
+            {
+                if (child.NodeType != XmlNodeType.Element)
+                {
+                    continue;
+                }
+
+                if (!string.Equals(child.Name, "li", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    var ability = DirectXmlToObject.ObjectFromXml<ModularAbilityDef>(child, true);
+                    if (ability != null)
+                    {
+                        ResolveAbilityDefReferences(ability, child);
+                        if (string.IsNullOrWhiteSpace(ability.defName))
+                        {
+                            ability.defName = $"CS_RestoredAbility_{restored.Count}";
+                        }
+
+                        if (string.IsNullOrWhiteSpace(ability.label))
+                        {
+                            ability.label = ability.defName;
+                        }
+
+                        restored.Add(ability);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LogSkinXmlWarningOnce("(abilities)", $"[CharacterStudio] 恢复技能数据失败: {ex.Message}");
+                }
+            }
+
+            def.abilities = restored;
+        }
+
+        /// <summary>
+        /// 手动解析技能 XML 节点中的 Def 引用，确保 ThingDef / DamageDef 等在运行时可用。
+        /// </summary>
+        private static void ResolveAbilityDefReferences(ModularAbilityDef ability, XmlNode abilityNode)
+        {
+            // 顶层 projectileDef
+            string? projectileDefName = abilityNode.SelectSingleNode("projectileDef")?.InnerText?.Trim();
+            ability.projectileDef = !string.IsNullOrWhiteSpace(projectileDefName)
+                ? DefDatabase<ThingDef>.GetNamedSilentFail(projectileDefName)
+                : null;
+
+            // 效果列表中的 Def 引用
+            if (ability.effects != null)
+            {
+                XmlNode? effectsNode = abilityNode.SelectSingleNode("effects");
+                XmlNodeList? effectNodes = effectsNode?.SelectNodes("li");
+                if (effectNodes != null)
+                {
+                    for (int i = 0; i < effectNodes.Count && i < ability.effects.Count; i++)
+                    {
+                        ResolveEffectDefReferences(ability.effects[i], effectNodes[i]);
+                    }
+                }
+            }
+
+            // 视觉特效：归一化遗留数据
+            if (ability.visualEffects != null)
+            {
+                foreach (var vfx in ability.visualEffects)
+                {
+                    vfx?.NormalizeLegacyData();
+                    vfx?.SyncLegacyFields();
+                }
+            }
+
+            // 运行时组件中的 Def 引用
+            if (ability.runtimeComponents != null)
+            {
+                XmlNode? rcNode = abilityNode.SelectSingleNode("runtimeComponents");
+                XmlNodeList? rcNodes = rcNode?.SelectNodes("li");
+                if (rcNodes != null)
+                {
+                    for (int i = 0; i < rcNodes.Count && i < ability.runtimeComponents.Count; i++)
+                    {
+                        ResolveRuntimeComponentDefReferences(ability.runtimeComponents[i], rcNodes[i]);
+                    }
+                }
+            }
+        }
+
+        private static void ResolveEffectDefReferences(AbilityEffectConfig? effect, XmlNode? effectNode)
+        {
+            if (effect == null || effectNode == null)
+            {
+                return;
+            }
+
+            effect.damageDef = ResolveDef<DamageDef>(effectNode, "damageDef");
+            effect.hediffDef = ResolveDef<HediffDef>(effectNode, "hediffDef");
+            effect.summonKind = ResolveDef<PawnKindDef>(effectNode, "summonKind");
+            effect.summonFactionDef = ResolveDef<FactionDef>(effectNode, "summonFactionDef");
+            effect.terraformThingDef = ResolveDef<ThingDef>(effectNode, "terraformThingDef");
+            effect.terraformTerrainDef = ResolveDef<TerrainDef>(effectNode, "terraformTerrainDef");
+        }
+
+        private static void ResolveRuntimeComponentDefReferences(AbilityRuntimeComponentConfig? component, XmlNode? componentNode)
+        {
+            if (component == null || componentNode == null)
+            {
+                return;
+            }
+
+            component.waveDamageDef = ResolveDef<DamageDef>(componentNode, "waveDamageDef");
+            component.markDamageDef = ResolveDef<DamageDef>(componentNode, "markDamageDef");
+            component.landingBurstDamageDef = ResolveDef<DamageDef>(componentNode, "landingBurstDamageDef");
+        }
+
+        /// <summary>
+        /// 从 XML 子节点按名称查找 defName 文本，再从 DefDatabase 获取对应 Def。
+        /// 找不到或为空时返回 null。
+        /// </summary>
+        private static T? ResolveDef<T>(XmlNode parentNode, string elementName) where T : Def, new()
+        {
+            string? defName = parentNode.SelectSingleNode(elementName)?.InnerText?.Trim();
+            return !string.IsNullOrWhiteSpace(defName)
+                ? DefDatabase<T>.GetNamedSilentFail(defName)
+                : null;
+        }
+
+        /// <summary>
+        /// 从皮肤 XML 节点手动恢复热键配置。
+        /// SkinAbilityHotkeyConfig.slotBindings 使用动态键名（如 qAbilityDefName），
+        /// DirectXmlToObject 无法将其映射回 Dictionary，因此需要手动解析。
+        /// </summary>
+        private static void RestoreAbilityHotkeysFromXml(XmlNode defNode, PawnSkinDef def)
+        {
+            if (defNode == null || def == null)
+            {
+                return;
+            }
+
+            XmlNode? hotkeysNode = defNode.SelectSingleNode("abilityHotkeys");
+            if (hotkeysNode == null)
+            {
+                def.abilityHotkeys ??= new SkinAbilityHotkeyConfig();
+                return;
+            }
+
+            var config = new SkinAbilityHotkeyConfig();
+
+            string enabledText = hotkeysNode.SelectSingleNode("enabled")?.InnerText?.Trim() ?? "false";
+            config.enabled = bool.TryParse(enabledText, out bool enabled) && enabled;
+
+            foreach (string slotKey in new[] { "Q", "W", "E", "R", "T", "A", "S", "D", "F", "Z", "X", "C", "V" })
+            {
+                string elementName = slotKey.ToLowerInvariant() + "AbilityDefName";
+                string? rawValue = hotkeysNode.SelectSingleNode(elementName)?.InnerText?.Trim();
+                if (!string.IsNullOrWhiteSpace(rawValue))
+                {
+                    config[slotKey] = rawValue!;
+                }
+            }
+
+            def.abilityHotkeys = config;
         }
 
         /// <summary>

@@ -24,128 +24,14 @@ namespace CharacterStudio.Abilities
 
         protected static Vector3 ResolvePosition(AbilityVisualEffectConfig config, LocalTargetInfo target, Pawn caster)
         {
-            Vector3 pos;
-            switch (config.target)
-            {
-                case VisualEffectTarget.Caster:
-                    pos = caster.DrawPos;
-                    break;
-                case VisualEffectTarget.Target:
-                    if (target.HasThing)
-                    {
-                        pos = target.Thing.DrawPos;
-                    }
-                    else if (target.IsValid)
-                    {
-                        pos = target.Cell.ToVector3Shifted();
-                    }
-                    else
-                    {
-                        pos = caster.DrawPos;
-                    }
-                    break;
-                default: // Both — 默认在目标位置（调用者可循环调用两次）
-                    pos = target.IsValid ? target.Cell.ToVector3Shifted() : caster.DrawPos;
-                    break;
-            }
-
-            pos += config.offset;
-            pos.y += config.heightOffset;
-
-            if (!TryResolveFacingBasis(config, target, caster, out Vector3 forward, out Vector3 right))
-            {
-                return pos;
-            }
-
-            return pos + forward * config.forwardOffset + right * config.sideOffset;
+            return AbilityVfxPlayer.ResolveVfxPosition(config, target, caster);
         }
 
         protected static IEnumerable<Vector3> ResolvePositions(AbilityVisualEffectConfig config, LocalTargetInfo target, Pawn caster)
         {
-            if (config.target == VisualEffectTarget.Both)
-            {
-                Vector3 casterPos = ResolvePositionForMode(config, target, caster, VisualEffectTarget.Caster);
-                yield return casterPos;
-
-                Vector3 targetPos = ResolvePositionForMode(config, target, caster, VisualEffectTarget.Target);
-                if ((targetPos - casterPos).sqrMagnitude > 0.0001f)
-                {
-                    yield return targetPos;
-                }
-
-                yield break;
-            }
-
-            yield return ResolvePosition(config, target, caster);
+            return AbilityVfxPlayer.ResolveVfxPositions(config, target, caster);
         }
 
-        private static Vector3 ResolvePositionForMode(AbilityVisualEffectConfig config, LocalTargetInfo target, Pawn caster, VisualEffectTarget mode)
-        {
-            AbilityVisualEffectConfig resolvedConfig = config.Clone();
-            resolvedConfig.target = mode;
-            return ResolvePosition(resolvedConfig, target, caster);
-        }
-
-        private static bool TryResolveFacingBasis(AbilityVisualEffectConfig config, LocalTargetInfo target, Pawn caster, out Vector3 forward, out Vector3 right)
-        {
-            AbilityVisualFacingMode facingMode = ResolveFacingMode(config);
-            if (facingMode == AbilityVisualFacingMode.None)
-            {
-                forward = Vector3.zero;
-                right = Vector3.zero;
-                return false;
-            }
-
-            IntVec3 forwardCell = facingMode == AbilityVisualFacingMode.CastDirection
-                ? ResolveCastDirectionCell(target, caster)
-                : caster.Rotation.FacingCell;
-            if (forwardCell == IntVec3.Zero)
-            {
-                forwardCell = caster.Rotation.FacingCell;
-            }
-
-            forward = forwardCell.ToVector3();
-            if (forward == Vector3.zero)
-            {
-                forward = new Vector3(0f, 0f, 1f);
-            }
-
-            right = new Vector3(forward.z, 0f, -forward.x);
-            return true;
-        }
-
-        private static AbilityVisualFacingMode ResolveFacingMode(AbilityVisualEffectConfig config)
-        {
-            if (!Enum.IsDefined(typeof(AbilityVisualFacingMode), config.facingMode))
-            {
-                return config.useCasterFacing ? AbilityVisualFacingMode.CasterFacing : AbilityVisualFacingMode.None;
-            }
-
-            if (config.facingMode == AbilityVisualFacingMode.None && config.useCasterFacing)
-            {
-                return AbilityVisualFacingMode.CasterFacing;
-            }
-
-            return config.facingMode;
-        }
-
-        private static IntVec3 ResolveCastDirectionCell(LocalTargetInfo target, Pawn caster)
-        {
-            IntVec3 origin = caster.Position;
-            IntVec3 destination = target.IsValid ? target.Cell : origin + caster.Rotation.FacingCell;
-            IntVec3 delta = destination - origin;
-            if (delta == IntVec3.Zero)
-            {
-                return caster.Rotation.FacingCell;
-            }
-
-            if (Mathf.Abs(delta.x) >= Mathf.Abs(delta.z))
-            {
-                return delta.x >= 0 ? IntVec3.East : IntVec3.West;
-            }
-
-            return delta.z >= 0 ? IntVec3.North : IntVec3.South;
-        }
     }
 
     /// <summary>

@@ -123,7 +123,7 @@ namespace CharacterStudio.Rendering
             {
                 case LayerVariantLogic.ExpressionOnly:
                 case LayerVariantLogic.ExpressionAndDirection:
-                    AddExpressionSuffixCandidates(results, expression);
+                    AddExpressionSuffixCandidates(results, expression, pawn);
                     break;
 
                 case LayerVariantLogic.EyeDirectionOnly:
@@ -150,7 +150,7 @@ namespace CharacterStudio.Rendering
                     if (!string.IsNullOrEmpty(sequenceState))
                         AddUnique(results, sequenceState);
                     else
-                        AddExpressionSuffixCandidates(results, expression);
+                        AddExpressionSuffixCandidates(results, expression, pawn);
                     break;
             }
 
@@ -163,39 +163,50 @@ namespace CharacterStudio.Rendering
             if (config.useExpressionSuffix
                 && config.variantLogic != LayerVariantLogic.ExpressionOnly
                 && config.variantLogic != LayerVariantLogic.ExpressionAndDirection)
-            {
-                AddExpressionSuffixCandidates(results, expression);
-            }
+                AddExpressionSuffixCandidates(results, expression, pawn);
 
             return results;
         }
 
-        private void AddExpressionSuffixCandidates(List<string> results, ExpressionType? expression)
+        private void AddExpressionSuffixCandidates(List<string> results, ExpressionType? expression, Pawn? pawn = null)
         {
-            if (!expression.HasValue)
-                return;
-
-            // P-PERF: 用查找表替代 Enum.ToString()，避免反射和字符串分配
-            AddUnique(results, ExpressionTypeNames[(int)expression.Value]);
-
-            switch (expression.Value)
+            if (expression.HasValue)
             {
-                case ExpressionType.Sleeping:
-                case ExpressionType.Dead:
-                    AddUnique(results, "Sleep");
-                    break;
+                // P-PERF: 用查找表替代 Enum.ToString()，避免反射和字符串分配
+                AddUnique(results, ExpressionTypeNames[(int)expression.Value]);
 
-                case ExpressionType.Angry:
-                case ExpressionType.AttackMelee:
-                case ExpressionType.AttackRanged:
-                case ExpressionType.WaitCombat:
-                case ExpressionType.Scared:
-                    AddUnique(results, "Angry");
-                    break;
+                switch (expression.Value)
+                {
+                    case ExpressionType.Sleeping:
+                    case ExpressionType.Dead:
+                        AddUnique(results, "Sleep");
+                        break;
 
-                case ExpressionType.Blink:
-                    AddUnique(results, "Blink");
-                    break;
+                    case ExpressionType.Angry:
+                    case ExpressionType.AttackMelee:
+                    case ExpressionType.AttackRanged:
+                    case ExpressionType.WaitCombat:
+                    case ExpressionType.Scared:
+                        AddUnique(results, "Angry");
+                        break;
+
+                    case ExpressionType.Blink:
+                        AddUnique(results, "Blink");
+                        break;
+                }
+            }
+
+            if (pawn != null)
+            {
+                var needsExpr = CharacterStudio.Core.CompPawnSkin.FaceExpressionStateResolver.ResolveNeedsExpression(pawn);
+                if (needsExpr != ExpressionType.Neutral && (!expression.HasValue || needsExpr != expression.Value))
+                {
+                    AddUnique(results, ExpressionTypeNames[(int)needsExpr]);
+                    if (needsExpr == ExpressionType.Cheerful)
+                        AddUnique(results, "Happy");
+                    else if (needsExpr == ExpressionType.Hopeless)
+                        AddUnique(results, "Sad");
+                }
             }
         }
 

@@ -115,12 +115,17 @@ namespace CharacterStudio.UI
 
             if (this.abilities.Count == 0)
             {
-                var persisted = TryLoadAbilityEditorSessionFromDisk(out SkinAbilityHotkeyConfig? persistedHotkeys);
+                var persisted = TryLoadAbilityEditorSessionFromDisk(out SkinAbilityHotkeyConfig? persistedHotkeys, out string? persistedSelectedDefName);
                 if (persisted.Count > 0)
                 {
                     this.abilities = persisted;
                     ApplyHotkeyConfig(persistedHotkeys);
-                    selectedAbility = this.abilities[0];
+
+                    // 尝试恢复上次选中的技能
+                    selectedAbility = !string.IsNullOrWhiteSpace(persistedSelectedDefName)
+                        ? persisted.FirstOrDefault(a => a != null && string.Equals(a.defName, persistedSelectedDefName, StringComparison.OrdinalIgnoreCase))
+                        : null;
+                    selectedAbility ??= this.abilities[0];
                 }
                 else
                 {

@@ -155,15 +155,6 @@ namespace CharacterStudio.UI
         {
             base.ProcessInput(ev);
 
-            if (AbilityVanillaFlightUtility.ShouldBlockStandardAbilityAccessDuringFlight(pawn, modAbility))
-            {
-                Messages.Message(
-                    "[CharacterStudio] Flight-only continuation required.",
-                    MessageTypeDefOf.RejectInput,
-                    false);
-                return;
-            }
-
             if (TryProcessViaVanillaCommand(ev))
             {
                 return;
@@ -201,11 +192,6 @@ namespace CharacterStudio.UI
 
         private bool TryProcessViaVanillaCommand(Event ev)
         {
-            if (AbilityVanillaFlightUtility.ShouldBlockStandardAbilityAccessDuringFlight(pawn, modAbility))
-            {
-                return false;
-            }
-
             if (GetSmartJumpComponent(modAbility) != null)
             {
                 return false;
@@ -390,7 +376,6 @@ namespace CharacterStudio.UI
             if (pawn.Dead || pawn.Downed || pawn.InMentalState) return false;
             if (!pawn.Drafted) return false;
             if (!AbilityTimeStopRuntimeController.CanPawnAct(pawn)) return false;
-            if (AbilityVanillaFlightUtility.ShouldBlockStandardAbilityAccessDuringFlight(pawn, modAbility)) return false;
             if (runtimeDef == null) return false;
             if (!AbilityVanillaFlightUtility.CanUseFlightFollowup(pawn, modAbility, out _, out _)) return false;
             return pawn.abilities?.GetAbility(runtimeDef) != null;

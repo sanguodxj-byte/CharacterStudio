@@ -424,12 +424,16 @@ namespace CharacterStudio.Rendering
                         offset = renderData.offset,
                         offsetEast = renderData.offsetEast,
                         offsetNorth = renderData.offsetNorth,
+                        useWestOffset = renderData.useWestOffset,
+                        offsetWest = renderData.offsetWest,
                         scale = renderData.scale,
                         scaleEastMultiplier = renderData.scaleEastMultiplier,
                         scaleNorthMultiplier = renderData.scaleNorthMultiplier,
+                        scaleWestMultiplier = renderData.scaleWestMultiplier,
                         rotation = renderData.rotation,
                         rotationEastOffset = renderData.rotationEastOffset,
                         rotationNorthOffset = renderData.rotationNorthOffset,
+                        rotationWestOffset = renderData.rotationWestOffset,
                         drawOrder = renderData.drawOrder,
                         flipHorizontal = renderData.flipHorizontal,
                         directionalFacing = renderData.directionalFacing ?? string.Empty,
@@ -449,6 +453,7 @@ namespace CharacterStudio.Rendering
                         triggeredReturnTicks = renderData.triggeredReturnTicks,
                         animPivotOffset = renderData.triggeredPivotOffset,
                         triggeredPivotOffset = renderData.triggeredPivotOffset,
+                        triggeredDeployOffset = renderData.triggeredDeployOffset,
                         triggeredUseVfxVisibility = renderData.triggeredUseVfxVisibility,
                         triggeredIdleTexPath = renderData.triggeredIdleTexPath ?? string.Empty,
                         triggeredDeployTexPath = renderData.triggeredDeployTexPath ?? string.Empty,
@@ -463,6 +468,33 @@ namespace CharacterStudio.Rendering
                         triggeredVisibleDuringReturn = renderData.triggeredVisibleDuringReturn,
                         triggeredVisibleOutsideCycle = renderData.triggeredVisibleOutsideCycle
                     };
+                }
+            }
+
+            // 2. 从 pawn 实际穿戴的装备中读取 DefModExtension_EquipmentRender
+            //    这处理了导出后的装备在运行时被穿上时的自定义图层注入
+            if (pawn.apparel?.WornApparel != null)
+            {
+                foreach (var apparel in pawn.apparel.WornApparel)
+                {
+                    if (apparel?.def == null) continue;
+
+                    var ext = apparel.def.GetModExtension<DefModExtension_EquipmentRender>();
+                    if (ext == null || !ext.enabled || !ext.HasRenderableTexture()) continue;
+
+                    // 如果该装备的 ThingDef 已经通过 skinDef.equipments 注入过，跳过
+                    string wornDefName = apparel.def.defName ?? string.Empty;
+                    if (!string.IsNullOrWhiteSpace(wornDefName)
+                        && injectedSkinEquipmentThingDefs.Contains(wornDefName))
+                        continue;
+
+                    string fallbackLabel = string.IsNullOrWhiteSpace(ext.label)
+                        ? apparel.def.label ?? apparel.def.defName ?? "Equipment"
+                        : ext.label;
+
+                    PawnLayerConfig layerConfig = ext.ToPawnLayerConfig(fallbackLabel);
+                    layerConfig.layerName = $"[WornEquipment] {fallbackLabel}";
+                    yield return layerConfig;
                 }
             }
 
@@ -679,7 +711,7 @@ namespace CharacterStudio.Rendering
                             overlayCustomNode.layeredFacePartType = partType;
                             overlayCustomNode.layeredOverlayId = overlayId;
                             overlayCustomNode.layeredOverlayOrder = overlayOrder;
-                            PawnRenderNode parentNode = ResolveLayeredFaceParentNode(tree, defaultHeadParentNode, partType, overlayId);
+                            PawnRenderNode parentNode = ResolveLayeredFaceParentNode(tree, defaultHeadParentNode, overlayLayer);
                             overlayNode.parent = parentNode;
                             overlayNode.debugOffset = overlayLayer.offset;
 
@@ -709,7 +741,7 @@ namespace CharacterStudio.Rendering
                         customNode.config = layer;
                         customNode.layeredFacePartType = partType;
                         customNode.layeredFacePartSide = side;
-                        PawnRenderNode parentNode = ResolveLayeredFaceParentNode(tree, defaultHeadParentNode, partType, string.Empty);
+                        PawnRenderNode parentNode = ResolveLayeredFaceParentNode(tree, defaultHeadParentNode, layer);
                         node.parent = parentNode;
                         node.debugOffset = layer.offset;
 
@@ -733,18 +765,35 @@ namespace CharacterStudio.Rendering
         private static PawnRenderNode ResolveLayeredFaceParentNode(
             PawnRenderTree tree,
             PawnRenderNode defaultHeadParentNode,
-            LayeredFacePartType partType,
-            string overlayId)
+            PawnLayerConfig layer)
         {
-            string normalizedOverlayId = PawnFaceConfig.NormalizeOverlayId(overlayId);
-            if (partType == LayeredFacePartType.Hair
-                && normalizedOverlayId.Equals("back", StringComparison.OrdinalIgnoreCase))
+            PawnRenderNode? resolvedParent = null;
+
+            // 1. 优先通过 anchorPath 定位
+            if (!string.IsNullOrEmpty(layer.anchorPath))
             {
-                PawnRenderNode? bodyParentNode = FindParentNode(tree, "Body");
-                if (bodyParentNode != null)
-                    return bodyParentNode;
+                resolvedParent = FindNodeByPath(tree, layer.anchorPath);
+                if (resolvedParent != null)
+                    return resolvedParent;
+                
+                Log.Warning($"[CharacterStudio] 无法通过路径找到锚点: {layer.anchorPath}，回退到 anchorTag");
             }
 
+            // 2. 其次通过 anchorTag 定位
+            if (!string.IsNullOrWhiteSpace(layer.anchorTag))
+            {
+                // 如果用户明确设置为 Head，则直接使用传入的默认 Head 节点，避免重复查找
+                if (string.Equals(layer.anchorTag, "Head", StringComparison.OrdinalIgnoreCase))
+                {
+                    return defaultHeadParentNode;
+                }
+
+                resolvedParent = FindParentNode(tree, layer.anchorTag);
+                if (resolvedParent != null)
+                    return resolvedParent;
+            }
+
+            // 3. 最后回退到默认的 Head 节点
             return defaultHeadParentNode;
         }
 
@@ -843,7 +892,13 @@ namespace CharacterStudio.Rendering
             resolvedLayer.visible = editableLayer?.visible ?? true;
             resolvedLayer.role = editableLayer?.role ?? GetLayeredFaceRole(displayPartType);
             resolvedLayer.useDirectionalSuffix = editableLayer?.useDirectionalSuffix ?? true;
-            if (displayPartType == LayeredFacePartType.Hair)
+            
+            // 允许 Hair 等图层继承编辑器的方向配置，不再在此处强行覆盖
+            if (editableLayer != null && !string.IsNullOrWhiteSpace(editableLayer.directionalFacing))
+            {
+                resolvedLayer.directionalFacing = editableLayer.directionalFacing;
+            }
+            else if (displayPartType == LayeredFacePartType.Hair)
             {
                 if (normalizedOverlayId.Equals("east", StringComparison.OrdinalIgnoreCase))
                     resolvedLayer.directionalFacing = "EastWest";

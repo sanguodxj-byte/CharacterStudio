@@ -41,6 +41,9 @@
     <CS_Studio_Offset_EX>Offset E.X</CS_Studio_Offset_EX>
     <CS_Studio_Offset_EY>Offset E.Y</CS_Studio_Offset_EY>
     <CS_Studio_Offset_EZ>Offset E.Z</CS_Studio_Offset_EZ>
+    <CS_Studio_Offset_WX>Offset W.X</CS_Studio_WX>
+    <CS_Studio_Offset_WY>Offset W.Y</CS_Studio_WY>
+    <CS_Studio_Offset_WZ>Offset W.Z</CS_Studio_WZ>
     <CS_Studio_Offset_NX>Offset N.X</CS_Studio_Offset_NX>
     <CS_Studio_Offset_NY>Offset N.Y</CS_Studio_Offset_NY>
     <CS_Studio_Offset_NZ>Offset N.Z</CS_Studio_Offset_NZ>
@@ -139,6 +142,7 @@
     <CS_Studio_Prop_OffsetYHeight>Y Offset (Height)</CS_Studio_Prop_OffsetYHeight>
     <CS_Studio_Prop_OffsetZ>Z Offset</CS_Studio_Prop_OffsetZ>
     <CS_Studio_Prop_Scale>Scale</CS_Studio_Prop_Scale>
+    <CS_Studio_Prop_ScaleWest>Scale West (Multiplier)</CS_Studio_Prop_ScaleWest>
     <CS_Studio_Prop_ShowNode>Show Node</CS_Studio_Prop_ShowNode>
     <CS_Studio_Prop_TexturePath>Texture Path</CS_Studio_Prop_TexturePath>
     <CS_Studio_Prop_Visible>Visible</CS_Studio_Prop_Visible>
@@ -223,6 +227,7 @@
     <CS_Studio_Transform_PreviewScaleX>Preview Scale X</CS_Studio_Transform_PreviewScaleX>
     <CS_Studio_Transform_PreviewScaleY>Preview Scale Y</CS_Studio_Transform_PreviewScaleY>
     <CS_Studio_Transform_RotationOffset>Rotation Offset</CS_Studio_Transform_RotationOffset>
+    <CS_Studio_Transform_RotationWestOffset>Rotation West Offset</CS_Studio_Transform_RotationWestOffset>
     <CS_Studio_Variant_BaseName>Variant Base Name</CS_Studio_Variant_BaseName>
     <CS_Studio_Variant_DirectionalFacing>Directional Facing</CS_Studio_Variant_DirectionalFacing>
     <CS_Studio_Variant_DirectionalFacing_Any>Any Facing</CS_Studio_Variant_DirectionalFacing_Any>

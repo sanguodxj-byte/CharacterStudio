@@ -385,7 +385,7 @@ namespace CharacterStudio.Abilities
                 foreach (var effect in modAbility.effects)
                 {
                     if (effect == null) continue;
-                    parts.Add($"E:{effect.type}|{effect.amount:F3}|{effect.duration:F3}|{effect.chance:F3}|{effect.damageDef?.defName}|{effect.hediffDef?.defName}|{effect.summonKind?.defName}|{effect.summonCount}|{effect.summonFactionDef?.defName}|{effect.controlMode}|{effect.controlMoveDistance}|{effect.terraformMode}|{effect.terraformThingDef?.defName}|{effect.terraformTerrainDef?.defName}|{effect.terraformSpawnCount}|{effect.canHurtSelf}");
+                    parts.Add($"E:{effect.type}|{effect.amount:F3}|{effect.duration:F3}|{effect.chance:F3}|{effect.damageDef?.defName}|{effect.hediffDef?.defName}|{effect.summonKind?.defName}|{effect.summonCount}|{effect.summonFactionType}|{effect.summonFactionDefName}|{effect.summonFactionDef?.defName}|{effect.controlMode}|{effect.controlMoveDistance}|{effect.terraformMode}|{effect.terraformThingDef?.defName}|{effect.terraformTerrainDef?.defName}|{effect.terraformSpawnCount}|{effect.canHurtSelf}");
                 }
             }
 

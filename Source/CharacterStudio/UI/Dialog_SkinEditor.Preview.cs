@@ -1689,8 +1689,16 @@ namespace CharacterStudio.UI
 
             if (previewRotation == Rot4.West)
             {
-                layer.offsetEast.x -= dx;
-                layer.offsetEast.z += dz;
+                if (layer.useWestOffset)
+                {
+                    layer.offsetWest.x += dx;
+                    layer.offsetWest.z += dz;
+                }
+                else
+                {
+                    layer.offsetEast.x -= dx;
+                    layer.offsetEast.z += dz;
+                }
                 return;
             }
 
@@ -1831,11 +1839,17 @@ namespace CharacterStudio.UI
             if (previewRotation == Rot4.North)
                 return layer.offsetNorth;
 
-            Vector3 offset = layer.offsetEast;
             if (previewRotation == Rot4.West)
-                offset.x = -offset.x;
+            {
+                if (layer.useWestOffset)
+                    return layer.offsetWest;
+                
+                Vector3 eastMirror = layer.offsetEast;
+                eastMirror.x = -eastMirror.x;
+                return eastMirror;
+            }
 
-            return offset;
+            return layer.offsetEast;
         }
 
         private Vector3 GetEditableLayerOffsetForPreview(CharacterEquipmentRenderData layer)
@@ -1868,7 +1882,18 @@ namespace CharacterStudio.UI
             }
 
             if (previewRotation == Rot4.West)
-                value.x = -value.x;
+            {
+                if (layer.useWestOffset)
+                {
+                    layer.offsetWest = value;
+                }
+                else
+                {
+                    value.x = -value.x;
+                    layer.offsetEast = value;
+                }
+                return;
+            }
 
             layer.offsetEast = value;
         }
@@ -1895,8 +1920,17 @@ namespace CharacterStudio.UI
 
         private Vector2 GetEditableLayerScaleForPreview(PawnLayerConfig layer)
         {
-            if (editLayerOffsetPerFacing && (previewRotation == Rot4.East || previewRotation == Rot4.West))
-                return new Vector2(layer.scale.x * layer.scaleEastMultiplier.x, layer.scale.y * layer.scaleEastMultiplier.y);
+            if (editLayerOffsetPerFacing)
+            {
+                if (previewRotation == Rot4.East)
+                    return new Vector2(layer.scale.x * layer.scaleEastMultiplier.x, layer.scale.y * layer.scaleEastMultiplier.y);
+                
+                if (previewRotation == Rot4.West)
+                {
+                    var mult = layer.useWestOffset ? layer.scaleWestMultiplier : layer.scaleEastMultiplier;
+                    return new Vector2(layer.scale.x * mult.x, layer.scale.y * mult.y);
+                }
+            }
 
             return layer.scale;
         }
@@ -1911,10 +1945,23 @@ namespace CharacterStudio.UI
 
         private void SetEditableLayerScaleForPreview(PawnLayerConfig layer, Vector2 value)
         {
-            if (editLayerOffsetPerFacing && (previewRotation == Rot4.East || previewRotation == Rot4.West))
+            if (editLayerOffsetPerFacing)
             {
-                layer.scaleEastMultiplier = new Vector2(layer.scale.x != 0f ? value.x / layer.scale.x : 1f, layer.scale.y != 0f ? value.y / layer.scale.y : 1f);
-                return;
+                if (previewRotation == Rot4.East)
+                {
+                    layer.scaleEastMultiplier = new Vector2(layer.scale.x != 0f ? value.x / layer.scale.x : 1f, layer.scale.y != 0f ? value.y / layer.scale.y : 1f);
+                    return;
+                }
+
+                if (previewRotation == Rot4.West)
+                {
+                    Vector2 mult = new Vector2(layer.scale.x != 0f ? value.x / layer.scale.x : 1f, layer.scale.y != 0f ? value.y / layer.scale.y : 1f);
+                    if (layer.useWestOffset)
+                        layer.scaleWestMultiplier = mult;
+                    else
+                        layer.scaleEastMultiplier = mult;
+                    return;
+                }
             }
 
             layer.scale = value;
@@ -1941,7 +1988,14 @@ namespace CharacterStudio.UI
             if (previewRotation == Rot4.North)
                 return layer.rotation + layer.rotationNorthOffset;
 
-            return previewRotation == Rot4.West ? layer.rotation - layer.rotationEastOffset : layer.rotation + layer.rotationEastOffset;
+            if (previewRotation == Rot4.West)
+            {
+                if (layer.useWestOffset)
+                    return layer.rotation + layer.rotationWestOffset;
+                return layer.rotation - layer.rotationEastOffset;
+            }
+
+            return layer.rotation + layer.rotationEastOffset;
         }
 
         private float GetEditableLayerRotationForPreview(CharacterEquipmentRenderData layer)
@@ -1969,7 +2023,16 @@ namespace CharacterStudio.UI
                 return;
             }
 
-            layer.rotationEastOffset = previewRotation == Rot4.West ? layer.rotation - value : value - layer.rotation;
+            if (previewRotation == Rot4.West)
+            {
+                if (layer.useWestOffset)
+                    layer.rotationWestOffset = value - layer.rotation;
+                else
+                    layer.rotationEastOffset = layer.rotation - value;
+                return;
+            }
+
+            layer.rotationEastOffset = value - layer.rotation;
         }
 
         private void SetEditableLayerRotationForPreview(CharacterEquipmentRenderData layer, float value)
@@ -1997,15 +2060,22 @@ namespace CharacterStudio.UI
             {
                 offset += layer.offsetNorth;
             }
-            else if (previewRotation == Rot4.East || previewRotation == Rot4.West)
+            else if (previewRotation == Rot4.East)
             {
-                Vector3 eastOffset = layer.offsetEast;
-                if (previewRotation == Rot4.West)
+                offset += layer.offsetEast;
+            }
+            else if (previewRotation == Rot4.West)
+            {
+                if (layer.useWestOffset)
                 {
-                    eastOffset.x = -eastOffset.x;
+                    offset += layer.offsetWest;
                 }
-
-                offset += eastOffset;
+                else
+                {
+                    Vector3 eastMirror = layer.offsetEast;
+                    eastMirror.x = -eastMirror.x;
+                    offset += eastMirror;
+                }
             }
 
             return offset;

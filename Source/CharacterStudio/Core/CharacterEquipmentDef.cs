@@ -479,12 +479,16 @@ namespace CharacterStudio.Core
         public Vector3 offset = Vector3.zero;
         public Vector3 offsetEast = Vector3.zero;
         public Vector3 offsetNorth = Vector3.zero;
+        public bool useWestOffset = false;
+        public Vector3 offsetWest = Vector3.zero;
         public Vector2 scale = Vector2.one;
         public Vector2 scaleEastMultiplier = Vector2.one;
         public Vector2 scaleNorthMultiplier = Vector2.one;
+        public Vector2 scaleWestMultiplier = Vector2.one;
         public float rotation = 0f;
         public float rotationEastOffset = 0f;
         public float rotationNorthOffset = 0f;
+        public float rotationWestOffset = 0f;
         public float drawOrder = 50f;
         public bool flipHorizontal = false;
         public bool visible = true;
@@ -504,6 +508,7 @@ namespace CharacterStudio.Core
         public int triggeredHoldTicks = 24;
         public int triggeredReturnTicks = 12;
         public Vector2 triggeredPivotOffset = Vector2.zero;
+        public Vector3 triggeredDeployOffset = Vector3.zero;
         public bool triggeredUseVfxVisibility = false;
 
         public string triggeredIdleTexPath = string.Empty;
@@ -544,12 +549,16 @@ namespace CharacterStudio.Core
                 offset = offset,
                 offsetEast = offsetEast,
                 offsetNorth = offsetNorth,
+                useWestOffset = useWestOffset,
+                offsetWest = offsetWest,
                 scale = scale,
                 scaleEastMultiplier = scaleEastMultiplier,
                 scaleNorthMultiplier = scaleNorthMultiplier,
+                scaleWestMultiplier = scaleWestMultiplier,
                 rotation = rotation,
                 rotationEastOffset = rotationEastOffset,
                 rotationNorthOffset = rotationNorthOffset,
+                rotationWestOffset = rotationWestOffset,
                 drawOrder = drawOrder,
                 flipHorizontal = flipHorizontal,
                 visible = visible,
@@ -567,6 +576,7 @@ namespace CharacterStudio.Core
                 triggeredHoldTicks = triggeredHoldTicks,
                 triggeredReturnTicks = triggeredReturnTicks,
                 triggeredPivotOffset = triggeredPivotOffset,
+                triggeredDeployOffset = triggeredDeployOffset,
                 triggeredUseVfxVisibility = triggeredUseVfxVisibility,
                 triggeredIdleTexPath = triggeredIdleTexPath,
                 triggeredDeployTexPath = triggeredDeployTexPath,
@@ -636,6 +646,7 @@ namespace CharacterStudio.Core
         public int triggeredHoldTicks = 24;
         public int triggeredReturnTicks = 12;
         public Vector2 triggeredPivotOffset = Vector2.zero;
+        public Vector3 triggeredDeployOffset = Vector3.zero;
         public bool triggeredUseVfxVisibility = false;
         public string triggeredIdleTexPath = string.Empty;
         public string triggeredDeployTexPath = string.Empty;
@@ -664,6 +675,7 @@ namespace CharacterStudio.Core
                 triggeredHoldTicks = triggeredHoldTicks,
                 triggeredReturnTicks = triggeredReturnTicks,
                 triggeredPivotOffset = triggeredPivotOffset,
+                triggeredDeployOffset = triggeredDeployOffset,
                 triggeredUseVfxVisibility = triggeredUseVfxVisibility,
                 triggeredIdleTexPath = triggeredIdleTexPath,
                 triggeredDeployTexPath = triggeredDeployTexPath,

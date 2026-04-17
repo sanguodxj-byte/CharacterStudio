@@ -446,9 +446,6 @@ namespace CharacterStudio.Core
                 if (owner.IsAbilityExpressionOverrideActive())
                     return owner.AbilityExpressionOverride ?? owner.curExpression;
 
-                if (owner.faceExpressionState.IsBlinkActive)
-                    return ExpressionType.Blink;
-
                 Pawn? pawn = owner.Pawn;
                 int now = Find.TickManager?.TicksGame ?? 0;
                 if (pawn != null
@@ -544,7 +541,24 @@ namespace CharacterStudio.Core
                 if (owner.previewOverrides.PreviewMouthState.HasValue)
                     return owner.previewOverrides.PreviewMouthState.Value;
 
-                return CompPawnSkin.ResolveMouthState(expression);
+                // 显式配置覆盖
+                var expConfig = owner.activeSkin?.faceConfig?.GetExpression(expression);
+                if (expConfig?.mouthStateOverride.HasValue == true)
+                    return expConfig.mouthStateOverride.Value;
+
+                MouthState state = CompPawnSkin.ResolveMouthState(expression);
+                if (state == MouthState.Normal && owner.Pawn != null)
+                {
+                    ExpressionType needsExpr = FaceExpressionStateResolver.ResolveNeedsExpression(owner.Pawn);
+                    if (needsExpr != expression && needsExpr != ExpressionType.Neutral)
+                    {
+                        MouthState needsState = CompPawnSkin.ResolveMouthState(needsExpr);
+                        if (needsState != MouthState.Normal)
+                            return needsState;
+                    }
+                }
+
+                return state;
             }
 
             private static LidState ResolveLidState(CompPawnSkin owner, ExpressionType expression)
@@ -552,7 +566,24 @@ namespace CharacterStudio.Core
                 if (owner.previewOverrides.PreviewLidState.HasValue)
                     return owner.previewOverrides.PreviewLidState.Value;
 
-                return CompPawnSkin.ResolveLidState(expression);
+                // 显式配置覆盖
+                var expConfig = owner.activeSkin?.faceConfig?.GetExpression(expression);
+                if (expConfig?.lidStateOverride.HasValue == true)
+                    return expConfig.lidStateOverride.Value;
+
+                LidState state = CompPawnSkin.ResolveLidState(expression);
+                if (state == LidState.Normal && owner.Pawn != null)
+                {
+                    ExpressionType needsExpr = FaceExpressionStateResolver.ResolveNeedsExpression(owner.Pawn);
+                    if (needsExpr != expression && needsExpr != ExpressionType.Neutral)
+                    {
+                        LidState needsState = CompPawnSkin.ResolveLidState(needsExpr);
+                        if (needsState != LidState.Normal)
+                            return needsState;
+                    }
+                }
+
+                return state;
             }
 
             private static BrowState ResolveBrowState(CompPawnSkin owner, ExpressionType expression)
@@ -560,7 +591,24 @@ namespace CharacterStudio.Core
                 if (owner.previewOverrides.PreviewBrowState.HasValue)
                     return owner.previewOverrides.PreviewBrowState.Value;
 
-                return CompPawnSkin.ResolveBrowState(expression);
+                // 显式配置覆盖
+                var expConfig = owner.activeSkin?.faceConfig?.GetExpression(expression);
+                if (expConfig?.browStateOverride.HasValue == true)
+                    return expConfig.browStateOverride.Value;
+
+                BrowState state = CompPawnSkin.ResolveBrowState(expression);
+                if (state == BrowState.Normal && owner.Pawn != null)
+                {
+                    ExpressionType needsExpr = FaceExpressionStateResolver.ResolveNeedsExpression(owner.Pawn);
+                    if (needsExpr != expression && needsExpr != ExpressionType.Neutral)
+                    {
+                        BrowState needsState = CompPawnSkin.ResolveBrowState(needsExpr);
+                        if (needsState != BrowState.Normal)
+                            return needsState;
+                    }
+                }
+
+                return state;
             }
 
             private static EmotionOverlayState ResolveEmotionOverlayState(CompPawnSkin owner, ExpressionType expression)
@@ -570,9 +618,25 @@ namespace CharacterStudio.Core
 
                 PawnFaceConfig? faceConfig = owner.ActiveSkin?.faceConfig;
                 if (faceConfig != null)
-                    return faceConfig.ResolveEmotionOverlayState(expression);
+                {
+                    EmotionOverlayState cfgState = faceConfig.ResolveEmotionOverlayState(expression);
+                    if (cfgState != EmotionOverlayState.None)
+                        return cfgState;
+                }
 
-                return CompPawnSkin.ResolveEmotionOverlayState(expression);
+                EmotionOverlayState state = CompPawnSkin.ResolveEmotionOverlayState(expression);
+                if (state == EmotionOverlayState.None && owner.Pawn != null)
+                {
+                    ExpressionType needsExpr = FaceExpressionStateResolver.ResolveNeedsExpression(owner.Pawn);
+                    if (needsExpr != expression && needsExpr != ExpressionType.Neutral)
+                    {
+                        EmotionOverlayState needsState = CompPawnSkin.ResolveEmotionOverlayState(needsExpr);
+                        if (needsState != EmotionOverlayState.None)
+                            return needsState;
+                    }
+                }
+
+                return state;
             }
 
             private static string ResolveOverlaySemanticKey(CompPawnSkin owner, ExpressionType expression)
@@ -596,7 +660,7 @@ namespace CharacterStudio.Core
             }
         }
 
-        private static class FaceExpressionStateResolver
+        public static class FaceExpressionStateResolver
         {
             public static ExpressionType ResolveExpression(Pawn pawn)
             {
@@ -698,7 +762,7 @@ namespace CharacterStudio.Core
                 return isPanic ? ExpressionType.Scared : ExpressionType.Angry;
             }
 
-            private static ExpressionType ResolveNeedsExpression(Pawn pawn)
+            public static ExpressionType ResolveNeedsExpression(Pawn pawn)
             {
                 float rest = pawn.needs?.rest?.CurLevel ?? 1f;
                 float mood = pawn.needs?.mood?.CurLevel ?? 0.5f;
@@ -1259,6 +1323,11 @@ namespace CharacterStudio.Core
             public static void Tick(CompPawnSkin owner, Pawn pawn)
             {
                 owner.EnsureFaceRuntimeStateUpdated();
+
+                // P-PERF: Phase 1 LOD - Dormant 状态完全跳过所有逻辑更新
+                if (owner.faceRuntimeState?.currentLod == FaceRenderLod.Dormant)
+                    return;
+
                 owner.faceExpressionState.AdvanceAnimTick();
 
                 if (owner.faceExpressionState.ClearExpiredShock(Find.TickManager?.TicksGame ?? 0))

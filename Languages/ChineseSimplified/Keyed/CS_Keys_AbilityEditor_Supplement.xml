@@ -39,8 +39,6 @@
     <CS_Studio_Runtime_ShieldVisualHeightOffset>护盾视觉高度偏移</CS_Studio_Runtime_ShieldVisualHeightOffset>
     <CS_Studio_Runtime_ShieldInterceptorThingDef>拦截护盾 ThingDef</CS_Studio_Runtime_ShieldInterceptorThingDef>
     <CS_Studio_Runtime_ShieldInterceptorDuration>拦截持续时间(Tick)</CS_Studio_Runtime_ShieldInterceptorDuration>
-    <CS_Studio_Runtime_VanillaFlyerThingDef>飞行器 ThingDef</CS_Studio_Runtime_VanillaFlyerThingDef>
-    <CS_Studio_Runtime_FlyerWarmupTicks>飞行预热(Tick)</CS_Studio_Runtime_FlyerWarmupTicks>
     <CS_Studio_Runtime_LaunchFromCasterPosition>从施法者位置起飞</CS_Studio_Runtime_LaunchFromCasterPosition>
     <CS_Studio_Runtime_RequireValidTargetCell>要求目标格有效</CS_Studio_Runtime_RequireValidTargetCell>
     <CS_Studio_Runtime_StoreTargetForFollowup>为后续技能保留目标格</CS_Studio_Runtime_StoreTargetForFollowup>
@@ -216,7 +214,13 @@
     <CS_Studio_Effect_EmptyHint>当前没有效果，点击上方按钮添加一个技能效果。</CS_Studio_Effect_EmptyHint>
     <CS_Studio_Effect_Hediff>Hediff</CS_Studio_Effect_Hediff>
     <CS_Studio_Effect_SummonCount>数量</CS_Studio_Effect_SummonCount>
-    <CS_Studio_Effect_SummonFaction>召唤阵营</CS_Studio_Effect_SummonFaction>
+    <CS_Studio_Effect_SummonFaction>召唤阵营 (固定)</CS_Studio_Effect_SummonFaction>
+    <CS_Studio_Effect_SummonFactionType>阵营模式</CS_Studio_Effect_SummonFactionType>
+    <CS_Studio_SummonFactionType_Player>玩家阵营</CS_Studio_SummonFactionType_Player>
+    <CS_Studio_SummonFactionType_Caster>施法者阵营</CS_Studio_SummonFactionType_Caster>
+    <CS_Studio_SummonFactionType_Hostile>敌对阵营</CS_Studio_SummonFactionType_Hostile>
+    <CS_Studio_SummonFactionType_Neutral>中立阵营</CS_Studio_SummonFactionType_Neutral>
+    <CS_Studio_SummonFactionType_FixedDef>指定 Def</CS_Studio_SummonFactionType_FixedDef>
     <CS_Studio_Effect_SummonKind>召唤 PawnKind</CS_Studio_Effect_SummonKind>
     <CS_Studio_Effect_TerraformMode>地形改造类型</CS_Studio_Effect_TerraformMode>
     <CS_Studio_Effect_TerraformMode_CleanFilth>清理污秽</CS_Studio_Effect_TerraformMode_CleanFilth>
@@ -375,6 +379,11 @@
     <CS_Studio_VFX_ForwardOffsetShort>前移</CS_Studio_VFX_ForwardOffsetShort>
     <CS_Studio_VFX_SideOffsetShort>侧移</CS_Studio_VFX_SideOffsetShort>
     <CS_Studio_VFX_FacingModeHint>朝向会同时影响前移/侧移偏移基准，并为自定义纹理特效自动叠加基础旋转。</CS_Studio_VFX_FacingModeHint>
+    <CS_Studio_VFX_FrameAnimToggle>帧动画</CS_Studio_VFX_FrameAnimToggle>
+    <CS_Studio_VFX_FrameCountShort>帧数</CS_Studio_VFX_FrameCountShort>
+    <CS_Studio_VFX_FrameIntervalShort>帧间隔(tick)</CS_Studio_VFX_FrameIntervalShort>
+    <CS_Studio_VFX_FrameLoop>循环</CS_Studio_VFX_FrameLoop>
+    <CS_Studio_VFX_FrameAnimHint>文件命名：basePath_1, basePath_2 ...（或 _01, _02 ...）</CS_Studio_VFX_FrameAnimHint>
     <CS_Studio_VFX_SummaryLine>{0} · {1} · {2}</CS_Studio_VFX_SummaryLine>
     <CS_Studio_VFX_Trigger_OnCastFinish>施法完成</CS_Studio_VFX_Trigger_OnCastFinish>
     <CS_Studio_VFX_Trigger_OnCastStart>施法开始</CS_Studio_VFX_Trigger_OnCastStart>
@@ -451,9 +460,8 @@
     <CS_Ability_Validate_RuntimeComponentWarning>运行时组件 #{0}（{1}）：{2}</CS_Ability_Validate_RuntimeComponentWarning>
     <CS_Ability_Validate_RuntimeConflict_DashEmpowerNeedsMovement>{0} 需要配合位移型运行时组件。</CS_Ability_Validate_RuntimeConflict_DashEmpowerNeedsMovement>
     <CS_Ability_Validate_RuntimeConflict_DuplicateSingleton>重复的单例运行时组件 {0}（{1}）：{2}</CS_Ability_Validate_RuntimeConflict_DuplicateSingleton>
-    <CS_Ability_Validate_RuntimeConflict_FlightOnlyNeedsVanillaFlyer>{0} 需要 VanillaPawnFlyer。</CS_Ability_Validate_RuntimeConflict_FlightOnlyNeedsVanillaFlyer>
-    <CS_Ability_Validate_RuntimeConflict_FlightStateWithVanillaFlyer>{0} 与 {1} 冲突。</CS_Ability_Validate_RuntimeConflict_FlightStateWithVanillaFlyer>
-    <CS_Ability_Validate_RuntimeConflict_LandingBurstNeedsVanillaFlyer>{0} 需要 VanillaPawnFlyer。</CS_Ability_Validate_RuntimeConflict_LandingBurstNeedsVanillaFlyer>
+    <CS_Ability_Validate_RuntimeConflict_FlightOnlyNeedsFlightState>{0} 需要 FlightState。</CS_Ability_Validate_RuntimeConflict_FlightOnlyNeedsFlightState>
+    <CS_Ability_Validate_RuntimeConflict_LandingBurstNeedsFlightState>{0} 需要 FlightState。</CS_Ability_Validate_RuntimeConflict_LandingBurstNeedsFlightState>
     <CS_Ability_Validate_RuntimeConflict_MovementDuplicate>检测到多个位移型运行时组件：{0}</CS_Ability_Validate_RuntimeConflict_MovementDuplicate>
     <CS_Studio_File_ExportSelected>导出XML</CS_Studio_File_ExportSelected>
     <CS_Ability_Validate_RuntimeConflict_ProjectileSplitNeedsProjectile>{0} 需要投射物载具类型。</CS_Ability_Validate_RuntimeConflict_ProjectileSplitNeedsProjectile>
@@ -465,8 +473,6 @@
     <CS_Ability_Validate_TerraformSpawnCount>地形生成数量必须大于 0。</CS_Ability_Validate_TerraformSpawnCount>
     <CS_Ability_Validate_TerraformTerrainRequired>替换地形需要指定 TerrainDef。</CS_Ability_Validate_TerraformTerrainRequired>
     <CS_Ability_Validate_TerraformThingRequired>生成物体需要指定 ThingDef。</CS_Ability_Validate_TerraformThingRequired>
-    <CS_Ability_Validate_VanillaFlightWindowTicks>飞行专用窗口时长必须大于 0。</CS_Ability_Validate_VanillaFlightWindowTicks>
-    <CS_Ability_Validate_VanillaFlyerThingDefRequired>VanillaPawnFlyer 需要填写 ThingDef 名称。</CS_Ability_Validate_VanillaFlyerThingDefRequired>
     <CS_Ability_Validate_WarmupNegative>前摇不能为负数。</CS_Ability_Validate_WarmupNegative>
     <CS_Ability_Validate_Warnings>警告</CS_Ability_Validate_Warnings>
     <CS_Studio_Ability_ExamplesNotFound>未找到技能示例。</CS_Studio_Ability_ExamplesNotFound>

@@ -248,7 +248,12 @@ namespace CharacterStudio.UI
                     string summonStr = effect.summonCount.ToString();
                     DrawNumericRowInt(y, rightX, "CS_Studio_Effect_SummonCount".Translate(), ref effect.summonCount, ref summonStr, 1, 99);
                     y += 26f;
-                    DrawSelectRow(y, inner.x, "CS_Studio_Effect_SummonFaction".Translate(), effect.summonFactionDef?.label ?? "CS_Studio_None".Translate(), () => ShowFactionSelector(effect), overrideLabelWidth: labelW, overrideFieldWidth: inner.width - labelW);
+                    DrawSelectRow(y, inner.x, "CS_Studio_Effect_SummonFactionType".Translate(), GetSummonFactionTypeLabel(effect.summonFactionType), () => ShowSummonFactionTypeSelector(effect), overrideLabelWidth: labelW, overrideFieldWidth: inner.width - labelW);
+                    if (effect.summonFactionType == SummonFactionType.FixedDef)
+                    {
+                        y += 26f;
+                        DrawSelectRow(y, inner.x, "CS_Studio_Effect_SummonFaction".Translate(), effect.summonFactionDef?.label ?? (string.IsNullOrEmpty(effect.summonFactionDefName) ? "CS_Studio_None".Translate() : (string)effect.summonFactionDefName), () => ShowFactionSelector(effect), overrideLabelWidth: labelW, overrideFieldWidth: inner.width - labelW);
+                    }
                     break;
                 case AbilityEffectType.Control:
                     DrawSelectRow(y, inner.x, "CS_Studio_Effect_ControlMode".Translate(), GetControlModeLabel(effect.controlMode), () => ShowControlModeSelector(effect));
@@ -708,6 +713,34 @@ namespace CharacterStudio.UI
             selectedAbility.effects[indexA] = selectedAbility.effects[indexB];
             selectedAbility.effects[indexB] = temp;
             NotifyAbilityPreviewDirty(true);
+        }
+
+        private static string GetSummonFactionTypeLabel(SummonFactionType type)
+        {
+            return type switch
+            {
+                SummonFactionType.Player => "CS_Studio_SummonFactionType_Player".Translate(),
+                SummonFactionType.Caster => "CS_Studio_SummonFactionType_Caster".Translate(),
+                SummonFactionType.Hostile => "CS_Studio_SummonFactionType_Hostile".Translate(),
+                SummonFactionType.Neutral => "CS_Studio_SummonFactionType_Neutral".Translate(),
+                SummonFactionType.FixedDef => "CS_Studio_SummonFactionType_FixedDef".Translate(),
+                _ => "CS_Studio_SummonFactionType_Player".Translate()
+            };
+        }
+
+        private void ShowSummonFactionTypeSelector(AbilityEffectConfig effect)
+        {
+            var options = new List<FloatMenuOption>();
+            foreach (SummonFactionType type in Enum.GetValues(typeof(SummonFactionType)))
+            {
+                SummonFactionType localType = type;
+                options.Add(new FloatMenuOption(GetSummonFactionTypeLabel(localType), () =>
+                {
+                    effect.summonFactionType = localType;
+                    NotifyAbilityPreviewDirty(true);
+                }));
+            }
+            Find.WindowStack.Add(new FloatMenu(options));
         }
     }
 }

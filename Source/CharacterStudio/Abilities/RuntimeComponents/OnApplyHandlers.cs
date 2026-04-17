@@ -304,7 +304,10 @@ namespace CharacterStudio.Abilities.RuntimeComponents
         public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.VanillaPawnFlyer;
         public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, int nowTick)
         {
-            CompAbilityEffect_Modular.ApplyFlightState(config, source.parent?.def?.defName ?? string.Empty, caster, abilityComp, target, nowTick);
+            if (!AbilityVanillaFlightUtility.TryLaunchPawnFlyer(caster, target, config, source.parent?.def?.defName ?? string.Empty, out string failureReason))
+            {
+                CSLogger.Warn($"Failed to launch vanilla pawn flyer: {failureReason}", "VanillaFlight");
+            }
         }
     }
 

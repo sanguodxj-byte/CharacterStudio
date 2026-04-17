@@ -138,6 +138,12 @@ namespace CharacterStudio.Core
         /// <summary>北向朝向时的额外偏移量 (North)</summary>
         public Vector3 offsetNorth = Vector3.zero;
 
+        /// <summary>是否启用独立的西向偏移（否则回退到 East 镜像）</summary>
+        public bool useWestOffset = false;
+
+        /// <summary>西向朝向时的额外偏移量 (West)</summary>
+        public Vector3 offsetWest = Vector3.zero;
+
         /// <summary>绘制顺序（用于确定图层的前后关系）</summary>
         public float drawOrder = 0f;
 
@@ -150,10 +156,14 @@ namespace CharacterStudio.Core
         /// <summary>北向缩放乘数（North，1=不覆盖）</summary>
         public Vector2 scaleNorthMultiplier = Vector2.one;
 
+        /// <summary>西向缩放乘数（West，1=不覆盖）</summary>
+        public Vector2 scaleWestMultiplier = Vector2.one;
+
         /// <summary>旋转角度（度）</summary>
         public float rotation = 0f;
         public float rotationEastOffset = 0f;
         public float rotationNorthOffset = 0f;
+        public float rotationWestOffset = 0f;
 
         /// <summary>是否根据方向翻转</summary>
         public bool flipHorizontal = false;
@@ -341,6 +351,7 @@ namespace CharacterStudio.Core
         public int triggeredHoldTicks = 24;
         public int triggeredReturnTicks = 12;
         public Vector2 triggeredPivotOffset = Vector2.zero;
+        public Vector3 triggeredDeployOffset = Vector3.zero;
         public bool triggeredUseVfxVisibility = false;
         public string triggeredIdleTexPath = string.Empty;
         public string triggeredDeployTexPath = string.Empty;
@@ -372,13 +383,17 @@ namespace CharacterStudio.Core
                 offset = this.offset,
                 offsetEast = this.offsetEast,
                 offsetNorth = this.offsetNorth,
+                useWestOffset = this.useWestOffset,
+                offsetWest = this.offsetWest,
                 drawOrder = this.drawOrder,
                 scale = this.scale,
                 scaleEastMultiplier = this.scaleEastMultiplier,
                 scaleNorthMultiplier = this.scaleNorthMultiplier,
+                scaleWestMultiplier = this.scaleWestMultiplier,
                 rotation = this.rotation,
                 rotationEastOffset = this.rotationEastOffset,
                 rotationNorthOffset = this.rotationNorthOffset,
+                rotationWestOffset = this.rotationWestOffset,
                 flipHorizontal = this.flipHorizontal,
                 directionalFacing = this.directionalFacing,
                 rotDrawMode = this.rotDrawMode,
@@ -433,6 +448,7 @@ namespace CharacterStudio.Core
                 triggeredHoldTicks = this.triggeredHoldTicks,
                 triggeredReturnTicks = this.triggeredReturnTicks,
                 triggeredPivotOffset = this.triggeredPivotOffset,
+                triggeredDeployOffset = this.triggeredDeployOffset,
                 triggeredUseVfxVisibility = this.triggeredUseVfxVisibility,
                 triggeredIdleTexPath = this.triggeredIdleTexPath,
                 triggeredDeployTexPath = this.triggeredDeployTexPath,

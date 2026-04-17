@@ -21,7 +21,8 @@ namespace CharacterStudio.Core
     {
         HighFocus = 0,
         Standard = 1,
-        Reduced = 2
+        Reduced = 2,
+        Dormant = 3
     }
 
     /// <summary>
@@ -646,6 +647,12 @@ namespace CharacterStudio.Core
 
         /// <summary>上一次 LowerLid 的 LidState</summary>
         public LidState lastLowerLidState = (LidState)(-1);
+
+        /// <summary>上一次 UpperLid 渲染时是否处于眨眼状态（用于检测 isBlinkActive 边沿变化）</summary>
+        public bool wasBlinkActiveForUpperLid = false;
+
+        /// <summary>上一次 LowerLid 渲染时是否处于眨眼状态（用于检测 isBlinkActive 边沿变化）</summary>
+        public bool wasBlinkActiveForLowerLid = false;
 
         /// <summary>上一次 Brow 的 BrowState</summary>
         public BrowState lastBrowState = (BrowState)(-1);

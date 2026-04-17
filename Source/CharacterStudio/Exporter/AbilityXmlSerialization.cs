@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Xml.Linq;
 using CharacterStudio.Abilities;
 using CharacterStudio.Core;
@@ -16,7 +17,7 @@ namespace CharacterStudio.Exporter
     /// </summary>
     internal static class AbilityXmlSerialization
     {
-        internal static XDocument CreateEditorSessionDocument(List<ModularAbilityDef>? abilities, SkinAbilityHotkeyConfig? hotkeys = null)
+        internal static XDocument CreateEditorSessionDocument(List<ModularAbilityDef>? abilities, SkinAbilityHotkeyConfig? hotkeys = null, string? selectedAbilityDefName = null)
         {
             var defs = new XElement("Defs");
             var skinRoot = new XElement("CharacterStudio.Core.PawnSkinDef");
@@ -29,8 +30,28 @@ namespace CharacterStudio.Exporter
                 skinRoot.Add(hotkeysElement);
             }
 
+            if (!string.IsNullOrWhiteSpace(selectedAbilityDefName))
+            {
+                skinRoot.Add(new XElement("_editorSelectedAbilityDefName", selectedAbilityDefName));
+            }
+
             defs.Add(skinRoot);
             return new XDocument(defs);
+        }
+
+        /// <summary>
+        /// 从会话 XML 文档中提取编辑器选中技能的 defName。
+        /// 返回 null 表示未存储或无法解析。
+        /// </summary>
+        internal static string? ExtractSelectedAbilityDefName(System.Xml.Linq.XDocument doc)
+        {
+            if (doc?.Root == null)
+            {
+                return null;
+            }
+
+            var element = doc.Root.Descendants("_editorSelectedAbilityDefName").FirstOrDefault();
+            return element?.Value?.Trim();
         }
 
         internal static XElement? GenerateAbilitiesElement(List<ModularAbilityDef>? abilities)
@@ -76,6 +97,8 @@ namespace CharacterStudio.Exporter
                     effect.damageDef != null ? new XElement("damageDef", effect.damageDef.defName) : null,
                     effect.hediffDef != null ? new XElement("hediffDef", effect.hediffDef.defName) : null,
                     effect.summonKind != null ? new XElement("summonKind", effect.summonKind.defName) : null,
+                    new XElement("summonFactionType", effect.summonFactionType.ToString()),
+                    !string.IsNullOrEmpty(effect.summonFactionDefName) ? new XElement("summonFactionDefName", effect.summonFactionDefName) : null,
                     effect.summonFactionDef != null ? new XElement("summonFactionDef", effect.summonFactionDef.defName) : null,
                     new XElement("summonCount", effect.summonCount),
                     new XElement("controlMode", effect.controlMode.ToString()),
@@ -177,7 +200,11 @@ namespace CharacterStudio.Exporter
                     !string.IsNullOrWhiteSpace(visualEffect.soundDefName) ? new XElement("soundDefName", visualEffect.soundDefName) : null,
                     new XElement("soundDelayTicks", visualEffect.soundDelayTicks),
                     new XElement("soundVolume", visualEffect.soundVolume),
-                    new XElement("soundPitch", visualEffect.soundPitch)
+                    new XElement("soundPitch", visualEffect.soundPitch),
+                    new XElement("enableFrameAnimation", SerializeBool(visualEffect.enableFrameAnimation)),
+                    new XElement("frameCount", visualEffect.frameCount),
+                    new XElement("frameIntervalTicks", visualEffect.frameIntervalTicks),
+                    new XElement("frameLoop", SerializeBool(visualEffect.frameLoop))
                 ));
             }
 

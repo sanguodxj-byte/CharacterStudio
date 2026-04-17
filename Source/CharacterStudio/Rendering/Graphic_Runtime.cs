@@ -16,7 +16,22 @@ namespace CharacterStudio.Rendering
         private static readonly HashSet<string> initWarnings = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private static readonly object pendingInitLock = new object();
         private static readonly HashSet<string> pendingMainThreadInitializations = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        
         public bool IsInitializedSuccessfully { get; private set; }
+
+        public Shader? shader;
+
+        public void Reset()
+        {
+            this.path = string.Empty;
+            this.color = Color.white;
+            this.colorTwo = Color.white;
+            this.drawSize = Vector2.one;
+            this.data = null;
+            this.shader = null;
+            this.mat = null;
+            this.IsInitializedSuccessfully = false;
+        }
 
         public override void Init(GraphicRequest req)
         {
@@ -168,7 +183,7 @@ namespace CharacterStudio.Rendering
         {
             // 彻底绕过 GraphicDatabase.Get，因为该方法内部会强制调用 ContentFinder 校验路径，
             // 导致绝对路径直接触发原版报错。
-            var newGraphic = Activator.CreateInstance<Graphic_Runtime>();
+            var newGraphic = GraphicRuntimePool.Get();
             newGraphic.Init(new GraphicRequest(typeof(Graphic_Runtime), this.path, newShader, this.drawSize, newColor, newColorTwo, this.data, 0, null, null));
             return newGraphic;
         }

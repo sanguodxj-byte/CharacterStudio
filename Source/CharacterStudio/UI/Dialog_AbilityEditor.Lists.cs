@@ -292,23 +292,7 @@ namespace CharacterStudio.UI
                 {
                     if (component != null)
                     {
-                        AbilityRuntimeComponentConfig cloned = component.Clone();
-                        if (cloned.type == AbilityRuntimeComponentType.VanillaPawnFlyer)
-                        {
-                            cloned.type = AbilityRuntimeComponentType.FlightState;
-                            cloned.flyerThingDefName = string.Empty;
-                            cloned.flyerWarmupTicks = 0;
-                            cloned.launchFromCasterPosition = true;
-                            cloned.requireValidTargetCell = false;
-                            cloned.storeTargetForFollowup = false;
-                            cloned.enableFlightOnlyWindow = false;
-                            cloned.flightOnlyWindowTicks = 180;
-                            cloned.flightOnlyAbilityDefName = string.Empty;
-                            cloned.hideCasterDuringTakeoff = false;
-                            cloned.autoExpireFlightMarkerOnLanding = true;
-                        }
-
-                        copy.runtimeComponents.Add(cloned);
+                        copy.runtimeComponents.Add(component.Clone());
                     }
                 }
             }

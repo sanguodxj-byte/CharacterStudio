@@ -278,8 +278,10 @@ namespace CharacterStudio.Core
 
         public bool IsBlinkActive()
         {
-            EnsureEffectiveStateCache();
-            return _cachedEffectiveExpression == ExpressionType.Blink;
+            // 内部眨眼状态机（faceExpressionState.IsBlinkActive）驱动实际的相位推进，
+            // 而 curExpression 从不会被设置为 ExpressionType.Blink（它只反映需求/工作等状态）。
+            // 因此必须直接检查内部状态机，而非通过缓存的表达式判断。
+            return faceExpressionState.IsBlinkActive;
         }
 
         public BlinkPhase GetBlinkPhase()
@@ -424,6 +426,11 @@ namespace CharacterStudio.Core
             if (previewOverrides.PreviewExpression.HasValue)
                 return EyeAnimationVariant.NeutralOpen;
 
+            // 显式配置覆盖
+            var expConfig = activeSkin?.faceConfig?.GetExpression(expression);
+            if (expConfig?.eyeVariantOverride.HasValue == true)
+                return expConfig.eyeVariantOverride.Value;
+
             if (faceExpressionState.IsBlinkActive)
             {
                 return faceExpressionState.blinkPhase == BlinkPhase.ShowReplacementEye
@@ -487,6 +494,27 @@ namespace CharacterStudio.Core
                 };
             }
 
+            if (Pawn != null)
+            {
+                ExpressionType needsExpr = FaceExpressionStateResolver.ResolveNeedsExpression(Pawn);
+                if (needsExpr != expression && needsExpr != ExpressionType.Neutral)
+                {
+                    if (needsExpr == ExpressionType.Happy || needsExpr == ExpressionType.Cheerful || needsExpr == ExpressionType.Lovin || needsExpr == ExpressionType.SocialRelax)
+                    {
+                        int cycle = Mathf.Abs(pawnSeed + tick / 45) % 6;
+                        return cycle switch
+                        {
+                            0 => EyeAnimationVariant.HappyOpen,
+                            1 => EyeAnimationVariant.HappySoft,
+                            2 => EyeAnimationVariant.HappyClosedPeak,
+                            3 => EyeAnimationVariant.HappyClosedPeak,
+                            4 => EyeAnimationVariant.HappyOpen,
+                            _ => EyeAnimationVariant.HappySoft,
+                        };
+                    }
+                }
+            }
+
             int neutralCycle = Mathf.Abs(pawnSeed + tick / 60) % 6;
             return neutralCycle switch
             {
@@ -504,11 +532,24 @@ namespace CharacterStudio.Core
             if (previewOverrides.PreviewExpression.HasValue)
                 return PupilScaleVariant.Neutral;
 
+            // 显式配置覆盖
+            var expConfig = activeSkin?.faceConfig?.GetExpression(expression);
+            if (expConfig?.pupilVariantOverride.HasValue == true)
+                return expConfig.pupilVariantOverride.Value;
+
             if (faceExpressionState.IsBlinkActive)
                 return PupilScaleVariant.BlinkHidden;
 
             int tick = Find.TickManager?.TicksGame ?? 0;
             int pulse = Mathf.Abs((Pawn?.thingIDNumber ?? 0) + tick / 24) % 4;
+
+            PupilScaleVariant needsVariant = PupilScaleVariant.Neutral;
+            if (Pawn != null && expression != ExpressionType.Neutral)
+            {
+                ExpressionType needsExpr = FaceExpressionStateResolver.ResolveNeedsExpression(Pawn);
+                if (needsExpr == ExpressionType.Lovin)
+                    needsVariant = PupilScaleVariant.SlightlyContracted;
+            }
 
             return expression switch
             {
@@ -520,7 +561,7 @@ namespace CharacterStudio.Core
                 ExpressionType.Working => PupilScaleVariant.Focus,
                 ExpressionType.Reading => PupilScaleVariant.Focus,
                 ExpressionType.Angry => PupilScaleVariant.Focus,
-                _ => PupilScaleVariant.Neutral,
+                _ => needsVariant,
             };
         }
 

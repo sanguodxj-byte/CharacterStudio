@@ -96,6 +96,10 @@ namespace CharacterStudio.Exporter
                 yield return new XElement("offsetEast", FormatVector3(layer.offsetEast));
             if (layer.offsetNorth != Vector3.zero)
                 yield return new XElement("offsetNorth", FormatVector3(layer.offsetNorth));
+            if (layer.useWestOffset)
+                yield return new XElement("useWestOffset", "true");
+            if (layer.offsetWest != Vector3.zero)
+                yield return new XElement("offsetWest", FormatVector3(layer.offsetWest));
 
             yield return new XElement("drawOrder", layer.drawOrder);
             yield return new XElement("scale", FormatVector2(layer.scale));
@@ -104,6 +108,8 @@ namespace CharacterStudio.Exporter
                 yield return new XElement("scaleEastMultiplier", FormatVector2(layer.scaleEastMultiplier));
             if (layer.scaleNorthMultiplier != Vector2.one)
                 yield return new XElement("scaleNorthMultiplier", FormatVector2(layer.scaleNorthMultiplier));
+            if (layer.scaleWestMultiplier != Vector2.one)
+                yield return new XElement("scaleWestMultiplier", FormatVector2(layer.scaleWestMultiplier));
 
             yield return new XElement("rotation", layer.rotation);
 
@@ -111,6 +117,8 @@ namespace CharacterStudio.Exporter
                 yield return new XElement("rotationEastOffset", layer.rotationEastOffset);
             if (layer.rotationNorthOffset != 0f)
                 yield return new XElement("rotationNorthOffset", layer.rotationNorthOffset);
+            if (layer.rotationWestOffset != 0f)
+                yield return new XElement("rotationWestOffset", layer.rotationWestOffset);
 
             yield return new XElement("flipHorizontal", layer.flipHorizontal.ToString().ToLower());
             yield return new XElement("colorSource", layer.colorSource.ToString());

@@ -219,6 +219,12 @@ namespace CharacterStudio.Core
             }
         }
 
+        /// <summary>
+        /// 获取一个共享的默认配置实例。
+        /// 用于面部配置存在但未显式指定眼睛方向配置时的回退。
+        /// </summary>
+        public static PawnEyeDirectionConfig Default { get; } = new PawnEyeDirectionConfig();
+
         /// <summary>是否启用眼睛方向功能</summary>
         public bool enabled = false;
 

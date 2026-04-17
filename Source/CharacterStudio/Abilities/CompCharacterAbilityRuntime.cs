@@ -27,6 +27,32 @@ namespace CharacterStudio.Abilities
         private AbilityHotkeyRuntimeState abilityRuntimeState = new AbilityHotkeyRuntimeState();
         private CharacterAbilityLoadout? activeAbilityLoadout;
 
+        // ── P-PERF: Per-frame rendering cache ──
+        private int _lastFlightHeightFrameId = -1;
+        private float _cachedTotalFlightHeight = 0f;
+
+        public float TotalFlightHeight
+        {
+            get
+            {
+                int currentFrame = Time.frameCount;
+                if (_lastFlightHeightFrameId == currentFrame)
+                    return _cachedTotalFlightHeight;
+
+                _lastFlightHeightFrameId = currentFrame;
+                if (!IsFlightStateActive())
+                {
+                    _cachedTotalFlightHeight = 0f;
+                }
+                else
+                {
+                    float liftFactor = GetFlightLiftFactor01();
+                    _cachedTotalFlightHeight = (abilityRuntimeState.flightStateHeightFactor * liftFactor) + GetFlightHoverOffset();
+                }
+                return _cachedTotalFlightHeight;
+            }
+        }
+
         // ── Cached Thing references ──
         internal Thing? attachedShieldVisualCached;
         internal Thing? projectileInterceptorShieldCached;

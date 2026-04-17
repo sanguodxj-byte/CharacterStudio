@@ -147,7 +147,9 @@ namespace CharacterStudio.Core
                 float drawScale = baseScale * (0.9f + (energyPercent * 0.2f));
 
                 Vector3 pos = pawn.Drawer.DrawPos;
-                pos.y = AltitudeLayer.MoteOverhead.AltitudeFor() + abilityComp.AttachedShieldVisualHeightOffset;
+                // 修复：护盾层级应跟随人物当前高度（含飞行高度带来的大幅提升），
+                // 在 Postfix 修改后的基础上再略微提升，确保罩在角色最上方。
+                pos.y += 0.05f + abilityComp.AttachedShieldVisualHeightOffset;
 
                 // Impact jitter effect
                 int ticksSinceImpact = Find.TickManager.TicksGame - abilityComp.LastShieldAbsorbTick;
@@ -171,6 +173,34 @@ namespace CharacterStudio.Core
 
                 if (mat != null)
                     Graphics.DrawMesh(MeshPool.plane10, matrix, mat, 0);
+            }
+
+            if (abilityComp != null && abilityComp.IsFlightStateActive())
+            {
+                float liftFactor = abilityComp.GetFlightLiftFactor01();
+                if (liftFactor > 0.01f)
+                {
+                    float flightBaseHeight = abilityComp.FlightStateHeightFactor * liftFactor;
+                    float currentHover = abilityComp.GetFlightHoverOffset();
+                    float totalHeight = flightBaseHeight + currentHover;
+
+                    if (totalHeight > 0.01f)
+                    {
+                        Material? shadowMat = DefDatabase<ThingDef>.GetNamedSilentFail("PawnFlyer")?.pawnFlyer?.ShadowMaterial;
+                        if (shadowMat != null)
+                        {
+                            float scale = Mathf.Lerp(1f, 0.6f, totalHeight);
+                            Vector3 s = new Vector3(scale, 1f, scale);
+                            // 修复：由于 Patch_PawnRenderer 现在将飞行单位提升到了极高的 Altitude (Y)，
+                            // 阴影必须补偿这个巨大的 Y 偏移才能回落到地面（Pawn 层级）。
+                            Vector3 shadowPos = pawn.Drawer.DrawPos;
+                            shadowPos.z -= totalHeight; // 抵消 Z 轴视觉偏移
+                            shadowPos.y = AltitudeLayer.Pawn.AltitudeFor() - 0.01f; // 强制回落到地面层级
+                            Matrix4x4 matrix = Matrix4x4.TRS(shadowPos, Quaternion.identity, s);
+                            Graphics.DrawMesh(MeshPool.plane10, matrix, shadowMat, 0);
+                        }
+                    }
+                }
             }
         }
 

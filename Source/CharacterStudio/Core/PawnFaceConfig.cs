@@ -139,6 +139,16 @@ namespace CharacterStudio.Core
         /// </summary>
         public List<ExpressionFrame> frames = new List<ExpressionFrame>();
 
+        // --- 表情状态显式覆盖 (可选) ---
+        // 为 null 时遵循代码内置的“家族式”硬编码逻辑映射。
+        // 设置后将跳过家族映射，直接使用指定的显式状态。
+
+        public MouthState? mouthStateOverride;
+        public LidState? lidStateOverride;
+        public BrowState? browStateOverride;
+        public EyeAnimationVariant? eyeVariantOverride;
+        public PupilScaleVariant? pupilVariantOverride;
+
         /// <summary>是否为帧动画（有多帧定义）</summary>
         public bool IsAnimated => frames != null && frames.Count > 1;
 

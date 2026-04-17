@@ -31,13 +31,22 @@ namespace CharacterStudio.Abilities
                 return false;
             }
 
-            if (string.IsNullOrWhiteSpace(component.flyerThingDefName))
+            // 环境检查：室内禁止起飞
+            if (caster.Map.roofGrid.Roofed(caster.Position))
             {
-                failureReason = "flyerThingDefName is empty";
+                failureReason = "CS_Ability_Fail_Roofed".Translate();
                 return false;
             }
 
+            // 检查目标位置（如果是物理位移飞行）
             IntVec3 destination = target.IsValid ? target.Cell : caster.Position;
+            if (target.IsValid && caster.Map.roofGrid.Roofed(destination))
+            {
+                failureReason = "CS_Ability_Fail_TargetRoofed".Translate();
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(component.flyerThingDefName))
             if (component.requireValidTargetCell && !target.IsValid)
             {
                 failureReason = "target cell invalid";
@@ -256,6 +265,21 @@ namespace CharacterStudio.Abilities
 
         public static bool ShouldBlockStandardAbilityAccessDuringFlight(Pawn? pawn, ModularAbilityDef? ability)
         {
+            if (pawn == null) return false;
+            CompCharacterAbilityRuntime? abilityComp = pawn.GetComp<CompCharacterAbilityRuntime>();
+            if (abilityComp == null) return false;
+
+            // 如果处于飞行状态且配置了“飞行期间禁止战斗动作”
+            if (abilityComp.IsFlightStateActive() && abilityComp.SuppressCombatActionsDuringFlightState)
+            {
+                // 允许具有 FlightOnlyFollowup 组件的技能通过（这些是专门为飞行设计的后续技能）
+                if (ability?.runtimeComponents != null && ability.runtimeComponents.Any(c => c != null && c.enabled && c.type == AbilityRuntimeComponentType.FlightOnlyFollowup))
+                {
+                    return false;
+                }
+                return true;
+            }
+
             return false;
         }
 

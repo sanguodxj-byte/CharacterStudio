@@ -39,8 +39,6 @@
     <CS_Studio_Runtime_ShieldVisualHeightOffset>Shield Visual Height Offset</CS_Studio_Runtime_ShieldVisualHeightOffset>
     <CS_Studio_Runtime_ShieldInterceptorThingDef>Interceptor Shield ThingDef</CS_Studio_Runtime_ShieldInterceptorThingDef>
     <CS_Studio_Runtime_ShieldInterceptorDuration>Interceptor Duration (Ticks)</CS_Studio_Runtime_ShieldInterceptorDuration>
-    <CS_Studio_Runtime_VanillaFlyerThingDef>Flyer ThingDef</CS_Studio_Runtime_VanillaFlyerThingDef>
-    <CS_Studio_Runtime_FlyerWarmupTicks>Flyer Warmup (Ticks)</CS_Studio_Runtime_FlyerWarmupTicks>
     <CS_Studio_Runtime_LaunchFromCasterPosition>Launch From Caster Position</CS_Studio_Runtime_LaunchFromCasterPosition>
     <CS_Studio_Runtime_RequireValidTargetCell>Require Valid Target Cell</CS_Studio_Runtime_RequireValidTargetCell>
     <CS_Studio_Runtime_StoreTargetForFollowup>Store Target For Followup</CS_Studio_Runtime_StoreTargetForFollowup>
@@ -365,6 +363,11 @@
     <CS_Studio_VFX_ForwardOffsetShort>Forward</CS_Studio_VFX_ForwardOffsetShort>
     <CS_Studio_VFX_SideOffsetShort>Side</CS_Studio_VFX_SideOffsetShort>
     <CS_Studio_VFX_FacingModeHint>Facing changes the basis used by forward/side offsets and also adds base auto-rotation for custom texture VFX.</CS_Studio_VFX_FacingModeHint>
+    <CS_Studio_VFX_FrameAnimToggle>Frame Animation</CS_Studio_VFX_FrameAnimToggle>
+    <CS_Studio_VFX_FrameCountShort>Frames</CS_Studio_VFX_FrameCountShort>
+    <CS_Studio_VFX_FrameIntervalShort>Interval(tick)</CS_Studio_VFX_FrameIntervalShort>
+    <CS_Studio_VFX_FrameLoop>Loop</CS_Studio_VFX_FrameLoop>
+    <CS_Studio_VFX_FrameAnimHint>Files: basePath_1, basePath_2 ... (or _01, _02 ...)</CS_Studio_VFX_FrameAnimHint>
     <CS_Studio_VFX_SummaryLine>{0} · {1} · {2}</CS_Studio_VFX_SummaryLine>
     <CS_Studio_VFX_Trigger_OnCastFinish>Cast Finish</CS_Studio_VFX_Trigger_OnCastFinish>
     <CS_Studio_VFX_Trigger_OnCastStart>Cast Start</CS_Studio_VFX_Trigger_OnCastStart>
@@ -441,9 +444,8 @@
     <CS_Ability_Validate_RuntimeComponentWarning>Runtime component #{0} ({1}): {2}</CS_Ability_Validate_RuntimeComponentWarning>
     <CS_Ability_Validate_RuntimeConflict_DashEmpowerNeedsMovement>{0} requires a movement runtime component.</CS_Ability_Validate_RuntimeConflict_DashEmpowerNeedsMovement>
     <CS_Ability_Validate_RuntimeConflict_DuplicateSingleton>Duplicate singleton runtime component {0} ({1}): {2}</CS_Ability_Validate_RuntimeConflict_DuplicateSingleton>
-    <CS_Ability_Validate_RuntimeConflict_FlightOnlyNeedsVanillaFlyer>{0} requires VanillaPawnFlyer.</CS_Ability_Validate_RuntimeConflict_FlightOnlyNeedsVanillaFlyer>
-    <CS_Ability_Validate_RuntimeConflict_FlightStateWithVanillaFlyer>{0} conflicts with {1}.</CS_Ability_Validate_RuntimeConflict_FlightStateWithVanillaFlyer>
-    <CS_Ability_Validate_RuntimeConflict_LandingBurstNeedsVanillaFlyer>{0} requires VanillaPawnFlyer.</CS_Ability_Validate_RuntimeConflict_LandingBurstNeedsVanillaFlyer>
+    <CS_Ability_Validate_RuntimeConflict_FlightOnlyNeedsFlightState>{0} requires FlightState.</CS_Ability_Validate_RuntimeConflict_FlightOnlyNeedsFlightState>
+    <CS_Ability_Validate_RuntimeConflict_LandingBurstNeedsFlightState>{0} requires FlightState.</CS_Ability_Validate_RuntimeConflict_LandingBurstNeedsFlightState>
     <CS_Ability_Validate_RuntimeConflict_MovementDuplicate>Multiple movement runtime components detected: {0}</CS_Ability_Validate_RuntimeConflict_MovementDuplicate>
     <CS_Studio_File_ExportSelected>Export XML</CS_Studio_File_ExportSelected>
     <CS_Ability_Validate_RuntimeConflict_ProjectileSplitNeedsProjectile>{0} requires Projectile carrier type.</CS_Ability_Validate_RuntimeConflict_ProjectileSplitNeedsProjectile>
@@ -455,8 +457,6 @@
     <CS_Ability_Validate_TerraformSpawnCount>Terraform spawn count must be greater than 0.</CS_Ability_Validate_TerraformSpawnCount>
     <CS_Ability_Validate_TerraformTerrainRequired>Terraform terrain replacement requires a TerrainDef.</CS_Ability_Validate_TerraformTerrainRequired>
     <CS_Ability_Validate_TerraformThingRequired>Terraform spawn requires a ThingDef.</CS_Ability_Validate_TerraformThingRequired>
-    <CS_Ability_Validate_VanillaFlightWindowTicks>Flight-only window ticks must be greater than 0.</CS_Ability_Validate_VanillaFlightWindowTicks>
-    <CS_Ability_Validate_VanillaFlyerThingDefRequired>VanillaPawnFlyer requires a ThingDef name.</CS_Ability_Validate_VanillaFlyerThingDefRequired>
     <CS_Ability_Validate_WarmupNegative>Warmup cannot be negative.</CS_Ability_Validate_WarmupNegative>
     <CS_Ability_Validate_Warnings>Warnings</CS_Ability_Validate_Warnings>
     <CS_Studio_Ability_ExamplesNotFound>No ability examples found.</CS_Studio_Ability_ExamplesNotFound>

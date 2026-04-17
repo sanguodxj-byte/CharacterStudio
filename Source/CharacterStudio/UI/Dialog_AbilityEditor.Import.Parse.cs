@@ -363,21 +363,6 @@ namespace CharacterStudio.UI
                             runtimeComponent.comboTargetAbilityDefName = runtimeComponent.overrideAbilityDefName;
                         }
 
-                        if (runtimeComponent.type == AbilityRuntimeComponentType.VanillaPawnFlyer)
-                        {
-                            runtimeComponent.type = AbilityRuntimeComponentType.FlightState;
-                            runtimeComponent.flyerThingDefName = string.Empty;
-                            runtimeComponent.flyerWarmupTicks = 0;
-                            runtimeComponent.launchFromCasterPosition = true;
-                            runtimeComponent.requireValidTargetCell = false;
-                            runtimeComponent.storeTargetForFollowup = false;
-                            runtimeComponent.enableFlightOnlyWindow = false;
-                            runtimeComponent.flightOnlyWindowTicks = 180;
-                            runtimeComponent.flightOnlyAbilityDefName = string.Empty;
-                            runtimeComponent.hideCasterDuringTakeoff = false;
-                            runtimeComponent.autoExpireFlightMarkerOnLanding = true;
-                        }
-
                         result.Add(runtimeComponent);
                     }
                 }

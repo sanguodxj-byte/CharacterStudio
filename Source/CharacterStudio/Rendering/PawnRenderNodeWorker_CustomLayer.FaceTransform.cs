@@ -91,14 +91,16 @@ namespace CharacterStudio.Rendering
 
             ExpressionType expression = skinComp.GetEffectiveExpression();
 
-            if (ShouldHideLayeredEyePartForReplacement(customNode, pawn, skinComp, expression))
+            bool hideForReplacement = ShouldHideLayeredEyePartForReplacement(customNode, pawn, skinComp, expression);
+            if (hideForReplacement)
             {
                 HideProgrammaticFacePart(customNode);
                 UpdateProgrammaticFaceAlpha(customNode);
                 return;
             }
 
-            if (ShouldHideUpperLidAtBlinkEndpoint(customNode, skinComp, expression))
+            bool hideAtBlinkEndpoint = ShouldHideUpperLidAtBlinkEndpoint(customNode, skinComp, expression);
+            if (hideAtBlinkEndpoint)
             {
                 HideProgrammaticFacePart(customNode);
                 UpdateProgrammaticFaceAlpha(customNode);
@@ -128,6 +130,12 @@ namespace CharacterStudio.Rendering
             EyeAnimationVariant eyeVariant = skinComp.GetEffectiveEyeAnimationVariant();
             PupilScaleVariant pupilVariant = skinComp.GetEffectivePupilScaleVariant();
             Vector2 gazeOffset = skinComp.CurrentFaceRuntimeState.gazeOffset;
+
+            // ── 临时诊断日志（调试后删除）──
+            if (isBlinkActive && customNode.layeredFacePartType == LayeredFacePartType.UpperLid)
+            {
+                Log.Message($"[BlinkDebug][CalcFace] part={customNode.layeredFacePartType} side={customNode.layeredFacePartSide} isBlink={isBlinkActive} phase={blinkPhase} progress={blinkPhaseProgress:F3} eyeVar={eyeVariant} pupilVar={pupilVariant} lidState={lidState} hasReplacement={hasReplacementEyeOverlay} expr={expression}");
+            }
             var transformContext = new FaceTransformContext(
                 customNode.layeredFacePartType.Value,
                 customNode.layeredFacePartSide,
@@ -148,7 +156,9 @@ namespace CharacterStudio.Rendering
                 pawn.Rotation,
                 gazeOffset,
                 primaryWave,
-                slowWave);
+                slowWave,
+                Mathf.Abs(primaryWave),
+                Mathf.Abs(slowWave));
 
             // ── Profile 驱动路径：Eye, Pupil, UpperLid, LowerLid, Brow, Mouth ──
             // 这六个通道有偏移动画，使用皮肤实例 profile + FaceBlendState
@@ -206,6 +216,13 @@ namespace CharacterStudio.Rendering
             PawnFaceConfig? faceCfg = skinComp.ActiveSkin?.faceConfig;
             PawnEyeDirectionConfig? eyeDirCfg = faceCfg?.eyeDirectionConfig;
 
+            // 如果没有显式配置眼睛方向，则始终回退到默认配置以确保眨眼等动画驱动逻辑正常运行。
+            // 即使 faceCfg 为 null（皮肤未配置面部参数），也需要 Default 配置来驱动眼睑闭合动画。
+            if (eyeDirCfg == null)
+            {
+                eyeDirCfg = PawnEyeDirectionConfig.Default;
+            }
+
             if (!runtimeState.blendStatesInitialized)
             {
                 InitializeBlendStates(runtimeState, context, currentTick, faceCfg);
@@ -218,13 +235,18 @@ namespace CharacterStudio.Rendering
             {
                 case LayeredFacePartType.Eye:
                 {
-                    string eyeKey = FaceTransformEvaluator.ResolveEyeStateKey(context.eyeVariant, context.lidState, context.expression);
+                    // Close/HappyClosedPeak 时立即隐藏眼球
+                    // Blink 时：眼睑动画可遮盖眼球，无需隐藏。
+                    // 仅在有替换眼且处于 HideBaseEyeParts 阶段时才隐藏基础部件（与替换眼同步）
                     if (context.eyeVariant == EyeAnimationVariant.HappyClosedPeak
-                        || context.lidState == LidState.Close)
+                        || context.lidState == LidState.Close
+                        || (context.hasReplacementEyeOverlay && IsBlinkHidingBaseParts(context)))
                     {
                         HideProgrammaticFacePart(customNode);
                         return;
                     }
+
+                    string eyeKey = FaceTransformEvaluator.ResolveEyeStateKey(context.eyeVariant, context.lidState, context.expression);
 
                     bool eyeChanged = runtimeState.lastEyeVariant != context.eyeVariant;
                     if (eyeChanged && eyeDirCfg != null)
@@ -239,16 +261,31 @@ namespace CharacterStudio.Rendering
 
                 case LayeredFacePartType.Sclera:
                 {
-                    // 眼白无专属程序动画，仅参与通用 motionAmplitude
+                    // Close 时立即隐藏眼白
+                    // Blink 时：眼睑动画可遮盖眼白，无需隐藏。
+                    // 仅在有替换眼时才隐藏（与替换眼同步）
+                    if (context.lidState == LidState.Close
+                        || (context.hasReplacementEyeOverlay && IsBlinkHidingBaseParts(context)))
+                    {
+                        HideProgrammaticFacePart(customNode);
+                        return;
+                    }
+                    // 正常状态下眼白无专属程序动画，仅参与通用 motionAmplitude
                     break;
                 }
 
                 case LayeredFacePartType.Pupil:
                 {
+                    // 瞳孔隐藏条件：
+                    // - 特定变体要求隐藏（BlinkHidden/HappyClosedPeak/BlinkClosed）
+                    // - Close 时立即隐藏
+                    // - Blink 时：眼睑动画可遮盖瞳孔，无需隐藏。
+                    //   仅在有替换眼时才隐藏基础部件（与替换眼显示同步）
                     if (context.pupilVariant == PupilScaleVariant.BlinkHidden
                         || context.eyeVariant == EyeAnimationVariant.HappyClosedPeak
                         || context.eyeVariant == EyeAnimationVariant.BlinkClosed
-                        || context.lidState == LidState.Close)
+                        || context.lidState == LidState.Close
+                        || (context.hasReplacementEyeOverlay && IsBlinkHidingBaseParts(context)))
                     {
                         HideProgrammaticFacePart(customNode);
                         return;
@@ -263,20 +300,27 @@ namespace CharacterStudio.Rendering
                         runtimeState.lastPupilVariant = context.pupilVariant;
                     }
                     result = FaceTransformEvaluator.EvaluatePupilFromProfile(runtimeState.pupilBlend, context, currentTick);
+
+                    // 叠加注视方向偏移（gazeOffset + eyeDirection）
+                    // 这是 Profile 路径之前遗漏的关键逻辑
+                    if (eyeDirCfg != null && !result.hidden)
+                    {
+                        Vector3 dirOffset = FaceTransformEvaluator.ComputePupilDirectionOffset(context, eyeDirCfg.pupilMotion ?? new PawnEyeDirectionConfig.PupilMotionConfig());
+                        result = FaceTransformResult.Visible(result.angle, result.offset + dirOffset, result.scale);
+                    }
                     break;
                 }
 
                 case LayeredFacePartType.UpperLid:
                 {
-                    if (context.lidState == LidState.Blink && context.isBlinkActive)
-                    {
-                        ApplyEvaluatedFaceTransform(customNode, context, GetLayeredLidMotionConfig(customNode));
-                        return;
-                    }
-
-                    string upperLidKey = FaceTransformEvaluator.ResolveUpperLidStateKey(context.lidState, context.eyeVariant);
+                    // Profile 驱动路径：眨眼时强制使用 "Blink" Profile，否则按 lidState 解析
+                    string upperLidKey = context.isBlinkActive
+                        ? "Blink"
+                        : FaceTransformEvaluator.ResolveUpperLidStateKey(context.lidState, context.eyeVariant);
                     bool upperLidChanged = runtimeState.lastUpperLidState != context.lidState
-                        || runtimeState.lastUpperLidEyeVariant != context.eyeVariant;
+                        || runtimeState.lastUpperLidEyeVariant != context.eyeVariant
+                        || (context.isBlinkActive && !runtimeState.wasBlinkActiveForUpperLid)
+                        || (!context.isBlinkActive && runtimeState.wasBlinkActiveForUpperLid);
                     if (upperLidChanged && eyeDirCfg != null)
                     {
                         FaceStateProfile? profile = eyeDirCfg.GetOrBuildUpperLidProfiles().GetProfileOrDefault(upperLidKey);
@@ -284,20 +328,21 @@ namespace CharacterStudio.Rendering
                         runtimeState.lastUpperLidState = context.lidState;
                         runtimeState.lastUpperLidEyeVariant = context.eyeVariant;
                     }
-                    result = FaceTransformEvaluator.EvaluateUpperLidFromProfile(runtimeState.upperLidBlend, context, currentTick, GetLayeredUpperLidMoveDown(customNode));
+                    float ulMoveDown = GetLayeredUpperLidMoveDown(customNode);
+                    result = FaceTransformEvaluator.EvaluateUpperLidFromProfile(runtimeState.upperLidBlend, context, currentTick, ulMoveDown);
+                    runtimeState.wasBlinkActiveForUpperLid = context.isBlinkActive;
                     break;
                 }
 
                 case LayeredFacePartType.LowerLid:
                 {
-                    if (context.lidState == LidState.Blink && context.isBlinkActive)
-                    {
-                        ApplyEvaluatedFaceTransform(customNode, context, GetLayeredLidMotionConfig(customNode));
-                        return;
-                    }
-
-                    string lowerLidKey = FaceTransformEvaluator.ResolveLowerLidStateKey(context.lidState);
-                    bool lowerLidChanged = runtimeState.lastLowerLidState != context.lidState;
+                    // Profile 驱动路径：眨眼时强制使用 "Blink" Profile，否则按 lidState 解析
+                    string lowerLidKey = context.isBlinkActive
+                        ? "Blink"
+                        : FaceTransformEvaluator.ResolveLowerLidStateKey(context.lidState);
+                    bool lowerLidChanged = runtimeState.lastLowerLidState != context.lidState
+                        || (context.isBlinkActive && !runtimeState.wasBlinkActiveForLowerLid)
+                        || (!context.isBlinkActive && runtimeState.wasBlinkActiveForLowerLid);
                     if (lowerLidChanged && eyeDirCfg != null)
                     {
                         FaceStateProfile? profile = eyeDirCfg.GetOrBuildLowerLidProfiles().GetProfileOrDefault(lowerLidKey);
@@ -305,6 +350,7 @@ namespace CharacterStudio.Rendering
                         runtimeState.lastLowerLidState = context.lidState;
                     }
                     result = FaceTransformEvaluator.EvaluateLowerLidFromProfile(runtimeState.lowerLidBlend, context, currentTick);
+                    runtimeState.wasBlinkActiveForLowerLid = context.isBlinkActive;
                     break;
                 }
 
@@ -346,6 +392,20 @@ namespace CharacterStudio.Rendering
             }
 
             SetProgrammaticFaceTransform(customNode, result.angle, result.offset, result.scale);
+        }
+
+        /// <summary>
+        /// 判断当前是否处于眨眼的"隐藏基础眼部部件"阶段。
+        /// 眨眼通过 isBlinkActive 触发（非 LidState.Blink）。
+        /// 仅在 HideBaseEyeParts/ShowReplacementEye/RestoreBaseEyeParts 阶段返回 true，
+        /// ClosingLid/OpeningLid 阶段返回 false（此时眼睑尚未完全闭合/已开始打开，眼球应保持可见）。
+        /// </summary>
+        private static bool IsBlinkHidingBaseParts(FaceTransformContext context)
+        {
+            if (!context.isBlinkActive) return false;
+            return context.blinkPhase == BlinkPhase.HideBaseEyeParts
+                || context.blinkPhase == BlinkPhase.ShowReplacementEye
+                || context.blinkPhase == BlinkPhase.RestoreBaseEyeParts;
         }
 
         /// <summary>

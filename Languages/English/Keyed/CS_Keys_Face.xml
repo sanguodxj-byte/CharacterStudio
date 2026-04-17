@@ -58,6 +58,11 @@
     <CS_Studio_Face_EyeDir_Up>Up</CS_Studio_Face_EyeDir_Up>
     <CS_Studio_Face_EyeDir_UpperLidMoveDown>Upper Lid Move Down</CS_Studio_Face_EyeDir_UpperLidMoveDown>
     <CS_Studio_Face_Frames>frames</CS_Studio_Face_Frames>
+    <CS_Studio_Face_Override_Mouth>Mouth State Override</CS_Studio_Face_Override_Mouth>
+    <CS_Studio_Face_Override_Lid>Lid State Override</CS_Studio_Face_Override_Lid>
+    <CS_Studio_Face_Override_Brow>Brow State Override</CS_Studio_Face_Override_Brow>
+    <CS_Studio_Face_Override_EyeVariant>Eye Variant Override</CS_Studio_Face_Override_EyeVariant>
+    <CS_Studio_Face_Override_PupilVariant>Pupil Variant Override</CS_Studio_Face_Override_PupilVariant>
     <CS_Studio_Face_HeadTexHint>Assign a full head texture for each expression, or click [+F] to add multiple frames for animation.</CS_Studio_Face_HeadTexHint>
     <CS_Studio_Face_Layered_Enable>Enable this layered part entry</CS_Studio_Face_Layered_Enable>
     <CS_Studio_Face_Layered_Hint>Use this mode when your art is split into reusable facial parts. Usually you only need to name the parts and assign paths; movement and fallback are code-driven.</CS_Studio_Face_Layered_Hint>

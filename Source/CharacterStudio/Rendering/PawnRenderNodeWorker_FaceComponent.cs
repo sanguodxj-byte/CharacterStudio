@@ -99,6 +99,15 @@ namespace CharacterStudio.Rendering
             return (float.IsNaN(gs) || float.IsInfinity(gs) || gs <= 0f) ? 1f : gs;
         }
 
+        public override float LayerFor(PawnRenderNode node, PawnDrawParms parms)
+        {
+            if (node is PawnRenderNode_Custom customNode && customNode.config != null)
+            {
+                return customNode.config.drawOrder;
+            }
+            return base.LayerFor(node, parms);
+        }
+
         public override Quaternion RotationFor(PawnRenderNode node, PawnDrawParms parms)
         {
             Quaternion baseRot = base.RotationFor(node, parms);
@@ -119,8 +128,19 @@ namespace CharacterStudio.Rendering
         private static Vector2 GetConfiguredScale(PawnLayerConfig config, Rot4 facing)
         {
             Vector2 scale = config.scale;
-            if (facing == Rot4.East || facing == Rot4.West)
+            if (facing == Rot4.North)
+                return new Vector2(scale.x * config.scaleNorthMultiplier.x, scale.y * config.scaleNorthMultiplier.y);
+
+            if (facing == Rot4.East)
                 return new Vector2(scale.x * config.scaleEastMultiplier.x, scale.y * config.scaleEastMultiplier.y);
+
+            if (facing == Rot4.West)
+            {
+                if (config.useWestOffset)
+                    return new Vector2(scale.x * config.scaleWestMultiplier.x, scale.y * config.scaleWestMultiplier.y);
+                else
+                    return new Vector2(scale.x * config.scaleEastMultiplier.x, scale.y * config.scaleEastMultiplier.y);
+            }
 
             return scale;
         }
@@ -135,7 +155,12 @@ namespace CharacterStudio.Rendering
                 return rotation + config.rotationEastOffset;
 
             if (facing == Rot4.West)
-                return rotation - config.rotationEastOffset;
+            {
+                if (config.useWestOffset)
+                    return rotation + config.rotationWestOffset;
+                else
+                    return rotation - config.rotationEastOffset;
+            }
 
             return rotation;
         }

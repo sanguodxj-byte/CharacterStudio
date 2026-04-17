@@ -265,7 +265,6 @@ namespace CharacterStudio.UI
                     config.splitSearchRange = 5f;
                     break;
                 case AbilityRuntimeComponentType.FlightState:
-                case AbilityRuntimeComponentType.VanillaPawnFlyer:
                     config.flightDurationTicks = 180;
                     config.flightHeightFactor = 0.35f;
                     config.suppressCombatActionsDuringFlightState = true;
@@ -411,9 +410,6 @@ namespace CharacterStudio.UI
                     {
                         case AbilityRuntimeComponentType.FlightOnlyFollowup:
                             component.requiredFlightSourceAbilityDefName = localAbility.defName;
-                            break;
-                        case AbilityRuntimeComponentType.VanillaPawnFlyer:
-                            component.flightOnlyAbilityDefName = localAbility.defName;
                             break;
                         case AbilityRuntimeComponentType.SlotOverrideWindow:
                             component.comboTargetAbilityDefName = localAbility.defName;

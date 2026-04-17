@@ -230,10 +230,6 @@ namespace CharacterStudio.Exporter
                 {
                     equipment.flyerThingDefName = existingFlyerThingDefName;
                 }
-                else if (string.IsNullOrWhiteSpace(equipment.flyerThingDefName) && EquipmentNeedsFlyerExport(equipment, skinAbilities, config.Abilities))
-                {
-                    equipment.flyerThingDefName = $"{equipment.GetResolvedThingDefName()}_Flyer";
-                }
 
                 if (!string.IsNullOrWhiteSpace(equipment.flyerThingDefName))
                 {
@@ -262,75 +258,8 @@ namespace CharacterStudio.Exporter
                 }
             }
 
-            foreach (CharacterEquipmentDef equipment in config.SkinDef.equipments)
-            {
-                if (equipment == null || !equipment.enabled || string.IsNullOrWhiteSpace(equipment.flyerThingDefName))
-                {
-                    continue;
-                }
-
-                ApplyFlyerThingDefToBoundAbilities(equipment, config.Abilities);
-                ApplyFlyerThingDefToBoundAbilities(equipment, skinAbilities);
-            }
         }
 
-        private static bool EquipmentNeedsFlyerExport(
-            CharacterEquipmentDef equipment,
-            IEnumerable<ModularAbilityDef> skinAbilities,
-            IEnumerable<ModularAbilityDef> exportAbilities)
-        {
-            IEnumerable<ModularAbilityDef> combined = (skinAbilities ?? Enumerable.Empty<ModularAbilityDef>())
-                .Concat(exportAbilities ?? Enumerable.Empty<ModularAbilityDef>());
-
-            foreach (string abilityDefName in equipment.abilityDefNames ?? new List<string>())
-            {
-                ModularAbilityDef? ability = combined.FirstOrDefault(candidate =>
-                    candidate != null && string.Equals(candidate.defName, abilityDefName, StringComparison.OrdinalIgnoreCase));
-                if (ability?.runtimeComponents == null)
-                {
-                    continue;
-                }
-
-                if (ability.runtimeComponents.Any(component =>
-                        component != null
-                        && component.enabled
-                        && component.type == AbilityRuntimeComponentType.VanillaPawnFlyer))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static void ApplyFlyerThingDefToBoundAbilities(CharacterEquipmentDef equipment, IEnumerable<ModularAbilityDef> abilities)
-        {
-            if (string.IsNullOrWhiteSpace(equipment.flyerThingDefName) || abilities == null)
-            {
-                return;
-            }
-
-            foreach (string abilityDefName in equipment.abilityDefNames ?? new List<string>())
-            {
-                ModularAbilityDef? ability = abilities.FirstOrDefault(candidate =>
-                    candidate != null && string.Equals(candidate.defName, abilityDefName, StringComparison.OrdinalIgnoreCase));
-                if (ability?.runtimeComponents == null)
-                {
-                    continue;
-                }
-
-                foreach (AbilityRuntimeComponentConfig component in ability.runtimeComponents)
-                {
-                    if (component != null
-                        && component.enabled
-                        && component.type == AbilityRuntimeComponentType.VanillaPawnFlyer
-                        && string.IsNullOrWhiteSpace(component.flyerThingDefName))
-                    {
-                        component.flyerThingDefName = equipment.flyerThingDefName;
-                    }
-                }
-            }
-        }
 
         private void CopyExternalXmls(string modPath, List<string> sourcePaths)
         {

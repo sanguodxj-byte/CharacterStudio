@@ -761,6 +761,15 @@ namespace CharacterStudio.UI
                     Vector2 newPivot = new Vector2(pivotX, pivotY);
                     if (newPivot != renderData.triggeredPivotOffset) { CaptureUndoSnapshot(); renderData.triggeredPivotOffset = newPivot; MarkEquipmentDirty(); }
 
+                    float dOffsetX = renderData.triggeredDeployOffset.x;
+                    UIHelper.DrawPropertySlider(ref y, width, "Deploy Offset X".Translate(), ref dOffsetX, -5f, 5f, "F3");
+                    float dOffsetY = renderData.triggeredDeployOffset.y;
+                    UIHelper.DrawPropertySlider(ref y, width, "Deploy Offset Y".Translate(), ref dOffsetY, -5f, 5f, "F3");
+                    float dOffsetZ = renderData.triggeredDeployOffset.z;
+                    UIHelper.DrawPropertySlider(ref y, width, "Deploy Offset Z".Translate(), ref dOffsetZ, -5f, 5f, "F3");
+                    Vector3 newDOffset = new Vector3(dOffsetX, dOffsetY, dOffsetZ);
+                    if (newDOffset != renderData.triggeredDeployOffset) { CaptureUndoSnapshot(); renderData.triggeredDeployOffset = newDOffset; MarkEquipmentDirty(); }
+
                     bool useVfxVisibility = renderData.triggeredUseVfxVisibility;
                     UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Equip_TriggeredAnimation_UseVfxVisibility".Translate(), ref useVfxVisibility);
                     if (useVfxVisibility != renderData.triggeredUseVfxVisibility) { CaptureUndoSnapshot(); renderData.triggeredUseVfxVisibility = useVfxVisibility; MarkEquipmentDirty(); }
@@ -898,6 +907,20 @@ namespace CharacterStudio.UI
             {
                 CaptureUndoSnapshot();
                 overrideData.triggeredPivotOffset = newPivot;
+                markEquipmentDirty(false);
+            }
+
+            float dOffsetX = overrideData.triggeredDeployOffset.x;
+            UIHelper.DrawPropertySlider(ref y, width, "Deploy Offset X".Translate(), ref dOffsetX, -5f, 5f, "F3");
+            float dOffsetY = overrideData.triggeredDeployOffset.y;
+            UIHelper.DrawPropertySlider(ref y, width, "Deploy Offset Y".Translate(), ref dOffsetY, -5f, 5f, "F3");
+            float dOffsetZ = overrideData.triggeredDeployOffset.z;
+            UIHelper.DrawPropertySlider(ref y, width, "Deploy Offset Z".Translate(), ref dOffsetZ, -5f, 5f, "F3");
+            Vector3 newDOffset = new Vector3(dOffsetX, dOffsetY, dOffsetZ);
+            if (newDOffset != overrideData.triggeredDeployOffset)
+            {
+                CaptureUndoSnapshot();
+                overrideData.triggeredDeployOffset = newDOffset;
                 markEquipmentDirty(false);
             }
 

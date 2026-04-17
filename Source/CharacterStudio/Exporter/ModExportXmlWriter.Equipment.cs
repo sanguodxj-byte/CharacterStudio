@@ -139,12 +139,16 @@ namespace CharacterStudio.Exporter
                 new XElement("offset", FormatVector3(renderData.offset)),
                 renderData.offsetEast != Vector3.zero ? new XElement("offsetEast", FormatVector3(renderData.offsetEast)) : null,
                 renderData.offsetNorth != Vector3.zero ? new XElement("offsetNorth", FormatVector3(renderData.offsetNorth)) : null,
+                renderData.useWestOffset ? new XElement("useWestOffset", "true") : null,
+                renderData.offsetWest != Vector3.zero ? new XElement("offsetWest", FormatVector3(renderData.offsetWest)) : null,
                 new XElement("scale", FormatVector2(renderData.scale)),
                 renderData.scaleEastMultiplier != Vector2.one ? new XElement("scaleEastMultiplier", FormatVector2(renderData.scaleEastMultiplier)) : null,
                 renderData.scaleNorthMultiplier != Vector2.one ? new XElement("scaleNorthMultiplier", FormatVector2(renderData.scaleNorthMultiplier)) : null,
+                renderData.scaleWestMultiplier != Vector2.one ? new XElement("scaleWestMultiplier", FormatVector2(renderData.scaleWestMultiplier)) : null,
                 new XElement("rotation", renderData.rotation),
                 renderData.rotationEastOffset != 0f ? new XElement("rotationEastOffset", renderData.rotationEastOffset) : null,
                 renderData.rotationNorthOffset != 0f ? new XElement("rotationNorthOffset", renderData.rotationNorthOffset) : null,
+                renderData.rotationWestOffset != 0f ? new XElement("rotationWestOffset", renderData.rotationWestOffset) : null,
                 new XElement("drawOrder", renderData.drawOrder),
                 new XElement("flipHorizontal", renderData.flipHorizontal.ToString().ToLower()),
                 new XElement("visible", renderData.visible.ToString().ToLower()),
@@ -469,8 +473,17 @@ namespace CharacterStudio.Exporter
 
         private static XElement GenerateEquipmentApparelXml(CharacterEquipmentDef equipment)
         {
+            // 如果 wornTexPath 是外部绝对路径（如 D:/...），RimWorld 原生 ContentFinder 无法解析，
+            // 会导致穿戴后显示红色 X。此时不输出 wornGraphicPath，
+            // 让 vanilla 回退到 graphicData（已使用 Graphic_Runtime 支持外部路径），
+            // 同时 CS 自定义图层注入系统通过 DefModExtension_EquipmentRender 接管精确渲染。
+            bool wornTexPathIsExternal = !string.IsNullOrWhiteSpace(equipment.wornTexPath)
+                && Rendering.RuntimeAssetLoader.LooksLikeExternalTexturePath(equipment.wornTexPath);
+
             return new XElement("apparel",
-                !string.IsNullOrWhiteSpace(equipment.wornTexPath) ? new XElement("wornGraphicPath", equipment.wornTexPath) : null,
+                !string.IsNullOrWhiteSpace(equipment.wornTexPath) && !wornTexPathIsExternal
+                    ? new XElement("wornGraphicPath", equipment.wornTexPath)
+                    : null,
                 equipment.useWornGraphicMask ? new XElement("useWornGraphicMask", equipment.useWornGraphicMask.ToString().ToLower()) : null,
                 GenerateStringListXml("bodyPartGroups", equipment.bodyPartGroups),
                 GenerateStringListXml("layers", equipment.apparelLayers),
@@ -520,12 +533,16 @@ namespace CharacterStudio.Exporter
                     new XElement("offset", FormatVector3(renderExtension.offset)),
                     renderExtension.offsetEast != Vector3.zero ? new XElement("offsetEast", FormatVector3(renderExtension.offsetEast)) : null,
                     renderExtension.offsetNorth != Vector3.zero ? new XElement("offsetNorth", FormatVector3(renderExtension.offsetNorth)) : null,
+                    renderExtension.useWestOffset ? new XElement("useWestOffset", "true") : null,
+                    renderExtension.offsetWest != Vector3.zero ? new XElement("offsetWest", FormatVector3(renderExtension.offsetWest)) : null,
                     new XElement("scale", FormatVector2(renderExtension.scale)),
                     renderExtension.scaleEastMultiplier != Vector2.one ? new XElement("scaleEastMultiplier", FormatVector2(renderExtension.scaleEastMultiplier)) : null,
                     renderExtension.scaleNorthMultiplier != Vector2.one ? new XElement("scaleNorthMultiplier", FormatVector2(renderExtension.scaleNorthMultiplier)) : null,
+                    renderExtension.scaleWestMultiplier != Vector2.one ? new XElement("scaleWestMultiplier", FormatVector2(renderExtension.scaleWestMultiplier)) : null,
                     new XElement("rotation", renderExtension.rotation),
                     renderExtension.rotationEastOffset != 0f ? new XElement("rotationEastOffset", renderExtension.rotationEastOffset) : null,
                     renderExtension.rotationNorthOffset != 0f ? new XElement("rotationNorthOffset", renderExtension.rotationNorthOffset) : null,
+                    renderExtension.rotationWestOffset != 0f ? new XElement("rotationWestOffset", renderExtension.rotationWestOffset) : null,
                     new XElement("drawOrder", renderExtension.drawOrder),
                     new XElement("flipHorizontal", renderExtension.flipHorizontal.ToString().ToLower()),
                     new XElement("visible", renderExtension.visible.ToString().ToLower()),

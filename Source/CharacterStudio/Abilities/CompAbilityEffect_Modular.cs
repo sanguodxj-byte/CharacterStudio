@@ -3,11 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using CharacterStudio.Abilities.RuntimeComponents;
 using CharacterStudio.Core;
-using CharacterStudio.Rendering;
 using RimWorld;
 using UnityEngine;
 using Verse;
-using Verse.Sound;
 
 namespace CharacterStudio.Abilities
 {
@@ -38,17 +36,13 @@ namespace CharacterStudio.Abilities
             return _cachedAbilityComp;
         }
 
-        private static readonly Dictionary<string, ThingDef> customTextureMoteDefCache = new Dictionary<string, ThingDef>();
-        private static readonly HashSet<string> runtimeVfxWarnings = new HashSet<string>();
-
         /// <summary>
         /// 在游戏加载或地图切换时清理静态缓存，防止长时间游戏中的内存增长。
         /// 由 ModEntryPoint 或 GameComponent 在适当的生命周期点调用。
         /// </summary>
         public static void ClearStaticCaches()
         {
-            customTextureMoteDefCache.Clear();
-            runtimeVfxWarnings.Clear();
+            AbilityVfxPlayer.ClearStaticCaches();
         }
 
         private static bool CanApplyDamageToTarget(Pawn? caster, LocalTargetInfo target, AbilityEffectConfig? damageEffect = null)
@@ -99,22 +93,27 @@ namespace CharacterStudio.Abilities
         }
 
         /// <summary>
-        /// 共享飞行状态设置逻辑，供 FlightStateHandler 和 VanillaPawnFlyerHandler 调用。
+        /// 共享飞行状态设置逻辑，供 FlightStateHandler 调用。
         /// </summary>
-        public static void ApplyFlightState(AbilityRuntimeComponentConfig component, string abilityDefName, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, int nowTick)
+        public static void ApplyFlightState(AbilityRuntimeComponentConfig component, string abilityDefName, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, int nowTick, bool isVanillaFlight = false)
         {
             abilityComp.FlightStateStartTick = nowTick;
             abilityComp.FlightStateExpireTick = nowTick + Mathf.Max(1, component.flightDurationTicks);
             abilityComp.FlightStateHeightFactor = Mathf.Max(0f, component.flightHeightFactor);
             abilityComp.SuppressCombatActionsDuringFlightState = component.suppressCombatActionsDuringFlightState;
-            abilityComp.IsInVanillaFlight = true;
-            abilityComp.VanillaFlightStartTick = nowTick;
-            abilityComp.VanillaFlightExpireTick = abilityComp.FlightStateExpireTick;
-            abilityComp.VanillaFlightSourceAbilityDefName = abilityDefName;
-            abilityComp.VanillaFlightFollowupAbilityDefName = component.flightOnlyAbilityDefName?.Trim() ?? string.Empty;
-            abilityComp.VanillaFlightReservedTargetCell = target.IsValid ? target.Cell : caster.Position;
-            abilityComp.VanillaFlightHasReservedTargetCell = target.IsValid;
-            abilityComp.VanillaFlightFollowupWindowEndTick = abilityComp.FlightStateExpireTick;
+
+            if (isVanillaFlight)
+            {
+                abilityComp.IsInVanillaFlight = true;
+                abilityComp.VanillaFlightStartTick = nowTick;
+                abilityComp.VanillaFlightExpireTick = abilityComp.FlightStateExpireTick;
+                abilityComp.VanillaFlightSourceAbilityDefName = abilityDefName;
+                abilityComp.VanillaFlightFollowupAbilityDefName = component.flightOnlyAbilityDefName?.Trim() ?? string.Empty;
+                abilityComp.VanillaFlightReservedTargetCell = target.IsValid ? target.Cell : caster.Position;
+                abilityComp.VanillaFlightHasReservedTargetCell = target.IsValid;
+                abilityComp.VanillaFlightFollowupWindowEndTick = abilityComp.FlightStateExpireTick;
+            }
+
             caster.flight?.StartFlying();
             abilityComp.TriggerEquipmentAnimationState("FlightState", nowTick, component.flightDurationTicks);
         }
@@ -439,27 +438,27 @@ namespace CharacterStudio.Abilities
             }
 
             // P-PERF: 仅在有挂起特效时才遍历列表
-            if (pendingVfx.Count > 0)
+            if (pendingVfx.Count > 0 && caster != null)
             {
                 for (int i = pendingVfx.Count - 1; i >= 0; i--)
                 {
                     var (triggerTick, vfxConfig, target, sourceOverride) = pendingVfx[i];
                     if (nowTick >= triggerTick)
                     {
-                        PlayVfx(vfxConfig, target, sourceOverride);
+                        AbilityVfxPlayer.PlayVfx(vfxConfig, target, caster, sourceOverride);
                         pendingVfx.RemoveAt(i);
                     }
                 }
             }
 
-            if (pendingVfxSounds.Count > 0)
+            if (pendingVfxSounds.Count > 0 && caster != null)
             {
                 for (int i = pendingVfxSounds.Count - 1; i >= 0; i--)
                 {
                     var (triggerTick, vfxConfig, target, sourceOverride) = pendingVfxSounds[i];
                     if (nowTick >= triggerTick)
                     {
-                        PlayVfxSound(vfxConfig, target, sourceOverride);
+                        AbilityVfxPlayer.PlayVfxSound(vfxConfig, target, caster, sourceOverride);
                         pendingVfxSounds.RemoveAt(i);
                     }
                 }
@@ -490,57 +489,31 @@ namespace CharacterStudio.Abilities
 
         private static void TickFlightState(Pawn caster, CompCharacterAbilityRuntime abilityComp, int nowTick)
         {
-            if (abilityComp.FlightStateExpireTick < 0 && !abilityComp.IsInVanillaFlight)
+            if (abilityComp.FlightStateExpireTick < 0)
             {
                 return;
             }
 
-            // FlightState expiry reached
-            if (abilityComp.FlightStateExpireTick >= 0 && nowTick > abilityComp.FlightStateExpireTick)
-            {
-                if (caster.Flying)
-                {
-                    // ForceLand is async — pawn lands next frame.
-                    // Defer all cleanup until the third branch detects landing.
-                    caster.flight?.ForceLand();
-                    return;
-                }
-
-                // Pawn is on the ground (visual-only flight expired): immediate cleanup
-                if (abilityComp.VanillaFlightPendingLandingBurst)
-                {
-                    AbilityVanillaFlightUtility.TryApplyLandingBurst(caster, caster.Position, abilityComp.VanillaFlightSourceAbilityDefName);
-                }
-
-                abilityComp.FlightStateExpireTick = -1;
-                abilityComp.FlightStateHeightFactor = 0f;
-                abilityComp.SuppressCombatActionsDuringFlightState = false;
-                abilityComp.ClearEquipmentAnimationState("FlightState");
-                AbilityVanillaFlightUtility.ClearVanillaFlightState(caster);
-                caster.GetComp<Core.CompPawnSkin>()?.RequestRenderRefresh();
-                return;
-            }
-
-            // PawnFlyer-based flight (VanillaPawnFlyer component): wait for landing
-            if (caster.Flying)
-            {
-                return;
-            }
-
-            // Landed from VanillaPawnFlyer — cleanup
-            if (abilityComp.IsInVanillaFlight)
+            // 飞行状态到期 → 执行清理
+            if (nowTick > abilityComp.FlightStateExpireTick)
             {
                 if (abilityComp.VanillaFlightPendingLandingBurst)
                 {
                     AbilityVanillaFlightUtility.TryApplyLandingBurst(caster, caster.Position, abilityComp.VanillaFlightSourceAbilityDefName);
                 }
 
-                abilityComp.FlightStateHeightFactor = 0f;
-                abilityComp.SuppressCombatActionsDuringFlightState = false;
-                abilityComp.ClearEquipmentAnimationState("FlightState");
-                AbilityVanillaFlightUtility.ClearVanillaFlightState(caster);
-                caster.GetComp<Core.CompPawnSkin>()?.RequestRenderRefresh();
+                CleanupFlightState(caster, abilityComp);
             }
+        }
+
+        public static void CleanupFlightState(Pawn caster, CompCharacterAbilityRuntime abilityComp)
+        {
+            abilityComp.FlightStateExpireTick = -1;
+            abilityComp.FlightStateHeightFactor = 0f;
+            abilityComp.SuppressCombatActionsDuringFlightState = false;
+            abilityComp.ClearEquipmentAnimationState("FlightState");
+            AbilityVanillaFlightUtility.ClearVanillaFlightState(caster);
+            caster.GetComp<Core.CompPawnSkin>()?.RequestRenderRefresh();
         }
 
         public static Thing? FindThingByIdCached(Map? map, string thingId, ref Thing? cachedThing)
@@ -574,11 +547,9 @@ namespace CharacterStudio.Abilities
 
         public void TriggerVisualEffects(AbilityVisualEffectTrigger trigger, LocalTargetInfo target, Vector3? sourceOverride = null)
         {
-            QueueVisualEffectsForTrigger(trigger, target, sourceOverride);
-        }
+            Pawn? caster = parent?.pawn;
+            if (caster == null) return;
 
-        private void QueueVisualEffectsForTrigger(AbilityVisualEffectTrigger trigger, LocalTargetInfo target, Vector3? sourceOverride = null)
-        {
             if (Props.visualEffects == null || Props.visualEffects.Count == 0)
             {
                 return;
@@ -606,7 +577,7 @@ namespace CharacterStudio.Abilities
                     int totalDelay = vfx.delayTicks + (repeatIndex * repeatIntervalTicks);
                     if (totalDelay <= 0)
                     {
-                        PlayVfx(vfx, target, sourceOverride);
+                        AbilityVfxPlayer.PlayVfx(vfx, target, caster, sourceOverride);
                     }
                     else
                     {
@@ -618,7 +589,7 @@ namespace CharacterStudio.Abilities
                         int soundDelay = totalDelay + Mathf.Max(0, vfx.soundDelayTicks);
                         if (soundDelay <= 0)
                         {
-                            PlayVfxSound(vfx, target, sourceOverride);
+                            AbilityVfxPlayer.PlayVfxSound(vfx, target, caster, sourceOverride);
                         }
                         else
                         {
@@ -1054,513 +1025,6 @@ namespace CharacterStudio.Abilities
             return effectType == AbilityEffectType.Terraform;
         }
 
-        // NormalizeRuntimeTrigger removed: was a no-op identity function (review F-QUAL-03)
-
-        private static void LogRuntimeVfxWarningOnce(string key, string message)
-        {
-            if (runtimeVfxWarnings.Add(key))
-            {
-                Log.Warning(message);
-            }
-        }
-
-        private static bool TryResolveRuntimeVfxType(AbilityVisualEffectConfig vfx, out AbilityVisualEffectType resolvedType)
-        {
-            resolvedType = vfx.type;
-            if (!vfx.UsesPresetType)
-            {
-                return true;
-            }
-
-            if (VisualEffectWorkerFactory.TryResolvePresetType(vfx.presetDefName, out resolvedType))
-            {
-                return true;
-            }
-
-            string presetName = string.IsNullOrWhiteSpace(vfx.presetDefName)
-                ? "<empty>"
-                : vfx.presetDefName.Trim();
-            LogRuntimeVfxWarningOnce(
-                $"PresetMissing:{presetName}",
-                $"[CharacterStudio] 视觉特效预设 '{presetName}' 未注册到运行时 Worker，已跳过播放。");
-            return false;
-        }
-
-        private void PlayVfx(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Vector3? sourceOverride = null)
-        {
-            var caster = parent?.pawn;
-            if (caster == null || caster.Map == null) return;
-
-            try
-            {
-                vfx.NormalizeLegacyData();
-                vfx.SyncLegacyFields();
-
-                CompPawnSkin? skinComp = caster.GetComp<CompPawnSkin>();
-                if (skinComp != null
-                    && (vfx.linkedExpression.HasValue
-                        || Math.Abs(vfx.linkedPupilBrightnessOffset) > 0.001f
-                        || Math.Abs(vfx.linkedPupilContrastOffset) > 0.001f))
-                {
-                    skinComp.ApplyAbilityFaceOverride(
-                        vfx.linkedExpression,
-                        vfx.linkedExpressionDurationTicks,
-                        vfx.linkedPupilBrightnessOffset,
-                        vfx.linkedPupilContrastOffset);
-                }
-
-                if (vfx.UsesCustomTextureType)
-                {
-                    if (TryPlayCustomTextureVfx(vfx, target, caster, sourceOverride))
-                    {
-                        return;
-                    }
-
-                    Log.Warning($"[CharacterStudio] 自定义贴图特效缺少有效贴图路径，已跳过播放。");
-                    return;
-                }
-
-                if ((vfx.type == AbilityVisualEffectType.LineTexture || vfx.type == AbilityVisualEffectType.WallTexture)
-                    && TryPlaySpatialTextureVfx(vfx, target, caster, sourceOverride))
-                {
-                    return;
-                }
-
-                if (!TryResolveRuntimeVfxType(vfx, out AbilityVisualEffectType runtimeVfxType))
-                {
-                    return;
-                }
-
-                VisualEffectWorker worker = VisualEffectWorkerFactory.GetWorker(runtimeVfxType);
-                worker.Play(vfx, CreateRuntimeVfxTarget(vfx, target, caster, sourceOverride), caster);
-            }
-            catch (Exception ex)
-            {
-                Log.Warning($"[CharacterStudio] VFX 播放异常: {ex.Message}");
-            }
-        }
-
-        private void PlayVfxSound(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Vector3? sourceOverride = null)
-        {
-            Pawn? caster = parent?.pawn;
-            if (caster?.Map == null || string.IsNullOrWhiteSpace(vfx.soundDefName))
-            {
-                return;
-            }
-
-            try
-            {
-                SoundDef? soundDef = DefDatabase<SoundDef>.GetNamedSilentFail(vfx.soundDefName);
-                if (soundDef == null)
-                {
-                    Log.Warning($"[CharacterStudio] 未找到 VFX 声音 Def: {vfx.soundDefName}");
-                    return;
-                }
-
-                foreach (Vector3 soundPos in ResolveVfxPositions(vfx, target, caster, sourceOverride))
-                {
-                    SoundInfo soundInfo = SoundInfo.InMap(new TargetInfo(soundPos.ToIntVec3(), caster.Map, false), MaintenanceType.None);
-                    soundInfo.volumeFactor = Mathf.Max(0f, vfx.soundVolume);
-                    soundInfo.pitchFactor = Mathf.Max(0.01f, vfx.soundPitch);
-                    soundDef.PlayOneShot(soundInfo);
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Warning($"[CharacterStudio] VFX 声音播放异常: {ex.Message}");
-            }
-        }
-
-        private static bool TryPlayCustomTextureVfx(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster, Vector3? sourceOverride = null)
-        {
-            if (string.IsNullOrWhiteSpace(vfx.customTexturePath) || caster.Map == null)
-            {
-                return false;
-            }
-
-            ThingDef moteDef = GetOrCreateCustomTextureMoteDef(
-                vfx.customTexturePath,
-                Mathf.Max(0.1f, vfx.drawSize),
-                Mathf.Max(1, vfx.displayDurationTicks));
-
-            float uniformScale = Mathf.Max(0.1f, vfx.scale);
-            float scaleX = Mathf.Max(0.1f, vfx.textureScale.x) * uniformScale;
-            float scaleZ = Mathf.Max(0.1f, vfx.textureScale.y) * uniformScale;
-            bool playedAny = false;
-
-            foreach (Vector3 spawnPos in ResolveVfxPositions(vfx, target, caster, sourceOverride))
-            {
-                MoteThrown? mote = ThingMaker.MakeThing(moteDef) as MoteThrown;
-                if (mote == null)
-                {
-                    continue;
-                }
-
-                mote.exactPosition = spawnPos;
-                mote.exactRotation = ResolveVfxRotation(vfx, target, caster, sourceOverride);
-                mote.rotationRate = 0f;
-                mote.instanceColor = Color.white;
-                mote.linearScale = new Vector3(scaleX, 1f, scaleZ);
-                mote.SetVelocity(0f, 0f);
-                GenSpawn.Spawn(mote, spawnPos.ToIntVec3(), caster.Map, WipeMode.Vanish);
-                playedAny = true;
-            }
-
-            return playedAny;
-        }
-
-        private static bool TryPlaySpatialTextureVfx(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster, Vector3? sourceOverride = null)
-        {
-            if (string.IsNullOrWhiteSpace(vfx.customTexturePath) || caster.Map == null)
-            {
-                return false;
-            }
-
-            if (!TryResolveSpatialAnchors(vfx, target, caster, sourceOverride, out Vector3 start, out Vector3 end))
-            {
-                return false;
-            }
-
-            Vector3 delta = end - start;
-            delta.y = 0f;
-            float length = delta.magnitude;
-            if (length < 0.05f)
-            {
-                end = start + caster.Rotation.FacingCell.ToVector3() * 0.2f;
-                delta = end - start;
-                delta.y = 0f;
-                length = Mathf.Max(0.2f, delta.magnitude);
-            }
-
-            ThingDef moteDef = GetOrCreateCustomTextureMoteDef(
-                vfx.customTexturePath,
-                Mathf.Max(0.1f, vfx.drawSize),
-                Mathf.Max(1, vfx.displayDurationTicks));
-
-            int requestedSegments = Mathf.Max(1, vfx.segmentCount);
-            int segmentCount = vfx.tileByLength
-                ? Mathf.Max(requestedSegments, Mathf.CeilToInt(length / Mathf.Max(0.2f, vfx.drawSize)))
-                : requestedSegments;
-            float rotation = Mathf.Atan2(delta.x, delta.z) * Mathf.Rad2Deg + vfx.rotation;
-            Vector3 forward = delta.normalized;
-            if (forward == Vector3.zero)
-            {
-                forward = caster.Rotation.FacingCell.ToVector3();
-            }
-
-            bool playedAny = false;
-            for (int i = 0; i < segmentCount; i++)
-            {
-                if (vfx.revealBySegments && i > 0)
-                {
-                    // v1 runtime keeps immediate full spawn; editor/preview expose the field already.
-                }
-
-                float t = segmentCount == 1 ? 0.5f : (i + 0.5f) / segmentCount;
-                Vector3 spawnPos = Vector3.Lerp(start, end, t);
-                if (vfx.followGround)
-                {
-                    spawnPos = spawnPos.ToIntVec3().ToVector3Shifted();
-                }
-
-                MoteThrown? mote = ThingMaker.MakeThing(moteDef) as MoteThrown;
-                if (mote == null)
-                {
-                    continue;
-                }
-
-                float uniformScale = Mathf.Max(0.1f, vfx.scale);
-                float segmentLength = length / segmentCount;
-                float scaleX;
-                float scaleZ;
-                if (vfx.type == AbilityVisualEffectType.WallTexture)
-                {
-                    scaleX = Mathf.Max(0.1f, vfx.wallThickness) * uniformScale;
-                    scaleZ = Mathf.Max(0.1f, vfx.wallHeight) * uniformScale;
-                    spawnPos.y += Mathf.Max(0f, vfx.wallHeight) * 0.5f;
-                }
-                else
-                {
-                    scaleX = Mathf.Max(0.1f, vfx.lineWidth) * uniformScale;
-                    scaleZ = Mathf.Max(0.1f, segmentLength) * Mathf.Max(0.1f, vfx.textureScale.y) * uniformScale;
-                }
-
-                scaleX *= Mathf.Max(0.1f, vfx.textureScale.x);
-
-                mote.exactPosition = spawnPos;
-                mote.exactRotation = rotation;
-                mote.rotationRate = 0f;
-                mote.instanceColor = Color.white;
-                mote.linearScale = new Vector3(scaleX, 1f, scaleZ);
-                mote.SetVelocity(0f, 0f);
-                GenSpawn.Spawn(mote, spawnPos.ToIntVec3(), caster.Map, WipeMode.Vanish);
-                playedAny = true;
-            }
-
-            return playedAny;
-        }
-
-        private static bool TryResolveSpatialAnchors(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster, Vector3? sourceOverride, out Vector3 start, out Vector3 end)
-        {
-            start = ResolveSpatialAnchor(vfx.anchorMode, target, caster, sourceOverride);
-            end = ResolveSpatialAnchor(vfx.secondaryAnchorMode, target, caster, sourceOverride);
-
-            if (vfx.pathMode == AbilityVisualPathMode.DirectLineCasterToTarget)
-            {
-                start = ResolveSpatialAnchor(AbilityVisualAnchorMode.Caster, target, caster, sourceOverride);
-                end = ResolveSpatialAnchor(AbilityVisualAnchorMode.Target, target, caster, sourceOverride);
-            }
-
-            if ((end - start).sqrMagnitude < 0.0001f)
-            {
-                end = ResolveSpatialAnchor(AbilityVisualAnchorMode.Target, target, caster, sourceOverride);
-            }
-
-            return true;
-        }
-
-        private static Vector3 ResolveSpatialAnchor(AbilityVisualAnchorMode anchorMode, LocalTargetInfo target, Pawn caster, Vector3? sourceOverride = null)
-        {
-            switch (anchorMode)
-            {
-                case AbilityVisualAnchorMode.Caster:
-                    return sourceOverride ?? caster.DrawPos;
-                case AbilityVisualAnchorMode.TargetCell:
-                    return target.IsValid ? target.Cell.ToVector3Shifted() : caster.Position.ToVector3Shifted();
-                case AbilityVisualAnchorMode.AreaCenter:
-                    return target.IsValid ? target.Cell.ToVector3Shifted() : caster.DrawPos;
-                case AbilityVisualAnchorMode.Target:
-                default:
-                    if (target.HasThing)
-                    {
-                        return target.Thing.DrawPos;
-                    }
-
-                    return target.IsValid ? target.Cell.ToVector3Shifted() : caster.DrawPos;
-            }
-        }
-
-        private static IEnumerable<Vector3> ResolveVfxPositions(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster, Vector3? sourceOverride = null)
-        {
-            if (vfx.target == VisualEffectTarget.Both)
-            {
-                Vector3 casterPos = ResolveVfxPosition(vfx, target, caster, VisualEffectTarget.Caster, sourceOverride);
-                yield return casterPos;
-
-                Vector3 targetPos = ResolveVfxPosition(vfx, target, caster, VisualEffectTarget.Target, sourceOverride);
-                if ((targetPos - casterPos).sqrMagnitude > 0.0001f)
-                {
-                    yield return targetPos;
-                }
-
-                yield break;
-            }
-
-            yield return ResolveVfxPosition(vfx, target, caster, vfx.target, sourceOverride);
-        }
-
-        private static Vector3 ResolveVfxPosition(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster, Vector3? sourceOverride = null)
-        {
-            VisualEffectTarget resolvedTarget = vfx.target == VisualEffectTarget.Both
-                ? VisualEffectTarget.Caster
-                : vfx.target;
-            return ResolveVfxPosition(vfx, target, caster, resolvedTarget, sourceOverride);
-        }
-
-        private static Vector3 ResolveVfxPosition(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster, VisualEffectTarget targetMode, Vector3? sourceOverride = null)
-        {
-            Vector3 pos;
-            switch (targetMode)
-            {
-                case VisualEffectTarget.Caster:
-                    pos = sourceOverride ?? caster.DrawPos;
-                    break;
-                case VisualEffectTarget.Target:
-                    if (target.HasThing)
-                    {
-                        pos = target.Thing.DrawPos;
-                    }
-                    else if (target.IsValid)
-                    {
-                        pos = target.Cell.ToVector3Shifted();
-                    }
-                    else
-                    {
-                        pos = caster.DrawPos;
-                    }
-                    break;
-                case VisualEffectTarget.Both:
-                default:
-                    pos = caster.DrawPos;
-                    break;
-            }
-
-            pos += vfx.offset;
-            pos.y += vfx.heightOffset;
-
-            if (!TryResolveFacingBasis(vfx, target, caster, sourceOverride, out Vector3 forward, out Vector3 right))
-            {
-                return pos;
-            }
-
-            return pos + forward * vfx.forwardOffset + right * vfx.sideOffset;
-        }
-
-        private static float ResolveVfxRotation(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster, Vector3? sourceOverride = null)
-        {
-            return vfx.rotation + ResolveAutoFacingAngle(vfx, target, caster, sourceOverride);
-        }
-
-        private static float ResolveAutoFacingAngle(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster, Vector3? sourceOverride = null)
-        {
-            if (!TryResolveFacingBasis(vfx, target, caster, sourceOverride, out Vector3 forward, out _))
-            {
-                return 0f;
-            }
-
-            if (Mathf.Abs(forward.x) >= Mathf.Abs(forward.z))
-            {
-                return forward.x >= 0f ? 90f : 270f;
-            }
-
-            return forward.z >= 0f ? 0f : 180f;
-        }
-
-        private static bool TryResolveFacingBasis(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster, Vector3? sourceOverride, out Vector3 forward, out Vector3 right)
-        {
-            AbilityVisualFacingMode facingMode = ResolveFacingMode(vfx);
-            if (facingMode == AbilityVisualFacingMode.None)
-            {
-                forward = Vector3.zero;
-                right = Vector3.zero;
-                return false;
-            }
-
-            IntVec3 forwardCell = facingMode == AbilityVisualFacingMode.CastDirection
-                ? ResolveCastDirectionCell(target, caster, sourceOverride)
-                : caster.Rotation.FacingCell;
-
-            if (forwardCell == IntVec3.Zero)
-            {
-                forwardCell = caster.Rotation.FacingCell;
-            }
-
-            forward = forwardCell.ToVector3();
-            if (forward == Vector3.zero)
-            {
-                forward = new Vector3(0f, 0f, 1f);
-            }
-
-            right = new Vector3(forward.z, 0f, -forward.x);
-            return true;
-        }
-
-        private static AbilityVisualFacingMode ResolveFacingMode(AbilityVisualEffectConfig vfx)
-        {
-            AbilityVisualFacingMode facingMode = vfx.facingMode;
-            if (!Enum.IsDefined(typeof(AbilityVisualFacingMode), facingMode))
-            {
-                return vfx.useCasterFacing ? AbilityVisualFacingMode.CasterFacing : AbilityVisualFacingMode.None;
-            }
-
-            if (facingMode == AbilityVisualFacingMode.None && vfx.useCasterFacing)
-            {
-                return AbilityVisualFacingMode.CasterFacing;
-            }
-
-            return facingMode;
-        }
-
-        private static IntVec3 ResolveCastDirectionCell(LocalTargetInfo target, Pawn caster, Vector3? sourceOverride = null)
-        {
-            IntVec3 origin = sourceOverride?.ToIntVec3() ?? caster.Position;
-            IntVec3 destination = target.IsValid ? target.Cell : origin + caster.Rotation.FacingCell;
-            IntVec3 delta = destination - origin;
-            if (delta == IntVec3.Zero)
-            {
-                return caster.Rotation.FacingCell;
-            }
-
-            if (Mathf.Abs(delta.x) >= Mathf.Abs(delta.z))
-            {
-                return delta.x >= 0 ? IntVec3.East : IntVec3.West;
-            }
-
-            return delta.z >= 0 ? IntVec3.North : IntVec3.South;
-        }
-
-        private static LocalTargetInfo CreateRuntimeVfxTarget(AbilityVisualEffectConfig vfx, LocalTargetInfo target, Pawn caster, Vector3? sourceOverride)
-        {
-            if (!sourceOverride.HasValue || vfx.target != VisualEffectTarget.Caster)
-            {
-                return target;
-            }
-
-            return new LocalTargetInfo(sourceOverride.Value.ToIntVec3());
-        }
-
-        /// <summary>
-        /// 获取或创建自定义贴图 Mote ThingDef。
-        /// 
-        /// 注意：此方法在运行时动态创建 ThingDef 但不注册到 DefDatabase。
-        /// 这意味着某些依赖 DefDatabase 查找的系统可能无法找到这些 Def。
-        /// 当前使用场景（MoteThrown 渲染）不需要 DefDatabase 注册，因此可以安全使用。
-        /// 如果未来需要更广泛的 Def 查找，应改为在 Defs XML 中预定义一批 Mote Def。
-        /// </summary>
-        private static ThingDef GetOrCreateCustomTextureMoteDef(string texturePath, float drawSize, int displayDurationTicks)
-        {
-            string key = $"{texturePath}|{drawSize:F3}|{displayDurationTicks}";
-            if (customTextureMoteDefCache.TryGetValue(key, out ThingDef cachedDef))
-            {
-                return cachedDef;
-            }
-
-            // 警告：动态创建的 ThingDef 未注册到 DefDatabase
-            // 缓存大小上限保护，防止异常情况下无限增长
-            if (customTextureMoteDefCache.Count > 500)
-            {
-                Log.Warning("[CharacterStudio] 自定义贴图 Mote 缓存已超过 500 条，执行清理。这通常意味着贴图路径组合过多。");
-                customTextureMoteDefCache.Clear();
-            }
-
-            var def = new ThingDef
-            {
-                defName = $"CS_RuntimeCustomVfx_{customTextureMoteDefCache.Count}",
-                label = "runtime custom vfx mote",
-                thingClass = typeof(MoteThrown),
-                category = ThingCategory.Mote,
-                altitudeLayer = AltitudeLayer.MoteOverhead,
-                drawerType = DrawerType.RealtimeOnly,
-                useHitPoints = false,
-                drawGUIOverlay = false,
-                tickerType = TickerType.Normal,
-                mote = new MoteProperties
-                {
-                    realTime = true,
-                    fadeInTime = 0f,
-                    solidTime = Mathf.Max(1, displayDurationTicks) / 60f,
-                    fadeOutTime = 0.2f,
-                    needsMaintenance = false,
-                    collide = false,
-                    speedPerTime = 0f,
-                    growthRate = 0f
-                },
-                graphicData = new GraphicData
-                {
-                    texPath = texturePath,
-                    graphicClass = (texturePath.Contains(":") || texturePath.Contains("/") || texturePath.Contains("\\"))
-                        ? typeof(Graphic_Runtime)
-                        : typeof(Graphic_Single),
-                    shaderType = ShaderTypeDefOf.Transparent,
-                    drawSize = new Vector2(drawSize, drawSize),
-                    color = Color.white,
-                    colorTwo = Color.white
-                }
-            };
-
-            customTextureMoteDefCache[key] = def;
-            return def;
-        }
     }
 
     public class CompProperties_AbilityModular : CompProperties_AbilityEffect

@@ -104,6 +104,19 @@ namespace CharacterStudio.Core
             return distanceToCenter <= maxDistance;
         }
 
+        public static bool IsInVisibleRect(Pawn pawn)
+        {
+            if (pawn == null || !pawn.Spawned || pawn.Map == null)
+                return false;
+
+            if (pawn.Position.Fogged(pawn.Map))
+                return false;
+
+            CameraDriver? cameraDriver = Find.CameraDriver;
+            CellRect visibleRect = cameraDriver?.CurrentViewRect ?? CellRect.Empty;
+            return visibleRect.Contains(pawn.Position);
+        }
+
         private static float GetPortraitTrackDistanceBudget(float rootSize, Pawn pawn)
         {
             // RootSize 越大镜头越远，允许进入 Portrait 轨的距离预算越小；
@@ -170,6 +183,9 @@ namespace CharacterStudio.Core
             if (pawn.InMentalState || pawn.Downed)
                 return FaceRenderLod.Standard;
 
+            if (!IsInVisibleRect(pawn))
+                return FaceRenderLod.Dormant;
+
             return FaceRenderLod.Reduced;
         }
 
@@ -192,6 +208,8 @@ namespace CharacterStudio.Core
                     return 10;
                 case FaceRenderLod.Standard:
                     return 20;
+                case FaceRenderLod.Dormant:
+                    return 999999;
                 default:
                     return 45;
             }
@@ -209,6 +227,8 @@ namespace CharacterStudio.Core
                     return 5;
                 case FaceRenderLod.Standard:
                     return 10;
+                case FaceRenderLod.Dormant:
+                    return 999999;
                 default:
                     return 20;
             }

@@ -149,6 +149,11 @@ namespace CharacterStudio.UI
             if (UsesCustomTextureSettings(vfx))
             {
                 height += RowHeight * 5f; // DrawSize+Rotation, ScaleX+Y, Facing+Height, Forward+Side, Hint
+                height += RowHeight;      // Frame Animation toggle
+                if (vfx.enableFrameAnimation)
+                {
+                    height += RowHeight * 2f; // FrameCount+Interval, Loop+Hint
+                }
             }
 
             if (vfx.type == AbilityVisualEffectType.LineTexture || vfx.type == AbilityVisualEffectType.WallTexture)
@@ -530,6 +535,39 @@ namespace CharacterStudio.UI
                 GUI.color = Color.white;
                 Text.Font = GameFont.Small;
                 y += RowHeight;
+
+                // Frame animation controls
+                bool frameAnimBefore = vfx.enableFrameAnimation;
+                Widgets.Checkbox(new Vector2(inner.x, y + 2f), ref vfx.enableFrameAnimation, 24f, false);
+                Widgets.Label(new Rect(inner.x + 28f, y, inner.width - 28f, RowHeight), "CS_Studio_VFX_FrameAnimToggle".Translate());
+                if (vfx.enableFrameAnimation != frameAnimBefore)
+                {
+                    NotifyAbilityPreviewDirty();
+                }
+                y += RowHeight;
+
+                if (vfx.enableFrameAnimation)
+                {
+                    string frameCountStr = vfx.frameCount.ToString();
+                    DrawIntRow(y, inner.x, "CS_Studio_VFX_FrameCountShort".Translate(), ref vfx.frameCount, ref frameCountStr, 2, 120);
+                    string frameIntervalStr = vfx.frameIntervalTicks.ToString();
+                    DrawIntRow(y, rightX, "CS_Studio_VFX_FrameIntervalShort".Translate(), ref vfx.frameIntervalTicks, ref frameIntervalStr, 1, 60000);
+                    y += RowHeight;
+
+                    bool frameLoopBefore = vfx.frameLoop;
+                    Widgets.Checkbox(new Vector2(inner.x, y + 2f), ref vfx.frameLoop, 24f, false);
+                    Widgets.Label(new Rect(inner.x + 28f, y, 120f, RowHeight), "CS_Studio_VFX_FrameLoop".Translate());
+                    if (vfx.frameLoop != frameLoopBefore)
+                    {
+                        NotifyAbilityPreviewDirty();
+                    }
+                    Text.Font = GameFont.Tiny;
+                    GUI.color = UIHelper.SubtleColor;
+                    Widgets.Label(new Rect(rightX, y + 3f, inner.width - rightX + inner.x, 18f), "CS_Studio_VFX_FrameAnimHint".Translate());
+                    GUI.color = Color.white;
+                    Text.Font = GameFont.Small;
+                    y += RowHeight;
+                }
             }
 
             if (vfx.type == AbilityVisualEffectType.LineTexture || vfx.type == AbilityVisualEffectType.WallTexture)

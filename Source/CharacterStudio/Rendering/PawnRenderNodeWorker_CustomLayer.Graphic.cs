@@ -188,10 +188,18 @@ namespace CharacterStudio.Rendering
                     // P-PERF: Queue-based FIFO 淘汰，确保可靠的插入顺序淘汰
                     if (externalGraphicCache.Count >= MaxExternalGraphicCacheSize && externalGraphicEvictionQueue.Count > 0)
                     {
-                        externalGraphicCache.Remove(externalGraphicEvictionQueue.Dequeue());
+                        string evictedKey = externalGraphicEvictionQueue.Dequeue();
+                        if (externalGraphicCache.TryGetValue(evictedKey, out Graphic evictedGraphic))
+                        {
+                            externalGraphicCache.Remove(evictedKey);
+                            if (evictedGraphic is Graphic_Runtime runtimeEvicted)
+                            {
+                                GraphicRuntimePool.Return(runtimeEvicted);
+                            }
+                        }
                     }
 
-                    var graphic = new Graphic_Runtime();
+                    var graphic = GraphicRuntimePool.Get();
                     graphic.Init(req);
                     if (graphic.IsInitializedSuccessfully)
                     {
@@ -352,6 +360,9 @@ namespace CharacterStudio.Rendering
         // P-PERF: 记录已应用 ZWrite 的 Graphic 实例 ID，避免对同一 Graphic 重复创建 Material
         private static readonly HashSet<int> _zWriteAppliedInstanceIds = new HashSet<int>();
 
+        // P-PERF: 全局材质池，用于在不同 Graphic 间共享开启了 ZWrite 的材质，Promote Batching
+        private static readonly Dictionary<int, Material> _sharedZWriteMaterials = new Dictionary<int, Material>();
+
         /// <summary>
         /// 对透明/Custom 图形的材质强制开启 ZWrite，保持原始 renderQueue 不变。
         /// 透明图层仍在 3000+ 队列绘制（alpha blending 正常），ZWrite=On 确保深度缓冲正确遮挡地面阴影。
@@ -365,51 +376,56 @@ namespace CharacterStudio.Rendering
                 if (_zWriteAppliedInstanceIds.Contains(instanceId))
                     return baseGraphic;
 
-                var matSouth = baseGraphic.MatAt(Rot4.South);
-                if (matSouth == null)
-                    return baseGraphic;
-
-                if (matSouth.GetInt("_ZWrite") == 1)
+                if (baseGraphic is Graphic_Single single)
                 {
-                    _zWriteAppliedInstanceIds.Add(instanceId);
-                    return baseGraphic;
-                }
-
-                Material zWriteMatSouth = new Material(matSouth);
-                zWriteMatSouth.SetInt("_ZWrite", 1);
-                // 保持原始 renderQueue，仅开启 ZWrite
-                // renderQueue 不修改：Transparent=3000+ 让 alpha blending 正常工作，
-                // ZWrite=On 让透明像素写入深度缓冲，遮挡地面阴影
-
-                if (baseGraphic is Graphic_Single)
-                {
-                    _graphicMatField?.SetValue(baseGraphic, zWriteMatSouth);
-                    _zWriteAppliedInstanceIds.Add(instanceId);
-                    return baseGraphic;
-                }
-
-                if (baseGraphic is Graphic_Multi)
-                {
-                    if (_graphicMultiMatsField?.GetValue(baseGraphic) is Material[] existingMats)
+                    Material? mat = single.MatSingle;
+                    if (mat != null)
                     {
-                        Material[] newMats = new Material[existingMats.Length];
+                        if (mat.GetInt("_ZWrite") == 1)
+                        {
+                            _zWriteAppliedInstanceIds.Add(instanceId);
+                        }
+                        else
+                        {
+                            Material zWriteMat = GetSharedZWriteMaterial(mat);
+                            _graphicMatField?.SetValue(single, zWriteMat);
+                            _zWriteAppliedInstanceIds.Add(instanceId);
+                        }
+                    }
+                }
+                else if (baseGraphic is Graphic_Multi multi)
+                {
+                    if (_graphicMultiMatsField?.GetValue(multi) is Material[] existingMats)
+                    {
+                        bool alreadyZWrite = true;
                         for (int i = 0; i < existingMats.Length; i++)
                         {
-                            if (existingMats[i] != null)
+                            if (existingMats[i] != null && existingMats[i].GetInt("_ZWrite") == 0)
                             {
-                                newMats[i] = new Material(existingMats[i]);
-                                newMats[i].SetInt("_ZWrite", 1);
-                                // 保持原始 renderQueue，仅开启 ZWrite
+                                alreadyZWrite = false;
+                                break;
                             }
                         }
-                        _graphicMultiMatsField.SetValue(baseGraphic, newMats);
-                    }
-                    _zWriteAppliedInstanceIds.Add(instanceId);
-                    return baseGraphic;
-                }
 
-                _graphicMatField?.SetValue(baseGraphic, zWriteMatSouth);
-                _zWriteAppliedInstanceIds.Add(instanceId);
+                        if (alreadyZWrite)
+                        {
+                            _zWriteAppliedInstanceIds.Add(instanceId);
+                        }
+                        else
+                        {
+                            Material[] newMats = new Material[existingMats.Length];
+                            for (int i = 0; i < existingMats.Length; i++)
+                            {
+                                if (existingMats[i] != null)
+                                {
+                                    newMats[i] = GetSharedZWriteMaterial(existingMats[i]);
+                                }
+                            }
+                            _graphicMultiMatsField.SetValue(multi, newMats);
+                            _zWriteAppliedInstanceIds.Add(instanceId);
+                        }
+                    }
+                }
                 return baseGraphic;
             }
             catch (Exception ex)
@@ -417,6 +433,20 @@ namespace CharacterStudio.Rendering
                 Log.WarningOnce($"[CharacterStudio] Failed to apply ZWrite to graphic: {ex.Message}", baseGraphic.path?.GetHashCode() ?? 0);
                 return baseGraphic;
             }
+        }
+
+        private Material GetSharedZWriteMaterial(Material baseMat)
+        {
+            // P-PERF: 基于原始材质 ID 获取共享的 ZWrite 版本，极大提升合批概率
+            int baseMatId = baseMat.GetInstanceID();
+            if (_sharedZWriteMaterials.TryGetValue(baseMatId, out Material shared))
+                return shared;
+
+            Material zWriteMat = new Material(baseMat);
+            zWriteMat.SetInt("_ZWrite", 1);
+            // 保持原始 renderQueue，仅开启 ZWrite
+            _sharedZWriteMaterials[baseMatId] = zWriteMat;
+            return zWriteMat;
         }
 
         // P-PERF: 缓存 LoadShader / Shader.Find 结果，避免每帧重复查找
@@ -449,6 +479,13 @@ namespace CharacterStudio.Rendering
 
         public static void ClearExternalGraphicCache()
         {
+            foreach (var graphic in externalGraphicCache.Values)
+            {
+                if (graphic is Graphic_Runtime runtime)
+                {
+                    GraphicRuntimePool.Return(runtime);
+                }
+            }
             externalGraphicCache.Clear();
             externalGraphicEvictionQueue.Clear();
         }
@@ -593,8 +630,7 @@ namespace CharacterStudio.Rendering
 
         public static void ClearCache()
         {
-            externalGraphicCache.Clear();
-            externalGraphicEvictionQueue.Clear();
+            ClearExternalGraphicCache();
             textureExistsCache.Clear();
             textureExistsEvictionQueue.Clear();
             frameSequenceCountCache.Clear();
@@ -602,6 +638,8 @@ namespace CharacterStudio.Rendering
             graphicTypeProbeEvictionQueue.Clear();
             // P-PERF: 清理 ZWrite 已处理记录，防止 HashSet 无界增长
             _zWriteAppliedInstanceIds.Clear();
+            // P-PERF: 清理全局材质池
+            _sharedZWriteMaterials.Clear();
         }
     }
 }

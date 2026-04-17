@@ -46,17 +46,18 @@ namespace CharacterStudio.Rendering
         private const int MaxGraphicTypeProbeCacheSize = 4096;
 
         // P2: 方向匹配预解析缓存（避免每帧字符串比较和 Trim 分配）
-        private enum DirectionalFacingMode : byte
+        [Flags]
+        private enum DirectionalFacingFlags : byte
         {
-            Any,      // 空字符串 — 所有方向都匹配
-            South,
-            North,
-            East,
-            West,
-            EastWest, // "EastWest" / "Side" / "Sides"
+            None  = 0,
+            South = 1,
+            North = 2,
+            East  = 4,
+            West  = 8,
+            Any   = South | North | East | West,
         }
-        private static readonly Dictionary<string, DirectionalFacingMode> directionalFacingParseCache
-            = new Dictionary<string, DirectionalFacingMode>(StringComparer.OrdinalIgnoreCase);
+        private static readonly Dictionary<string, DirectionalFacingFlags> directionalFacingParseCache
+            = new Dictionary<string, DirectionalFacingFlags>(StringComparer.OrdinalIgnoreCase);
 
         private const float ProgrammaticFaceFadeInStep = 0.12f;
         private const float ProgrammaticFaceFadeOutStep = 0.08f;
@@ -162,42 +163,77 @@ namespace CharacterStudio.Rendering
             return true;
         }
 
+        private static DirectionalFacingFlags FacingToFlag(Rot4 facing)
+        {
+            if (facing == Rot4.South) return DirectionalFacingFlags.South;
+            if (facing == Rot4.North) return DirectionalFacingFlags.North;
+            if (facing == Rot4.East)  return DirectionalFacingFlags.East;
+            if (facing == Rot4.West)  return DirectionalFacingFlags.West;
+            return DirectionalFacingFlags.Any;
+        }
+
+        private static DirectionalFacingFlags ParseDirectionalFacing(string raw)
+        {
+            string trimmed = raw.Trim();
+            if (string.IsNullOrEmpty(trimmed))
+                return DirectionalFacingFlags.Any;
+
+            // 快捷别名（单次匹配，无分配）
+            if (string.Equals(trimmed, "EastWest", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(trimmed, "Side", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(trimmed, "Sides", StringComparison.OrdinalIgnoreCase))
+                return DirectionalFacingFlags.East | DirectionalFacingFlags.West;
+
+            if (string.Equals(trimmed, "SouthNorth", StringComparison.OrdinalIgnoreCase))
+                return DirectionalFacingFlags.South | DirectionalFacingFlags.North;
+
+            // 逗号分隔解析：支持 "South, North" / "South,East" 等
+            if (trimmed.Contains(','))
+            {
+                DirectionalFacingFlags flags = DirectionalFacingFlags.None;
+                string[] parts = trimmed.Split(',');
+                for (int i = 0; i < parts.Length; i++)
+                {
+                    string part = parts[i].Trim();
+                    if (string.Equals(part, "South", StringComparison.OrdinalIgnoreCase))
+                        flags |= DirectionalFacingFlags.South;
+                    else if (string.Equals(part, "North", StringComparison.OrdinalIgnoreCase))
+                        flags |= DirectionalFacingFlags.North;
+                    else if (string.Equals(part, "East", StringComparison.OrdinalIgnoreCase))
+                        flags |= DirectionalFacingFlags.East;
+                    else if (string.Equals(part, "West", StringComparison.OrdinalIgnoreCase))
+                        flags |= DirectionalFacingFlags.West;
+                }
+                return flags == DirectionalFacingFlags.None ? DirectionalFacingFlags.Any : flags;
+            }
+
+            // 单方向
+            if (string.Equals(trimmed, "South", StringComparison.OrdinalIgnoreCase))
+                return DirectionalFacingFlags.South;
+            if (string.Equals(trimmed, "North", StringComparison.OrdinalIgnoreCase))
+                return DirectionalFacingFlags.North;
+            if (string.Equals(trimmed, "East", StringComparison.OrdinalIgnoreCase))
+                return DirectionalFacingFlags.East;
+            if (string.Equals(trimmed, "West", StringComparison.OrdinalIgnoreCase))
+                return DirectionalFacingFlags.West;
+
+            return DirectionalFacingFlags.Any;
+        }
+
         private static bool MatchesDirectionalFacing(PawnLayerConfig config, Rot4 facing)
         {
             // P2: 使用预解析缓存，避免每帧 Trim() 分配和多次字符串比较
             string raw = config.directionalFacing ?? string.Empty;
-            if (!directionalFacingParseCache.TryGetValue(raw, out DirectionalFacingMode mode))
+            if (!directionalFacingParseCache.TryGetValue(raw, out DirectionalFacingFlags flags))
             {
-                string trimmed = raw.Trim();
-                if (string.IsNullOrEmpty(trimmed))
-                    mode = DirectionalFacingMode.Any;
-                else if (string.Equals(trimmed, "South", StringComparison.OrdinalIgnoreCase))
-                    mode = DirectionalFacingMode.South;
-                else if (string.Equals(trimmed, "North", StringComparison.OrdinalIgnoreCase))
-                    mode = DirectionalFacingMode.North;
-                else if (string.Equals(trimmed, "East", StringComparison.OrdinalIgnoreCase))
-                    mode = DirectionalFacingMode.East;
-                else if (string.Equals(trimmed, "West", StringComparison.OrdinalIgnoreCase))
-                    mode = DirectionalFacingMode.West;
-                else if (string.Equals(trimmed, "EastWest", StringComparison.OrdinalIgnoreCase)
-                         || string.Equals(trimmed, "Side", StringComparison.OrdinalIgnoreCase)
-                         || string.Equals(trimmed, "Sides", StringComparison.OrdinalIgnoreCase))
-                    mode = DirectionalFacingMode.EastWest;
-                else
-                    mode = DirectionalFacingMode.Any;
-                directionalFacingParseCache[raw] = mode;
+                flags = ParseDirectionalFacing(raw);
+                directionalFacingParseCache[raw] = flags;
             }
 
-            return mode switch
-            {
-                DirectionalFacingMode.Any => true,
-                DirectionalFacingMode.South => facing == Rot4.South,
-                DirectionalFacingMode.North => facing == Rot4.North,
-                DirectionalFacingMode.East => facing == Rot4.East,
-                DirectionalFacingMode.West => facing == Rot4.West,
-                DirectionalFacingMode.EastWest => facing == Rot4.East || facing == Rot4.West,
-                _ => true,
-            };
+            if (flags == DirectionalFacingFlags.Any)
+                return true;
+
+            return (flags & FacingToFlag(facing)) != 0;
         }
 
         /// <summary>
@@ -230,15 +266,19 @@ namespace CharacterStudio.Rendering
 
             // 根据朝向应用额外的方向特定偏移
             Rot4 facing = parms.facing;
+CompPawnSkin? skinComp = (node is PawnRenderNode_Custom cn) ? cn.GetCachedSkinComp() : parms.pawn?.TryGetComp<CompPawnSkin>();
+// 注意：飞行高度偏移现在由 Patch_PawnRenderer 在 GetBodyDrawPos 中全局处理。
+// 不再在这里重复累加，否则自定义图层会产生双倍偏移。
+/*
+if (skinComp != null && skinComp.IsFlightStateActive())
+{
+    float liftFactor = skinComp.GetFlightLiftFactor01();
+    float flightBaseHeight = skinComp.FlightStateHeightFactor * liftFactor;
+    baseOffset.z += flightBaseHeight + skinComp.GetFlightHoverOffset();
+}
+*/
 
-            CompPawnSkin? skinComp = (node is PawnRenderNode_Custom cn) ? cn.GetCachedSkinComp() : parms.pawn?.TryGetComp<CompPawnSkin>();
-            if (skinComp != null && skinComp.IsFlightStateActive())
-            {
-                float liftFactor = skinComp.GetFlightLiftFactor01();
-                float flightBaseHeight = skinComp.FlightStateHeightFactor * liftFactor;
-                baseOffset.y += flightBaseHeight + skinComp.GetFlightHoverOffset();
-            }
-
+// 根据朝向应用额外的方向特定偏移
             // 侧面朝向（East或West）应用 offsetEast
             if (facing == Rot4.East || facing == Rot4.West)
             {
@@ -248,6 +288,13 @@ namespace CharacterStudio.Rendering
                 // 1. 优先从 config 获取
                 if (customNode != null && customNode.config != null)
                 {
+                    // P-PERF: Support independent West offset
+                    if (facing == Rot4.West && customNode.config.useWestOffset)
+                    {
+                        baseOffset += customNode.config.offsetWest;
+                        return baseOffset;
+                    }
+
                     eastOffset = customNode.config.offsetEast;
                     hasEastOffset = true;
                 }
@@ -264,7 +311,7 @@ namespace CharacterStudio.Rendering
 
                 if (hasEastOffset && eastOffset != Vector3.zero)
                 {
-                    // 如果是西面朝向，需要翻转X轴偏移
+                    // 如果是西面朝向，需要翻转X轴偏移（除非启用了独立的 offsetWest）
                     if (facing == Rot4.West)
                     {
                         eastOffset.x = -eastOffset.x;
@@ -453,8 +500,19 @@ namespace CharacterStudio.Rendering
         private static Vector2 GetConfiguredScale(PawnLayerConfig config, Rot4 facing)
         {
             Vector2 scale = config.scale;
-            if (facing == Rot4.East || facing == Rot4.West)
+            if (facing == Rot4.North)
+                return new Vector2(scale.x * config.scaleNorthMultiplier.x, scale.y * config.scaleNorthMultiplier.y);
+
+            if (facing == Rot4.East)
                 return new Vector2(scale.x * config.scaleEastMultiplier.x, scale.y * config.scaleEastMultiplier.y);
+
+            if (facing == Rot4.West)
+            {
+                if (config.useWestOffset)
+                    return new Vector2(scale.x * config.scaleWestMultiplier.x, scale.y * config.scaleWestMultiplier.y);
+                else
+                    return new Vector2(scale.x * config.scaleEastMultiplier.x, scale.y * config.scaleEastMultiplier.y);
+            }
 
             return scale;
         }
@@ -469,7 +527,12 @@ namespace CharacterStudio.Rendering
                 return rotation + config.rotationEastOffset;
 
             if (facing == Rot4.West)
-                return rotation - config.rotationEastOffset;
+            {
+                if (config.useWestOffset)
+                    return rotation + config.rotationWestOffset;
+                else
+                    return rotation - config.rotationEastOffset;
+            }
 
             return rotation;
         }

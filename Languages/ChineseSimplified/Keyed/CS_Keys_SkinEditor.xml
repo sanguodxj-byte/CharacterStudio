@@ -34,7 +34,10 @@
     <CS_Studio_Offset_EX>偏移E.X</CS_Studio_Offset_EX>
     <CS_Studio_Offset_EY>偏移E.Y</CS_Studio_Offset_EY>
     <CS_Studio_Offset_EZ>偏移E.Z</CS_Studio_Offset_EZ>
-    <CS_Studio_Offset_NX>偏移N.X</CS_Studio_Offset_NX>
+    <CS_Studio_Offset_WX>西向偏移 X</CS_Studio_Offset_WX>
+    <CS_Studio_Offset_WY>西向偏移 Y</CS_Studio_Offset_WY>
+    <CS_Studio_Offset_WZ>西向偏移 Z</CS_Studio_Offset_WZ>
+    <CS_Studio_Offset_NX>北向偏移 X</CS_Studio_Offset_NX>
     <CS_Studio_Offset_NY>偏移N.Y</CS_Studio_Offset_NY>
     <CS_Studio_Offset_NZ>偏移N.Z</CS_Studio_Offset_NZ>
     <CS_Studio_Panel_AddLayer>添加图层</CS_Studio_Panel_AddLayer>
@@ -126,6 +129,8 @@
     <CS_Studio_Prop_OffsetYHeight>Y 偏移(高度)</CS_Studio_Prop_OffsetYHeight>
     <CS_Studio_Prop_OffsetZ>Z 偏移</CS_Studio_Prop_OffsetZ>
     <CS_Studio_Prop_Scale>缩放</CS_Studio_Prop_Scale>
+    <CS_Studio_Prop_ScaleWest>西向缩放（倍率）</CS_Studio_Prop_ScaleWest>
+    <CS_Studio_Prop_ShowNode>显示此节点</CS_Studio_Prop_ShowNode>
     <CS_Studio_Prop_TexturePath>纹理路径</CS_Studio_Prop_TexturePath>
     <CS_Studio_Prop_Visible>可见</CS_Studio_Prop_Visible>
     <CS_Studio_Prop_Shader>材质类型 (Shader)</CS_Studio_Prop_Shader>
@@ -203,6 +208,7 @@
     <CS_Studio_Transform_PreviewScaleX>预览缩放 X</CS_Studio_Transform_PreviewScaleX>
     <CS_Studio_Transform_PreviewScaleY>预览缩放 Y</CS_Studio_Transform_PreviewScaleY>
     <CS_Studio_Transform_RotationOffset>旋转偏移</CS_Studio_Transform_RotationOffset>
+    <CS_Studio_Transform_RotationWestOffset>西向旋转偏移</CS_Studio_Transform_RotationWestOffset>
     <CS_Studio_Variant_BaseName>变体基础名称</CS_Studio_Variant_BaseName>
     <CS_Studio_Variant_DirectionalFacing>朝向限定</CS_Studio_Variant_DirectionalFacing>
     <CS_Studio_Variant_DirectionalFacing_Any>不限</CS_Studio_Variant_DirectionalFacing_Any>

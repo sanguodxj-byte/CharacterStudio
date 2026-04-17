@@ -59,6 +59,18 @@ namespace CharacterStudio.Rendering
                     return explicitDirectionalPath;
                 }
 
+                ExpressionType needsExpr = CharacterStudio.Core.CompPawnSkin.FaceExpressionStateResolver.ResolveNeedsExpression(pawn);
+                if (needsExpr != expression && needsExpr != ExpressionType.Neutral)
+                {
+                    string needsDirectionalPath = isOverlay
+                        ? faceConfig.GetLayeredDirectionalPartPath(partType, needsExpr, overlayId, facing)
+                        : faceConfig.GetLayeredDirectionalPartPath(partType, needsExpr, side, facing);
+                    if (!string.IsNullOrWhiteSpace(needsDirectionalPath) && !shouldDelayBlinkTextureReplacement)
+                    {
+                        return needsDirectionalPath;
+                    }
+                }
+
                 string explicitNeutralDirectionalPath = isOverlay
                     ? faceConfig.GetLayeredDirectionalPartPath(partType, ExpressionType.Neutral, overlayId, facing)
                     : faceConfig.GetLayeredDirectionalPartPath(partType, ExpressionType.Neutral, side, facing);
@@ -75,6 +87,16 @@ namespace CharacterStudio.Rendering
                     : faceConfig.GetLayeredDirectionalPartPath(partType, expression, side, facing);
                 if (!string.IsNullOrWhiteSpace(explicitNorthPath) && !shouldDelayBlinkTextureReplacement)
                     return explicitNorthPath;
+
+                ExpressionType needsExpr = CharacterStudio.Core.CompPawnSkin.FaceExpressionStateResolver.ResolveNeedsExpression(pawn);
+                if (needsExpr != expression && needsExpr != ExpressionType.Neutral)
+                {
+                    string needsNorthPath = isOverlay
+                        ? faceConfig.GetLayeredDirectionalPartPath(partType, needsExpr, overlayId, facing)
+                        : faceConfig.GetLayeredDirectionalPartPath(partType, needsExpr, side, facing);
+                    if (!string.IsNullOrWhiteSpace(needsNorthPath) && !shouldDelayBlinkTextureReplacement)
+                        return needsNorthPath;
+                }
 
                 string neutralNorthPath = isOverlay
                     ? faceConfig.GetLayeredDirectionalPartPath(partType, ExpressionType.Neutral, overlayId, facing)

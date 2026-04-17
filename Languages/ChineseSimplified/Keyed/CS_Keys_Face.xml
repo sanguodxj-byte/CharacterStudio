@@ -47,8 +47,13 @@
     <CS_Studio_Face_EyeDir_Down>向下</CS_Studio_Face_EyeDir_Down>
     <CS_Studio_Face_EyeDir_Auto>自动（运行时推断）</CS_Studio_Face_EyeDir_Auto>
     <CS_Studio_Face_EyeDir_Enable>启用眼睛方向</CS_Studio_Face_EyeDir_Enable>
-    <CS_Studio_Face_EyeDir_Left>向左</CS_Studio_Face_EyeDir_Left>
-    <CS_Studio_Face_EyeDir_Hint>为每个视线方向指定贴图；缺失的方向会自动回退到正视。</CS_Studio_Face_EyeDir_Hint>
+    <CS_Studio_Face_Frames>帧</CS_Studio_Face_Frames>
+    <CS_Studio_Face_Override_Mouth>嘴部状态覆盖</CS_Studio_Face_Override_Mouth>
+    <CS_Studio_Face_Override_Lid>眼睑状态覆盖</CS_Studio_Face_Override_Lid>
+    <CS_Studio_Face_Override_Brow>眉毛状态覆盖</CS_Studio_Face_Override_Brow>
+    <CS_Studio_Face_Override_EyeVariant>眼部变体覆盖</CS_Studio_Face_Override_EyeVariant>
+    <CS_Studio_Face_Override_PupilVariant>瞳孔变体覆盖</CS_Studio_Face_Override_PupilVariant>
+    <CS_Studio_Face_HeadTexHint>为每种表情指定整张头部贴图路径，或点击 [+F] 添加多帧实现帧动画。</CS_Studio_Face_HeadTexHint>
     <CS_Studio_Face_EyeDir_Preview>预览方向</CS_Studio_Face_EyeDir_Preview>
     <CS_Studio_Face_EyeDir_Remove>移除眼睛方向配置</CS_Studio_Face_EyeDir_Remove>
     <CS_Studio_Face_EyeDir_Right>向右</CS_Studio_Face_EyeDir_Right>

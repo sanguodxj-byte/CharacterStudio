@@ -94,13 +94,38 @@ namespace CharacterStudio.Abilities
 
             for (int i = 0; i < config.summonCount; i++)
             {
-                Faction? faction = config.summonFactionDef != null
-                    ? Find.FactionManager?.FirstFactionOfDef(config.summonFactionDef)
-                    : Faction.OfPlayer;
+                Faction? faction = ResolveSummonFaction(config, caster);
                 faction ??= Faction.OfPlayer;
                 Pawn pawn = PawnGenerator.GeneratePawn(config.summonKind, faction);
                 GenSpawn.Spawn(pawn, loc, map, WipeMode.Vanish);
             }
+        }
+
+        private Faction? ResolveSummonFaction(AbilityEffectConfig config, Pawn caster)
+        {
+            switch (config.summonFactionType)
+            {
+                case SummonFactionType.Caster:
+                    return caster.Faction;
+                case SummonFactionType.Hostile:
+                    return Faction.OfAncientsHostile ?? Find.FactionManager?.RandomEnemyFaction();
+                case SummonFactionType.Neutral:
+                    return Find.FactionManager?.RandomNonHostileFaction(false, false, true);
+                case SummonFactionType.FixedDef:
+                    // 优先从 summonFactionDefName 查找（持久化更可靠）
+                    if (!string.IsNullOrEmpty(config.summonFactionDefName))
+                    {
+                        FactionDef? def = DefDatabase<FactionDef>.GetNamedSilentFail(config.summonFactionDefName);
+                        if (def != null) return Find.FactionManager?.FirstFactionOfDef(def);
+                    }
+                    // 回退到 Def 对象
+                    if (config.summonFactionDef != null)
+                        return Find.FactionManager?.FirstFactionOfDef(config.summonFactionDef);
+                    break;
+                default:
+                    return Faction.OfPlayer;
+            }
+            return Faction.OfPlayer;
         }
     }
 

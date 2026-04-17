@@ -29,7 +29,10 @@ namespace CharacterStudio.Rendering
             isOffHand = false;
             if (node?.Props?.tagDef == null) return false;
             string tagName = node.Props.tagDef.defName;
+            
+            // P-PERF: 使用 IndexOf 而非正则，性能更优
             if (tagName.IndexOf("Weapon", StringComparison.OrdinalIgnoreCase) < 0) return false;
+            
             if (tagName.IndexOf("Off",  StringComparison.OrdinalIgnoreCase) >= 0 ||
                 tagName.IndexOf("Left", StringComparison.OrdinalIgnoreCase) >= 0)
                 isOffHand = true;
@@ -42,30 +45,29 @@ namespace CharacterStudio.Rendering
             {
                 Pawn? pawn = __1.pawn;
                 if (pawn == null) return;
+                
                 CompPawnSkin? skinComp = FastGetSkinComp_Pawn(pawn, _lastOffsetPawnRef, ref _lastOffsetSkinComp);
-                if (skinComp == null || skinComp.ActiveSkin?.animationConfig == null) return;
+                if (skinComp == null) return; // 快速跳过：原版角色无组件
 
+                if (skinComp.ActiveSkin?.animationConfig == null) return;
                 var animCfg = skinComp.ActiveSkin.animationConfig;
                 if (!animCfg.enabled) return;
 
-                // --- 1. 鏍稿績淇锛氶槻姝㈠眰绾у彔鍔?---
-                // 鎴戜滑鍙湪鈥滈楠兼牴鑺傜偣鈥濅笂搴旂敤鍔ㄧ敾锛屽叾浣欏瓙鑺傜偣锛堣。鏈嶃€侀潰閮ㄣ€佸彂鍨嬶級浼氳嚜鐒剁户鎵跨埗鑺傜偣鐨勪綅绉汇€?
-                
+                // --- 1. 防止层级叠加 ---
+                // 仅在“骨架根节点”上应用动画，子节点（衣服、面部、发型）会自然继承父节点的位移。
                 string tag = __0.Props?.tagDef?.defName ?? "";
                 
-                // 濡傛灉鏄韩浣撴牴鑺傜偣
                 if (tag == "Body")
                 {
                     __result += skinComp.GetAnimationDelta(AnimBone.Body);
                 }
-                // 濡傛灉鏄ご閮ㄦ牴鑺傜偣
                 else if (tag == "Head")
                 {
-                    // 娉ㄦ剰锛欻ead 鍦ㄦ覆鏌撴爲閲屾槸 Body 鐨勫瓙鑺傜偣锛屾墍浠ヨ繖閲屾垜浠彧鍙犲姞 Head 鐩稿浜?Body 鐨勨€滃樊鍊尖€?
+                    // Head 在渲染树里是 Body 的子节点，这里只叠加 Head 相对于 Body 的增量
                     __result += skinComp.GetAnimationDelta(AnimBone.Head);
                 }
 
-                // --- 2. 澶勭悊姝﹀櫒涓撻」鍋忕Щ (姝﹀櫒閫氬父鏄嫭绔嬭绠楁垨鎸傚湪 Root 涓嬶紝淇濈暀鍘熼€昏緫) ---
+                // --- 2. 处理武器专项偏移 ---
                 if (IsWeaponNode(__0, out bool isOffHand))
                 {
                     if (animCfg.weaponOverrideEnabled && (!isOffHand || animCfg.applyToOffHand))
@@ -76,7 +78,7 @@ namespace CharacterStudio.Rendering
                     }
                 }
             }
-            catch (Exception ex) { Log.Warning($"[CharacterStudio] Animation.OffsetFor 杩愯鎶ラ敊: {ex.Message}"); }
+            catch (Exception ex) { CSLogger.Warn($"Animation.OffsetFor error: {ex.Message}", "AnimationPatch"); }
         }
 
         public static void ScaleFor_Postfix(PawnRenderNode __0, PawnDrawParms __1, ref Vector3 __result)
@@ -85,13 +87,15 @@ namespace CharacterStudio.Rendering
             {
                 Pawn? pawn = __1.pawn;
                 if (pawn == null) return;
+                
                 CompPawnSkin? skinComp = FastGetSkinComp_Pawn(pawn, _lastScalePawnRef, ref _lastScaleSkinComp);
-                if (skinComp == null || skinComp.ActiveSkin?.animationConfig == null) return;
+                if (skinComp == null) return; // 快速跳过：原版角色无组件
 
+                if (skinComp.ActiveSkin?.animationConfig == null) return;
                 var animCfg = skinComp.ActiveSkin.animationConfig;
                 if (!animCfg.enabled) return;
 
-                // 缂╂斁鍚屾牱鍙簲鐢ㄧ粰 Body 鏍硅妭鐐癸紝閬垮厤瀛愯妭鐐癸紙濡傞潰閮級璺熺潃浜屾缂╂斁瀵艰嚧褰㈠彉
+                // 缩放同样只应用给 Body 根节点，避免子节点（如面部）跟着二次缩放导致形变
                 string tag = __0.Props?.tagDef?.defName ?? "";
                 if (tag == "Body")
                 {

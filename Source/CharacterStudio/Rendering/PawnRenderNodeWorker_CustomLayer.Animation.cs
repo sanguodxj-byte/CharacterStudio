@@ -480,28 +480,39 @@ namespace CharacterStudio.Rendering
             int holdTicks = Mathf.Max(0, animationState.triggeredHoldTicks);
             int returnTicks = Mathf.Max(1, animationState.triggeredReturnTicks);
 
+            float deployAngle = facing == Rot4.West ? -animationState.triggeredDeployAngle : animationState.triggeredDeployAngle;
+            float returnAngle = facing == Rot4.West ? -animationState.triggeredReturnAngle : animationState.triggeredReturnAngle;
+            Vector3 deployOffset = animationState.triggeredDeployOffset;
+            if (facing == Rot4.West) { deployOffset.x = -deployOffset.x; }
+
             float angle;
+            Vector3 linearOffset;
             if (localTick < deployTicks)
             {
                 float t = Mathf.Clamp01(localTick / (float)deployTicks);
-                angle = Mathf.Lerp(animationState.triggeredReturnAngle, animationState.triggeredDeployAngle, t);
+                angle = Mathf.Lerp(returnAngle, deployAngle, t);
+                linearOffset = Vector3.Lerp(Vector3.zero, deployOffset, t);
             }
             else if (localTick < deployTicks + holdTicks)
             {
-                angle = animationState.triggeredDeployAngle;
+                angle = deployAngle;
+                linearOffset = deployOffset;
             }
             else
             {
                 float t = Mathf.Clamp01((localTick - deployTicks - holdTicks) / (float)returnTicks);
-                angle = Mathf.Lerp(animationState.triggeredDeployAngle, animationState.triggeredReturnAngle, t);
+                angle = Mathf.Lerp(deployAngle, returnAngle, t);
+                linearOffset = Vector3.Lerp(deployOffset, Vector3.zero, t);
             }
 
             customNode.currentAnimAngle = angle;
 
             Vector2 pivot = animationState.triggeredPivotOffset;
+            if (facing == Rot4.West) { pivot.x = -pivot.x; }
+
             if (pivot == Vector2.zero)
             {
-                customNode.currentAnimOffset = Vector3.zero;
+                customNode.currentAnimOffset = linearOffset;
                 return;
             }
 
@@ -510,7 +521,7 @@ namespace CharacterStudio.Rendering
             float sin = Mathf.Sin(rad);
             float rotX = cos * pivot.x - sin * pivot.y;
             float rotZ = sin * pivot.x + cos * pivot.y;
-            customNode.currentAnimOffset = new Vector3(pivot.x - rotX, 0f, pivot.y - rotZ);
+            customNode.currentAnimOffset = new Vector3(pivot.x - rotX, 0f, pivot.y - rotZ) + linearOffset;
         }
 
         private static EquipmentTriggeredAnimationOverride ResolveDirectionalTriggeredAnimationState(PawnLayerConfig config, Rot4 facing)
@@ -531,6 +542,7 @@ namespace CharacterStudio.Rendering
                 triggeredHoldTicks = config.triggeredHoldTicks,
                 triggeredReturnTicks = config.triggeredReturnTicks,
                 triggeredPivotOffset = config.triggeredPivotOffset,
+                triggeredDeployOffset = config.triggeredDeployOffset,
                 triggeredUseVfxVisibility = config.triggeredUseVfxVisibility,
                 triggeredVisibleDuringDeploy = config.triggeredVisibleDuringDeploy,
                 triggeredVisibleDuringHold = config.triggeredVisibleDuringHold,

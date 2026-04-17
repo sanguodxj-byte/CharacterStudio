@@ -47,7 +47,6 @@ namespace CharacterStudio.Abilities.RuntimeComponents
             Register(new ChainBounceHandler());
             Register(new DashEmpoweredStrikeHandler());
             Register(new FlightStateHandler());
-            Register(new VanillaPawnFlyerHandler());
             Register(new FlightOnlyFollowupHandler());
             Register(new FlightLandingBurstHandler());
 

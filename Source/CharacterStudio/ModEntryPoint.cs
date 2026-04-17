@@ -112,6 +112,8 @@ namespace CharacterStudio
             }
 
             ApplyPatch("PawnRenderTree", () => Patch_PawnRenderTree.Apply(harmony));
+            ApplyPatch("PawnRenderer", () => Rendering.Patch_PawnRenderer.Apply(harmony));
+            ApplyPatch("FlightState", () => Patches.Patch_FlightState.Apply(harmony));
             ApplyPatch("GameComponentBootstrap", () => Patches.Patch_GameComponentBootstrap.Apply(harmony));
             ApplyPatch("PawnGizmos", () => UI.Patch_PawnGizmos.Apply(harmony));
             ApplyPatch("AbilityGizmos", () => UI.Patch_AbilityGizmos.Apply(harmony));

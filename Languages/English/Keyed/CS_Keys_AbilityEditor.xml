@@ -170,6 +170,7 @@
     <CS_Ability_Validate_VfxSegmentRevealNonNegative>Segment reveal interval must be non-negative.</CS_Ability_Validate_VfxSegmentRevealNonNegative>
     <CS_Ability_Validate_VfxRepeatCountPositive>VFX repeat count must be positive.</CS_Ability_Validate_VfxRepeatCountPositive>
     <CS_Ability_Validate_VfxDurationPositive>VFX duration must be positive.</CS_Ability_Validate_VfxDurationPositive>
+    <CS_Ability_Validate_VfxFrameCountMin>Frame animation requires at least 2 frames.</CS_Ability_Validate_VfxFrameCountMin>
     <CS_Ability_Validate_VfxNull>VFX #{0} is null.</CS_Ability_Validate_VfxNull>
     <CS_Ability_Validate_VfxIndexError>VFX #{0}: {1}</CS_Ability_Validate_VfxIndexError>
     <CS_Ability_Validate_VfxIndexWarning>VFX #{0}: {1}</CS_Ability_Validate_VfxIndexWarning>

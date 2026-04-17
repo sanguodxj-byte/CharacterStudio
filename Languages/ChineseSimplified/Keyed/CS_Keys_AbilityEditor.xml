@@ -169,6 +169,7 @@
     <CS_Ability_Validate_VfxSegmentRevealNonNegative>分段显现间隔不能为负数。</CS_Ability_Validate_VfxSegmentRevealNonNegative>
     <CS_Ability_Validate_VfxRepeatCountPositive>特效重复次数必须大于 0。</CS_Ability_Validate_VfxRepeatCountPositive>
     <CS_Ability_Validate_VfxDurationPositive>特效持续时间必须大于 0。</CS_Ability_Validate_VfxDurationPositive>
+    <CS_Ability_Validate_VfxFrameCountMin>帧动画至少需要 2 帧。</CS_Ability_Validate_VfxFrameCountMin>
     <CS_Ability_Validate_VfxNull>第 {0} 个视觉特效为空。</CS_Ability_Validate_VfxNull>
     <CS_Ability_Validate_VfxIndexError>视觉特效 #{0}: {1}</CS_Ability_Validate_VfxIndexError>
     <CS_Ability_Validate_VfxIndexWarning>视觉特效 #{0}: {1}</CS_Ability_Validate_VfxIndexWarning>
