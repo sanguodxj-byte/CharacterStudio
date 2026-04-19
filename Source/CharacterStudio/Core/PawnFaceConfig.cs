@@ -285,6 +285,8 @@ namespace CharacterStudio.Core
             if (string.IsNullOrWhiteSpace(texPathSouth) && !string.IsNullOrWhiteSpace(texPath))
                 texPathSouth = texPath;
 
+            SyncLegacyMotionAmplitude();
+
             if (string.IsNullOrWhiteSpace(texPath))
             {
                 if (!string.IsNullOrWhiteSpace(texPathSouth))
@@ -591,19 +593,49 @@ namespace CharacterStudio.Core
             NormalizeOverlayRules();
         }
 
+        private static readonly Dictionary<string, string> _normalizedSemanticKeyCache
+            = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        internal static void PrewarmSemanticKeyCache()
+        {
+            _normalizedSemanticKeyCache[""] = string.Empty;
+            _normalizedSemanticKeyCache["lovin"] = "lovin";
+            _normalizedSemanticKeyCache["happy"] = "happy";
+            _normalizedSemanticKeyCache["cheerful"] = "cheerful";
+            _normalizedSemanticKeyCache["social_relax"] = "social_relax";
+            _normalizedSemanticKeyCache["scared"] = "scared";
+            _normalizedSemanticKeyCache["shock"] = "shock";
+            _normalizedSemanticKeyCache["wait_combat"] = "wait_combat";
+            _normalizedSemanticKeyCache["attack_melee"] = "attack_melee";
+            _normalizedSemanticKeyCache["attack_ranged"] = "attack_ranged";
+            _normalizedSemanticKeyCache["pain"] = "pain";
+            _normalizedSemanticKeyCache["sad"] = "sad";
+            _normalizedSemanticKeyCache["hopeless"] = "hopeless";
+            _normalizedSemanticKeyCache["dead"] = "dead";
+            _normalizedSemanticKeyCache["gloomy"] = "gloomy";
+            _normalizedSemanticKeyCache["sleeping"] = "sleeping";
+        }
+
         public static string NormalizeOverlaySemanticKey(string? semanticKey)
         {
             if (string.IsNullOrWhiteSpace(semanticKey))
                 return string.Empty;
 
-            string normalized = semanticKey!.Trim().Replace('-', '_').Replace(' ', '_');
+            string input = semanticKey!;
+
+            if (_normalizedSemanticKeyCache.TryGetValue(input, out string cached))
+                return cached;
+
+            string normalized = input.Trim().Replace('-', '_').Replace(' ', '_');
             string[] segments = normalized
                 .Split(new[] { '_' }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(segment => segment.Trim().ToLowerInvariant())
                 .Where(segment => !string.IsNullOrWhiteSpace(segment))
                 .ToArray();
 
-            return segments.Length == 0 ? string.Empty : string.Join("_", segments);
+            string result = segments.Length == 0 ? string.Empty : string.Join("_", segments);
+            _normalizedSemanticKeyCache[input] = result;
+            return result;
         }
 
         public static string MapLegacyEmotionStateToSemanticKey(string? emotionState)
@@ -665,26 +697,33 @@ namespace CharacterStudio.Core
         public string ResolveOverlaySemanticKey(ExpressionType expression)
         {
             EnsureDefaultOverlayRules();
-            ExpressionOverlayRule? rule = expressionOverlayRules.FirstOrDefault(r => r.expression == expression);
-            if (rule == null)
-                return string.Empty;
-
-            if (!string.IsNullOrWhiteSpace(rule.semanticKey))
-                return NormalizeOverlaySemanticKey(rule.semanticKey);
-
-            return MapLegacyEmotionStateToSemanticKey(rule.emotionState);
+            for (int i = 0; i < expressionOverlayRules.Count; i++)
+            {
+                if (expressionOverlayRules[i].expression == expression)
+                {
+                    string key = expressionOverlayRules[i].semanticKey;
+                    return !string.IsNullOrWhiteSpace(key)
+                        ? NormalizeOverlaySemanticKey(key)
+                        : MapLegacyEmotionStateToSemanticKey(expressionOverlayRules[i].emotionState);
+                }
+            }
+            return string.Empty;
         }
 
         public EmotionOverlayState ResolveEmotionOverlayState(ExpressionType expression)
         {
             EnsureDefaultOverlayRules();
-            ExpressionOverlayRule? rule = expressionOverlayRules.FirstOrDefault(r => r.expression == expression);
-            if (rule == null || string.IsNullOrWhiteSpace(rule.emotionState))
-                return EmotionOverlayState.None;
-
-            return Enum.TryParse(rule.emotionState, true, out EmotionOverlayState state)
-                ? state
-                : EmotionOverlayState.None;
+            for (int i = 0; i < expressionOverlayRules.Count; i++)
+            {
+                if (expressionOverlayRules[i].expression == expression)
+                {
+                    string state = expressionOverlayRules[i].emotionState;
+                    return !string.IsNullOrWhiteSpace(state) && Enum.TryParse(state, true, out EmotionOverlayState result)
+                        ? result
+                        : EmotionOverlayState.None;
+                }
+            }
+            return EmotionOverlayState.None;
         }
 
         public List<string> ResolveOverlayIds(string? semanticKey, ExpressionType expression)
@@ -698,13 +737,37 @@ namespace CharacterStudio.Core
             if (string.IsNullOrWhiteSpace(normalizedSemanticKey))
                 return new List<string>();
 
-            return emotionOverlayRules
-                .Where(r => string.Equals(NormalizeOverlaySemanticKey(r.semanticKey), normalizedSemanticKey, StringComparison.OrdinalIgnoreCase))
-                .SelectMany(r => r.overlayIds ?? new List<string>())
-                .Select(NormalizeOverlayId)
-                .Where(id => !string.IsNullOrWhiteSpace(id))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
+            var results = new List<string>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            ResolveOverlayIdsInto(normalizedSemanticKey, results, seen);
+            return results;
+        }
+
+        internal void ResolveOverlayIdsInto(string normalizedSemanticKey, List<string> results, HashSet<string> seen)
+        {
+            results.Clear();
+            seen.Clear();
+
+            if (string.IsNullOrWhiteSpace(normalizedSemanticKey))
+                return;
+
+            EnsureDefaultOverlayRules();
+
+            for (int i = 0; i < emotionOverlayRules.Count; i++)
+            {
+                EmotionOverlayRule r = emotionOverlayRules[i];
+                if (!string.Equals(NormalizeOverlaySemanticKey(r.semanticKey), normalizedSemanticKey, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                List<string>? ids = r.overlayIds;
+                if (ids == null) continue;
+                for (int j = 0; j < ids.Count; j++)
+                {
+                    string normalized = NormalizeOverlayId(ids[j]);
+                    if (string.IsNullOrWhiteSpace(normalized) || !seen.Add(normalized))
+                        continue;
+                    results.Add(normalized);
+                }
+            }
         }
 
         public string ResolveOverlayId(EmotionOverlayState emotionState, ExpressionType expression)
@@ -713,7 +776,24 @@ namespace CharacterStudio.Core
                 ? ResolveOverlaySemanticKey(expression)
                 : MapLegacyEmotionStateToSemanticKey(emotionState.ToString());
 
-            return ResolveOverlayIds(semanticKey, expression).FirstOrDefault() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(semanticKey))
+                return string.Empty;
+
+            EnsureDefaultOverlayRules();
+            string normalizedSemanticKey = NormalizeOverlaySemanticKey(semanticKey);
+
+            for (int i = 0; i < emotionOverlayRules.Count; i++)
+            {
+                EmotionOverlayRule r = emotionOverlayRules[i];
+                if (!string.Equals(NormalizeOverlaySemanticKey(r.semanticKey), normalizedSemanticKey, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                List<string>? ids = r.overlayIds;
+                if (ids == null || ids.Count == 0) continue;
+                string first = NormalizeOverlayId(ids[0]);
+                if (!string.IsNullOrWhiteSpace(first))
+                    return first;
+            }
+            return string.Empty;
         }
 
         public static bool IsOverlayPart(LayeredFacePartType partType)
@@ -817,26 +897,61 @@ namespace CharacterStudio.Core
             }
         }
 
+        private static readonly Dictionary<string, string> _normalizedOverlayIdCache
+            = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        internal static void PrewarmOverlayIdCache()
+        {
+            _normalizedOverlayIdCache["Blush"] = "Blush";
+            _normalizedOverlayIdCache["Tear"] = "Tear";
+            _normalizedOverlayIdCache["Sweat"] = "Sweat";
+            _normalizedOverlayIdCache["Sleep"] = "Sleep";
+            _normalizedOverlayIdCache["Gloomy"] = "Gloomy";
+            _normalizedOverlayIdCache["Overlay"] = "Overlay";
+            _normalizedOverlayIdCache[""] = string.Empty;
+        }
+
         public static string NormalizeOverlayId(string? overlayId)
         {
-            string normalized = string.IsNullOrWhiteSpace(overlayId)
-                ? string.Empty
-                : overlayId!.Trim().Replace('-', '_').Replace(' ', '_');
+            if (string.IsNullOrWhiteSpace(overlayId))
+                return string.Empty;
+
+            string input = overlayId!;
+
+            if (_normalizedOverlayIdCache.TryGetValue(input, out string cached))
+                return cached;
+
+            string normalized = input.Trim().Replace('-', '_').Replace(' ', '_');
 
             if (normalized.Equals("Blush", StringComparison.OrdinalIgnoreCase))
+            {
+                _normalizedOverlayIdCache[input] = "Blush";
                 return "Blush";
+            }
 
             if (normalized.Equals("Tear", StringComparison.OrdinalIgnoreCase))
+            {
+                _normalizedOverlayIdCache[input] = "Tear";
                 return "Tear";
+            }
 
             if (normalized.Equals("Sweat", StringComparison.OrdinalIgnoreCase))
+            {
+                _normalizedOverlayIdCache[input] = "Sweat";
                 return "Sweat";
+            }
 
             if (normalized.Equals("Sleep", StringComparison.OrdinalIgnoreCase))
+            {
+                _normalizedOverlayIdCache[input] = "Sleep";
                 return "Sleep";
+            }
 
             if (normalized.Equals("Gloomy", StringComparison.OrdinalIgnoreCase))
+            {
+                _normalizedOverlayIdCache[input] = "Gloomy";
                 return "Gloomy";
+            }
 
             string[] segments = normalized
                 .Split(new[] { '_' }, StringSplitOptions.RemoveEmptyEntries)
@@ -844,10 +959,9 @@ namespace CharacterStudio.Core
                 .Where(segment => !string.IsNullOrWhiteSpace(segment))
                 .ToArray();
 
-            if (segments.Length == 0)
-                return string.Empty;
-
-            return string.Join("_", segments);
+            string result = segments.Length == 0 ? string.Empty : string.Join("_", segments);
+            _normalizedOverlayIdCache[input] = result;
+            return result;
         }
 
         private static bool MatchesOverlayId(LayeredFacePartConfig? part, string overlayId)
@@ -859,6 +973,33 @@ namespace CharacterStudio.Core
                 NormalizeOverlayId(part.overlayId),
                 NormalizeOverlayId(overlayId),
                 StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 高性能 for 循环查找，替代渲染管线中的 EnumerateLayeredParts().FirstOrDefault()。
+        /// 无 LINQ 分配，无排序开销，无 Sync* 副作用。
+        /// </summary>
+        private LayeredFacePartConfig? FindFirstPart(
+            LayeredFacePartType partType,
+            ExpressionType? requiredExpression,
+            bool requireExplicitDirectional,
+            Rot4 facing)
+        {
+            if (layeredParts == null || layeredParts.Count == 0)
+                return null;
+
+            for (int i = 0; i < layeredParts.Count; i++)
+            {
+                LayeredFacePartConfig p = layeredParts[i];
+                if (p == null || p.partType != partType || !p.enabled || !p.HasAnyTexture())
+                    continue;
+                if (requiredExpression.HasValue && p.expression != requiredExpression.Value)
+                    continue;
+                if (requireExplicitDirectional && !HasExplicitDirectionalTexture(p, facing))
+                    continue;
+                return p;
+            }
+            return null;
         }
 
         private IEnumerable<LayeredFacePartConfig> EnumerateLayeredParts(
@@ -875,7 +1016,6 @@ namespace CharacterStudio.Core
                 .Select(p =>
                 {
                     p.SyncDirectionalTexPathsFromLegacy();
-                    p.SyncLegacyMotionAmplitude();
                     return p;
                 });
 
@@ -919,26 +1059,82 @@ namespace CharacterStudio.Core
             if (layeredParts == null || layeredParts.Count == 0)
                 return null;
 
+            bool isOverlay = IsOverlayPart(partType);
+            bool filterOverlay = isOverlay && !includeAllOverlayGroups;
+            string normalizedOverlayId = filterOverlay ? NormalizeOverlayId(overlayId) : string.Empty;
+
             LayeredFacePartConfig? Find(ExpressionType targetExpression, LayeredFacePartSide? targetSide)
             {
-                return EnumerateLayeredParts(partType, overlayId, includeAllOverlayGroups, targetSide)
-                    .FirstOrDefault(p =>
-                        p.enabled
-                        && p.expression == targetExpression
-                        && p.HasAnyTexture());
+                LayeredFacePartSide? normalizedSide = targetSide.HasValue
+                    ? NormalizePartSide(partType, targetSide.Value)
+                    : (LayeredFacePartSide?)null;
+                bool checkSide = normalizedSide.HasValue && normalizedSide.Value != LayeredFacePartSide.None;
+
+                for (int i = 0; i < layeredParts.Count; i++)
+                {
+                    LayeredFacePartConfig p = layeredParts[i];
+                    if (p == null || p.partType != partType || !p.enabled || p.expression != targetExpression || !p.HasAnyTexture())
+                        continue;
+                    if (filterOverlay && !MatchesOverlayId(p, normalizedOverlayId))
+                        continue;
+                    if (checkSide && NormalizePartSide(partType, p.side) != normalizedSide!.Value)
+                        continue;
+                    p.SyncDirectionalTexPathsFromLegacy();
+                    return p;
+                }
+                return null;
+            }
+
+            LayeredFacePartConfig? FindUnsided(ExpressionType targetExpression)
+            {
+                for (int i = 0; i < layeredParts.Count; i++)
+                {
+                    LayeredFacePartConfig p = layeredParts[i];
+                    if (p == null || p.partType != partType || !p.enabled || p.expression != targetExpression || !p.HasAnyTexture())
+                        continue;
+                    if (filterOverlay && !MatchesOverlayId(p, normalizedOverlayId))
+                        continue;
+                    if (NormalizePartSide(partType, p.side) != LayeredFacePartSide.None)
+                        continue;
+                    p.SyncDirectionalTexPathsFromLegacy();
+                    return p;
+                }
+                return null;
             }
 
             LayeredFacePartConfig? FindAnySided(ExpressionType targetExpression)
             {
-                return EnumerateLayeredParts(partType, overlayId, includeAllOverlayGroups)
-                    .FirstOrDefault(p =>
-                        p.enabled
-                        && p.expression == targetExpression
-                        && p.HasAnyTexture()
-                        && NormalizePartSide(partType, p.side) != LayeredFacePartSide.None);
+                for (int i = 0; i < layeredParts.Count; i++)
+                {
+                    LayeredFacePartConfig p = layeredParts[i];
+                    if (p == null || p.partType != partType || !p.enabled || p.expression != targetExpression || !p.HasAnyTexture())
+                        continue;
+                    if (filterOverlay && !MatchesOverlayId(p, normalizedOverlayId))
+                        continue;
+                    if (NormalizePartSide(partType, p.side) == LayeredFacePartSide.None)
+                        continue;
+                    p.SyncDirectionalTexPathsFromLegacy();
+                    return p;
+                }
+                return null;
             }
 
-            if (IsOverlayPart(partType))
+            bool HasAnySidedContent()
+            {
+                for (int i = 0; i < layeredParts.Count; i++)
+                {
+                    LayeredFacePartConfig p = layeredParts[i];
+                    if (p == null || p.partType != partType || !p.enabled || !p.HasAnyTexture())
+                        continue;
+                    if (filterOverlay && !MatchesOverlayId(p, normalizedOverlayId))
+                        continue;
+                    if (NormalizePartSide(partType, p.side) != LayeredFacePartSide.None)
+                        return true;
+                }
+                return false;
+            }
+
+            if (isOverlay)
             {
                 LayeredFacePartConfig? exactOverlay = Find(expression, null);
                 if (exactOverlay != null)
@@ -960,11 +1156,7 @@ namespace CharacterStudio.Core
 
             if (normalizedPreferredSide.HasValue && normalizedPreferredSide.Value != LayeredFacePartSide.None)
             {
-                bool hasExplicitSidedContent = CountLayeredParts(partType, normalizedPreferredSide.Value) > 0
-                    || EnumerateLayeredParts(partType, overlayId, includeAllOverlayGroups)
-                        .Any(p => p.enabled
-                            && p.HasAnyTexture()
-                            && NormalizePartSide(partType, p.side) != LayeredFacePartSide.None);
+                bool hasExplicitSidedContent = HasAnySidedContent();
 
                 LayeredFacePartConfig? exactPreferred = Find(expression, normalizedPreferredSide.Value);
                 if (exactPreferred != null)
@@ -980,13 +1172,13 @@ namespace CharacterStudio.Core
                 if (hasExplicitSidedContent)
                     return null;
 
-                LayeredFacePartConfig? exactUnsided = Find(expression, LayeredFacePartSide.None);
+                LayeredFacePartConfig? exactUnsided = FindUnsided(expression);
                 if (exactUnsided != null)
                     return exactUnsided;
 
                 if (expression != ExpressionType.Neutral)
                 {
-                    LayeredFacePartConfig? neutralUnsided = Find(ExpressionType.Neutral, LayeredFacePartSide.None);
+                    LayeredFacePartConfig? neutralUnsided = FindUnsided(ExpressionType.Neutral);
                     if (neutralUnsided != null)
                         return neutralUnsided;
                 }
@@ -994,13 +1186,13 @@ namespace CharacterStudio.Core
                 return null;
             }
 
-            LayeredFacePartConfig? exact = Find(expression, LayeredFacePartSide.None);
+            LayeredFacePartConfig? exact = FindUnsided(expression);
             if (exact != null)
                 return exact;
 
             if (expression != ExpressionType.Neutral)
             {
-                LayeredFacePartConfig? neutral = Find(ExpressionType.Neutral, LayeredFacePartSide.None);
+                LayeredFacePartConfig? neutral = FindUnsided(ExpressionType.Neutral);
                 if (neutral != null)
                     return neutral;
             }
@@ -1115,13 +1307,11 @@ namespace CharacterStudio.Core
                         return unsidedDirectionalPath;
                 }
 
-                LayeredFacePartConfig? neutralAnySided = EnumerateLayeredParts(partType, null, includeAllOverlayGroups: true)
-                    .FirstOrDefault(p => p.enabled && p.expression == ExpressionType.Neutral && p.HasAnyTexture() && HasExplicitDirectionalTexture(p, facing));
+                LayeredFacePartConfig? neutralAnySided = FindFirstPart(partType, ExpressionType.Neutral, true, facing);
                 if (neutralAnySided != null)
                     return neutralAnySided.GetDirectionalTexPath(facing);
 
-                LayeredFacePartConfig? anySided = EnumerateLayeredParts(partType, null, includeAllOverlayGroups: true)
-                    .FirstOrDefault(p => p.enabled && p.HasAnyTexture() && HasExplicitDirectionalTexture(p, facing));
+                LayeredFacePartConfig? anySided = FindFirstPart(partType, null, true, facing);
                 if (anySided != null)
                     return anySided.GetDirectionalTexPath(facing);
             }
@@ -1159,22 +1349,49 @@ namespace CharacterStudio.Core
         /// <summary>获取指定类型的已启用分层部件数量</summary>
         public int CountLayeredParts(LayeredFacePartType partType)
         {
-            return EnumerateLayeredParts(partType, null, includeAllOverlayGroups: true).Count(p =>
-                p.enabled && p.HasAnyTexture());
+            if (layeredParts == null || layeredParts.Count == 0)
+                return 0;
+            int count = 0;
+            for (int i = 0; i < layeredParts.Count; i++)
+            {
+                LayeredFacePartConfig p = layeredParts[i];
+                if (p != null && p.partType == partType && p.enabled && p.HasAnyTexture())
+                    count++;
+            }
+            return count;
         }
 
         public int CountLayeredParts(LayeredFacePartType partType, LayeredFacePartSide side)
         {
+            if (layeredParts == null || layeredParts.Count == 0)
+                return 0;
             LayeredFacePartSide normalizedSide = NormalizePartSide(partType, side);
-            return EnumerateLayeredParts(partType, null, includeAllOverlayGroups: true, normalizedSide).Count(p =>
-                p.enabled && p.HasAnyTexture());
+            int count = 0;
+            for (int i = 0; i < layeredParts.Count; i++)
+            {
+                LayeredFacePartConfig p = layeredParts[i];
+                if (p != null && p.partType == partType && p.enabled && p.HasAnyTexture()
+                    && NormalizePartSide(partType, p.side) == normalizedSide)
+                    count++;
+            }
+            return count;
         }
 
         /// <summary>获取指定 Overlay 分组内的已启用分层部件数量</summary>
         public int CountLayeredParts(LayeredFacePartType partType, string overlayId)
         {
-            return EnumerateLayeredParts(partType, overlayId, includeAllOverlayGroups: false).Count(p =>
-                p.enabled && p.HasAnyTexture());
+            if (layeredParts == null || layeredParts.Count == 0)
+                return 0;
+            string normalizedOverlayId = NormalizeOverlayId(overlayId);
+            int count = 0;
+            for (int i = 0; i < layeredParts.Count; i++)
+            {
+                LayeredFacePartConfig p = layeredParts[i];
+                if (p != null && p.partType == partType && p.enabled && p.HasAnyTexture()
+                    && MatchesOverlayId(p, normalizedOverlayId))
+                    count++;
+            }
+            return count;
         }
 
         /// <summary>

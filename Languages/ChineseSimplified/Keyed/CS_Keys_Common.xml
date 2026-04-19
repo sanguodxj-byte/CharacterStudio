@@ -79,16 +79,23 @@
     <CS_Studio_Anchor_Nose>鼻子</CS_Studio_Anchor_Nose>
     <CS_Studio_Anchor_Root>根节点</CS_Studio_Anchor_Root>
     <CS_Studio_Anim_AffectsOffset>同时位移</CS_Studio_Anim_AffectsOffset>
+    <CS_Studio_Anim_AffectsOffset_Tip>开启后动画不仅旋转图层，还会产生位移。浮游炮等需要移动的效果必须开启。</CS_Studio_Anim_AffectsOffset_Tip>
     <CS_Studio_Anim_Amplitude>幅度</CS_Studio_Anim_Amplitude>
+    <CS_Studio_Anim_Amplitude_Tip>旋转角度范围（度）。越大摆动越剧烈。对 Brownian 类型无效。</CS_Studio_Anim_Amplitude_Tip>
     <CS_Studio_Anim_Breathe>呼吸起伏</CS_Studio_Anim_Breathe>
     <CS_Studio_Anim_Frequency>频率</CS_Studio_Anim_Frequency>
+    <CS_Studio_Anim_Frequency_Tip>动画速度。值越大振荡越快。Spin 模式下与速度共同决定转速。</CS_Studio_Anim_Frequency_Tip>
     <CS_Studio_Anim_IdleSway>轻柔摇曳</CS_Studio_Anim_IdleSway>
     <CS_Studio_Anim_None>无动画</CS_Studio_Anim_None>
     <CS_Studio_Anim_OffsetAmplitude>位移幅度</CS_Studio_Anim_OffsetAmplitude>
+    <CS_Studio_Anim_OffsetAmplitude_Tip>位移距离（格）。控制图层偏离锚点多远。1.0 = 一个完整格子。</CS_Studio_Anim_OffsetAmplitude_Tip>
     <CS_Studio_Anim_PhaseOffset>相位偏移</CS_Studio_Anim_PhaseOffset>
+    <CS_Studio_Anim_PhaseOffset_Tip>动画循环的起始相位（0~1）。多个图层用不同值可以错开动画节奏。</CS_Studio_Anim_PhaseOffset_Tip>
     <CS_Studio_Anim_PivotX>旋转枢轴 X</CS_Studio_Anim_PivotX>
     <CS_Studio_Anim_PivotY>旋转枢轴 Y</CS_Studio_Anim_PivotY>
+    <CS_Studio_Anim_Pivot_Tip>旋转中心偏离图层中心的偏移。图层会绕这个点公转而非原地自转。</CS_Studio_Anim_Pivot_Tip>
     <CS_Studio_Anim_Speed>速度</CS_Studio_Anim_Speed>
+    <CS_Studio_Anim_Speed_Tip>动画播放速度倍率。值越大状态切换越快。</CS_Studio_Anim_Speed_Tip>
     <CS_Studio_Anim_Spin>持续旋转</CS_Studio_Anim_Spin>
     <CS_Studio_Anim_Swing>周期摆动</CS_Studio_Anim_Swing>
     <CS_Studio_Anim_Twitch>随机抽动</CS_Studio_Anim_Twitch>
@@ -430,4 +437,25 @@
     <CS_RoleCard_LetterLabel>角色已生成：{0}</CS_RoleCard_LetterLabel>
     <CS_Summon_Success>成功召唤：{0}</CS_Summon_Success>
     <CS_Summon_Use>召唤 {0}</CS_Summon_Use>
+    <CS_Settings_Category>Character Studio</CS_Settings_Category>
+    <CS_Settings_FaceTrackThresholds>面部追踪阈值</CS_Settings_FaceTrackThresholds>
+    <CS_Settings_Preset_Balanced>均衡</CS_Settings_Preset_Balanced>
+    <CS_Settings_Preset_Performance>性能</CS_Settings_Preset_Performance>
+    <CS_Settings_Preset_UltraPerformance>极致性能</CS_Settings_Preset_UltraPerformance>
+    <CS_Settings_RootSizeNear>近距 根尺寸</CS_Settings_RootSizeNear>
+    <CS_Settings_BudgetNear>近距 预算</CS_Settings_BudgetNear>
+    <CS_Settings_RootSizeMid1>中距1 根尺寸</CS_Settings_RootSizeMid1>
+    <CS_Settings_BudgetMid1>中距1 预算</CS_Settings_BudgetMid1>
+    <CS_Settings_RootSizeMid2>中距2 根尺寸</CS_Settings_RootSizeMid2>
+    <CS_Settings_BudgetMid2>中距2 预算</CS_Settings_BudgetMid2>
+    <CS_Settings_RootSizeFar>远距 根尺寸</CS_Settings_RootSizeFar>
+    <CS_Settings_BudgetFar>远距 预算</CS_Settings_BudgetFar>
+    <CS_Settings_FallbackBudget>后备预算</CS_Settings_FallbackBudget>
+    <CS_Settings_FallbackPriorityThreshold>后备优先级阈值</CS_Settings_FallbackPriorityThreshold>
+    <CS_Settings_FallbackPriorityBudget>后备优先级预算</CS_Settings_FallbackPriorityBudget>
+    <CS_Settings_PriorityBonuses>优先级加成</CS_Settings_PriorityBonuses>
+    <CS_Settings_DraftedBonus>征召加成</CS_Settings_DraftedBonus>
+    <CS_Settings_ColonistBonus>殖民者加成</CS_Settings_ColonistBonus>
+    <CS_Settings_UnstableBonus>不稳定加成</CS_Settings_UnstableBonus>
+    <CS_Settings_ResetToDefaults>恢复默认</CS_Settings_ResetToDefaults>
 </LanguageData>

@@ -27,6 +27,12 @@ namespace CharacterStudio.Core
 
         public PawnSkinBootstrapComponent(Game game) { }
 
+        public override void GameComponentTick()
+        {
+            base.GameComponentTick();
+            Rendering.RuntimeAssetLoader.TickProcessPendingTextures();
+        }
+
         public override void LoadedGame()
         {
             base.LoadedGame();
@@ -202,13 +208,25 @@ namespace CharacterStudio.Core
                 return false;
 
             loadoutGrantedPawnIds.Add(pawnId);
+
+            // 文件日志
+            try
+            {
+                var abilityComp = pawn.GetComp<Abilities.CompCharacterAbilityRuntime>();
+                var hasLoadout = abilityComp?.HasExplicitAbilityLoadout ?? false;
+                var logPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "CS_Debug.log");
+                System.IO.File.AppendAllText(logPath,
+                    $"[{System.DateTime.Now:HH:mm:ss.fff}] TryGrantLoadoutOnce pawn={pawn.LabelShort ?? pawn.ThingID} hasExplicitLoadout={hasLoadout} comp={comp != null}\n");
+            }
+            catch { }
+
             if (comp == null)
                 return false;
 
             CharacterAbilityLoadout? loadout = AbilityLoadoutRuntimeUtility.GetEffectiveLoadout(pawn);
             bool hasEffectiveAbilities = loadout?.abilities != null && loadout.abilities.Count > 0;
 
-            // 读档恢复时必须同步“当前生效装配”，而不是仅同步皮肤模板技能。
+            // 读档恢复时必须同步"当前生效装配"，而不是仅同步皮肤模板技能。
             // 否则显式 loadout 会在存档恢复后被皮肤技能覆盖，导致热键、Gizmo 与运行时 Ability 链路失配。
             AbilityLoadoutRuntimeUtility.GrantEffectiveLoadoutToPawn(pawn);
             return hasEffectiveAbilities;

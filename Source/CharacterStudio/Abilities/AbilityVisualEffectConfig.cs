@@ -58,6 +58,13 @@ namespace CharacterStudio.Abilities
         public bool attachToTargetCell = false;
         public bool enabled = true;
 
+        /// <summary>
+        /// VFX 起点来源图层名。填写后，该 VFX 的起点位置将从指定图层的实际渲染位置（包含动画偏移）获取，
+        /// 而非默认的施法者位置。用于实现浮游炮等从动态图层位置发射弹道的效果。
+        /// 留空则使用默认行为（从施法者中心发射）。
+        /// </summary>
+        public string vfxSourceLayerName = string.Empty;
+
         // Frame animation fields
         public bool enableFrameAnimation = false;
         public int frameCount = 2;
@@ -90,9 +97,10 @@ namespace CharacterStudio.Abilities
         public string globalFilterTransition = string.Empty;
         public int globalFilterTransitionTicks = 0;
 
-        public bool UsesBuiltInType => type != AbilityVisualEffectType.Preset && type != AbilityVisualEffectType.CustomTexture;
+        public bool UsesBuiltInType => type != AbilityVisualEffectType.Preset && type != AbilityVisualEffectType.CustomTexture && type != AbilityVisualEffectType.GlobalFilter;
         public bool UsesPresetType => type == AbilityVisualEffectType.Preset;
         public bool UsesCustomTextureType => type == AbilityVisualEffectType.CustomTexture;
+        public bool IsGlobalFilterType => type == AbilityVisualEffectType.GlobalFilter;
         public bool UsesSpatialLine => type == AbilityVisualEffectType.LineTexture || spatialMode == AbilityVisualSpatialMode.Line;
         public bool UsesSpatialWall => type == AbilityVisualEffectType.WallTexture || spatialMode == AbilityVisualSpatialMode.Wall;
         public bool RequiresTexturePath => UsesCustomTextureType || type == AbilityVisualEffectType.LineTexture || type == AbilityVisualEffectType.WallTexture;
@@ -251,6 +259,7 @@ namespace CharacterStudio.Abilities
             soundDelayTicks = AbilityEditorNormalizationUtility.ClampInt(soundDelayTicks, 0, 60000);
             soundVolume = AbilityEditorNormalizationUtility.ClampFloat(soundVolume, 0f, 4f);
             soundPitch = AbilityEditorNormalizationUtility.ClampFloat(soundPitch, 0.25f, 3f);
+            vfxSourceLayerName = AbilityEditorNormalizationUtility.TrimOrEmpty(vfxSourceLayerName);
             SyncLegacyFields();
             frameCount = AbilityEditorNormalizationUtility.ClampInt(frameCount, 2, 120);
             frameIntervalTicks = AbilityEditorNormalizationUtility.ClampInt(frameIntervalTicks, 1, 60000);

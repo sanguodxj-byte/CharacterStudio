@@ -653,13 +653,23 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_DashTriggerEffects".Translate(), labelW);
-                    bool dashTrigger = comp.dashTriggerEffects;
-                    Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref dashTrigger, 24f, false);
-                    if (comp.dashTriggerEffects != dashTrigger)
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_DashEffectTiming".Translate(), labelW);
+                    string timingLabel = ("CS_Studio_DashTiming_" + comp.dashEffectTiming).Translate();
+                    if (DrawSelectionFieldButton(new Rect(inner.x + labelW, rowY, valueW, 24f), timingLabel, () =>
                     {
-                        comp.dashTriggerEffects = dashTrigger;
-                        NotifyAbilityPreviewDirty(true);
+                        var options = new List<FloatMenuOption>();
+                        foreach (DashEffectTiming t in Enum.GetValues(typeof(DashEffectTiming)))
+                        {
+                            DashEffectTiming localT = t;
+                            options.Add(new FloatMenuOption(("CS_Studio_DashTiming_" + localT).Translate(), () =>
+                            {
+                                comp.dashEffectTiming = localT;
+                                NotifyAbilityPreviewDirty(true);
+                            }));
+                        }
+                        Find.WindowStack.Add(new FloatMenu(options));
+                    }))
+                    {
                     }
                     rowY += 26f;
 

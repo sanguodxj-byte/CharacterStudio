@@ -131,11 +131,6 @@ namespace CharacterStudio.Rendering
             PupilScaleVariant pupilVariant = skinComp.GetEffectivePupilScaleVariant();
             Vector2 gazeOffset = skinComp.CurrentFaceRuntimeState.gazeOffset;
 
-            // ── 临时诊断日志（调试后删除）──
-            if (isBlinkActive && customNode.layeredFacePartType == LayeredFacePartType.UpperLid)
-            {
-                Log.Message($"[BlinkDebug][CalcFace] part={customNode.layeredFacePartType} side={customNode.layeredFacePartSide} isBlink={isBlinkActive} phase={blinkPhase} progress={blinkPhaseProgress:F3} eyeVar={eyeVariant} pupilVar={pupilVariant} lidState={lidState} hasReplacement={hasReplacementEyeOverlay} expr={expression}");
-            }
             var transformContext = new FaceTransformContext(
                 customNode.layeredFacePartType.Value,
                 customNode.layeredFacePartSide,
@@ -1216,25 +1211,6 @@ namespace CharacterStudio.Rendering
             ExpressionType expression = skinComp.GetEffectiveExpression();
             yield return expression;
 
-            switch (expression)
-            {
-                case ExpressionType.Wink:
-                    yield return ExpressionType.Happy;
-                    break;
-                case ExpressionType.Dead:
-                    yield return ExpressionType.Sleeping;
-                    yield return ExpressionType.Blink;
-                    break;
-                case ExpressionType.Sleeping:
-                    yield return ExpressionType.Blink;
-                    break;
-                case ExpressionType.Cheerful:
-                case ExpressionType.Lovin:
-                case ExpressionType.SocialRelax:
-                    yield return ExpressionType.Happy;
-                    break;
-            }
-
             if (expression != ExpressionType.Neutral)
                 yield return ExpressionType.Neutral;
         }
@@ -1244,12 +1220,8 @@ namespace CharacterStudio.Rendering
             ExpressionType expression = skinComp.GetEffectiveExpression();
             yield return expression;
 
-            switch (expression)
-            {
-                case ExpressionType.Wink:
-                    yield return ExpressionType.Happy;
-                    break;
-            }
+            if (expression != ExpressionType.Neutral)
+                yield return ExpressionType.Neutral;
         }
 
         private static string? ResolveReplacementMouthPath(PawnFaceConfig faceConfig, CompPawnSkin skinComp, Rot4 facing)
@@ -1532,7 +1504,6 @@ namespace CharacterStudio.Rendering
 
             if (exact != null)
             {
-                exact.SyncLegacyMotionAmplitude();
                 return exact.motionAmplitude;
             }
 
@@ -1542,7 +1513,6 @@ namespace CharacterStudio.Rendering
 
             if (neutral != null)
             {
-                neutral.SyncLegacyMotionAmplitude();
                 return neutral.motionAmplitude;
             }
 

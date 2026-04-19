@@ -34,6 +34,7 @@ namespace CharacterStudio.Rendering
             _cachedSkinCompTick = -1;
             _cachedSkinComp = null;
             _cachedCanDrawTick = -1;
+            _hasVanillaAncestorState = -1;
         }
 
         // P-PERF: CanDrawNow 结果缓存（避免 ReplacementMouth/Mouth 每帧重复解析纹理路径）
@@ -101,6 +102,15 @@ namespace CharacterStudio.Rendering
         /// <summary>Brownian 模式下当前速度</summary>
         public Vector3 currentBrownianVelocity = Vector3.zero;
 
+        /// <summary>Brownian 启停混合因子（0=完全停用，1=完全启用），用于平滑插值</summary>
+        public float brownianBlendFactor = 0f;
+
+        /// <summary>Brownian 原始偏移（不含 blend 衰减），由物理模拟直接产出</summary>
+        public Vector3 brownianRawOffset = Vector3.zero;
+
+        /// <summary>Brownian 经过 blend 插值后的输出偏移，供渲染使用</summary>
+        public Vector3 brownianSmoothedOffset = Vector3.zero;
+
         /// <summary>当前动画产生的位移偏移</summary>
         public Vector3 currentAnimOffset = Vector3.zero;
 
@@ -145,6 +155,19 @@ namespace CharacterStudio.Rendering
         public Vector3 currentExternalLayerScale = Vector3.one;
 
         // ─────────────────────────────────────────────
+        // P-PERF: HasAnyVanillaAncestor 结果缓存
+        // 该方法每次渲染调用都会走 parent 链，多节点场景下开销显著。
+        // 树结构仅在 Init / SetDirty 时重建，之后 parent 链不变，
+        // 因此在节点首次访问时缓存结果即可。
+        // ─────────────────────────────────────────────
+        internal int _hasVanillaAncestorState = -1; // -1=未计算, 0=false, 1=true
+
+        /// <summary>P-PERF: 使祖先缓存失效（树结构重建时调用）</summary>
+        public void InvalidateAncestorCache()
+        {
+            _hasVanillaAncestorState = -1;
+        }
+
         // P8: 节点级图形缓存（避免 GetGraphic 每帧完整重算）
         // 当 tick 和 facing 未变时直接返回缓存的 Graphic，跳过
         // 完整的路径解析、TextureExists 查找和 GraphicDatabase.Get。
@@ -160,6 +183,7 @@ namespace CharacterStudio.Rendering
             _cachedGraphicHasResult = false;
             _cachedGraphicResult = null;
             _cachedGraphicTick = -1;
+            _hasVanillaAncestorState = -1;
         }
 
         public PawnRenderNode_Custom(Pawn pawn, PawnRenderNodeProperties props, PawnRenderTree tree)

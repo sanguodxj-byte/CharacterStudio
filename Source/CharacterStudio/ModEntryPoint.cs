@@ -30,8 +30,6 @@ namespace CharacterStudio
 
         static ModEntryPoint()
         {
-            Log.Message($"[CharacterStudio] Character Studio v{Version} 正在初始化...");
-
             // 初始化 Harmony
             InitializeHarmony();
 
@@ -43,13 +41,20 @@ namespace CharacterStudio
             CharacterSpawnProfileRegistry.LoadFromConfig();
             CharacterRuntimeTriggerRegistry.LoadFromConfig();
 
+            // 将 DefDatabase 中由 XML Defs 加载的 PawnSkinDef（如导出模组提供的）同步到运行时注册表，
+            // 使 GetDefaultSkinForRace 等运行时查询能找到这些 Def，
+            // 从而让 PawnSkinBootstrapComponent 在加载存档时自动应用导出模组的皮肤到匹配种族的 Pawn。
+            PawnSkinDefRegistry.SyncFromDefDatabase();
+
             // 预热运行时技能 Def，确保旧存档中的 CS_RT_* AbilityDef 引用在读档期即可被解析
             Abilities.AbilityGrantUtility.WarmupAllRuntimeAbilityDefs();
 
+            // 预热字符串规范化缓存，避免渲染管线首次调用时分配
+            Core.PawnFaceConfig.PrewarmOverlayIdCache();
+            Core.PawnFaceConfig.PrewarmSemanticKeyCache();
+
             // 应用补丁
             ApplyPatches();
-
-            Log.Message($"[CharacterStudio] 初始化完成！");
         }
 
         /// <summary>
@@ -60,7 +65,6 @@ namespace CharacterStudio
             try
             {
                 HarmonyInstance = new Harmony(HarmonyId);
-                Log.Message($"[CharacterStudio] Harmony 实例已创建: {HarmonyId}");
             }
             catch (System.Exception ex)
             {
@@ -91,7 +95,6 @@ namespace CharacterStudio
             try
             {
                 applyAction();
-                Log.Message($"[CharacterStudio] 已应用补丁: {patchName}");
             }
             catch (System.Exception ex)
             {

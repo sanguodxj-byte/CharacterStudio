@@ -57,43 +57,6 @@ namespace CharacterStudio.UI
 
         private void DrawActivePropertiesContent(Rect rect)
         {
-            float propsY = GetPropertiesContentTop(rect);
-            Rect summaryRect = new Rect(rect.x + Margin, propsY, rect.width - Margin * 2f, 34f);
-            UIHelper.DrawContentCard(summaryRect);
-
-            string summaryText;
-            if (!string.IsNullOrEmpty(selectedNodePath) && cachedRootSnapshot != null)
-            {
-                summaryText = "CS_Studio_Properties_Summary_Node".Translate();
-            }
-            else if (selectedBaseSlotType != null)
-            {
-                summaryText = "CS_Studio_Properties_Summary_BaseSlot".Translate();
-            }
-            else if (!layerModificationWorkflowActive &&
-                currentTab == EditorTab.Items &&
-                selectedEquipmentIndex >= 0 &&
-                selectedEquipmentIndex < (workingSkin.equipments?.Count ?? 0))
-            {
-                summaryText = "CS_Studio_Properties_Summary_Equipment".Translate();
-            }
-            else if (!layerModificationWorkflowActive && currentTab == EditorTab.Animation)
-            {
-                summaryText = "CS_Studio_Tab_Animation".Translate();
-            }
-            else
-            {
-                summaryText = "CS_Studio_Properties_Summary_Layer".Translate();
-            }
-
-            Text.Font = GameFont.Tiny;
-            Text.Anchor = TextAnchor.MiddleLeft;
-            GUI.color = UIHelper.SubtleColor;
-            Widgets.Label(new Rect(summaryRect.x + 8f, summaryRect.y, summaryRect.width - 16f, summaryRect.height), summaryText);
-            GUI.color = Color.white;
-            Text.Anchor = TextAnchor.UpperLeft;
-            Text.Font = GameFont.Small;
-
             if (!string.IsNullOrEmpty(selectedNodePath) && cachedRootSnapshot != null)
             {
                 DrawNodeProperties(rect);

@@ -362,6 +362,8 @@
     <CS_Studio_VFX_FacingMode_CastDirection>Cast Direction</CS_Studio_VFX_FacingMode_CastDirection>
     <CS_Studio_VFX_ForwardOffsetShort>Forward</CS_Studio_VFX_ForwardOffsetShort>
     <CS_Studio_VFX_SideOffsetShort>Side</CS_Studio_VFX_SideOffsetShort>
+    <CS_Studio_VFX_SourceLayerShort>Source Layer</CS_Studio_VFX_SourceLayerShort>
+    <CS_Studio_VFX_SourceLayerNone>None (Caster Center)</CS_Studio_VFX_SourceLayerNone>
     <CS_Studio_VFX_FacingModeHint>Facing changes the basis used by forward/side offsets and also adds base auto-rotation for custom texture VFX.</CS_Studio_VFX_FacingModeHint>
     <CS_Studio_VFX_FrameAnimToggle>Frame Animation</CS_Studio_VFX_FrameAnimToggle>
     <CS_Studio_VFX_FrameCountShort>Frames</CS_Studio_VFX_FrameCountShort>
@@ -517,7 +519,10 @@
     <CS_Studio_Runtime_DashDistance>Dash Distance</CS_Studio_Runtime_DashDistance>
     <CS_Studio_Runtime_DashSpeed>Ticks Per Cell</CS_Studio_Runtime_DashSpeed>
     <CS_Studio_Runtime_DashUseAbilityRange>Use Ability Range</CS_Studio_Runtime_DashUseAbilityRange>
-    <CS_Studio_Runtime_DashTriggerEffects>Trigger Effects After Dash</CS_Studio_Runtime_DashTriggerEffects>
+    <CS_Studio_Runtime_DashEffectTiming>Effect Timing</CS_Studio_Runtime_DashEffectTiming>
+    <CS_Studio_DashTiming_OnCollisionStop>On Collision (Stop)</CS_Studio_DashTiming_OnCollisionStop>
+    <CS_Studio_DashTiming_OnCollisionPassThrough>On Collision (Pass Through)</CS_Studio_DashTiming_OnCollisionPassThrough>
+    <CS_Studio_DashTiming_OnComplete>On Dash Complete</CS_Studio_DashTiming_OnComplete>
     <CS_Studio_Runtime_DashEquipAnim>Trigger Weapon Animation</CS_Studio_Runtime_DashEquipAnim>
     <CS_Studio_Runtime_DashEquipAnimKey>Animation Trigger Key</CS_Studio_Runtime_DashEquipAnimKey>
     <CS_Studio_Runtime_DashEquipAnimDuration>Animation Duration (Ticks)</CS_Studio_Runtime_DashEquipAnimDuration>
@@ -525,4 +530,37 @@
     <CS_Ability_Validate_DashDistance>Dash distance must be greater than 0.</CS_Ability_Validate_DashDistance>
     <CS_Ability_Validate_DashStepDuration>Dash ticks per cell must be greater than 0.</CS_Ability_Validate_DashStepDuration>
     <CS_Ability_Validate_DashEquipAnimKey>Weapon animation linkage enabled but trigger key is empty.</CS_Ability_Validate_DashEquipAnimKey>
+    <CS_Studio_VFX_GlobalFilter>Global Filter</CS_Studio_VFX_GlobalFilter>
+    <CS_Studio_VFX_GlobalFilter_None>None</CS_Studio_VFX_GlobalFilter_None>
+    <CS_Studio_VFX_GlobalFilterMode>Filter</CS_Studio_VFX_GlobalFilterMode>
+    <CS_Studio_VFX_GlobalFilterTransition>Transition</CS_Studio_VFX_GlobalFilterTransition>
+    <CS_Studio_VFX_GlobalFilterTransition_None>None</CS_Studio_VFX_GlobalFilterTransition_None>
+    <CS_Studio_VFX_GlobalFilterTransitionTicks>Transition(tick)</CS_Studio_VFX_GlobalFilterTransitionTicks>
+    <!-- VFX category names -->
+    <CS_Studio_VFX_Category_Preset>Preset Effect</CS_Studio_VFX_Category_Preset>
+    <CS_Studio_VFX_Category_CustomTexture>Custom Texture</CS_Studio_VFX_Category_CustomTexture>
+    <CS_Studio_VFX_Category_LineTexture>Line Texture</CS_Studio_VFX_Category_LineTexture>
+    <CS_Studio_VFX_Category_WallTexture>Wall Texture</CS_Studio_VFX_Category_WallTexture>
+    <CS_Studio_VFX_Category_GlobalFilter>Global Filter</CS_Studio_VFX_Category_GlobalFilter>
+    <!-- VFX add menu categories -->
+    <CS_Studio_VFX_AddCategory_Preset>▶ Preset Effect...</CS_Studio_VFX_AddCategory_Preset>
+    <CS_Studio_VFX_AddCategory_CustomTexture>Custom Texture</CS_Studio_VFX_AddCategory_CustomTexture>
+    <CS_Studio_VFX_AddCategory_LineTexture>Line Texture</CS_Studio_VFX_AddCategory_LineTexture>
+    <CS_Studio_VFX_AddCategory_WallTexture>Wall Texture</CS_Studio_VFX_AddCategory_WallTexture>
+    <CS_Studio_VFX_AddCategory_GlobalFilter>Global Filter</CS_Studio_VFX_AddCategory_GlobalFilter>
+    <!-- Preset effect display names -->
+    <CS_Studio_VFX_Preset_DustPuff>Dust Puff</CS_Studio_VFX_Preset_DustPuff>
+    <CS_Studio_VFX_Preset_MicroSparks>Micro Sparks</CS_Studio_VFX_Preset_MicroSparks>
+    <CS_Studio_VFX_Preset_LightningGlow>Lightning Glow</CS_Studio_VFX_Preset_LightningGlow>
+    <CS_Studio_VFX_Preset_FireGlow>Fire Glow</CS_Studio_VFX_Preset_FireGlow>
+    <CS_Studio_VFX_Preset_Smoke>Smoke</CS_Studio_VFX_Preset_Smoke>
+    <CS_Studio_VFX_Preset_ExplosionEffect>Explosion</CS_Studio_VFX_Preset_ExplosionEffect>
+    <CS_Studio_VFX_Preset_SteamBurst>Steam Burst</CS_Studio_VFX_Preset_SteamBurst>
+    <CS_Studio_VFX_Preset_EmberBurst>Ember Burst</CS_Studio_VFX_Preset_EmberBurst>
+    <CS_Studio_VFX_Preset_ShockBurst>Shock Burst</CS_Studio_VFX_Preset_ShockBurst>
+    <CS_Studio_VFX_Preset_DustRing>Dust Ring</CS_Studio_VFX_Preset_DustRing>
+    <CS_Studio_VFX_Preset_ArcSparkBurst>Arc Spark Burst</CS_Studio_VFX_Preset_ArcSparkBurst>
+    <CS_Studio_VFX_Preset_FlameSurge>Flame Surge</CS_Studio_VFX_Preset_FlameSurge>
+    <CS_Studio_VFX_Preset_FlightJetBlue>Flight Jet (Blue)</CS_Studio_VFX_Preset_FlightJetBlue>
+    <CS_Studio_VFX_Preset_FlightJetTrail>Flight Jet Trail</CS_Studio_VFX_Preset_FlightJetTrail>
 </LanguageData>

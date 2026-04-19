@@ -29,15 +29,13 @@ namespace CharacterStudio.UI
                 Widgets.DrawBox(rowRect, 1);
             }
 
-            GUI.color = new Color(0.5f, 1f, 0.5f);
-            Widgets.Label(new Rect(4, y + 2, 18, 18), "★");
-            GUI.color = Color.white;
-
-            Rect visRect = new Rect(24, y + 2, 18, 18);
+            // 可见性开关 (菱形方块)
+            Rect visRect = new Rect(2, y + 1, 24, 22);
             bool visible = layer.visible;
-            string visIcon = visible ? "◉" : "◯";
-            GUI.color = visible ? Color.white : Color.gray;
-            if (Widgets.ButtonText(visRect, visIcon, false))
+            GUI.color = visible ? new Color(0.37f, 0.82f, 1f) : new Color(0.4f, 0.45f, 0.5f);
+            Text.Anchor = TextAnchor.MiddleCenter;
+            Text.Font = GameFont.Medium;
+            if (Widgets.ButtonText(visRect, visible ? "◆" : "◇", false))
             {
                 bool newVisible = !layer.visible;
                 MutateWithUndo(() =>
@@ -50,9 +48,11 @@ namespace CharacterStudio.UI
                 });
             }
             GUI.color = Color.white;
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.UpperLeft;
 
             Rect deleteRect = new Rect(width - 28f, y, 24f, 22f);
-            Rect nameRect = new Rect(46, y, width - 78f, TreeNodeHeight);
+            Rect nameRect = new Rect(32, y, width - 66f, TreeNodeHeight);
             string displayName = string.IsNullOrEmpty(layer.layerName) ? GetDefaultLayerLabel(index) : layer.layerName;
 
             Text.Anchor = TextAnchor.MiddleLeft;
@@ -64,7 +64,8 @@ namespace CharacterStudio.UI
                 return y + TreeNodeHeight;
             }
 
-            if (Mouse.IsOver(rowRect) && Event.current.type == EventType.MouseDown && Event.current.button == 0)
+            if (Mouse.IsOver(rowRect) && Event.current.type == EventType.MouseDown && Event.current.button == 0
+                && !deleteRect.Contains(Event.current.mousePosition) && !visRect.Contains(Event.current.mousePosition))
             {
                 HandleLayerRowLeftClick(index);
                 selectedBaseSlotType = null;

@@ -18,6 +18,9 @@ namespace CharacterStudio.Rendering
         [ThreadStatic]
         private static List<string>? _reusableTokenList;
 
+        [ThreadStatic]
+        private static HashSet<string>? _reusableOverlayIdSet;
+
         internal static List<string> GetReusableTokenList()
         {
             var list = _reusableTokenList;
@@ -31,6 +34,21 @@ namespace CharacterStudio.Rendering
                 list.Clear();
             }
             return list;
+        }
+
+        internal static HashSet<string> GetReusableOverlayIdSet()
+        {
+            var set = _reusableOverlayIdSet;
+            if (set == null)
+            {
+                set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                _reusableOverlayIdSet = set;
+            }
+            else
+            {
+                set.Clear();
+            }
+            return set;
         }
 
         private bool IsExpressionVisibleForLayer(PawnLayerConfig config, Pawn? pawn, CompPawnSkin? cachedSkinComp = null)

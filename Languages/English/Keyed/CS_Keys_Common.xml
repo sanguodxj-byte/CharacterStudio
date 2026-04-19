@@ -63,16 +63,23 @@
     <CS_Studio_Anchor_Nose>Nose</CS_Studio_Anchor_Nose>
     <CS_Studio_Anchor_Root>Root</CS_Studio_Anchor_Root>
     <CS_Studio_Anim_AffectsOffset>Affects Offset</CS_Studio_Anim_AffectsOffset>
+    <CS_Studio_Anim_AffectsOffset_Tip>When enabled, the animation will also move the layer's position, not just rotate it.</CS_Studio_Anim_AffectsOffset_Tip>
     <CS_Studio_Anim_Amplitude>Amplitude</CS_Studio_Anim_Amplitude>
+    <CS_Studio_Anim_Amplitude_Tip>Rotation angle range in degrees. Higher values produce wider swings.</CS_Studio_Anim_Amplitude_Tip>
     <CS_Studio_Anim_Breathe>Breathe</CS_Studio_Anim_Breathe>
     <CS_Studio_Anim_Frequency>Frequency</CS_Studio_Anim_Frequency>
+    <CS_Studio_Anim_Frequency_Tip>Animation speed. Higher = faster oscillation. For Spin this controls rotation speed together with Speed.</CS_Studio_Anim_Frequency_Tip>
     <CS_Studio_Anim_IdleSway>Idle Sway</CS_Studio_Anim_IdleSway>
     <CS_Studio_Anim_None>None</CS_Studio_Anim_None>
     <CS_Studio_Anim_OffsetAmplitude>Offset Amplitude</CS_Studio_Anim_OffsetAmplitude>
+    <CS_Studio_Anim_OffsetAmplitude_Tip>Position displacement range in tiles. Controls how far the layer moves from its anchor. 1.0 = one full tile.</CS_Studio_Anim_OffsetAmplitude_Tip>
     <CS_Studio_Anim_PhaseOffset>Phase Offset</CS_Studio_Anim_PhaseOffset>
+    <CS_Studio_Anim_PhaseOffset_Tip>Starting phase of the animation cycle (0~1). Use different values for multiple layers to desynchronize them.</CS_Studio_Anim_PhaseOffset_Tip>
     <CS_Studio_Anim_PivotX>Rotation Pivot X</CS_Studio_Anim_PivotX>
     <CS_Studio_Anim_PivotY>Rotation Pivot Y</CS_Studio_Anim_PivotY>
+    <CS_Studio_Anim_Pivot_Tip>Offset from the layer center to the rotation pivot point. The layer orbits around this point instead of spinning in place.</CS_Studio_Anim_Pivot_Tip>
     <CS_Studio_Anim_Speed>Speed</CS_Studio_Anim_Speed>
+    <CS_Studio_Anim_Speed_Tip>Animation playback speed multiplier. Higher = faster transitions between states.</CS_Studio_Anim_Speed_Tip>
     <CS_Studio_Anim_Spin>Continuous Spin</CS_Studio_Anim_Spin>
     <CS_Studio_Anim_Swing>Periodic Swing</CS_Studio_Anim_Swing>
     <CS_Studio_Anim_Twitch>Random Twitch</CS_Studio_Anim_Twitch>
@@ -358,4 +365,25 @@
     <CS_RoleCard_LetterLabel>Character generated: {0}</CS_RoleCard_LetterLabel>
     <CS_Summon_Success>Successfully summoned: {0}</CS_Summon_Success>
     <CS_Summon_Use>Summon {0}</CS_Summon_Use>
+    <CS_Settings_Category>Character Studio</CS_Settings_Category>
+    <CS_Settings_FaceTrackThresholds>Face Track Thresholds</CS_Settings_FaceTrackThresholds>
+    <CS_Settings_Preset_Balanced>Balanced</CS_Settings_Preset_Balanced>
+    <CS_Settings_Preset_Performance>Performance</CS_Settings_Preset_Performance>
+    <CS_Settings_Preset_UltraPerformance>Ultra Performance</CS_Settings_Preset_UltraPerformance>
+    <CS_Settings_RootSizeNear>Near Root Size</CS_Settings_RootSizeNear>
+    <CS_Settings_BudgetNear>Near Budget</CS_Settings_BudgetNear>
+    <CS_Settings_RootSizeMid1>Mid1 Root Size</CS_Settings_RootSizeMid1>
+    <CS_Settings_BudgetMid1>Mid1 Budget</CS_Settings_BudgetMid1>
+    <CS_Settings_RootSizeMid2>Mid2 Root Size</CS_Settings_RootSizeMid2>
+    <CS_Settings_BudgetMid2>Mid2 Budget</CS_Settings_BudgetMid2>
+    <CS_Settings_RootSizeFar>Far Root Size</CS_Settings_RootSizeFar>
+    <CS_Settings_BudgetFar>Far Budget</CS_Settings_BudgetFar>
+    <CS_Settings_FallbackBudget>Fallback Budget</CS_Settings_FallbackBudget>
+    <CS_Settings_FallbackPriorityThreshold>Fallback Priority Threshold</CS_Settings_FallbackPriorityThreshold>
+    <CS_Settings_FallbackPriorityBudget>Fallback Priority Budget</CS_Settings_FallbackPriorityBudget>
+    <CS_Settings_PriorityBonuses>Priority Bonuses</CS_Settings_PriorityBonuses>
+    <CS_Settings_DraftedBonus>Drafted Bonus</CS_Settings_DraftedBonus>
+    <CS_Settings_ColonistBonus>Colonist Bonus</CS_Settings_ColonistBonus>
+    <CS_Settings_UnstableBonus>Unstable Bonus</CS_Settings_UnstableBonus>
+    <CS_Settings_ResetToDefaults>Reset to Defaults</CS_Settings_ResetToDefaults>
 </LanguageData>

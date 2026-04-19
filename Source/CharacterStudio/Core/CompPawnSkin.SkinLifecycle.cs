@@ -112,21 +112,40 @@ namespace CharacterStudio.Core
             Scribe_Values.Look(ref activeSkinDefName, "activeSkinDefName");
             Scribe_Values.Look(ref activeSkinFromDefaultRaceBinding, "activeSkinFromDefaultRaceBinding", false);
 
-            // Migration: read old ability data from CompPawnSkin and forward to CompCharacterAbilityRuntime
+            // CompCharacterAbilityRuntime 是运行时动态添加的 ThingComp，
+            // RimWorld 不会序列化它。因此通过 CompPawnSkin 代理保存/恢复 activeAbilityLoadout。
+            CharacterAbilityLoadout? loadoutForSerialize = null;
+            if (Scribe.mode != LoadSaveMode.LoadingVars)
+            {
+                // 保存时：从 CompCharacterAbilityRuntime 读取当前 loadout
+                var abilityComp = Pawn?.GetComp<Abilities.CompCharacterAbilityRuntime>();
+                if (abilityComp != null && abilityComp.HasExplicitAbilityLoadout)
+                {
+                    loadoutForSerialize = abilityComp.ActiveAbilityLoadout;
+                }
+            }
+
+            Scribe_Deep.Look(ref loadoutForSerialize, "activeAbilityLoadout");
+
+            // 文件日志——绕过 RimWorld 日志系统
+            try
+            {
+                var logPath = System.IO.Path.Combine(
+                    System.IO.Path.GetTempPath(), "CS_Debug.log");
+                var msg = $"[{System.DateTime.Now:HH:mm:ss.fff}] PostExposeData mode={Scribe.mode}";
+                System.IO.File.AppendAllText(logPath, msg + "\n");
+            }
+            catch { }
+
+            if (Scribe.mode == LoadSaveMode.LoadingVars && loadoutForSerialize != null)
+            {
+                _migratedLoadout = loadoutForSerialize;
+            }
+
+            // 旧存档的 abilityRuntimeState 迁移：读取并丢弃
             if (Scribe.mode == LoadSaveMode.LoadingVars)
             {
-                // Old saves had activeAbilityLoadout here - forward to new component
-                CharacterAbilityLoadout? migratedLoadout = null;
-                Scribe_Deep.Look(ref migratedLoadout, "activeAbilityLoadout");
-                if (migratedLoadout != null)
-                {
-                    // Will be applied after comps are initialized
-                    _migratedLoadout = migratedLoadout;
-                }
-
-                // Old saves had abilityRuntimeState.ExposeData() here
-                // Read and discard - the data is also saved in CompCharacterAbilityRuntime now
-                var legacyState = new AbilityHotkeyRuntimeState();
+                var legacyState = new Abilities.AbilityHotkeyRuntimeState();
                 legacyState.ExposeData();
             }
 
@@ -134,17 +153,22 @@ namespace CharacterStudio.Core
             {
                 SkinLifecycleRecoveryCoordinator.RestoreAfterLoad(this);
 
-                // Apply migrated loadout (only clear if successfully forwarded)
                 if (_migratedLoadout != null)
                 {
-                    var abilityComp = Pawn?.GetComp<CompCharacterAbilityRuntime>();
+                    var abilityComp = Pawn?.GetComp<Abilities.CompCharacterAbilityRuntime>();
+                    try
+                    {
+                        var logPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "CS_Debug.log");
+                        System.IO.File.AppendAllText(logPath,
+                            $"[{System.DateTime.Now:HH:mm:ss.fff}] PostLoadInit migratedLoadout abilities={_migratedLoadout.abilities?.Count ?? -1} abilityComp={abilityComp != null} pawn={Pawn?.LabelShort ?? "null"}\n");
+                    }
+                    catch { }
+
                     if (abilityComp != null)
                     {
                         abilityComp.ActiveAbilityLoadout = _migratedLoadout;
                         _migratedLoadout = null;
                     }
-                    // If abilityComp is null (old save before comp existed),
-                    // retain _migratedLoadout for later retry via PawnSkinBootstrapComponent
                 }
             }
         }

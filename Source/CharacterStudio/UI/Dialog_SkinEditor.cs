@@ -135,6 +135,13 @@ namespace CharacterStudio.UI
         private string scannedEyeCacheSourceRoot = string.Empty;
         private readonly List<ScannedEyeCandidate> scannedEyeCandidates = new List<ScannedEyeCandidate>();
         private string scannedEyeCacheError = string.Empty;
+        private int semanticMappingCacheVersion;
+        private int semanticMappingCacheBuildVersion = -1;
+        private readonly Dictionary<string, List<ExpressionType>> eyeMappingCache = new Dictionary<string, List<ExpressionType>>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, List<ExpressionType>> mouthMappingCache = new Dictionary<string, List<ExpressionType>>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, string> overlayIdMappingCache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, string> overlaySemanticKeyCache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, string> overlayFollowTargetCache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private WeaponCarryVisualState previewWeaponCarryState = WeaponCarryVisualState.Undrafted;
  
         private enum EditorTab { BaseAppearance, Layers, Face, Attributes, Animation, Items }
@@ -395,6 +402,7 @@ namespace CharacterStudio.UI
         {
             workingDocument = CreateDocumentFromSkin(skin, sourceSkinDefName, preferredRaceDefName);
             workingSkin = workingDocument.runtimeSkin;
+            editLayerOffsetPerFacing = workingSkin?.editLayerOffsetPerFacing ?? false;
             if (syncAbilities)
             {
                 SyncAbilitiesFromSkin();

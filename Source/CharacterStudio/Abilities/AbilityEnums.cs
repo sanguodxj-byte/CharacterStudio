@@ -120,7 +120,8 @@ namespace CharacterStudio.Abilities
         LineTexture,
         WallTexture,
         Preset,
-        CustomTexture
+        CustomTexture,
+        GlobalFilter
     }
 
     public enum AbilityVisualSpatialMode
@@ -199,6 +200,13 @@ namespace CharacterStudio.Abilities
         CleanFilth,
         SpawnThing,
         ReplaceTerrain
+    }
+
+    public enum DashEffectTiming
+    {
+        OnCollisionStop,
+        OnCollisionPassThrough,
+        OnComplete
     }
 
     public enum SummonFactionType

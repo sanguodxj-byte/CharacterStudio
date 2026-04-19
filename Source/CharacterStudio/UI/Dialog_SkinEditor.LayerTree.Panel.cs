@@ -14,65 +14,19 @@ namespace CharacterStudio.UI
 
         private void DrawLayerPanel(Rect rect)
         {
-            Widgets.DrawBoxSolid(rect, UIHelper.PanelFillColor);
-            GUI.color = UIHelper.BorderColor;
-            Widgets.DrawBox(rect, 1);
-            GUI.color = Color.white;
-
-            Rect titleRect = new Rect(rect.x + Margin, rect.y + Margin, rect.width - Margin * 2, 26f);
-            Widgets.DrawBoxSolid(titleRect, UIHelper.PanelFillSoftColor);
-            Widgets.DrawBoxSolid(new Rect(titleRect.x, titleRect.yMax - 2f, titleRect.width, 2f), UIHelper.AccentSoftColor);
-            GUI.color = UIHelper.BorderColor;
-            Widgets.DrawBox(titleRect, 1);
-            GUI.color = Color.white;
-
-            GameFont oldFont = Text.Font;
-            Text.Font = GameFont.Tiny;
-            Text.Anchor = TextAnchor.MiddleLeft;
-            GUI.color = UIHelper.HeaderColor;
-            Widgets.Label(new Rect(titleRect.x + 8f, titleRect.y, titleRect.width - 16f, titleRect.height), "CS_Studio_Panel_Layers".Translate());
-            GUI.color = Color.white;
-            Text.Anchor = TextAnchor.UpperLeft;
-            Text.Font = oldFont;
+            Rect titleRect = UIHelper.DrawPanelShell(rect, "CS_Studio_Panel_Layers".Translate(), Margin);
 
             float btnY = titleRect.yMax + 6f;
             float btnWidth = (rect.width - Margin * 8) / 7f;
             float btnHeight = Mathf.Max(ButtonHeight - 2f, 22f);
 
-            bool DrawIconButton(Rect buttonRect, string label, string tooltip, Action action, bool accent = false)
-            {
-                Widgets.DrawBoxSolid(buttonRect, accent ? UIHelper.ActiveTabColor : UIHelper.PanelFillSoftColor);
-                Widgets.DrawBoxSolid(new Rect(buttonRect.x, buttonRect.yMax - 2f, buttonRect.width, 2f), accent ? UIHelper.AccentColor : new Color(1f, 1f, 1f, 0.05f));
-                GUI.color = Mouse.IsOver(buttonRect) ? UIHelper.HoverOutlineColor : UIHelper.BorderColor;
-                Widgets.DrawBox(buttonRect, 1);
-                GUI.color = Color.white;
-
-                GameFont prevFont = Text.Font;
-                Text.Font = GameFont.Tiny;
-                Text.Anchor = TextAnchor.MiddleCenter;
-                GUI.color = accent ? Color.white : UIHelper.HeaderColor;
-                Widgets.Label(buttonRect, label);
-                GUI.color = Color.white;
-                Text.Anchor = TextAnchor.UpperLeft;
-                Text.Font = prevFont;
-
-                TooltipHandler.TipRegion(buttonRect, tooltip);
-                if (Widgets.ButtonInvisible(buttonRect))
-                {
-                    action();
-                    return true;
-                }
-
-                return false;
-            }
-
-            DrawIconButton(new Rect(rect.x + Margin, btnY, btnWidth, btnHeight), "↻", "CS_Studio_Panel_RefreshTree".Translate(), RefreshRenderTree);
-            DrawIconButton(new Rect(rect.x + Margin * 2 + btnWidth, btnY, btnWidth, btnHeight), "▼", "CS_Studio_Panel_ExpandAll".Translate(), ExpandAllNodes);
-            DrawIconButton(new Rect(rect.x + Margin * 3 + btnWidth * 2, btnY, btnWidth, btnHeight), "▶", "CS_Studio_Panel_CollapseAll".Translate(), CollapseAllNodes);
-            DrawIconButton(new Rect(rect.x + Margin * 4 + btnWidth * 3, btnY, btnWidth, btnHeight), "+", "CS_Studio_Layer_AddCustom".Translate(), OnAddLayer, true);
-            DrawIconButton(new Rect(rect.x + Margin * 5 + btnWidth * 4, btnY, btnWidth, btnHeight), "-", "CS_Studio_Tip_RemoveLayer".Translate(), OnRemoveLayer);
-            DrawIconButton(new Rect(rect.x + Margin * 6 + btnWidth * 5, btnY, btnWidth, btnHeight), "↑", "CS_Studio_Tip_MoveUp".Translate(), () => MoveSelectedLayerUp());
-            DrawIconButton(new Rect(rect.x + Margin * 7 + btnWidth * 6, btnY, btnWidth, btnHeight), "↓", "CS_Studio_Tip_MoveDown".Translate(), () => MoveSelectedLayerDown());
+            UIHelper.DrawIconButton(new Rect(rect.x + Margin, btnY, btnWidth, btnHeight), "↻", "CS_Studio_Panel_RefreshTree".Translate(), RefreshRenderTree);
+            UIHelper.DrawIconButton(new Rect(rect.x + Margin * 2 + btnWidth, btnY, btnWidth, btnHeight), "▼", "CS_Studio_Panel_ExpandAll".Translate(), ExpandAllNodes);
+            UIHelper.DrawIconButton(new Rect(rect.x + Margin * 3 + btnWidth * 2, btnY, btnWidth, btnHeight), "▶", "CS_Studio_Panel_CollapseAll".Translate(), CollapseAllNodes);
+            UIHelper.DrawIconButton(new Rect(rect.x + Margin * 4 + btnWidth * 3, btnY, btnWidth, btnHeight), "+", "CS_Studio_Layer_AddCustom".Translate(), OnAddLayer, true);
+            UIHelper.DrawIconButton(new Rect(rect.x + Margin * 5 + btnWidth * 4, btnY, btnWidth, btnHeight), "-", "CS_Studio_Tip_RemoveLayer".Translate(), OnRemoveLayer);
+            UIHelper.DrawIconButton(new Rect(rect.x + Margin * 6 + btnWidth * 5, btnY, btnWidth, btnHeight), "↑", "CS_Studio_Tip_MoveUp".Translate(), () => MoveSelectedLayerUp());
+            UIHelper.DrawIconButton(new Rect(rect.x + Margin * 7 + btnWidth * 6, btnY, btnWidth, btnHeight), "↓", "CS_Studio_Tip_MoveDown".Translate(), () => MoveSelectedLayerDown());
 
             float listY = btnY + btnHeight + 8f;
             float listHeight = rect.height - listY + rect.y - Margin;

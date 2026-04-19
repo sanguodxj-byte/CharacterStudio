@@ -312,22 +312,24 @@ namespace CharacterStudio.UI
                 }
             }
 
+            bool isBaseSlotEastActive = previewRotation == Rot4.East || previewRotation == Rot4.West;
+            if (DrawCollapsibleSection(ref y, width, "CS_Studio_Transform_EastRotation".Translate(), "BaseSlotEastScaleRotation", isBaseSlotEastActive))
+            {
+                float eastRotationOffset = slot.rotationEastOffset;
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Transform_RotationOffset".Translate(), ref eastRotationOffset, -180f, 180f, "F0");
+                if (Math.Abs(eastRotationOffset - slot.rotationEastOffset) > 0.0001f)
+                {
+                    MutateBaseSlotWithUndo(() => slot.rotationEastOffset = eastRotationOffset);
+                }
+            }
+
             if (DrawCollapsibleSection(ref y, width, "CS_Studio_Section_Misc".Translate(), "BaseSlotMisc"))
             {
-                DrawPropertyHint(ref y, width, "CS_Studio_Transform_GlobalHint".Translate());
-
-                float scaleX = slot.scale.x;
-                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Transform_GlobalScaleX".Translate(), ref scaleX, 0.1f, 3f, "F3");
-                if (Math.Abs(scaleX - slot.scale.x) > 0.0001f)
+                float uniformScale = slot.scale.x;
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Transform_GlobalScale".Translate(), ref uniformScale, 0.1f, 3f, "F3");
+                if (Math.Abs(uniformScale - slot.scale.x) > 0.0001f || Math.Abs(uniformScale - slot.scale.y) > 0.0001f)
                 {
-                    MutateBaseSlotWithUndo(() => slot.scale.x = scaleX);
-                }
-
-                float scaleY = slot.scale.y;
-                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Transform_GlobalScaleY".Translate(), ref scaleY, 0.1f, 3f, "F3");
-                if (Math.Abs(scaleY - slot.scale.y) > 0.0001f)
-                {
-                    MutateBaseSlotWithUndo(() => slot.scale.y = scaleY);
+                    MutateBaseSlotWithUndo(() => slot.scale = new Vector2(uniformScale, uniformScale));
                 }
 
                 float baseRotation = slot.rotation;
@@ -336,15 +338,6 @@ namespace CharacterStudio.UI
                 {
                     MutateBaseSlotWithUndo(() => slot.rotation = baseRotation);
                 }
-
-                float currentScaleX = GetEditableSlotScaleForPreview(slot).x;
-                UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Transform_PreviewScaleX".Translate(), currentScaleX.ToString("F3"));
-
-                float currentScaleY = GetEditableSlotScaleForPreview(slot).y;
-                UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Transform_PreviewScaleY".Translate(), currentScaleY.ToString("F3"));
-
-                float currentRotation = GetEditableSlotRotationForPreview(slot);
-                UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Transform_PreviewRotation".Translate(), currentRotation.ToString("F0"));
 
                 float drawOrderOffset = slot.drawOrderOffset;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_BaseSlot_DrawOrderOffset".Translate(), ref drawOrderOffset, -50f, 50f, "F0");
@@ -362,19 +355,6 @@ namespace CharacterStudio.UI
                 if (flip != slot.flipHorizontal)
                 {
                     MutateBaseSlotWithUndo(() => slot.flipHorizontal = flip);
-                }
-            }
-
-            bool isBaseSlotEastActive = previewRotation == Rot4.East || previewRotation == Rot4.West;
-            if (DrawCollapsibleSection(ref y, width, "CS_Studio_Transform_EastRotation".Translate(), "BaseSlotEastScaleRotation", isBaseSlotEastActive))
-            {
-                DrawPropertyHint(ref y, width, "CS_Studio_Transform_EastRotationHint".Translate());
-
-                float eastRotationOffset = slot.rotationEastOffset;
-                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Transform_RotationOffset".Translate(), ref eastRotationOffset, -180f, 180f, "F0");
-                if (Math.Abs(eastRotationOffset - slot.rotationEastOffset) > 0.0001f)
-                {
-                    MutateBaseSlotWithUndo(() => slot.rotationEastOffset = eastRotationOffset);
                 }
             }
 

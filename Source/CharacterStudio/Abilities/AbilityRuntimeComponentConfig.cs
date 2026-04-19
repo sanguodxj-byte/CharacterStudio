@@ -131,7 +131,7 @@ namespace CharacterStudio.Abilities
         // ── Dash (直线冲刺) ──
         public int dashDistance = 6;
         public int dashStepDurationTicks = 3;
-        public bool dashTriggerEffects = true;
+        public DashEffectTiming dashEffectTiming = DashEffectTiming.OnCollisionStop;
         public bool dashUseAbilityRange = false;
 
         // ── 联动标签 (Tag-based Linkage) ──

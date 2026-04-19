@@ -339,18 +339,27 @@ namespace CharacterStudio.Abilities.RuntimeComponents
         {
             int distance = config.dashDistance > 0 ? config.dashDistance : 6;
             int stepDuration = config.dashStepDurationTicks > 0 ? config.dashStepDurationTicks : 3;
+            int totalDurationTicks = distance * stepDuration;
 
-            // Resolve dash direction: toward target cell or forward
+            // Resolve dash direction: precise angle toward target
             IntVec3 origin = caster.Position;
             IntVec3 targetCell = target.IsValid ? target.Cell : (origin + caster.Rotation.FacingCell);
-            IntVec3 dir = new IntVec3(Math.Sign(targetCell.x - origin.x), 0, Math.Sign(targetCell.z - origin.z));
-            if (dir.x == 0 && dir.z == 0)
-                dir = caster.Rotation.FacingCell;
+            IntVec3 delta = targetCell - origin;
+            Vector2 dir;
+            if (delta.x == 0 && delta.z == 0)
+            {
+                IntVec3 facing = caster.Rotation.FacingCell;
+                dir = new Vector2(facing.x, facing.z).normalized;
+            }
+            else
+            {
+                dir = new Vector2(delta.x, delta.z).normalized;
+            }
 
             // Begin forced move
-            Core.CompPawnSkin? skinComp = caster.GetComp<Core.CompPawnSkin>();
-            if (skinComp != null)
-                skinComp.BeginForcedMove(dir, distance, stepDuration);
+            CompCharacterAbilityRuntime? abilityCompDirect = caster.GetComp<CompCharacterAbilityRuntime>();
+            if (abilityCompDirect != null)
+                abilityCompDirect.BeginForcedMove(dir, distance, totalDurationTicks);
 
             // Tag-based Equipment Animation linkage
             if (config.triggerEquipmentAnimationOnApply && !string.IsNullOrWhiteSpace(config.equipmentAnimationTriggerKey))

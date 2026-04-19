@@ -363,6 +363,33 @@ namespace CharacterStudio.UI
             return titleRect;
         }
 
+        public static bool DrawIconButton(Rect buttonRect, string label, string tooltip, Action action, bool accent = false)
+        {
+            Widgets.DrawBoxSolid(buttonRect, accent ? ActiveTabColor : PanelFillSoftColor);
+            Widgets.DrawBoxSolid(new Rect(buttonRect.x, buttonRect.yMax - 2f, buttonRect.width, 2f), accent ? AccentColor : new Color(1f, 1f, 1f, 0.05f));
+            GUI.color = Mouse.IsOver(buttonRect) ? HoverOutlineColor : BorderColor;
+            Widgets.DrawBox(buttonRect, 1);
+            GUI.color = Color.white;
+
+            GameFont prevFont = Text.Font;
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.MiddleCenter;
+            GUI.color = accent ? Color.white : HeaderColor;
+            Widgets.Label(buttonRect, label);
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = prevFont;
+
+            TooltipHandler.TipRegion(buttonRect, tooltip);
+            if (Widgets.ButtonInvisible(buttonRect))
+            {
+                action();
+                return true;
+            }
+
+            return false;
+        }
+
         public static Rect DrawContentCard(Rect rect)
         {
             Widgets.DrawBoxSolid(rect, PanelFillSoftColor);
@@ -636,7 +663,7 @@ namespace CharacterStudio.UI
         /// <summary>
         /// 绘制滑块字段（带有文本输入框以便精细调整）
         /// </summary>
-        public static void DrawPropertySlider(ref float y, float width, string label, ref float value, float min, float max, string format = "F2", float labelWidth = LabelWidth)
+        public static void DrawPropertySlider(ref float y, float width, string label, ref float value, float min, float max, string format = "F2", float labelWidth = LabelWidth, string? tooltip = null)
         {
             Rect rect = new Rect(0, y, width, RowHeight);
 
@@ -673,6 +700,11 @@ namespace CharacterStudio.UI
             if (Math.Abs(value - numericValueBefore) > 0.0001f)
             {
                 value = QuantizeFloat(value, decimals);
+            }
+
+            if (!string.IsNullOrWhiteSpace(tooltip))
+            {
+                TooltipHandler.TipRegion(rect, tooltip);
             }
 
             y += RowHeight;
@@ -828,34 +860,28 @@ namespace CharacterStudio.UI
         public static void DrawPropertyColor(ref float y, float width, string label, Color value, Action<Color> onColorChanged, float labelWidth = LabelWidth)
         {
             Rect rect = new Rect(0, y, width, RowHeight);
-            
+
             Text.Font = GameFont.Small;
             float actualLabelWidth = Mathf.Max(labelWidth, Text.CalcSize(label).x + 10f);
-            
-            float minFieldWidth = 100f;
+
+            float minFieldWidth = 60f;
             float availableLabelWidth = rect.width - minFieldWidth;
             if (actualLabelWidth > availableLabelWidth)
             {
                 actualLabelWidth = Mathf.Max(30f, availableLabelWidth);
             }
-            
+
             Widgets.Label(new Rect(rect.x, rect.y, actualLabelWidth, 24), label);
-            
+
             Rect colorRect = new Rect(rect.x + actualLabelWidth, rect.y + 2, 40, 20);
-            
-            // 绘制当前颜色
+
             Widgets.DrawBoxSolid(colorRect, value);
             Widgets.DrawBox(colorRect, 1);
-            
-            // 点击打开颜色选择器
+
             if (Widgets.ButtonInvisible(colorRect))
             {
                 Find.WindowStack.Add(new Dialog_SimpleColorPicker(value, onColorChanged));
             }
-            
-            // 显示 RGB 文本
-            string colorText = "CS_Studio_UI_ColorValueRGB".Translate(value.r.ToString("F2"), value.g.ToString("F2"), value.b.ToString("F2"));
-            Widgets.Label(new Rect(colorRect.xMax + 10, rect.y, width - colorRect.xMax - 10, 24), colorText);
 
             y += RowHeight;
         }

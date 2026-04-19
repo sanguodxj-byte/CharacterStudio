@@ -345,14 +345,29 @@ namespace CharacterStudio.Rendering
         /// </summary>
         public static bool HasAnyVanillaAncestor(PawnRenderNode node)
         {
+            if (node is PawnRenderNode_Custom customNode)
+            {
+                int cached = customNode._hasVanillaAncestorState;
+                if (cached >= 0)
+                    return cached != 0;
+            }
+
+            bool result = false;
             PawnRenderNode? ancestor = node.parent;
             while (ancestor != null)
             {
                 if (!(ancestor is PawnRenderNode_Custom))
-                    return true;
+                {
+                    result = true;
+                    break;
+                }
                 ancestor = ancestor.parent;
             }
-            return false;
+
+            if (node is PawnRenderNode_Custom cn)
+                cn._hasVanillaAncestorState = result ? 1 : 0;
+
+            return result;
         }
 
         /// <summary>

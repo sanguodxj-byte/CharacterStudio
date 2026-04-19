@@ -23,74 +23,26 @@ namespace CharacterStudio.UI
             workingSkin.equipments ??= new List<CharacterEquipmentDef>();
             SanitizeEquipmentSelection();
 
-            Widgets.DrawBoxSolid(rect, UIHelper.PanelFillColor);
-            GUI.color = UIHelper.BorderColor;
-            Widgets.DrawBox(rect, 1);
-            GUI.color = Color.white;
-
-            Rect titleRect = new Rect(rect.x + Margin, rect.y + Margin, rect.width - Margin * 2, 26f);
-            Widgets.DrawBoxSolid(titleRect, UIHelper.PanelFillSoftColor);
-            Widgets.DrawBoxSolid(new Rect(titleRect.x, titleRect.yMax - 2f, titleRect.width, 2f), UIHelper.AccentSoftColor);
-            GUI.color = UIHelper.BorderColor;
-            Widgets.DrawBox(titleRect, 1);
-            GUI.color = Color.white;
-
-            GameFont oldFont = Text.Font;
-            Text.Font = GameFont.Tiny;
-            Text.Anchor = TextAnchor.MiddleLeft;
-            GUI.color = UIHelper.HeaderColor;
-            Widgets.Label(new Rect(titleRect.x + 8f, titleRect.y, titleRect.width - 16f, titleRect.height), "CS_Studio_Tab_Equipment".Translate());
-            GUI.color = Color.white;
-            Text.Anchor = TextAnchor.UpperLeft;
-            Text.Font = oldFont;
+            Rect titleRect = UIHelper.DrawPanelShell(rect, "CS_Studio_Tab_Equipment".Translate(), Margin);
 
             float btnY = titleRect.yMax + 6f;
             float btnCount = 8f;
             float btnWidth = (rect.width - Margin * (btnCount + 1f)) / btnCount;
             float btnHeight = Mathf.Max(ButtonHeight - 2f, 22f);
 
-            bool DrawIconButton(Rect buttonRect, string label, string tooltip, Action action, bool accent = false)
-            {
-                Widgets.DrawBoxSolid(buttonRect, accent ? UIHelper.ActiveTabColor : UIHelper.PanelFillSoftColor);
-                Widgets.DrawBoxSolid(
-                    new Rect(buttonRect.x, buttonRect.yMax - 2f, buttonRect.width, 2f),
-                    accent ? UIHelper.AccentColor : new Color(1f, 1f, 1f, 0.05f));
-                GUI.color = Mouse.IsOver(buttonRect) ? UIHelper.HoverOutlineColor : UIHelper.BorderColor;
-                Widgets.DrawBox(buttonRect, 1);
-                GUI.color = Color.white;
-
-                GameFont prevFont = Text.Font;
-                Text.Font = GameFont.Tiny;
-                Text.Anchor = TextAnchor.MiddleCenter;
-                GUI.color = accent ? Color.white : UIHelper.HeaderColor;
-                Widgets.Label(buttonRect, label);
-                GUI.color = Color.white;
-                Text.Anchor = TextAnchor.UpperLeft;
-                Text.Font = prevFont;
-
-                TooltipHandler.TipRegion(buttonRect, tooltip);
-                if (Widgets.ButtonInvisible(buttonRect))
-                {
-                    action();
-                    return true;
-                }
-
-                return false;
-            }
-
             float startX = rect.x + Margin;
-            DrawIconButton(new Rect(startX + (btnWidth + Margin) * 0f, btnY, btnWidth, btnHeight), "+", "CS_Studio_Equip_Btn_New".Translate(), AddNewEquipment, true);
-            DrawIconButton(new Rect(startX + (btnWidth + Margin) * 1f, btnY, btnWidth, btnHeight), "A", "CS_Studio_Equip_Btn_Abilities".Translate(), () =>
+            UIHelper.DrawIconButton(new Rect(startX + (btnWidth + Margin) * 0f, btnY, btnWidth, btnHeight), "+", "CS_Studio_Equip_Btn_New".Translate(), AddNewEquipment, true);
+            UIHelper.DrawIconButton(new Rect(startX + (btnWidth + Margin) * 1f, btnY, btnWidth, btnHeight), "A", "CS_Studio_Equip_Btn_Abilities".Translate(), () =>
             {
                 SyncAbilitiesFromSkin();
                 Find.WindowStack.Add(new Dialog_AbilityEditor(workingAbilities, workingSkin.abilityHotkeys, workingSkin));
             });
-            DrawIconButton(new Rect(startX + (btnWidth + Margin) * 2f, btnY, btnWidth, btnHeight), "✈", "CS_Studio_Equip_AircraftPreset".Translate(), AddAircraftWingAnimationPreset, true);
-            DrawIconButton(new Rect(startX + (btnWidth + Margin) * 3f, btnY, btnWidth, btnHeight), "-", "CS_Studio_Btn_Delete".Translate(), DeleteSelectedEquipment);
-            DrawIconButton(new Rect(startX + (btnWidth + Margin) * 4f, btnY, btnWidth, btnHeight), "C", "CS_Studio_Panel_Duplicate".Translate(), DuplicateSelectedEquipment);
-            DrawIconButton(new Rect(startX + (btnWidth + Margin) * 5f, btnY, btnWidth, btnHeight), "T", "CS_Studio_Equip_Btn_TestSpawn".Translate(), SpawnSelectedEquipmentForTest, true);
-            DrawIconButton(new Rect(startX + (btnWidth + Margin) * 6f, btnY, btnWidth, btnHeight), "↓", "CS_Studio_Equip_ImportXmlTitle".Translate(), OpenEquipmentImportXmlDialog);
-            DrawIconButton(new Rect(startX + (btnWidth + Margin) * 7f, btnY, btnWidth, btnHeight), "↑", "CS_Studio_Equip_Btn_ExportXml".Translate(), ExportSelectedEquipmentToDefaultPath);
+            UIHelper.DrawIconButton(new Rect(startX + (btnWidth + Margin) * 2f, btnY, btnWidth, btnHeight), "✈", "CS_Studio_Equip_AircraftPreset".Translate(), AddAircraftWingAnimationPreset, true);
+            UIHelper.DrawIconButton(new Rect(startX + (btnWidth + Margin) * 3f, btnY, btnWidth, btnHeight), "-", "CS_Studio_Btn_Delete".Translate(), DeleteSelectedEquipment);
+            UIHelper.DrawIconButton(new Rect(startX + (btnWidth + Margin) * 4f, btnY, btnWidth, btnHeight), "C", "CS_Studio_Panel_Duplicate".Translate(), DuplicateSelectedEquipment);
+            UIHelper.DrawIconButton(new Rect(startX + (btnWidth + Margin) * 5f, btnY, btnWidth, btnHeight), "T", "CS_Studio_Equip_Btn_TestSpawn".Translate(), SpawnSelectedEquipmentForTest, true);
+            UIHelper.DrawIconButton(new Rect(startX + (btnWidth + Margin) * 6f, btnY, btnWidth, btnHeight), "↓", "CS_Studio_Equip_ImportXmlTitle".Translate(), OpenEquipmentImportXmlDialog);
+            UIHelper.DrawIconButton(new Rect(startX + (btnWidth + Margin) * 7f, btnY, btnWidth, btnHeight), "↑", "CS_Studio_Equip_Btn_ExportXml".Translate(), ExportSelectedEquipmentToDefaultPath);
 
             float listY = btnY + btnHeight + 8f;
             float listHeight = rect.height - listY + rect.y - Margin;

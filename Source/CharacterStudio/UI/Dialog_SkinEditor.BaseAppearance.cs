@@ -20,26 +20,7 @@ namespace CharacterStudio.UI
 
         private void DrawBaseAppearancePanel(Rect rect)
         {
-            Widgets.DrawBoxSolid(rect, UIHelper.PanelFillColor);
-            GUI.color = UIHelper.BorderColor;
-            Widgets.DrawBox(rect, 1);
-            GUI.color = Color.white;
-
-            Rect titleRect = new Rect(rect.x + Margin, rect.y + Margin, rect.width - Margin * 2, 26f);
-            Widgets.DrawBoxSolid(titleRect, UIHelper.PanelFillSoftColor);
-            Widgets.DrawBoxSolid(new Rect(titleRect.x, titleRect.yMax - 2f, titleRect.width, 2f), UIHelper.AccentSoftColor);
-            GUI.color = UIHelper.BorderColor;
-            Widgets.DrawBox(titleRect, 1);
-            GUI.color = Color.white;
-
-            GameFont oldFont = Text.Font;
-            Text.Font = GameFont.Tiny;
-            Text.Anchor = TextAnchor.MiddleLeft;
-            GUI.color = UIHelper.HeaderColor;
-            Widgets.Label(new Rect(titleRect.x + 8f, titleRect.y, titleRect.width - 16f, titleRect.height), "CS_Studio_Tab_BaseAppearance".Translate());
-            GUI.color = Color.white;
-            Text.Anchor = TextAnchor.UpperLeft;
-            Text.Font = oldFont;
+            Rect titleRect = UIHelper.DrawPanelShell(rect, "CS_Studio_Tab_BaseAppearance".Translate(), Margin);
 
             Rect summaryRect = new Rect(rect.x + Margin, titleRect.yMax + 6f, rect.width - Margin * 2, 24f);
             Widgets.DrawBoxSolid(summaryRect, UIHelper.PanelFillSoftColor);
@@ -61,7 +42,7 @@ namespace CharacterStudio.UI
             Text.Font = GameFont.Tiny;
             Text.Anchor = TextAnchor.MiddleLeft;
             GUI.color = UIHelper.SubtleColor;
-            Widgets.Label(new Rect(summaryRect.x + 8f, summaryRect.y, summaryRect.width - 16f, summaryRect.height), $"已启用槽位：{enabledCount}/{workingSkin.baseAppearance.slots.Count}");
+            Widgets.Label(new Rect(summaryRect.x + 8f, summaryRect.y, summaryRect.width - 16f, summaryRect.height), "CS_Studio_BaseSlot_EnabledCount".Translate(enabledCount, workingSkin.baseAppearance.slots.Count));
             GUI.color = Color.white;
             Text.Anchor = TextAnchor.UpperLeft;
             Text.Font = GameFont.Small;
@@ -140,32 +121,26 @@ namespace CharacterStudio.UI
                 GUI.color = Color.white;
             }
 
-            // 图标居中对齐
-            float iconSize = 18f;
+            float iconSize = 28f;
             float iconY = y + (BaseSlotRowHeight - iconSize) / 2f;
-            
-            // 启用状态 (菱形)
-            Rect statusRect = new Rect(8f, iconY, iconSize, iconSize);
+
+            // 启用状态开关 (菱形方块)
+            Rect toggleRect = new Rect(4f, iconY, iconSize, iconSize);
             bool enabled = slot.enabled;
             GUI.color = enabled ? new Color(0.37f, 0.82f, 1f) : new Color(0.4f, 0.45f, 0.5f);
             Text.Anchor = TextAnchor.MiddleCenter;
-            Widgets.Label(statusRect, enabled ? "◆" : "◇");
-            Text.Anchor = TextAnchor.UpperLeft;
-            GUI.color = Color.white;
-
-            // 显示开关 (圆形)
-            Rect toggleRect = new Rect(30f, iconY, iconSize, iconSize);
-            GUI.color = enabled ? Color.white : new Color(0.4f, 0.45f, 0.5f);
-            Text.Anchor = TextAnchor.MiddleCenter;
-            if (Widgets.ButtonText(toggleRect, enabled ? "◉" : "◯", false))
+            Text.Font = GameFont.Medium;
+            if (Widgets.ButtonText(toggleRect, enabled ? "◆" : "◇", false))
             {
                 bool newEnabled = !slot.enabled;
                 MutateWithUndo(() => slot.enabled = newEnabled, refreshPreview: true, refreshRenderTree: true);
             }
+            Text.Font = GameFont.Small;
             Text.Anchor = TextAnchor.UpperLeft;
             GUI.color = Color.white;
+            TooltipHandler.TipRegion(toggleRect, enabled ? "CS_Studio_BaseSlot_Disable".Translate() : "CS_Studio_BaseSlot_Enable".Translate());
 
-            float textX = 56f;
+            float textX = 38f;
             float editX = width - BaseSlotEditButtonWidth - 8f;
             float textWidth = Mathf.Max(64f, editX - textX - 6f);
             

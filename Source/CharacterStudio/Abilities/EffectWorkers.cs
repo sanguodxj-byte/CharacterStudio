@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using CharacterStudio.Core;
 using RimWorld;
+using UnityEngine;
 using Verse;
 
 namespace CharacterStudio.Abilities
@@ -215,7 +216,8 @@ namespace CharacterStudio.Abilities
             CompCharacterAbilityRuntime? abilityComp = targetPawn.GetComp<CompCharacterAbilityRuntime>();
             if (abilityComp != null)
             {
-                abilityComp.BeginForcedMove(direction, distance);
+                Vector2 dir = new Vector2(direction.x, direction.z).normalized;
+                abilityComp.BeginForcedMove(dir, distance, distance * 4);
                 return;
             }
 

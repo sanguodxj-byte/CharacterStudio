@@ -238,26 +238,7 @@ namespace CharacterStudio.UI
 
         private void DrawFacePanel(Rect rect)
         {
-            Widgets.DrawBoxSolid(rect, UIHelper.PanelFillColor);
-            GUI.color = UIHelper.BorderColor;
-            Widgets.DrawBox(rect, 1);
-            GUI.color = Color.white;
-
-            Rect titleRect = new Rect(rect.x + Margin, rect.y + Margin, rect.width - Margin * 2, 26f);
-            Widgets.DrawBoxSolid(titleRect, UIHelper.PanelFillSoftColor);
-            Widgets.DrawBoxSolid(new Rect(titleRect.x, titleRect.yMax - 2f, titleRect.width, 2f), UIHelper.AccentSoftColor);
-            GUI.color = UIHelper.BorderColor;
-            Widgets.DrawBox(titleRect, 1);
-            GUI.color = Color.white;
-
-            GameFont oldFont = Text.Font;
-            Text.Font = GameFont.Tiny;
-            Text.Anchor = TextAnchor.MiddleLeft;
-            GUI.color = UIHelper.HeaderColor;
-            Widgets.Label(new Rect(titleRect.x + 8f, titleRect.y, titleRect.width - 16f, titleRect.height), "CS_Studio_Face_Title".Translate());
-            GUI.color = Color.white;
-            Text.Anchor = TextAnchor.UpperLeft;
-            Text.Font = oldFont;
+            Rect titleRect = UIHelper.DrawPanelShell(rect, "CS_Studio_Face_Title".Translate(), Margin);
 
             PawnFaceConfig? fc = workingSkin.faceConfig;
             float contentY = titleRect.yMax + 8f;
@@ -623,8 +604,11 @@ namespace CharacterStudio.UI
 
         private void DrawScannedMouthSemanticRow(PawnFaceConfig fc, ref float y, float width, ScannedMouthCandidate candidate)
         {
+            RebuildSemanticMappingCacheIfNeeded(fc);
+
             string mappedPath = fc.GetLayeredPartPath(LayeredFacePartType.ReplacementMouth, candidate.SuggestedExpression);
-            List<ExpressionType> mappedExpressions = GetAllMouthMappedExpressions(fc, candidate.FilePath);
+            if (!mouthMappingCache.TryGetValue(candidate.FilePath, out List<ExpressionType> mappedExpressions))
+                mappedExpressions = new List<ExpressionType>();
             string displayLabel;
             if (mappedExpressions.Count > 0)
             {
@@ -756,10 +740,87 @@ namespace CharacterStudio.UI
             }
         }
 
+        private void RebuildSemanticMappingCacheIfNeeded(PawnFaceConfig fc)
+        {
+            if (semanticMappingCacheBuildVersion == semanticMappingCacheVersion)
+                return;
+
+            semanticMappingCacheBuildVersion = semanticMappingCacheVersion;
+            eyeMappingCache.Clear();
+            mouthMappingCache.Clear();
+            overlayIdMappingCache.Clear();
+            overlaySemanticKeyCache.Clear();
+            overlayFollowTargetCache.Clear();
+
+            // Eye mapping cache: filePath → [expressions]
+            foreach (ExpressionType expr in Enum.GetValues(typeof(ExpressionType)))
+            {
+                foreach (LayeredFacePartSide side in new[] { LayeredFacePartSide.None, LayeredFacePartSide.Left, LayeredFacePartSide.Right })
+                {
+                    string mappedPath = fc.GetLayeredPartPath(LayeredFacePartType.ReplacementEye, expr, side);
+                    if (string.IsNullOrWhiteSpace(mappedPath)) continue;
+                    if (!eyeMappingCache.TryGetValue(mappedPath, out var list))
+                    {
+                        list = new List<ExpressionType>();
+                        eyeMappingCache[mappedPath] = list;
+                    }
+                    if (!list.Contains(expr))
+                        list.Add(expr);
+                }
+            }
+
+            // Mouth mapping cache: filePath → [expressions]
+            foreach (ExpressionType expr in Enum.GetValues(typeof(ExpressionType)))
+            {
+                string mappedPath = fc.GetLayeredPartPath(LayeredFacePartType.ReplacementMouth, expr);
+                if (string.IsNullOrWhiteSpace(mappedPath)) continue;
+                if (!mouthMappingCache.TryGetValue(mappedPath, out var list))
+                {
+                    list = new List<ExpressionType>();
+                    mouthMappingCache[mappedPath] = list;
+                }
+                if (!list.Contains(expr))
+                    list.Add(expr);
+            }
+
+            // Overlay mapping caches
+            foreach (LayeredFacePartType partType in new[] { LayeredFacePartType.Overlay, LayeredFacePartType.OverlayTop, LayeredFacePartType.Hair })
+            {
+                foreach (string overlayId in fc.GetOrderedOverlayIds(partType))
+                {
+                    LayeredFacePartConfig? overlayPart = fc.GetLayeredPartConfig(partType, ExpressionType.Neutral, overlayId);
+                    if (overlayPart != null && !string.IsNullOrWhiteSpace(overlayPart.texPath))
+                        overlayIdMappingCache[overlayPart.texPath] = overlayId;
+                }
+            }
+
+            foreach (var rule in fc.emotionOverlayRules)
+            {
+                if (rule == null) continue;
+                foreach (string oid in rule.overlayIds ?? Enumerable.Empty<string>())
+                {
+                    string normalizedOid = PawnFaceConfig.NormalizeOverlayId(oid);
+                    if (!string.IsNullOrWhiteSpace(normalizedOid) && !overlaySemanticKeyCache.ContainsKey(normalizedOid))
+                        overlaySemanticKeyCache[normalizedOid] = PawnFaceConfig.NormalizeOverlaySemanticKey(rule.semanticKey);
+                }
+            }
+
+            foreach (var part in fc.layeredParts ?? Enumerable.Empty<LayeredFacePartConfig>())
+            {
+                if (part == null || !PawnFaceConfig.IsOverlayPart(part.partType)) continue;
+                string normalizedOid = PawnFaceConfig.NormalizeOverlayId(part.overlayId);
+                if (!string.IsNullOrWhiteSpace(normalizedOid) && !string.IsNullOrWhiteSpace(part.followTarget) && !overlayFollowTargetCache.ContainsKey(normalizedOid))
+                    overlayFollowTargetCache[normalizedOid] = part.followTarget;
+            }
+        }
+
         private void DrawScannedEyeSemanticRow(PawnFaceConfig fc, ref float y, float width, ScannedEyeCandidate candidate)
         {
+            RebuildSemanticMappingCacheIfNeeded(fc);
+
             string mappedPath = fc.GetLayeredPartPath(LayeredFacePartType.ReplacementEye, candidate.SuggestedExpression, candidate.Side);
-            List<ExpressionType> mappedExpressions = GetAllEyeMappedExpressions(fc, candidate.FilePath);
+            if (!eyeMappingCache.TryGetValue(candidate.FilePath, out List<ExpressionType> mappedExpressions))
+                mappedExpressions = new List<ExpressionType>();
             string displayLabel;
             if (mappedExpressions.Count > 0)
             {
@@ -1068,14 +1129,19 @@ namespace CharacterStudio.UI
 
         private void DrawScannedOverlaySemanticRow(PawnFaceConfig fc, ref float y, float width, ScannedOverlayCandidate candidate)
         {
-            string mappedOverlayId = GetMappedOverlayIdForPath(fc, candidate.FilePath, candidate.PartType);
-            string semanticKey = GetPrimarySemanticKeyForOverlayId(fc, mappedOverlayId);
+            RebuildSemanticMappingCacheIfNeeded(fc);
+
+            string cacheKey = candidate.FilePath;
+            if (!overlayIdMappingCache.TryGetValue(cacheKey, out string mappedOverlayId))
+                mappedOverlayId = string.Empty;
+            if (!overlaySemanticKeyCache.TryGetValue(mappedOverlayId, out string semanticKey))
+                semanticKey = string.Empty;
             string displayLabel = string.IsNullOrWhiteSpace(semanticKey)
                 ? (TrySemanticKeyToExpression(PawnFaceConfig.NormalizeOverlaySemanticKey(candidate.SuggestedToken), out ExpressionType suggestedExpression)
                     ? GetExpressionTypeLabel(suggestedExpression)
                     : (!string.IsNullOrWhiteSpace(candidate.SuggestedToken) ? candidate.SuggestedToken : "..."))
                 : GetOverlaySelectionLabel(semanticKey);
-            string followTarget = GetFollowTargetForOverlayId(fc, mappedOverlayId, candidate.PartType);
+            string followTarget = overlayFollowTargetCache.TryGetValue(mappedOverlayId, out string ft) ? ft : string.Empty;
             string followLabel = string.IsNullOrWhiteSpace(followTarget)
                 ? "..."
                 : GetOverlayFollowTargetLabel(followTarget);

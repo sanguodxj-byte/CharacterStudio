@@ -378,6 +378,8 @@
     <CS_Studio_VFX_FacingMode_CastDirection>施法方向</CS_Studio_VFX_FacingMode_CastDirection>
     <CS_Studio_VFX_ForwardOffsetShort>前移</CS_Studio_VFX_ForwardOffsetShort>
     <CS_Studio_VFX_SideOffsetShort>侧移</CS_Studio_VFX_SideOffsetShort>
+    <CS_Studio_VFX_SourceLayerShort>发射源图层</CS_Studio_VFX_SourceLayerShort>
+    <CS_Studio_VFX_SourceLayerNone>无（施法者中心）</CS_Studio_VFX_SourceLayerNone>
     <CS_Studio_VFX_FacingModeHint>朝向会同时影响前移/侧移偏移基准，并为自定义纹理特效自动叠加基础旋转。</CS_Studio_VFX_FacingModeHint>
     <CS_Studio_VFX_FrameAnimToggle>帧动画</CS_Studio_VFX_FrameAnimToggle>
     <CS_Studio_VFX_FrameCountShort>帧数</CS_Studio_VFX_FrameCountShort>
@@ -534,7 +536,10 @@
     <CS_Studio_Runtime_DashDistance>冲刺距离</CS_Studio_Runtime_DashDistance>
     <CS_Studio_Runtime_DashSpeed>每格耗时(Tick)</CS_Studio_Runtime_DashSpeed>
     <CS_Studio_Runtime_DashUseAbilityRange>使用技能射程</CS_Studio_Runtime_DashUseAbilityRange>
-    <CS_Studio_Runtime_DashTriggerEffects>冲刺后触发效果</CS_Studio_Runtime_DashTriggerEffects>
+    <CS_Studio_Runtime_DashEffectTiming>效果触发时机</CS_Studio_Runtime_DashEffectTiming>
+    <CS_Studio_DashTiming_OnCollisionStop>碰撞停下触发</CS_Studio_DashTiming_OnCollisionStop>
+    <CS_Studio_DashTiming_OnCollisionPassThrough>碰撞穿过触发</CS_Studio_DashTiming_OnCollisionPassThrough>
+    <CS_Studio_DashTiming_OnComplete>冲刺完成触发</CS_Studio_DashTiming_OnComplete>
     <CS_Studio_Runtime_DashEquipAnim>触发武器动画</CS_Studio_Runtime_DashEquipAnim>
     <CS_Studio_Runtime_DashEquipAnimKey>动画触发键</CS_Studio_Runtime_DashEquipAnimKey>
     <CS_Studio_Runtime_DashEquipAnimDuration>动画持续(Tick)</CS_Studio_Runtime_DashEquipAnimDuration>
@@ -542,4 +547,37 @@
     <CS_Ability_Validate_DashDistance>冲刺距离必须大于 0。</CS_Ability_Validate_DashDistance>
     <CS_Ability_Validate_DashStepDuration>每格耗时必须大于 0。</CS_Ability_Validate_DashStepDuration>
     <CS_Ability_Validate_DashEquipAnimKey>启用了武器动画联动但未填写触发键。</CS_Ability_Validate_DashEquipAnimKey>
+    <CS_Studio_VFX_GlobalFilter>全局滤镜</CS_Studio_VFX_GlobalFilter>
+    <CS_Studio_VFX_GlobalFilter_None>无</CS_Studio_VFX_GlobalFilter_None>
+    <CS_Studio_VFX_GlobalFilterMode>滤镜</CS_Studio_VFX_GlobalFilterMode>
+    <CS_Studio_VFX_GlobalFilterTransition>过渡</CS_Studio_VFX_GlobalFilterTransition>
+    <CS_Studio_VFX_GlobalFilterTransition_None>无</CS_Studio_VFX_GlobalFilterTransition_None>
+    <CS_Studio_VFX_GlobalFilterTransitionTicks>过渡(tick)</CS_Studio_VFX_GlobalFilterTransitionTicks>
+    <!-- VFX 大类名称 -->
+    <CS_Studio_VFX_Category_Preset>预设特效</CS_Studio_VFX_Category_Preset>
+    <CS_Studio_VFX_Category_CustomTexture>自定义贴图</CS_Studio_VFX_Category_CustomTexture>
+    <CS_Studio_VFX_Category_LineTexture>线段贴图</CS_Studio_VFX_Category_LineTexture>
+    <CS_Studio_VFX_Category_WallTexture>墙壁贴图</CS_Studio_VFX_Category_WallTexture>
+    <CS_Studio_VFX_Category_GlobalFilter>全局滤镜</CS_Studio_VFX_Category_GlobalFilter>
+    <!-- VFX 添加菜单分类 -->
+    <CS_Studio_VFX_AddCategory_Preset>▶ 预设特效...</CS_Studio_VFX_AddCategory_Preset>
+    <CS_Studio_VFX_AddCategory_CustomTexture>自定义贴图</CS_Studio_VFX_AddCategory_CustomTexture>
+    <CS_Studio_VFX_AddCategory_LineTexture>线段贴图</CS_Studio_VFX_AddCategory_LineTexture>
+    <CS_Studio_VFX_AddCategory_WallTexture>墙壁贴图</CS_Studio_VFX_AddCategory_WallTexture>
+    <CS_Studio_VFX_AddCategory_GlobalFilter>全局滤镜</CS_Studio_VFX_AddCategory_GlobalFilter>
+    <!-- 预设特效翻译名 -->
+    <CS_Studio_VFX_Preset_DustPuff>灰尘飞扬</CS_Studio_VFX_Preset_DustPuff>
+    <CS_Studio_VFX_Preset_MicroSparks>微火花</CS_Studio_VFX_Preset_MicroSparks>
+    <CS_Studio_VFX_Preset_LightningGlow>闪电光辉</CS_Studio_VFX_Preset_LightningGlow>
+    <CS_Studio_VFX_Preset_FireGlow>火焰光辉</CS_Studio_VFX_Preset_FireGlow>
+    <CS_Studio_VFX_Preset_Smoke>烟雾</CS_Studio_VFX_Preset_Smoke>
+    <CS_Studio_VFX_Preset_ExplosionEffect>爆炸效果</CS_Studio_VFX_Preset_ExplosionEffect>
+    <CS_Studio_VFX_Preset_SteamBurst>蒸汽爆发</CS_Studio_VFX_Preset_SteamBurst>
+    <CS_Studio_VFX_Preset_EmberBurst>余烬迸发</CS_Studio_VFX_Preset_EmberBurst>
+    <CS_Studio_VFX_Preset_ShockBurst>冲击爆发</CS_Studio_VFX_Preset_ShockBurst>
+    <CS_Studio_VFX_Preset_DustRing>尘环</CS_Studio_VFX_Preset_DustRing>
+    <CS_Studio_VFX_Preset_ArcSparkBurst>弧光火花</CS_Studio_VFX_Preset_ArcSparkBurst>
+    <CS_Studio_VFX_Preset_FlameSurge>烈焰涌动</CS_Studio_VFX_Preset_FlameSurge>
+    <CS_Studio_VFX_Preset_FlightJetBlue>飞行尾焰(蓝)</CS_Studio_VFX_Preset_FlightJetBlue>
+    <CS_Studio_VFX_Preset_FlightJetTrail>飞行尾迹</CS_Studio_VFX_Preset_FlightJetTrail>
 </LanguageData>

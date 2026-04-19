@@ -172,6 +172,9 @@ namespace CharacterStudio.Core
         /// <summary>皮肤创建/编辑时预览人偶的 Head 节点 Z 偏移，用于自动补偿不同体型的面部 Z 差异。0 表示未记录（不做补偿）。</summary>
         public float previewHeadOffsetZ = 0f;
 
+        /// <summary>编辑器预览中是否启用"仅编辑当前朝向"模式，使拖拽和方向微调只修改当前朝向的偏移数据。</summary>
+        public bool editLayerOffsetPerFacing = false;
+
         /// <summary>装备定义列表（编辑器内创建/导入/导出的装备条目）</summary>
         public List<CharacterEquipmentDef> equipments = new List<CharacterEquipmentDef>();
 
@@ -247,6 +250,7 @@ namespace CharacterStudio.Core
             clone.xenotypeDefName = this.xenotypeDefName;
             clone.raceDisplayName = this.raceDisplayName;
             clone.previewHeadOffsetZ = this.previewHeadOffsetZ;
+            clone.editLayerOffsetPerFacing = this.editLayerOffsetPerFacing;
             clone.globalTextureScale = this.globalTextureScale;
 
             // 复制图层

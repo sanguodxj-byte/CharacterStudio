@@ -1,9 +1,13 @@
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Xml.Linq;
 using CharacterStudio.Abilities;
 using CharacterStudio.Core;
 using UnityEngine;
+using Verse;
 
 namespace CharacterStudio.Exporter
 {
@@ -192,6 +196,7 @@ namespace CharacterStudio.Exporter
                     new XElement("revealBySegments", SerializeBool(visualEffect.revealBySegments)),
                     new XElement("segmentRevealIntervalTicks", visualEffect.segmentRevealIntervalTicks),
                     visualEffect.offset != Vector3.zero ? new XElement("offset", XmlExportHelper.FormatVector3(visualEffect.offset)) : null,
+                    !string.IsNullOrWhiteSpace(visualEffect.vfxSourceLayerName) ? new XElement("vfxSourceLayerName", visualEffect.vfxSourceLayerName) : null,
                     new XElement("repeatCount", visualEffect.repeatCount),
                     new XElement("repeatIntervalTicks", visualEffect.repeatIntervalTicks),
                     new XElement("attachToPawn", SerializeBool(visualEffect.attachToPawn)),
@@ -226,118 +231,78 @@ namespace CharacterStudio.Exporter
                     continue;
                 }
 
-                root.Add(new XElement("li",
-                    new XElement("type", component.type.ToString()),
-                    new XElement("enabled", SerializeBool(component.enabled)),
-                    new XElement("comboWindowTicks", component.comboWindowTicks),
-                    new XElement("comboTargetHotkeySlot", component.comboTargetHotkeySlot.ToString()),
-                    !string.IsNullOrWhiteSpace(component.comboTargetAbilityDefName) ? new XElement("comboTargetAbilityDefName", component.comboTargetAbilityDefName) : null,
-                    new XElement("cooldownTicks", component.cooldownTicks),
-                    new XElement("jumpDistance", component.jumpDistance),
-                    new XElement("findCellRadius", component.findCellRadius),
-                    new XElement("triggerAbilityEffectsAfterJump", SerializeBool(component.triggerAbilityEffectsAfterJump)),
-                    new XElement("useMouseTargetCell", SerializeBool(component.useMouseTargetCell)),
-                    new XElement("smartCastOffsetCells", component.smartCastOffsetCells),
-                    new XElement("smartCastClampToMaxDistance", SerializeBool(component.smartCastClampToMaxDistance)),
-                    new XElement("smartCastAllowFallbackForward", SerializeBool(component.smartCastAllowFallbackForward)),
-                    new XElement("overrideHotkeySlot", component.overrideHotkeySlot.ToString()),
-                    new XElement("overrideAbilityDefName", component.overrideAbilityDefName ?? string.Empty),
-                    new XElement("overrideDurationTicks", component.overrideDurationTicks),
-                    new XElement("followupCooldownHotkeySlot", component.followupCooldownHotkeySlot.ToString()),
-                    new XElement("followupCooldownTicks", component.followupCooldownTicks),
-                    new XElement("requiredStacks", component.requiredStacks),
-                    new XElement("delayTicks", component.delayTicks),
-                    new XElement("wave1Radius", component.wave1Radius),
-                    new XElement("wave1Damage", component.wave1Damage),
-                    new XElement("wave2Radius", component.wave2Radius),
-                    new XElement("wave2Damage", component.wave2Damage),
-                    new XElement("wave3Radius", component.wave3Radius),
-                    new XElement("wave3Damage", component.wave3Damage),
-                    component.waveDamageDef != null ? new XElement("waveDamageDef", component.waveDamageDef.defName) : null,
-                    new XElement("pulseIntervalTicks", component.pulseIntervalTicks),
-                    new XElement("pulseTotalTicks", component.pulseTotalTicks),
-                    new XElement("pulseStartsImmediately", SerializeBool(component.pulseStartsImmediately)),
-                    new XElement("killRefreshHotkeySlot", component.killRefreshHotkeySlot.ToString()),
-                    new XElement("killRefreshCooldownPercent", component.killRefreshCooldownPercent),
-                    new XElement("shieldMaxDamage", component.shieldMaxDamage),
-                    new XElement("shieldDurationTicks", component.shieldDurationTicks),
-                    new XElement("shieldHealRatio", component.shieldHealRatio),
-                    new XElement("shieldBonusDamageRatio", component.shieldBonusDamageRatio),
-                    new XElement("shieldVisualScale", component.shieldVisualScale),
-                    new XElement("shieldVisualHeightOffset", component.shieldVisualHeightOffset),
-                    !string.IsNullOrWhiteSpace(component.shieldInterceptorThingDefName) ? new XElement("shieldInterceptorThingDefName", component.shieldInterceptorThingDefName) : null,
-                    new XElement("shieldInterceptorDurationTicks", component.shieldInterceptorDurationTicks),
-                    new XElement("maxBounceCount", component.maxBounceCount),
-                    new XElement("bounceRange", component.bounceRange),
-                    new XElement("bounceDamageFalloff", component.bounceDamageFalloff),
-                    new XElement("executeThresholdPercent", component.executeThresholdPercent),
-                    new XElement("executeBonusDamageScale", component.executeBonusDamageScale),
-                    new XElement("missingHealthBonusPerTenPercent", component.missingHealthBonusPerTenPercent),
-                    new XElement("missingHealthBonusMaxScale", component.missingHealthBonusMaxScale),
-                    new XElement("fullHealthThresholdPercent", component.fullHealthThresholdPercent),
-                    new XElement("fullHealthBonusDamageScale", component.fullHealthBonusDamageScale),
-                    new XElement("nearbyEnemyBonusMaxTargets", component.nearbyEnemyBonusMaxTargets),
-                    new XElement("nearbyEnemyBonusPerTarget", component.nearbyEnemyBonusPerTarget),
-                    new XElement("nearbyEnemyBonusRadius", component.nearbyEnemyBonusRadius),
-                    new XElement("isolatedTargetRadius", component.isolatedTargetRadius),
-                    new XElement("isolatedTargetBonusDamageScale", component.isolatedTargetBonusDamageScale),
-                    new XElement("markDurationTicks", component.markDurationTicks),
-                    new XElement("markMaxStacks", component.markMaxStacks),
-                    new XElement("markDetonationDamage", component.markDetonationDamage),
-                    component.markDamageDef != null ? new XElement("markDamageDef", component.markDamageDef.defName) : null,
-                    new XElement("comboStackWindowTicks", component.comboStackWindowTicks),
-                    new XElement("comboStackMax", component.comboStackMax),
-                    new XElement("comboStackBonusDamagePerStack", component.comboStackBonusDamagePerStack),
-                    new XElement("slowFieldDurationTicks", component.slowFieldDurationTicks),
-                    new XElement("slowFieldRadius", component.slowFieldRadius),
-                    new XElement("slowFieldHediffDefName", component.slowFieldHediffDefName ?? string.Empty),
-                    new XElement("pierceMaxTargets", component.pierceMaxTargets),
-                    new XElement("pierceBonusDamagePerTarget", component.pierceBonusDamagePerTarget),
-                    new XElement("pierceSearchRange", component.pierceSearchRange),
-                    new XElement("dashEmpowerDurationTicks", component.dashEmpowerDurationTicks),
-                    new XElement("dashEmpowerBonusDamageScale", component.dashEmpowerBonusDamageScale),
-                    new XElement("hitHealAmount", component.hitHealAmount),
-                    new XElement("hitHealRatio", component.hitHealRatio),
-                    new XElement("refundHotkeySlot", component.refundHotkeySlot.ToString()),
-                    new XElement("hitCooldownRefundPercent", component.hitCooldownRefundPercent),
-                    new XElement("splitProjectileCount", component.splitProjectileCount),
-                    new XElement("splitDamageScale", component.splitDamageScale),
-                    new XElement("splitSearchRange", component.splitSearchRange),
-                    new XElement("flightDurationTicks", component.flightDurationTicks),
-                    new XElement("flightHeightFactor", component.flightHeightFactor),
-                    new XElement("suppressCombatActionsDuringFlightState", SerializeBool(component.suppressCombatActionsDuringFlightState)),
-                    new XElement("flyerThingDefName", component.flyerThingDefName ?? string.Empty),
-                    new XElement("flyerWarmupTicks", component.flyerWarmupTicks),
-                    new XElement("launchFromCasterPosition", SerializeBool(component.launchFromCasterPosition)),
-                    new XElement("requireValidTargetCell", SerializeBool(component.requireValidTargetCell)),
-                    new XElement("storeTargetForFollowup", SerializeBool(component.storeTargetForFollowup)),
-                    new XElement("enableFlightOnlyWindow", SerializeBool(component.enableFlightOnlyWindow)),
-                    new XElement("flightOnlyWindowTicks", component.flightOnlyWindowTicks),
-                    new XElement("flightOnlyAbilityDefName", component.flightOnlyAbilityDefName ?? string.Empty),
-                    new XElement("hideCasterDuringTakeoff", SerializeBool(component.hideCasterDuringTakeoff)),
-                    new XElement("autoExpireFlightMarkerOnLanding", SerializeBool(component.autoExpireFlightMarkerOnLanding)),
-                    new XElement("requiredFlightSourceAbilityDefName", component.requiredFlightSourceAbilityDefName ?? string.Empty),
-                    new XElement("requireReservedTargetCell", SerializeBool(component.requireReservedTargetCell)),
-                    new XElement("consumeFlightStateOnCast", SerializeBool(component.consumeFlightStateOnCast)),
-                    new XElement("onlyUseDuringFlightWindow", SerializeBool(component.onlyUseDuringFlightWindow)),
-                    new XElement("landingBurstRadius", component.landingBurstRadius),
-                    new XElement("landingBurstDamage", component.landingBurstDamage),
-                    component.landingBurstDamageDef != null ? new XElement("landingBurstDamageDef", component.landingBurstDamageDef.defName) : null,
-                    new XElement("landingEffecterDefName", component.landingEffecterDefName ?? string.Empty),
-                    new XElement("landingSoundDefName", component.landingSoundDefName ?? string.Empty),
-                    new XElement("affectBuildings", SerializeBool(component.affectBuildings)),
-                    new XElement("affectCells", SerializeBool(component.affectCells)),
-                    new XElement("knockbackTargets", SerializeBool(component.knockbackTargets)),
-                    new XElement("knockbackDistance", component.knockbackDistance),
-                    new XElement("timeStopDurationTicks", component.timeStopDurationTicks),
-                    new XElement("freezeVisualsDuringTimeStop", SerializeBool(component.freezeVisualsDuringTimeStop)),
-                    !string.IsNullOrWhiteSpace(component.weatherDefName) ? new XElement("weatherDefName", component.weatherDefName) : null,
-                    new XElement("weatherDurationTicks", component.weatherDurationTicks),
-                    new XElement("weatherTransitionTicks", component.weatherTransitionTicks)
-                ));
+                root.Add(new XElement("li", SerializePublicFields(component)));
             }
 
             return root;
+        }
+
+        /// <summary>
+        /// 通过反射将对象的全部 public 实例字段序列化为 XElement 数组。
+        /// 自动处理 int/float/bool/string/enum/Def? 类型。
+        /// 新增字段时无需更新此方法。
+        /// </summary>
+        private static object?[] SerializePublicFields(object obj)
+        {
+            var fields = obj.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance);
+            var elements = new List<object?>();
+
+            foreach (var field in fields)
+            {
+                var value = field.GetValue(obj);
+                var fieldType = field.FieldType;
+
+                // DamageDef? 等 Def 引用 → 写 defName，null 跳过
+                if (typeof(Def).IsAssignableFrom(fieldType))
+                {
+                    if (value != null)
+                    {
+                        string? defName = (value as Def)?.defName;
+                        if (!string.IsNullOrWhiteSpace(defName))
+                        {
+                            elements.Add(new XElement(field.Name, defName));
+                        }
+                    }
+                    continue;
+                }
+
+                // bool → "true"/"false"
+                if (fieldType == typeof(bool))
+                {
+                    elements.Add(new XElement(field.Name, SerializeBool((bool)value)));
+                    continue;
+                }
+
+                // float → InvariantCulture 避免逗号
+                if (fieldType == typeof(float))
+                {
+                    elements.Add(new XElement(field.Name, ((float)value).ToString(CultureInfo.InvariantCulture)));
+                    continue;
+                }
+
+                // enum → ToString()
+                if (fieldType.IsEnum)
+                {
+                    elements.Add(new XElement(field.Name, value!.ToString()));
+                    continue;
+                }
+
+                // string → 直接写
+                if (fieldType == typeof(string))
+                {
+                    elements.Add(new XElement(field.Name, (string?)value ?? string.Empty));
+                    continue;
+                }
+
+                // int, double 等 值类型 → 直接 ToString()
+                if (fieldType.IsValueType)
+                {
+                    elements.Add(new XElement(field.Name, value!.ToString()));
+                    continue;
+                }
+            }
+
+            return elements.ToArray();
         }
 
         internal static XElement? GenerateAbilityHotkeysElement(SkinAbilityHotkeyConfig? hotkeys)

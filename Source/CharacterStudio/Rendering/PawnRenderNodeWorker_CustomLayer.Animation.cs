@@ -74,21 +74,28 @@ namespace CharacterStudio.Rendering
         private void CalculateBrownianAnimation(PawnRenderNode_Custom customNode, PawnLayerConfig config, int currentTick)
         {
             Pawn? pawn = customNode.tree?.pawn;
+
+            // ── 初始化 ──
+            if (customNode.lastBrownianTick < 0)
+            {
+                customNode.lastBrownianTick = currentTick;
+                customNode.currentBrownianVelocity = Vector3.zero;
+                customNode.brownianRawOffset = Vector3.zero;
+                customNode.brownianBlendFactor = 0f;
+                customNode.brownianSmoothedOffset = Vector3.zero;
+            }
+
             if (pawn == null)
             {
                 customNode.currentAnimAngle = 0f;
                 customNode.currentAnimOffset = Vector3.zero;
                 customNode.currentAnimScale = 1f;
+                customNode.brownianBlendFactor = 0f;
+                customNode.brownianSmoothedOffset = Vector3.zero;
                 return;
             }
 
-            if (customNode.lastBrownianTick < 0)
-            {
-                customNode.lastBrownianTick = currentTick;
-                customNode.currentBrownianVelocity = Vector3.zero;
-            }
-
-            // P-PERF: 限制单帧最大迭代次数，避免暂停恢复/TimeStop结束时单帧卡顿
+            // ── 帧间 ticks 计算 ──
             const int MaxBrownianTicksPerFrame = 30;
             int rawDelta = currentTick - customNode.lastBrownianTick;
             int deltaTicks = Mathf.Min(MaxBrownianTicksPerFrame, Mathf.Max(1, rawDelta));
@@ -103,10 +110,11 @@ namespace CharacterStudio.Rendering
                 ? Mathf.Max(0.01f, config.brownianCombatRadius)
                 : Mathf.Max(0.01f, config.brownianRadius);
 
-            float jitter = Mathf.Max(0f, config.brownianJitter) * deltaTicks;
+            // FIX-1: jitter 不再预乘 deltaTicks，避免 O(n²) 随机力累积
+            float jitter = Mathf.Max(0f, config.brownianJitter);
             float damping = Mathf.Clamp01(config.brownianDamping);
 
-            Vector3 offset = customNode.currentAnimOffset;
+            Vector3 offset = customNode.brownianRawOffset;
             Vector3 velocity = customNode.currentBrownianVelocity;
 
             for (int i = 0; i < deltaTicks; i++)
@@ -116,23 +124,31 @@ namespace CharacterStudio.Rendering
                     0f,
                     Rand.Range(-jitter, jitter));
 
-                Vector3 centerPull = offset.sqrMagnitude > 0.0001f
-                    ? (-offset.normalized) * (offset.magnitude / Mathf.Max(targetRadius, 0.0001f)) * jitter * 0.35f
-                    : Vector3.zero;
-
-                if (inCombat)
+                // FIX-2: 软边界推动——仅当接近/超出 radius 时施加指向中心的温和力
+                // 取代旧的中心弹簧，让粒子自由漂移而不被弹回原点
+                Vector3 boundaryPush = Vector3.zero;
+                float dist = offset.magnitude;
+                if (dist > targetRadius * 0.6f && dist > 0.0001f)
                 {
-                    centerPull *= 2f;
+                    // 0.6R 以外开始施加渐增的回推力，到 1.0R 时力度为 jitter 的 40%
+                    float overRatio = Mathf.InverseLerp(targetRadius * 0.6f, targetRadius, dist);
+                    boundaryPush = (-offset.normalized) * jitter * overRatio * 0.4f;
+
+                    if (inCombat)
+                    {
+                        boundaryPush *= 1.5f;
+                    }
                 }
 
-                velocity += randomForce + centerPull;
+                velocity += randomForce + boundaryPush;
                 velocity *= damping;
 
                 Vector3 candidate = offset + velocity;
+                // 硬边界：超出 radius 时钳位并大幅减速
                 if (candidate.magnitude > targetRadius)
                 {
                     candidate = candidate.normalized * targetRadius;
-                    velocity *= 0.4f;
+                    velocity *= 0.3f;
                 }
 
                 if (config.brownianRespectWalkability || config.brownianStayInRoom)
@@ -185,7 +201,31 @@ namespace CharacterStudio.Rendering
             }
 
             customNode.currentBrownianVelocity = velocity;
-            customNode.currentAnimOffset = offset;
+            customNode.brownianRawOffset = offset;
+
+            // ── 平滑启停插值 ──
+            // 启用：blend 从当前值渐增到 1（每 tick +0.05，约 20 ticks ≈ 0.33 秒过渡）
+            // 停用：blend 渐减到 0，同时物理继续运算使偏移自然衰减
+            const float BlendRampSpeed = 0.05f;
+            bool isActive = config.animationType == LayerAnimationType.Brownian;
+
+            float targetBlend = isActive ? 1f : 0f;
+            float blendDelta = (targetBlend - customNode.brownianBlendFactor);
+            float blendStep = Mathf.Sign(blendDelta) * Mathf.Min(BlendRampSpeed * deltaTicks, Mathf.Abs(blendDelta));
+            customNode.brownianBlendFactor += blendStep;
+            customNode.brownianBlendFactor = Mathf.Clamp01(customNode.brownianBlendFactor);
+
+            // 停用中额外施加向原点的衰减力，让残留偏移平滑归零
+            if (!isActive && customNode.brownianBlendFactor > 0.001f)
+            {
+                customNode.brownianRawOffset *= Mathf.Pow(0.96f, deltaTicks);
+                customNode.currentBrownianVelocity *= Mathf.Pow(0.92f, deltaTicks);
+            }
+
+            customNode.brownianSmoothedOffset = customNode.brownianRawOffset * customNode.brownianBlendFactor;
+
+            // 写入通用动画输出（保持兼容）
+            customNode.currentAnimOffset = customNode.brownianSmoothedOffset;
             customNode.currentAnimAngle = 0f;
             customNode.currentAnimScale = 1f;
         }

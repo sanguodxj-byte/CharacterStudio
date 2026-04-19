@@ -109,42 +109,31 @@ namespace CharacterStudio.UI
             bool isSouthActive = previewRotation == Rot4.South;
             if (DrawCollapsibleSection(ref y, width, "CS_Studio_Section_Transform".Translate(), "Transform", isSouthActive))
             {
-                Vector3 editableOffset = GetEditableLayerOffsetForPreview(layer);
+                // 属性面板始终根据预览朝向读写偏移，不受 editLayerOffsetPerFacing 影响
+                Vector3 currentOffset = GetLayerOffsetForRotation(layer, previewRotation);
 
-                float ox = editableOffset.x;
+                float ox = currentOffset.x;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_OffsetX".Translate(), ref ox, -1f, 1f);
-                if (Math.Abs(ox - editableOffset.x) > 0.0001f)
+                if (Math.Abs(ox - currentOffset.x) > 0.0001f)
                 {
-                    MutateSelectedLayersWithUndo(layer, l =>
-                    {
-                        var v = GetEditableLayerOffsetForPreview(l);
-                        v.x = ox;
-                        SetEditableLayerOffsetForPreview(l, v);
-                    });
+                    float val = ox;
+                    MutateSelectedLayersWithUndo(layer, l => SetLayerOffsetForRotation(l, previewRotation, newOffsetX: val));
                 }
 
-                float oy = editableOffset.y;
+                float oy = currentOffset.y;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_OffsetYHeight".Translate(), ref oy, -1f, 1f);
-                if (Math.Abs(oy - editableOffset.y) > 0.0001f)
+                if (Math.Abs(oy - currentOffset.y) > 0.0001f)
                 {
-                    MutateSelectedLayersWithUndo(layer, l =>
-                    {
-                        var v = GetEditableLayerOffsetForPreview(l);
-                        v.y = oy;
-                        SetEditableLayerOffsetForPreview(l, v);
-                    });
+                    float val = oy;
+                    MutateSelectedLayersWithUndo(layer, l => SetLayerOffsetForRotation(l, previewRotation, newOffsetY: val));
                 }
 
-                float oz = editableOffset.z;
+                float oz = currentOffset.z;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_OffsetZ".Translate(), ref oz, -1f, 1f);
-                if (Math.Abs(oz - editableOffset.z) > 0.0001f)
+                if (Math.Abs(oz - currentOffset.z) > 0.0001f)
                 {
-                    MutateSelectedLayersWithUndo(layer, l =>
-                    {
-                        var v = GetEditableLayerOffsetForPreview(l);
-                        v.z = oz;
-                        SetEditableLayerOffsetForPreview(l, v);
-                    });
+                    float val = oz;
+                    MutateSelectedLayersWithUndo(layer, l => SetLayerOffsetForRotation(l, previewRotation, newOffsetZ: val));
                 }
 
                 float uniformScale = layer.scale.x;
@@ -193,8 +182,19 @@ namespace CharacterStudio.UI
                     });
                 }
 
-                bool editingWest = layer.useWestOffset && previewRotation == Rot4.West;
-                Vector3 sideOffset = editingWest ? layer.offsetWest : layer.offsetEast;
+                bool editingWest = (layer.useWestOffset || editLayerOffsetPerFacing) && previewRotation == Rot4.West;
+                Vector3 sideOffset;
+                if (editingWest)
+                {
+                    if (!layer.useWestOffset && layer.offsetWest == Vector3.zero)
+                        sideOffset = new Vector3(-layer.offsetEast.x, layer.offsetEast.y, layer.offsetEast.z);
+                    else
+                        sideOffset = layer.offsetWest;
+                }
+                else
+                {
+                    sideOffset = layer.offsetEast;
+                }
 
                 float sx = sideOffset.x;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_OffsetX".Translate(), ref sx, -1f, 1f);
@@ -202,7 +202,11 @@ namespace CharacterStudio.UI
                 {
                     float val = sx;
                     if (editingWest)
-                        MutateSelectedLayersWithUndo(layer, l => l.offsetWest.x = val);
+                        MutateSelectedLayersWithUndo(layer, l =>
+                        {
+                            if (!l.useWestOffset) { l.useWestOffset = true; l.offsetWest = new Vector3(-l.offsetEast.x, l.offsetEast.y, l.offsetEast.z); }
+                            l.offsetWest.x = val;
+                        });
                     else
                         MutateSelectedLayersWithUndo(layer, l => l.offsetEast.x = val);
                 }
@@ -213,7 +217,11 @@ namespace CharacterStudio.UI
                 {
                     float val = sy;
                     if (editingWest)
-                        MutateSelectedLayersWithUndo(layer, l => l.offsetWest.y = val);
+                        MutateSelectedLayersWithUndo(layer, l =>
+                        {
+                            if (!l.useWestOffset) { l.useWestOffset = true; l.offsetWest = new Vector3(-l.offsetEast.x, l.offsetEast.y, l.offsetEast.z); }
+                            l.offsetWest.y = val;
+                        });
                     else
                         MutateSelectedLayersWithUndo(layer, l => l.offsetEast.y = val);
                 }
@@ -224,7 +232,11 @@ namespace CharacterStudio.UI
                 {
                     float val = sz;
                     if (editingWest)
-                        MutateSelectedLayersWithUndo(layer, l => l.offsetWest.z = val);
+                        MutateSelectedLayersWithUndo(layer, l =>
+                        {
+                            if (!l.useWestOffset) { l.useWestOffset = true; l.offsetWest = new Vector3(-l.offsetEast.x, l.offsetEast.y, l.offsetEast.z); }
+                            l.offsetWest.z = val;
+                        });
                     else
                         MutateSelectedLayersWithUndo(layer, l => l.offsetEast.z = val);
                 }
@@ -582,7 +594,7 @@ namespace CharacterStudio.UI
             }
 
             float freq = layer.animFrequency;
-            UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_Frequency".Translate(), ref freq, 0.1f, 5f);
+            UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_Frequency".Translate(), ref freq, 0.1f, 20f, tooltip: "CS_Studio_Anim_Frequency_Tip".Translate());
             if (Math.Abs(freq - layer.animFrequency) > 0.0001f)
             {
                 MutateSelectedLayersWithUndo(layer, l => l.animFrequency = freq);
@@ -591,7 +603,7 @@ namespace CharacterStudio.UI
             if (layer.animationType != LayerAnimationType.Brownian)
             {
                 float amp = layer.animAmplitude;
-                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_Amplitude".Translate(), ref amp, 1f, 45f);
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_Amplitude".Translate(), ref amp, 1f, 180f, tooltip: "CS_Studio_Anim_Amplitude_Tip".Translate());
                 if (Math.Abs(amp - layer.animAmplitude) > 0.0001f)
                 {
                     MutateSelectedLayersWithUndo(layer, l => l.animAmplitude = amp);
@@ -601,7 +613,7 @@ namespace CharacterStudio.UI
             if (layer.animationType == LayerAnimationType.Twitch)
             {
                 float speed = layer.animSpeed;
-                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_Speed".Translate(), ref speed, 0.1f, 3f);
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_Speed".Translate(), ref speed, 0.1f, 10f, tooltip: "CS_Studio_Anim_Speed_Tip".Translate());
                 if (Math.Abs(speed - layer.animSpeed) > 0.0001f)
                 {
                     MutateSelectedLayersWithUndo(layer, l => l.animSpeed = speed);
@@ -609,14 +621,14 @@ namespace CharacterStudio.UI
             }
 
             float phase = layer.animPhaseOffset;
-            UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_PhaseOffset".Translate(), ref phase, 0f, 1f);
+            UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_PhaseOffset".Translate(), ref phase, 0f, 1f, tooltip: "CS_Studio_Anim_PhaseOffset_Tip".Translate());
             if (Math.Abs(phase - layer.animPhaseOffset) > 0.0001f)
             {
                 MutateSelectedLayersWithUndo(layer, l => l.animPhaseOffset = phase);
             }
 
             bool affectsOffset = layer.animAffectsOffset;
-            UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Anim_AffectsOffset".Translate(), ref affectsOffset);
+            UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Anim_AffectsOffset".Translate(), ref affectsOffset, "CS_Studio_Anim_AffectsOffset_Tip".Translate());
             if (affectsOffset != layer.animAffectsOffset)
             {
                 MutateSelectedLayersWithUndo(layer, l => l.animAffectsOffset = affectsOffset);
@@ -625,7 +637,7 @@ namespace CharacterStudio.UI
             if (layer.animAffectsOffset)
             {
                 float offsetAmp = layer.animOffsetAmplitude;
-                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_OffsetAmplitude".Translate(), ref offsetAmp, 0.001f, 0.1f, "F3");
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_OffsetAmplitude".Translate(), ref offsetAmp, 0.001f, 10f, "F3", tooltip: "CS_Studio_Anim_OffsetAmplitude_Tip".Translate());
                 if (Math.Abs(offsetAmp - layer.animOffsetAmplitude) > 0.0001f)
                 {
                     MutateSelectedLayersWithUndo(layer, l => l.animOffsetAmplitude = offsetAmp);
@@ -636,8 +648,8 @@ namespace CharacterStudio.UI
             {
                 float pivotX = layer.animPivotOffset.x;
                 float pivotY = layer.animPivotOffset.y;
-                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_PivotX".Translate(), ref pivotX, -1f, 1f, "F3");
-                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_PivotY".Translate(), ref pivotY, -1f, 1f, "F3");
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_PivotX".Translate(), ref pivotX, -5f, 5f, "F3", tooltip: "CS_Studio_Anim_Pivot_Tip".Translate());
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_PivotY".Translate(), ref pivotY, -5f, 5f, "F3", tooltip: "CS_Studio_Anim_Pivot_Tip".Translate());
                 var newPivot = new Vector2(pivotX, pivotY);
                 if (newPivot != layer.animPivotOffset)
                 {
@@ -648,42 +660,42 @@ namespace CharacterStudio.UI
             if (layer.animationType == LayerAnimationType.Brownian)
             {
                 float radius = layer.brownianRadius;
-                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_BrownianRadius".Translate(), ref radius, 0.02f, 0.6f, "F3");
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_BrownianRadius".Translate(), ref radius, 0.02f, 10f, "F2", tooltip: "CS_Studio_Anim_BrownianRadius_Tip".Translate());
                 if (Math.Abs(radius - layer.brownianRadius) > 0.0001f)
                 {
                     MutateSelectedLayersWithUndo(layer, l => l.brownianRadius = radius);
                 }
 
                 float jitter = layer.brownianJitter;
-                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_BrownianJitter".Translate(), ref jitter, 0.001f, 0.05f, "F3");
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_BrownianJitter".Translate(), ref jitter, 0.001f, 1f, "F3", tooltip: "CS_Studio_Anim_BrownianJitter_Tip".Translate());
                 if (Math.Abs(jitter - layer.brownianJitter) > 0.0001f)
                 {
                     MutateSelectedLayersWithUndo(layer, l => l.brownianJitter = jitter);
                 }
 
                 float damping = layer.brownianDamping;
-                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_BrownianDamping".Translate(), ref damping, 0.7f, 0.99f, "F3");
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_BrownianDamping".Translate(), ref damping, 0.7f, 0.999f, "F3", tooltip: "CS_Studio_Anim_BrownianDamping_Tip".Translate());
                 if (Math.Abs(damping - layer.brownianDamping) > 0.0001f)
                 {
                     MutateSelectedLayersWithUndo(layer, l => l.brownianDamping = damping);
                 }
 
                 float combatRadius = layer.brownianCombatRadius;
-                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_BrownianCombatRadius".Translate(), ref combatRadius, 0.01f, 0.3f, "F3");
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Anim_BrownianCombatRadius".Translate(), ref combatRadius, 0.01f, 5f, "F2", tooltip: "CS_Studio_Anim_BrownianCombatRadius_Tip".Translate());
                 if (Math.Abs(combatRadius - layer.brownianCombatRadius) > 0.0001f)
                 {
                     MutateSelectedLayersWithUndo(layer, l => l.brownianCombatRadius = combatRadius);
                 }
 
                 bool respectWalkability = layer.brownianRespectWalkability;
-                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Anim_BrownianRespectWalkability".Translate(), ref respectWalkability);
+                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Anim_BrownianRespectWalkability".Translate(), ref respectWalkability, "CS_Studio_Anim_BrownianRespectWalkability_Tip".Translate());
                 if (respectWalkability != layer.brownianRespectWalkability)
                 {
                     MutateSelectedLayersWithUndo(layer, l => l.brownianRespectWalkability = respectWalkability);
                 }
 
                 bool stayInRoom = layer.brownianStayInRoom;
-                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Anim_BrownianStayInRoom".Translate(), ref stayInRoom);
+                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Anim_BrownianStayInRoom".Translate(), ref stayInRoom, "CS_Studio_Anim_BrownianStayInRoom_Tip".Translate());
                 if (stayInRoom != layer.brownianStayInRoom)
                 {
                     MutateSelectedLayersWithUndo(layer, l => l.brownianStayInRoom = stayInRoom);

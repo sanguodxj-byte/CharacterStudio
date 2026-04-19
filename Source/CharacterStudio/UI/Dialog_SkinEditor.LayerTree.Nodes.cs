@@ -62,17 +62,20 @@ namespace CharacterStudio.UI
 
             bool isHidden = IsNodeHiddenInCurrentMode(node);
 
-            Rect eyeRect = new Rect(indentOffset + 20, y + 2, 18, 18);
-            string eyeIcon = isHidden ? "◯" : "◉";
-            GUI.color = isHidden ? Color.gray : Color.white;
-            if (Widgets.ButtonText(eyeRect, eyeIcon, false))
+            Rect eyeRect = new Rect(indentOffset + 18, y + 1, 24, 22);
+            GUI.color = isHidden ? new Color(0.4f, 0.45f, 0.5f) : new Color(0.37f, 0.82f, 1f);
+            Text.Anchor = TextAnchor.MiddleCenter;
+            Text.Font = GameFont.Medium;
+            if (Widgets.ButtonText(eyeRect, isHidden ? "◇" : "◆", false))
             {
                 ToggleNodeVisibilityInCurrentMode(node);
             }
             GUI.color = Color.white;
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.UpperLeft;
             TooltipHandler.TipRegion(eyeRect, isHidden ? "CS_Studio_Tip_ShowNode".Translate() : "CS_Studio_Tip_HideNode".Translate());
 
-            Rect nameRect = new Rect(indentOffset + 42, y, width - indentOffset - 44, TreeNodeHeight);
+            Rect nameRect = new Rect(indentOffset + 48, y, width - indentOffset - 50, TreeNodeHeight);
             string displayName = GetNodeDisplayName(node);
 
             GUI.color = GetNodeColor(node);
@@ -81,7 +84,7 @@ namespace CharacterStudio.UI
             Text.Anchor = TextAnchor.UpperLeft;
             GUI.color = Color.white;
 
-            if (Widgets.ButtonInvisible(rowRect))
+            if (Widgets.ButtonInvisible(rowRect) && !eyeRect.Contains(Event.current.mousePosition))
             {
                 BaseAppearanceSlotType? baseSlotType = TryResolveBaseSlotType(node);
                 if (baseSlotType != null)

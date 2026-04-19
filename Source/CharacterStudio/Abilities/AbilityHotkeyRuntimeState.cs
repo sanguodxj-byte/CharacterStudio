@@ -80,7 +80,7 @@ namespace CharacterStudio.Abilities
         public int dashEmpowerExpireTick = -1;
         public int flightStateStartTick = -1;
         public int flightStateExpireTick = -1;
-        public float flightStateHeightFactor = 0.35f;
+        public float flightStateHeightFactor = 0.12f;
         public bool suppressCombatActionsDuringFlightState = true;
         public bool isInVanillaFlight = false;
         public int vanillaFlightStartTick = -1;
@@ -109,6 +109,13 @@ namespace CharacterStudio.Abilities
         public int forcedMoveDirectionZ = 0;
         public int forcedMoveBusyUntilTick = -1;
         public bool forcedMoveCollisionTriggered = false;
+        public float forcedMoveDirFloatX = 0f;
+        public float forcedMoveDirFloatZ = 0f;
+        public float forcedMoveTotalDistance = 0f;
+        public float forcedMoveTraveledDistance = 0f;
+        public float forcedMoveSpeedPerTick = 0f;
+        public int forcedMoveStartTick = -1;
+        public int forcedMoveDurationTicks = -1;
 
         public int GetCooldownUntilTick(AbilityRuntimeHotkeySlot slot)
         {
@@ -291,6 +298,13 @@ namespace CharacterStudio.Abilities
             Scribe_Values.Look(ref forcedMoveDirectionZ, "forcedMoveDirectionZ", 0);
             Scribe_Values.Look(ref forcedMoveBusyUntilTick, "forcedMoveBusyUntilTick", -1);
             Scribe_Values.Look(ref forcedMoveCollisionTriggered, "forcedMoveCollisionTriggered", false);
+            Scribe_Values.Look(ref forcedMoveDirFloatX, "forcedMoveDirFloatX", 0f);
+            Scribe_Values.Look(ref forcedMoveDirFloatZ, "forcedMoveDirFloatZ", 0f);
+            Scribe_Values.Look(ref forcedMoveTotalDistance, "forcedMoveTotalDistance", 0f);
+            Scribe_Values.Look(ref forcedMoveTraveledDistance, "forcedMoveTraveledDistance", 0f);
+            Scribe_Values.Look(ref forcedMoveSpeedPerTick, "forcedMoveSpeedPerTick", 0f);
+            Scribe_Values.Look(ref forcedMoveStartTick, "forcedMoveStartTick", -1);
+            Scribe_Values.Look(ref forcedMoveDurationTicks, "forcedMoveDurationTicks", -1);
         }
 
         public void Normalize()
@@ -331,6 +345,9 @@ namespace CharacterStudio.Abilities
             if (forcedMoveStepDurationTicks <= 0) forcedMoveStepDurationTicks = 4;
             if (forcedMoveQueuedSteps < 0) forcedMoveQueuedSteps = 0;
             if (forcedMoveBusyUntilTick < -1) forcedMoveBusyUntilTick = -1;
+            if (forcedMoveTotalDistance < 0f) forcedMoveTotalDistance = 0f;
+            if (forcedMoveTraveledDistance < 0f) forcedMoveTraveledDistance = 0f;
+            if (forcedMoveSpeedPerTick < 0f) forcedMoveSpeedPerTick = 0f;
             triggeredEquipmentAnimationAbilityDefName ??= string.Empty;
             if (triggeredEquipmentAnimationEndTick < triggeredEquipmentAnimationStartTick)
             {

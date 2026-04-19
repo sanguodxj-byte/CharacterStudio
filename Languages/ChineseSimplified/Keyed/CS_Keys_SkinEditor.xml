@@ -2,6 +2,7 @@
 <LanguageData>
     <CS_Studio_BaseSlot_DrawOrderOffset>层级偏移</CS_Studio_BaseSlot_DrawOrderOffset>
     <CS_Studio_BaseSlot_Enable>启用</CS_Studio_BaseSlot_Enable>
+    <CS_Studio_BaseSlot_Disable>禁用</CS_Studio_BaseSlot_Disable>
     <CS_Studio_BaseSlot_MaskTexture>Mask 贴图</CS_Studio_BaseSlot_MaskTexture>
     <CS_Studio_BaseSlot_Rotation>旋转</CS_Studio_BaseSlot_Rotation>
     <CS_Studio_BaseSlot_SecondaryColor>第二颜色</CS_Studio_BaseSlot_SecondaryColor>
@@ -65,7 +66,6 @@
     <CS_Studio_Preview_Channel_Eye>眼</CS_Studio_Preview_Channel_Eye>
     <CS_Studio_Preview_Channel_Lid>睑</CS_Studio_Preview_Channel_Lid>
     <CS_Studio_Preview_Channel_Mouth>嘴</CS_Studio_Preview_Channel_Mouth>
-    <CS_Studio_Preview_EditPerFacingTip>启用后，预览区拖拽与方向键微调只会修改当前朝向对应的偏移数据。南向修改基础 Offset，东/西向修改侧视 Offset，北向修改北向 Offset。</CS_Studio_Preview_EditPerFacingTip>
     <CS_Studio_Preview_Strip>脱衣</CS_Studio_Preview_Strip>
     <CS_Studio_Preview_StripTooltip>在预览中隐藏该角色的原版服装（不影响实际角色）。</CS_Studio_Preview_StripTooltip>
     <CS_Studio_Preview_Dress>穿衣</CS_Studio_Preview_Dress>
@@ -274,11 +274,18 @@
     <CS_Studio_VariantLogicTip_Sequence>根据帧序列进度匹配编号变体，用于序列动画图层。</CS_Studio_VariantLogicTip_Sequence>
     <CS_Studio_Workflow_CompositeBaseLayerName>主体底图</CS_Studio_Workflow_CompositeBaseLayerName>
     <CS_Studio_Workflow_MechanoidStandardLayers>机械体分层工作流</CS_Studio_Workflow_MechanoidStandardLayers>
+    <CS_Studio_BaseSlot_EnabledCount>已启用槽位：{0}/{1}</CS_Studio_BaseSlot_EnabledCount>
     <CS_Studio_Anim_Brownian>布朗闲逛</CS_Studio_Anim_Brownian>
     <CS_Studio_Anim_BrownianRadius>闲逛半径</CS_Studio_Anim_BrownianRadius>
+    <CS_Studio_Anim_BrownianRadius_Tip>图层偏离角色的最大距离（格）。1.0 = 一格。浮游炮推荐 0.5~2.0。</CS_Studio_Anim_BrownianRadius_Tip>
     <CS_Studio_Anim_BrownianJitter>随机扰动</CS_Studio_Anim_BrownianJitter>
+    <CS_Studio_Anim_BrownianJitter_Tip>每 tick 施加的随机力。越大移动越活跃、越不可预测。推荐 0.03~0.1。</CS_Studio_Anim_BrownianJitter_Tip>
     <CS_Studio_Anim_BrownianDamping>阻尼</CS_Studio_Anim_BrownianDamping>
+    <CS_Studio_Anim_BrownianDamping_Tip>速度衰减系数。越接近 1 越平滑、惯性越大；接近 0.7 则快速刹停。</CS_Studio_Anim_BrownianDamping_Tip>
     <CS_Studio_Anim_BrownianCombatRadius>战斗收拢半径</CS_Studio_Anim_BrownianCombatRadius>
+    <CS_Studio_Anim_BrownianCombatRadius_Tip>战斗状态下的闲逛半径。通常更小以保持图层贴近角色。</CS_Studio_Anim_BrownianCombatRadius_Tip>
     <CS_Studio_Anim_BrownianRespectWalkability>遵守通行约束</CS_Studio_Anim_BrownianRespectWalkability>
+    <CS_Studio_Anim_BrownianRespectWalkability_Tip>阻止图层漂移到不可通行地形（墙壁、障碍物等）。</CS_Studio_Anim_BrownianRespectWalkability_Tip>
     <CS_Studio_Anim_BrownianStayInRoom>限制在当前房间</CS_Studio_Anim_BrownianStayInRoom>
+    <CS_Studio_Anim_BrownianStayInRoom_Tip>阻止图层穿墙漂移到相邻房间。</CS_Studio_Anim_BrownianStayInRoom_Tip>
 </LanguageData>

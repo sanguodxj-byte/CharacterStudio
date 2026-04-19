@@ -29,10 +29,116 @@ namespace CharacterStudio.UI
             Rotate
         }
 
+        // ── 模拟实体状态标记 ──
+        [Flags]
+        private enum PreviewEntityState
+        {
+            None = 0,
+            Dashing = 1,
+            Jumping = 2,
+            Flying = 4,
+            Stunned = 8,
+            Shielded = 16,
+            Frozen = 32
+        }
+
+        // ── 模拟实体关键帧 ──
+        private sealed class PreviewSimKeyframe
+        {
+            public int tick;
+            public Vector2 gridPos;   // 地图格坐标（0-11 范围，对应 12×12 网格）
+            public float height;      // Z 轴高度（格为单位）
+            public PreviewEntityState state;
+            public string label = string.Empty;
+        }
+
+        // ── 模拟实体 ──
+        private sealed class PreviewSimEntity
+        {
+            public string id = string.Empty;         // "caster" / "target" / "chain_0" / ...
+            public string displayName = string.Empty;
+            public Color color = Color.white;
+            public readonly List<PreviewSimKeyframe> keyframes = new List<PreviewSimKeyframe>();
+
+            /// <summary>
+            /// 根据 tick 插值获取当前网格位置。
+            /// </summary>
+            public Vector2 GetGridPosAtTick(float tick)
+            {
+                if (keyframes.Count == 0) return Vector2.zero;
+                if (keyframes.Count == 1 || tick <= keyframes[0].tick) return keyframes[0].gridPos;
+                if (tick >= keyframes[keyframes.Count - 1].tick) return keyframes[keyframes.Count - 1].gridPos;
+
+                // 找到 tick 所在的两个关键帧之间
+                for (int i = 0; i < keyframes.Count - 1; i++)
+                {
+                    if (tick >= keyframes[i].tick && tick <= keyframes[i + 1].tick)
+                    {
+                        float t = keyframes[i + 1].tick == keyframes[i].tick
+                            ? 0f
+                            : (tick - keyframes[i].tick) / (float)(keyframes[i + 1].tick - keyframes[i].tick);
+                        return Vector2.Lerp(keyframes[i].gridPos, keyframes[i + 1].gridPos, t);
+                    }
+                }
+                return keyframes[keyframes.Count - 1].gridPos;
+            }
+
+            public float GetHeightAtTick(float tick)
+            {
+                if (keyframes.Count == 0) return 0f;
+                if (keyframes.Count == 1 || tick <= keyframes[0].tick) return keyframes[0].height;
+                if (tick >= keyframes[keyframes.Count - 1].tick) return keyframes[keyframes.Count - 1].height;
+
+                for (int i = 0; i < keyframes.Count - 1; i++)
+                {
+                    if (tick >= keyframes[i].tick && tick <= keyframes[i + 1].tick)
+                    {
+                        float t = keyframes[i + 1].tick == keyframes[i].tick
+                            ? 0f
+                            : (tick - keyframes[i].tick) / (float)(keyframes[i + 1].tick - keyframes[i].tick);
+                        return Mathf.Lerp(keyframes[i].height, keyframes[i + 1].height, t);
+                    }
+                }
+                return keyframes[keyframes.Count - 1].height;
+            }
+
+            public PreviewEntityState GetStateAtTick(float tick)
+            {
+                PreviewEntityState state = PreviewEntityState.None;
+                foreach (var kf in keyframes)
+                {
+                    if (kf.tick > tick) break;
+                    state = kf.state;
+                }
+                return state;
+            }
+
+            public void AddKeyframe(int tick, Vector2 gridPos, float height = 0f, PreviewEntityState state = PreviewEntityState.None, string label = "")
+            {
+                keyframes.Add(new PreviewSimKeyframe { tick = tick, gridPos = gridPos, height = height, state = state, label = label });
+            }
+
+            /// <summary>
+            /// 确保在指定 tick 有一个关键帧（用于状态标记），如果没有则插入一个保持当前位置的帧。
+            /// </summary>
+            public void EnsureKeyframe(int tick)
+            {
+                if (keyframes.Count == 0) return;
+                // 检查是否已存在此 tick 的关键帧
+                foreach (var kf in keyframes)
+                {
+                    if (kf.tick == tick) return;
+                }
+                // 在此 tick 插入一个保持当前插值位置的帧
+                AddKeyframe(tick, GetGridPosAtTick(tick), GetHeightAtTick(tick));
+            }
+        }
+
         private sealed class AbilityPreviewContext
         {
-            public Vector2 casterPos = new Vector2(0.28f, 0.78f);
-            public Vector2 targetPos = new Vector2(0.74f, 0.36f);
+            // 实体初始位置（地图格坐标，0-11 范围）
+            public Vector2 casterGridPos = new Vector2(3f, 9f);
+            public Vector2 targetGridPos = new Vector2(9f, 4f);
             public float playbackSpeed = 1f;
             public bool showGrid = true;
             public bool showTimeline = true;
@@ -44,7 +150,10 @@ namespace CharacterStudio.UI
             public AbilityPreviewEventType type;
             public string label = string.Empty;
             public string detail = string.Empty;
+            [Obsolete("Use gridPos for map-grid coordinate simulation")]
             public Vector2 normalizedPos = new Vector2(0.5f, 0.5f);
+            /// <summary>地图格坐标（0-11 范围）</summary>
+            public Vector2 gridPos = new Vector2(6f, 6f);
             public float radius = 0f;
             public AbilityAreaShape areaShape = AbilityAreaShape.Circle;
             public string irregularPattern = string.Empty;
@@ -66,6 +175,8 @@ namespace CharacterStudio.UI
             public Vector2 lineEndNormalized;
             public float wallHeight;
             public int segmentCount = 1;
+            public int displayDurationTicks;
+            public bool attachToPawn;
         }
 
         private sealed class AbilityPreviewPlan
@@ -76,6 +187,13 @@ namespace CharacterStudio.UI
             public readonly List<AbilityPreviewEvent> events = new List<AbilityPreviewEvent>();
             public readonly List<string> summaries = new List<string>();
             public readonly List<string> notes = new List<string>();
+            public readonly List<PreviewSimEntity> entities = new List<PreviewSimEntity>();
+
+            public PreviewSimEntity? GetEntity(string id)
+            {
+                foreach (var e in entities) { if (e.id == id) return e; }
+                return null;
+            }
         }
 
         private sealed class AbilityPreviewInteractionState
@@ -155,13 +273,35 @@ namespace CharacterStudio.UI
             string target = GetTargetTypeLabel(ModularAbilityDefExtensions.NormalizeTargetType(ability));
             plan.summary = "CS_Studio_Ability_PreviewSummaryLine".Translate(carrier, target);
 
+            // ── 创建模拟实体 ──
+            Vector2 casterStart = abilityPreviewContext.casterGridPos;
+            Vector2 targetStart = abilityPreviewContext.targetGridPos;
+
+            var casterEntity = new PreviewSimEntity
+            {
+                id = "caster",
+                displayName = "CS_Studio_Ability_PreviewCaster".Translate(),
+                color = new Color(0.42f, 0.88f, 1f)
+            };
+            casterEntity.AddKeyframe(0, casterStart);
+            plan.entities.Add(casterEntity);
+
+            var targetEntity = new PreviewSimEntity
+            {
+                id = "target",
+                displayName = "CS_Studio_Ability_PreviewTarget".Translate(),
+                color = new Color(1f, 0.72f, 0.36f)
+            };
+            targetEntity.AddKeyframe(0, targetStart);
+            plan.entities.Add(targetEntity);
+
             plan.events.Add(new AbilityPreviewEvent
             {
                 tick = 0,
                 type = AbilityPreviewEventType.CastStart,
                 label = "CS_Studio_Ability_PreviewEventCastStart".Translate(),
                 detail = "CS_Studio_Ability_PreviewEventCasterOrigin".Translate(),
-                normalizedPos = abilityPreviewContext.casterPos,
+                gridPos = casterStart,
                 color = new Color(0.42f, 0.88f, 1f),
                 order = 0
             });
@@ -175,7 +315,7 @@ namespace CharacterStudio.UI
                     type = AbilityPreviewEventType.Warmup,
                     label = "CS_Studio_Ability_PreviewEventWarmup".Translate(),
                     detail = "CS_Studio_Ability_PreviewWarmupDetail".Translate(warmupTicks.ToString()),
-                    normalizedPos = Vector2.Lerp(abilityPreviewContext.casterPos, abilityPreviewContext.targetPos, 0.2f),
+                    gridPos = Vector2.Lerp(casterStart, targetStart, 0.2f),
                     color = new Color(1f, 0.82f, 0.35f),
                     order = 1
                 });
@@ -188,14 +328,13 @@ namespace CharacterStudio.UI
                 type = AbilityPreviewEventType.CastFinish,
                 label = "CS_Studio_Ability_PreviewEventCastFinish".Translate(),
                 detail = "CS_Studio_Ability_PreviewCastReleaseDetail".Translate(),
-                normalizedPos = abilityPreviewContext.casterPos,
+                gridPos = casterStart,
                 color = new Color(0.32f, 1f, 0.68f),
                 order = 2
             });
 
             AbilityCarrierType normalizedCarrier = ModularAbilityDefExtensions.NormalizeCarrierType(ability.carrierType);
             AbilityTargetType normalizedTarget = ModularAbilityDefExtensions.NormalizeTargetType(ability);
-            Vector2 impactPos = ResolvePreviewImpactPosition(normalizedCarrier, normalizedTarget);
             float radius = ability.useRadius ? Mathf.Max(0f, ability.radius) : 0f;
             AbilityAreaShape areaShape = ModularAbilityDefExtensions.NormalizeAreaShape(ability);
             bool areaCenteredOnCaster = ModularAbilityDefExtensions.NormalizeAreaCenter(ability) == AbilityAreaCenter.Self;
@@ -208,7 +347,7 @@ namespace CharacterStudio.UI
                     type = AbilityPreviewEventType.Projectile,
                     label = "CS_Studio_Ability_PreviewEventProjectile".Translate(),
                     detail = ability.projectileDef?.label ?? "CS_Studio_Ability_PreviewProjectileGeneric".Translate(),
-                    normalizedPos = Vector2.Lerp(abilityPreviewContext.casterPos, impactPos, 0.55f),
+                    gridPos = Vector2.Lerp(casterStart, targetStart, 0.55f),
                     color = new Color(1f, 0.52f, 0.3f),
                     order = 3
                 });
@@ -224,13 +363,20 @@ namespace CharacterStudio.UI
 
                     string summary = BuildEffectSummary(effect);
                     plan.summaries.Add($"[{i + 1}] {summary}");
+
+                    // Control 类效果：击退/拉扯模拟目标位移
+                    if (effect.type == AbilityEffectType.Control)
+                    {
+                        SimulateControlEffect(plan, targetEntity, effect, castFinishTick);
+                    }
+
                     plan.events.Add(new AbilityPreviewEvent
                     {
                         tick = castFinishTick,
                         type = AbilityPreviewEventType.Effect,
                         label = "CS_Studio_Ability_PreviewEventEffect".Translate(),
                         detail = summary,
-                        normalizedPos = ResolveEffectPreviewPosition(effect, normalizedTarget, impactPos),
+                        gridPos = normalizedTarget == AbilityTargetType.Self ? casterStart : targetStart,
                         radius = radius,
                         areaShape = areaShape,
                         irregularPattern = ability.irregularAreaPattern ?? string.Empty,
@@ -238,6 +384,32 @@ namespace CharacterStudio.UI
                         color = GetEffectPreviewColor(effect.type),
                         order = 10 + i
                     });
+                }
+            }
+
+            // ── 运行时组件模拟 → 实体关键帧 ──
+            if (ability.runtimeComponents != null)
+            {
+                for (int i = 0; i < ability.runtimeComponents.Count; i++)
+                {
+                    AbilityRuntimeComponentConfig? component = ability.runtimeComponents[i];
+                    if (component == null || !component.enabled)
+                        continue;
+
+                    string summary = BuildRuntimeComponentSummary(component);
+                    plan.notes.Add(summary);
+                    plan.events.Add(new AbilityPreviewEvent
+                    {
+                        tick = castFinishTick,
+                        type = AbilityPreviewEventType.RuntimeComponent,
+                        label = "CS_Studio_Ability_PreviewEventRuntime".Translate(),
+                        detail = summary,
+                        gridPos = casterEntity.GetGridPosAtTick(castFinishTick),
+                        color = new Color(0.72f, 0.58f, 1f),
+                        order = 400 + i
+                    });
+
+                    SimulateRuntimeComponent(plan, casterEntity, targetEntity, component, castFinishTick);
                 }
             }
 
@@ -255,31 +427,9 @@ namespace CharacterStudio.UI
                     for (int repeatIndex = 0; repeatIndex < repeatCount; repeatIndex++)
                     {
                         int tick = castFinishTick + Math.Max(0, vfx.delayTicks) + repeatIndex * repeatInterval;
-                        AddPreviewVisualEffectEvents(plan, vfx, i, tick, repeatIndex, impactPos, radius, areaShape, areaCenteredOnCaster, irregularPattern);
+                        Vector2 impactGrid = targetEntity.GetGridPosAtTick(tick);
+                        AddPreviewVisualEffectEvents(plan, vfx, i, tick, repeatIndex, impactGrid, radius, areaShape, areaCenteredOnCaster, irregularPattern);
                     }
-                }
-            }
-
-            if (ability.runtimeComponents != null)
-            {
-                for (int i = 0; i < ability.runtimeComponents.Count; i++)
-                {
-                    AbilityRuntimeComponentConfig? component = ability.runtimeComponents[i];
-                    if (component == null || !component.enabled)
-                        continue;
-
-                    string summary = BuildRuntimeComponentSummary(component);
-                    plan.notes.Add(summary);
-                    plan.events.Add(new AbilityPreviewEvent
-                    {
-                        tick = castFinishTick,
-                        type = AbilityPreviewEventType.RuntimeComponent,
-                        label = "CS_Studio_Ability_PreviewEventRuntime".Translate(),
-                        detail = summary,
-                        normalizedPos = abilityPreviewContext.casterPos,
-                        color = new Color(0.72f, 0.58f, 1f),
-                        order = 400 + i
-                    });
                 }
             }
 
@@ -290,6 +440,12 @@ namespace CharacterStudio.UI
             });
 
             int lastTick = plan.events.Count > 0 ? plan.events.Max(e => e.tick) : 0;
+            // 也考虑实体的最后关键帧
+            foreach (var entity in plan.entities)
+            {
+                if (entity.keyframes.Count > 0)
+                    lastTick = Math.Max(lastTick, entity.keyframes[entity.keyframes.Count - 1].tick);
+            }
             plan.totalTicks = Math.Max(90, lastTick + 45);
             if (!ability.useRadius)
             {
@@ -305,14 +461,167 @@ namespace CharacterStudio.UI
             return plan;
         }
 
-        private void AddPreviewVisualEffectEvents(AbilityPreviewPlan plan, AbilityVisualEffectConfig vfx, int index, int tick, int repeatIndex, Vector2 impactPos, float defaultRadius, AbilityAreaShape areaShape, bool areaCenteredOnCaster, string irregularPattern)
+        // ── 运行时组件模拟：将组件配置翻译为实体关键帧 ──
+        private void SimulateRuntimeComponent(AbilityPreviewPlan plan, PreviewSimEntity caster, PreviewSimEntity target, AbilityRuntimeComponentConfig component, int castTick)
+        {
+            switch (component.type)
+            {
+                case AbilityRuntimeComponentType.Dash:
+                    SimulateDash(caster, target, component, castTick);
+                    break;
+                case AbilityRuntimeComponentType.SmartJump:
+                case AbilityRuntimeComponentType.EShortJump:
+                    SimulateJump(caster, target, component, castTick);
+                    break;
+                case AbilityRuntimeComponentType.FlightState:
+                    SimulateFlight(caster, component, castTick);
+                    break;
+                case AbilityRuntimeComponentType.ChainBounce:
+                    SimulateChainBounce(plan, target, component, castTick);
+                    break;
+            }
+        }
+
+        private void SimulateDash(PreviewSimEntity caster, PreviewSimEntity target, AbilityRuntimeComponentConfig component, int castTick)
+        {
+            // 计算冲刺方向
+            Vector2 from = caster.GetGridPosAtTick(castTick);
+            Vector2 to = target.GetGridPosAtTick(castTick);
+            Vector2 dir = to - from;
+            if (dir.sqrMagnitude < 0.01f) dir = new Vector2(0f, -1f);
+            dir = dir.normalized;
+
+            int distance = Math.Max(1, component.dashDistance);
+            int stepDuration = Math.Max(2, component.dashStepDurationTicks);
+
+            Vector2 currentPos = from;
+            for (int step = 1; step <= distance; step++)
+            {
+                Vector2 nextPos = from + dir * step;
+                // 限制在网格范围内
+                nextPos = ClampToGrid(nextPos);
+                int tick = castTick + step * stepDuration;
+                caster.AddKeyframe(tick, nextPos, 0f, PreviewEntityState.Dashing, $"Dash step {step}");
+                currentPos = nextPos;
+            }
+            // 冲刺结束，回到正常状态
+            caster.AddKeyframe(castTick + distance * stepDuration + 1, currentPos);
+        }
+
+        private void SimulateJump(PreviewSimEntity caster, PreviewSimEntity target, AbilityRuntimeComponentConfig component, int castTick)
+        {
+            Vector2 from = caster.GetGridPosAtTick(castTick);
+            Vector2 to = target.GetGridPosAtTick(castTick);
+
+            // 跳向目标方向，距离由 jumpDistance 或默认到目标位置
+            float jumpDist = component.jumpDistance > 0 ? component.jumpDistance : Vector2.Distance(from, to);
+            Vector2 dir = to - from;
+            if (dir.sqrMagnitude < 0.01f) dir = new Vector2(0f, -1f);
+            dir = dir.normalized;
+
+            Vector2 landPos = ClampToGrid(from + dir * jumpDist);
+
+            // 起跳标记
+            caster.EnsureKeyframe(castTick);
+            caster.AddKeyframe(castTick + 1, from, 0f, PreviewEntityState.Jumping, "Jump start");
+            // 落地（跳 2 格大约 10 tick）
+            int jumpDuration = Math.Max(5, (int)(jumpDist * 5));
+            caster.AddKeyframe(castTick + jumpDuration, landPos, 0f, PreviewEntityState.None, "Jump land");
+        }
+
+        private void SimulateFlight(PreviewSimEntity caster, AbilityRuntimeComponentConfig component, int castTick)
+        {
+            Vector2 pos = caster.GetGridPosAtTick(castTick);
+            caster.EnsureKeyframe(castTick);
+
+            int duration = Math.Max(30, component.flightDurationTicks);
+            float height = Math.Max(1f, component.flightHeightFactor * 5f); // 放大显示高度
+
+            // 起飞
+            caster.AddKeyframe(castTick + 5, pos, height * 0.5f, PreviewEntityState.Flying, "Takeoff");
+            // 最高点
+            caster.AddKeyframe(castTick + 15, pos, height, PreviewEntityState.Flying, "Peak");
+            // 降落
+            caster.AddKeyframe(castTick + duration - 5, pos, height * 0.5f, PreviewEntityState.Flying, "Descending");
+            // 落地
+            caster.AddKeyframe(castTick + duration, pos, 0f, PreviewEntityState.None, "Landed");
+        }
+
+        private void SimulateChainBounce(AbilityPreviewPlan plan, PreviewSimEntity target, AbilityRuntimeComponentConfig component, int castTick)
+        {
+            int bounces = Math.Max(2, component.maxBounceCount);
+            float bounceRange = Math.Max(1f, component.bounceRange);
+
+            for (int b = 0; b < bounces; b++)
+            {
+                string chainId = $"chain_{b}";
+                var chainEntity = new PreviewSimEntity
+                {
+                    id = chainId,
+                    displayName = $"Chain {b + 1}",
+                    color = new Color(1f, 0.5f + b * 0.1f, 0.2f)
+                };
+
+                // 从上一个目标位置弹射到随机偏移位置
+                Vector2 prevPos = b == 0
+                    ? target.GetGridPosAtTick(castTick)
+                    : (plan.GetEntity($"chain_{b - 1}")?.GetGridPosAtTick(castTick + b * 8) ?? target.GetGridPosAtTick(castTick));
+
+                // 随机但确定性的偏移（用 bounce index 做种子）
+                float angle = (b * 2.399f) % (2f * Mathf.PI); // 黄金角分散
+                Vector2 offset = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * Mathf.Min(bounceRange, 4f);
+                Vector2 bouncePos = ClampToGrid(prevPos + offset);
+
+                int bounceTick = castTick + b * 8;
+                chainEntity.AddKeyframe(bounceTick, prevPos);
+                chainEntity.AddKeyframe(bounceTick + 3, bouncePos);
+                plan.entities.Add(chainEntity);
+            }
+        }
+
+        private void SimulateControlEffect(AbilityPreviewPlan plan, PreviewSimEntity target, AbilityEffectConfig effect, int castTick)
+        {
+            if (effect.type != AbilityEffectType.Control) return;
+            if (effect.controlMode == ControlEffectMode.Stun) return;
+
+            Vector2 targetPos = target.GetGridPosAtTick(castTick);
+            Vector2 casterPos = plan.GetEntity("caster")?.GetGridPosAtTick(castTick) ?? abilityPreviewContext.casterGridPos;
+            int distance = Math.Max(1, effect.controlMoveDistance);
+
+            Vector2 dir;
+            if (effect.controlMode == ControlEffectMode.Knockback)
+            {
+                dir = targetPos - casterPos;
+                if (dir.sqrMagnitude < 0.01f) dir = new Vector2(0f, -1f);
+                dir = dir.normalized;
+            }
+            else // Pull
+            {
+                dir = casterPos - targetPos;
+                if (dir.sqrMagnitude < 0.01f) dir = new Vector2(0f, 1f);
+                dir = dir.normalized;
+            }
+
+            Vector2 endPos = ClampToGrid(targetPos + dir * distance);
+            target.EnsureKeyframe(castTick);
+            target.AddKeyframe(castTick + 5, endPos, 0f, effect.controlMode == ControlEffectMode.Knockback ? PreviewEntityState.Stunned : PreviewEntityState.None);
+        }
+
+        private static Vector2 ClampToGrid(Vector2 pos)
+        {
+            return new Vector2(
+                Mathf.Clamp(pos.x, 0f, PreviewGridCellsPerAxis - 1),
+                Mathf.Clamp(pos.y, 0f, PreviewGridCellsPerAxis - 1));
+        }
+
+        private void AddPreviewVisualEffectEvents(AbilityPreviewPlan plan, AbilityVisualEffectConfig vfx, int index, int tick, int repeatIndex, Vector2 impactGridPos, float defaultRadius, AbilityAreaShape areaShape, bool areaCenteredOnCaster, string irregularPattern)
         {
             if (vfx.target == VisualEffectTarget.Both)
             {
-                AddPreviewVisualEffectEvent(plan, vfx, index, tick, repeatIndex, impactPos, defaultRadius, areaShape, areaCenteredOnCaster, irregularPattern, VisualEffectTarget.Caster, 0);
-                if ((impactPos - abilityPreviewContext.casterPos).sqrMagnitude > 0.0001f)
+                AddPreviewVisualEffectEvent(plan, vfx, index, tick, repeatIndex, impactGridPos, defaultRadius, areaShape, areaCenteredOnCaster, irregularPattern, VisualEffectTarget.Caster, 0);
+                if ((impactGridPos - abilityPreviewContext.casterGridPos).sqrMagnitude > 0.0001f)
                 {
-                    AddPreviewVisualEffectEvent(plan, vfx, index, tick, repeatIndex, impactPos, defaultRadius, areaShape, areaCenteredOnCaster, irregularPattern, VisualEffectTarget.Target, 1);
+                    AddPreviewVisualEffectEvent(plan, vfx, index, tick, repeatIndex, impactGridPos, defaultRadius, areaShape, areaCenteredOnCaster, irregularPattern, VisualEffectTarget.Target, 1);
                 }
 
                 return;
@@ -321,10 +630,10 @@ namespace CharacterStudio.UI
             VisualEffectTarget previewTargetMode = vfx.target == VisualEffectTarget.Caster
                 ? VisualEffectTarget.Caster
                 : VisualEffectTarget.Target;
-            AddPreviewVisualEffectEvent(plan, vfx, index, tick, repeatIndex, impactPos, defaultRadius, areaShape, areaCenteredOnCaster, irregularPattern, previewTargetMode, 0);
+            AddPreviewVisualEffectEvent(plan, vfx, index, tick, repeatIndex, impactGridPos, defaultRadius, areaShape, areaCenteredOnCaster, irregularPattern, previewTargetMode, 0);
         }
 
-        private void AddPreviewVisualEffectEvent(AbilityPreviewPlan plan, AbilityVisualEffectConfig vfx, int index, int tick, int repeatIndex, Vector2 impactPos, float defaultRadius, AbilityAreaShape areaShape, bool areaCenteredOnCaster, string irregularPattern, VisualEffectTarget previewTargetMode, int anchorOrder)
+        private void AddPreviewVisualEffectEvent(AbilityPreviewPlan plan, AbilityVisualEffectConfig vfx, int index, int tick, int repeatIndex, Vector2 impactGridPos, float defaultRadius, AbilityAreaShape areaShape, bool areaCenteredOnCaster, string irregularPattern, VisualEffectTarget previewTargetMode, int anchorOrder)
         {
             plan.events.Add(new AbilityPreviewEvent
             {
@@ -332,7 +641,7 @@ namespace CharacterStudio.UI
                 type = AbilityPreviewEventType.VisualEffect,
                 label = "CS_Studio_Ability_PreviewEventVfx".Translate(),
                 detail = BuildVfxSummary(vfx, repeatIndex),
-                normalizedPos = ResolveVfxPreviewPosition(impactPos, previewTargetMode),
+                gridPos = ResolveVfxPreviewGridPosition(impactGridPos, previewTargetMode),
                 radius = GetPreviewRadiusForVfx(vfx, defaultRadius),
                 areaShape = areaShape,
                 irregularPattern = irregularPattern,
@@ -350,10 +659,12 @@ namespace CharacterStudio.UI
                 repeatIndex = repeatIndex,
                 previewTargetMode = previewTargetMode,
                 spatialMode = vfx.spatialMode,
-                lineStartNormalized = abilityPreviewContext.casterPos,
-                lineEndNormalized = impactPos,
+                lineStartNormalized = GridToNormalized(abilityPreviewContext.casterGridPos),
+                lineEndNormalized = GridToNormalized(impactGridPos),
                 wallHeight = vfx.wallHeight,
-                segmentCount = Math.Max(1, vfx.segmentCount)
+                segmentCount = Math.Max(1, vfx.segmentCount),
+                displayDurationTicks = Math.Max(1, vfx.displayDurationTicks),
+                attachToPawn = vfx.attachToPawn
             });
         }
 
@@ -361,10 +672,10 @@ namespace CharacterStudio.UI
         {
             if (carrierType == AbilityCarrierType.Self || targetType == AbilityTargetType.Self)
             {
-                return abilityPreviewContext.casterPos;
+                return abilityPreviewContext.casterGridPos;
             }
 
-            return abilityPreviewContext.targetPos;
+            return abilityPreviewContext.targetGridPos;
         }
 
         private Vector2 ResolveEffectPreviewPosition(AbilityEffectConfig effect, AbilityTargetType targetType, Vector2 impactPos)
@@ -379,12 +690,25 @@ namespace CharacterStudio.UI
 
         private Vector2 ResolveUnifiedPreviewAnchor(bool useCasterAnchor, Vector2 impactPos)
         {
-            return useCasterAnchor ? abilityPreviewContext.casterPos : impactPos;
+            return useCasterAnchor ? abilityPreviewContext.casterGridPos : impactPos;
+        }
+
+        private Vector2 ResolveVfxPreviewGridPosition(Vector2 impactGridPos, VisualEffectTarget previewTargetMode)
+        {
+            return ResolveUnifiedPreviewAnchor(previewTargetMode == VisualEffectTarget.Caster, impactGridPos);
+        }
+
+        /// <summary>
+        /// 将地图格坐标（0-11）转换为归一化坐标（0-1），用于兼容旧的 VFX 渲染管线。
+        /// </summary>
+        private static Vector2 GridToNormalized(Vector2 gridPos)
+        {
+            return new Vector2(gridPos.x / PreviewGridCellsPerAxis, gridPos.y / PreviewGridCellsPerAxis);
         }
 
         private Vector2 ResolvePreviewCastDirection()
         {
-            Vector2 dir = abilityPreviewContext.targetPos - abilityPreviewContext.casterPos;
+            Vector2 dir = abilityPreviewContext.targetGridPos - abilityPreviewContext.casterGridPos;
             if (dir.sqrMagnitude < 0.0001f)
             {
                 return new Vector2(0f, -1f);
@@ -495,9 +819,21 @@ namespace CharacterStudio.UI
             Text.Font = GameFont.Small;
         }
 
-        private Vector2 ResolvePreviewEventCanvasPosition(Rect drawRect, AbilityPreviewEvent evt)
+        private Vector2 ResolvePreviewEventCanvasPosition(Rect drawRect, AbilityPreviewEvent evt, float currentTick, AbilityPreviewPlan plan)
         {
-            Vector2 pos = ToCanvasPosition(GetPreviewGridRect(drawRect), evt.normalizedPos);
+            // 当 attachToPawn 时，gridPos 跟随目标实体的动态位置
+            Vector2 resolvedGridPos = evt.gridPos;
+            if (evt.attachToPawn && evt.sourceVfx != null)
+            {
+                string entityId = evt.previewTargetMode == VisualEffectTarget.Caster ? "caster" : "target";
+                PreviewSimEntity? entity = plan.GetEntity(entityId);
+                if (entity != null)
+                {
+                    resolvedGridPos = entity.GetGridPosAtTick(currentTick);
+                }
+            }
+
+            Vector2 pos = GridToCanvasPosition(GetPreviewGridRect(drawRect), resolvedGridPos);
             AbilityVisualEffectConfig? vfx = evt.sourceVfx;
             if (vfx == null)
             {
@@ -1145,11 +1481,15 @@ namespace CharacterStudio.UI
             GUI.color = Color.white;
             Text.Font = GameFont.Small;
 
-            Vector2 caster = ToCanvasPosition(gridRect, abilityPreviewContext.casterPos);
-            Vector2 target = ToCanvasPosition(gridRect, abilityPreviewContext.targetPos);
+            float currentTick = abilityPreviewTimeTicks;
+
+            // 使用模拟实体的动态位置绘制施法者和目标
+            Vector2 casterGridNow = plan.GetEntity("caster")?.GetGridPosAtTick(currentTick) ?? abilityPreviewContext.casterGridPos;
+            Vector2 targetGridNow = plan.GetEntity("target")?.GetGridPosAtTick(currentTick) ?? abilityPreviewContext.targetGridPos;
+            Vector2 caster = GridToCanvasPosition(gridRect, casterGridNow);
+            Vector2 target = GridToCanvasPosition(gridRect, targetGridNow);
             Widgets.DrawLine(caster, target, new Color(0.45f, 0.75f, 1f), 2f);
 
-            float currentTick = abilityPreviewTimeTicks;
             AbilityPreviewEvent? activeEvent = GetCurrentPreviewEvent(plan, currentTick);
             foreach (AbilityPreviewEvent evt in plan.events)
             {
@@ -1157,8 +1497,11 @@ namespace CharacterStudio.UI
                 evt.lastTextureRotation = 0f;
                 if (evt.tick > currentTick)
                     continue;
+                // 超出显示生命周期的特效不再绘制区域覆盖
+                if (evt.sourceVfx != null && currentTick - evt.tick > evt.displayDurationTicks)
+                    continue;
 
-                Vector2 pos = ResolvePreviewEventCanvasPosition(drawRect, evt);
+                Vector2 pos = ResolvePreviewEventCanvasPosition(drawRect, evt, currentTick, plan);
                 if (evt.radius > 0f)
                 {
                     DrawPreviewAreaOverlay(gridRect, evt, pos, cellSize, evt.color, evt == activeEvent);
@@ -1168,12 +1511,39 @@ namespace CharacterStudio.UI
             DrawPreviewAnchor(caster, 8f, new Color(0.42f, 0.88f, 1f), "CS_Studio_Ability_PreviewCaster".Translate());
             DrawPreviewAnchor(target, 8f, new Color(1f, 0.72f, 0.36f), "CS_Studio_Ability_PreviewTarget".Translate());
 
+            // 绘制所有模拟实体（含连锁弹射目标）
+            foreach (var entity in plan.entities)
+            {
+                if (entity.id == "caster" || entity.id == "target") continue; // 已画
+                Vector2 entityPos = GridToCanvasPosition(gridRect, entity.GetGridPosAtTick(currentTick));
+                DrawPreviewAnchor(entityPos, 6f, entity.color, entity.displayName);
+            }
+
+            // 绘制施法者高度标记（飞行状态）
+            PreviewSimEntity? casterSim = plan.GetEntity("caster");
+            float casterHeight = casterSim?.GetHeightAtTick(currentTick) ?? 0f;
+            if (casterHeight > 0.1f)
+            {
+                DrawPreviewHeightIndicator(caster, casterHeight, cellSize, new Color(0.42f, 0.88f, 1f));
+            }
+
+            // 绘制实体状态标记
+            DrawEntityStateIndicators(plan, currentTick, gridRect, cellSize);
+
             foreach (AbilityPreviewEvent evt in plan.events)
             {
                 if (evt.tick > currentTick)
                     continue;
 
-                Vector2 pos = ResolvePreviewEventCanvasPosition(drawRect, evt);
+                // 特效显示生命周期：超出后不绘制
+                if (evt.sourceVfx != null)
+                {
+                    float elapsed = currentTick - evt.tick;
+                    if (elapsed > evt.displayDurationTicks)
+                        continue;
+                }
+
+                Vector2 pos = ResolvePreviewEventCanvasPosition(drawRect, evt, currentTick, plan);
                 DrawPreviewSpatialOverlay(drawRect, evt);
                 float pulse = 1f + 0.18f * Mathf.Sin((currentTick - evt.tick) * 0.35f);
                 float pulseRadius = Mathf.Max(6f, cellSize * 0.4f) * pulse;
@@ -1364,10 +1734,79 @@ namespace CharacterStudio.UI
             return new Vector2(rect.x + rect.width * normalized.x, rect.y + rect.height * normalized.y);
         }
 
+        /// <summary>
+        /// 将地图格坐标（0-11）直接转换为画布像素坐标。
+        /// </summary>
+        private static Vector2 GridToCanvasPosition(Rect gridRect, Vector2 gridPos)
+        {
+            float x = gridRect.x + (gridPos.x / PreviewGridCellsPerAxis) * gridRect.width;
+            float y = gridRect.y + (gridPos.y / PreviewGridCellsPerAxis) * gridRect.height;
+            return new Vector2(x, y);
+        }
+
+        private void DrawPreviewHeightIndicator(Vector2 basePos, float height, float cellSize, Color color)
+        {
+            // 高度指示：在实体上方画竖线和高度标记
+            float pixelHeight = height * cellSize;
+            Vector2 topPos = new Vector2(basePos.x, basePos.y - pixelHeight);
+            Color faded = new Color(color.r, color.g, color.b, 0.6f);
+            Widgets.DrawLine(basePos, topPos, faded, 2f);
+
+            // 高度标签
+            Text.Font = GameFont.Tiny;
+            GUI.color = faded;
+            Widgets.Label(new Rect(topPos.x - 12f, topPos.y - 14f, 30f, 14f), $"↑{height:F1}");
+            GUI.color = Color.white;
+            Text.Font = GameFont.Small;
+        }
+
+        private void DrawEntityStateIndicators(AbilityPreviewPlan plan, float currentTick, Rect gridRect, float cellSize)
+        {
+            foreach (var entity in plan.entities)
+            {
+                PreviewEntityState state = entity.GetStateAtTick(currentTick);
+                if (state == PreviewEntityState.None) continue;
+
+                Vector2 pos = GridToCanvasPosition(gridRect, entity.GetGridPosAtTick(currentTick));
+                string stateLabel = string.Empty;
+                Color stateColor = Color.white;
+
+                if ((state & PreviewEntityState.Dashing) != 0)
+                {
+                    stateLabel = "→";
+                    stateColor = new Color(1f, 0.9f, 0.3f);
+                }
+                else if ((state & PreviewEntityState.Jumping) != 0)
+                {
+                    stateLabel = "⬆";
+                    stateColor = new Color(0.3f, 1f, 0.6f);
+                }
+                else if ((state & PreviewEntityState.Flying) != 0)
+                {
+                    stateLabel = "✈";
+                    stateColor = new Color(0.5f, 0.8f, 1f);
+                }
+                else if ((state & PreviewEntityState.Stunned) != 0)
+                {
+                    stateLabel = "★";
+                    stateColor = new Color(1f, 0.5f, 0.3f);
+                }
+
+                if (!string.IsNullOrEmpty(stateLabel))
+                {
+                    Text.Font = GameFont.Tiny;
+                    GUI.color = stateColor;
+                    Widgets.Label(new Rect(pos.x + 10f, pos.y - 10f, 20f, 16f), stateLabel);
+                    GUI.color = Color.white;
+                    Text.Font = GameFont.Small;
+                }
+            }
+        }
+
         private void DrawPreviewAreaOverlay(Rect gridRect, AbilityPreviewEvent evt, Vector2 resolvedPos, float cellSize, Color color, bool highlight)
         {
             Vector2 center = evt.areaCenteredOnCaster
-                ? ToCanvasPosition(gridRect, abilityPreviewContext.casterPos)
+                ? GridToCanvasPosition(gridRect, abilityPreviewContext.casterGridPos)
                 : resolvedPos;
             AbilityAreaShape shape = evt.areaShape;
             Vector2 cellStep = GetPreviewCellStep(gridRect);

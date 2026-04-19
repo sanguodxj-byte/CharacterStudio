@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using HarmonyLib;
 using RimWorld;
@@ -178,6 +179,10 @@ namespace CharacterStudio.Abilities
 
         public static void WarmupAllRuntimeAbilityDefs()
         {
+            // 先从 Config 目录加载已保存的技能文件并注册到 DefDatabase，
+            // 确保后续 RehydrateAbilities 能通过 DefDatabase 查找到自定义技能。
+            LoadAndRegisterSavedAbilities();
+
             foreach (ModularAbilityDef modAbility in DefDatabase<ModularAbilityDef>.AllDefsListForReading)
             {
                 if (modAbility == null || string.IsNullOrWhiteSpace(modAbility.defName))
@@ -189,6 +194,100 @@ namespace CharacterStudio.Abilities
             }
         }
 
+        /// <summary>
+        /// 从 Config/CharacterStudio/Abilities/ 目录加载已保存的技能 XML 文件，
+        /// 将其中的 ModularAbilityDef 注册到 DefDatabase。
+        /// 这确保重启游戏后读档时，RehydrateAbilities 能通过 DefDatabase 查找到自定义技能。
+        /// 
+        /// 编辑器会话 XML 结构：
+        /// &lt;Defs&gt;
+        ///   &lt;CharacterStudio.Core.PawnSkinDef&gt;
+        ///     &lt;abilities&gt;
+        ///       &lt;li&gt;
+        ///         &lt;defName&gt;CS_PureCode_StormBurst&lt;/defName&gt;
+        ///         &lt;label&gt;...&lt;/label&gt;
+        ///         &lt;cooldownTicks&gt;...&lt;/cooldownTicks&gt;
+        ///         ...
+        ///       &lt;/li&gt;
+        ///     &lt;/abilities&gt;
+        ///   &lt;/CharacterStudio.Core.PawnSkinDef&gt;
+        /// &lt;/Defs&gt;
+        /// </summary>
+        private static void LoadAndRegisterSavedAbilities()
+        {
+            string abilitiesDir = Path.Combine(GenFilePaths.ConfigFolderPath, "CharacterStudio", "Abilities");
+            if (!Directory.Exists(abilitiesDir))
+                return;
+
+            int registered = 0;
+
+            foreach (string filePath in Directory.GetFiles(abilitiesDir, "*.xml"))
+            {
+                try
+                {
+                    var xmlDoc = new System.Xml.XmlDocument();
+                    xmlDoc.Load(filePath);
+                    System.Xml.XmlNode? root = xmlDoc.DocumentElement;
+                    if (root == null)
+                        continue;
+
+                    // 查找 <abilities> 下的所有 <li> 节点（编辑器会话格式）
+                    var abilityLiNodes = root.SelectNodes("//abilities/li");
+                    if (abilityLiNodes != null)
+                    {
+                        foreach (System.Xml.XmlNode liNode in abilityLiNodes)
+                        {
+                            if (liNode == null) continue;
+                            try
+                            {
+                                var ability = DirectXmlToObject.ObjectFromXml<ModularAbilityDef>(liNode, false);
+                                if (ability != null && !string.IsNullOrWhiteSpace(ability.defName))
+                                {
+                                    RegisterModularAbilityDefIfMissing(ability);
+                                    registered++;
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Log.Warning($"[CharacterStudio] 加载技能(li)从 {Path.GetFileName(filePath)} 失败: {ex.Message}");
+                            }
+                        }
+                    }
+
+                    // 也查找直接用类全名包装的节点（导出格式）
+                    string modAbilityNodeName = typeof(ModularAbilityDef).FullName!;
+                    var typedNodes = root.SelectNodes($"//{modAbilityNodeName}");
+                    if (typedNodes != null)
+                    {
+                        foreach (System.Xml.XmlNode typedNode in typedNodes)
+                        {
+                            if (typedNode == null) continue;
+                            try
+                            {
+                                var ability = DirectXmlToObject.ObjectFromXml<ModularAbilityDef>(typedNode, true);
+                                if (ability != null && !string.IsNullOrWhiteSpace(ability.defName))
+                                {
+                                    RegisterModularAbilityDefIfMissing(ability);
+                                    registered++;
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Log.Warning($"[CharacterStudio] 加载技能(typed)从 {Path.GetFileName(filePath)} 失败: {ex.Message}");
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning($"[CharacterStudio] 读取技能文件 {Path.GetFileName(filePath)} 失败: {ex.Message}");
+                }
+            }
+
+            if (registered > 0 && Prefs.DevMode)
+                Log.Message($"[CharacterStudio] 从 Config 目录预加载了 {registered} 个 ModularAbilityDef");
+        }
+
         // ─────────────────────────────────────────────
         // 运行时 AbilityDef 构建
         // ─────────────────────────────────────────────
@@ -197,6 +296,10 @@ namespace CharacterStudio.Abilities
         {
             string key = modAbility.defName;
             string fingerprint = BuildAbilityFingerprint(modAbility);
+
+            // 确保 ModularAbilityDef 在 DefDatabase 中注册（所有路径都需要，不仅仅是新建），
+            // 以便存档加载时 RehydrateAbilities 能通过 DefDatabase 查找恢复。
+            RegisterModularAbilityDefIfMissing(modAbility);
 
             if (runtimeAbilityDefs.TryGetValue(key, out var cached))
             {
@@ -225,6 +328,11 @@ namespace CharacterStudio.Abilities
                 // 原版技能栏中的技能也必须至少有 MinAbilityCooldownTicks（0.5s）的冷却，
                 // 防止玩家连点刷屏产生重复效果。
                 int resolvedCd = Mathf.Max((int)modAbility.cooldownTicks, MinAbilityCooldownTicks);
+
+                // 确保 ModularAbilityDef 在 DefDatabase 中注册，
+                // 以便存档加载时 RehydrateAbilities 能通过 DefDatabase 查找恢复。
+                RegisterModularAbilityDefIfMissing(modAbility);
+
                 var abilityDef = new AbilityDef();
                 ConfigureRuntimeAbilityDef(abilityDef, modAbility, key, resolvedCd);
                 DefDatabase<AbilityDef>.Add(abilityDef);
@@ -261,8 +369,7 @@ namespace CharacterStudio.Abilities
             bool usesJumpVerb = modAbility.runtimeComponents != null
                 && modAbility.runtimeComponents.Any(c => c != null && c.enabled
                     && (c.type == AbilityRuntimeComponentType.SmartJump
-                        || c.type == AbilityRuntimeComponentType.EShortJump
-                        || c.type == AbilityRuntimeComponentType.Dash));
+                        || c.type == AbilityRuntimeComponentType.EShortJump));
 
             VerbProperties verbProps = normalizedCarrier switch
             {
@@ -315,6 +422,28 @@ namespace CharacterStudio.Abilities
         private static void CacheRuntimeAbilitySource(string key, ModularAbilityDef modAbility)
         {
             runtimeAbilitySourceDefs[key] = CopyAbilityDefForRuntimeCache(modAbility);
+        }
+
+        /// <summary>
+        /// 将 ModularAbilityDef 注册到 DefDatabase（如果尚未注册）。
+        /// 这确保存档加载时 RehydrateAbilities 能通过 DefDatabase 查找到对应的 def。
+        /// </summary>
+        private static void RegisterModularAbilityDefIfMissing(ModularAbilityDef modAbility)
+        {
+            if (modAbility == null || string.IsNullOrWhiteSpace(modAbility.defName))
+                return;
+
+            if (DefDatabase<ModularAbilityDef>.GetNamedSilentFail(modAbility.defName) != null)
+                return;
+
+            try
+            {
+                DefDatabase<ModularAbilityDef>.Add(modAbility);
+            }
+            catch (Exception ex)
+            {
+                Log.Warning($"[CharacterStudio] 注册 ModularAbilityDef [{modAbility.defName}] 到 DefDatabase 失败: {ex.Message}");
+            }
         }
 
         private static ModularAbilityDef CopyAbilityDefForRuntimeCache(ModularAbilityDef source)

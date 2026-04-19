@@ -102,20 +102,17 @@ namespace CharacterStudio.Rendering
             string requestedPath = fullPath;
             string resolvedPath = ResolveExistingTexturePath(fullPath);
 
-            // P-PERF: 即使编辑器模式也使用 0.5 秒节流，避免每帧 File.GetLastWriteTime I/O
+            // P-PERF: 仅编辑器模式检查文件修改（热重载），游戏内跳过磁盘 I/O
             bool aggressive = ShouldCheckFileModificationAggressively();
             bool checkMod = false;
+            if (aggressive)
             {
                 DateTime now = DateTime.Now;
-                TimeSpan elapsed = now - (aggressive ? lastEditorFileModCheckTime : lastFileModCheckTime);
-                double threshold = aggressive ? editorFileModCheckInterval.TotalSeconds : 2.0;
-                if (elapsed.TotalSeconds >= threshold)
+                TimeSpan elapsed = now - lastEditorFileModCheckTime;
+                if (elapsed.TotalSeconds >= editorFileModCheckInterval.TotalSeconds)
                 {
                     checkMod = true;
-                    if (aggressive)
-                        lastEditorFileModCheckTime = now;
-                    else
-                        lastFileModCheckTime = now;
+                    lastEditorFileModCheckTime = now;
                 }
             }
 
@@ -1166,6 +1163,43 @@ namespace CharacterStudio.Rendering
             }
 
             return $"{textureIdentity}_{shader.name}";
+        }
+
+        /// <summary>
+        /// 主线程 tick 回调：消费后台读取的纹理字节数据，创建 Texture2D 对象。
+        /// 每次 tick 最多处理 4 个，避免单帧卡顿。
+        /// </summary>
+        public static void TickProcessPendingTextures()
+        {
+            if (!IsMainThread()) return;
+
+            int processed = 0;
+            while (processed < 4)
+            {
+                string? path = null;
+                byte[]? bytes = null;
+
+                lock (textureCacheLock)
+                {
+                    foreach (var kvp in pendingTextureBytes)
+                    {
+                        path = kvp.Key;
+                        bytes = kvp.Value;
+                        break;
+                    }
+                }
+
+                if (path == null || bytes == null)
+                    break;
+
+                lock (textureCacheLock)
+                {
+                    pendingTextureBytes.Remove(path);
+                }
+
+                CreateTextureFromBytes(path, bytes, true);
+                processed++;
+            }
         }
     }
 }

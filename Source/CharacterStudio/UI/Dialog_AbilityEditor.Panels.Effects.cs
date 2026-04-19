@@ -175,6 +175,31 @@ namespace CharacterStudio.UI
             float fieldW = Mathf.Max(60f, colWidth - labelW - 4f);
             float rightX = inner.x + colWidth + gap;
 
+            // 计算展开区域行数，预画 section card 背景
+            int expandedRows = 1; // Amount + Chance
+            switch (effect.type)
+            {
+                case AbilityEffectType.Damage:
+                    expandedRows += 2; // DamageDef + CanHurtSelf
+                    break;
+                case AbilityEffectType.Summon:
+                    expandedRows += 2; // SummonKind+Count + SummonFaction
+                    if (effect.summonFactionType == SummonFactionType.FixedDef) expandedRows++;
+                    break;
+                case AbilityEffectType.Terraform:
+                    expandedRows++; // TerraformMode
+                    if (effect.terraformMode == TerraformEffectMode.SpawnThing) expandedRows += 2;
+                    else if (effect.terraformMode == TerraformEffectMode.ReplaceTerrain) expandedRows++;
+                    break;
+                case AbilityEffectType.Control:
+                    if (effect.controlMode != ControlEffectMode.Stun) expandedRows++;
+                    break;
+                case AbilityEffectType.WeatherChange:
+                    expandedRows += 2; // WeatherDef + Duration/Transition
+                    break;
+            }
+            DrawSectionBg(inner.x, y, inner.width, expandedRows * 26f);
+
             void DrawNumericRow(float rowY, float x, string label, ref float value, ref string buffer, float min = float.MinValue, float max = float.MaxValue)
             {
                 Text.Font = GameFont.Tiny;

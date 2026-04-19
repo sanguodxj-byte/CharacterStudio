@@ -179,7 +179,7 @@ namespace CharacterStudio.UI
                 case AbilityRuntimeComponentType.Dash:
                     config.dashDistance = 6;
                     config.dashStepDurationTicks = 3;
-                    config.dashTriggerEffects = true;
+                    config.dashEffectTiming = DashEffectTiming.OnCollisionStop;
                     config.dashUseAbilityRange = false;
                     config.triggerEquipmentAnimationOnApply = false;
                     config.equipmentAnimationTriggerKey = "Dash";

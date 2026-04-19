@@ -68,6 +68,16 @@ namespace CharacterStudio.Core
 
         // ── Shield visual rendering cache (for CompPawnSkin.PostDraw) ──
         private static readonly Material DefaultShieldBubbleMat = MaterialPool.MatFrom("Things/Pawn/Effects/Shield", ShaderDatabase.Transparent);
+        private static Material? CachedFlightShadowMat;
+        private static Material? FlightShadowMat
+        {
+            get
+            {
+                if (CachedFlightShadowMat == null)
+                    CachedFlightShadowMat = DefDatabase<ThingDef>.GetNamedSilentFail("PawnFlyer")?.pawnFlyer?.ShadowMaterial;
+                return CachedFlightShadowMat;
+            }
+        }
 
         public Pawn? Pawn => parent as Pawn;
 
@@ -163,7 +173,8 @@ namespace CharacterStudio.Core
                 }
 
                 float angle = (float)(pawn.thingIDNumber % 360) + (Find.TickManager.TicksGame * 0.5f) % 360f;
-                Matrix4x4 matrix = Matrix4x4.TRS(pos, Quaternion.AngleAxis(angle, Vector3.up), new Vector3(drawScale, 1f, drawScale));
+                Vector3 shieldScale = new Vector3(drawScale, 1f, drawScale);
+                Matrix4x4 matrix = Matrix4x4.TRS(pos, Quaternion.AngleAxis(angle, Vector3.up), shieldScale);
 
                 Material? mat = null;
                 if (abilityComp.attachedShieldVisualCached != null)
@@ -186,7 +197,7 @@ namespace CharacterStudio.Core
 
                     if (totalHeight > 0.01f)
                     {
-                        Material? shadowMat = DefDatabase<ThingDef>.GetNamedSilentFail("PawnFlyer")?.pawnFlyer?.ShadowMaterial;
+                        Material? shadowMat = FlightShadowMat;
                         if (shadowMat != null)
                         {
                             float scale = Mathf.Lerp(1f, 0.6f, totalHeight);
@@ -325,5 +336,93 @@ namespace CharacterStudio.Core
         DilatedMax,
         ScaredPulse,
         BlinkHidden
+    }
+
+    /// <summary>
+    /// CompPawnSkin 的图层世界位置查询扩展方法。
+    /// 用于技能 VFX 系统获取指定图层的实际渲染世界坐标。
+    /// </summary>
+    public static class CompPawnSkinLayerPositionExtensions
+    {
+        /// <summary>
+        /// 获取指定图层名在当前帧的实际世界渲染位置。
+        /// 包含：基础偏移 + 图层动画偏移 + 外部动画偏移。
+        /// 如果未找到图层，返回 null。
+        /// </summary>
+        public static Vector3? GetCurrentLayerWorldPosition(this CompPawnSkin skinComp, string layerName)
+        {
+            if (skinComp == null || string.IsNullOrWhiteSpace(layerName))
+                return null;
+
+            Pawn? pawn = skinComp.Pawn;
+            if (pawn == null || !pawn.Spawned)
+                return null;
+
+            var renderTree = pawn.Drawer?.renderer?.renderTree;
+            if (renderTree?.rootNode == null)
+                return null;
+
+            Rendering.PawnRenderNode_Custom? foundNode = FindCustomNodeByName(renderTree.rootNode, layerName);
+            if (foundNode == null || foundNode.config == null)
+                return null;
+
+            // 基础世界位置 = Pawn.DrawPos
+            Vector3 worldPos = pawn.DrawPos;
+
+            // 加上图层配置的基础偏移
+            Vector3 baseOffset = foundNode.config.offset;
+            worldPos += baseOffset;
+
+            // 加上动画系统计算的偏移（包含触发式装备动画）
+            worldPos += foundNode.currentAnimOffset;
+
+            // 加上外部图层动画偏移（如环绕轨道动画）
+            worldPos += foundNode.currentExternalLayerOffset;
+
+            // 根据当前朝向加上方向特定偏移（与渲染系统 OffsetFor 保持一致）
+            Rot4 facing = pawn.Rotation;
+            if (facing == Rot4.East || facing == Rot4.West)
+            {
+                if (facing == Rot4.West && foundNode.config.useWestOffset)
+                {
+                    worldPos += foundNode.config.offsetWest;
+                }
+                else
+                {
+                    Vector3 eastOffset = foundNode.config.offsetEast;
+                    if (facing == Rot4.West)
+                        eastOffset.x = -eastOffset.x;
+                    worldPos += eastOffset;
+                }
+            }
+            else if (facing == Rot4.North)
+            {
+                worldPos += foundNode.config.offsetNorth;
+            }
+
+            return worldPos;
+        }
+
+        private static Rendering.PawnRenderNode_Custom? FindCustomNodeByName(PawnRenderNode node, string layerName)
+        {
+            if (node is Rendering.PawnRenderNode_Custom customNode
+                && customNode.config != null
+                && string.Equals(customNode.config.layerName, layerName, StringComparison.OrdinalIgnoreCase))
+            {
+                return customNode;
+            }
+
+            if (node.children != null)
+            {
+                foreach (var child in node.children)
+                {
+                    var found = FindCustomNodeByName(child, layerName);
+                    if (found != null)
+                        return found;
+                }
+            }
+
+            return null;
+        }
     }
 }

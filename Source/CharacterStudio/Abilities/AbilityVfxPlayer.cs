@@ -81,6 +81,16 @@ namespace CharacterStudio.Abilities
                     return;
                 }
 
+                // 全局滤镜类型：只激活滤镜，不播放视觉特效
+                if (vfx.IsGlobalFilterType)
+                {
+                    if (VfxGlobalFilterManager.IsValidFilterMode(vfx.globalFilterMode))
+                    {
+                        VfxGlobalFilterManager.Activate(vfx, caster);
+                    }
+                    return;
+                }
+
                 if (!TryResolveRuntimeVfxType(vfx, out AbilityVisualEffectType runtimeVfxType))
                 {
                     return;
@@ -88,6 +98,12 @@ namespace CharacterStudio.Abilities
 
                 VisualEffectWorker worker = VisualEffectWorkerFactory.GetWorker(runtimeVfxType);
                 worker.Play(vfx, CreateRuntimeVfxTarget(vfx, target, caster, sourceOverride), caster);
+
+                // 全局滤镜：如果 VFX 配置了 globalFilterMode，激活全屏后处理
+                if (VfxGlobalFilterManager.IsValidFilterMode(vfx.globalFilterMode))
+                {
+                    VfxGlobalFilterManager.Activate(vfx, caster);
+                }
             }
             catch (Exception ex)
             {

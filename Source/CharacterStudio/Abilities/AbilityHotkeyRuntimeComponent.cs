@@ -1185,8 +1185,7 @@ namespace CharacterStudio.Abilities
         private static AbilityRuntimeComponentConfig? GetSmartJumpComponent(ModularAbilityDef? ability)
         {
             AbilityRuntimeComponentConfig? smart = GetRuntimeComponent(ability, AbilityRuntimeComponentType.SmartJump);
-            smart ??= GetRuntimeComponent(ability, AbilityRuntimeComponentType.EShortJump);
-            return smart ?? GetRuntimeComponent(ability, AbilityRuntimeComponentType.Dash);
+            return smart ?? GetRuntimeComponent(ability, AbilityRuntimeComponentType.EShortJump);
         }
 
         private static bool TryCastSmartJumpAbility(Pawn caster, CompCharacterAbilityRuntime abilityComp, ModularAbilityDef ability, int tick, AbilityRuntimeComponentConfig jumpComp, AbilityHotkeySlot slot)

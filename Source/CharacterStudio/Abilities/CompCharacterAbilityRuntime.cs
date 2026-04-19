@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using CharacterStudio.Core;
 using RimWorld;
 using UnityEngine;
@@ -50,6 +51,20 @@ namespace CharacterStudio.Abilities
                     _cachedTotalFlightHeight = (abilityRuntimeState.flightStateHeightFactor * liftFactor) + GetFlightHoverOffset();
                 }
                 return _cachedTotalFlightHeight;
+            }
+        }
+
+        /// <summary>
+        /// 稳定的飞行高度（不含 hover 波动），用于渲染层级排序。
+        /// Y 轴（altitude）若包含 hover 正弦波动会导致全局渲染排序每帧重排，
+        /// 造成所有角色 Z 轴持续跳变。
+        /// </summary>
+        public float StableFlightHeight
+        {
+            get
+            {
+                if (!IsFlightStateActive()) return 0f;
+                return abilityRuntimeState.flightStateHeightFactor * GetFlightLiftFactor01();
             }
         }
 
@@ -408,6 +423,22 @@ namespace CharacterStudio.Abilities
             set => abilityRuntimeState.forcedMoveCollisionTriggered = value;
         }
 
+        // ── Dash Deferred Effect Callbacks ──
+        private System.Action<IntVec3>? _dashCollisionCallback;
+        private System.Action<IntVec3>? _dashCompleteCallback;
+
+        public void SetDashCallbacks(System.Action<IntVec3>? onCollision, System.Action<IntVec3>? onComplete)
+        {
+            _dashCollisionCallback = onCollision;
+            _dashCompleteCallback = onComplete;
+        }
+
+        public void ClearDashCallbacks()
+        {
+            _dashCollisionCallback = null;
+            _dashCompleteCallback = null;
+        }
+
         // ── Ability Expression Override ──
         public bool IsAbilityExpressionOverrideActive()
         {
@@ -476,44 +507,58 @@ namespace CharacterStudio.Abilities
         }
 
         // ── Begin Forced Move (convenience overload) ──
-        public void BeginForcedMove(IntVec3 direction, int steps, int stepDurationTicks = 4)
+        public void BeginForcedMove(Vector2 direction, float distance, int durationTicks)
         {
             Pawn? pawn = Pawn;
-            if (pawn?.Map == null || !pawn.Spawned || steps <= 0)
+            if (pawn?.Map == null || !pawn.Spawned || distance <= 0f || durationTicks <= 0)
                 return;
 
-            int dirX = Math.Sign(direction.x);
-            int dirZ = Math.Sign(direction.z);
-            if (dirX == 0 && dirZ == 0)
+            if (Mathf.Approximately(direction.sqrMagnitude, 0f))
                 return;
+
+            Vector2 dir = direction.normalized;
 
             abilityRuntimeState.forcedMoveActive = true;
-            abilityRuntimeState.forcedMoveDirectionX = dirX;
-            abilityRuntimeState.forcedMoveDirectionZ = dirZ;
-            abilityRuntimeState.forcedMoveQueuedSteps = Math.Max(1, steps);
-            abilityRuntimeState.forcedMoveStepDurationTicks = Math.Max(2, stepDurationTicks);
-            abilityRuntimeState.forcedMoveCurrentCell = pawn.Position;
             abilityRuntimeState.forcedMoveStartCell = pawn.Position;
+            abilityRuntimeState.forcedMoveCurrentCell = pawn.Position;
+            abilityRuntimeState.forcedMoveNextCell = pawn.Position;
+            abilityRuntimeState.forcedMoveDirFloatX = dir.x;
+            abilityRuntimeState.forcedMoveDirFloatZ = dir.y;
+            abilityRuntimeState.forcedMoveTotalDistance = distance;
+            abilityRuntimeState.forcedMoveTraveledDistance = 0f;
+            abilityRuntimeState.forcedMoveSpeedPerTick = distance / Mathf.Max(1, durationTicks);
+            abilityRuntimeState.forcedMoveStartTick = Find.TickManager?.TicksGame ?? 0;
+            abilityRuntimeState.forcedMoveDurationTicks = durationTicks;
+            abilityRuntimeState.forcedMoveStepStartTick = abilityRuntimeState.forcedMoveStartTick;
+            abilityRuntimeState.forcedMoveBusyUntilTick = abilityRuntimeState.forcedMoveStartTick + durationTicks + 6;
             abilityRuntimeState.forcedMoveCollisionTriggered = false;
-            abilityRuntimeState.forcedMoveNextCell = ResolveNextForcedMoveCell(pawn, abilityRuntimeState.forcedMoveCurrentCell);
-            abilityRuntimeState.forcedMoveStepStartTick = Find.TickManager?.TicksGame ?? 0;
-            abilityRuntimeState.forcedMoveBusyUntilTick = abilityRuntimeState.forcedMoveStepStartTick + (abilityRuntimeState.forcedMoveQueuedSteps * abilityRuntimeState.forcedMoveStepDurationTicks) + 6;
+
+            // 旧字段兼容
+            abilityRuntimeState.forcedMoveDirectionX = (int)Mathf.Round(dir.x);
+            abilityRuntimeState.forcedMoveDirectionZ = (int)Mathf.Round(dir.y);
+            abilityRuntimeState.forcedMoveQueuedSteps = Mathf.CeilToInt(distance);
+            abilityRuntimeState.forcedMoveStepDurationTicks = durationTicks;
+
+            pawn.Rotation = RotFromDirection(dir.x, dir.y);
 
             if (pawn.stances?.stunner != null)
-                pawn.stances.stunner.StunFor(Math.Max(2, abilityRuntimeState.forcedMoveStepDurationTicks), pawn, false);
-
-            if (!abilityRuntimeState.forcedMoveNextCell.IsValid || abilityRuntimeState.forcedMoveNextCell == abilityRuntimeState.forcedMoveCurrentCell)
-            {
-                TriggerForcedMoveCollisionFeedback(pawn, pawn.Position, blockedImmediately: true);
-                ClearForcedMoveState();
-                return;
-            }
+                pawn.stances.stunner.StunFor(Mathf.Max(2, durationTicks), pawn, false);
 
             RequestSkinRenderRefresh();
         }
 
         // ── Shield PostDraw entry point (delegates to CompPawnSkin.ShieldRendering) ──
         // Shield rendering remains in CompPawnSkin but reads state from this component.
+
+        /// <summary>
+        /// 根据方向向量转换为最接近的 Rot4（用于冲刺朝向）。
+        /// </summary>
+        private static Rot4 RotFromDirection(float dirX, float dirZ)
+        {
+            if (Mathf.Abs(dirZ) >= Mathf.Abs(dirX))
+                return dirZ > 0 ? Rot4.North : Rot4.South;
+            return dirX > 0 ? Rot4.East : Rot4.West;
+        }
 
         // ── Forced Move Tick (complete with collision, stun, resolve) ──
         private void TickForcedMove()
@@ -528,60 +573,108 @@ namespace CharacterStudio.Abilities
                 return;
             }
 
-            if (!abilityRuntimeState.forcedMoveCurrentCell.IsValid)
-                abilityRuntimeState.forcedMoveCurrentCell = pawn.Position;
-
-            if (!abilityRuntimeState.forcedMoveNextCell.IsValid || abilityRuntimeState.forcedMoveNextCell == abilityRuntimeState.forcedMoveCurrentCell)
+            float speed = abilityRuntimeState.forcedMoveSpeedPerTick;
+            if (speed <= 0f)
             {
-                abilityRuntimeState.forcedMoveNextCell = ResolveNextForcedMoveCell(pawn, abilityRuntimeState.forcedMoveCurrentCell);
-                if (!abilityRuntimeState.forcedMoveNextCell.IsValid || abilityRuntimeState.forcedMoveNextCell == abilityRuntimeState.forcedMoveCurrentCell)
+                ClearForcedMoveState();
+                return;
+            }
+
+            abilityRuntimeState.forcedMoveTraveledDistance += speed;
+
+            // 计算当前世界位置
+            float dx = abilityRuntimeState.forcedMoveDirFloatX * abilityRuntimeState.forcedMoveTraveledDistance;
+            float dz = abilityRuntimeState.forcedMoveDirFloatZ * abilityRuntimeState.forcedMoveTraveledDistance;
+            IntVec3 startCell = abilityRuntimeState.forcedMoveStartCell;
+            float worldX = startCell.x + dx;
+            float worldZ = startCell.z + dz;
+            IntVec3 nearestCell = new IntVec3(Mathf.RoundToInt(worldX), 0, Mathf.RoundToInt(worldZ));
+
+            // 建筑阻挡检测：仅建筑物阻止冲刺移动
+            if (nearestCell.InBounds(pawn.Map))
+            {
+                Building? blockingBuilding = nearestCell.GetEdifice(pawn.Map);
+                if (blockingBuilding != null && blockingBuilding.def.blockWind)
                 {
-                    TriggerForcedMoveCollisionFeedback(pawn, abilityRuntimeState.forcedMoveCurrentCell, blockedImmediately: true);
+                    TriggerForcedMoveCollisionFeedback(pawn, pawn.Position, blockedImmediately: false);
                     ClearForcedMoveState();
                     return;
                 }
-                abilityRuntimeState.forcedMoveStepStartTick = Find.TickManager?.TicksGame ?? 0;
+
+                if (nearestCell != pawn.Position)
+                {
+                    pawn.Position = nearestCell;
+                    pawn.Notify_Teleported(true, false);
+                }
+            }
+            else
+            {
+                TriggerForcedMoveCollisionFeedback(pawn, pawn.Position, blockedImmediately: true);
+                ClearForcedMoveState();
+                return;
+            }
+            abilityRuntimeState.forcedMoveCurrentCell = pawn.Position;
+
+            // 碰撞检测：只检查当前格子及相邻格子的 Pawn（避免遍历全地图）
+            Pawn? hitPawn = null;
+            IntVec3 checkCenter = pawn.Position;
+            Map pawnMap = pawn.Map;
+            float closestDist = 1.2f;
+            for (int ox = -1; ox <= 1; ox++)
+            {
+                for (int oz = -1; oz <= 1; oz++)
+                {
+                    IntVec3 checkCell = new IntVec3(checkCenter.x + ox, 0, checkCenter.z + oz);
+                    if (!checkCell.InBounds(pawnMap)) continue;
+                    List<Thing> things = pawnMap.thingGrid.ThingsListAt(checkCell);
+                    for (int i = 0; i < things.Count; i++)
+                    {
+                        if (things[i] is Pawn other && other != pawn && !other.Dead && other.Spawned)
+                        {
+                            float dist = Mathf.Abs(other.DrawPos.x - (worldX + 0.5f)) + Mathf.Abs(other.DrawPos.z - (worldZ + 0.5f));
+                            if (dist < closestDist)
+                            {
+                                closestDist = dist;
+                                hitPawn = other;
+                            }
+                        }
+                    }
+                }
             }
 
-            int now = Find.TickManager?.TicksGame ?? 0;
-            if (now - abilityRuntimeState.forcedMoveStepStartTick < Math.Max(1, abilityRuntimeState.forcedMoveStepDurationTicks))
-                return;
-
-            pawn.Position = abilityRuntimeState.forcedMoveNextCell;
-            pawn.Notify_Teleported(true, false);
-
-            abilityRuntimeState.forcedMoveCurrentCell = abilityRuntimeState.forcedMoveNextCell;
-            abilityRuntimeState.forcedMoveQueuedSteps--;
-
-            if (abilityRuntimeState.forcedMoveQueuedSteps <= 0)
+            if (hitPawn != null && _dashCollisionCallback != null)
             {
+                var cb = _dashCollisionCallback;
+                _dashCollisionCallback = null;
+                cb(pawn.Position);
+                if (_dashCompleteCallback == null)
+                {
+                    TriggerForcedMoveCollisionFeedback(pawn, pawn.Position, blockedImmediately: false);
+                    ClearForcedMoveState();
+                    return;
+                }
+            }
+
+            // 检查是否到达总距离
+            if (abilityRuntimeState.forcedMoveTraveledDistance >= abilityRuntimeState.forcedMoveTotalDistance)
+            {
+                if (_dashCompleteCallback != null)
+                {
+                    var cb = _dashCompleteCallback;
+                    _dashCompleteCallback = null;
+                    cb(pawn.Position);
+                }
                 ClearForcedMoveState();
                 return;
             }
 
-            abilityRuntimeState.forcedMoveStartCell = abilityRuntimeState.forcedMoveCurrentCell;
-            abilityRuntimeState.forcedMoveNextCell = ResolveNextForcedMoveCell(pawn, abilityRuntimeState.forcedMoveCurrentCell);
-            abilityRuntimeState.forcedMoveStepStartTick = now;
-            abilityRuntimeState.forcedMoveBusyUntilTick = Math.Max(abilityRuntimeState.forcedMoveBusyUntilTick, now + abilityRuntimeState.forcedMoveStepDurationTicks + 4);
-
-            if (!abilityRuntimeState.forcedMoveNextCell.IsValid || abilityRuntimeState.forcedMoveNextCell == abilityRuntimeState.forcedMoveCurrentCell)
+            // 检查是否超出地图
+            if (!nearestCell.InBounds(pawn.Map))
             {
-                TriggerForcedMoveCollisionFeedback(pawn, abilityRuntimeState.forcedMoveCurrentCell, blockedImmediately: false);
+                TriggerForcedMoveCollisionFeedback(pawn, pawn.Position, blockedImmediately: true);
                 ClearForcedMoveState();
                 return;
             }
-
-            RequestSkinRenderRefresh();
-        }
-
-        private IntVec3 ResolveNextForcedMoveCell(Pawn pawn, IntVec3 origin)
-        {
-            Map? map = pawn.Map;
-            if (map == null) return origin;
-            IntVec3 next = origin + new IntVec3(abilityRuntimeState.forcedMoveDirectionX, 0, abilityRuntimeState.forcedMoveDirectionZ);
-            if (!next.InBounds(map) || !next.Standable(map))
-                return origin;
-            return next;
         }
 
         private void ClearForcedMoveState()
@@ -596,6 +689,15 @@ namespace CharacterStudio.Abilities
             abilityRuntimeState.forcedMoveCurrentCell = IntVec3.Invalid;
             abilityRuntimeState.forcedMoveNextCell = IntVec3.Invalid;
             abilityRuntimeState.forcedMoveStepStartTick = -1;
+            abilityRuntimeState.forcedMoveDirFloatX = 0f;
+            abilityRuntimeState.forcedMoveDirFloatZ = 0f;
+            abilityRuntimeState.forcedMoveTotalDistance = 0f;
+            abilityRuntimeState.forcedMoveTraveledDistance = 0f;
+            abilityRuntimeState.forcedMoveSpeedPerTick = 0f;
+            abilityRuntimeState.forcedMoveStartTick = -1;
+            abilityRuntimeState.forcedMoveDurationTicks = -1;
+            _dashCollisionCallback = null;
+            _dashCompleteCallback = null;
         }
 
         private void TriggerForcedMoveCollisionFeedback(Pawn pawn, IntVec3 collisionCell, bool blockedImmediately)
@@ -614,6 +716,16 @@ namespace CharacterStudio.Abilities
             abilityRuntimeState.forcedMoveBusyUntilTick = Math.Max(
                 abilityRuntimeState.forcedMoveBusyUntilTick,
                 (Find.TickManager?.TicksGame ?? 0) + (blockedImmediately ? 12 : 8));
+
+            // 地形阻挡碰撞：触发碰撞回调
+            if (_dashCollisionCallback != null)
+            {
+                var cb = _dashCollisionCallback;
+                _dashCollisionCallback = null;
+                _dashCompleteCallback = null;
+                cb(collisionCell);
+            }
+
             RequestSkinRenderRefresh();
         }
 
@@ -626,33 +738,16 @@ namespace CharacterStudio.Abilities
 
         public Vector3 GetForcedMoveVisualOffset()
         {
-            Pawn? pawn = Pawn;
-            if (pawn == null || !abilityRuntimeState.forcedMoveActive || !abilityRuntimeState.forcedMoveCurrentCell.IsValid || !abilityRuntimeState.forcedMoveNextCell.IsValid)
+            if (!abilityRuntimeState.forcedMoveActive || abilityRuntimeState.forcedMoveSpeedPerTick <= 0f)
                 return Vector3.zero;
 
-            int now = Find.TickManager?.TicksGame ?? 0;
-            int duration = Math.Max(1, abilityRuntimeState.forcedMoveStepDurationTicks);
-            float t = UnityEngine.Mathf.Clamp01((now - abilityRuntimeState.forcedMoveStepStartTick) / (float)duration);
-            float eased = UnityEngine.Mathf.SmoothStep(0f, 1f, t);
-            IntVec3 delta = abilityRuntimeState.forcedMoveNextCell - abilityRuntimeState.forcedMoveCurrentCell;
-            return new Vector3(delta.x * eased, 0f, delta.z * eased);
-        }
-
-        public void StartForcedMove(IntVec3 startCell, IntVec3 direction, int totalSteps, int stepDurationTicks)
-        {
-            Pawn? pawn = Pawn;
-            if (pawn == null) return;
-            abilityRuntimeState.forcedMoveActive = true;
-            abilityRuntimeState.forcedMoveStartCell = startCell;
-            abilityRuntimeState.forcedMoveCurrentCell = startCell;
-            abilityRuntimeState.forcedMoveNextCell = startCell + direction;
-            abilityRuntimeState.forcedMoveDirectionX = direction.x;
-            abilityRuntimeState.forcedMoveDirectionZ = direction.z;
-            abilityRuntimeState.forcedMoveQueuedSteps = UnityEngine.Mathf.Max(1, totalSteps);
-            abilityRuntimeState.forcedMoveStepDurationTicks = UnityEngine.Mathf.Max(1, stepDurationTicks);
-            abilityRuntimeState.forcedMoveStepStartTick = Find.TickManager?.TicksGame ?? 0;
-            abilityRuntimeState.forcedMoveBusyUntilTick = -1;
-            abilityRuntimeState.forcedMoveCollisionTriggered = false;
+            float dx = abilityRuntimeState.forcedMoveDirFloatX * abilityRuntimeState.forcedMoveTraveledDistance;
+            float dz = abilityRuntimeState.forcedMoveDirFloatZ * abilityRuntimeState.forcedMoveTraveledDistance;
+            IntVec3 startCell = abilityRuntimeState.forcedMoveStartCell;
+            // 精确世界位置减去当前格子位置
+            float offsetX = (startCell.x + dx) - abilityRuntimeState.forcedMoveCurrentCell.x;
+            float offsetZ = (startCell.z + dz) - abilityRuntimeState.forcedMoveCurrentCell.z;
+            return new Vector3(offsetX, 0f, offsetZ);
         }
 
         public void CancelForcedMove()
@@ -678,23 +773,13 @@ namespace CharacterStudio.Abilities
 
         public float GetFlightLiftFactor01()
         {
-            int now = AbilityTimeStopRuntimeController.ResolveVisualTickForPawn(Pawn, Find.TickManager?.TicksGame ?? 0);
             if (!IsFlightStateActive() || abilityRuntimeState.flightStateStartTick < 0 || abilityRuntimeState.flightStateExpireTick < abilityRuntimeState.flightStateStartTick)
                 return 0f;
 
-            const int easeTicks = 18;
-            float fadeIn = UnityEngine.Mathf.Clamp01((now - abilityRuntimeState.flightStateStartTick) / (float)easeTicks);
-            float fadeOut = UnityEngine.Mathf.Clamp01((abilityRuntimeState.flightStateExpireTick - now) / (float)easeTicks);
-            return UnityEngine.Mathf.SmoothStep(0f, 1f, UnityEngine.Mathf.Min(fadeIn, fadeOut));
+            return 1f;
         }
 
-        public float GetFlightHoverOffset()
-        {
-            int now = AbilityTimeStopRuntimeController.ResolveVisualTickForPawn(Pawn, Find.TickManager?.TicksGame ?? 0);
-            if (!IsFlightStateActive()) return 0f;
-            float amplitude = UnityEngine.Mathf.Max(0.015f, abilityRuntimeState.flightStateHeightFactor * 0.18f) * GetFlightLiftFactor01();
-            return UnityEngine.Mathf.Sin((now + (Pawn?.thingIDNumber ?? 0)) * 0.14f) * amplitude;
-        }
+        public float GetFlightHoverOffset() => 0f;
 
         // ── Shield Damage Absorption ──
         public bool TryAbsorbShieldDamage(ref DamageInfo dinfo)

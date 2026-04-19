@@ -39,10 +39,12 @@ namespace CharacterStudio.Core
                 }
             }
 
-            if (cfg.hoveringEnabled || IsFlightStateActive())
+            // 悬浮动画仅在用户手动启用时生效。
+            // 飞行状态的高度偏移已由 Patch_PawnRenderer 统一处理，
+            // 不在此处叠加正弦波动，避免 y 轴每帧变化导致全局渲染排序跳变。
+            if (cfg.hoveringEnabled)
             {
                 float hover = Mathf.Sin(time * 0.04f * cfg.hoveringSpeed);
-                // 悬浮通常只应用在 Body 根节点，Head 会自动跟随，所以 Head 不需要差值
                 if (bone == AnimBone.Body)
                 {
                     delta.y += hover * cfg.hoveringAmplitude;

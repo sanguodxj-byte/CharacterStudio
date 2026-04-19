@@ -114,7 +114,9 @@ namespace CharacterStudio.Abilities
                 abilityComp.VanillaFlightFollowupWindowEndTick = abilityComp.FlightStateExpireTick;
             }
 
-            caster.flight?.StartFlying();
+            // 不调用 vanilla StartFlying() — 它会触发 Pawn_FlightTracker 的动态 DrawPos 偏移，
+            // 导致起飞/降落曲线期间 DrawPos 每帧变化，引发全局渲染排序跳变。
+            // 寻路由 Patch_FlightState 通过 CompCharacterAbilityRuntime.IsFlightStateActive() 独立处理。
             abilityComp.TriggerEquipmentAnimationState("FlightState", nowTick, component.flightDurationTicks);
         }
 
@@ -155,6 +157,38 @@ namespace CharacterStudio.Abilities
             if (jumpComponent != null)
             {
                 return;
+            }
+
+            // Dash 效果始终延迟到碰撞或完成时施加
+            AbilityRuntimeComponentConfig? deferredDash = GetDeferredDashComponent();
+            if (deferredDash != null)
+            {
+                Pawn? caster = parent?.pawn;
+                if (caster != null)
+                {
+                    CompCharacterAbilityRuntime? abilityComp = GetCachedAbilityComp();
+                    if (abilityComp != null)
+                    {
+                        var capturedTarget = target;
+                        var capturedSelf = this;
+                        var timing = deferredDash.dashEffectTiming;
+
+                        System.Action<IntVec3>? onCollision = null;
+                        System.Action<IntVec3>? onComplete = null;
+
+                        if (timing == DashEffectTiming.OnCollisionStop || timing == DashEffectTiming.OnCollisionPassThrough)
+                            onCollision = collisionCell => capturedSelf.ApplyDeferredDashEffects(collisionCell, capturedTarget);
+
+                        if (timing == DashEffectTiming.OnComplete || timing == DashEffectTiming.OnCollisionPassThrough)
+                            onComplete = finalCell => capturedSelf.ApplyDeferredDashEffects(finalCell, capturedTarget);
+
+                        abilityComp.SetDashCallbacks(onCollision, onComplete);
+
+                        HandleRuntimeComponentsAtApply(target);
+                        TriggerVisualEffects(AbilityVisualEffectTrigger.OnTargetApply, target);
+                        return;
+                    }
+                }
             }
 
             // --- 投射物语义处理 ---
@@ -209,6 +243,24 @@ namespace CharacterStudio.Abilities
                 IntVec3 landingCell = caster?.Position ?? origin;
                 resolvedTarget = new LocalTargetInfo(landingCell);
             }
+
+            ApplyResolvedEffects(resolvedTarget);
+        }
+
+        /// <summary>
+        /// Dash 延迟效果回调：在碰撞或冲刺完成时，以实际位置作为目标施加效果。
+        /// 将碰撞格/终点格作为新的目标，重新解析并施加技能的伤害/效果。
+        /// </summary>
+        private void ApplyDeferredDashEffects(IntVec3 collisionCell, LocalTargetInfo originalTarget)
+        {
+            Pawn? caster = parent?.pawn;
+            if (caster == null) return;
+
+            // 优先使用碰撞位置的 Pawn 作为目标，若无则使用原始目标
+            Pawn? hitPawn = collisionCell.GetFirstPawn(caster.Map);
+            LocalTargetInfo resolvedTarget = hitPawn != null
+                ? new LocalTargetInfo(hitPawn)
+                : new LocalTargetInfo(collisionCell);
 
             ApplyResolvedEffects(resolvedTarget);
         }
@@ -367,11 +419,24 @@ namespace CharacterStudio.Abilities
 
             return Props.runtimeComponents.FirstOrDefault(component => component != null
                 && component.enabled
-                && ((component.triggerAbilityEffectsAfterJump
-                        && (component.type == AbilityRuntimeComponentType.SmartJump
-                            || component.type == AbilityRuntimeComponentType.EShortJump))
-                    || (component.type == AbilityRuntimeComponentType.Dash
-                        && component.dashTriggerEffects)));
+                && component.triggerAbilityEffectsAfterJump
+                && (component.type == AbilityRuntimeComponentType.SmartJump
+                    || component.type == AbilityRuntimeComponentType.EShortJump));
+        }
+
+        /// <summary>
+        /// 查找 Dash 组件。所有 Dash 组件的技能效果都延迟到碰撞/完成时施加。
+        /// </summary>
+        private AbilityRuntimeComponentConfig? GetDeferredDashComponent()
+        {
+            if (Props.runtimeComponents == null || Props.runtimeComponents.Count == 0)
+            {
+                return null;
+            }
+
+            return Props.runtimeComponents.FirstOrDefault(component => component != null
+                && component.enabled
+                && component.type == AbilityRuntimeComponentType.Dash);
         }
 
         /// <summary>
@@ -441,6 +506,9 @@ namespace CharacterStudio.Abilities
             }
 
             // P-PERF: 仅在有挂起特效时才遍历列表
+            // 全局滤镜 Tick（驱动过渡动画和恢复）
+            VfxGlobalFilterManager.Tick();
+
             if (pendingVfx.Count > 0 && caster != null)
             {
                 for (int i = pendingVfx.Count - 1; i >= 0; i--)
@@ -572,6 +640,17 @@ namespace CharacterStudio.Abilities
                     continue;
                 }
 
+                // 解析该 VFX 的起点：如果配置了 vfxSourceLayerName，从图层实际位置发射
+                Vector3? resolvedSourceOverride = sourceOverride;
+                if (!resolvedSourceOverride.HasValue && !string.IsNullOrWhiteSpace(vfx.vfxSourceLayerName))
+                {
+                    Core.CompPawnSkin? skinComp = caster.GetComp<Core.CompPawnSkin>();
+                    if (skinComp != null)
+                    {
+                        resolvedSourceOverride = skinComp.GetCurrentLayerWorldPosition(vfx.vfxSourceLayerName);
+                    }
+                }
+
                 int repeatCount = vfx.repeatCount <= 0 ? 1 : vfx.repeatCount;
                 int repeatIntervalTicks = vfx.repeatIntervalTicks < 0 ? 0 : vfx.repeatIntervalTicks;
 
@@ -580,11 +659,11 @@ namespace CharacterStudio.Abilities
                     int totalDelay = vfx.delayTicks + (repeatIndex * repeatIntervalTicks);
                     if (totalDelay <= 0)
                     {
-                        AbilityVfxPlayer.PlayVfx(vfx, target, caster, sourceOverride);
+                        AbilityVfxPlayer.PlayVfx(vfx, target, caster, resolvedSourceOverride);
                     }
                     else
                     {
-                        pendingVfx.Add((nowTick + totalDelay, vfx, target, sourceOverride));
+                        pendingVfx.Add((nowTick + totalDelay, vfx, target, resolvedSourceOverride));
                     }
 
                     if (vfx.playSound && !string.IsNullOrWhiteSpace(vfx.soundDefName))
@@ -592,11 +671,11 @@ namespace CharacterStudio.Abilities
                         int soundDelay = totalDelay + Mathf.Max(0, vfx.soundDelayTicks);
                         if (soundDelay <= 0)
                         {
-                            AbilityVfxPlayer.PlayVfxSound(vfx, target, caster, sourceOverride);
+                            AbilityVfxPlayer.PlayVfxSound(vfx, target, caster, resolvedSourceOverride);
                         }
                         else
                         {
-                            pendingVfxSounds.Add((nowTick + soundDelay, vfx, target, sourceOverride));
+                            pendingVfxSounds.Add((nowTick + soundDelay, vfx, target, resolvedSourceOverride));
                         }
                     }
                 }

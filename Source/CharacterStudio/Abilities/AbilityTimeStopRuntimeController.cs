@@ -500,6 +500,9 @@ namespace CharacterStudio.Abilities
         [ThreadStatic]
         private static int? forcedTicksGameOverride;
 
+        // RimWorld WindManager 通过此 shader 属性驱动树木/植物摇动
+        private static readonly int WindSpeedShaderId = Shader.PropertyToID("_WindSpeed");
+
         private static readonly System.Reflection.FieldInfo? FleckManagerParentField =
             AccessTools.Field(typeof(FleckManager), "parent");
         private static readonly System.Reflection.FieldInfo? PostTickVisualsMapField =
@@ -650,9 +653,19 @@ namespace CharacterStudio.Abilities
 
         public static void GlobalRendererUtility_UpdateGlobalShadersParams_Prefix()
         {
-            int frozenTick = AbilityTimeStopRuntimeController.ResolveGlobalVisualTickForCurrentMap(Find.TickManager?.TicksGame ?? 0);
+            int currentTick = Find.TickManager?.TicksGame ?? 0;
+            int frozenTick = AbilityTimeStopRuntimeController.ResolveGlobalVisualTickForCurrentMap(currentTick);
             forcedTicksGameOverride = frozenTick;
             Shader.SetGlobalFloat(ShaderPropertyIDs.GameSeconds, frozenTick.TicksToSeconds());
+
+            // 仅在时停激活时冻结风力 shader 全局参数（树木/草地摇动）。
+            // Postfix 不恢复——WindManager.Update 在时停结束时自然恢复真实值。
+            // 此处不能无条件冻结+Postfix恢复，因为 Postfix 在渲染之前执行，
+            // 恢复后渲染管线看到的仍是原始 WindSpeed，无法冻结。
+            if (frozenTick != currentTick)
+            {
+                Shader.SetGlobalFloat(WindSpeedShaderId, 0f);
+            }
         }
 
         public static void GlobalRendererUtility_UpdateGlobalShadersParams_Postfix()

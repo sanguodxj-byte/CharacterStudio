@@ -110,6 +110,7 @@ namespace CharacterStudio.UI
         private void FinalizeMutatedEditorState(bool refreshPreview = true, bool refreshRenderTree = false, string? statusMessage = null)
         {
             isDirty = true;
+            semanticMappingCacheVersion++;
 
             if (refreshPreview)
                 RefreshPreview();

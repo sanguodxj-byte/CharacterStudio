@@ -100,6 +100,77 @@ namespace CharacterStudio.Core
             return def;
         }
 
+        /// <summary>
+        /// 将 DefDatabase 中由 XML Defs 加载的 PawnSkinDef（如导出模组提供的）同步到运行时注册表。
+        /// 这使得 GetDefaultSkinForRace / TryGet 等运行时查询能找到这些 Def，
+        /// 从而让 PawnSkinBootstrapComponent 在加载存档时自动应用导出模组的皮肤。
+        /// 
+        /// 对于含 abilities 但缺少热键配置的 Def，自动按 Q/W/E/R... 顺序分配热键绑定，
+        /// 确保自定义 Gizmo 能正确替换原版 Command_Ability。
+        /// </summary>
+        public static int SyncFromDefDatabase()
+        {
+            int count = 0;
+            foreach (var def in DefDatabase<PawnSkinDef>.AllDefs)
+            {
+                if (def == null || string.IsNullOrEmpty(def.defName))
+                    continue;
+
+                // 跳过已在运行时注册表中的 Def（可能来自 Config 目录加载或显式 RegisterOrReplace）
+                if (runtimeDefsByName.ContainsKey(def.defName))
+                    continue;
+
+                // 导出模组的 PawnSkinDef 通过 RimWorld 标准 DefDatabase 加载时，
+                // abilityHotkeys.slotBindings（Dictionary<string,string>）无法被 DirectXmlToObject 正确反序列化，
+                // 导致 hotkeys.enabled=false 或 slotBindings 为空。
+                // 自定义 Gizmo 的显示依赖 EnumerateVisibleAbilitySlots → hotkeys.enabled && HasAnyBinding()，
+                // 所以这里需要自动补齐。
+                EnsureDefaultHotkeyBindings(def);
+
+                runtimeDefsByName[def.defName] = def;
+                count++;
+            }
+
+            if (count > 0)
+            {
+                Log.Message($"[CharacterStudio] 已从 DefDatabase 同步 {count} 个皮肤定义到运行时注册表");
+            }
+
+            return count;
+        }
+
+        /// <summary>
+        /// 为含 abilities 但缺少有效热键配置的 PawnSkinDef 自动分配默认热键绑定。
+        /// 按 Q/W/E/R/T/A/S/D/F/Z/X/C/V 顺序将技能映射到槽位。
+        /// </summary>
+        private static void EnsureDefaultHotkeyBindings(PawnSkinDef def)
+        {
+            if (def.abilities == null || def.abilities.Count == 0)
+                return;
+
+            // 如果 hotkeys 已经有有效绑定，不需要覆盖
+            if (def.abilityHotkeys != null && def.abilityHotkeys.enabled && def.abilityHotkeys.HasAnyBinding())
+                return;
+
+            def.abilityHotkeys ??= new SkinAbilityHotkeyConfig();
+            def.abilityHotkeys.enabled = true;
+
+            // 收集有效技能 defName，按原始顺序
+            var validAbilities = def.abilities
+                .Where(a => a != null && !string.IsNullOrWhiteSpace(a.defName))
+                .ToList();
+
+            if (validAbilities.Count == 0)
+                return;
+
+            // 按 Q/W/E/R/T/A/S/D/F/Z/X/C/V 顺序分配
+            string[] slotKeys = { "Q", "W", "E", "R", "T", "A", "S", "D", "F", "Z", "X", "C", "V" };
+            for (int i = 0; i < validAbilities.Count && i < slotKeys.Length; i++)
+            {
+                def.abilityHotkeys[slotKeys[i]] = validAbilities[i].defName!;
+            }
+        }
+
         public static int LoadFromConfig()
         {
             if (loading) return 0;
@@ -340,6 +411,10 @@ namespace CharacterStudio.Core
                             ability.label = ability.defName;
                         }
 
+                        // 注册到 DefDatabase，以便 WarmupAllRuntimeAbilityDefs 能预热运行时 AbilityDef，
+                        // 以及存档加载时 RehydrateAbilities 能通过 DefDatabase 查找恢复。
+                        RegisterOrReplaceAbilityDef(ability);
+
                         restored.Add(ability);
                     }
                 }
@@ -350,6 +425,31 @@ namespace CharacterStudio.Core
             }
 
             def.abilities = restored;
+        }
+
+        /// <summary>
+        /// 将 ModularAbilityDef 注册到 DefDatabase。
+        /// 如果已存在同名 def 则跳过（保持首次注册的版本），
+        /// 否则调用 Add 注册新 def。
+        /// 这确保 WarmupAllRuntimeAbilityDefs 能预热运行时 AbilityDef，
+        /// 以及存档加载时 RehydrateAbilities 能通过 DefDatabase 查找恢复。
+        /// </summary>
+        private static void RegisterOrReplaceAbilityDef(ModularAbilityDef def)
+        {
+            if (def == null || string.IsNullOrWhiteSpace(def.defName))
+                return;
+
+            try
+            {
+                if (DefDatabase<ModularAbilityDef>.GetNamedSilentFail(def.defName) != null)
+                    return;
+
+                DefDatabase<ModularAbilityDef>.Add(def);
+            }
+            catch (Exception ex)
+            {
+                Log.Warning($"[CharacterStudio] 注册 ModularAbilityDef [{def.defName}] 到 DefDatabase 失败: {ex.Message}");
+            }
         }
 
         /// <summary>

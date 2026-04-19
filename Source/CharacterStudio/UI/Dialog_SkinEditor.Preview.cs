@@ -889,221 +889,195 @@ namespace CharacterStudio.UI
         {
             Rect titleRect = UIHelper.DrawPanelShell(rect, "CS_Studio_Panel_Preview".Translate(), Margin);
 
-            float btnY = titleRect.yMax + 6f;
+            float btnY = titleRect.yMax + 4f;
             float btnWidth = 40f;
             float btnHeight = Mathf.Max(ButtonHeight - 2f, 22f);
             float btnX = rect.x + Margin;
+            float maxX = rect.xMax - Margin;
 
-            if (UIHelper.DrawToolbarButton(new Rect(btnX, btnY, btnWidth, btnHeight), "◀", tooltip: "CS_Studio_Preview_RotateLeft".Translate()))
+            // ── 旋转 / 缩放 ──
+            if (btnX + btnWidth <= maxX && UIHelper.DrawToolbarButton(new Rect(btnX, btnY, btnWidth, btnHeight), "◀", tooltip: "CS_Studio_Preview_RotateLeft".Translate()))
             {
                 previewRotation.Rotate(RotationDirection.Counterclockwise);
                 RefreshPreview();
             }
             btnX += btnWidth + Margin;
 
-            if (UIHelper.DrawToolbarButton(new Rect(btnX, btnY, btnWidth, btnHeight), "▶", tooltip: "CS_Studio_Preview_RotateRight".Translate()))
+            if (btnX + btnWidth <= maxX && UIHelper.DrawToolbarButton(new Rect(btnX, btnY, btnWidth, btnHeight), "▶", tooltip: "CS_Studio_Preview_RotateRight".Translate()))
             {
                 previewRotation.Rotate(RotationDirection.Clockwise);
                 RefreshPreview();
             }
-            btnX += btnWidth + Margin * 2f;
+            btnX += btnWidth + Margin;
 
-            if (UIHelper.DrawToolbarButton(new Rect(btnX, btnY, btnWidth, btnHeight), "-", tooltip: "CS_Studio_Preview_ZoomOut".Translate()))
+            if (btnX + btnWidth <= maxX && UIHelper.DrawToolbarButton(new Rect(btnX, btnY, btnWidth, btnHeight), "-", tooltip: "CS_Studio_Preview_ZoomOut".Translate()))
             {
                 previewZoom = Mathf.Max(0.5f, previewZoom - 0.1f);
             }
             btnX += btnWidth + Margin;
 
-            if (UIHelper.DrawToolbarButton(new Rect(btnX, btnY, btnWidth, btnHeight), "+", tooltip: "CS_Studio_Preview_ZoomIn".Translate()))
+            if (btnX + btnWidth <= maxX && UIHelper.DrawToolbarButton(new Rect(btnX, btnY, btnWidth, btnHeight), "+", tooltip: "CS_Studio_Preview_ZoomIn".Translate()))
             {
                 previewZoom = Mathf.Min(2f, previewZoom + 0.1f);
             }
             btnX += btnWidth + Margin;
 
-            if (UIHelper.DrawToolbarButton(new Rect(btnX, btnY, btnWidth + 20f, btnHeight), "↺", tooltip: "CS_Studio_Preview_ResetView".Translate()))
+            float resetBtnWidth = btnWidth + 20f;
+            if (btnX + resetBtnWidth <= maxX && UIHelper.DrawToolbarButton(new Rect(btnX, btnY, resetBtnWidth, btnHeight), "↺", tooltip: "CS_Studio_Preview_ResetView".Translate()))
             {
                 previewRotation = Rot4.South;
                 previewZoom = 1f;
                 RefreshPreview();
             }
+            btnX += resetBtnWidth + Margin;
 
-            float stripBtnX = btnX + btnWidth + 20f + Margin * 2f;
+            // ── 装扮选择 ──
             if (mannequin != null)
             {
                 float apparelBtnWidth = 64f;
-                if (UIHelper.DrawToolbarButton(new Rect(stripBtnX, btnY, apparelBtnWidth, btnHeight), "CS_Studio_Preview_SelectApparel".Translate()))
+                if (btnX + apparelBtnWidth <= maxX && UIHelper.DrawToolbarButton(new Rect(btnX, btnY, apparelBtnWidth, btnHeight), "CS_Studio_Preview_SelectApparel".Translate()))
                 {
                     OpenPreviewApparelMenu();
                 }
+                btnX += apparelBtnWidth + Margin;
             }
 
-            float autoPlayWidth = 72f;
-            Rect autoPlayRect = new Rect(rect.xMax - Margin - autoPlayWidth, btnY, autoPlayWidth, btnHeight);
-            if (UIHelper.DrawToolbarButton(autoPlayRect, (previewAutoPlayEnabled ? "▶ " : string.Empty) + "CS_Studio_Preview_Flow".Translate(), previewAutoPlayEnabled))
+            // ── 装备动画控制（仅 Items 选项卡） ──
+            if (currentTab == EditorTab.Items)
             {
-                previewAutoPlayEnabled = !previewAutoPlayEnabled;
-                if (previewAutoPlayEnabled)
+                float equipmentPreviewBtnWidth = 76f;
+                bool canPreviewEquipmentAnimation = !string.IsNullOrWhiteSpace(GetSelectedEquipmentAnimationTriggerKey());
+
+                if (btnX + equipmentPreviewBtnWidth <= maxX)
                 {
-                    ResetPreviewAutoPlayState(keepEnabled: true);
-                    ApplyPreviewAutoPlayStep();
+                    if (UIHelper.DrawToolbarButton(new Rect(btnX, btnY, equipmentPreviewBtnWidth, btnHeight),
+                        (previewEquipmentAnimationPlaying && !previewEquipmentAnimationLoop ? "▶ " : string.Empty) + "CS_Studio_Equip_PreviewPlay".Translate(),
+                        previewEquipmentAnimationPlaying && !previewEquipmentAnimationLoop))
+                    {
+                        TogglePreviewEquipmentAnimation(loop: false);
+                    }
+                    TooltipHandler.TipRegion(new Rect(btnX, btnY, equipmentPreviewBtnWidth, btnHeight), canPreviewEquipmentAnimation
+                        ? "CS_Studio_Equip_PreviewPlay_Hint".Translate()
+                        : "CS_Studio_Equip_PreviewUnavailable_Hint".Translate());
                 }
-                else
+                btnX += equipmentPreviewBtnWidth + Margin;
+
+                if (btnX + equipmentPreviewBtnWidth <= maxX)
                 {
-                    previewRuntimeExpressionOverrideEnabled = false;
-                    previewAutoPlayStepIndex = 0;
-                    previewAutoPlayNextStepTime = 0f;
-                    SyncPreviewOverridesToSkinComp();
-                    RefreshPreview();
+                    if (UIHelper.DrawToolbarButton(new Rect(btnX, btnY, equipmentPreviewBtnWidth, btnHeight),
+                        (previewEquipmentAnimationPlaying && previewEquipmentAnimationLoop ? "▶ " : string.Empty) + "CS_Studio_Equip_PreviewLoop".Translate(),
+                        previewEquipmentAnimationPlaying && previewEquipmentAnimationLoop))
+                    {
+                        TogglePreviewEquipmentAnimation(loop: true);
+                    }
+                    TooltipHandler.TipRegion(new Rect(btnX, btnY, equipmentPreviewBtnWidth, btnHeight), canPreviewEquipmentAnimation
+                        ? "CS_Studio_Equip_PreviewLoop_Hint".Translate()
+                        : "CS_Studio_Equip_PreviewUnavailable_Hint".Translate());
                 }
+                btnX += equipmentPreviewBtnWidth + Margin;
             }
-            TooltipHandler.TipRegion(autoPlayRect, "CS_Studio_Preview_FlowTooltip".Translate(GetExpressionTypeLabel(previewExpression)));
 
-            float equipmentPreviewBtnWidth = 76f;
-            Rect equipmentLoopRect = new Rect(autoPlayRect.x - Margin - equipmentPreviewBtnWidth, btnY, equipmentPreviewBtnWidth, btnHeight);
-            bool canPreviewEquipmentAnimation = !string.IsNullOrWhiteSpace(GetSelectedEquipmentAnimationTriggerKey());
-            if (UIHelper.DrawToolbarButton(equipmentLoopRect,
-                (previewEquipmentAnimationPlaying && previewEquipmentAnimationLoop ? "▶ " : string.Empty) + "CS_Studio_Equip_PreviewLoop".Translate(),
-                previewEquipmentAnimationPlaying && previewEquipmentAnimationLoop))
-            {
-                TogglePreviewEquipmentAnimation(loop: true);
-            }
-            TooltipHandler.TipRegion(equipmentLoopRect, canPreviewEquipmentAnimation
-                ? "CS_Studio_Equip_PreviewLoop_Hint".Translate()
-                : "CS_Studio_Equip_PreviewUnavailable_Hint".Translate());
+            // ── 第二行：表情控制 + Flow + 朝向复选框 + Face 扩展条 ──
+            float extY = btnY + btnHeight + Margin;
 
-            Rect equipmentPlayRect = new Rect(equipmentLoopRect.x - Margin - equipmentPreviewBtnWidth, btnY, equipmentPreviewBtnWidth, btnHeight);
-            if (UIHelper.DrawToolbarButton(equipmentPlayRect,
-                (previewEquipmentAnimationPlaying && !previewEquipmentAnimationLoop ? "▶ " : string.Empty) + "CS_Studio_Equip_PreviewPlay".Translate(),
-                previewEquipmentAnimationPlaying && !previewEquipmentAnimationLoop))
-            {
-                TogglePreviewEquipmentAnimation(loop: false);
-            }
-            TooltipHandler.TipRegion(equipmentPlayRect, canPreviewEquipmentAnimation
-                ? "CS_Studio_Equip_PreviewPlay_Hint".Translate()
-                : "CS_Studio_Equip_PreviewUnavailable_Hint".Translate());
-
-            float presetY = btnY + ButtonHeight + Margin;
-            float presetButtonWidth = 64f;
-            float presetX = rect.x + Margin;
-
-            if (UIHelper.DrawToolbarButton(new Rect(presetX, presetY, 56f, btnHeight), GetPreviewPresetLabel(PreviewFacePreset.Auto))) ApplyPreviewPreset(PreviewFacePreset.Auto);
-            presetX += 56f + Margin;
-
-            if (UIHelper.DrawToolbarButton(new Rect(presetX, presetY, presetButtonWidth, btnHeight), GetPreviewPresetLabel(PreviewFacePreset.Combat))) ApplyPreviewPreset(PreviewFacePreset.Combat);
-            presetX += presetButtonWidth + Margin;
-
-            if (UIHelper.DrawToolbarButton(new Rect(presetX, presetY, presetButtonWidth, btnHeight), GetPreviewPresetLabel(PreviewFacePreset.Panic))) ApplyPreviewPreset(PreviewFacePreset.Panic);
-            presetX += presetButtonWidth + Margin;
-
-            if (UIHelper.DrawToolbarButton(new Rect(presetX, presetY, presetButtonWidth, btnHeight), GetPreviewPresetLabel(PreviewFacePreset.Tired))) ApplyPreviewPreset(PreviewFacePreset.Tired);
-            presetX += presetButtonWidth + Margin;
-
-            if (UIHelper.DrawToolbarButton(new Rect(presetX, presetY, 82f, btnHeight), GetPreviewPresetLabel(PreviewFacePreset.Depressed))) ApplyPreviewPreset(PreviewFacePreset.Depressed);
-            presetX += 82f + Margin;
-
-            if (UIHelper.DrawToolbarButton(new Rect(presetX, presetY, 78f, btnHeight), GetPreviewPresetLabel(PreviewFacePreset.Romance))) ApplyPreviewPreset(PreviewFacePreset.Romance);
-            presetX += 78f + Margin;
-
-            if (UIHelper.DrawToolbarButton(new Rect(presetX, presetY, 72f, btnHeight), GetPreviewPresetLabel(PreviewFacePreset.Downed))) ApplyPreviewPreset(PreviewFacePreset.Downed);
-            presetX += 72f + Margin;
-
-            if (UIHelper.DrawToolbarButton(new Rect(presetX, presetY, 56f, btnHeight), GetPreviewPresetLabel(PreviewFacePreset.Dead))) ApplyPreviewPreset(PreviewFacePreset.Dead);
-
-            // 表情 / 通道控制
-            btnY = presetY + ButtonHeight + Margin;
             if (mannequin != null)
             {
                 float controlX = rect.x + Margin;
+
+                // 表情选择按钮
                 DrawPreviewOverrideButton(
                     ref controlX,
-                    btnY,
+                    extY,
                     "CS_Studio_Preview_Exp".Translate(),
                     GetPreviewOverrideLabel(previewExpressionOverrideEnabled, GetExpressionTypeLabel(previewExpression)),
                     36f,
                     150f,
                     OpenPreviewExpressionMenu);
                 TooltipHandler.TipRegion(
-                    new Rect(rect.x + Margin, btnY, 190f, ButtonHeight),
+                    new Rect(rect.x + Margin, extY, 190f, ButtonHeight),
                     "CS_Studio_Preview_ExpressionContextHint".Translate() + "\n\n" + GetExpressionRuntimeHint(previewExpression));
 
-                DrawPreviewOverrideButton(
-                    ref controlX,
-                    btnY,
-                    "CS_Studio_Preview_Channel_Eye".Translate(),
-                    GetPreviewOverrideLabel(previewEyeDirectionOverrideEnabled, GetEyeDirectionLabel(previewEyeDirection)),
-                    26f,
-                    88f,
-                    OpenPreviewEyeDirectionMenu);
+                // Flow 按钮
+                float autoPlayWidth = 72f;
+                if (controlX + autoPlayWidth <= maxX)
+                {
+                    Rect autoPlayRect = new Rect(controlX, extY, autoPlayWidth, btnHeight);
+                    if (UIHelper.DrawToolbarButton(autoPlayRect, (previewAutoPlayEnabled ? "▶ " : string.Empty) + "CS_Studio_Preview_Flow".Translate(), previewAutoPlayEnabled))
+                    {
+                        previewAutoPlayEnabled = !previewAutoPlayEnabled;
+                        if (previewAutoPlayEnabled)
+                        {
+                            ResetPreviewAutoPlayState(keepEnabled: true);
+                            ApplyPreviewAutoPlayStep();
+                        }
+                        else
+                        {
+                            previewRuntimeExpressionOverrideEnabled = false;
+                            previewAutoPlayStepIndex = 0;
+                            previewAutoPlayNextStepTime = 0f;
+                            SyncPreviewOverridesToSkinComp();
+                            RefreshPreview();
+                        }
+                    }
+                    TooltipHandler.TipRegion(autoPlayRect, "CS_Studio_Preview_FlowTooltip".Translate(GetExpressionTypeLabel(previewExpression)));
+                    controlX += autoPlayWidth + Margin;
+                }
 
-                btnY += ButtonHeight + Margin;
+                // 朝向复选框 + 标签
+                float facingBoxSize = 16f;
+                float facingMargin = 4f;
+                string facingText = "CS_Studio_Preview_EditPerFacing".Translate();
+                Text.Font = GameFont.Tiny;
+                float facingTextWidth = Text.CalcSize(facingText).x;
+                Text.Font = GameFont.Small;
+                float facingCtrlTotalWidth = facingBoxSize + facingMargin + facingTextWidth;
+                if (controlX + facingCtrlTotalWidth <= maxX)
+                {
+                    bool prevMode = editLayerOffsetPerFacing;
+                    Rect checkRect = new Rect(controlX, extY + (btnHeight - facingBoxSize) / 2f, facingBoxSize, facingBoxSize);
+                    Widgets.Checkbox(checkRect.position, ref prevMode, facingBoxSize);
+                    if (prevMode != editLayerOffsetPerFacing)
+                    {
+                        editLayerOffsetPerFacing = prevMode;
+                        if (workingSkin != null)
+                            workingSkin.editLayerOffsetPerFacing = prevMode;
+                    }
 
-                controlX = rect.x + Margin;
-                DrawPreviewOverrideButton(
-                    ref controlX,
-                    btnY,
-                    "CS_Studio_Preview_Channel_Mouth".Translate(),
-                    GetPreviewOverrideLabel(previewMouthStateOverrideEnabled, GetMouthStateLabel(previewMouthState)),
-                    42f,
-                    76f,
-                    OpenPreviewMouthStateMenu);
+                    Rect labelRect = new Rect(checkRect.xMax + facingMargin, extY, facingTextWidth, btnHeight);
+                    Text.Font = GameFont.Tiny;
+                    Text.Anchor = TextAnchor.MiddleLeft;
+                    GUI.color = editLayerOffsetPerFacing ? UIHelper.AccentColor : UIHelper.SubtleColor;
+                    Widgets.Label(labelRect, facingText);
+                    GUI.color = Color.white;
+                    Text.Anchor = TextAnchor.UpperLeft;
+                    Text.Font = GameFont.Small;
 
-                DrawPreviewOverrideButton(
-                    ref controlX,
-                    btnY,
-                    "CS_Studio_Preview_Channel_Lid".Translate(),
-                    GetPreviewOverrideLabel(previewLidStateOverrideEnabled, GetLidStateLabel(previewLidState)),
-                    28f,
-                    76f,
-                    OpenPreviewLidStateMenu);
+                    TooltipHandler.TipRegion(new Rect(controlX, extY, facingCtrlTotalWidth, btnHeight),
+                        "CS_Studio_Preview_EditPerFacingTip".Translate());
+                    controlX += facingCtrlTotalWidth + Margin;
+                }
 
-                DrawPreviewOverrideButton(
-                    ref controlX,
-                    btnY,
-                    "CS_Studio_Preview_Channel_Brow".Translate(),
-                    GetPreviewOverrideLabel(previewBrowStateOverrideEnabled, GetBrowStateLabel(previewBrowState)),
-                    36f,
-                    76f,
-                    OpenPreviewBrowStateMenu);
+                // Face 选项卡扩展条：在控件右侧绘制
+                if (currentTab == EditorTab.Face)
+                {
+                    float faceExtX = controlX + Margin;
+                    float faceExtWidth = maxX - Margin - faceExtX;
+                    if (faceExtWidth > 40f)
+                    {
+                        DrawFacePreviewExtensionStrip(faceExtX, extY, faceExtWidth, btnHeight);
+                    }
+                }
 
-                btnY += ButtonHeight + Margin;
-
-                controlX = rect.x + Margin;
-                DrawPreviewOverrideButton(
-                    ref controlX,
-                    btnY,
-                    "CS_Studio_Preview_Channel_Emotion".Translate(),
-                    GetPreviewOverrideLabel(previewEmotionStateOverrideEnabled, GetEmotionStateLabel(previewEmotionState)),
-                    52f,
-                    96f,
-                    OpenPreviewEmotionStateMenu);
-
-                TooltipHandler.TipRegion(new Rect(rect.x + Margin, btnY - (ButtonHeight + Margin) * 2f, 360f, ButtonHeight * 3f + Margin * 2f), "CS_Studio_Preview_ChannelContextHint".Translate());
-
-                btnY += ButtonHeight + Margin;
+                // 控件行已占用一行，扩展条从下一行开始
+                extY += btnHeight + Margin;
             }
 
-            Rect modeWrapRect = new Rect(rect.x + Margin, btnY, 210f, Mathf.Max(ButtonHeight - 2f, 22f));
-            Widgets.DrawBoxSolid(modeWrapRect, UIHelper.PanelFillSoftColor);
-            Widgets.DrawBoxSolid(new Rect(modeWrapRect.x, modeWrapRect.yMax - 2f, modeWrapRect.width, 2f), UIHelper.AccentSoftColor);
-            GUI.color = Mouse.IsOver(modeWrapRect) ? UIHelper.HoverOutlineColor : UIHelper.BorderColor;
-            Widgets.DrawBox(modeWrapRect, 1);
-            GUI.color = Color.white;
+            // ── 通用扩展工具条区域（各选项卡可复用） ──
+            float extUsedHeight = DrawTabPreviewExtensionStrip(rect.x + Margin, extY, rect.width - Margin * 2, btnHeight);
+            extY += extUsedHeight;
 
-            Rect labelRect = new Rect(modeWrapRect.x + 8f, modeWrapRect.y, modeWrapRect.width - 36f, modeWrapRect.height);
-            Text.Anchor = TextAnchor.MiddleLeft;
-            GUI.color = UIHelper.HeaderColor;
-            Widgets.Label(labelRect, "CS_Studio_Preview_EditPerFacing".Translate());
-            GUI.color = Color.white;
-            Text.Anchor = TextAnchor.UpperLeft;
-
-            bool currentMode = editLayerOffsetPerFacing;
-            Widgets.Checkbox(new Vector2(modeWrapRect.xMax - 22f, modeWrapRect.y + 2f), ref currentMode);
-            if (currentMode != editLayerOffsetPerFacing)
-                editLayerOffsetPerFacing = currentMode;
-
-            TooltipHandler.TipRegion(modeWrapRect, "CS_Studio_Preview_EditPerFacingTip".Translate());
-
-            float previewY = btnY + modeWrapRect.height + Margin;
+            // ── 预览渲染区域 ──
+            float previewY = extY;
             float previewHeight = rect.height - previewY + rect.y - Margin;
             Rect previewRect = new Rect(rect.x + Margin, previewY, rect.width - Margin * 2, previewHeight);
 
@@ -1137,6 +1111,25 @@ namespace CharacterStudio.UI
             HandleFaceGazeCursorInput(previewInnerRect);
 
             DrawSelectedLayerHighlight(previewInnerRect);
+        }
+
+        /// <summary>
+        /// 通用扩展工具条：根据当前选项卡绘制对应的扩展控件。
+        /// 返回实际占用的高度（0 表示不绘制任何内容）。
+        /// 子类或分部文件可重写以追加选项卡专属控件。
+        /// </summary>
+        protected virtual float DrawTabPreviewExtensionStrip(float x, float y, float width, float rowHeight)
+        {
+            // 默认不绘制任何扩展内容；各选项卡分部文件可 override 或扩展
+            return 0f;
+        }
+
+        /// <summary>
+        /// Face 选项卡专用扩展条：在表情控件右侧绘制辅助控件。
+        /// </summary>
+        protected virtual void DrawFacePreviewExtensionStrip(float x, float y, float width, float rowHeight)
+        {
+            // 默认不绘制；Face 选项卡分部文件可扩展
         }
 
         private void DrawFaceGazeCursorOverlay(Rect previewRect)
@@ -1829,6 +1822,68 @@ namespace CharacterStudio.UI
 
             config.offsetEast.x += dx;
             config.offsetEast.z += dz;
+        }
+
+        private Vector3 GetLayerOffsetForRotation(PawnLayerConfig layer, Rot4 rotation)
+        {
+            if (rotation == Rot4.South) return layer.offset;
+            if (rotation == Rot4.North) return layer.offsetNorth;
+            if (rotation == Rot4.West)
+            {
+                if (layer.useWestOffset || editLayerOffsetPerFacing)
+                {
+                    if (layer.useWestOffset) return layer.offsetWest;
+                    Vector3 mirror = layer.offsetEast;
+                    mirror.x = -mirror.x;
+                    return mirror;
+                }
+                Vector3 m = layer.offsetEast;
+                m.x = -m.x;
+                return m;
+            }
+            return layer.offsetEast;
+        }
+
+        private void SetLayerOffsetForRotation(PawnLayerConfig layer, Rot4 rotation, float? newOffsetX = null, float? newOffsetY = null, float? newOffsetZ = null)
+        {
+            if (rotation == Rot4.South)
+            {
+                if (newOffsetX.HasValue) layer.offset.x = newOffsetX.Value;
+                if (newOffsetY.HasValue) layer.offset.y = newOffsetY.Value;
+                if (newOffsetZ.HasValue) layer.offset.z = newOffsetZ.Value;
+            }
+            else if (rotation == Rot4.North)
+            {
+                if (newOffsetX.HasValue) layer.offsetNorth.x = newOffsetX.Value;
+                if (newOffsetY.HasValue) layer.offsetNorth.y = newOffsetY.Value;
+                if (newOffsetZ.HasValue) layer.offsetNorth.z = newOffsetZ.Value;
+            }
+            else if (rotation == Rot4.West)
+            {
+                if (layer.useWestOffset || editLayerOffsetPerFacing)
+                {
+                    if (!layer.useWestOffset)
+                    {
+                        layer.useWestOffset = true;
+                        layer.offsetWest = new Vector3(-layer.offsetEast.x, layer.offsetEast.y, layer.offsetEast.z);
+                    }
+                    if (newOffsetX.HasValue) layer.offsetWest.x = newOffsetX.Value;
+                    if (newOffsetY.HasValue) layer.offsetWest.y = newOffsetY.Value;
+                    if (newOffsetZ.HasValue) layer.offsetWest.z = newOffsetZ.Value;
+                }
+                else
+                {
+                    if (newOffsetX.HasValue) layer.offsetEast.x = -newOffsetX.Value;
+                    if (newOffsetY.HasValue) layer.offsetEast.y = newOffsetY.Value;
+                    if (newOffsetZ.HasValue) layer.offsetEast.z = newOffsetZ.Value;
+                }
+            }
+            else
+            {
+                if (newOffsetX.HasValue) layer.offsetEast.x = newOffsetX.Value;
+                if (newOffsetY.HasValue) layer.offsetEast.y = newOffsetY.Value;
+                if (newOffsetZ.HasValue) layer.offsetEast.z = newOffsetZ.Value;
+            }
         }
 
         private Vector3 GetEditableLayerOffsetForPreview(PawnLayerConfig layer)

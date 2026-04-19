@@ -2,6 +2,7 @@
 <LanguageData>
     <CS_Studio_BaseSlot_DrawOrderOffset>Draw Order Offset</CS_Studio_BaseSlot_DrawOrderOffset>
     <CS_Studio_BaseSlot_Enable>Enabled</CS_Studio_BaseSlot_Enable>
+    <CS_Studio_BaseSlot_Disable>Disabled</CS_Studio_BaseSlot_Disable>
     <CS_Studio_BaseSlot_MaskTexture>Mask Texture</CS_Studio_BaseSlot_MaskTexture>
     <CS_Studio_BaseSlot_PrimaryColor>Primary Color</CS_Studio_BaseSlot_PrimaryColor>
     <CS_Studio_BaseSlot_PrimaryColorSource>Primary Color Source</CS_Studio_BaseSlot_PrimaryColorSource>
@@ -297,11 +298,18 @@
     <CS_Studio_Workflow_CompositeBaseLayerName>Composite Base</CS_Studio_Workflow_CompositeBaseLayerName>
     <CS_Studio_Workflow_MechanoidStandardLayers>Mechanoid Layered Workflow</CS_Studio_Workflow_MechanoidStandardLayers>
     <CS_Studio_Workflow_StandardLayers>Standard Layered Workflow</CS_Studio_Workflow_StandardLayers>
+    <CS_Studio_BaseSlot_EnabledCount>Enabled Slots: {0}/{1}</CS_Studio_BaseSlot_EnabledCount>
     <CS_Studio_Anim_Brownian>Brownian Wander</CS_Studio_Anim_Brownian>
     <CS_Studio_Anim_BrownianRadius>Wander Radius</CS_Studio_Anim_BrownianRadius>
+    <CS_Studio_Anim_BrownianRadius_Tip>Maximum distance the layer can drift from the pawn. 1.0 = one tile. Recommended for floating turrets: 0.5~2.0.</CS_Studio_Anim_BrownianRadius_Tip>
     <CS_Studio_Anim_BrownianJitter>Random Jitter</CS_Studio_Anim_BrownianJitter>
+    <CS_Studio_Anim_BrownianJitter_Tip>Random force applied each tick. Higher = more energetic and unpredictable movement. Recommended: 0.03~0.1.</CS_Studio_Anim_BrownianJitter_Tip>
     <CS_Studio_Anim_BrownianDamping>Damping</CS_Studio_Anim_BrownianDamping>
+    <CS_Studio_Anim_BrownianDamping_Tip>Velocity decay per tick. Closer to 1 = smoother, more sustained movement with inertia. Closer to 0.7 = snappy, quick stops.</CS_Studio_Anim_BrownianDamping_Tip>
     <CS_Studio_Anim_BrownianCombatRadius>Combat Recall Radius</CS_Studio_Anim_BrownianCombatRadius>
+    <CS_Studio_Anim_BrownianCombatRadius_Tip>Wander radius used during combat. Usually smaller to keep the layer close to the pawn.</CS_Studio_Anim_BrownianCombatRadius_Tip>
     <CS_Studio_Anim_BrownianRespectWalkability>Respect Walkability</CS_Studio_Anim_BrownianRespectWalkability>
+    <CS_Studio_Anim_BrownianRespectWalkability_Tip>Prevents the layer from drifting over non-walkable terrain (walls, obstacles).</CS_Studio_Anim_BrownianRespectWalkability_Tip>
     <CS_Studio_Anim_BrownianStayInRoom>Stay In Current Room</CS_Studio_Anim_BrownianStayInRoom>
+    <CS_Studio_Anim_BrownianStayInRoom_Tip>Prevents the layer from drifting through walls into adjacent rooms.</CS_Studio_Anim_BrownianStayInRoom_Tip>
 </LanguageData>

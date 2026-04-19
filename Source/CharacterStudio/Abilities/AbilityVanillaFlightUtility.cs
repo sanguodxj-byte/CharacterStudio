@@ -492,7 +492,8 @@ namespace CharacterStudio.Abilities
             CompCharacterAbilityRuntime? targetAbilityComp = targetPawn.GetComp<CompCharacterAbilityRuntime>();
             if (targetAbilityComp != null)
             {
-                targetAbilityComp.BeginForcedMove(direction, steps);
+                Vector2 dir = new Vector2(direction.x, direction.z).normalized;
+                targetAbilityComp.BeginForcedMove(dir, steps, steps * 4);
                 return;
             }
 

@@ -10,9 +10,9 @@ namespace CharacterStudio.Core
     {
         // ─── 强制位移（转发到 CompCharacterAbilityRuntime） ───
 
-        public void BeginForcedMove(IntVec3 direction, int steps, int stepDurationTicks = 4)
+        public void BeginForcedMove(Vector2 direction, float distance, int durationTicks)
         {
-            AbilityComp?.BeginForcedMove(direction, steps, stepDurationTicks);
+            AbilityComp?.BeginForcedMove(direction, distance, durationTicks);
         }
 
         public Vector3 GetForcedMoveVisualOffset()

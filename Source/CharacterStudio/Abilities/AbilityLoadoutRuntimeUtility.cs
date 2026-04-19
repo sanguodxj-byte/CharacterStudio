@@ -44,7 +44,10 @@ namespace CharacterStudio.Abilities
         {
             if (Scribe.mode != LoadSaveMode.LoadingVars)
             {
-                SyncSerializedAbilityDefNamesFromAbilities();
+                if (abilities != null && abilities.Any(static a => a != null && !string.IsNullOrWhiteSpace(a.defName)))
+                {
+                    SyncSerializedAbilityDefNamesFromAbilities();
+                }
             }
 
             Scribe_Collections.Look(ref serializedAbilityDefNames, "abilityDefNames", LookMode.Value);
@@ -64,7 +67,10 @@ namespace CharacterStudio.Abilities
             else
             {
                 abilities.RemoveAll(static ability => ability == null || string.IsNullOrWhiteSpace(ability.defName));
-                SyncSerializedAbilityDefNamesFromAbilities();
+                if (abilities.Any(static a => a != null && !string.IsNullOrWhiteSpace(a.defName)))
+                {
+                    SyncSerializedAbilityDefNamesFromAbilities();
+                }
             }
 
             hotkeys ??= new SkinAbilityHotkeyConfig();
@@ -72,16 +78,22 @@ namespace CharacterStudio.Abilities
 
         public void RehydrateAbilities(IEnumerable<ModularAbilityDef>? preferredAbilities = null)
         {
+            var snapshot = GetAbilityDefNamesSnapshot();
             List<ModularAbilityDef> resolvedAbilities = new List<ModularAbilityDef>();
             List<ModularAbilityDef> preferredAbilityList = preferredAbilities?
                 .Where(static ability => ability != null && !string.IsNullOrWhiteSpace(ability.defName))
                 .ToList() ?? new List<ModularAbilityDef>();
 
-            foreach (string defName in GetAbilityDefNamesSnapshot())
+            Log.Message($"[CS-DEBUG] Rehydrate: snapshot=[{string.Join(",", snapshot)}] preferred={preferredAbilityList.Count} dbCount={DefDatabase<ModularAbilityDef>.DefCount}");
+
+            foreach (string defName in snapshot)
             {
-                ModularAbilityDef? source = preferredAbilityList
-                    .FirstOrDefault(ability => string.Equals(ability.defName, defName, StringComparison.OrdinalIgnoreCase))
-                    ?? DefDatabase<ModularAbilityDef>.GetNamedSilentFail(defName);
+                ModularAbilityDef? fromPreferred = preferredAbilityList
+                    .FirstOrDefault(ability => string.Equals(ability.defName, defName, StringComparison.OrdinalIgnoreCase));
+                ModularAbilityDef? fromDb = DefDatabase<ModularAbilityDef>.GetNamedSilentFail(defName);
+                ModularAbilityDef? source = fromPreferred ?? fromDb;
+
+                Log.Message($"[CS-DEBUG] Rehydrate defName={defName}: preferred={fromPreferred?.defName} db={fromDb?.defName} resolved={source?.defName}");
 
                 if (source != null)
                 {
@@ -89,6 +101,7 @@ namespace CharacterStudio.Abilities
                 }
             }
 
+            Log.Message($"[CS-DEBUG] Rehydrate result: {resolvedAbilities.Count} abilities");
             abilities = resolvedAbilities;
             SyncSerializedAbilityDefNamesFromAbilities();
         }
@@ -97,6 +110,8 @@ namespace CharacterStudio.Abilities
         {
             bool hasResolvedAbilities = abilities != null
                 && abilities.Any(static ability => ability != null && !string.IsNullOrWhiteSpace(ability.defName));
+            Log.Message($"[CS-DEBUG] EnsureRehydrated: hasResolved={hasResolvedAbilities} abilities={abilities?.Count ?? -1}");
+
             if (hasResolvedAbilities)
             {
                 SyncSerializedAbilityDefNamesFromAbilities();

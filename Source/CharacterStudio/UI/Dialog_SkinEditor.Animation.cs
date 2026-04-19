@@ -19,39 +19,10 @@ namespace CharacterStudio.UI
             float btnWidth = (rect.width - Margin * (btnCount + 1f)) / btnCount;
             float btnHeight = Mathf.Max(ButtonHeight - 2f, 22f);
 
-            bool DrawIconButton(Rect buttonRect, string label, string tooltip, Action action, bool accent = false)
-            {
-                Widgets.DrawBoxSolid(buttonRect, accent ? UIHelper.ActiveTabColor : UIHelper.PanelFillSoftColor);
-                Widgets.DrawBoxSolid(
-                    new Rect(buttonRect.x, buttonRect.yMax - 2f, buttonRect.width, 2f),
-                    accent ? UIHelper.AccentColor : new Color(1f, 1f, 1f, 0.05f));
-                GUI.color = Mouse.IsOver(buttonRect) ? UIHelper.HoverOutlineColor : UIHelper.BorderColor;
-                Widgets.DrawBox(buttonRect, 1);
-                GUI.color = Color.white;
-
-                GameFont prevFont = Text.Font;
-                Text.Font = GameFont.Tiny;
-                Text.Anchor = TextAnchor.MiddleCenter;
-                GUI.color = accent ? Color.white : UIHelper.HeaderColor;
-                Widgets.Label(buttonRect, label);
-                GUI.color = Color.white;
-                Text.Anchor = TextAnchor.UpperLeft;
-                Text.Font = prevFont;
-
-                TooltipHandler.TipRegion(buttonRect, tooltip);
-                if (Widgets.ButtonInvisible(buttonRect))
-                {
-                    action();
-                    return true;
-                }
-
-                return false;
-            }
-
             float startX = rect.x + Margin;
-            DrawIconButton(new Rect(startX + (btnWidth + Margin) * 0f, btnY, btnWidth, btnHeight), "↓", "CS_Studio_Section_Animation".Translate(), OpenAnimationImportXmlDialog);
-            DrawIconButton(new Rect(startX + (btnWidth + Margin) * 1f, btnY, btnWidth, btnHeight), "↑", "CS_Studio_Equip_Btn_ExportXml".Translate(), ExportAnimationConfigToDefaultPath);
-            DrawIconButton(new Rect(startX + (btnWidth + Margin) * 2f, btnY, btnWidth, btnHeight), "↺", "CS_Studio_Btn_Reset".Translate(), ResetAnimationConfig);
+            UIHelper.DrawIconButton(new Rect(startX + (btnWidth + Margin) * 0f, btnY, btnWidth, btnHeight), "↓", "CS_Studio_Section_Animation".Translate(), OpenAnimationImportXmlDialog);
+            UIHelper.DrawIconButton(new Rect(startX + (btnWidth + Margin) * 1f, btnY, btnWidth, btnHeight), "↑", "CS_Studio_Equip_Btn_ExportXml".Translate(), ExportAnimationConfigToDefaultPath);
+            UIHelper.DrawIconButton(new Rect(startX + (btnWidth + Margin) * 2f, btnY, btnWidth, btnHeight), "↺", "CS_Studio_Btn_Reset".Translate(), ResetAnimationConfig);
 
             float contentY = btnY + btnHeight + 8f;
             float contentHeight = rect.height - contentY + rect.y - Margin;

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CharacterStudio.Abilities;
 using CharacterStudio.Core;
 using UnityEngine;
@@ -136,43 +137,50 @@ namespace CharacterStudio.UI
         private float GetVfxItemHeight(AbilityVisualEffectConfig vfx)
         {
             float height = 50f; // header: title(22) + summary(18) + spacing(10)
-            height += RowHeight; // Type + SourceMode
-            if (UsesPresetSource(vfx) || UsesTextureSourceSelector(vfx))
+
+            // 全局滤镜类型：紧凑布局（类型 + 触发 + 延时/持续 + 全局滤镜区域）
+            if (vfx.IsGlobalFilterType)
             {
-                height += RowHeight;
+                height += SectionPadding; // Basic section
+                height += RowHeight * 3;  // Type + Trigger + Delay/Duration
+                // 全局滤镜区域：分隔线(4) + 标题(20) + SectionPadding + 2行
+                height += 4f + 20f + SectionPadding + RowHeight * 2;
+                return height + 10f;
             }
 
-            height += RowHeight; // Target + Trigger
-            height += RowHeight; // Delay + Duration
-            height += RowHeight; // Scale + ExpressionDuration (always drawn)
+            // Section 1: 基础设置
+            int basicRows = 4; // Type+Source, Target+Trigger, Delay+Duration, Scale+Expression
+            if (UsesPresetSource(vfx) || UsesTextureSourceSelector(vfx)) basicRows++;
+            height += SectionPadding + basicRows * RowHeight;
 
+            // Section 2: 贴图设置
             if (UsesCustomTextureSettings(vfx))
             {
-                height += RowHeight * 5f; // DrawSize+Rotation, ScaleX+Y, Facing+Height, Forward+Side, Hint
-                height += RowHeight;      // Frame Animation toggle
-                if (vfx.enableFrameAnimation)
-                {
-                    height += RowHeight * 2f; // FrameCount+Interval, Loop+Hint
-                }
+                int texRows = 6; // DrawSize+Rot, ScaleX+Y, Facing+Height, Forward+Side, VfxSourceLayer, Hint
+                if (vfx.enableFrameAnimation) texRows += 2;
+                height += SectionPadding + texRows * RowHeight;
             }
 
+            // Section 3: 空间设置
             if (vfx.type == AbilityVisualEffectType.LineTexture || vfx.type == AbilityVisualEffectType.WallTexture)
             {
-                height += RowHeight * 3f; // Spatial+Path, Anchor+AnchorB, LineWidth/WallHeight+Segments
+                height += SectionPadding + RowHeight * 3;
             }
 
-            height += RowHeight; // RepeatCount + RepeatInterval
-            height += RowHeight; // LinkedExpression + PupilBrightness
-            height += RowHeight; // PupilContrast
+            // Section 4: 动画/表情
+            height += SectionPadding + RowHeight * 3;
+
+            // 全局滤镜区域：分隔线(4) + 标题(20) + SectionPadding + 2行
+            height += 4f + 20f + SectionPadding + RowHeight * 2;
             return height + 10f;
         }
 
         private string BuildVfxTitleLabel(AbilityVisualEffectConfig vfx, int index)
         {
-            string titleLabel = $"#{index + 1} {GetVfxTypeLabel(vfx.type)}";
+            string titleLabel = $"#{index + 1} {GetVfxCategoryLabel(vfx)}";
             if (UsesPresetSource(vfx) && !string.IsNullOrWhiteSpace(vfx.presetDefName))
             {
-                titleLabel += $" [{vfx.presetDefName}]";
+                titleLabel += $" [{GetVfxPresetDisplayName(vfx.presetDefName)}]";
             }
             else if (UsesCustomTextureSettings(vfx) && !string.IsNullOrWhiteSpace(vfx.customTexturePath))
             {
@@ -290,6 +298,13 @@ namespace CharacterStudio.UI
             float rightX = inner.x + colW + gap;
             Text.Font = prevFont;
 
+            // ── 全局滤镜类型：只绘制基础行 + 全局滤镜区域 ──
+            if (vfx.IsGlobalFilterType)
+            {
+                DrawVfxGlobalFilterOnlySection(inner, y, vfx, labelW, fieldW, rightX, prevFont);
+                return;
+            }
+
             void DrawNumberRow(float rowY, float x, string label, ref float value, ref string buffer, float min, float max)
             {
                 Text.Font = GameFont.Tiny;
@@ -318,31 +333,58 @@ namespace CharacterStudio.UI
                 }
             }
 
-            DrawVfxDropdownRow(inner.x, y, labelW, fieldW, "CS_Studio_VFX_TypeShort".Translate(), GetVfxTypeLabel(vfx.type), () =>
+            // ── Section 1: 基础设置 ──
+            int basicRows = 4; // Type+Source, Target+Trigger, Delay+Duration, Scale+Expression
+            if (UsesPresetSource(vfx) || UsesCustomTextureSettings(vfx)) basicRows++;
+            DrawSectionBg(inner.x, y, inner.width, basicRows * RowHeight);
+
+            DrawVfxDropdownRow(inner.x, y, labelW, fieldW, "CS_Studio_VFX_TypeShort".Translate(), GetVfxCategoryLabel(vfx), () =>
             {
-                var options = new List<FloatMenuOption>();
-                foreach (AbilityVisualEffectType t in Enum.GetValues(typeof(AbilityVisualEffectType)))
+                var options = new List<FloatMenuOption>
                 {
-                    var captured = t;
-                    options.Add(new FloatMenuOption(GetVfxTypeLabel(captured), () =>
+                    new FloatMenuOption(GetVfxCategoryLabel(AbilityVisualEffectType.Preset), () =>
                     {
-                        vfx.type = captured;
-                        if (!vfx.UsesCustomTextureType)
+                        vfx.type = AbilityVisualEffectType.Preset;
+                        if (string.IsNullOrWhiteSpace(vfx.presetDefName)
+                            || !VisualEffectWorkerFactory.GetRegisteredPresetNames().Contains(vfx.presetDefName))
                         {
-                            vfx.textureSource = AbilityVisualEffectTextureSource.Vanilla;
+                            IReadOnlyList<string> names = VisualEffectWorkerFactory.GetRegisteredPresetNames();
+                            vfx.presetDefName = names.Count > 0 ? names[0] : string.Empty;
                         }
-
-                        if (vfx.UsesPresetType)
-                        {
-                            IReadOnlyList<string> registeredPresetNames = VisualEffectWorkerFactory.GetRegisteredPresetNames();
-                            vfx.presetDefName = registeredPresetNames.Count > 0 ? registeredPresetNames[0] : string.Empty;
-                        }
-
-                        vfx.trigger = NormalizeEditorVfxTrigger(vfx.trigger);
+                        vfx.textureSource = AbilityVisualEffectTextureSource.Vanilla;
                         vfx.SyncLegacyFields();
                         NotifyAbilityPreviewDirty(true);
-                    }));
-                }
+                    }),
+                    new FloatMenuOption(GetVfxCategoryLabel(AbilityVisualEffectType.CustomTexture), () =>
+                    {
+                        vfx.type = AbilityVisualEffectType.CustomTexture;
+                        vfx.textureSource = AbilityVisualEffectTextureSource.LocalPath;
+                        vfx.SyncLegacyFields();
+                        NotifyAbilityPreviewDirty(true);
+                    }),
+                    new FloatMenuOption(GetVfxCategoryLabel(AbilityVisualEffectType.LineTexture), () =>
+                    {
+                        vfx.type = AbilityVisualEffectType.LineTexture;
+                        vfx.textureSource = AbilityVisualEffectTextureSource.LocalPath;
+                        vfx.pathMode = AbilityVisualPathMode.DirectLineCasterToTarget;
+                        vfx.SyncLegacyFields();
+                        NotifyAbilityPreviewDirty(true);
+                    }),
+                    new FloatMenuOption(GetVfxCategoryLabel(AbilityVisualEffectType.WallTexture), () =>
+                    {
+                        vfx.type = AbilityVisualEffectType.WallTexture;
+                        vfx.textureSource = AbilityVisualEffectTextureSource.LocalPath;
+                        vfx.pathMode = AbilityVisualPathMode.DirectLineCasterToTarget;
+                        vfx.SyncLegacyFields();
+                        NotifyAbilityPreviewDirty(true);
+                    }),
+                    new FloatMenuOption(GetVfxCategoryLabel(AbilityVisualEffectType.GlobalFilter), () =>
+                    {
+                        vfx.type = AbilityVisualEffectType.GlobalFilter;
+                        vfx.target = VisualEffectTarget.Caster;
+                        NotifyAbilityPreviewDirty(true);
+                    })
+                };
                 Find.WindowStack.Add(new FloatMenu(options));
             });
  
@@ -383,14 +425,15 @@ namespace CharacterStudio.UI
             if (UsesPresetSource(vfx))
             {
                 float presetLabelW = 44f;
-                DrawVfxDropdownRow(inner.x, y, presetLabelW, inner.width - presetLabelW - 4f, "CS_Studio_VFX_PresetShort".Translate(), GetPresetSelectionLabel(vfx), () =>
+                string presetDisplayLabel = GetVfxPresetDisplayName(vfx.presetDefName);
+                DrawVfxDropdownRow(inner.x, y, presetLabelW, inner.width - presetLabelW - 4f, "CS_Studio_VFX_PresetShort".Translate(), presetDisplayLabel, () =>
                 {
                     IReadOnlyList<string> registeredPresetNames = VisualEffectWorkerFactory.GetRegisteredPresetNames();
                     var options = new List<FloatMenuOption>();
                     for (int i = 0; i < registeredPresetNames.Count; i++)
                     {
                         string presetName = registeredPresetNames[i];
-                        options.Add(new FloatMenuOption(presetName, () =>
+                        options.Add(new FloatMenuOption(GetVfxPresetDisplayName(presetName), () =>
                         {
                             vfx.presetDefName = presetName;
                             NotifyAbilityPreviewDirty(true);
@@ -482,8 +525,14 @@ namespace CharacterStudio.UI
             DrawIntRow(y, rightX, "CS_Studio_VFX_ExpressionDurationShort".Translate(), ref vfx.linkedExpressionDurationTicks, ref expressionDurationStr, 1, 60000);
             y += RowHeight;
 
+            // ── Section 2: 贴图设置（CustomTexture/Line/Wall 共用） ──
             if (UsesCustomTextureSettings(vfx))
             {
+                int texRows = 6; // DrawSize+Rot, ScaleX+Y, Facing+Height, Forward+Side, VfxSourceLayer, Hint
+                texRows++; // FrameAnim toggle
+                if (vfx.enableFrameAnimation) texRows += 2;
+                DrawSectionBg(inner.x, y, inner.width, texRows * RowHeight);
+
                 string drawSizeStr = vfx.drawSize.ToString("F2");
                 DrawNumberRow(y, inner.x, "CS_Studio_VFX_DrawSizeShort".Translate(), ref vfx.drawSize, ref drawSizeStr, 0.1f, 20f);
                 string rotationStr = vfx.rotation.ToString("F1");
@@ -529,6 +578,39 @@ namespace CharacterStudio.UI
                 DrawNumberRow(y, rightX, "CS_Studio_VFX_SideOffsetShort".Translate(), ref vfx.sideOffset, ref sideStr, -20f, 20f);
                 y += RowHeight;
 
+                // VFX 起点图层名（浮游炮等动态发射源）— 下拉选择
+                string currentLayerLabel = string.IsNullOrWhiteSpace(vfx.vfxSourceLayerName)
+                    ? "CS_Studio_VFX_SourceLayerNone".Translate()
+                    : vfx.vfxSourceLayerName;
+                DrawVfxDropdownRow(inner.x, y, labelW, inner.width - labelW - 4f, "CS_Studio_VFX_SourceLayerShort".Translate(), currentLayerLabel, () =>
+                {
+                    var layerOptions = new List<FloatMenuOption>
+                    {
+                        new FloatMenuOption("CS_Studio_VFX_SourceLayerNone".Translate(), () =>
+                        {
+                            vfx.vfxSourceLayerName = string.Empty;
+                            NotifyAbilityPreviewDirty();
+                        })
+                    };
+
+                    if (boundSkin?.layers != null)
+                    {
+                        foreach (var layer in boundSkin.layers)
+                        {
+                            if (string.IsNullOrWhiteSpace(layer.layerName)) continue;
+                            string captured = layer.layerName;
+                            layerOptions.Add(new FloatMenuOption(captured, () =>
+                            {
+                                vfx.vfxSourceLayerName = captured;
+                                NotifyAbilityPreviewDirty();
+                            }));
+                        }
+                    }
+
+                    Find.WindowStack.Add(new FloatMenu(layerOptions));
+                });
+                y += RowHeight;
+
                 Text.Font = GameFont.Tiny;
                 GUI.color = UIHelper.SubtleColor;
                 Widgets.Label(new Rect(inner.x, y + 3f, inner.width, 18f), "CS_Studio_VFX_FacingModeHint".Translate());
@@ -570,8 +652,11 @@ namespace CharacterStudio.UI
                 }
             }
 
+            // ── Section 3: 空间设置（Line/Wall） ──
             if (vfx.type == AbilityVisualEffectType.LineTexture || vfx.type == AbilityVisualEffectType.WallTexture)
             {
+                DrawSectionBg(inner.x, y, inner.width, 3 * RowHeight);
+
                 DrawVfxDropdownRow(inner.x, y, labelW, fieldW, "CS_Studio_VFX_SpatialShort".Translate(), GetVfxSpatialModeLabel(vfx.spatialMode), () =>
                 {
                     var options = new List<FloatMenuOption>();
@@ -650,6 +735,9 @@ namespace CharacterStudio.UI
                 y += RowHeight;
             }
 
+            // ── Section 4: 动画/表情 ──
+            DrawSectionBg(inner.x, y, inner.width, 3 * RowHeight);
+
             string repeatCountStr = vfx.repeatCount.ToString();
             DrawIntRow(y, inner.x, "CS_Studio_VFX_RepeatCountShort".Translate(), ref vfx.repeatCount, ref repeatCountStr, 1, 999);
             string repeatIntervalStr = vfx.repeatIntervalTicks.ToString();
@@ -686,38 +774,303 @@ namespace CharacterStudio.UI
 
             string pupilContrastStr = vfx.linkedPupilContrastOffset.ToString("F2");
             DrawNumberRow(y, inner.x, "CS_Studio_VFX_PupilContrastShort".Translate(), ref vfx.linkedPupilContrastOffset, ref pupilContrastStr, -2f, 2f);
+            y += RowHeight;
+
+            // ── 全局滤镜 ──
+            DrawVfxGlobalFilterSection(inner, y, vfx, labelW, fieldW, rightX);
+        }
+
+        private void DrawVfxGlobalFilterSection(Rect inner, float startY, AbilityVisualEffectConfig vfx, float labelW, float fieldW, float rightX)
+        {
+            float y = startY;
+
+            // 分隔线
+            Widgets.DrawBoxSolid(new Rect(inner.x, y, inner.width, 1f), UIHelper.AccentSoftColor);
+            y += 4f;
+
+            // 标题
+            Text.Font = GameFont.Tiny;
+            GUI.color = UIHelper.HeaderColor;
+            Widgets.Label(new Rect(inner.x, y, inner.width, 18f), "CS_Studio_VFX_GlobalFilter".Translate());
+            GUI.color = Color.white;
+            Text.Font = GameFont.Small;
+            y += 20f;
+
+            // Section card 包裹滤镜配置行（2行：模式+过渡，过渡时间）
+            DrawSectionBg(inner.x, y, inner.width, 2 * RowHeight);
+
+            // 全局滤镜模式选择
+            string filterLabel = string.IsNullOrWhiteSpace(vfx.globalFilterMode)
+                ? "CS_Studio_VFX_GlobalFilter_None".Translate()
+                : vfx.globalFilterMode;
+            DrawVfxDropdownRow(inner.x, y, labelW, fieldW, "CS_Studio_VFX_GlobalFilterMode".Translate(), filterLabel, () =>
+            {
+                var options = new List<FloatMenuOption>
+                {
+                    new FloatMenuOption("CS_Studio_VFX_GlobalFilter_None".Translate(), () =>
+                    {
+                        vfx.globalFilterMode = string.Empty;
+                        NotifyAbilityPreviewDirty();
+                    }),
+                    new FloatMenuOption("Grayscale", () =>
+                    {
+                        vfx.globalFilterMode = VfxGlobalFilterManager.ModeGrayscale;
+                        NotifyAbilityPreviewDirty();
+                    }),
+                    new FloatMenuOption("Desaturate", () =>
+                    {
+                        vfx.globalFilterMode = VfxGlobalFilterManager.ModeDesaturate;
+                        NotifyAbilityPreviewDirty();
+                    }),
+                    new FloatMenuOption("Sepia", () =>
+                    {
+                        vfx.globalFilterMode = VfxGlobalFilterManager.ModeSepia;
+                        NotifyAbilityPreviewDirty();
+                    }),
+                    new FloatMenuOption("Tint", () =>
+                    {
+                        vfx.globalFilterMode = VfxGlobalFilterManager.ModeTint;
+                        NotifyAbilityPreviewDirty();
+                    }),
+                    new FloatMenuOption("Negative", () =>
+                    {
+                        vfx.globalFilterMode = VfxGlobalFilterManager.ModeNegative;
+                        NotifyAbilityPreviewDirty();
+                    })
+                };
+                Find.WindowStack.Add(new FloatMenu(options));
+            });
+
+            // 过渡方式选择
+            string transitionLabel = string.IsNullOrWhiteSpace(vfx.globalFilterTransition)
+                ? "CS_Studio_VFX_GlobalFilterTransition_None".Translate()
+                : vfx.globalFilterTransition;
+            DrawVfxDropdownRow(rightX, y, labelW, fieldW, "CS_Studio_VFX_GlobalFilterTransition".Translate(), transitionLabel, () =>
+            {
+                var options = new List<FloatMenuOption>
+                {
+                    new FloatMenuOption("CS_Studio_VFX_GlobalFilterTransition_None".Translate(), () =>
+                    {
+                        vfx.globalFilterTransition = string.Empty;
+                        NotifyAbilityPreviewDirty();
+                    }),
+                    new FloatMenuOption("Linear", () =>
+                    {
+                        vfx.globalFilterTransition = "Linear";
+                        NotifyAbilityPreviewDirty();
+                    }),
+                    new FloatMenuOption("EaseIn", () =>
+                    {
+                        vfx.globalFilterTransition = "EaseIn";
+                        NotifyAbilityPreviewDirty();
+                    }),
+                    new FloatMenuOption("EaseOut", () =>
+                    {
+                        vfx.globalFilterTransition = "EaseOut";
+                        NotifyAbilityPreviewDirty();
+                    })
+                };
+                Find.WindowStack.Add(new FloatMenu(options));
+            });
+            y += RowHeight;
+
+            // 过渡时间
+            string transitionTicksStr = vfx.globalFilterTransitionTicks.ToString();
+            void DrawIntRowLocal(float rowY, float x, string label, ref int value, ref string buffer, int min, int max)
+            {
+                GameFont prevFont = Text.Font;
+                Text.Font = GameFont.Tiny;
+                Rect labelRect = new Rect(x, rowY + 2f, labelW, 20f);
+                Widgets.Label(labelRect, label.Truncate(labelRect.width));
+                Text.Font = prevFont;
+                int before = value;
+                UIHelper.TextFieldNumeric(new Rect(x + labelW, rowY, fieldW, 24f), ref value, ref buffer, min, max);
+                if (value != before)
+                {
+                    NotifyAbilityPreviewDirty(true);
+                }
+            }
+
+            DrawIntRowLocal(y, inner.x, "CS_Studio_VFX_GlobalFilterTransitionTicks".Translate(),
+                ref vfx.globalFilterTransitionTicks, ref transitionTicksStr, 0, 600);
+        }
+
+        /// <summary>
+        /// 全局滤镜类型专用绘制：只显示类型、触发时机、延时、持续时间和全局滤镜配置。
+        /// </summary>
+        private void DrawVfxGlobalFilterOnlySection(Rect inner, float startY, AbilityVisualEffectConfig vfx, float labelW, float fieldW, float rightX, GameFont prevFont)
+        {
+            float y = startY;
+            float gap = 10f;
+            float colW = (inner.width - gap) * 0.5f;
+
+            void DrawIntRowLocal(float rowY, float x, string label, ref int value, ref string buffer, int min, int max)
+            {
+                Text.Font = GameFont.Tiny;
+                Rect labelRect = new Rect(x, rowY + 2f, labelW, 20f);
+                Widgets.Label(labelRect, label.Truncate(labelRect.width));
+                Text.Font = prevFont;
+                int before = value;
+                UIHelper.TextFieldNumeric(new Rect(x + labelW, rowY, fieldW, 24f), ref value, ref buffer, min, max);
+                if (value != before)
+                {
+                    NotifyAbilityPreviewDirty(true);
+                }
+            }
+
+            // ── Section: 基础设置 ──
+            DrawSectionBg(inner.x, y, inner.width, 3 * RowHeight);
+
+            // 类型（复用大类下拉）
+            DrawVfxDropdownRow(inner.x, y, labelW, fieldW, "CS_Studio_VFX_TypeShort".Translate(), GetVfxCategoryLabel(vfx), () =>
+            {
+                var typeOptions = new List<FloatMenuOption>
+                {
+                    new FloatMenuOption(GetVfxCategoryLabel(AbilityVisualEffectType.Preset), () => { vfx.type = AbilityVisualEffectType.Preset; NotifyAbilityPreviewDirty(true); }),
+                    new FloatMenuOption(GetVfxCategoryLabel(AbilityVisualEffectType.CustomTexture), () => { vfx.type = AbilityVisualEffectType.CustomTexture; NotifyAbilityPreviewDirty(true); }),
+                    new FloatMenuOption(GetVfxCategoryLabel(AbilityVisualEffectType.LineTexture), () => { vfx.type = AbilityVisualEffectType.LineTexture; NotifyAbilityPreviewDirty(true); }),
+                    new FloatMenuOption(GetVfxCategoryLabel(AbilityVisualEffectType.WallTexture), () => { vfx.type = AbilityVisualEffectType.WallTexture; NotifyAbilityPreviewDirty(true); }),
+                    new FloatMenuOption(GetVfxCategoryLabel(AbilityVisualEffectType.GlobalFilter), () => { vfx.type = AbilityVisualEffectType.GlobalFilter; NotifyAbilityPreviewDirty(true); })
+                };
+                Find.WindowStack.Add(new FloatMenu(typeOptions));
+            });
+            y += RowHeight;
+
+            // 触发时机
+            DrawVfxDropdownRow(inner.x, y, labelW, fieldW, "CS_Studio_VFX_TriggerShort".Translate(), GetVfxTriggerLabel(vfx.trigger), () =>
+            {
+                var triggerOptions = new List<FloatMenuOption>();
+                foreach (AbilityVisualEffectTrigger trigger in Enum.GetValues(typeof(AbilityVisualEffectTrigger)))
+                {
+                    var captured = trigger;
+                    triggerOptions.Add(new FloatMenuOption(GetVfxTriggerLabel(captured), () =>
+                    {
+                        vfx.trigger = captured;
+                        NotifyAbilityPreviewDirty(true);
+                    }));
+                }
+                Find.WindowStack.Add(new FloatMenu(triggerOptions));
+            });
+            y += RowHeight;
+
+            // 延时 + 持续时间
+            string delayStr = vfx.delayTicks.ToString();
+            DrawIntRowLocal(y, inner.x, "CS_Studio_VFX_DelayShort".Translate(), ref vfx.delayTicks, ref delayStr, 0, 60000);
+            string durationStr = vfx.displayDurationTicks.ToString();
+            DrawIntRowLocal(y, rightX, "CS_Studio_VFX_DisplayDurationShort".Translate(), ref vfx.displayDurationTicks, ref durationStr, 1, 60000);
+            y += RowHeight;
+
+            // 全局滤镜配置
+            DrawVfxGlobalFilterSection(inner, y, vfx, labelW, fieldW, rightX);
         }
 
         private void ShowAddVfxMenu()
         {
             var options = new List<FloatMenuOption>();
-            foreach (AbilityVisualEffectType t in Enum.GetValues(typeof(AbilityVisualEffectType)))
+
+            // 预设特效——添加后在展开字段中选择具体预设
+            options.Add(new FloatMenuOption("CS_Studio_VFX_AddCategory_Preset".Translate(), () =>
             {
-                var captured = t;
-                options.Add(new FloatMenuOption(GetVfxTypeLabel(captured), () =>
+                IReadOnlyList<string> names = VisualEffectWorkerFactory.GetRegisteredPresetNames();
+                var vfx = new AbilityVisualEffectConfig
                 {
-                    AbilityVisualEffectConfig vfx = new AbilityVisualEffectConfig
-                    {
-                        type = captured,
-                        target = VisualEffectTarget.Target,
-                        trigger = AbilityVisualEffectTrigger.OnTargetApply,
-                        delayTicks = 0,
-                        scale = 1f,
-                        textureSource = AbilityVisualEffectTextureSource.Vanilla
-                    };
+                    type = AbilityVisualEffectType.Preset,
+                    presetDefName = names.Count > 0 ? names[0] : string.Empty,
+                    target = VisualEffectTarget.Target,
+                    trigger = AbilityVisualEffectTrigger.OnTargetApply,
+                    delayTicks = 0,
+                    scale = 1f,
+                    textureSource = AbilityVisualEffectTextureSource.Vanilla
+                };
+                vfx.SyncLegacyFields();
+                selectedAbility?.visualEffects.Add(vfx);
+                NotifyAbilityPreviewDirty(true);
+            }));
 
-                    if (vfx.UsesPresetType)
-                    {
-                        IReadOnlyList<string> registeredPresetNames = VisualEffectWorkerFactory.GetRegisteredPresetNames();
-                        vfx.presetDefName = registeredPresetNames.Count > 0 ? registeredPresetNames[0] : string.Empty;
-                    }
+            // 自定义贴图
+            options.Add(new FloatMenuOption("CS_Studio_VFX_AddCategory_CustomTexture".Translate(), () =>
+            {
+                var vfx = new AbilityVisualEffectConfig
+                {
+                    type = AbilityVisualEffectType.CustomTexture,
+                    target = VisualEffectTarget.Target,
+                    trigger = AbilityVisualEffectTrigger.OnTargetApply,
+                    delayTicks = 0,
+                    scale = 1f,
+                    textureSource = AbilityVisualEffectTextureSource.LocalPath
+                };
+                vfx.SyncLegacyFields();
+                selectedAbility?.visualEffects.Add(vfx);
+                NotifyAbilityPreviewDirty(true);
+            }));
 
-                    vfx.SyncLegacyFields();
-                    selectedAbility?.visualEffects.Add(vfx);
-                    NotifyAbilityPreviewDirty(true);
-                }));
-            }
+            // 线段贴图
+            options.Add(new FloatMenuOption("CS_Studio_VFX_AddCategory_LineTexture".Translate(), () =>
+            {
+                var vfx = new AbilityVisualEffectConfig
+                {
+                    type = AbilityVisualEffectType.LineTexture,
+                    target = VisualEffectTarget.Target,
+                    trigger = AbilityVisualEffectTrigger.OnTargetApply,
+                    delayTicks = 0,
+                    scale = 1f,
+                    textureSource = AbilityVisualEffectTextureSource.LocalPath,
+                    pathMode = AbilityVisualPathMode.DirectLineCasterToTarget
+                };
+                vfx.SyncLegacyFields();
+                selectedAbility?.visualEffects.Add(vfx);
+                NotifyAbilityPreviewDirty(true);
+            }));
+
+            // 墙壁贴图
+            options.Add(new FloatMenuOption("CS_Studio_VFX_AddCategory_WallTexture".Translate(), () =>
+            {
+                var vfx = new AbilityVisualEffectConfig
+                {
+                    type = AbilityVisualEffectType.WallTexture,
+                    target = VisualEffectTarget.Target,
+                    trigger = AbilityVisualEffectTrigger.OnTargetApply,
+                    delayTicks = 0,
+                    scale = 1f,
+                    textureSource = AbilityVisualEffectTextureSource.LocalPath,
+                    pathMode = AbilityVisualPathMode.DirectLineCasterToTarget
+                };
+                vfx.SyncLegacyFields();
+                selectedAbility?.visualEffects.Add(vfx);
+                NotifyAbilityPreviewDirty(true);
+            }));
+
+            // 全局滤镜
+            options.Add(new FloatMenuOption("CS_Studio_VFX_AddCategory_GlobalFilter".Translate(), () =>
+            {
+                var vfx = new AbilityVisualEffectConfig
+                {
+                    type = AbilityVisualEffectType.GlobalFilter,
+                    target = VisualEffectTarget.Caster,
+                    trigger = AbilityVisualEffectTrigger.OnTargetApply,
+                    delayTicks = 0,
+                    displayDurationTicks = 60,
+                    scale = 1f
+                };
+                vfx.SyncLegacyFields();
+                selectedAbility?.visualEffects.Add(vfx);
+                NotifyAbilityPreviewDirty(true);
+            }));
+
             Find.WindowStack.Add(new FloatMenu(options));
+        }
+
+        /// <summary>
+        /// 获取预设特效的显示名称（带翻译）。
+        /// </summary>
+        private static string GetVfxPresetDisplayName(string presetName)
+        {
+            string translationKey = "CS_Studio_VFX_Preset_" + presetName;
+            if (translationKey.CanTranslate())
+            {
+                return translationKey.Translate();
+            }
+            return presetName;
         }
 
         private static string GetLinkedExpressionLabel(ExpressionType? expression)
@@ -728,6 +1081,27 @@ namespace CharacterStudio.UI
         private static string GetVfxTypeLabel(AbilityVisualEffectType type)
         {
             return ("CS_Studio_VFX_Type_" + type).Translate();
+        }
+
+        /// <summary>
+        /// 获取 VFX 大类标签（Preset/CustomTexture/LineTexture/WallTexture）。
+        /// </summary>
+        private static string GetVfxCategoryLabel(AbilityVisualEffectConfig vfx)
+        {
+            return GetVfxCategoryLabel(vfx.type);
+        }
+
+        private static string GetVfxCategoryLabel(AbilityVisualEffectType type)
+        {
+            // 内置特效类型（DustPuff~FlameSurge）统一显示为"预设特效"
+            if (type != AbilityVisualEffectType.CustomTexture
+                && type != AbilityVisualEffectType.LineTexture
+                && type != AbilityVisualEffectType.WallTexture
+                && type != AbilityVisualEffectType.GlobalFilter)
+            {
+                return "CS_Studio_VFX_Category_Preset".Translate();
+            }
+            return ("CS_Studio_VFX_Category_" + type).Translate();
         }
 
         private static string GetVfxTargetLabel(VisualEffectTarget target)
@@ -815,6 +1189,25 @@ namespace CharacterStudio.UI
             {
             }
         }
+
+        /// <summary>
+        /// 画一个 section card 背景（先画背景，再在上面画控件）。
+        /// padding 每侧 3px。
+        /// </summary>
+        private static void DrawSectionBg(float x, float y, float width, float contentHeight)
+        {
+            float pad = 3f;
+            Rect bgRect = new Rect(x - pad, y - pad, width + pad * 2f, contentHeight + pad * 2f);
+            Widgets.DrawBoxSolid(bgRect, new Color(0.16f, 0.17f, 0.20f, 0.6f));
+            GUI.color = new Color(1f, 1f, 1f, 0.08f);
+            Widgets.DrawBox(bgRect, 1);
+            GUI.color = Color.white;
+        }
+
+        /// <summary>
+        /// 计算 section card 的额外垂直 padding（上下各 3px + 间距）。
+        /// </summary>
+        private const float SectionPadding = 10f; // 3 top + 3 bottom + 4 gap
 
         private void SwapVfx(int indexA, int indexB)
         {

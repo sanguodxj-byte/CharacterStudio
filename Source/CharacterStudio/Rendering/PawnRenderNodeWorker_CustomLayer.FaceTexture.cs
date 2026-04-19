@@ -479,7 +479,7 @@ namespace CharacterStudio.Rendering
             PawnLayerConfig? config,
             CompPawnSkin skinComp)
         {
-            var results = GetReusableTokenList();
+            var results = new List<string>();
 
             EyeDirection eyeDirection = skinComp.CurEyeDirection;
             switch (eyeDirection)
@@ -522,7 +522,7 @@ namespace CharacterStudio.Rendering
             PawnLayerConfig? config,
             CompPawnSkin skinComp)
         {
-            var results = GetReusableTokenList();
+            var results = new List<string>();
 
             LayerRole role = config?.role ?? LayerRole.Decoration;
             string? channelState = skinComp.GetChannelStateSuffix(role);
@@ -674,7 +674,7 @@ namespace CharacterStudio.Rendering
         private static bool IsGenericOverlayGroupId(string? overlayId)
         {
             return string.IsNullOrWhiteSpace(overlayId)
-                || string.Equals(PawnFaceConfig.NormalizeOverlayId(overlayId), "Overlay", StringComparison.OrdinalIgnoreCase);
+                || string.Equals(overlayId, "Overlay", StringComparison.OrdinalIgnoreCase);
         }
 
         private bool IsOverlayAllowedByExplicitRules(string activeOverlayId, List<string> explicitOverlayIds)
@@ -682,21 +682,21 @@ namespace CharacterStudio.Rendering
             if (explicitOverlayIds.Count == 0)
                 return false;
 
-            // P-PERF: 用 for 循环替代 LINQ .Any(lambda)，避免闭包委托分配
+            // activeOverlayId 已由 ResolveActiveEmotionOverlayId 规范化
+            // explicitOverlayIds 已由 ResolveOverlayIds 规范化
             if (IsGenericOverlayGroupId(activeOverlayId))
             {
                 for (int i = 0; i < explicitOverlayIds.Count; i++)
                 {
-                    if (string.Equals(PawnFaceConfig.NormalizeOverlayId(explicitOverlayIds[i]), "Overlay", StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(explicitOverlayIds[i], "Overlay", StringComparison.OrdinalIgnoreCase))
                         return true;
                 }
                 return false;
             }
 
-            string normalizedActiveOverlayId = PawnFaceConfig.NormalizeOverlayId(activeOverlayId);
             for (int i = 0; i < explicitOverlayIds.Count; i++)
             {
-                if (string.Equals(PawnFaceConfig.NormalizeOverlayId(explicitOverlayIds[i]), normalizedActiveOverlayId, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(explicitOverlayIds[i], activeOverlayId, StringComparison.OrdinalIgnoreCase))
                     return true;
             }
             return false;
@@ -719,11 +719,11 @@ namespace CharacterStudio.Rendering
             switch (customNode.layeredFacePartType.Value)
             {
                 case LayeredFacePartType.Blush:
-                    return PawnFaceConfig.NormalizeOverlayId("Blush");
+                    return "Blush";
                 case LayeredFacePartType.Tear:
-                    return PawnFaceConfig.NormalizeOverlayId("Tear");
+                    return "Tear";
                 case LayeredFacePartType.Sweat:
-                    return PawnFaceConfig.NormalizeOverlayId("Sweat");
+                    return "Sweat";
                 case LayeredFacePartType.Overlay:
                 case LayeredFacePartType.OverlayTop:
                     return GetEffectiveLayeredOverlayId(customNode, pawn);
@@ -779,12 +779,12 @@ namespace CharacterStudio.Rendering
                 normalizedSemanticKey = ResolveExplicitOverlaySemanticKey(faceConfig, skinComp, expression);
 
             if (string.IsNullOrWhiteSpace(normalizedSemanticKey))
-            {
-                var empty = GetReusableTokenList();
-                return empty;
-            }
+                return GetReusableTokenList();
 
-            return faceConfig.ResolveOverlayIds(normalizedSemanticKey, expression);
+            var results = GetReusableTokenList();
+            var seen = GetReusableOverlayIdSet();
+            faceConfig.ResolveOverlayIdsInto(normalizedSemanticKey, results, seen);
+            return results;
         }
 
         private bool ShouldSuppressEmotionOverlayRendering(PawnRenderNode_Custom customNode, Pawn? pawn)
