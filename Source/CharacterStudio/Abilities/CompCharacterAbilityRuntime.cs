@@ -286,6 +286,12 @@ namespace CharacterStudio.Abilities
             set => abilityRuntimeState.bezierWallAbsorbRemaining = value;
         }
 
+        public int LastBezierWallApplyTick
+        {
+            get => abilityRuntimeState.lastBezierWallApplyTick;
+            set => abilityRuntimeState.lastBezierWallApplyTick = value;
+        }
+
         public bool IsBezierWallActive()
         {
             int now = Find.TickManager?.TicksGame ?? 0;
@@ -836,29 +842,6 @@ namespace CharacterStudio.Abilities
             return abilityRuntimeState.forcedMoveActive || abilityRuntimeState.forcedMoveBusyUntilTick >= nowTick;
         }
 
-        public Vector3 GetForcedMoveVisualOffset()
-        {
-            if (!abilityRuntimeState.forcedMoveActive || abilityRuntimeState.forcedMoveSpeedPerTick <= 0f)
-                return Vector3.zero;
-
-            Pawn? pawn = Pawn;
-            if (pawn == null) return Vector3.zero;
-
-            float dx = abilityRuntimeState.forcedMoveDirFloatX * abilityRuntimeState.forcedMoveTraveledDistance;
-            float dz = abilityRuntimeState.forcedMoveDirFloatZ * abilityRuntimeState.forcedMoveTraveledDistance;
-            IntVec3 startCell = abilityRuntimeState.forcedMoveStartCell;
-            
-            // 计算当前精确的逻辑世界坐标（中心点）
-            float currentWorldX = startCell.x + dx + 0.5f;
-            float currentWorldZ = startCell.z + dz + 0.5f;
-            
-            // 视觉偏移 = 精确中心点 - 当前 Pawn 逻辑格中心点
-            // 使用 pawn.Position 而非 forcedMoveCurrentCell，确保与 TickForcedMove 中
-            // 的 FloorToInt(worldCoord + 0.5f) 格子跳转完全同步，消除斜向抖动
-            float offsetX = currentWorldX - (pawn.Position.x + 0.5f);
-            float offsetZ = currentWorldZ - (pawn.Position.z + 0.5f);
-            return new Vector3(offsetX, 0f, offsetZ);
-        }
 
         public void CancelForcedMove()
         {

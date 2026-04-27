@@ -15,11 +15,6 @@ namespace CharacterStudio.Core
             AbilityComp?.BeginForcedMove(direction, distance, durationTicks);
         }
 
-        public Vector3 GetForcedMoveVisualOffset()
-        {
-            return AbilityComp?.GetForcedMoveVisualOffset() ?? Vector3.zero;
-        }
-
         public bool IsForcedMoveBusy()
         {
             return AbilityComp?.IsForcedMoveBusy() ?? false;

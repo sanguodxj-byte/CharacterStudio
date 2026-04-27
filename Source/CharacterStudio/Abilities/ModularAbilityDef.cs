@@ -28,6 +28,7 @@ namespace CharacterStudio.Abilities
 
         public AbilityCarrierType carrierType = AbilityCarrierType.Self;
         public AbilityTargetType targetType = AbilityTargetType.Self;
+        public bool useTwoPointTargeting = false;
         public bool useRadius = false;
         public AbilityAreaCenter areaCenter = AbilityAreaCenter.Target;
         public AbilityAreaShape areaShape = AbilityAreaShape.Circle;
@@ -54,6 +55,7 @@ namespace CharacterStudio.Abilities
 
             Scribe_Values.Look(ref carrierType, "carrierType", AbilityCarrierType.Self);
             Scribe_Values.Look(ref targetType, "targetType", AbilityTargetType.Self);
+            Scribe_Values.Look(ref useTwoPointTargeting, "useTwoPointTargeting", false);
             Scribe_Values.Look(ref useRadius, "useRadius", false);
             Scribe_Values.Look(ref areaCenter, "areaCenter", AbilityAreaCenter.Target);
             Scribe_Values.Look(ref areaShape, "areaShape", AbilityAreaShape.Circle);
@@ -88,6 +90,7 @@ namespace CharacterStudio.Abilities
                 aiCanUse = this.aiCanUse,
                 carrierType = this.carrierType,
                 targetType = this.targetType,
+                useTwoPointTargeting = this.useTwoPointTargeting,
                 useRadius = this.useRadius,
                 areaCenter = this.areaCenter,
                 areaShape = this.areaShape,

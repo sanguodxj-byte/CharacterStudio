@@ -246,6 +246,7 @@ namespace CharacterStudio.Core
 
                 XmlNode parseNode = PrepareLegacyCompatibleDefNode(defNode);
                 var def = DirectXmlToObject.ObjectFromXml<PawnSkinDef>(parseNode, true);
+                DirectXmlCrossRefLoader.ResolveAllWantedCrossReferences(FailMode.LogErrors);
                 if (def == null)
                 {
                     LogSkinXmlWarningOnce(file, $"[CharacterStudio] 皮肤 XML 解析结果为空，已跳过: {file}");

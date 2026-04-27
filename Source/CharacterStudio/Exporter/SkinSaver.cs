@@ -411,6 +411,7 @@ namespace CharacterStudio.Exporter
                     new XElement("aiCanUse", ability.aiCanUse),
                     new XElement("carrierType", ability.carrierType.ToString()),
                     new XElement("targetType", ability.targetType.ToString()),
+                    ability.useTwoPointTargeting ? new XElement("useTwoPointTargeting", "true") : null,
                     new XElement("useRadius", ability.useRadius.ToString().ToLower()),
                     new XElement("areaCenter", ability.areaCenter.ToString()),
                     new XElement("areaShape", ability.areaShape.ToString()),

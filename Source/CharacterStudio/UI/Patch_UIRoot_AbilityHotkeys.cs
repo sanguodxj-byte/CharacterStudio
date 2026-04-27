@@ -44,6 +44,9 @@ namespace CharacterStudio.UI
 
         private static void UIRootOnGUI_Postfix()
         {
+            // 确保全局滤镜摄像机组件已创建（首次 UI 渲染时初始化）
+            Abilities.GlobalFilterCameraComponent.EnsureCreated();
+            // 绘制全局滤镜叠加层（仅在 Shader 不可用时生效的回退路径）
             Abilities.VfxGlobalFilterManager.OnGUI();
         }
     }

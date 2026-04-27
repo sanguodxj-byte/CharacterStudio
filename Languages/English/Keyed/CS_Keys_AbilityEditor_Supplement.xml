@@ -189,6 +189,7 @@
     <CS_Studio_Ability_Type>Type</CS_Studio_Ability_Type>
     <CS_Studio_Ability_Unassigned>Unassigned</CS_Studio_Ability_Unassigned>
     <CS_Studio_Ability_UseRadius>Use Radius</CS_Studio_Ability_UseRadius>
+    <CS_Studio_Ability_UseTwoPointTargeting>Two-Point Targeting</CS_Studio_Ability_UseTwoPointTargeting>
     <CS_Studio_Ability_Valid>Valid</CS_Studio_Ability_Valid>
     <CS_Studio_Ability_Validate>Validate</CS_Studio_Ability_Validate>
     <CS_Studio_Ability_ValidationSummary>Validation: {0}</CS_Studio_Ability_ValidationSummary>

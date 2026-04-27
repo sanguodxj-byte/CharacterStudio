@@ -135,6 +135,15 @@ namespace CharacterStudio.UI
                     NotifyAbilityPreviewDirty(true);
                 });
 
+            if (normalizedTarget != AbilityTargetType.Self)
+            {
+                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Ability_UseTwoPointTargeting".Translate(), ref ability.useTwoPointTargeting);
+            }
+            else
+            {
+                ability.useTwoPointTargeting = false;
+            }
+
             normalizedCarrier = ModularAbilityDefExtensions.NormalizeCarrierType(ability.carrierType);
             normalizedTarget = ModularAbilityDefExtensions.NormalizeTargetType(ability);
 

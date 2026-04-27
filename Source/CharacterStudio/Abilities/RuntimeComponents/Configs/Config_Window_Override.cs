@@ -8,24 +8,9 @@ namespace CharacterStudio.Abilities.RuntimeComponents.Configs
 {
     public class Config_SlotOverrideWindow : AbilityRuntimeComponentConfig
     {
-        [EditorField("CS_Studio_Runtime_ComboWindowTicks", AbilityRuntimeComponentType.SlotOverrideWindow)]
-        public new int comboWindowTicks = 12;
-        [EditorField("CS_Studio_Runtime_ComboTargetHotkeySlot", AbilityRuntimeComponentType.SlotOverrideWindow)]
-        public new AbilityRuntimeHotkeySlot comboTargetHotkeySlot = AbilityRuntimeHotkeySlot.None;
-        [EditorField("CS_Studio_Runtime_ComboTargetAbilityDefName", AbilityRuntimeComponentType.SlotOverrideWindow)]
-        public new string comboTargetAbilityDefName = string.Empty;
-
         public override AbilityRuntimeComponentType type => AbilityRuntimeComponentType.SlotOverrideWindow;
         public override float EditorBlockHeight => 138f;
         public override bool IsSingleton => true;
-
-        public override void ExposeData()
-        {
-            base.ExposeData();
-            Scribe_Values.Look(ref comboWindowTicks, "comboWindowTicks", 12);
-            Scribe_Values.Look(ref comboTargetHotkeySlot, "comboTargetHotkeySlot", AbilityRuntimeHotkeySlot.None);
-            Scribe_Values.Look(ref comboTargetAbilityDefName, "comboTargetAbilityDefName", string.Empty);
-        }
 
         public override void NormalizeForSave()
         {
@@ -46,24 +31,9 @@ namespace CharacterStudio.Abilities.RuntimeComponents.Configs
 
     public class Config_HotkeyOverride : AbilityRuntimeComponentConfig
     {
-        [EditorField("CS_Studio_Runtime_OverrideHotkeySlot", AbilityRuntimeComponentType.HotkeyOverride)]
-        public new AbilityRuntimeHotkeySlot overrideHotkeySlot = AbilityRuntimeHotkeySlot.None;
-        [EditorField("CS_Studio_Runtime_OverrideAbilityDefName", AbilityRuntimeComponentType.HotkeyOverride)]
-        public new string overrideAbilityDefName = string.Empty;
-        [EditorField("CS_Studio_Runtime_OverrideDurationTicks", AbilityRuntimeComponentType.HotkeyOverride)]
-        public new int overrideDurationTicks = 60;
-
         public override AbilityRuntimeComponentType type => AbilityRuntimeComponentType.HotkeyOverride;
         public override float EditorBlockHeight => 164f;
         public override bool IsSingleton => true;
-
-        public override void ExposeData()
-        {
-            base.ExposeData();
-            Scribe_Values.Look(ref overrideHotkeySlot, "overrideHotkeySlot", AbilityRuntimeHotkeySlot.None);
-            Scribe_Values.Look(ref overrideAbilityDefName, "overrideAbilityDefName", string.Empty);
-            Scribe_Values.Look(ref overrideDurationTicks, "overrideDurationTicks", 60);
-        }
 
         public override void NormalizeForSave() { }
 

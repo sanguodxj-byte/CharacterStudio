@@ -196,6 +196,7 @@
     <CS_Studio_Ability_Type>类型</CS_Studio_Ability_Type>
     <CS_Studio_Ability_Unassigned>未绑定</CS_Studio_Ability_Unassigned>
     <CS_Studio_Ability_UseRadius>使用范围</CS_Studio_Ability_UseRadius>
+    <CS_Studio_Ability_UseTwoPointTargeting>双点选取模式</CS_Studio_Ability_UseTwoPointTargeting>
     <CS_Studio_Ability_Valid>校验通过</CS_Studio_Ability_Valid>
     <CS_Studio_Ability_Validate>校验</CS_Studio_Ability_Validate>
     <CS_Studio_Ability_ValidationSummary>校验状态：{0}</CS_Studio_Ability_ValidationSummary>

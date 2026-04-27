@@ -171,12 +171,22 @@ namespace CharacterStudio.Exporter
                 if (value == null) continue;
 
                 // DamageDef? 等 Def 引用 → 写 defName
-                if (typeof(Def).IsAssignableFrom(fieldType))
+                if (IsDefCompatibleType(fieldType))
                 {
                     string? defName = (value as Def)?.defName;
                     if (!string.IsNullOrWhiteSpace(defName))
                     {
                         elements.Add(new XElement(field.Name, defName));
+                    }
+                    continue;
+                }
+
+                // PawnKindDef 特殊处理（以防万一它在特定环境下未被识别为 Def）
+                if (value is PawnKindDef pkd)
+                {
+                    if (!string.IsNullOrWhiteSpace(pkd.defName))
+                    {
+                        elements.Add(new XElement(field.Name, pkd.defName));
                     }
                     continue;
                 }
@@ -284,6 +294,7 @@ namespace CharacterStudio.Exporter
                     }
 
                     ModularAbilityDef? ability = DirectXmlToObject.ObjectFromXml<ModularAbilityDef>(root, true);
+                    DirectXmlCrossRefLoader.ResolveAllWantedCrossReferences(FailMode.LogErrors);
                     if (ability != null)
                     {
                         result.Add(ability);
@@ -348,5 +359,18 @@ namespace CharacterStudio.Exporter
         {
             return value.ToString().ToLowerInvariant();
         }
+
+        /// <summary>
+        /// 检查 fieldType 是否为 Def 或 Nullable&lt;Def&gt; 类型
+        /// </summary>
+        private static bool IsDefCompatibleType(Type fieldType)
+        {
+            if (typeof(Def).IsAssignableFrom(fieldType))
+                return true;
+
+            Type? underlying = Nullable.GetUnderlyingType(fieldType);
+            return underlying != null && typeof(Def).IsAssignableFrom(underlying);
+        }
+
     }
 }

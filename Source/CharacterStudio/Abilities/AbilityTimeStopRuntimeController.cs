@@ -514,9 +514,6 @@ namespace CharacterStudio.Abilities
 
     public static class Patch_AbilityTimeStop
     {
-        [ThreadStatic]
-        private static int? forcedTicksGameOverride;
-
         // RimWorld WindManager 通过此 shader 属性驱动树木/植物摇动
         private static readonly int WindSpeedShaderId = Shader.PropertyToID("_WindSpeed");
 
@@ -549,13 +546,9 @@ namespace CharacterStudio.Abilities
             PatchPrefix(harmony, typeof(WindManager), "WindManagerUpdate", nameof(WindManager_Update_Prefix));
             PatchPrefix(harmony, typeof(MapComponentUtility), nameof(MapComponentUtility.MapComponentUpdate), nameof(MapComponentUtility_MapComponentUpdate_Prefix));
 
-            PatchScopedOverride(harmony,
+            PatchPostfix(harmony,
                 AccessTools.Method(typeof(RimWorld.Planet.GlobalRendererUtility), nameof(RimWorld.Planet.GlobalRendererUtility.UpdateGlobalShadersParams)),
-                nameof(GlobalRendererUtility_UpdateGlobalShadersParams_Prefix),
                 nameof(GlobalRendererUtility_UpdateGlobalShadersParams_Postfix));
-            PatchPrefix(harmony,
-                AccessTools.PropertyGetter(typeof(TickManager), nameof(TickManager.TicksGame)),
-                nameof(TickManager_TicksGame_Prefix));
 
             Log.Message("[CharacterStudio] Patch_AbilityTimeStop 时停补丁已应用");
         }
@@ -587,13 +580,12 @@ namespace CharacterStudio.Abilities
             }
         }
 
-        private static void PatchScopedOverride(Harmony harmony, System.Reflection.MethodBase? target, string prefixName, string postfixName)
+        private static void PatchPostfix(Harmony harmony, System.Reflection.MethodBase? target, string postfixName)
         {
-            var prefix = AccessTools.Method(typeof(Patch_AbilityTimeStop), prefixName);
             var postfix = AccessTools.Method(typeof(Patch_AbilityTimeStop), postfixName);
-            if (target != null && prefix != null && postfix != null)
+            if (target != null && postfix != null)
             {
-                harmony.Patch(target, prefix: new HarmonyMethod(prefix), postfix: new HarmonyMethod(postfix));
+                harmony.Patch(target, postfix: new HarmonyMethod(postfix));
             }
         }
 
@@ -626,14 +618,23 @@ namespace CharacterStudio.Abilities
                 return true;
             }
 
-            CompCharacterAbilityRuntime? abilityComp = pawn?.GetComp<CompCharacterAbilityRuntime>();
-            if (abilityComp != null && abilityComp.IsForcedMoveBusy())
+            // 时停期间非豁免角色强制 FullBodyBusy
+            if (!AbilityTimeStopRuntimeController.CanPawnAct(pawn))
             {
                 __result = true;
                 return false;
             }
 
-            if (!AbilityTimeStopRuntimeController.CanPawnAct(pawn))
+            // 时停施法者（CanPawnAct 返回 true）拥有完全行动自由，
+            // 跳过下方的 IsForcedMoveBusy 检查，避免冲刺等强制位移状态残留导致无法转向
+            if (AbilityTimeStopRuntimeController.HasActiveTimeStopOnCurrentMap())
+            {
+                return true;
+            }
+
+            // 正常冲刺等强制位移状态下阻止其他动作
+            CompCharacterAbilityRuntime? abilityComp = pawn?.GetComp<CompCharacterAbilityRuntime>();
+            if (abilityComp != null && abilityComp.IsForcedMoveBusy())
             {
                 __result = true;
                 return false;
@@ -668,7 +669,18 @@ namespace CharacterStudio.Abilities
         public static bool WindManager_Update_Prefix(WindManager __instance)
         {
             Map? map = WindManagerMapField?.GetValue(__instance) as Map;
-            return !AbilityTimeStopRuntimeController.ShouldFreezeMapVisuals(map);
+            if (AbilityTimeStopRuntimeController.ShouldFreezeMapVisuals(map))
+            {
+                // 跳过 WindManager 更新后必须手动清零全局 shader 参数，
+                // 否则 _WindSpeed 会保留上一帧的非零值导致树木/植物继续摇动。
+                // 同时冻结 _GameSeconds 防止环境 shader 动画（水流等）继续推进。
+                int currentTick = Find.TickManager?.TicksGame ?? 0;
+                int frozenTick = AbilityTimeStopRuntimeController.ResolveGlobalVisualTickForCurrentMap(currentTick);
+                Shader.SetGlobalFloat(WindSpeedShaderId, 0f);
+                Shader.SetGlobalFloat(ShaderPropertyIDs.GameSeconds, frozenTick.TicksToSeconds());
+                return false;
+            }
+            return true;
         }
 
         public static bool MapComponentUtility_MapComponentUpdate_Prefix(Map map)
@@ -676,37 +688,21 @@ namespace CharacterStudio.Abilities
             return !AbilityTimeStopRuntimeController.ShouldFreezeMapVisuals(map);
         }
 
-        public static void GlobalRendererUtility_UpdateGlobalShadersParams_Prefix()
+        /// <summary>
+        /// 在 UpdateGlobalShadersParams 之后执行，覆盖原方法的 _GameSeconds 和 _WindSpeed 值。
+        /// 这样施法者渲染逻辑查询 TicksGame 时能获取到真实的 live tick，
+        /// 而全局 shader 动画（树木/水）和风力渲染仍会冻结。
+        /// </summary>
+        public static void GlobalRendererUtility_UpdateGlobalShadersParams_Postfix()
         {
             int currentTick = Find.TickManager?.TicksGame ?? 0;
             int frozenTick = AbilityTimeStopRuntimeController.ResolveGlobalVisualTickForCurrentMap(currentTick);
-            forcedTicksGameOverride = frozenTick;
-            Shader.SetGlobalFloat(ShaderPropertyIDs.GameSeconds, frozenTick.TicksToSeconds());
 
-            // 仅在时停激活时冻结风力 shader 全局参数（树木/草地摇动）。
-            // Postfix 不恢复——WindManager.Update 在时停结束时自然恢复真实值。
-            // 此处不能无条件冻结+Postfix恢复，因为 Postfix 在渲染之前执行，
-            // 恢复后渲染管线看到的仍是原始 WindSpeed，无法冻结。
             if (frozenTick != currentTick)
             {
+                Shader.SetGlobalFloat(ShaderPropertyIDs.GameSeconds, frozenTick.TicksToSeconds());
                 Shader.SetGlobalFloat(WindSpeedShaderId, 0f);
             }
-        }
-
-        public static void GlobalRendererUtility_UpdateGlobalShadersParams_Postfix()
-        {
-            forcedTicksGameOverride = null;
-        }
-
-        public static bool TickManager_TicksGame_Prefix(ref int __result)
-        {
-            if (!forcedTicksGameOverride.HasValue)
-            {
-                return true;
-            }
-
-            __result = forcedTicksGameOverride.Value;
-            return false;
         }
     }
 }

@@ -147,6 +147,7 @@ namespace CharacterStudio.Abilities
         public int bezierWallSegmentCount;
         public bool bezierWallBlockFriendly;
         public float bezierWallAbsorbRemaining;
+        public int lastBezierWallApplyTick = -1;
 
         public int GetCooldownUntilTick(AbilityRuntimeHotkeySlot slot)
         {
@@ -282,6 +283,7 @@ namespace CharacterStudio.Abilities
             Scribe_Values.Look(ref bezierWallSegmentCount, "bezierWallSegmentCount", 16);
             Scribe_Values.Look(ref bezierWallBlockFriendly, "bezierWallBlockFriendly", false);
             Scribe_Values.Look(ref bezierWallAbsorbRemaining, "bezierWallAbsorbRemaining", 0f);
+            Scribe_Values.Look(ref lastBezierWallApplyTick, "lastBezierWallApplyTick", -1);
         }
 
         public void Normalize()
@@ -336,6 +338,7 @@ namespace CharacterStudio.Abilities
             if (bezierWallThickness < 0f) bezierWallThickness = 0.5f;
             if (bezierWallSegmentCount <= 0) bezierWallSegmentCount = 16;
             if (bezierWallAbsorbRemaining < 0f) bezierWallAbsorbRemaining = 0f;
+            if (lastBezierWallApplyTick < -1) lastBezierWallApplyTick = -1;
         }
     }
 }

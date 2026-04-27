@@ -8,25 +8,9 @@ namespace CharacterStudio.Abilities.RuntimeComponents.Configs
 {
     public class Config_PeriodicPulse : AbilityRuntimeComponentConfig
     {
-        [EditorField("CS_Studio_Runtime_PulseIntervalTicks", AbilityRuntimeComponentType.PeriodicPulse)]
-        public new int pulseIntervalTicks = 60;
-        [EditorField("CS_Studio_Runtime_PulseTotalTicks", AbilityRuntimeComponentType.PeriodicPulse)]
-        public new int pulseTotalTicks = 240;
-        [EditorField("CS_Studio_Runtime_PulseStartsImmediately", AbilityRuntimeComponentType.PeriodicPulse)]
-        public new bool pulseStartsImmediately = true;
-
         public override AbilityRuntimeComponentType type => AbilityRuntimeComponentType.PeriodicPulse;
         public override float EditorBlockHeight => 112f;
         public override bool IsSingleton => true;
-
-
-        public override void ExposeData()
-        {
-            base.ExposeData();
-            Scribe_Values.Look(ref pulseIntervalTicks, "pulseIntervalTicks", 60);
-            Scribe_Values.Look(ref pulseTotalTicks, "pulseTotalTicks", 240);
-            Scribe_Values.Look(ref pulseStartsImmediately, "pulseStartsImmediately", true);
-        }
 
         public override void NormalizeForSave()
         {
@@ -49,15 +33,6 @@ namespace CharacterStudio.Abilities.RuntimeComponents.Configs
         public override AbilityRuntimeComponentType type => AbilityRuntimeComponentType.ProjectileSplit;
         public override float EditorBlockHeight => 138f;
 
-
-        public override void ExposeData()
-        {
-            base.ExposeData();
-            Scribe_Values.Look(ref splitProjectileCount, "splitProjectileCount", 2);
-            Scribe_Values.Look(ref splitDamageScale, "splitDamageScale", 0.5f);
-            Scribe_Values.Look(ref splitSearchRange, "splitSearchRange", 5f);
-        }
-
         public override void NormalizeForSave()
         {
             splitProjectileCount = AbilityEditorNormalizationUtility.ClampInt(splitProjectileCount, 1, 99);
@@ -78,22 +53,9 @@ namespace CharacterStudio.Abilities.RuntimeComponents.Configs
 
     public class Config_TimeStop : AbilityRuntimeComponentConfig
     {
-        [EditorField("CS_Studio_Runtime_TimeStopDurationTicks", AbilityRuntimeComponentType.TimeStop)]
-        public new int timeStopDurationTicks = 60;
-        [EditorField("CS_Studio_Runtime_FreezeVisualsDuringTimeStop", AbilityRuntimeComponentType.TimeStop)]
-        public new bool freezeVisualsDuringTimeStop = true;
-
         public override AbilityRuntimeComponentType type => AbilityRuntimeComponentType.TimeStop;
         public override float EditorBlockHeight => 86f;
         public override bool IsSingleton => true;
-
-
-        public override void ExposeData()
-        {
-            base.ExposeData();
-            Scribe_Values.Look(ref timeStopDurationTicks, "timeStopDurationTicks", 60);
-            Scribe_Values.Look(ref freezeVisualsDuringTimeStop, "freezeVisualsDuringTimeStop", true);
-        }
 
         public override void NormalizeForSave()
         {
@@ -107,21 +69,11 @@ namespace CharacterStudio.Abilities.RuntimeComponents.Configs
             if (timeStopDurationTicks <= 0) result.AddError("CS_Ability_Validate_TimeStopDurationTicks".Translate());
             return result;
         }
-
     }
 
     public class Config_WeatherChange : AbilityRuntimeComponentConfig
     {
         public override AbilityRuntimeComponentType type => AbilityRuntimeComponentType.WeatherChange;
-
-
-        public override void ExposeData()
-        {
-            base.ExposeData();
-            Scribe_Values.Look(ref weatherDefName, "weatherDefName", string.Empty);
-            Scribe_Values.Look(ref weatherDurationTicks, "weatherDurationTicks", 60000);
-            Scribe_Values.Look(ref weatherTransitionTicks, "weatherTransitionTicks", 3000);
-        }
 
         public override void NormalizeForSave()
         {
@@ -133,7 +85,6 @@ namespace CharacterStudio.Abilities.RuntimeComponents.Configs
         {
             return new AbilityValidationResult();
         }
-
     }
 
     /// <summary>
@@ -167,6 +118,5 @@ namespace CharacterStudio.Abilities.RuntimeComponents.Configs
             if (bezierWallAbsorbMax <= 0f) result.AddError("CS_Ability_Validate_BezierWallAbsorbMax".Translate());
             return result;
         }
-
     }
 }

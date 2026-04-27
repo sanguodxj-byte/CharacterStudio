@@ -200,6 +200,7 @@ namespace CharacterStudio.Core
                 }
 
                 CharacterSpawnProfileDef? def = DirectXmlToObject.ObjectFromXml<CharacterSpawnProfileDef>(child, true);
+                DirectXmlCrossRefLoader.ResolveAllWantedCrossReferences(FailMode.LogErrors);
                 if (def == null)
                 {
                     continue;

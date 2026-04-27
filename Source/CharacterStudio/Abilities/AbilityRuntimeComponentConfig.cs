@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Xml;
 using CharacterStudio.Core;
@@ -17,11 +16,6 @@ namespace CharacterStudio.Abilities
     /// </summary>
     public class AbilityRuntimeComponentConfig : IExposable
     {
-        private static readonly Dictionary<string, FieldInfo> XmlFieldMap = typeof(AbilityRuntimeComponentConfig)
-            .GetFields(BindingFlags.Instance | BindingFlags.Public)
-            .Where(static field => !field.IsStatic)
-            .ToDictionary(static field => field.Name, StringComparer.OrdinalIgnoreCase);
-
         private AbilityRuntimeComponentType loadedTypeValue = AbilityRuntimeComponentType.SlotOverrideWindow;
         private bool loadedTypeInitialized;
 
@@ -501,7 +495,9 @@ namespace CharacterStudio.Abilities
                     continue;
                 }
 
-                if (!XmlFieldMap.TryGetValue(child.Name, out FieldInfo? field))
+                // 使用实例的真实类型查找字段，确保多态类型的字段被正确解析。
+                FieldInfo? field = GetType().GetField(child.Name, BindingFlags.Public | BindingFlags.Instance);
+                if (field == null)
                 {
                     continue;
                 }
@@ -519,7 +515,7 @@ namespace CharacterStudio.Abilities
                 return;
             }
 
-            if (typeof(Def).IsAssignableFrom(field.FieldType))
+            if (IsDefCompatibleType(field.FieldType))
             {
                 if (!string.IsNullOrWhiteSpace(rawValue))
                 {
@@ -601,5 +597,19 @@ namespace CharacterStudio.Abilities
         {
             return string.Empty;
         }
+
+        /// <summary>
+        /// 检查 fieldType 是否为 Def 或 Nullable&lt;Def&gt; 类型
+        /// </summary>
+        private static bool IsDefCompatibleType(Type fieldType)
+        {
+            if (typeof(Def).IsAssignableFrom(fieldType))
+                return true;
+
+            Type? underlying = Nullable.GetUnderlyingType(fieldType);
+            return underlying != null && typeof(Def).IsAssignableFrom(underlying);
+        }
+
+
     }
 }

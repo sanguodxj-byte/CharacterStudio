@@ -698,6 +698,31 @@ namespace CharacterStudio.Abilities
 
             TargetingParameters parms = BuildTargetingParameters(ability);
             Texture2D? icon = LoadAbilityIcon(ability.iconPath);
+
+            // 双点选取模式
+            if (ability.useTwoPointTargeting)
+            {
+                Find.Targeter.BeginTargeting(parms,
+                    firstTarget =>
+                    {
+                        Find.Targeter.BeginTargeting(parms,
+                            secondTarget =>
+                            {
+                                try
+                                {
+                                    runtimeAbility.QueueCastingJob(firstTarget, secondTarget);
+                                }
+                                catch (System.Exception ex)
+                                {
+                                    Log.Warning($"[CharacterStudio] 热键双点技能施放失败: {ex.Message}");
+                                }
+                            },
+                            caster, null, icon, true);
+                    },
+                    caster, null, icon, true);
+                return true;
+            }
+
             Find.Targeter.BeginTargeting(parms,
                 target =>
                 {

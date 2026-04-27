@@ -5,6 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 Character Studio is a RimWorld 1.6 mod for in-game character appearance editing. It provides a full pipeline: edit appearance layers, face animations, equipment, abilities → preview in real-time → export as a standalone mod. Written in C# targeting .NET Framework 4.7.2 with Harmony patching.
+注意禁止任何猜测，必须获取完全足够的信息后再进行修改
 
 ## Build & Deploy
 

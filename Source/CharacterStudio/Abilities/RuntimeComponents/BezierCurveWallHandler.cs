@@ -24,6 +24,11 @@ namespace CharacterStudio.Abilities.RuntimeComponents
             int nowTick)
         {
             if (caster.Map == null) return;
+            
+            // P-DEBOUNCE: 区域施法会针对每个格子/目标调用 OnApply。
+            // 贝塞尔墙每一跳施法只需创建一个实例。
+            if (abilityComp.LastBezierWallApplyTick == nowTick) return;
+            abilityComp.LastBezierWallApplyTick = nowTick;
 
             // 自定义 Gizmo 只提供单一 target，dest 通常无效。
             // 策略：以 caster 为起点、target 为终点生成墙体；

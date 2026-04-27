@@ -304,6 +304,7 @@ namespace CharacterStudio.Core
                     || string.Equals(root.Name, typeof(CharacterRenderFixPatch).FullName, StringComparison.OrdinalIgnoreCase))
                 {
                     patch = DirectXmlToObject.ObjectFromXml<CharacterRenderFixPatch>(root, true);
+                    DirectXmlCrossRefLoader.ResolveAllWantedCrossReferences(FailMode.LogErrors);
                 }
                 else
                 {
@@ -318,6 +319,7 @@ namespace CharacterStudio.Core
                             || string.Equals(child.Name, typeof(CharacterRenderFixPatch).FullName, StringComparison.OrdinalIgnoreCase))
                         {
                             patch = DirectXmlToObject.ObjectFromXml<CharacterRenderFixPatch>(child, true);
+                            DirectXmlCrossRefLoader.ResolveAllWantedCrossReferences(FailMode.LogErrors);
                             break;
                         }
                     }

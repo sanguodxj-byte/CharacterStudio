@@ -1097,6 +1097,7 @@ namespace CharacterStudio.UI
             try
             {
                 var imported = DirectXmlToObject.ObjectFromXml<CharacterEquipmentDef>(node, true);
+                DirectXmlCrossRefLoader.ResolveAllWantedCrossReferences(FailMode.LogErrors);
                 if (imported == null)
                 {
                     return null;
@@ -1148,6 +1149,7 @@ namespace CharacterStudio.UI
                 if (extensionNode != null)
                 {
                     extension = DirectXmlToObject.ObjectFromXml<DefModExtension_EquipmentRender>(extensionNode, true);
+                    DirectXmlCrossRefLoader.ResolveAllWantedCrossReferences(FailMode.LogErrors);
                     extension?.EnsureDefaults();
                 }
 

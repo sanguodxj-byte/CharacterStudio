@@ -173,6 +173,11 @@ namespace CharacterStudio.UI
             try
             {
                 var imported = DirectXmlToObject.ObjectFromXml<ModularAbilityDef>(node, true);
+                // 手动触发延迟 Def 交叉引用解析。
+                // DirectXmlToObject 在遇到 Def 字段时注册延迟引用，
+                // 但编辑器的手工导入路径绕过了 RimWorld 的标准加载流水线，
+                // 需要在此处显式解析，否则所有 Def 引用（如 summonKind、damageDef）将保持 null。
+                DirectXmlCrossRefLoader.ResolveAllWantedCrossReferences(FailMode.LogErrors);
                 return FinalizeImportedAbility(imported);
             }
             catch (Exception ex)
@@ -282,6 +287,7 @@ namespace CharacterStudio.UI
                 try
                 {
                     var effect = DirectXmlToObject.ObjectFromXml<AbilityEffectConfig>(child, true);
+                    DirectXmlCrossRefLoader.ResolveAllWantedCrossReferences(FailMode.LogErrors);
                     if (effect != null)
                     {
                         result.Add(effect);
@@ -354,6 +360,7 @@ namespace CharacterStudio.UI
                 try
                 {
                     var runtimeComponent = DirectXmlToObject.ObjectFromXml<AbilityRuntimeComponentConfig>(child, true);
+                    DirectXmlCrossRefLoader.ResolveAllWantedCrossReferences(FailMode.LogErrors);
                     if (runtimeComponent != null)
                     {
                         if (runtimeComponent.type == AbilityRuntimeComponentType.SlotOverrideWindow

@@ -25,13 +25,6 @@ namespace CharacterStudio.Rendering
             var abilityComp = ___pawn.GetComp<CompCharacterAbilityRuntime>();
             if (abilityComp == null) return;
 
-            // 冲刺视觉偏移（插值移动）
-            if (abilityComp.IsForcedMoveBusy())
-            {
-                Vector3 moveOffset = abilityComp.GetForcedMoveVisualOffset();
-                __result += moveOffset;
-            }
-
             // 飞行高度偏移
             if (abilityComp.IsFlightStateActive())
             {

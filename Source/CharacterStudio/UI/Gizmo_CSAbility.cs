@@ -253,6 +253,44 @@ namespace CharacterStudio.UI
             }
 
             TargetingParameters parms = BuildTargetingParameters(modAbility);
+            
+            // 如果是双点选取模式
+            if (modAbility.useTwoPointTargeting)
+            {
+                // 第一阶段：选取起点 (target)
+                Find.Targeter.BeginTargeting(
+                    parms,
+                    target =>
+                    {
+                        // 第二阶段：选取终点 (dest)
+                        // 注意：这里需要稍微延迟或在下一帧启动，或者直接启动第二次 Targeting。
+                        // RimWorld 的 Targeter 支持链式调用。
+                        Find.Targeter.BeginTargeting(
+                            parms,
+                            dest =>
+                            {
+                                try
+                                {
+                                    runtimeAbility.QueueCastingJob(target, dest);
+                                }
+                                catch (System.Exception ex)
+                                {
+                                    Log.Warning($"[CharacterStudio] 双点技能施放失败: {ex.Message}");
+                                }
+                            },
+                            pawn,
+                            null,
+                            iconTex,
+                            true);
+                    },
+                    pawn,
+                    null,
+                    iconTex,
+                    true);
+                return true;
+            }
+
+            // 原有的单点选取逻辑
             Find.Targeter.BeginTargeting(
                 parms,
                 target =>

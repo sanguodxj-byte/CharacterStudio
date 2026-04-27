@@ -190,6 +190,7 @@ namespace CharacterStudio.Core
                 }
 
                 CharacterRuntimeTriggerDef? def = DirectXmlToObject.ObjectFromXml<CharacterRuntimeTriggerDef>(child, true);
+                DirectXmlCrossRefLoader.ResolveAllWantedCrossReferences(FailMode.LogErrors);
                 if (def == null)
                 {
                     continue;
