@@ -4,7 +4,7 @@
     <author>Character Studio Team</author>
     <modVersion>1.0.0</modVersion>
     <url>https://github.com/CharacterStudio/CharacterStudio</url>
-    <packageId>CharacterStudio.Mod</packageId>
+    <packageId>CharacterStudio.Main</packageId>
     <supportedVersions>
         <li>1.6</li>
     </supportedVersions>

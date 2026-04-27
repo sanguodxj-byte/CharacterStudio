@@ -9,7 +9,7 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     public class SlotOverrideWindowHandler : IOnApplyHandler
     {
         public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.SlotOverrideWindow;
-        public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, int nowTick)
+        public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, LocalTargetInfo dest, int nowTick)
         {
             int comboWindow = config.comboWindowTicks > 0 ? config.comboWindowTicks : 12;
             abilityComp.SlotOverrideWindowEndTick = nowTick + comboWindow;
@@ -21,7 +21,7 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     public class HotkeyOverrideHandler : IOnApplyHandler
     {
         public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.HotkeyOverride;
-        public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, int nowTick)
+        public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, LocalTargetInfo dest, int nowTick)
         {
             if (string.IsNullOrWhiteSpace(config.overrideAbilityDefName)) return;
             int expireTick = nowTick + Mathf.Max(1, config.overrideDurationTicks);
@@ -33,7 +33,7 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     public class FollowupCooldownGateHandler : IOnApplyHandler
     {
         public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.FollowupCooldownGate;
-        public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, int nowTick)
+        public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, LocalTargetInfo dest, int nowTick)
         {
             int cooldownUntil = nowTick + Mathf.Max(1, config.followupCooldownTicks);
             int current = abilityComp.GetCooldownUntilTick(config.followupCooldownHotkeySlot);
@@ -44,7 +44,7 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     public class RStackDetonationHandler : IOnApplyHandler
     {
         public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.RStackDetonation;
-        public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, int nowTick)
+        public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, LocalTargetInfo dest, int nowTick)
         {
             if (!abilityComp.RStackingEnabled || abilityComp.RSecondStageReady) return;
             int requiredStacks = config.requiredStacks > 0 ? config.requiredStacks : 7;
@@ -66,7 +66,7 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     {
         public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.PeriodicPulse;
 
-        public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, int nowTick)
+        public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, LocalTargetInfo dest, int nowTick)
         {
             int interval = Mathf.Max(1, config.pulseIntervalTicks);
             int duration = Mathf.Max(interval, config.pulseTotalTicks);
@@ -126,7 +126,7 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     {
         public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.ShieldAbsorb;
 
-        public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, int nowTick)
+        public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, LocalTargetInfo dest, int nowTick)
         {
             abilityComp.ShieldRemainingDamage = Mathf.Max(0f, config.shieldMaxDamage);
             abilityComp.ShieldExpireTick = nowTick + Mathf.Max(1, Mathf.RoundToInt(config.shieldDurationTicks));
@@ -155,7 +155,7 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     {
         public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.AttachedShieldVisual;
 
-        public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, int nowTick)
+        public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, LocalTargetInfo dest, int nowTick)
         {
             Pawn? pawn = abilityComp.Pawn;
             if (pawn?.Map == null) return;
@@ -211,7 +211,7 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     {
         public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.ProjectileInterceptorShield;
 
-        public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, int nowTick)
+        public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, LocalTargetInfo dest, int nowTick)
         {
             if (caster.Map == null || string.IsNullOrWhiteSpace(config.shieldInterceptorThingDefName)) return;
 
@@ -260,7 +260,7 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     public class ChainBounceHandler : IOnApplyHandler
     {
         public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.ChainBounce;
-        public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, int nowTick)
+        public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, LocalTargetInfo dest, int nowTick)
             => source.TriggerChainBounce(config, caster, target);
     }
 
@@ -268,7 +268,7 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     {
         public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.DashEmpoweredStrike;
 
-        public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, int nowTick)
+        public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, LocalTargetInfo dest, int nowTick)
         {
             if (source.HasMovementRuntimeComponent())
                 abilityComp.DashEmpowerExpireTick = nowTick + Mathf.Max(1, config.dashEmpowerDurationTicks);
@@ -293,7 +293,7 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     public class FlightStateHandler : IOnApplyHandler
     {
         public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.FlightState;
-        public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, int nowTick)
+        public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, LocalTargetInfo dest, int nowTick)
         {
             CompAbilityEffect_Modular.ApplyFlightState(config, source.parent?.def?.defName ?? string.Empty, caster, abilityComp, target, nowTick);
         }
@@ -302,7 +302,7 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     public class VanillaPawnFlyerHandler : IOnApplyHandler
     {
         public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.VanillaPawnFlyer;
-        public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, int nowTick)
+        public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, LocalTargetInfo dest, int nowTick)
         {
             if (!AbilityVanillaFlightUtility.TryLaunchPawnFlyer(caster, target, config, source.parent?.def?.defName ?? string.Empty, out string failureReason))
             {
@@ -314,7 +314,7 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     public class FlightOnlyFollowupHandler : IOnApplyHandler
     {
         public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.FlightOnlyFollowup;
-        public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, int nowTick)
+        public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, LocalTargetInfo dest, int nowTick)
         {
             if (caster.Flying && config.consumeFlightStateOnCast)
             {
@@ -327,7 +327,7 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     public class FlightLandingBurstHandler : IOnApplyHandler
     {
         public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.FlightLandingBurst;
-        public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, int nowTick)
+        public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, LocalTargetInfo dest, int nowTick)
             => abilityComp.VanillaFlightPendingLandingBurst = true;
     }
 
@@ -335,7 +335,7 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     {
         public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.Dash;
 
-        public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, int nowTick)
+        public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, LocalTargetInfo dest, int nowTick)
         {
             int distance = config.dashDistance > 0 ? config.dashDistance : 6;
             int stepDuration = config.dashStepDurationTicks > 0 ? config.dashStepDurationTicks : 3;
@@ -359,7 +359,7 @@ namespace CharacterStudio.Abilities.RuntimeComponents
             // Begin forced move
             CompCharacterAbilityRuntime? abilityCompDirect = caster.GetComp<CompCharacterAbilityRuntime>();
             if (abilityCompDirect != null)
-                abilityCompDirect.BeginForcedMove(dir, distance, totalDurationTicks);
+                abilityCompDirect.BeginForcedMove(dir, distance, totalDurationTicks, config.dashLanding, config.dashSweepAcrossPath);
 
             // Tag-based Equipment Animation linkage
             if (config.triggerEquipmentAnimationOnApply && !string.IsNullOrWhiteSpace(config.equipmentAnimationTriggerKey))

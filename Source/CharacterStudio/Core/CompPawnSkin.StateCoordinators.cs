@@ -789,6 +789,19 @@ namespace CharacterStudio.Core
             }
         }
 
+        /// <summary>
+        /// 眼睛方向状态解析器。
+        /// 根据当前 Job 的目标位置（targetA）计算 Pawn 应注视的方向。
+        ///
+        /// 战斗状态下的瞳孔-方向联动机制：
+        ///   - AttackMelee / AttackRanged / WaitCombat 时，CurJob.targetA 为攻击目标
+        ///     （敌方 Pawn 或目标格子），GetJobTargetCell 提取其坐标，
+        ///     通过 delta 计算将眼睛方向映射到目标方位。
+        ///   - ResolvePupilScaleVariant 中对应使用 Focus 变体（瞳孔轻微收缩），
+        ///     与此处的方向计算共同实现"战斗中瞳孔注视目标"的效果。
+        ///   - 瞳孔的实际渲染偏移由 FaceTransformEvaluator 根据
+        ///     EyeDirection + PupilScaleVariant 的组合参数驱动。
+        /// </summary>
         private static class EyeDirectionStateResolver
         {
             public static EyeDirection ResolveDirection(Pawn pawn)
@@ -796,6 +809,9 @@ namespace CharacterStudio.Core
                 if (pawn.Dead || pawn.Downed || RestUtility.InBed(pawn))
                     return EyeDirection.Center;
 
+                // 从当前 Job 提取目标位置（攻击目标/工作目标/社交对象等），
+                // 用于驱动眼睛注视方向。战斗 Job（AttackMelee/AttackRanged/WaitCombat）
+                // 的 targetA 即为攻击对象，使角色在攻击时注视敌方目标。
                 IntVec3 targetCell = GetJobTargetCell(pawn);
                 if (targetCell.IsValid && pawn.Position.IsValid)
                 {
@@ -818,6 +834,15 @@ namespace CharacterStudio.Core
                 };
             }
 
+            /// <summary>
+            /// 获取当前 Job 的目标格子坐标。
+            /// 优先取 targetA.Thing.Position（如攻击目标 Pawn 的位置），
+            /// 回退到 targetA.Cell（如 WaitCombat 的警戒点）。
+            ///
+            /// 战斗场景：AttackMelee 的 targetA 为近战目标 Pawn，
+            /// AttackRanged/AttackStatic 的 targetA 为射击目标，
+            /// WaitCombat 的 targetA 为警戒朝向的敌方。
+            /// </summary>
             private static IntVec3 GetJobTargetCell(Pawn pawn)
             {
                 try
@@ -837,6 +862,41 @@ namespace CharacterStudio.Core
                 {
                     return IntVec3.Invalid;
                 }
+            }
+
+            /// <summary>
+            /// 计算基于目标距离的连续注视偏移矢量。
+            /// 近处目标（2 格以内）偏移趋近 0，远处目标（20 格）偏移达到最大值 1.0。
+            /// 中间距离线性插值。
+            ///
+            /// 渲染器 EvaluatePupil 将此偏移乘以瞳孔方向振幅，实现距离驱动的瞳孔位移梯度：
+            ///   实际瞳孔偏移 = EyeDirection 固定偏移 + gazeOffset * max(dirAmplitude)
+            /// </summary>
+            public static Vector2 ResolveGazeOffset(Pawn pawn)
+            {
+                if (pawn.Dead || pawn.Downed || RestUtility.InBed(pawn))
+                    return Vector2.zero;
+
+                IntVec3 targetCell = GetJobTargetCell(pawn);
+                if (!targetCell.IsValid || !pawn.Position.IsValid)
+                    return Vector2.zero;
+
+                IntVec3 delta = targetCell - pawn.Position;
+                float horizontalDist = delta.LengthHorizontal;
+                if (horizontalDist <= 1f)
+                    return Vector2.zero;
+
+                // 距离因子：2 格内为 0（近处瞳孔偏移小），20 格线性增长到 1.0（远处偏移大）
+                float distanceFactor = Mathf.InverseLerp(2f, 20f, horizontalDist);
+
+                // 归一化方向 * 距离因子
+                // X 轴：RimWorld delta.x 正=东=视觉右，与渲染 offsetX 正方向一致，无需翻转
+                // Z 轴：RimWorld delta.z 正=北=视觉上，但渲染 offsetZ 正值=视觉下（dirDownZ=正），
+                //       需要取反：gazeOffset.y 为负时 → offsetZ 减小 → 视觉向上
+                float dirX = (float)delta.x / horizontalDist;
+                float dirZ = (float)delta.z / horizontalDist;
+
+                return Vector2.ClampMagnitude(new Vector2(dirX * distanceFactor, -dirZ * distanceFactor), 1f);
             }
 
             private static EyeDirection MapDeltaToEyeDirection(IntVec3 delta, Rot4 rot)
@@ -1331,7 +1391,7 @@ namespace CharacterStudio.Core
                 owner.faceExpressionState.AdvanceAnimTick();
 
                 if (owner.faceExpressionState.ClearExpiredShock(Find.TickManager?.TicksGame ?? 0))
-                    owner.RequestRenderRefresh();
+                    owner.MarkFaceGraphicDirty();
 
                 if (ShouldUpdateExpression(pawn))
                     owner.UpdateExpressionState();

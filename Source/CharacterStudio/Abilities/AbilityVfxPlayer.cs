@@ -264,7 +264,19 @@ namespace CharacterStudio.Abilities
             ThingDef moteDef = GetOrCreateCustomTextureMoteDef(
                 vfx.customTexturePath,
                 Mathf.Max(0.1f, vfx.drawSize),
-                Mathf.Max(1, vfx.displayDurationTicks));
+                Mathf.Max(1, vfx.displayDurationTicks),
+                typeof(Mote_SpatialLine));
+
+            if (vfx.type == AbilityVisualEffectType.LineTexture
+                && vfx.lineRenderMode == AbilityLineRenderMode.VanillaConnectingLine)
+            {
+                float lineWidth = Mathf.Max(0.05f, vfx.lineWidth)
+                    * Mathf.Max(0.1f, vfx.scale)
+                    * Mathf.Max(0.1f, vfx.textureScale.x);
+
+                MoteMaker.MakeConnectingLine(start, end, moteDef, caster.Map, lineWidth);
+                return true;
+            }
 
             int requestedSegments = Mathf.Max(1, vfx.segmentCount);
             int segmentCount = vfx.tileByLength
@@ -315,6 +327,19 @@ namespace CharacterStudio.Abilities
                 }
 
                 scaleX *= Mathf.Max(0.1f, vfx.textureScale.x);
+
+                int revealDelayTicks = 0;
+                if (vfx.type == AbilityVisualEffectType.LineTexture && vfx.revealBySegments)
+                {
+                    revealDelayTicks = Mathf.Max(0, i) * Mathf.Max(0, vfx.segmentRevealIntervalTicks);
+                    if (mote is Mote_SpatialLine spatialLineMote)
+                    {
+                        spatialLineMote.visibleFromTick = (Find.TickManager?.TicksGame ?? 0) + revealDelayTicks;
+                    }
+
+                    float baseSolidTime = Mathf.Max(1f / 60f, mote.def.mote?.solidTime ?? 0f);
+                    mote.solidTimeOverride = baseSolidTime + (revealDelayTicks / 60f);
+                }
 
                 mote.exactPosition = spawnPos;
                 mote.exactRotation = rotation;

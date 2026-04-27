@@ -57,12 +57,12 @@ namespace CharacterStudio.UI
             tempEnabled = hotkeyConfig.enabled;
             tempSlotBindings = new Dictionary<string, string>(hotkeyConfig.slotBindings, StringComparer.OrdinalIgnoreCase);
 
-            string[] slotKeys = { "Q", "W", "E", "R", "T", "A", "S", "D", "F", "Z", "X", "C", "V" };
+            string[] slotKeys = { "Q", "E", "R", "T", "F", "Z", "X", "C", "V" };
             string[] labelKeys = {
-                "CS_Studio_Ability_Hotkey_Q", "CS_Studio_Ability_Hotkey_W", "CS_Studio_Ability_Hotkey_E",
-                "CS_Studio_Ability_Hotkey_R", "CS_Studio_Ability_Hotkey_T", "CS_Studio_Ability_Hotkey_A",
-                "CS_Studio_Ability_Hotkey_S", "CS_Studio_Ability_Hotkey_D", "CS_Studio_Ability_Hotkey_F",
-                "CS_Studio_Ability_Hotkey_Z", "CS_Studio_Ability_Hotkey_X", "CS_Studio_Ability_Hotkey_C",
+                "CS_Studio_Ability_Hotkey_Q", "CS_Studio_Ability_Hotkey_E",
+                "CS_Studio_Ability_Hotkey_R", "CS_Studio_Ability_Hotkey_T",
+                "CS_Studio_Ability_Hotkey_F", "CS_Studio_Ability_Hotkey_Z",
+                "CS_Studio_Ability_Hotkey_X", "CS_Studio_Ability_Hotkey_C",
                 "CS_Studio_Ability_Hotkey_V"
             };
 
@@ -82,6 +82,8 @@ namespace CharacterStudio.UI
 
         public override void DoWindowContents(Rect inRect)
         {
+            UIHelper.DrawDialogFrame(inRect, this);
+
             Text.Font = GameFont.Medium;
             Widgets.Label(new Rect(0f, 0f, inRect.width, 30f), "CS_Studio_Section_AbilityHotkeys".Translate());
             Text.Font = GameFont.Small;

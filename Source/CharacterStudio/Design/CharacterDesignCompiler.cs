@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CharacterStudio.Abilities;
 using CharacterStudio.Core;
 
 namespace CharacterStudio.Design
@@ -24,8 +23,7 @@ namespace CharacterStudio.Design
 
             var runtimeSkin = document.runtimeSkin?.Clone() ?? new PawnSkinDef();
             ApplyNodeRules(document, runtimeSkin);
-            NormalizeEquipments(runtimeSkin);
-            runtimeSkin.abilities = CompileRuntimeAbilities(runtimeSkin);
+            ApplyEquipmentVisualLayers(document, runtimeSkin);
 
             return runtimeSkin;
         }
@@ -97,6 +95,47 @@ namespace CharacterStudio.Design
             runtimeSkin.layers.Add(attachedLayer);
         }
 
+        /// <summary>
+        /// 将装备编辑器中的视觉数据编译为渲染图层，
+        /// 使装备纹理在编辑器预览和运行时渲染树注入中可见。
+        /// </summary>
+        private static void ApplyEquipmentVisualLayers(CharacterDesignDocument document, PawnSkinDef runtimeSkin)
+        {
+            var equipments = document.characterDefinition?.equipments;
+            if (equipments == null || equipments.Count == 0)
+            {
+                return;
+            }
+
+            runtimeSkin.layers ??= new List<PawnLayerConfig>();
+
+            // Remove all previously compiled equipment layers so that deleted/renamed
+            // equipment does not leave stale entries in the runtime skin.
+            runtimeSkin.layers.RemoveAll(existing =>
+                existing != null &&
+                existing.layerName != null &&
+                existing.layerName.StartsWith(EquipmentLayerMarker.Prefix, StringComparison.OrdinalIgnoreCase));
+
+            foreach (var equipment in equipments)
+            {
+                if (equipment == null || !equipment.HasRenderTexture())
+                {
+                    continue;
+                }
+
+                equipment.renderData.EnsureDefaults(
+                    equipment.GetDisplayLabel(),
+                    equipment.renderData.GetResolvedTexPath(),
+                    equipment.renderData.maskTexPath ?? string.Empty,
+                    equipment.renderData.shaderDefName ?? "Cutout");
+
+                var layerConfig = equipment.renderData.ToPawnLayerConfig();
+                layerConfig.layerName = $"{EquipmentLayerMarker.Prefix} {layerConfig.layerName}";
+
+                runtimeSkin.layers.Add(layerConfig);
+            }
+        }
+
         private static bool LayerSemanticallyEquals(PawnLayerConfig? a, PawnLayerConfig? b)
         {
             if (a == null || b == null)
@@ -111,128 +150,5 @@ namespace CharacterStudio.Design
                 && a.drawOrder.Equals(b.drawOrder);
         }
 
-        private static void NormalizeEquipments(PawnSkinDef runtimeSkin)
-        {
-            runtimeSkin.equipments ??= new List<CharacterEquipmentDef>();
-
-            foreach (var equipment in runtimeSkin.equipments)
-            {
-                equipment?.EnsureDefaults();
-            }
-        }
-
-        private static List<ModularAbilityDef> CompileRuntimeAbilities(PawnSkinDef runtimeSkin)
-        {
-            var sourceAbilities = runtimeSkin.abilities ?? new List<ModularAbilityDef>();
-            bool hasEquipmentAbilityBindings = runtimeSkin.equipments != null &&
-                runtimeSkin.equipments.Any(e =>
-                    e != null &&
-                    e.enabled &&
-                    e.abilityDefNames != null &&
-                    e.abilityDefNames.Count > 0);
-
-            // 若未使用装备绑定技能，则保持旧行为：运行时直接使用皮肤原有技能列表。
-            if (!hasEquipmentAbilityBindings)
-            {
-                return CloneAbilities(sourceAbilities);
-            }
-
-            var abilityByDefName = new Dictionary<string, ModularAbilityDef>(StringComparer.OrdinalIgnoreCase);
-            foreach (var ability in sourceAbilities)
-            {
-                if (ability == null || string.IsNullOrWhiteSpace(ability.defName))
-                {
-                    continue;
-                }
-
-                if (!abilityByDefName.ContainsKey(ability.defName))
-                {
-                    abilityByDefName.Add(ability.defName, ability);
-                }
-            }
-
-            var compiled = new List<ModularAbilityDef>();
-            var added = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var equipments = runtimeSkin.equipments ?? new List<CharacterEquipmentDef>();
-
-            foreach (var equipment in equipments)
-            {
-                if (equipment == null || !equipment.enabled || equipment.abilityDefNames == null)
-                {
-                    continue;
-                }
-
-                foreach (var defName in equipment.abilityDefNames)
-                {
-                    if (string.IsNullOrWhiteSpace(defName))
-                    {
-                        continue;
-                    }
-
-                    if (!added.Add(defName))
-                    {
-                        continue;
-                    }
-
-                    if (abilityByDefName.TryGetValue(defName, out var ability))
-                    {
-                        compiled.Add(ability.Clone());
-                    }
-                }
-            }
-
-            // 保留被热键引用的技能，防止装备技能与热键配置同时使用时丢失能力。
-            foreach (var defName in EnumerateHotkeyAbilityNames(runtimeSkin.abilityHotkeys))
-            {
-                if (string.IsNullOrWhiteSpace(defName))
-                {
-                    continue;
-                }
-
-                if (!added.Add(defName))
-                {
-                    continue;
-                }
-
-                if (abilityByDefName.TryGetValue(defName, out var ability))
-                {
-                    compiled.Add(ability.Clone());
-                }
-            }
-
-            return compiled;
-        }
-
-        private static IEnumerable<string> EnumerateHotkeyAbilityNames(SkinAbilityHotkeyConfig? hotkeys)
-        {
-            if (hotkeys == null)
-            {
-                yield break;
-            }
-
-            foreach (string defName in hotkeys.EnumerateBoundAbilityDefNames())
-            {
-                yield return defName;
-            }
-        }
-
-        private static List<ModularAbilityDef> CloneAbilities(IEnumerable<ModularAbilityDef>? abilities)
-        {
-            var cloned = new List<ModularAbilityDef>();
-            if (abilities == null)
-            {
-                return cloned;
-            }
-
-            foreach (var ability in abilities)
-            {
-                if (ability != null)
-                {
-                    cloned.Add(ability.Clone());
-                }
-            }
-
-            return cloned;
-        }
     }
 }

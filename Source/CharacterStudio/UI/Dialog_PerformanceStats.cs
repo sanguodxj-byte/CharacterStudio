@@ -25,6 +25,8 @@ namespace CharacterStudio.UI
 
         public override void DoWindowContents(Rect inRect)
         {
+            UIHelper.DrawDialogFrame(inRect, this);
+
             Rect shellRect = new Rect(0f, 0f, inRect.width, inRect.height);
             Rect titleRect = UIHelper.DrawPanelShell(shellRect, "CS_Studio_Performance_Title".Translate(), 0f);
 
@@ -32,7 +34,7 @@ namespace CharacterStudio.UI
             DrawControls(controlsRect);
 
             Rect scrollOutRect = new Rect(inRect.x, controlsRect.yMax + 8f, inRect.width, inRect.height - 92f);
-            Rect viewRect = new Rect(0f, 0f, scrollOutRect.width - 16f, 560f);
+            Rect viewRect = new Rect(0f, 0f, scrollOutRect.width - 16f, 900f);
 
             UIHelper.DrawContentCard(scrollOutRect);
             Widgets.BeginScrollView(scrollOutRect.ContractedBy(2f), ref scrollPosition, viewRect);
@@ -97,6 +99,16 @@ namespace CharacterStudio.UI
             listing.Label(snapshot.lastRenderRefreshTick >= 0
                 ? "CS_Studio_Performance_LastRefreshTick".Translate(snapshot.lastRenderRefreshTick)
                 : "CS_Studio_Performance_LastRefreshTickNA".Translate());
+            listing.Label("CS_Studio_Performance_GraphicDirtyTriggers".Translate(snapshot.graphicDirtyTriggers));
+            listing.Label("CS_Studio_Performance_GraphicDirtySkipped".Translate(snapshot.graphicDirtySkippedByThrottle));
+            listing.Gap(12f);
+            listing.GapLine();
+
+            listing.Label("CS_Studio_Performance_FaceCaches".Translate());
+            listing.Label("CS_Studio_Performance_FaceTransformCacheHits".Translate(snapshot.faceTransformCacheHits));
+            listing.Label("CS_Studio_Performance_FaceTransformCacheMisses".Translate(snapshot.faceTransformCacheMisses));
+            listing.Label("CS_Studio_Performance_FacePathCacheHits".Translate(snapshot.facePathCacheHits));
+            listing.Label("CS_Studio_Performance_FacePathCacheMisses".Translate(snapshot.facePathCacheMisses));
             listing.Gap(12f);
             listing.GapLine();
 

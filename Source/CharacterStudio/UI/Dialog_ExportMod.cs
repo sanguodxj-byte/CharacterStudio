@@ -90,6 +90,8 @@ namespace CharacterStudio.UI
 
         public override void DoWindowContents(Rect inRect)
         {
+            UIHelper.DrawDialogFrame(inRect, this);
+
             Rect shellRect = new Rect(0f, 0f, inRect.width, inRect.height);
             Rect titleRect = UIHelper.DrawPanelShell(shellRect, "CS_Studio_Export_Title".Translate(), 0f);
 
@@ -158,14 +160,15 @@ namespace CharacterStudio.UI
             }
             else if (exportMode == ExportMode.FullUnit)
             {
-                bool canExportAbilities = abilities.Count > 0;
+                bool canExportAbilities = (characterDefinition?.abilityLoadout?.abilities?.Count ?? abilities.Count) > 0;
+                int runtimeTriggerCount = characterDefinition?.runtimeTriggers?.Count ?? 0;
                 UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Export_IncludePawnKind".Translate(), ref includePawnKind, "CS_Studio_Export_ModulePawnKindHint".Translate());
                 if (includePawnKind) DrawXmlSelectorRow(ref vy, width, "CS_Studio_Export_PawnKindDefXmlPath".Translate(), pawnKindDefXmlPaths);
 
                 UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Export_IncludeSummonItem".Translate(), ref includeSummonItem, "CS_Studio_Export_ModuleSummonHint".Translate());
                 if (includeSummonItem) DrawXmlSelectorRow(ref vy, width, "CS_Studio_Export_SummonItemXmlPath".Translate(), summonItemXmlPaths);
                 UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Export_IncludeRuntimeTriggers".Translate(), ref includeRuntimeTriggers,
-                    characterDefinition.runtimeTriggers != null && characterDefinition.runtimeTriggers.Count > 0
+                    runtimeTriggerCount > 0
                         ? "CS_Studio_Export_IncludeRuntimeTriggers_Hint".Translate()
                         : "CS_Studio_Export_IncludeRuntimeTriggers_EmptyHint".Translate());
 
@@ -174,7 +177,7 @@ namespace CharacterStudio.UI
                     Rect triggerBtnRect = new Rect(0, vy, width, 24f);
                     if (UIHelper.DrawToolbarButton(triggerBtnRect, "CS_Studio_RuntimeTriggers_Title".Translate()))
                     {
-                        Find.WindowStack.Add(new Dialog_RuntimeTriggers(characterDefinition, () => { }));
+                        Find.WindowStack.Add(new Dialog_RuntimeTriggers(characterDefinition ?? new CharacterDefinition(), () => { }));
                     }
                     vy += 30f;
                 }
@@ -221,8 +224,31 @@ namespace CharacterStudio.UI
 
             // 输出设置
             UIHelper.DrawSectionTitle(ref vy, width, "CS_Studio_Export_OutputSettings".Translate());
-            UIHelper.DrawPropertyFieldWithButton(ref vy, width, "CS_Studio_Export_OutputPath".Translate(),
-                outputPath, OnBrowseOutputPath, "CS_Studio_Export_Browse".Translate());
+
+            // 路径显示行：可编辑文本框 + 浏览按钮
+            {
+                Text.Font = GameFont.Small;
+                float labelW = Mathf.Max(UIHelper.LabelWidth, Text.CalcSize("CS_Studio_Export_OutputPath".Translate()).x + 10f);
+                float browseBtnW = Mathf.Max(40f, Text.CalcSize("CS_Studio_Export_Browse".Translate()).x + 16f);
+                float spacing = 5f;
+                float pathFieldW = Mathf.Max(60f, width - labelW - browseBtnW - spacing);
+
+                Widgets.Label(new Rect(0, vy, labelW, 24), "CS_Studio_Export_OutputPath".Translate());
+
+                string newPath = Widgets.TextField(new Rect(labelW, vy, pathFieldW, 24), outputPath);
+                if (newPath != outputPath)
+                {
+                    outputPath = newPath;
+                }
+                TooltipHandler.TipRegion(new Rect(labelW, vy, pathFieldW, 24), outputPath);
+
+                if (UIHelper.DrawBrowseButton(new Rect(labelW + pathFieldW + spacing, vy, browseBtnW, 24), OnBrowseOutputPath, "CS_Studio_Export_Browse".Translate()))
+                {
+                }
+
+                vy += UIHelper.RowHeight;
+                Text.Font = GameFont.Small;
+            }
 
             if (Event.current.type == EventType.Layout)
             {
@@ -282,17 +308,16 @@ namespace CharacterStudio.UI
 
         private void OnBrowseOutputPath()
         {
-            // RimWorld 没有内置的文件夹选择对话框
-            // 这里只能显示提示信息
-            Find.WindowStack.Add(new Dialog_MessageBox(
-                "CS_Studio_Export_PathHint".Translate(GenFilePaths.ModsFolderPath),
-                "CS_Studio_Btn_OK".Translate()
-            ));
+            Find.WindowStack.Add(new Dialog_FileBrowser(outputPath, selectedPath =>
+            {
+                outputPath = selectedPath;
+            }, true, GenFilePaths.ModsFolderPath));
         }
 
         private List<string> BuildSourceTextureSearchPaths()
         {
-            return ExportAssetUtility.BuildSourceTextureSearchPaths(skinDef, abilities);
+            List<ModularAbilityDef> exportAbilities = characterDefinition?.abilityLoadout?.abilities ?? abilities;
+            return ExportAssetUtility.BuildSourceTextureSearchPaths(skinDef, exportAbilities);
         }
 
         private float GetRemainingConfirmationSeconds()
@@ -346,7 +371,7 @@ namespace CharacterStudio.UI
                     includeSkinDef = true;
                     includePawnKind = true;
                     includeSummonItem = true;
-                    includeAbilities = abilities.Count > 0;
+                    includeAbilities = (characterDefinition?.abilityLoadout?.abilities?.Count ?? abilities.Count) > 0;
                     copyTextures = true;
                     break;
             }
@@ -431,7 +456,7 @@ namespace CharacterStudio.UI
                             Description = description,
                             OutputPath = outputPath,
                             SkinDef = skinDef,
-                            Abilities = abilities,
+                            Abilities = characterDefinition?.abilityLoadout?.abilities?.Select(a => a?.Clone()).OfType<ModularAbilityDef>().ToList() ?? abilities,
                             SourceTexturePaths = BuildSourceTextureSearchPaths(),
                             Mode = exportMode,
                             ExportAsGene = exportAsGene,
@@ -453,7 +478,7 @@ namespace CharacterStudio.UI
                             RoleCardSpawnEvent = roleCardSpawnEvent,
                             RoleCardSpawnAnimation = roleCardSpawnAnimation,
                             RoleCardSpawnAnimationScale = roleCardSpawnAnimationScale,
-                            CharacterDefinition = characterDefinition.Clone(),
+                            CharacterDefinition = (characterDefinition ?? new CharacterDefinition()).Clone(),
                             IncludeRuntimeTriggers = includeRuntimeTriggers,
                             AssetRightsConfirmed = assetRightsConfirmed
                         };

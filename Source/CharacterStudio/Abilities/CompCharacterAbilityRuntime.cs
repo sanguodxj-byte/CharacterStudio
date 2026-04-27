@@ -229,6 +229,70 @@ namespace CharacterStudio.Abilities
             set => abilityRuntimeState.projectileInterceptorShieldThingId = value ?? string.Empty;
         }
 
+        // ── Bezier Curve Wall ──
+        public int BezierWallExpireTick
+        {
+            get => abilityRuntimeState.bezierWallExpireTick;
+            set => abilityRuntimeState.bezierWallExpireTick = value;
+        }
+        public float BezierWallStartX
+        {
+            get => abilityRuntimeState.bezierWallStartX;
+            set => abilityRuntimeState.bezierWallStartX = value;
+        }
+        public float BezierWallStartZ
+        {
+            get => abilityRuntimeState.bezierWallStartZ;
+            set => abilityRuntimeState.bezierWallStartZ = value;
+        }
+        public float BezierWallEndX
+        {
+            get => abilityRuntimeState.bezierWallEndX;
+            set => abilityRuntimeState.bezierWallEndX = value;
+        }
+        public float BezierWallEndZ
+        {
+            get => abilityRuntimeState.bezierWallEndZ;
+            set => abilityRuntimeState.bezierWallEndZ = value;
+        }
+        public float BezierWallControlX
+        {
+            get => abilityRuntimeState.bezierWallControlX;
+            set => abilityRuntimeState.bezierWallControlX = value;
+        }
+        public float BezierWallControlZ
+        {
+            get => abilityRuntimeState.bezierWallControlZ;
+            set => abilityRuntimeState.bezierWallControlZ = value;
+        }
+        public float BezierWallThickness
+        {
+            get => abilityRuntimeState.bezierWallThickness;
+            set => abilityRuntimeState.bezierWallThickness = value;
+        }
+        public int BezierWallSegmentCount
+        {
+            get => abilityRuntimeState.bezierWallSegmentCount;
+            set => abilityRuntimeState.bezierWallSegmentCount = value;
+        }
+        public bool BezierWallBlockFriendly
+        {
+            get => abilityRuntimeState.bezierWallBlockFriendly;
+            set => abilityRuntimeState.bezierWallBlockFriendly = value;
+        }
+        public float BezierWallAbsorbRemaining
+        {
+            get => abilityRuntimeState.bezierWallAbsorbRemaining;
+            set => abilityRuntimeState.bezierWallAbsorbRemaining = value;
+        }
+
+        public bool IsBezierWallActive()
+        {
+            int now = Find.TickManager?.TicksGame ?? 0;
+            return abilityRuntimeState.bezierWallExpireTick >= now
+                && abilityRuntimeState.bezierWallAbsorbRemaining > 0f;
+        }
+
         // ── Offensive Mark ──
         public int OffensiveMarkExpireTick
         {
@@ -424,10 +488,14 @@ namespace CharacterStudio.Abilities
         }
 
         // ── Dash Deferred Effect Callbacks ──
-        private System.Action<IntVec3>? _dashCollisionCallback;
+        /// <summary>
+        /// 碰撞回调：传入碰撞格和精确命中的敌人（可能为 null）。
+        /// 支持穿透模式下的沿途逐目标触发。
+        /// </summary>
+        private System.Action<IntVec3, Pawn?>? _dashCollisionCallback;
         private System.Action<IntVec3>? _dashCompleteCallback;
 
-        public void SetDashCallbacks(System.Action<IntVec3>? onCollision, System.Action<IntVec3>? onComplete)
+        public void SetDashCallbacks(System.Action<IntVec3, Pawn?>? onCollision, System.Action<IntVec3>? onComplete)
         {
             _dashCollisionCallback = onCollision;
             _dashCompleteCallback = onComplete;
@@ -507,7 +575,7 @@ namespace CharacterStudio.Abilities
         }
 
         // ── Begin Forced Move (convenience overload) ──
-        public void BeginForcedMove(Vector2 direction, float distance, int durationTicks)
+        public void BeginForcedMove(Vector2 direction, float distance, int durationTicks, bool isLanding = false, bool sweepAcrossPath = false)
         {
             Pawn? pawn = Pawn;
             if (pawn?.Map == null || !pawn.Spawned || distance <= 0f || durationTicks <= 0)
@@ -519,6 +587,7 @@ namespace CharacterStudio.Abilities
             Vector2 dir = direction.normalized;
 
             abilityRuntimeState.forcedMoveActive = true;
+            abilityRuntimeState.forcedMoveIsLanding = isLanding;
             abilityRuntimeState.forcedMoveStartCell = pawn.Position;
             abilityRuntimeState.forcedMoveCurrentCell = pawn.Position;
             abilityRuntimeState.forcedMoveNextCell = pawn.Position;
@@ -529,6 +598,8 @@ namespace CharacterStudio.Abilities
             abilityRuntimeState.forcedMoveSpeedPerTick = distance / Mathf.Max(1, durationTicks);
             abilityRuntimeState.forcedMoveStartTick = Find.TickManager?.TicksGame ?? 0;
             abilityRuntimeState.forcedMoveDurationTicks = durationTicks;
+            abilityRuntimeState.forcedMoveSweepAcrossPath = sweepAcrossPath;
+            abilityRuntimeState.forcedMoveHitPawns?.Clear();
             abilityRuntimeState.forcedMoveStepStartTick = abilityRuntimeState.forcedMoveStartTick;
             abilityRuntimeState.forcedMoveBusyUntilTick = abilityRuntimeState.forcedMoveStartTick + durationTicks + 6;
             abilityRuntimeState.forcedMoveCollisionTriggered = false;
@@ -541,8 +612,9 @@ namespace CharacterStudio.Abilities
 
             pawn.Rotation = RotFromDirection(dir.x, dir.y);
 
-            if (pawn.stances?.stunner != null)
-                pawn.stances.stunner.StunFor(Mathf.Max(2, durationTicks), pawn, false);
+            // 停止当前移动和排队的工作，但不施加眩晕状态（避免显示眩晕星星）
+            pawn.pather?.StopDead();
+            pawn.jobs?.ClearQueuedJobs();
 
             RequestSkinRenderRefresh();
         }
@@ -588,7 +660,13 @@ namespace CharacterStudio.Abilities
             IntVec3 startCell = abilityRuntimeState.forcedMoveStartCell;
             float worldX = startCell.x + dx;
             float worldZ = startCell.z + dz;
-            IntVec3 nearestCell = new IntVec3(Mathf.RoundToInt(worldX), 0, Mathf.RoundToInt(worldZ));
+
+            // 沿冲刺方向单调推进格点。
+            // 使用 Mathf.FloorToInt 配合微小偏移，确保在跨越 0.5 边界时，
+            // 逻辑格点的跳转与渲染层的视觉偏移补偿在同一个 Tick 内发生。
+            int targetCellX = Mathf.FloorToInt(worldX + 0.5f);
+            int targetCellZ = Mathf.FloorToInt(worldZ + 0.5f);
+            IntVec3 nearestCell = new IntVec3(targetCellX, 0, targetCellZ);
 
             // 建筑阻挡检测：仅建筑物阻止冲刺移动
             if (nearestCell.InBounds(pawn.Map))
@@ -604,7 +682,7 @@ namespace CharacterStudio.Abilities
                 if (nearestCell != pawn.Position)
                 {
                     pawn.Position = nearestCell;
-                    pawn.Notify_Teleported(true, false);
+                    RequestSkinRenderRefresh();
                 }
             }
             else
@@ -615,11 +693,12 @@ namespace CharacterStudio.Abilities
             }
             abilityRuntimeState.forcedMoveCurrentCell = pawn.Position;
 
-            // 碰撞检测：只检查当前格子及相邻格子的 Pawn（避免遍历全地图）
-            Pawn? hitPawn = null;
+            // 碰撞检测
             IntVec3 checkCenter = pawn.Position;
             Map pawnMap = pawn.Map;
+            bool hitAnythingThisTick = false;
             float closestDist = 1.2f;
+
             for (int ox = -1; ox <= 1; ox++)
             {
                 for (int oz = -1; oz <= 1; oz++)
@@ -632,21 +711,33 @@ namespace CharacterStudio.Abilities
                         if (things[i] is Pawn other && other != pawn && !other.Dead && other.Spawned)
                         {
                             float dist = Mathf.Abs(other.DrawPos.x - (worldX + 0.5f)) + Mathf.Abs(other.DrawPos.z - (worldZ + 0.5f));
-                            if (dist < closestDist)
+                            if (dist < 1.2f)
                             {
-                                closestDist = dist;
-                                hitPawn = other;
+                                if (abilityRuntimeState.forcedMoveSweepAcrossPath)
+                                {
+                                    if (abilityRuntimeState.forcedMoveHitPawns != null && !abilityRuntimeState.forcedMoveHitPawns.Contains(other))
+                                    {
+                                        abilityRuntimeState.forcedMoveHitPawns.Add(other);
+                                        _dashCollisionCallback?.Invoke(other.Position, other);
+                                        hitAnythingThisTick = true;
+                                    }
+                                }
+                                else if (dist < closestDist)
+                                {
+                                    closestDist = dist;
+                                    hitAnythingThisTick = true;
+                                }
                             }
                         }
                     }
                 }
             }
 
-            if (hitPawn != null && _dashCollisionCallback != null)
+            if (hitAnythingThisTick && _dashCollisionCallback != null && !abilityRuntimeState.forcedMoveSweepAcrossPath)
             {
                 var cb = _dashCollisionCallback;
                 _dashCollisionCallback = null;
-                cb(pawn.Position);
+                cb(pawn.Position, null);
                 if (_dashCompleteCallback == null)
                 {
                     TriggerForcedMoveCollisionFeedback(pawn, pawn.Position, blockedImmediately: false);
@@ -679,7 +770,14 @@ namespace CharacterStudio.Abilities
 
         private void ClearForcedMoveState()
         {
+            // 如果是落地冲刺，结束时清除飞行状态
+            if (abilityRuntimeState.forcedMoveActive && abilityRuntimeState.forcedMoveIsLanding)
+            {
+                abilityRuntimeState.flightStateExpireTick = -1;
+            }
+
             abilityRuntimeState.forcedMoveActive = false;
+            abilityRuntimeState.forcedMoveIsLanding = false;
             abilityRuntimeState.forcedMoveQueuedSteps = 0;
             abilityRuntimeState.forcedMoveDirectionX = 0;
             abilityRuntimeState.forcedMoveDirectionZ = 0;
@@ -696,6 +794,8 @@ namespace CharacterStudio.Abilities
             abilityRuntimeState.forcedMoveSpeedPerTick = 0f;
             abilityRuntimeState.forcedMoveStartTick = -1;
             abilityRuntimeState.forcedMoveDurationTicks = -1;
+            abilityRuntimeState.forcedMoveHitPawns?.Clear();
+            abilityRuntimeState.forcedMoveSweepAcrossPath = false;
             _dashCollisionCallback = null;
             _dashCompleteCallback = null;
         }
@@ -723,7 +823,7 @@ namespace CharacterStudio.Abilities
                 var cb = _dashCollisionCallback;
                 _dashCollisionCallback = null;
                 _dashCompleteCallback = null;
-                cb(collisionCell);
+                cb(collisionCell, null);
             }
 
             RequestSkinRenderRefresh();
@@ -741,12 +841,22 @@ namespace CharacterStudio.Abilities
             if (!abilityRuntimeState.forcedMoveActive || abilityRuntimeState.forcedMoveSpeedPerTick <= 0f)
                 return Vector3.zero;
 
+            Pawn? pawn = Pawn;
+            if (pawn == null) return Vector3.zero;
+
             float dx = abilityRuntimeState.forcedMoveDirFloatX * abilityRuntimeState.forcedMoveTraveledDistance;
             float dz = abilityRuntimeState.forcedMoveDirFloatZ * abilityRuntimeState.forcedMoveTraveledDistance;
             IntVec3 startCell = abilityRuntimeState.forcedMoveStartCell;
-            // 精确世界位置减去当前格子位置
-            float offsetX = (startCell.x + dx) - abilityRuntimeState.forcedMoveCurrentCell.x;
-            float offsetZ = (startCell.z + dz) - abilityRuntimeState.forcedMoveCurrentCell.z;
+            
+            // 计算当前精确的逻辑世界坐标（中心点）
+            float currentWorldX = startCell.x + dx + 0.5f;
+            float currentWorldZ = startCell.z + dz + 0.5f;
+            
+            // 视觉偏移 = 精确中心点 - 当前 Pawn 逻辑格中心点
+            // 使用 pawn.Position 而非 forcedMoveCurrentCell，确保与 TickForcedMove 中
+            // 的 FloorToInt(worldCoord + 0.5f) 格子跳转完全同步，消除斜向抖动
+            float offsetX = currentWorldX - (pawn.Position.x + 0.5f);
+            float offsetZ = currentWorldZ - (pawn.Position.z + 0.5f);
             return new Vector3(offsetX, 0f, offsetZ);
         }
 
@@ -776,10 +886,36 @@ namespace CharacterStudio.Abilities
             if (!IsFlightStateActive() || abilityRuntimeState.flightStateStartTick < 0 || abilityRuntimeState.flightStateExpireTick < abilityRuntimeState.flightStateStartTick)
                 return 0f;
 
-            return 1f;
+            int now = AbilityTimeStopRuntimeController.ResolveVisualTickForPawn(Pawn, Find.TickManager?.TicksGame ?? 0);
+            
+            // 落地冲刺逻辑：高度随位移百分比下降
+            if (abilityRuntimeState.forcedMoveActive && abilityRuntimeState.forcedMoveIsLanding && abilityRuntimeState.forcedMoveTotalDistance > 0.001f)
+            {
+                return Mathf.Clamp01(1f - (abilityRuntimeState.forcedMoveTraveledDistance / abilityRuntimeState.forcedMoveTotalDistance));
+            }
+
+            // 正常的起飞/降落过渡
+            const float TransitionTicks = 30f;
+            float age = now - abilityRuntimeState.flightStateStartTick;
+            float takeoffFactor = Mathf.Clamp01(age / TransitionTicks);
+            
+            // 降落平滑过渡 (30 ticks)
+            float remaining = abilityRuntimeState.flightStateExpireTick - now;
+            float landingFactor = Mathf.Clamp01(remaining / TransitionTicks);
+
+            // 使用 SmoothStep 让过渡更自然
+            return Mathf.SmoothStep(0f, 1f, Mathf.Min(takeoffFactor, landingFactor));
         }
 
-        public float GetFlightHoverOffset() => 0f;
+        public float GetFlightHoverOffset()
+        {
+            if (!IsFlightStateActive()) return 0f;
+            
+            int now = AbilityTimeStopRuntimeController.ResolveVisualTickForPawn(Pawn, Find.TickManager?.TicksGame ?? 0);
+            // 悬停抖动：周期约 2.5 秒，振幅 0.08
+            float phase = (now % 150) / 150f * Mathf.PI * 2f;
+            return Mathf.Sin(phase) * 0.08f;
+        }
 
         // ── Shield Damage Absorption ──
         public bool TryAbsorbShieldDamage(ref DamageInfo dinfo)

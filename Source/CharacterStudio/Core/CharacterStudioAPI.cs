@@ -19,10 +19,10 @@ namespace CharacterStudio.Core
             => pawn?.GetComp<CompPawnSkin>()?.ActiveSkin?.Clone();
 
         public static CharacterAbilityLoadout? GetExplicitAbilityLoadout(Pawn? pawn)
-            => AbilityLoadoutRuntimeUtility.GetExplicitLoadout(pawn)?.Clone();
+            => pawn == null ? null : AbilityLoadoutRuntimeUtility.GetExplicitLoadout(pawn)?.Clone();
 
         public static CharacterAbilityLoadout? GetEffectiveAbilityLoadout(Pawn? pawn)
-            => AbilityLoadoutRuntimeUtility.GetEffectiveLoadout(pawn)?.Clone();
+            => pawn == null ? null : AbilityLoadoutRuntimeUtility.GetEffectiveLoadout(pawn)?.Clone();
 
         public static IReadOnlyCollection<string> GetGrantedAbilityNames(Pawn? pawn)
             => pawn == null ? Array.Empty<string>() : AbilityGrantUtility.GetGrantedAbilityNames(pawn);

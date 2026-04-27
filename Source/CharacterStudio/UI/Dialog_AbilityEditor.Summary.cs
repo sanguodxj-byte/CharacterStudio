@@ -58,6 +58,7 @@ namespace CharacterStudio.UI
                 Find.WindowStack.Add(new Dialog_AbilityHotkeySettings(hotkeyConfig, abilities, () =>
                 {
                     SanitizeHotkeyConfigAgainstAbilities(GetCurrentHotkeyConfig());
+                    NotifyAbilityPreviewDirty();
                     validationSummary = "CS_Studio_Section_AbilityHotkeys".Translate();
                 }));
             }))

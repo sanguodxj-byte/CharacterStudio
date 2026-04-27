@@ -52,14 +52,16 @@ namespace CharacterStudio.UI
 
         public override void DoWindowContents(Rect inRect)
         {
+            Rect contentRect = UIHelper.DrawDialogFrame(inRect, this);
+
             Text.Font = GameFont.Medium;
-            Widgets.Label(new Rect(0, 0, inRect.width, 30), "CS_Studio_Preview_SelectApparel".Translate());
+            Widgets.Label(new Rect(contentRect.x, contentRect.y, contentRect.width, 30), "CS_Studio_Preview_SelectApparel".Translate());
             Text.Font = GameFont.Small;
 
-            float y = 40;
+            float y = contentRect.y + 40;
 
             // 搜索栏
-            Rect searchRect = new Rect(0, y, inRect.width, 24);
+            Rect searchRect = new Rect(contentRect.x, y, contentRect.width, 24);
             string newSearch = Widgets.TextField(searchRect, searchText);
             if (newSearch != searchText)
             {
@@ -81,7 +83,7 @@ namespace CharacterStudio.UI
             y += 32;
 
             // “清除所有”按钮
-            Rect clearRect = new Rect(0, y, inRect.width, 30f);
+            Rect clearRect = new Rect(contentRect.x, y, contentRect.width, 30f);
             if (Widgets.ButtonText(clearRect, "CS_Studio_Preview_ClearApparel".Translate()))
             {
                 onSelect(null);
@@ -90,7 +92,7 @@ namespace CharacterStudio.UI
             y += 35;
 
             // 列表区域
-            Rect listRect = new Rect(0, y, inRect.width, inRect.height - y - 45); // 留出关闭按钮空间
+            Rect listRect = new Rect(contentRect.x, y, contentRect.width, contentRect.y + contentRect.height - y - 45); // 留出关闭按钮空间
             float rowHeight = 36f;
             Rect viewRect = new Rect(0, 0, listRect.width - 16, filteredApparel.Count * rowHeight);
 

@@ -227,7 +227,7 @@ namespace CharacterStudio.UI
         private const float PreviewRotationMin = -360f;
         private const float PreviewRotationMax = 360f;
 
-        private void NotifyAbilityPreviewDirty(bool resetPlayback = false)
+        private void InvalidateAbilityPreview(bool resetPlayback = false)
         {
             abilityPreviewDirty = true;
             cachedAbilityPreviewPlan = null;
@@ -236,6 +236,17 @@ namespace CharacterStudio.UI
             {
                 ResetAbilityPreviewPlayback(false);
             }
+        }
+
+        private void NotifyAbilityPreviewDirty(bool resetPlayback = false)
+        {
+            InvalidateAbilityPreview(resetPlayback);
+        }
+
+
+        private void RefreshAbilityPreviewSelection(bool resetPlayback = false)
+        {
+            InvalidateAbilityPreview(resetPlayback);
         }
 
         private void ResetAbilityPreviewPlayback(bool keepPlayingState)

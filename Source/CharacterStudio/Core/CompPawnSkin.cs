@@ -1,4 +1,5 @@
-﻿using System;
+﻿﻿using System;
+using System.Collections.Generic;
 using CharacterStudio.Abilities;
 using CharacterStudio.Attributes;
 using CharacterStudio.Performance;
@@ -13,11 +14,15 @@ namespace CharacterStudio.Core
     /// 附加到 Pawn 上，处理皮肤应用和动态表情逻辑
     /// 技能运行时状态已迁移至 CompCharacterAbilityRuntime
     /// </summary>
+    [StaticConstructorOnStartup]
     public partial class CompPawnSkin : ThingComp
     {
         public static event Action<Pawn, PawnSkinDef?, bool, bool, string>? SkinChangedGlobal;
 
         private PawnSkinDef? activeSkin;
+        public PawnSkinDef? CurrentSkinDef => activeSkin;
+        public PawnSkinDef? EffectiveSkinDef => activeSkin;
+
         private string? activeSkinDefName;
         private bool needsRefresh = false;
         private bool activeSkinFromDefaultRaceBinding = false;
@@ -67,12 +72,29 @@ namespace CharacterStudio.Core
         }
 
         // ── Shield visual rendering cache (for CompPawnSkin.PostDraw) ──
-        private static readonly Material DefaultShieldBubbleMat = MaterialPool.MatFrom("Things/Pawn/Effects/Shield", ShaderDatabase.Transparent);
+        private static Material? cachedDefaultShieldBubbleMat;
+        private static Material? DefaultShieldBubbleMat
+        {
+            get
+            {
+                if (cachedDefaultShieldBubbleMat != null)
+                    return cachedDefaultShieldBubbleMat;
+
+                if (!Rendering.RuntimeAssetLoader.IsMainThread())
+                    return null;
+
+                cachedDefaultShieldBubbleMat = MaterialPool.MatFrom("Things/Pawn/Effects/Shield", ShaderDatabase.Transparent);
+                return cachedDefaultShieldBubbleMat;
+            }
+        }
         private static Material? CachedFlightShadowMat;
         private static Material? FlightShadowMat
         {
             get
             {
+                if (!Rendering.RuntimeAssetLoader.IsMainThread())
+                    return CachedFlightShadowMat;
+
                 if (CachedFlightShadowMat == null)
                     CachedFlightShadowMat = DefDatabase<ThingDef>.GetNamedSilentFail("PawnFlyer")?.pawnFlyer?.ShadowMaterial;
                 return CachedFlightShadowMat;
@@ -134,7 +156,7 @@ namespace CharacterStudio.Core
             faceExpressionState.TriggerShock(now, ShockExpressionDuration);
             faceExpressionState.ClearBlink();
             faceExpressionState.ResetAnimatedFrameTracking();
-            RequestRenderRefresh();
+            MarkFaceGraphicDirty();
         }
 
         public int GetExpressionAnimTick() => faceExpressionState.expressionAnimTick;
@@ -216,6 +238,154 @@ namespace CharacterStudio.Core
         }
 
         private int lastPortraitDirtyTick = -1;
+        private int lastGraphicDirtyTick = -1;
+        private const int MinGraphicDirtyIntervalTicks = 3;
+
+        private int faceTransformVersion = 0;
+        private int faceGraphicVersion = 0;
+        private readonly Dictionary<FaceTransformCacheKey, FaceTransformCacheEntry> faceTransformCache = new Dictionary<FaceTransformCacheKey, FaceTransformCacheEntry>();
+        private readonly Dictionary<FacePathCacheKey, FacePathCacheEntry> facePathCache = new Dictionary<FacePathCacheKey, FacePathCacheEntry>();
+
+        public int FaceTransformVersion => faceTransformVersion;
+        public int FaceGraphicVersion => faceGraphicVersion;
+
+        public readonly struct FaceTransformCacheKey : IEquatable<FaceTransformCacheKey>
+        {
+            private readonly LayeredFacePartType partType;
+            private readonly LayeredFacePartSide side;
+            private readonly string overlayId;
+            private readonly int tick;
+
+            public FaceTransformCacheKey(LayeredFacePartType partType, LayeredFacePartSide side, string? overlayId, int tick)
+            {
+                this.partType = partType;
+                this.side = side;
+                this.overlayId = overlayId ?? string.Empty;
+                this.tick = tick;
+            }
+
+            public bool Equals(FaceTransformCacheKey other)
+                => partType == other.partType
+                && side == other.side
+                && tick == other.tick
+                && string.Equals(overlayId, other.overlayId, StringComparison.Ordinal);
+
+            public override bool Equals(object? obj)
+                => obj is FaceTransformCacheKey other && Equals(other);
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    int hash = (int)partType;
+                    hash = (hash * 397) ^ (int)side;
+                    hash = (hash * 397) ^ tick;
+                    hash = (hash * 397) ^ overlayId.GetHashCode();
+                    return hash;
+                }
+            }
+        }
+
+        public readonly struct FaceTransformCacheEntry
+        {
+            public readonly float angle;
+            public readonly Vector3 offset;
+            public readonly Vector3 scale;
+            public readonly float targetAlpha;
+
+            public FaceTransformCacheEntry(float angle, Vector3 offset, Vector3 scale, float targetAlpha)
+            {
+                this.angle = angle;
+                this.offset = offset;
+                this.scale = scale;
+                this.targetAlpha = targetAlpha;
+            }
+        }
+
+        public readonly struct FacePathCacheKey : IEquatable<FacePathCacheKey>
+        {
+            private readonly LayeredFacePartType partType;
+            private readonly LayeredFacePartSide side;
+            private readonly string overlayId;
+            private readonly int facing;
+            private readonly int version;
+
+            public FacePathCacheKey(LayeredFacePartType partType, LayeredFacePartSide side, string? overlayId, Rot4 facing, int version)
+            {
+                this.partType = partType;
+                this.side = side;
+                this.overlayId = overlayId ?? string.Empty;
+                this.facing = facing.AsInt;
+                this.version = version;
+            }
+
+            public bool Equals(FacePathCacheKey other)
+                => partType == other.partType
+                && side == other.side
+                && facing == other.facing
+                && version == other.version
+                && string.Equals(overlayId, other.overlayId, StringComparison.Ordinal);
+
+            public override bool Equals(object? obj)
+                => obj is FacePathCacheKey other && Equals(other);
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    int hash = (int)partType;
+                    hash = (hash * 397) ^ (int)side;
+                    hash = (hash * 397) ^ facing;
+                    hash = (hash * 397) ^ version;
+                    hash = (hash * 397) ^ overlayId.GetHashCode();
+                    return hash;
+                }
+            }
+        }
+
+        public readonly struct FacePathCacheEntry
+        {
+            public readonly bool hasPath;
+            public readonly string? path;
+
+            public FacePathCacheEntry(string? path)
+            {
+                this.hasPath = !string.IsNullOrWhiteSpace(path);
+                this.path = path;
+            }
+        }
+
+        public bool TryGetCachedFaceTransform(FaceTransformCacheKey key, out FaceTransformCacheEntry entry)
+            => faceTransformCache.TryGetValue(key, out entry);
+
+        public void SetCachedFaceTransform(FaceTransformCacheKey key, FaceTransformCacheEntry entry)
+            => faceTransformCache[key] = entry;
+
+        public bool TryGetCachedFacePath(FacePathCacheKey key, out FacePathCacheEntry entry)
+            => facePathCache.TryGetValue(key, out entry);
+
+        public void SetCachedFacePath(FacePathCacheKey key, FacePathCacheEntry entry)
+            => facePathCache[key] = entry;
+
+        public void MarkFaceTransformDirty()
+        {
+            faceTransformVersion++;
+            faceTransformCache.Clear();
+            InvalidateEffectiveStateCache();
+        }
+
+        public void MarkFaceGraphicDirty(bool dirtyPortrait = false)
+        {
+            faceGraphicVersion++;
+            facePathCache.Clear();
+            MarkFaceTransformDirty();
+            RequestRenderRefresh(dirtyPortrait);
+        }
+
+        public void RequestTransformRefresh()
+        {
+            MarkFaceTransformDirty();
+        }
 
         // ─── P-PERF: Per-frame effective state cache ───
         // GetEffectiveExpression() etc. are called 50-100+ times per pawn per frame
@@ -245,7 +415,19 @@ namespace CharacterStudio.Core
             // P-PERF: 令每帧有效状态缓存失效，下次访问时重建
             _effectiveStateCacheFrameId = -1;
 
-            pawn.Drawer.renderer.SetAllGraphicsDirty();
+            bool shouldDirtyGraphics = currentTick < 0
+                || lastGraphicDirtyTick < 0
+                || currentTick - lastGraphicDirtyTick >= MinGraphicDirtyIntervalTicks;
+            if (shouldDirtyGraphics)
+            {
+                pawn.Drawer.renderer.SetAllGraphicsDirty();
+                lastGraphicDirtyTick = currentTick;
+                CharacterStudioPerformanceStats.RecordGraphicDirtyTrigger(throttled: false);
+            }
+            else
+            {
+                CharacterStudioPerformanceStats.RecordGraphicDirtyTrigger(throttled: true);
+            }
             
             // Throttle PortraitsCache to avoid Colonist Bar performance death spiral
             if (dirtyPortrait || currentTick < 0 || currentTick - lastPortraitDirtyTick > 60)
@@ -381,7 +563,8 @@ namespace CharacterStudio.Core
 
             // 根据当前朝向加上方向特定偏移（与渲染系统 OffsetFor 保持一致）
             Rot4 facing = pawn.Rotation;
-            if (facing == Rot4.East || facing == Rot4.West)
+            bool usePerFacingOffsets = skinComp.ActiveSkin?.editLayerOffsetPerFacing ?? false;
+            if (usePerFacingOffsets && (facing == Rot4.East || facing == Rot4.West))
             {
                 if (facing == Rot4.West && foundNode.config.useWestOffset)
                 {
@@ -395,7 +578,7 @@ namespace CharacterStudio.Core
                     worldPos += eastOffset;
                 }
             }
-            else if (facing == Rot4.North)
+            else if (usePerFacingOffsets && facing == Rot4.North)
             {
                 worldPos += foundNode.config.offsetNorth;
             }

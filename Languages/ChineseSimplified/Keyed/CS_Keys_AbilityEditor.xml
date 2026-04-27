@@ -98,6 +98,9 @@
     <CS_Studio_Runtime_Desc_NearbyEnemyBonusDamage>目标附近敌人越多，额外伤害越高。</CS_Studio_Runtime_Desc_NearbyEnemyBonusDamage>
     <CS_Studio_Runtime_Desc_IsolatedTargetBonusDamage>对孤立目标造成额外伤害。</CS_Studio_Runtime_Desc_IsolatedTargetBonusDamage>
     <CS_Studio_Runtime_Desc_MarkDetonation>命中时叠加印记，达到上限后触发引爆。</CS_Studio_Runtime_Desc_MarkDetonation>
+    <CS_Studio_Runtime_DashUseAbilityRange>使用技能范围距离</CS_Studio_Runtime_DashUseAbilityRange>
+    <CS_Studio_Runtime_DashLanding>落地动画模式</CS_Studio_Runtime_DashLanding>
+    <CS_Studio_Runtime_DashSweepAcrossPath>穿透并沿途命中</CS_Studio_Runtime_DashSweepAcrossPath>
     <CS_Studio_Runtime_Desc_ComboStacks>累积连击层数以提高后续伤害。</CS_Studio_Runtime_Desc_ComboStacks>
     <CS_Studio_Runtime_Desc_HitSlowField>命中后在目标区域生成减速场。</CS_Studio_Runtime_Desc_HitSlowField>
     <CS_Studio_Runtime_Desc_PierceBonusDamage>更多敌人处于穿透路径上时获得额外伤害。</CS_Studio_Runtime_Desc_PierceBonusDamage>
@@ -175,4 +178,18 @@
     <CS_Ability_Validate_VfxIndexWarning>视觉特效 #{0}: {1}</CS_Ability_Validate_VfxIndexWarning>
     <CS_Ability_RuntimeComponentType_Dash>直线冲刺</CS_Ability_RuntimeComponentType_Dash>
     <CS_Studio_Runtime_Desc_Dash>向目标方向发起直线冲刺，速度和距离可调。</CS_Studio_Runtime_Desc_Dash>
+    <CS_Ability_RuntimeComponentType_BezierCurveWall>曲线墙</CS_Ability_RuntimeComponentType_BezierCurveWall>
+    <CS_Studio_Runtime_Desc_BezierCurveWall>生成基于曲线的弧形墙壁，在持续时间内拦截穿过的投射物。</CS_Studio_Runtime_Desc_BezierCurveWall>
+    <CS_Studio_Runtime_BezierWallDurationTicks>持续时间 (Tick)</CS_Studio_Runtime_BezierWallDurationTicks>
+    <CS_Studio_Runtime_BezierWallThickness>墙体厚度</CS_Studio_Runtime_BezierWallThickness>
+    <CS_Studio_Runtime_BezierWallControlPointHeight>控制点高度 (曲率)</CS_Studio_Runtime_BezierWallControlPointHeight>
+    <CS_Studio_Runtime_BezierWallSegmentCount>线段分段数</CS_Studio_Runtime_BezierWallSegmentCount>
+    <CS_Studio_Runtime_BezierWallBlockFriendly>阻挡友军投射物</CS_Studio_Runtime_BezierWallBlockFriendly>
+    <CS_Studio_Runtime_BezierWallCurveDirection>曲线方向</CS_Studio_Runtime_BezierWallCurveDirection>
+    <CS_Studio_Runtime_BezierWallAbsorbMax>最大吸收量</CS_Studio_Runtime_BezierWallAbsorbMax>
+    <CS_Studio_Runtime_BezierWallReflectsProjectiles>反弹敌方投射物</CS_Studio_Runtime_BezierWallReflectsProjectiles>
+    <CS_Ability_Validate_BezierWallDuration>持续时间必须大于 0。</CS_Ability_Validate_BezierWallDuration>
+    <CS_Ability_Validate_BezierWallThickness>墙体厚度必须大于 0。</CS_Ability_Validate_BezierWallThickness>
+    <CS_Ability_Validate_BezierWallSegments>分段数必须大于 0。</CS_Ability_Validate_BezierWallSegments>
+    <CS_Ability_Validate_BezierWallAbsorbMax>最大吸收量必须大于 0。</CS_Ability_Validate_BezierWallAbsorbMax>
 </LanguageData>

@@ -215,12 +215,15 @@ namespace CharacterStudio.UI
                     MutateWithUndo(() => slot.maskTexPath = maskPath, refreshPreview: true, refreshRenderTree: true);
                 }
 
-                string shaderDefName = slot.shaderDefName ?? string.Empty;
-                UIHelper.DrawPropertyField(ref y, width, "CS_Studio_BaseSlot_Shader".Translate(), ref shaderDefName);
-                if (shaderDefName != (slot.shaderDefName ?? string.Empty))
-                {
-                    MutateWithUndo(() => slot.shaderDefName = shaderDefName, refreshPreview: true, refreshRenderTree: false);
-                }
+                string[] shaderOptions = { "Cutout", "CutoutComplex", "Transparent", "TransparentPostLight", "TransparentZWrite", "ItemTransparent", "MetaOverlay", "Custom" };
+                UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_BaseSlot_Shader".Translate(), slot.shaderDefName ?? "Cutout",
+                    shaderOptions,
+                    val => val,
+                    val =>
+                    {
+                        MutateWithUndo(() => slot.shaderDefName = val, refreshPreview: true, refreshRenderTree: true);
+                    },
+                    tooltip: "CS_Studio_Prop_Shader_Tooltip".Translate());
 
                 string anchorTag = BaseAppearanceUtility.GetAnchorTag(slotType);
                 UIHelper.DrawPropertyLabel(ref y, width, "CS_Studio_Prop_AnchorPoint".Translate(), anchorTag);
@@ -266,25 +269,78 @@ namespace CharacterStudio.UI
 
             if (DrawCollapsibleSection(ref y, width, "CS_Studio_Section_EastOffset".Translate(), "BaseSlotEast", previewRotation == Rot4.East || previewRotation == Rot4.West))
             {
-                float ex = slot.offsetEast.x;
+                bool editingWest = previewRotation == Rot4.West;
+                Vector3 sideOffset = editingWest
+                    ? (slot.useWestOffset ? slot.offsetWest : new Vector3(-slot.offsetEast.x, slot.offsetEast.y, slot.offsetEast.z))
+                    : slot.offsetEast;
+
+                float ex = sideOffset.x;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_OffsetX".Translate(), ref ex, -1f, 1f, "F3");
-                if (Math.Abs(ex - slot.offsetEast.x) > 0.0001f)
+                if (Math.Abs(ex - sideOffset.x) > 0.0001f)
                 {
-                    MutateBaseSlotWithUndo(() => slot.offsetEast.x = ex);
+                    float val = ex;
+                    if (editingWest)
+                    {
+                        MutateBaseSlotWithUndo(() =>
+                        {
+                            if (!slot.useWestOffset)
+                            {
+                                slot.useWestOffset = true;
+                                slot.offsetWest = new Vector3(-slot.offsetEast.x, slot.offsetEast.y, slot.offsetEast.z);
+                            }
+                            slot.offsetWest.x = val;
+                        });
+                    }
+                    else
+                    {
+                        MutateBaseSlotWithUndo(() => slot.offsetEast.x = val);
+                    }
                 }
 
-                float ey = slot.offsetEast.y;
+                float ey = sideOffset.y;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_OffsetY".Translate(), ref ey, -1f, 1f, "F3");
-                if (Math.Abs(ey - slot.offsetEast.y) > 0.0001f)
+                if (Math.Abs(ey - sideOffset.y) > 0.0001f)
                 {
-                    MutateBaseSlotWithUndo(() => slot.offsetEast.y = ey);
+                    float val = ey;
+                    if (editingWest)
+                    {
+                        MutateBaseSlotWithUndo(() =>
+                        {
+                            if (!slot.useWestOffset)
+                            {
+                                slot.useWestOffset = true;
+                                slot.offsetWest = new Vector3(-slot.offsetEast.x, slot.offsetEast.y, slot.offsetEast.z);
+                            }
+                            slot.offsetWest.y = val;
+                        });
+                    }
+                    else
+                    {
+                        MutateBaseSlotWithUndo(() => slot.offsetEast.y = val);
+                    }
                 }
 
-                float ez = slot.offsetEast.z;
+                float ez = sideOffset.z;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_OffsetZ".Translate(), ref ez, -1f, 1f, "F3");
-                if (Math.Abs(ez - slot.offsetEast.z) > 0.0001f)
+                if (Math.Abs(ez - sideOffset.z) > 0.0001f)
                 {
-                    MutateBaseSlotWithUndo(() => slot.offsetEast.z = ez);
+                    float val = ez;
+                    if (editingWest)
+                    {
+                        MutateBaseSlotWithUndo(() =>
+                        {
+                            if (!slot.useWestOffset)
+                            {
+                                slot.useWestOffset = true;
+                                slot.offsetWest = new Vector3(-slot.offsetEast.x, slot.offsetEast.y, slot.offsetEast.z);
+                            }
+                            slot.offsetWest.z = val;
+                        });
+                    }
+                    else
+                    {
+                        MutateBaseSlotWithUndo(() => slot.offsetEast.z = val);
+                    }
                 }
             }
 
@@ -315,11 +371,20 @@ namespace CharacterStudio.UI
             bool isBaseSlotEastActive = previewRotation == Rot4.East || previewRotation == Rot4.West;
             if (DrawCollapsibleSection(ref y, width, "CS_Studio_Transform_EastRotation".Translate(), "BaseSlotEastScaleRotation", isBaseSlotEastActive))
             {
-                float eastRotationOffset = slot.rotationEastOffset;
-                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Transform_RotationOffset".Translate(), ref eastRotationOffset, -180f, 180f, "F0");
-                if (Math.Abs(eastRotationOffset - slot.rotationEastOffset) > 0.0001f)
+                float sideRotationOffset = previewRotation == Rot4.West && slot.useWestOffset
+                    ? slot.rotationWestOffset
+                    : slot.rotationEastOffset;
+                UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Transform_RotationOffset".Translate(), ref sideRotationOffset, -180f, 180f, "F0");
+                if (previewRotation == Rot4.West && slot.useWestOffset)
                 {
-                    MutateBaseSlotWithUndo(() => slot.rotationEastOffset = eastRotationOffset);
+                    if (Math.Abs(sideRotationOffset - slot.rotationWestOffset) > 0.0001f)
+                    {
+                        MutateBaseSlotWithUndo(() => slot.rotationWestOffset = sideRotationOffset);
+                    }
+                }
+                else if (Math.Abs(sideRotationOffset - slot.rotationEastOffset) > 0.0001f)
+                {
+                    MutateBaseSlotWithUndo(() => slot.rotationEastOffset = sideRotationOffset);
                 }
             }
 

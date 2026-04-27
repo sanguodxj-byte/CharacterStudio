@@ -40,7 +40,8 @@ namespace CharacterStudio.UI
             AbilityRuntimeComponentType.FlightOnlyFollowup,
             AbilityRuntimeComponentType.FlightLandingBurst,
             AbilityRuntimeComponentType.TimeStop,
-            AbilityRuntimeComponentType.WeatherChange
+            AbilityRuntimeComponentType.WeatherChange,
+            AbilityRuntimeComponentType.BezierCurveWall
         };
 
         private static IEnumerable<AbilityRuntimeComponentType> GetRuntimeComponentLibraryTypes()
@@ -95,7 +96,8 @@ namespace CharacterStudio.UI
                 || type == AbilityRuntimeComponentType.FlightState
                 || type == AbilityRuntimeComponentType.FlightOnlyFollowup
                 || type == AbilityRuntimeComponentType.FlightLandingBurst
-                || type == AbilityRuntimeComponentType.TimeStop;
+                || type == AbilityRuntimeComponentType.TimeStop
+                || type == AbilityRuntimeComponentType.BezierCurveWall;
         }
 
         private static string GetRuntimeComponentTypeDescription(AbilityRuntimeComponentType type)
@@ -133,17 +135,19 @@ namespace CharacterStudio.UI
                 AbilityRuntimeComponentType.ProjectileSplit => "CS_Studio_Runtime_Desc_ProjectileSplit".Translate(),
                 AbilityRuntimeComponentType.TimeStop => "CS_Studio_Runtime_Desc_TimeStop".Translate(),
                 AbilityRuntimeComponentType.WeatherChange => "CS_Studio_Runtime_Desc_WeatherChange".Translate(),
+                AbilityRuntimeComponentType.BezierCurveWall => "CS_Studio_Runtime_Desc_BezierCurveWall".Translate(),
                 _ => type.ToString()
             };
         }
 
         private static AbilityRuntimeComponentConfig CreateDefaultRuntimeComponent(AbilityRuntimeComponentType type)
         {
-            var config = new AbilityRuntimeComponentConfig
+            var config = CharacterStudio.Abilities.RuntimeComponents.RuntimeComponentRegistry.Create(type);
+            if (config == null)
             {
-                type = type,
-                enabled = true
-            };
+                Log.Error($"[CharacterStudio] Failed to create runtime component of type {type}");
+                config = new AbilityRuntimeComponentConfig { enabled = true };
+            }
 
             switch (type)
             {
@@ -305,6 +309,15 @@ namespace CharacterStudio.UI
                     config.weatherDurationTicks = 60000;
                     config.weatherTransitionTicks = 3000;
                     break;
+                case AbilityRuntimeComponentType.BezierCurveWall:
+                    config.bezierWallDurationTicks = 300;
+                    config.bezierWallThickness = 0.5f;
+                    config.bezierWallControlPointHeight = 3f;
+                    config.bezierWallSegmentCount = 16;
+                    config.bezierWallBlockFriendly = false;
+                    config.bezierWallCurveDirection = 1;
+                    config.bezierWallAbsorbMax = 200f;
+                    break;
             }
 
             return config;
@@ -313,13 +326,9 @@ namespace CharacterStudio.UI
         private static IEnumerable<AbilityRuntimeHotkeySlot> GetRuntimeHotkeySlotOptions()
         {
             yield return AbilityRuntimeHotkeySlot.Q;
-            yield return AbilityRuntimeHotkeySlot.W;
             yield return AbilityRuntimeHotkeySlot.E;
             yield return AbilityRuntimeHotkeySlot.R;
             yield return AbilityRuntimeHotkeySlot.T;
-            yield return AbilityRuntimeHotkeySlot.A;
-            yield return AbilityRuntimeHotkeySlot.S;
-            yield return AbilityRuntimeHotkeySlot.D;
             yield return AbilityRuntimeHotkeySlot.F;
             yield return AbilityRuntimeHotkeySlot.Z;
             yield return AbilityRuntimeHotkeySlot.X;
@@ -487,6 +496,84 @@ namespace CharacterStudio.UI
                 options.Add(new FloatMenuOption(label, () =>
                 {
                     component.weatherDefName = localDef.defName;
+                    NotifyAbilityPreviewDirty(true);
+                }));
+            }
+
+            Find.WindowStack.Add(new FloatMenu(options));
+        }
+
+        private void ShowEffecterDefSelector(AbilityVisualEffectConfig? vfx, AbilityRuntimeComponentConfig? comp)
+        {
+            var options = new List<FloatMenuOption>
+            {
+                new FloatMenuOption("CS_Studio_None".Translate(), () =>
+                {
+                    if (comp != null)
+                    {
+                        comp.landingEffecterDefName = string.Empty;
+                    }
+                    NotifyAbilityPreviewDirty(true);
+                })
+            };
+
+            var defs = DefDatabase<EffecterDef>.AllDefsListForReading;
+            var sorted = new List<EffecterDef>(defs);
+            sorted.Sort((a, b) => string.Compare(a.label ?? a.defName, b.label ?? b.defName, StringComparison.OrdinalIgnoreCase));
+
+            foreach (var effecterDef in sorted)
+            {
+                var localDef = effecterDef;
+                string label = (localDef.label ?? localDef.defName) + $" ({localDef.defName})";
+                options.Add(new FloatMenuOption(label, () =>
+                {
+                    if (comp != null)
+                    {
+                        comp.landingEffecterDefName = localDef.defName;
+                    }
+                    NotifyAbilityPreviewDirty(true);
+                }));
+            }
+
+            Find.WindowStack.Add(new FloatMenu(options));
+        }
+
+        private void ShowSoundDefSelector(AbilityVisualEffectConfig? vfx, AbilityRuntimeComponentConfig? comp)
+        {
+            var options = new List<FloatMenuOption>
+            {
+                new FloatMenuOption("CS_Studio_None".Translate(), () =>
+                {
+                    if (vfx != null)
+                    {
+                        vfx.soundDefName = string.Empty;
+                    }
+                    if (comp != null)
+                    {
+                        comp.landingSoundDefName = string.Empty;
+                    }
+                    NotifyAbilityPreviewDirty(true);
+                })
+            };
+
+            var defs = DefDatabase<SoundDef>.AllDefsListForReading;
+            var sorted = new List<SoundDef>(defs);
+            sorted.Sort((a, b) => string.Compare(a.label ?? a.defName, b.label ?? b.defName, StringComparison.OrdinalIgnoreCase));
+
+            foreach (var soundDef in sorted)
+            {
+                var localDef = soundDef;
+                string label = (localDef.label ?? localDef.defName) + $" ({localDef.defName})";
+                options.Add(new FloatMenuOption(label, () =>
+                {
+                    if (vfx != null)
+                    {
+                        vfx.soundDefName = localDef.defName;
+                    }
+                    if (comp != null)
+                    {
+                        comp.landingSoundDefName = localDef.defName;
+                    }
                     NotifyAbilityPreviewDirty(true);
                 }));
             }

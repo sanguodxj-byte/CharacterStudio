@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CharacterStudio.Abilities;
 using CharacterStudio.Core;
+using RimWorld;
 using UnityEngine;
 using Verse;
 
@@ -15,12 +16,12 @@ namespace CharacterStudio.UI
         private static readonly EquipmentTriggeredAnimationRole[] CachedEquipmentTriggeredAnimationRoles =
             (EquipmentTriggeredAnimationRole[])Enum.GetValues(typeof(EquipmentTriggeredAnimationRole));
 
-        private void DrawEquipmentProperties(Rect rect)
+        private void DrawEquipmentProperties(Rect rect, bool equipmentMode = false)
         {
-            workingSkin.equipments ??= new List<CharacterEquipmentDef>();
+            WorkingEquipments ??= new List<CharacterEquipmentDef>();
             SanitizeEquipmentSelection();
 
-            if (selectedEquipmentIndex < 0 || selectedEquipmentIndex >= workingSkin.equipments.Count)
+            if (selectedEquipmentIndex < 0 || selectedEquipmentIndex >= WorkingEquipments.Count)
             {
                 Rect hintRect = new Rect(rect.x + Margin, rect.y + 60, rect.width - Margin * 2, 40);
                 Text.Anchor = TextAnchor.MiddleCenter;
@@ -31,16 +32,16 @@ namespace CharacterStudio.UI
                 return;
             }
 
-            var equipment = workingSkin.equipments[selectedEquipmentIndex];
+            var equipment = WorkingEquipments[selectedEquipmentIndex];
             equipment ??= new CharacterEquipmentDef();
             equipment.EnsureDefaults();
             CharacterEquipmentRenderData renderData = equipment.renderData;
-            workingSkin.equipments[selectedEquipmentIndex] = equipment;
+            WorkingEquipments[selectedEquipmentIndex] = equipment;
 
             float propsY = GetPropertiesContentTop(rect);
             float propsHeight = rect.height - propsY + rect.y - Margin;
             Rect propsRect = new Rect(rect.x + Margin, propsY, rect.width - Margin * 2, propsHeight);
-            Rect viewRect = new Rect(0, 0, propsRect.width - 16, 1500);
+            Rect viewRect = new Rect(0, 0, propsRect.width - 16, equipmentMode ? 8000 : 1500);
 
             Widgets.BeginScrollView(propsRect, ref propsScrollPos, viewRect);
 
@@ -57,7 +58,8 @@ namespace CharacterStudio.UI
                 FinalizeMutatedEditorState(refreshPreview: true, refreshRenderTree: refreshRenderTree, statusMessage: statusMessage);
             }
 
-            if (DrawCollapsibleSection(ref y, width, "CS_Studio_Equip_Section_Base".Translate(), "EquipmentBase"))
+            // ── Items 标签：物品属性（基础、技能、定义）──
+            if (!equipmentMode && DrawCollapsibleSection(ref y, width, "CS_Studio_Equip_Section_Base".Translate(), "EquipmentBase"))
             {
                 CharacterStudio.Core.EquipmentType currentItemType = equipment.itemType;
                 var equipmentTypeOptions = (CharacterStudio.Core.EquipmentType[])Enum.GetValues(typeof(CharacterStudio.Core.EquipmentType));
@@ -104,12 +106,12 @@ namespace CharacterStudio.UI
                     MutateWithUndo(() => equipment.slotTag = slotTag, refreshPreview: true, refreshRenderTree: true);
                 }
 
-                string thingDefName = equipment.thingDefName ?? string.Empty;
-                UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_LinkedThingDef".Translate(), ref thingDefName);
-                if (thingDefName != (equipment.thingDefName ?? string.Empty))
-                {
-                    MutateWithUndo(() => equipment.thingDefName = thingDefName, refreshPreview: true, refreshRenderTree: false);
-                }
+                string linkedThingDisplay = string.IsNullOrWhiteSpace(equipment.thingDefName)
+                    ? "CS_Studio_None".Translate()
+                    : GetThingDefSelectionLabel(equipment.thingDefName);
+                UIHelper.DrawControlledReferenceField(ref y, width, "CS_Studio_Equip_LinkedThingDef".Translate(), equipment.thingDefName, () => linkedThingDisplay,
+                    () => ShowThingDefSelector(selected => MutateWithUndo(() => equipment.thingDefName = selected, refreshPreview: true, refreshRenderTree: false)),
+                    () => MutateWithUndo(() => equipment.thingDefName = string.Empty, refreshPreview: true, refreshRenderTree: false));
 
                 string exportGroupKey = equipment.exportGroupKey ?? string.Empty;
                 UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_ExportGroupKey".Translate(), ref exportGroupKey);
@@ -118,12 +120,12 @@ namespace CharacterStudio.UI
                     MutateWithUndo(() => equipment.exportGroupKey = exportGroupKey, refreshPreview: true, refreshRenderTree: false);
                 }
 
-                string parentThingDefName = equipment.parentThingDefName ?? string.Empty;
-                UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_ParentThingDefName".Translate(), ref parentThingDefName);
-                if (parentThingDefName != (equipment.parentThingDefName ?? string.Empty))
-                {
-                    MutateWithUndo(() => equipment.parentThingDefName = string.IsNullOrWhiteSpace(parentThingDefName) ? CharacterEquipmentDef.DefaultParentThingDefName : parentThingDefName, refreshPreview: true, refreshRenderTree: false);
-                }
+                string parentThingDisplay = string.IsNullOrWhiteSpace(equipment.parentThingDefName)
+                    ? GetThingDefSelectionLabel(CharacterEquipmentDef.DefaultParentThingDefName)
+                    : GetThingDefSelectionLabel(equipment.parentThingDefName);
+                UIHelper.DrawControlledReferenceField(ref y, width, "CS_Studio_Equip_ParentThingDefName".Translate(), equipment.parentThingDefName, () => parentThingDisplay,
+                    () => ShowThingDefSelector(selected => MutateWithUndo(() => equipment.parentThingDefName = selected, refreshPreview: true, refreshRenderTree: false)),
+                    () => MutateWithUndo(() => equipment.parentThingDefName = CharacterEquipmentDef.DefaultParentThingDefName, refreshPreview: true, refreshRenderTree: false));
 
                 string previewTexPath = equipment.previewTexPath ?? string.Empty;
                 if (UIHelper.DrawPathFieldWithBrowser(ref y, width, "CS_Studio_Equip_PreviewTexture".Translate(), ref previewTexPath, () =>
@@ -151,57 +153,20 @@ namespace CharacterStudio.UI
                 }
             }
 
-            if (DrawCollapsibleSection(ref y, width, "CS_Studio_Equip_Section_Abilities".Translate(), "EquipmentAbilities"))
+            // ── Items 标签：技能绑定 ──
+            if (!equipmentMode && DrawCollapsibleSection(ref y, width, "CS_Studio_Equip_Section_Abilities".Translate(), "EquipmentAbilities"))
             {
-                if (Widgets.ButtonText(new Rect(0f, y, width, 24f), "CS_Studio_Equip_OpenAbilityEditor".Translate()))
-                {
-                    SyncAbilitiesFromSkin();
-                    Find.WindowStack.Add(new Dialog_AbilityEditor(workingAbilities, workingSkin.abilityHotkeys, workingSkin));
-                }
+                float abilityBtnWidth = (width - Margin) / 2f;
+                UIHelper.DrawIconButton(new Rect(0f, y, abilityBtnWidth, 24f), "A", "CS_Studio_Equip_OpenAbilityEditor".Translate(), OpenAbilityEditor);
+                UIHelper.DrawIconButton(new Rect(abilityBtnWidth + Margin, y, abilityBtnWidth, 24f), "↓", "CS_Studio_Equip_ImportAbilities".Translate(), OpenAbilityXmlImportDialog);
                 y += 30f;
 
-                if (workingAbilities == null || workingAbilities.Count == 0)
-                {
-                    GUI.color = Color.gray;
-                    Widgets.Label(new Rect(0f, y, width, 24f), "CS_Studio_Equip_NoAbilityPool".Translate());
-                    GUI.color = Color.white;
-                    y += 26f;
-                }
-                else
-                {
-                    equipment.abilityDefNames ??= new List<string>();
-                    foreach (var ability in workingAbilities)
-                    {
-                        if (ability == null || string.IsNullOrWhiteSpace(ability.defName))
-                        {
-                            continue;
-                        }
-
-                        bool bound = equipment.abilityDefNames.Contains(ability.defName);
-                        bool newBound = bound;
-                        UIHelper.DrawPropertyCheckbox(ref y, width, $"{ability.label ?? ability.defName} [{ability.defName}]", ref newBound);
-                        if (newBound != bound)
-                        {
-                            MutateWithUndo(() =>
-                            {
-                                if (newBound)
-                                {
-                                    if (!equipment.abilityDefNames.Contains(ability.defName))
-                                    {
-                                        equipment.abilityDefNames.Add(ability.defName);
-                                    }
-                                }
-                                else
-                                {
-                                    equipment.abilityDefNames.RemoveAll(x => string.Equals(x, ability.defName, StringComparison.OrdinalIgnoreCase));
-                                }
-                            }, refreshPreview: true, refreshRenderTree: false);
-                        }
-                    }
-                }
+                DrawAbilityBindingList(ref y, width, equipment);
             }
 
-            if (DrawCollapsibleSection(ref y, width, "CS_Studio_Equip_Section_Definition".Translate(), "EquipmentDefinition"))
+
+            // ── Items 标签：物品定义 ──
+            if (!equipmentMode && DrawCollapsibleSection(ref y, width, "CS_Studio_Equip_Section_Definition".Translate(), "EquipmentDefinition"))
             {
                 string worldTexPath = equipment.worldTexPath ?? string.Empty;
                 if (UIHelper.DrawPathFieldWithBrowser(ref y, width, "CS_Studio_Equip_WorldTexPath".Translate(), ref worldTexPath, () =>
@@ -255,21 +220,53 @@ namespace CharacterStudio.UI
                     MutateEquipmentWithUndo(() => equipment.thingCategories = ParseCommaSeparatedList(thingCategoriesText).ToList(), refreshRenderTree: false);
                 }
 
-                string bodyPartGroupsText = string.Join(", ", equipment.bodyPartGroups ?? new List<string>());
-                UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_BodyPartGroups".Translate(), ref bodyPartGroupsText);
-                string normalizedBodyPartGroupsText = string.Join(", ", equipment.bodyPartGroups ?? new List<string>());
-                if (bodyPartGroupsText != normalizedBodyPartGroupsText)
-                {
-                    MutateEquipmentWithUndo(() => equipment.bodyPartGroups = ParseCommaSeparatedList(bodyPartGroupsText).ToList(), refreshRenderTree: false);
-                }
+                string bodyPartGroupsLabel = (equipment.bodyPartGroups != null && equipment.bodyPartGroups.Count > 0)
+                    ? string.Join(", ", equipment.bodyPartGroups.Select(defName =>
+                    {
+                        var def = DefDatabase<BodyPartGroupDef>.GetNamedSilentFail(defName);
+                        return def != null ? (def.label ?? def.defName) : defName;
+                    }))
+                    : "CS_Studio_None".Translate();
+                DrawSelectionPropertyButton(
+                    ref y,
+                    width,
+                    "CS_Studio_Equip_BodyPartGroups".Translate(),
+                    bodyPartGroupsLabel,
+                    () => ShowBodyPartGroupDefSelector(selected =>
+                    {
+                        MutateWithUndo(() =>
+                        {
+                            equipment.bodyPartGroups ??= new List<string>();
+                            if (!equipment.bodyPartGroups.Contains(selected))
+                            {
+                                equipment.bodyPartGroups.Add(selected);
+                            }
+                        }, refreshPreview: true, refreshRenderTree: false);
+                    }, equipment));
 
-                string apparelLayersText = string.Join(", ", equipment.apparelLayers ?? new List<string>());
-                UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_ApparelLayers".Translate(), ref apparelLayersText);
-                string normalizedApparelLayersText = string.Join(", ", equipment.apparelLayers ?? new List<string>());
-                if (apparelLayersText != normalizedApparelLayersText)
-                {
-                    MutateEquipmentWithUndo(() => equipment.apparelLayers = ParseCommaSeparatedList(apparelLayersText).ToList(), refreshRenderTree: false);
-                }
+                string apparelLayersLabel = (equipment.apparelLayers != null && equipment.apparelLayers.Count > 0)
+                    ? string.Join(", ", equipment.apparelLayers.Select(defName =>
+                    {
+                        var def = DefDatabase<ApparelLayerDef>.GetNamedSilentFail(defName);
+                        return def != null ? (def.label ?? def.defName) : defName;
+                    }))
+                    : "CS_Studio_None".Translate();
+                DrawSelectionPropertyButton(
+                    ref y,
+                    width,
+                    "CS_Studio_Equip_ApparelLayers".Translate(),
+                    apparelLayersLabel,
+                    () => ShowApparelLayerDefSelector(selected =>
+                    {
+                        MutateWithUndo(() =>
+                        {
+                            equipment.apparelLayers ??= new List<string>();
+                            if (!equipment.apparelLayers.Contains(selected))
+                            {
+                                equipment.apparelLayers.Add(selected);
+                            }
+                        }, refreshPreview: true, refreshRenderTree: false);
+                    }, equipment));
 
                 string apparelTagsText = string.Join(", ", equipment.apparelTags ?? new List<string>());
                 UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_ApparelTags".Translate(), ref apparelTagsText);
@@ -286,19 +283,19 @@ namespace CharacterStudio.UI
                     MutateEquipmentWithUndo(() => equipment.allowCrafting = allowCrafting, refreshRenderTree: false);
                 }
 
-                string recipeDefName = equipment.recipeDefName ?? string.Empty;
-                UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_RecipeDefName".Translate(), ref recipeDefName);
-                if (recipeDefName != (equipment.recipeDefName ?? string.Empty))
-                {
-                    MutateEquipmentWithUndo(() => equipment.recipeDefName = recipeDefName, refreshRenderTree: false);
-                }
+                string recipeDefDisplay = string.IsNullOrWhiteSpace(equipment.recipeDefName)
+                    ? "CS_Studio_None".Translate()
+                    : GetRecipeDefSelectionLabel(equipment.recipeDefName);
+                UIHelper.DrawControlledReferenceField(ref y, width, "CS_Studio_Equip_RecipeDefName".Translate(), equipment.recipeDefName, () => recipeDefDisplay,
+                    () => ShowRecipeDefSelector(selected => MutateEquipmentWithUndo(() => equipment.recipeDefName = selected, refreshRenderTree: false)),
+                    () => MutateEquipmentWithUndo(() => equipment.recipeDefName = string.Empty, refreshRenderTree: false));
 
-                string recipeWorkbenchDefName = equipment.recipeWorkbenchDefName ?? string.Empty;
-                UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_RecipeWorkbenchDefName".Translate(), ref recipeWorkbenchDefName);
-                if (recipeWorkbenchDefName != (equipment.recipeWorkbenchDefName ?? string.Empty))
-                {
-                    MutateEquipmentWithUndo(() => equipment.recipeWorkbenchDefName = recipeWorkbenchDefName, refreshRenderTree: false);
-                }
+                string recipeWorkbenchDisplay = string.IsNullOrWhiteSpace(equipment.recipeWorkbenchDefName)
+                    ? "CS_Studio_None".Translate()
+                    : GetThingDefSelectionLabel(equipment.recipeWorkbenchDefName);
+                UIHelper.DrawControlledReferenceField(ref y, width, "CS_Studio_Equip_RecipeWorkbenchDefName".Translate(), equipment.recipeWorkbenchDefName, () => recipeWorkbenchDisplay,
+                    () => ShowThingDefSelector(selected => MutateEquipmentWithUndo(() => equipment.recipeWorkbenchDefName = selected, refreshRenderTree: false)),
+                    () => MutateEquipmentWithUndo(() => equipment.recipeWorkbenchDefName = string.Empty, refreshRenderTree: false));
 
                 float recipeWorkAmount = equipment.recipeWorkAmount;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Equip_RecipeWorkAmount".Translate(), ref recipeWorkAmount, 1f, 20000f, "F0");
@@ -364,7 +361,8 @@ namespace CharacterStudio.UI
                 }
             }
 
-            if (DrawCollapsibleSection(ref y, width, "CS_Studio_Equip_Section_VisualBase".Translate(), "EquipmentVisualBase"))
+            // ── Equipment 标签：视觉基础 ──
+            if (equipmentMode && DrawCollapsibleSection(ref y, width, "CS_Studio_Equip_Section_VisualBase".Translate(), "EquipmentVisualBase"))
             {
                 string layerName = renderData.layerName ?? string.Empty;
                 UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_VisualLayerName".Translate(), ref layerName);
@@ -448,14 +446,43 @@ namespace CharacterStudio.UI
                         MarkEquipmentDirty();
                     });
 
-                string anchorPath = renderData.anchorPath ?? string.Empty;
-                UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_AnchorPath".Translate(), ref anchorPath);
-                if (anchorPath != (renderData.anchorPath ?? string.Empty))
-                {
-                    CaptureUndoSnapshot();
-                    renderData.anchorPath = anchorPath;
-                    MarkEquipmentDirty();
-                }
+                string currentAnchorPath = renderData.anchorPath ?? string.Empty;
+                DrawSelectionPropertyButton(
+                    ref y,
+                    width,
+                    "CS_Studio_Equip_AnchorPath".Translate(),
+                    string.IsNullOrWhiteSpace(currentAnchorPath) ? "CS_Studio_None".Translate() : currentAnchorPath,
+                    () =>
+                    {
+                        var pathOptions = new List<FloatMenuOption>
+                        {
+                            new FloatMenuOption("CS_Studio_None".Translate(), () =>
+                            {
+                                CaptureUndoSnapshot();
+                                renderData.anchorPath = string.Empty;
+                                MarkEquipmentDirty();
+                            })
+                        };
+
+                        if (cachedRootSnapshot != null)
+                        {
+                            var collectedPaths = new List<string>();
+                            CollectNodePaths(cachedRootSnapshot, collectedPaths);
+                            foreach (var path in collectedPaths.Where(p => !string.IsNullOrWhiteSpace(p))
+                                .OrderBy(p => p, StringComparer.OrdinalIgnoreCase))
+                            {
+                                string localPath = path;
+                                pathOptions.Add(new FloatMenuOption(localPath, () =>
+                                {
+                                    CaptureUndoSnapshot();
+                                    renderData.anchorPath = localPath;
+                                    MarkEquipmentDirty();
+                                }));
+                            }
+                        }
+
+                        Find.WindowStack.Add(new FloatMenu(pathOptions));
+                    });
 
                 string[] directionalFacingOptions = { string.Empty, "South", "North", "East", "West", "EastWest" };
                 UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Variant_DirectionalFacing".Translate(), renderData.directionalFacing ?? string.Empty,
@@ -536,7 +563,8 @@ namespace CharacterStudio.UI
                 }
             }
 
-            if (DrawCollapsibleSection(ref y, width, "CS_Studio_Equip_Section_VisualTransform".Translate(), "EquipmentVisualTransform"))
+            // ── Equipment 标签：视觉变换 ──
+            if (equipmentMode && DrawCollapsibleSection(ref y, width, "CS_Studio_Equip_Section_VisualTransform".Translate(), "EquipmentVisualTransform"))
             {
                 Vector3 editableOffset = GetEditableLayerOffsetForPreview(renderData);
 
@@ -676,7 +704,8 @@ namespace CharacterStudio.UI
                 }
             }
 
-            if (DrawCollapsibleSection(ref y, width, "CS_Studio_Equip_Section_TriggeredAnimation".Translate(), "EquipmentTriggeredAnimation"))
+            // ── Equipment 标签：触发动画 ──
+            if (equipmentMode && DrawCollapsibleSection(ref y, width, "CS_Studio_Equip_Section_TriggeredAnimation".Translate(), "EquipmentTriggeredAnimation"))
             {
                 bool useTriggered = renderData.useTriggeredLocalAnimation;
                 UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Equip_TriggeredAnimation_Enable".Translate(), ref useTriggered);
@@ -689,6 +718,31 @@ namespace CharacterStudio.UI
 
                 if (renderData.useTriggeredLocalAnimation)
                 {
+                    // ── 预设选择器 ──
+                    DrawSelectionPropertyButton(
+                        ref y,
+                        width,
+                        "CS_Studio_Equip_SwingPreset".Translate(),
+                        "CS_Studio_Equip_SwingPreset_None".Translate(),
+                        () =>
+                        {
+                            var options = new List<FloatMenuOption>
+                            {
+                                new FloatMenuOption("CS_Studio_Equip_SwingPreset_None".Translate(), () => { })
+                            };
+                            foreach (var preset in WeaponSwingPresetLibrary.Presets)
+                            {
+                                var localPreset = preset;
+                                options.Add(new FloatMenuOption(preset.nameKey.Translate(), () =>
+                                {
+                                    CaptureUndoSnapshot();
+                                    localPreset.ApplyTo(renderData);
+                                    MarkEquipmentDirty();
+                                }));
+                            }
+                            Find.WindowStack.Add(new FloatMenu(options));
+                        });
+
                     Rect pivotToggleRect = new Rect(0f, y, 110f, 24f);
                     if (Widgets.ButtonText(pivotToggleRect, (equipmentPivotEditMode ? "CS_Studio_Equip_Btn_DisablePivotEdit" : "CS_Studio_Equip_Btn_EnablePivotEdit").Translate()))
                     {
@@ -701,17 +755,9 @@ namespace CharacterStudio.UI
                         ref y,
                         width,
                         "CS_Studio_Equip_TriggeredAbilityDefName".Translate(),
-                        GetAbilitySelectionLabel(renderData.triggerAbilityDefName, workingAbilities ?? Enumerable.Empty<ModularAbilityDef>()),
-                        () => ShowEquipmentTriggeredAbilitySelector(renderData, workingAbilities ?? Enumerable.Empty<ModularAbilityDef>(), () => MarkEquipmentDirty(false)));
+                        GetAbilitySelectionLabel(renderData.triggerAbilityDefName, workingDocument?.characterDefinition?.abilityLoadout?.abilities ?? Enumerable.Empty<ModularAbilityDef>()),
+                        () => ShowEquipmentTriggeredAbilitySelector(renderData, workingDocument?.characterDefinition?.abilityLoadout?.abilities ?? Enumerable.Empty<ModularAbilityDef>(), () => MarkEquipmentDirty(false)));
 
-                    string triggerAbilityDefName = renderData.triggerAbilityDefName ?? string.Empty;
-                    UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_TriggeredAbilityDefName".Translate() + " Raw", ref triggerAbilityDefName);
-                    if (triggerAbilityDefName != (renderData.triggerAbilityDefName ?? string.Empty))
-                    {
-                        CaptureUndoSnapshot();
-                        renderData.triggerAbilityDefName = triggerAbilityDefName;
-                        MarkEquipmentDirty(false);
-                    }
                     string animationGroupKey = renderData.animationGroupKey ?? string.Empty;
                     UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_TriggeredAnimationGroupKey".Translate(), ref animationGroupKey);
                     if (animationGroupKey != (renderData.animationGroupKey ?? string.Empty))
@@ -780,6 +826,12 @@ namespace CharacterStudio.UI
                 }
             }
 
+            // ── Equipment 标签：皮肤级动画配置 ──
+            if (equipmentMode)
+            {
+                DrawSkinAnimationSections(ref y, width);
+            }
+
             Widgets.EndScrollView();
         }
 
@@ -822,14 +874,13 @@ namespace CharacterStudio.UI
                 markEquipmentDirty(false);
             }
 
-            string triggerAbilityDefName = overrideData.triggerAbilityDefName ?? string.Empty;
-            UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_Override_TriggerAbilityDefName".Translate(), ref triggerAbilityDefName);
-            if (triggerAbilityDefName != (overrideData.triggerAbilityDefName ?? string.Empty))
-            {
-                CaptureUndoSnapshot();
-                overrideData.triggerAbilityDefName = triggerAbilityDefName;
-                markEquipmentDirty(false);
-            }
+            string triggerAbilityDisplay = GetAbilitySelectionLabel(overrideData.triggerAbilityDefName, workingDocument?.characterDefinition?.abilityLoadout?.abilities ?? Enumerable.Empty<ModularAbilityDef>());
+            DrawSelectionPropertyButton(
+                ref y,
+                width,
+                "CS_Studio_Equip_Override_TriggerAbilityDefName".Translate(),
+                triggerAbilityDisplay,
+                () => ShowEquipmentTriggeredAbilitySelector(overrideData, workingDocument?.characterDefinition?.abilityLoadout?.abilities ?? Enumerable.Empty<ModularAbilityDef>(), () => markEquipmentDirty(false)));
 
             string animationGroupKey = overrideData.animationGroupKey ?? string.Empty;
             UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Equip_Override_AnimGroupKey".Translate(), ref animationGroupKey);
@@ -968,6 +1019,278 @@ namespace CharacterStudio.UI
                 overrideData.triggeredVisibleOutsideCycle = visibleOutsideCycle;
                 markEquipmentDirty(false);
             }
+        }
+
+        private static string GetThingDefSelectionLabel(string? defName)
+        {
+            if (string.IsNullOrWhiteSpace(defName))
+            {
+                return "CS_Studio_None".Translate();
+            }
+
+            ThingDef def = DefDatabase<ThingDef>.GetNamedSilentFail(defName);
+            if (def == null)
+            {
+                return defName ?? string.Empty;
+            }
+
+            string label = def.label ?? def.defName;
+            return $"{label} ({def.defName})";
+        }
+
+        private static string GetRecipeDefSelectionLabel(string? defName)
+        {
+            if (string.IsNullOrWhiteSpace(defName))
+            {
+                return "CS_Studio_None".Translate();
+            }
+
+            RecipeDef def = DefDatabase<RecipeDef>.GetNamedSilentFail(defName);
+            if (def == null)
+            {
+                return defName ?? string.Empty;
+            }
+
+            string label = def.label ?? def.defName;
+            return $"{label} ({def.defName})";
+        }
+
+        private void ShowThingDefSelector(Action<string> onSelected)
+        {
+            var sortedDefs = DefDatabase<ThingDef>.AllDefsListForReading
+                .OrderBy(def => def.label ?? def.defName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            Find.WindowStack.Add(new Dialog_DefBrowser<ThingDef>(
+                "CS_Studio_Equip_SelectThingDef".Translate(),
+                sortedDefs,
+                def => onSelected(def.defName),
+                def => def.label ?? def.defName,
+                def =>
+                {
+                    var parts = new List<string>();
+                    if (!string.IsNullOrWhiteSpace(def.description?.Trim()))
+                        parts.Add(def.description.StripTags().Truncate(120));
+                    if (def.FirstThingCategory != null)
+                        parts.Add(def.FirstThingCategory.LabelCap);
+                    return string.Join(" | ", parts);
+                }));
+        }
+
+        private void ShowRecipeDefSelector(Action<string> onSelected)
+        {
+            var sortedDefs = DefDatabase<RecipeDef>.AllDefsListForReading
+                .OrderBy(def => def.label ?? def.defName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            Find.WindowStack.Add(new Dialog_DefBrowser<RecipeDef>(
+                "CS_Studio_Equip_SelectRecipeDef".Translate(),
+                sortedDefs,
+                def => onSelected(def.defName),
+                def => def.label ?? def.defName,
+                def =>
+                {
+                    var parts = new List<string>();
+                    if (def.ProducedThingDef != null)
+                        parts.Add($"→ {def.ProducedThingDef.LabelCap}");
+                    return string.Join(" | ", parts);
+                }));
+        }
+
+        private void ShowBodyPartGroupDefSelector(Action<string> onSelected, CharacterEquipmentDef equipment)
+        {
+            var options = new List<FloatMenuOption>
+            {
+                new FloatMenuOption("CS_Studio_None".Translate(), () =>
+                {
+                    MutateWithUndo(() => equipment.bodyPartGroups = new List<string>(), refreshPreview: true, refreshRenderTree: false);
+                })
+            };
+
+            var sortedDefs = DefDatabase<BodyPartGroupDef>.AllDefsListForReading
+                .Where(def => def != null)
+                .OrderBy(def => def.label ?? def.defName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            foreach (var def in sortedDefs)
+            {
+                var localDef = def;
+                string label = string.IsNullOrWhiteSpace(localDef.label) ? localDef.defName : localDef.label;
+                bool alreadySelected = equipment.bodyPartGroups?.Contains(localDef.defName) == true;
+                string prefix = alreadySelected ? "✓ " : "  ";
+                options.Add(new FloatMenuOption($"{prefix}{label} [{localDef.defName}]", () =>
+                {
+                    onSelected(localDef.defName);
+                }));
+            }
+
+            Find.WindowStack.Add(new FloatMenu(options));
+        }
+
+        private void ShowApparelLayerDefSelector(Action<string> onSelected, CharacterEquipmentDef equipment)
+        {
+            var options = new List<FloatMenuOption>
+            {
+                new FloatMenuOption("CS_Studio_None".Translate(), () =>
+                {
+                    MutateWithUndo(() => equipment.apparelLayers = new List<string>(), refreshPreview: true, refreshRenderTree: false);
+                })
+            };
+
+            var sortedDefs = DefDatabase<ApparelLayerDef>.AllDefsListForReading
+                .Where(def => def != null)
+                .OrderBy(def => def.label ?? def.defName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            foreach (var def in sortedDefs)
+            {
+                var localDef = def;
+                string label = string.IsNullOrWhiteSpace(localDef.label) ? localDef.defName : localDef.label;
+                bool alreadySelected = equipment.apparelLayers?.Contains(localDef.defName) == true;
+                string prefix = alreadySelected ? "✓ " : "  ";
+                options.Add(new FloatMenuOption($"{prefix}{label} [{localDef.defName}]", () =>
+                {
+                    onSelected(localDef.defName);
+                }));
+            }
+
+            Find.WindowStack.Add(new FloatMenu(options));
+        }
+
+        private void ShowEquipmentTriggeredAbilitySelector(EquipmentTriggeredAnimationOverride overrideData, IEnumerable<ModularAbilityDef> availableAbilities, Action onChanged)
+        {
+            List<FloatMenuOption> options = new List<FloatMenuOption>
+            {
+                new FloatMenuOption("CS_Studio_None".Translate(), () =>
+                {
+                    CaptureUndoSnapshot();
+                    overrideData.triggerAbilityDefName = string.Empty;
+                    onChanged?.Invoke();
+                })
+            };
+
+            foreach (ModularAbilityDef ability in availableAbilities
+                .Where(ability => ability != null && !string.IsNullOrWhiteSpace(ability.defName))
+                .OrderBy(ability => ability.label ?? ability.defName, StringComparer.OrdinalIgnoreCase))
+            {
+                ModularAbilityDef localAbility = ability;
+                string label = GetAbilitySelectionLabel(localAbility.defName, availableAbilities);
+                options.Add(new FloatMenuOption(label, () =>
+                {
+                    CaptureUndoSnapshot();
+                    overrideData.triggerAbilityDefName = localAbility.defName;
+                    onChanged?.Invoke();
+                }));
+            }
+
+            Find.WindowStack.Add(new FloatMenu(options));
+        }
+
+        private void DrawAbilityBindingList(ref float y, float width, CharacterEquipmentDef equipment)
+        {
+            equipment.abilityDefNames ??= new List<string>();
+            IEnumerable<ModularAbilityDef> availableAbilities = workingDocument?.characterDefinition?.abilityLoadout?.abilities
+                ?? Enumerable.Empty<ModularAbilityDef>();
+            List<ModularAbilityDef> sortedAbilities = availableAbilities
+                .Where(ability => ability != null && !string.IsNullOrWhiteSpace(ability.defName))
+                .OrderBy(ability => ability.label ?? ability.defName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (sortedAbilities.Count == 0)
+            {
+                UIHelper.DrawInfoBanner(ref y, width, "CS_Studio_Equip_NoAbilitiesToBind".Translate(), accent: false);
+                return;
+            }
+
+            foreach (ModularAbilityDef ability in sortedAbilities)
+            {
+                string defName = ability.defName;
+                bool bound = equipment.abilityDefNames.Contains(defName);
+                bool newBound = bound;
+                UIHelper.DrawPropertyCheckbox(ref y, width, $"{(ability.label ?? defName)} [{defName}]", ref newBound);
+                if (newBound != bound)
+                {
+                    MutateWithUndo(() =>
+                    {
+                        if (newBound)
+                        {
+                            if (!equipment.abilityDefNames.Contains(defName))
+                            {
+                                equipment.abilityDefNames.Add(defName);
+                            }
+                        }
+                        else
+                        {
+                            equipment.abilityDefNames.RemoveAll(x => string.Equals(x, defName, StringComparison.OrdinalIgnoreCase));
+                        }
+                    }, refreshPreview: true, refreshRenderTree: false);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 递归收集渲染树节点路径
+        /// </summary>
+        private static void CollectNodePaths(Introspection.RenderNodeSnapshot node, List<string> paths)
+        {
+            if (node == null) return;
+            if (!string.IsNullOrWhiteSpace(node.uniqueNodePath))
+                paths.Add(node.uniqueNodePath);
+            if (node.children != null)
+            {
+                foreach (var child in node.children)
+                    CollectNodePaths(child, paths);
+            }
+        }
+
+        /// <summary>
+        /// 打开技能 XML 导入对话框，将导入的技能添加到当前文档的技能池
+        /// </summary>
+        private void OpenAbilityXmlImportDialog()
+        {
+            string defaultDir = System.IO.Path.Combine(
+                Verse.GenFilePaths.ConfigFolderPath, "CharacterStudio", "Abilities");
+            string initialPath = System.IO.Directory.Exists(defaultDir) ? defaultDir : string.Empty;
+
+            Find.WindowStack.Add(new Dialog_FileBrowser(initialPath, selectedPath =>
+            {
+                string normalizedPath = selectedPath?.Trim().Trim('"') ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(normalizedPath) || !System.IO.File.Exists(normalizedPath))
+                    return;
+
+                try
+                {
+                    var doc = System.Xml.Linq.XDocument.Load(normalizedPath);
+                    var importedAbilities = Exporter.AbilityXmlSerialization.ParseAbilities(doc.Root);
+
+                    if (importedAbilities == null || importedAbilities.Count == 0)
+                    {
+                        ShowStatus("CS_Studio_Equip_NoAbilitiesImported".Translate());
+                        return;
+                    }
+
+                    workingDocument.characterDefinition ??= new CharacterDefinition();
+                    workingDocument.characterDefinition.abilityLoadout ??= new CharacterAbilityLoadout();
+                    workingDocument.characterDefinition.abilityLoadout.abilities ??= new List<ModularAbilityDef>();
+
+                    foreach (var ability in importedAbilities)
+                    {
+                        if (ability == null || string.IsNullOrWhiteSpace(ability.defName)) continue;
+                        if (!workingDocument.characterDefinition.abilityLoadout.abilities
+                            .Any(a => string.Equals(a.defName, ability.defName, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            workingDocument.characterDefinition.abilityLoadout.abilities.Add(ability);
+                        }
+                    }
+
+                    ShowStatus("CS_Studio_Equip_AbilitiesImported".Translate(importedAbilities.Count));
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"[CharacterStudio] 导入技能 XML 失败: {ex.Message}");
+                    ShowStatus("CS_Studio_Equip_AbilityImportFailed".Translate());
+                }
+            }, "*.xml", defaultRoot: defaultDir));
         }
     }
 }

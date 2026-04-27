@@ -10,9 +10,95 @@ using Verse;
 
 namespace CharacterStudio.Abilities
 {
-    public class AbilityVisualEffectConfig
+    public class AbilityVisualEffectConfig : IExposable
     {
         public AbilityVisualEffectType type = AbilityVisualEffectType.DustPuff;
+
+        public void ExposeData()
+        {
+            Scribe_Values.Look(ref type, "type", AbilityVisualEffectType.DustPuff);
+            Scribe_Values.Look(ref spatialMode, "spatialMode", AbilityVisualSpatialMode.Point);
+            Scribe_Values.Look(ref anchorMode, "anchorMode", AbilityVisualAnchorMode.Target);
+            Scribe_Values.Look(ref secondaryAnchorMode, "secondaryAnchorMode", AbilityVisualAnchorMode.Target);
+            Scribe_Values.Look(ref pathMode, "pathMode", AbilityVisualPathMode.None);
+            Scribe_Values.Look(ref textureSource, "textureSource", AbilityVisualEffectTextureSource.Vanilla);
+            Scribe_Values.Look(ref sourceMode, "sourceMode", AbilityVisualEffectSourceMode.BuiltIn);
+            Scribe_Values.Look(ref presetDefName, "presetDefName", string.Empty);
+            Scribe_Values.Look(ref customTexturePath, "customTexturePath", string.Empty);
+            Scribe_Values.Look(ref fleckDefName, "fleckDefName", string.Empty);
+            Scribe_Values.Look(ref target, "target", VisualEffectTarget.Target);
+            Scribe_Values.Look(ref trigger, "trigger", AbilityVisualEffectTrigger.OnTargetApply);
+            Scribe_Values.Look(ref delayTicks, "delayTicks", 0);
+            Scribe_Values.Look(ref displayDurationTicks, "displayDurationTicks", 27);
+            Scribe_Values.Look(ref linkedExpression, "linkedExpression", null);
+            Scribe_Values.Look(ref linkedExpressionDurationTicks, "linkedExpressionDurationTicks", 30);
+            Scribe_Values.Look(ref linkedPupilBrightnessOffset, "linkedPupilBrightnessOffset", 0f);
+            Scribe_Values.Look(ref linkedPupilContrastOffset, "linkedPupilContrastOffset", 0f);
+            Scribe_Values.Look(ref scale, "scale", 1.0f);
+            Scribe_Values.Look(ref drawSize, "drawSize", 1.5f);
+            Scribe_Values.Look(ref facingMode, "facingMode", AbilityVisualFacingMode.None);
+            Scribe_Values.Look(ref useCasterFacing, "useCasterFacing", false);
+            Scribe_Values.Look(ref forwardOffset, "forwardOffset", 0f);
+            Scribe_Values.Look(ref sideOffset, "sideOffset", 0f);
+            Scribe_Values.Look(ref heightOffset, "heightOffset", 0f);
+            Scribe_Values.Look(ref rotation, "rotation", 0f);
+            Scribe_Values.Look(ref textureScale, "textureScale", Vector2.one);
+            Scribe_Values.Look(ref lineWidth, "lineWidth", 0.35f);
+            Scribe_Values.Look(ref wallHeight, "wallHeight", 2.5f);
+            Scribe_Values.Look(ref wallThickness, "wallThickness", 0.2f);
+            Scribe_Values.Look(ref tileByLength, "tileByLength", true);
+            Scribe_Values.Look(ref followGround, "followGround", false);
+            Scribe_Values.Look(ref lineRenderMode, "lineRenderMode", AbilityLineRenderMode.VanillaConnectingLine);
+            Scribe_Values.Look(ref segmentCount, "segmentCount", 1);
+            Scribe_Values.Look(ref revealBySegments, "revealBySegments", false);
+            Scribe_Values.Look(ref segmentRevealIntervalTicks, "segmentRevealIntervalTicks", 3);
+            Scribe_Values.Look(ref repeatCount, "repeatCount", 1);
+            Scribe_Values.Look(ref repeatIntervalTicks, "repeatIntervalTicks", 0);
+            Scribe_Values.Look(ref offset, "offset", Vector3.zero);
+            Scribe_Values.Look(ref playSound, "playSound", false);
+            Scribe_Values.Look(ref soundDefName, "soundDefName", string.Empty);
+            Scribe_Values.Look(ref soundDelayTicks, "soundDelayTicks", 0);
+            Scribe_Values.Look(ref soundVolume, "soundVolume", 1f);
+            Scribe_Values.Look(ref soundPitch, "soundPitch", 1f);
+            Scribe_Values.Look(ref attachToPawn, "attachToPawn", false);
+            Scribe_Values.Look(ref attachToTargetCell, "attachToTargetCell", false);
+            Scribe_Values.Look(ref enabled, "enabled", true);
+            Scribe_Values.Look(ref vfxSourceLayerName, "vfxSourceLayerName", string.Empty);
+            Scribe_Values.Look(ref enableFrameAnimation, "enableFrameAnimation", false);
+            Scribe_Values.Look(ref frameCount, "frameCount", 2);
+            Scribe_Values.Look(ref frameIntervalTicks, "frameIntervalTicks", 3);
+            Scribe_Values.Look(ref frameLoop, "frameLoop", true);
+            Scribe_Values.Look(ref assetBundlePath, "assetBundlePath", string.Empty);
+            Scribe_Values.Look(ref assetBundleEffectName, "assetBundleEffectName", string.Empty);
+            Scribe_Values.Look(ref assetBundleTextureName, "assetBundleTextureName", string.Empty);
+            Scribe_Values.Look(ref assetBundleEffectScale, "assetBundleEffectScale", 1.0f);
+            Scribe_Values.Look(ref bundleRenderStrategy, "bundleRenderStrategy", VfxBundleRenderStrategy.Default);
+            Scribe_Values.Look(ref shaderPath, "shaderPath", string.Empty);
+            Scribe_Values.Look(ref shaderAssetBundlePath, "shaderAssetBundlePath", string.Empty);
+            Scribe_Values.Look(ref shaderAssetBundleShaderName, "shaderAssetBundleShaderName", string.Empty);
+            Scribe_Values.Look(ref shaderLoadFromAssetBundle, "shaderLoadFromAssetBundle", false);
+            Scribe_Values.Look(ref shaderTexturePath, "shaderTexturePath", string.Empty);
+            Scribe_Values.Look(ref shaderTintColor, "shaderTintColor", Color.white);
+            Scribe_Values.Look(ref shaderIntensity, "shaderIntensity", 1f);
+            Scribe_Values.Look(ref shaderSpeed, "shaderSpeed", 1f);
+            Scribe_Values.Look(ref shaderParam1, "shaderParam1", 0f);
+            Scribe_Values.Look(ref shaderParam2, "shaderParam2", 0f);
+            Scribe_Values.Look(ref shaderParam3, "shaderParam3", 0f);
+            Scribe_Values.Look(ref shaderParam4, "shaderParam4", 0f);
+            Scribe_Values.Look(ref globalFilterMode, "globalFilterMode", string.Empty);
+            Scribe_Values.Look(ref globalFilterTransition, "globalFilterTransition", string.Empty);
+            Scribe_Values.Look(ref globalFilterTransitionTicks, "globalFilterTransitionTicks", 0);
+            Scribe_Values.Look(ref meshShape, "meshShape", VfxMeshShape.LightningBolt);
+            Scribe_Values.Look(ref meshSize, "meshSize", 3f);
+            Scribe_Values.Look(ref meshSecondarySize, "meshSecondarySize", 0.3f);
+            Scribe_Values.Look(ref meshSegments, "meshSegments", 8);
+            Scribe_Values.Look(ref meshParam1, "meshParam1", 0.5f);
+            Scribe_Values.Look(ref meshParam2, "meshParam2", 1.5f);
+            Scribe_Values.Look(ref meshShaderName, "meshShaderName", string.Empty);
+            Scribe_Values.Look(ref meshTexturePath, "meshTexturePath", string.Empty);
+            Scribe_Values.Look(ref meshFadeInTicks, "meshFadeInTicks", 3);
+        }
+
         public AbilityVisualSpatialMode spatialMode = AbilityVisualSpatialMode.Point;
         public AbilityVisualAnchorMode anchorMode = AbilityVisualAnchorMode.Target;
         public AbilityVisualAnchorMode secondaryAnchorMode = AbilityVisualAnchorMode.Target;
@@ -21,6 +107,7 @@ namespace CharacterStudio.Abilities
         public AbilityVisualEffectSourceMode sourceMode = AbilityVisualEffectSourceMode.BuiltIn;
         public string presetDefName = string.Empty;
         public string customTexturePath = string.Empty;
+        public string fleckDefName = string.Empty;
         public VisualEffectTarget target = VisualEffectTarget.Target;
         public AbilityVisualEffectTrigger trigger = AbilityVisualEffectTrigger.OnTargetApply;
         public int delayTicks = 0;
@@ -43,6 +130,7 @@ namespace CharacterStudio.Abilities
         public float wallThickness = 0.2f;
         public bool tileByLength = true;
         public bool followGround = false;
+        public AbilityLineRenderMode lineRenderMode = AbilityLineRenderMode.VanillaConnectingLine;
         public int segmentCount = 1;
         public bool revealBySegments = false;
         public int segmentRevealIntervalTicks = 3;
@@ -97,10 +185,41 @@ namespace CharacterStudio.Abilities
         public string globalFilterTransition = string.Empty;
         public int globalFilterTransitionTicks = 0;
 
-        public bool UsesBuiltInType => type != AbilityVisualEffectType.Preset && type != AbilityVisualEffectType.CustomTexture && type != AbilityVisualEffectType.GlobalFilter;
+        // Custom Mesh VFX fields
+        /// <summary>Mesh 形状类型，仅当 type == CustomMesh 时有效。</summary>
+        public VfxMeshShape meshShape = VfxMeshShape.LightningBolt;
+
+        /// <summary>Mesh 主尺寸（闪电=高度, 环=外半径, 螺旋=高度, 光束=长度）。</summary>
+        public float meshSize = 3f;
+
+        /// <summary>Mesh 副尺寸（闪电=宽度, 环=内半径, 螺旋=半径, 光束=起始宽度）。</summary>
+        public float meshSecondarySize = 0.3f;
+
+        /// <summary>闪电锯齿段数 / 环细分数 / 螺旋段数 / 光束段数。</summary>
+        public int meshSegments = 8;
+
+        /// <summary>闪电锯齿偏移量 / 螺旋带宽度 / 光束结束宽度。</summary>
+        public float meshParam1 = 0.5f;
+
+        /// <summary>螺旋旋转圈数。</summary>
+        public float meshParam2 = 1.5f;
+
+        /// <summary>材质 Shader 路径。留空则使用 MoteGlow（发光效果）。</summary>
+        public string meshShaderName = string.Empty;
+
+        /// <summary>贴图路径，叠加在 Mesh 上作为纹理。留空则使用纯色。</summary>
+        public string meshTexturePath = string.Empty;
+
+        /// <summary>Mesh 淡入 tick 数。</summary>
+        public int meshFadeInTicks = 3;
+
+        public bool UsesBuiltInType => type != AbilityVisualEffectType.Preset && type != AbilityVisualEffectType.CustomTexture && type != AbilityVisualEffectType.GlobalFilter && type != AbilityVisualEffectType.CustomMesh && type != AbilityVisualEffectType.Fleck && type != AbilityVisualEffectType.FleckConnectingLine;
         public bool UsesPresetType => type == AbilityVisualEffectType.Preset;
         public bool UsesCustomTextureType => type == AbilityVisualEffectType.CustomTexture;
         public bool IsGlobalFilterType => type == AbilityVisualEffectType.GlobalFilter;
+        public bool UsesCustomMeshType => type == AbilityVisualEffectType.CustomMesh;
+        public bool UsesFleckType => type == AbilityVisualEffectType.Fleck || type == AbilityVisualEffectType.FleckConnectingLine;
+        public bool RequiresFleckDef => UsesFleckType;
         public bool UsesSpatialLine => type == AbilityVisualEffectType.LineTexture || spatialMode == AbilityVisualSpatialMode.Line;
         public bool UsesSpatialWall => type == AbilityVisualEffectType.WallTexture || spatialMode == AbilityVisualSpatialMode.Wall;
         public bool RequiresTexturePath => UsesCustomTextureType || type == AbilityVisualEffectType.LineTexture || type == AbilityVisualEffectType.WallTexture;
@@ -135,6 +254,11 @@ namespace CharacterStudio.Abilities
             if (!System.Enum.IsDefined(typeof(AbilityVisualFacingMode), facingMode))
             {
                 facingMode = useCasterFacing ? AbilityVisualFacingMode.CasterFacing : AbilityVisualFacingMode.None;
+            }
+
+            if (!System.Enum.IsDefined(typeof(AbilityLineRenderMode), lineRenderMode))
+            {
+                lineRenderMode = AbilityLineRenderMode.VanillaConnectingLine;
             }
 
             if (facingMode == AbilityVisualFacingMode.None && useCasterFacing)

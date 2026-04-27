@@ -1,3 +1,4 @@
+using System.IO;
 using CharacterStudio.Core;
 using UnityEngine;
 using Verse;
@@ -13,6 +14,30 @@ namespace CharacterStudio
         {
             ModContent = content;
             Settings = GetSettings<CharacterStudioSettings>();
+            EnsureTexturesDirectoryExists(content);
+        }
+
+        /// <summary>
+        /// 确保 mod 目录下的 Textures 文件夹存在。
+        /// RimWorld 启动时自动扫描每个 mod 的 Textures/ 目录并载入其中的纹理，
+        /// 用户事先放入的 PNG/JPG 会通过原版 ContentFinder 管线加载，
+        /// 无需运行时磁盘 I/O（RuntimeAssetLoader），渲染性能更优。
+        /// </summary>
+        private static void EnsureTexturesDirectoryExists(ModContentPack content)
+        {
+            try
+            {
+                string texturesDir = Path.Combine(content.RootDir, "Textures");
+                if (!Directory.Exists(texturesDir))
+                {
+                    Directory.CreateDirectory(texturesDir);
+                    Log.Message($"[CharacterStudio] 已创建 Textures 目录: {texturesDir}");
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Log.Warning($"[CharacterStudio] 创建 Textures 目录失败: {ex.Message}");
+            }
         }
 
         public override string SettingsCategory()

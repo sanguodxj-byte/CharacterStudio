@@ -1,445 +1,605 @@
-// ─────────────────────────────────────────────
-// 运行时组件配置（热键覆写、护盾、飞行、弹跳等）
-// 从 ModularAbilityDef.cs 提取
-// ─────────────────────────────────────────────
-
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Xml;
 using CharacterStudio.Core;
 using RimWorld;
 using Verse;
+using UnityEngine;
 
 namespace CharacterStudio.Abilities
 {
-    public class AbilityRuntimeComponentConfig
+    /// <summary>
+    /// 运行时组件配置基类
+    /// 为兼容现有的 UI 和逻辑代码，保留所有字段。
+    /// 子类应只提供类型声明和特有验证，不应重新定义字段以免发生 CS0108。
+    /// </summary>
+    public class AbilityRuntimeComponentConfig : IExposable
     {
-        public AbilityRuntimeComponentType type;
-        public bool enabled = true;
+        private static readonly Dictionary<string, FieldInfo> XmlFieldMap = typeof(AbilityRuntimeComponentConfig)
+            .GetFields(BindingFlags.Instance | BindingFlags.Public)
+            .Where(static field => !field.IsStatic)
+            .ToDictionary(static field => field.Name, StringComparer.OrdinalIgnoreCase);
 
-        public int comboWindowTicks = 12;
-        public AbilityRuntimeHotkeySlot comboTargetHotkeySlot = AbilityRuntimeHotkeySlot.W;
-        public string comboTargetAbilityDefName = string.Empty;
-        public AbilityRuntimeHotkeySlot overrideHotkeySlot = AbilityRuntimeHotkeySlot.Q;
-        public string overrideAbilityDefName = string.Empty;
-        public int overrideDurationTicks = 60;
-        public AbilityRuntimeHotkeySlot followupCooldownHotkeySlot = AbilityRuntimeHotkeySlot.Q;
-        public int followupCooldownTicks = 60;
-        public AbilityRuntimeHotkeySlot killRefreshHotkeySlot = AbilityRuntimeHotkeySlot.Q;
+        private AbilityRuntimeComponentType loadedTypeValue = AbilityRuntimeComponentType.SlotOverrideWindow;
+        private bool loadedTypeInitialized;
+
+        public virtual AbilityRuntimeComponentType type => loadedTypeInitialized ? loadedTypeValue : AbilityRuntimeComponentType.SlotOverrideWindow;
+        public virtual float EditorBlockHeight { get; } = 100f;
+        public virtual bool IsSingleton { get; } = false;
+
+    [EditorField("CS_Studio_Runtime_Enabled", AbilityRuntimeComponentType.SlotOverrideWindow)]
+    public bool enabled = true;
+
+    // SlotOverride
+    [EditorField("CS_Studio_Runtime_ComboWindowTicks", AbilityRuntimeComponentType.SlotOverrideWindow)]
+    public int comboWindowTicks = 12;
+    [EditorField("CS_Studio_Runtime_ComboTargetHotkeySlot", AbilityRuntimeComponentType.SlotOverrideWindow)]
+    public AbilityRuntimeHotkeySlot comboTargetHotkeySlot = AbilityRuntimeHotkeySlot.None;
+    [EditorField("CS_Studio_Runtime_ComboTargetAbilityDefName", AbilityRuntimeComponentType.SlotOverrideWindow)]
+    public string comboTargetAbilityDefName = string.Empty;
+
+    // HotkeyOverride
+    [EditorField("CS_Studio_Runtime_OverrideHotkeySlot", AbilityRuntimeComponentType.HotkeyOverride)]
+    public AbilityRuntimeHotkeySlot overrideHotkeySlot = AbilityRuntimeHotkeySlot.None;
+    [EditorField("CS_Studio_Runtime_OverrideAbilityDefName", AbilityRuntimeComponentType.HotkeyOverride)]
+    public string overrideAbilityDefName = string.Empty;
+    [EditorField("CS_Studio_Runtime_OverrideDurationTicks", AbilityRuntimeComponentType.HotkeyOverride)]
+    public int overrideDurationTicks = 60;
+
+    // CooldownGate
+    [EditorField("CS_Studio_Runtime_FollowupCooldownHotkeySlot", AbilityRuntimeComponentType.FollowupCooldownGate)]
+    public AbilityRuntimeHotkeySlot followupCooldownHotkeySlot = AbilityRuntimeHotkeySlot.None;
+    [EditorField("CS_Studio_Runtime_FollowupCooldownTicks", AbilityRuntimeComponentType.FollowupCooldownGate)]
+    public int followupCooldownTicks = 60;
+    [EditorField("CS_Studio_Runtime_MaxComboFollowupDelayTicks", AbilityRuntimeComponentType.FollowupCooldownGate, Min = -1f, Max = 9999f)]
+    public int maxComboFollowupDelayTicks = 180;
+    [EditorField("CS_Studio_Runtime_CooldownPunishScale", AbilityRuntimeComponentType.FollowupCooldownGate, Min = 0.5f, Max = 50f)]
+    public float cooldownPunishScale = 1.0f;
+
+        // Jump / SmartJump
+        [EditorField("CS_Studio_Runtime_CooldownTicks", AbilityRuntimeComponentType.SmartJump)]
         public int cooldownTicks = 120;
+        [EditorField("CS_Studio_Runtime_JumpDistance", AbilityRuntimeComponentType.SmartJump)]
         public int jumpDistance = 6;
+        [EditorField("CS_Studio_Runtime_FindCellRadius", AbilityRuntimeComponentType.SmartJump)]
         public int findCellRadius = 3;
+        [EditorField("CS_Studio_Runtime_TriggerEffectsAfterJump", AbilityRuntimeComponentType.SmartJump)]
         public bool triggerAbilityEffectsAfterJump = true;
+        [EditorField("CS_Studio_Runtime_UseMouseTargetCell", AbilityRuntimeComponentType.SmartJump)]
         public bool useMouseTargetCell = true;
+        [EditorField("CS_Studio_Runtime_SmartCastOffsetCells", AbilityRuntimeComponentType.SmartJump)]
         public int smartCastOffsetCells = 1;
+        [EditorField("CS_Studio_Runtime_SmartCastClampToMaxDistance", AbilityRuntimeComponentType.SmartJump)]
         public bool smartCastClampToMaxDistance = true;
+        [EditorField("CS_Studio_Runtime_SmartCastAllowFallbackForward", AbilityRuntimeComponentType.SmartJump)]
         public bool smartCastAllowFallbackForward = true;
+
+        // RStack
+        [EditorField("CS_Studio_Runtime_RequiredStacks", AbilityRuntimeComponentType.RStackDetonation)]
         public int requiredStacks = 7;
+        [EditorField("CS_Studio_Runtime_DelayTicks", AbilityRuntimeComponentType.RStackDetonation)]
         public int delayTicks = 180;
+        [EditorField("CS_Studio_Runtime_Wave1Radius", AbilityRuntimeComponentType.RStackDetonation)]
         public float wave1Radius = 3f;
+        [EditorField("CS_Studio_Runtime_Wave1Damage", AbilityRuntimeComponentType.RStackDetonation)]
         public float wave1Damage = 80f;
+        [EditorField("CS_Studio_Runtime_Wave2Radius", AbilityRuntimeComponentType.RStackDetonation)]
         public float wave2Radius = 6f;
+        [EditorField("CS_Studio_Runtime_Wave2Damage", AbilityRuntimeComponentType.RStackDetonation)]
         public float wave2Damage = 140f;
+        [EditorField("CS_Studio_Runtime_Wave3Radius", AbilityRuntimeComponentType.RStackDetonation)]
         public float wave3Radius = 9f;
+        [EditorField("CS_Studio_Runtime_Wave3Damage", AbilityRuntimeComponentType.RStackDetonation)]
         public float wave3Damage = 220f;
+        [EditorField("CS_Studio_Runtime_WaveDamageDef", AbilityRuntimeComponentType.RStackDetonation)]
         public DamageDef? waveDamageDef;
+
+        // Pulse
+        [EditorField("CS_Studio_Runtime_PulseIntervalTicks", AbilityRuntimeComponentType.PeriodicPulse)]
         public int pulseIntervalTicks = 60;
+        [EditorField("CS_Studio_Runtime_PulseTotalTicks", AbilityRuntimeComponentType.PeriodicPulse)]
         public int pulseTotalTicks = 240;
+        [EditorField("CS_Studio_Runtime_PulseStartsImmediately", AbilityRuntimeComponentType.PeriodicPulse)]
         public bool pulseStartsImmediately = true;
+
+        // KillRefresh
+        [EditorField("CS_Studio_Runtime_KillRefreshHotkeySlot", AbilityRuntimeComponentType.HitCooldownRefund)]
+        public AbilityRuntimeHotkeySlot killRefreshHotkeySlot = AbilityRuntimeHotkeySlot.None;
+        [EditorField("CS_Studio_Runtime_KillRefreshCooldownPercent", AbilityRuntimeComponentType.HitCooldownRefund)]
         public float killRefreshCooldownPercent = 1f;
-        [EditorField("CS_Studio_Runtime_ShieldMaxDamage", AbilityRuntimeComponentType.ShieldAbsorb, Min = 1f, Max = 99999f)]
+
+        // Shield
+        [EditorField("CS_Studio_Runtime_ShieldMaxDamage", AbilityRuntimeComponentType.ShieldAbsorb)]
         public float shieldMaxDamage = 120f;
-        [EditorField("CS_Studio_Runtime_Duration", AbilityRuntimeComponentType.ShieldAbsorb, AbilityRuntimeComponentType.AttachedShieldVisual, Min = 1f, Max = 99999f)]
+        [EditorField("CS_Studio_Runtime_ShieldDurationTicks", AbilityRuntimeComponentType.ShieldAbsorb)]
         public float shieldDurationTicks = 240f;
-        [EditorField("CS_Studio_Runtime_ShieldHealRatio", AbilityRuntimeComponentType.ShieldAbsorb, Min = 0f, Max = 10f)]
+        [EditorField("CS_Studio_Runtime_ShieldHealRatio", AbilityRuntimeComponentType.ShieldAbsorb)]
         public float shieldHealRatio = 0.5f;
-        [EditorField("CS_Studio_Runtime_ShieldBonusDamageRatio", AbilityRuntimeComponentType.ShieldAbsorb, Min = 0f, Max = 10f)]
+        [EditorField("CS_Studio_Runtime_ShieldBonusDamageRatio", AbilityRuntimeComponentType.ShieldAbsorb)]
         public float shieldBonusDamageRatio = 0.25f;
-        [EditorField("CS_Studio_Runtime_ShieldVisualScale", AbilityRuntimeComponentType.AttachedShieldVisual, AbilityRuntimeComponentType.ProjectileInterceptorShield, Min = 0.1f, Max = 10f)]
+        [EditorField("CS_Studio_Runtime_ShieldVisualScale", AbilityRuntimeComponentType.AttachedShieldVisual)]
         public float shieldVisualScale = 1f;
-        [EditorField("CS_Studio_Runtime_ShieldVisualHeightOffset", AbilityRuntimeComponentType.AttachedShieldVisual, Min = -5f, Max = 5f)]
+        [EditorField("CS_Studio_Runtime_ShieldVisualHeightOffset", AbilityRuntimeComponentType.AttachedShieldVisual)]
         public float shieldVisualHeightOffset = 0f;
         [EditorField("CS_Studio_Runtime_ShieldInterceptorThingDefName", AbilityRuntimeComponentType.ProjectileInterceptorShield)]
         public string shieldInterceptorThingDefName = string.Empty;
-        [EditorField("CS_Studio_Runtime_Duration", AbilityRuntimeComponentType.ProjectileInterceptorShield, Min = 1f, Max = 99999f)]
+        [EditorField("CS_Studio_Runtime_ShieldInterceptorDurationTicks", AbilityRuntimeComponentType.ProjectileInterceptorShield)]
         public int shieldInterceptorDurationTicks = 240;
+
+        // ChainBounce
+        [EditorField("CS_Studio_Runtime_MaxBounceCount", AbilityRuntimeComponentType.ChainBounce)]
         public int maxBounceCount = 4;
+        [EditorField("CS_Studio_Runtime_BounceRange", AbilityRuntimeComponentType.ChainBounce)]
         public float bounceRange = 6f;
+        [EditorField("CS_Studio_Runtime_BounceDamageFalloff", AbilityRuntimeComponentType.ChainBounce)]
         public float bounceDamageFalloff = 0.2f;
+
+        // Execute / Health Bonus
+        [EditorField("CS_Studio_Runtime_ExecuteThresholdPercent", AbilityRuntimeComponentType.RStackDetonation)]
         public float executeThresholdPercent = 0.3f;
+        [EditorField("CS_Studio_Runtime_ExecuteBonusDamageScale", AbilityRuntimeComponentType.RStackDetonation)]
         public float executeBonusDamageScale = 0.5f;
+        [EditorField("CS_Studio_Runtime_FullHealthThresholdPercent", AbilityRuntimeComponentType.RStackDetonation)]
         public float fullHealthThresholdPercent = 0.95f;
+        [EditorField("CS_Studio_Runtime_FullHealthBonusDamageScale", AbilityRuntimeComponentType.RStackDetonation)]
         public float fullHealthBonusDamageScale = 0.35f;
+        [EditorField("CS_Studio_Runtime_MissingHealthBonusPerTenPercent", AbilityRuntimeComponentType.RStackDetonation)]
         public float missingHealthBonusPerTenPercent = 0.05f;
+        [EditorField("CS_Studio_Runtime_MissingHealthBonusMaxScale", AbilityRuntimeComponentType.RStackDetonation)]
         public float missingHealthBonusMaxScale = 0.5f;
+
+        // Nearby / Isolated
+        [EditorField("CS_Studio_Runtime_NearbyEnemyBonusMaxTargets", AbilityRuntimeComponentType.RStackDetonation)]
         public int nearbyEnemyBonusMaxTargets = 4;
+        [EditorField("CS_Studio_Runtime_NearbyEnemyBonusPerTarget", AbilityRuntimeComponentType.RStackDetonation)]
         public float nearbyEnemyBonusPerTarget = 0.08f;
+        [EditorField("CS_Studio_Runtime_NearbyEnemyBonusRadius", AbilityRuntimeComponentType.RStackDetonation)]
         public float nearbyEnemyBonusRadius = 5f;
+        [EditorField("CS_Studio_Runtime_IsolatedTargetRadius", AbilityRuntimeComponentType.RStackDetonation)]
         public float isolatedTargetRadius = 4f;
+        [EditorField("CS_Studio_Runtime_IsolatedTargetBonusDamageScale", AbilityRuntimeComponentType.RStackDetonation)]
         public float isolatedTargetBonusDamageScale = 0.35f;
+
+        // Mark
+        [EditorField("CS_Studio_Runtime_MarkDurationTicks", AbilityRuntimeComponentType.MarkDetonation)]
         public int markDurationTicks = 180;
+        [EditorField("CS_Studio_Runtime_MarkMaxStacks", AbilityRuntimeComponentType.MarkDetonation)]
         public int markMaxStacks = 3;
+        [EditorField("CS_Studio_Runtime_MarkDetonationDamage", AbilityRuntimeComponentType.MarkDetonation)]
         public float markDetonationDamage = 40f;
+        [EditorField("CS_Studio_Runtime_MarkDamageDef", AbilityRuntimeComponentType.MarkDetonation)]
         public DamageDef? markDamageDef;
+
+        // Combo
+        [EditorField("CS_Studio_Runtime_ComboStackWindowTicks", AbilityRuntimeComponentType.ComboStacks)]
         public int comboStackWindowTicks = 180;
+        [EditorField("CS_Studio_Runtime_ComboStackMax", AbilityRuntimeComponentType.ComboStacks)]
         public int comboStackMax = 5;
+        [EditorField("CS_Studio_Runtime_ComboStackBonusDamagePerStack", AbilityRuntimeComponentType.ComboStacks)]
         public float comboStackBonusDamagePerStack = 0.06f;
+
+        // Slow / Pierce
+        [EditorField("CS_Studio_Runtime_SlowFieldDurationTicks", AbilityRuntimeComponentType.HitSlowField)]
         public int slowFieldDurationTicks = 180;
+        [EditorField("CS_Studio_Runtime_SlowFieldRadius", AbilityRuntimeComponentType.HitSlowField)]
         public float slowFieldRadius = 2.5f;
+        [EditorField("CS_Studio_Runtime_SlowFieldHediffDefName", AbilityRuntimeComponentType.HitSlowField)]
         public string slowFieldHediffDefName = string.Empty;
+        [EditorField("CS_Studio_Runtime_PierceMaxTargets", AbilityRuntimeComponentType.ChainBounce)]
         public int pierceMaxTargets = 3;
+        [EditorField("CS_Studio_Runtime_PierceBonusDamagePerTarget", AbilityRuntimeComponentType.ChainBounce)]
         public float pierceBonusDamagePerTarget = 0.15f;
+        [EditorField("CS_Studio_Runtime_PierceSearchRange", AbilityRuntimeComponentType.ChainBounce)]
         public float pierceSearchRange = 5f;
+
+        // DashEmpower / Heal / Refund
+        [EditorField("CS_Studio_Runtime_DashEmpowerDurationTicks", AbilityRuntimeComponentType.DashEmpoweredStrike)]
         public int dashEmpowerDurationTicks = 180;
+        [EditorField("CS_Studio_Runtime_DashEmpowerBonusDamageScale", AbilityRuntimeComponentType.DashEmpoweredStrike)]
         public float dashEmpowerBonusDamageScale = 0.5f;
+        [EditorField("CS_Studio_Runtime_HitHealAmount", AbilityRuntimeComponentType.HitHeal)]
         public float hitHealAmount = 8f;
+        [EditorField("CS_Studio_Runtime_HitHealRatio", AbilityRuntimeComponentType.HitHeal)]
         public float hitHealRatio = 0f;
-        public AbilityRuntimeHotkeySlot refundHotkeySlot = AbilityRuntimeHotkeySlot.Q;
+        [EditorField("CS_Studio_Runtime_RefundHotkeySlot", AbilityRuntimeComponentType.HitCooldownRefund)]
+        public AbilityRuntimeHotkeySlot refundHotkeySlot = AbilityRuntimeHotkeySlot.None;
+        [EditorField("CS_Studio_Runtime_HitCooldownRefundPercent", AbilityRuntimeComponentType.HitCooldownRefund)]
         public float hitCooldownRefundPercent = 0.15f;
+
+        // Projectile / Flight
+        [EditorField("CS_Studio_Runtime_SplitProjectileCount", AbilityRuntimeComponentType.ProjectileSplit)]
         public int splitProjectileCount = 2;
+        [EditorField("CS_Studio_Runtime_SplitDamageScale", AbilityRuntimeComponentType.ProjectileSplit)]
         public float splitDamageScale = 0.5f;
+        [EditorField("CS_Studio_Runtime_SplitSearchRange", AbilityRuntimeComponentType.ProjectileSplit)]
         public float splitSearchRange = 5f;
+        [EditorField("CS_Studio_Runtime_FlightDurationTicks", AbilityRuntimeComponentType.FlightState)]
         public int flightDurationTicks = 180;
+        [EditorField("CS_Studio_Runtime_FlightHeightFactor", AbilityRuntimeComponentType.FlightState)]
         public float flightHeightFactor = 0.35f;
+        [EditorField("CS_Studio_Runtime_SuppressCombatActionsDuringFlightState", AbilityRuntimeComponentType.FlightState)]
         public bool suppressCombatActionsDuringFlightState = true;
 
+        // Flyer / Landing
+        [EditorField("CS_Studio_Runtime_FlyerThingDefName", AbilityRuntimeComponentType.VanillaPawnFlyer)]
         public string flyerThingDefName = string.Empty;
+        [EditorField("CS_Studio_Runtime_FlyerWarmupTicks", AbilityRuntimeComponentType.VanillaPawnFlyer)]
         public int flyerWarmupTicks = 0;
+        [EditorField("CS_Studio_Runtime_LaunchFromCasterPosition", AbilityRuntimeComponentType.VanillaPawnFlyer)]
         public bool launchFromCasterPosition = true;
+        [EditorField("CS_Studio_Runtime_RequireValidTargetCell", AbilityRuntimeComponentType.VanillaPawnFlyer)]
         public bool requireValidTargetCell = true;
+        [EditorField("CS_Studio_Runtime_StoreTargetForFollowup", AbilityRuntimeComponentType.VanillaPawnFlyer)]
         public bool storeTargetForFollowup = true;
+        [EditorField("CS_Studio_Runtime_EnableFlightOnlyWindow", AbilityRuntimeComponentType.FlightOnlyFollowup)]
         public bool enableFlightOnlyWindow = false;
+        [EditorField("CS_Studio_Runtime_FlightOnlyWindowTicks", AbilityRuntimeComponentType.FlightOnlyFollowup)]
         public int flightOnlyWindowTicks = 180;
+        [EditorField("CS_Studio_Runtime_FlightOnlyAbilityDefName", AbilityRuntimeComponentType.FlightOnlyFollowup)]
         public string flightOnlyAbilityDefName = string.Empty;
+        [EditorField("CS_Studio_Runtime_HideCasterDuringTakeoff", AbilityRuntimeComponentType.VanillaPawnFlyer)]
         public bool hideCasterDuringTakeoff = true;
+        [EditorField("CS_Studio_Runtime_AutoExpireFlightMarkerOnLanding", AbilityRuntimeComponentType.FlightLandingBurst)]
         public bool autoExpireFlightMarkerOnLanding = true;
-
+        [EditorField("CS_Studio_Runtime_RequiredFlightSourceAbilityDefName", AbilityRuntimeComponentType.VanillaPawnFlyer)]
         public string requiredFlightSourceAbilityDefName = string.Empty;
+        [EditorField("CS_Studio_Runtime_RequireReservedTargetCell", AbilityRuntimeComponentType.VanillaPawnFlyer)]
         public bool requireReservedTargetCell = false;
+        [EditorField("CS_Studio_Runtime_ConsumeFlightStateOnCast", AbilityRuntimeComponentType.VanillaPawnFlyer)]
         public bool consumeFlightStateOnCast = false;
+        [EditorField("CS_Studio_Runtime_OnlyUseDuringFlightWindow", AbilityRuntimeComponentType.FlightOnlyFollowup)]
         public bool onlyUseDuringFlightWindow = true;
 
+        [EditorField("CS_Studio_Runtime_LandingBurstRadius", AbilityRuntimeComponentType.FlightLandingBurst)]
         public float landingBurstRadius = 3f;
+        [EditorField("CS_Studio_Runtime_LandingBurstDamage", AbilityRuntimeComponentType.FlightLandingBurst)]
         public float landingBurstDamage = 30f;
+        [EditorField("CS_Studio_Runtime_LandingBurstDamageDef", AbilityRuntimeComponentType.FlightLandingBurst)]
         public DamageDef? landingBurstDamageDef;
+        [EditorField("CS_Studio_Runtime_LandingEffecterDefName", AbilityRuntimeComponentType.FlightLandingBurst)]
         public string landingEffecterDefName = string.Empty;
+        [EditorField("CS_Studio_Runtime_LandingSoundDefName", AbilityRuntimeComponentType.FlightLandingBurst)]
         public string landingSoundDefName = string.Empty;
+        [EditorField("CS_Studio_Runtime_AffectBuildings", AbilityRuntimeComponentType.FlightLandingBurst)]
         public bool affectBuildings = false;
+        [EditorField("CS_Studio_Runtime_AffectCells", AbilityRuntimeComponentType.FlightLandingBurst)]
         public bool affectCells = true;
+        [EditorField("CS_Studio_Runtime_KnockbackTargets", AbilityRuntimeComponentType.FlightLandingBurst)]
         public bool knockbackTargets = false;
+        [EditorField("CS_Studio_Runtime_KnockbackDistance", AbilityRuntimeComponentType.FlightLandingBurst)]
         public float knockbackDistance = 1.5f;
+
+        // TimeStop / Dash
+        [EditorField("CS_Studio_Runtime_TimeStopDurationTicks", AbilityRuntimeComponentType.TimeStop)]
         public int timeStopDurationTicks = 60;
+        [EditorField("CS_Studio_Runtime_FreezeVisualsDuringTimeStop", AbilityRuntimeComponentType.TimeStop)]
         public bool freezeVisualsDuringTimeStop = true;
-
-        // ── Dash (直线冲刺) ──
+        [EditorField("CS_Studio_Runtime_DashDistance", AbilityRuntimeComponentType.Dash)]
         public int dashDistance = 6;
+        [EditorField("CS_Studio_Runtime_DashStepDurationTicks", AbilityRuntimeComponentType.Dash)]
         public int dashStepDurationTicks = 3;
+        [EditorField("CS_Studio_Runtime_DashEffectTiming", AbilityRuntimeComponentType.Dash)]
         public DashEffectTiming dashEffectTiming = DashEffectTiming.OnCollisionStop;
+        [EditorField("CS_Studio_Runtime_DashUseAbilityRange", AbilityRuntimeComponentType.Dash)]
         public bool dashUseAbilityRange = false;
+        [EditorField("CS_Studio_Runtime_DashLanding", AbilityRuntimeComponentType.Dash)]
+        public bool dashLanding = false;
+        [EditorField("CS_Studio_Runtime_DashSweepAcrossPath", AbilityRuntimeComponentType.Dash)]
+        public bool dashSweepAcrossPath = false;
 
-        // ── 联动标签 (Tag-based Linkage) ──
+        // Tags
+        [EditorField("CS_Studio_Runtime_TriggerEquipmentAnimationOnApply", AbilityRuntimeComponentType.DashEmpoweredStrike)]
         public bool triggerEquipmentAnimationOnApply = false;
+        [EditorField("CS_Studio_Runtime_EquipmentAnimationTriggerKey", AbilityRuntimeComponentType.DashEmpoweredStrike)]
         public string equipmentAnimationTriggerKey = "Dash";
+        [EditorField("CS_Studio_Runtime_EquipmentAnimationDurationTicks", AbilityRuntimeComponentType.DashEmpoweredStrike)]
         public int equipmentAnimationDurationTicks = 30;
 
-        [EditorField("CS_Studio_Effect_WeatherDef", AbilityRuntimeComponentType.WeatherChange)]
+        // Weather / Bezier
+        [EditorField("CS_Studio_Runtime_WeatherDefName", AbilityRuntimeComponentType.WeatherChange)]
         public string weatherDefName = string.Empty;
-        [EditorField("CS_Studio_Effect_WeatherDuration", AbilityRuntimeComponentType.WeatherChange, Min = 1f, Max = 9999999f)]
+        [EditorField("CS_Studio_Runtime_WeatherDurationTicks", AbilityRuntimeComponentType.WeatherChange)]
         public int weatherDurationTicks = 60000;
-        [EditorField("CS_Studio_Effect_WeatherTransition", AbilityRuntimeComponentType.WeatherChange, Min = 0f, Max = 99999f)]
+        [EditorField("CS_Studio_Runtime_WeatherTransitionTicks", AbilityRuntimeComponentType.WeatherChange)]
         public int weatherTransitionTicks = 3000;
+        [EditorField("CS_Studio_Runtime_BezierWallDurationTicks", AbilityRuntimeComponentType.BezierCurveWall)]
+        public int bezierWallDurationTicks = 300;
+        [EditorField("CS_Studio_Runtime_BezierWallThickness", AbilityRuntimeComponentType.BezierCurveWall)]
+        public float bezierWallThickness = 0.5f;
+        [EditorField("CS_Studio_Runtime_BezierWallControlPointHeight", AbilityRuntimeComponentType.BezierCurveWall)]
+        public float bezierWallControlPointHeight = 3f;
+        [EditorField("CS_Studio_Runtime_BezierWallSegmentCount", AbilityRuntimeComponentType.BezierCurveWall)]
+        public int bezierWallSegmentCount = 16;
+        [EditorField("CS_Studio_Runtime_BezierWallBlockFriendly", AbilityRuntimeComponentType.BezierCurveWall)]
+        public bool bezierWallBlockFriendly = false;
+        [EditorField("CS_Studio_Runtime_BezierWallCurveDirection", AbilityRuntimeComponentType.BezierCurveWall)]
+        public int bezierWallCurveDirection = 1;
+        [EditorField("CS_Studio_Runtime_BezierWallAbsorbMax", AbilityRuntimeComponentType.BezierCurveWall)]
+        public float bezierWallAbsorbMax = 200f;
+        [EditorField("CS_Studio_Runtime_BezierWallCustomTexture", AbilityRuntimeComponentType.BezierCurveWall)]
+        public string bezierWallCustomTexture = string.Empty;
+        [EditorField("CS_Studio_Runtime_BezierWallReflectsProjectiles", AbilityRuntimeComponentType.BezierCurveWall)]
+        public bool bezierWallReflectsProjectiles = false;
 
-        public AbilityRuntimeComponentConfig Clone()
+        public virtual void ExposeData()
+        {
+            AbilityRuntimeComponentType tempType = type;
+            Scribe_Values.Look(ref tempType, "type");
+            loadedTypeValue = tempType;
+            loadedTypeInitialized = true;
+            Scribe_Values.Look(ref enabled, "enabled", true);
+
+            Scribe_Values.Look(ref comboWindowTicks, "comboWindowTicks", 12);
+            Scribe_Values.Look(ref comboTargetHotkeySlot, "comboTargetHotkeySlot", AbilityRuntimeHotkeySlot.None);
+            Scribe_Values.Look(ref comboTargetAbilityDefName, "comboTargetAbilityDefName", string.Empty);
+            Scribe_Values.Look(ref overrideHotkeySlot, "overrideHotkeySlot", AbilityRuntimeHotkeySlot.None);
+            Scribe_Values.Look(ref overrideAbilityDefName, "overrideAbilityDefName", string.Empty);
+            Scribe_Values.Look(ref overrideDurationTicks, "overrideDurationTicks", 60);
+            Scribe_Values.Look(ref followupCooldownHotkeySlot, "followupCooldownHotkeySlot", AbilityRuntimeHotkeySlot.None);
+            Scribe_Values.Look(ref followupCooldownTicks, "followupCooldownTicks", 60);
+            Scribe_Values.Look(ref maxComboFollowupDelayTicks, "maxComboFollowupDelayTicks", 180);
+            Scribe_Values.Look(ref cooldownPunishScale, "cooldownPunishScale", 1.0f);
+
+            Scribe_Values.Look(ref cooldownTicks, "cooldownTicks", 120);
+            Scribe_Values.Look(ref jumpDistance, "jumpDistance", 6);
+            Scribe_Values.Look(ref findCellRadius, "findCellRadius", 3);
+            Scribe_Values.Look(ref triggerAbilityEffectsAfterJump, "triggerAbilityEffectsAfterJump", true);
+            Scribe_Values.Look(ref useMouseTargetCell, "useMouseTargetCell", true);
+            Scribe_Values.Look(ref smartCastOffsetCells, "smartCastOffsetCells", 1);
+            Scribe_Values.Look(ref smartCastClampToMaxDistance, "smartCastClampToMaxDistance", true);
+            Scribe_Values.Look(ref smartCastAllowFallbackForward, "smartCastAllowFallbackForward", true);
+
+            Scribe_Values.Look(ref requiredStacks, "requiredStacks", 7);
+            Scribe_Values.Look(ref delayTicks, "delayTicks", 180);
+            Scribe_Values.Look(ref wave1Radius, "wave1Radius", 3f);
+            Scribe_Values.Look(ref wave1Damage, "wave1Damage", 80f);
+            Scribe_Values.Look(ref wave2Radius, "wave2Radius", 6f);
+            Scribe_Values.Look(ref wave2Damage, "wave2Damage", 140f);
+            Scribe_Values.Look(ref wave3Radius, "wave3Radius", 9f);
+            Scribe_Values.Look(ref wave3Damage, "wave3Damage", 220f);
+            Scribe_Defs.Look(ref waveDamageDef, "waveDamageDef");
+
+            Scribe_Values.Look(ref pulseIntervalTicks, "pulseIntervalTicks", 60);
+            Scribe_Values.Look(ref pulseTotalTicks, "pulseTotalTicks", 240);
+            Scribe_Values.Look(ref pulseStartsImmediately, "pulseStartsImmediately", true);
+
+            Scribe_Values.Look(ref killRefreshHotkeySlot, "killRefreshHotkeySlot", AbilityRuntimeHotkeySlot.None);
+            Scribe_Values.Look(ref killRefreshCooldownPercent, "killRefreshCooldownPercent", 1f);
+
+            Scribe_Values.Look(ref shieldMaxDamage, "shieldMaxDamage", 120f);
+            Scribe_Values.Look(ref shieldDurationTicks, "shieldDurationTicks", 240f);
+            Scribe_Values.Look(ref shieldHealRatio, "shieldHealRatio", 0.5f);
+            Scribe_Values.Look(ref shieldBonusDamageRatio, "shieldBonusDamageRatio", 0.25f);
+            Scribe_Values.Look(ref shieldVisualScale, "shieldVisualScale", 1f);
+            Scribe_Values.Look(ref shieldVisualHeightOffset, "shieldVisualHeightOffset", 0f);
+            Scribe_Values.Look(ref shieldInterceptorThingDefName, "shieldInterceptorThingDefName", string.Empty);
+            Scribe_Values.Look(ref shieldInterceptorDurationTicks, "shieldInterceptorDurationTicks", 240);
+
+            Scribe_Values.Look(ref maxBounceCount, "maxBounceCount", 4);
+            Scribe_Values.Look(ref bounceRange, "bounceRange", 6f);
+            Scribe_Values.Look(ref bounceDamageFalloff, "bounceDamageFalloff", 0.2f);
+
+            Scribe_Values.Look(ref executeThresholdPercent, "executeThresholdPercent", 0.3f);
+            Scribe_Values.Look(ref executeBonusDamageScale, "executeBonusDamageScale", 0.5f);
+            Scribe_Values.Look(ref fullHealthThresholdPercent, "fullHealthThresholdPercent", 0.95f);
+            Scribe_Values.Look(ref fullHealthBonusDamageScale, "fullHealthBonusDamageScale", 0.35f);
+            Scribe_Values.Look(ref missingHealthBonusPerTenPercent, "missingHealthBonusPerTenPercent", 0.05f);
+            Scribe_Values.Look(ref missingHealthBonusMaxScale, "missingHealthBonusMaxScale", 0.5f);
+
+            Scribe_Values.Look(ref nearbyEnemyBonusMaxTargets, "nearbyEnemyBonusMaxTargets", 4);
+            Scribe_Values.Look(ref nearbyEnemyBonusPerTarget, "nearbyEnemyBonusPerTarget", 0.08f);
+            Scribe_Values.Look(ref nearbyEnemyBonusRadius, "nearbyEnemyBonusRadius", 5f);
+            Scribe_Values.Look(ref isolatedTargetRadius, "isolatedTargetRadius", 4f);
+            Scribe_Values.Look(ref isolatedTargetBonusDamageScale, "isolatedTargetBonusDamageScale", 0.35f);
+
+            Scribe_Values.Look(ref markDurationTicks, "markDurationTicks", 180);
+            Scribe_Values.Look(ref markMaxStacks, "markMaxStacks", 3);
+            Scribe_Values.Look(ref markDetonationDamage, "markDetonationDamage", 40f);
+            Scribe_Defs.Look(ref markDamageDef, "markDamageDef");
+
+            Scribe_Values.Look(ref comboStackWindowTicks, "comboStackWindowTicks", 180);
+            Scribe_Values.Look(ref comboStackMax, "comboStackMax", 5);
+            Scribe_Values.Look(ref comboStackBonusDamagePerStack, "comboStackBonusDamagePerStack", 0.06f);
+
+            Scribe_Values.Look(ref slowFieldDurationTicks, "slowFieldDurationTicks", 180);
+            Scribe_Values.Look(ref slowFieldRadius, "slowFieldRadius", 2.5f);
+            Scribe_Values.Look(ref slowFieldHediffDefName, "slowFieldHediffDefName", string.Empty);
+            Scribe_Values.Look(ref pierceMaxTargets, "pierceMaxTargets", 3);
+            Scribe_Values.Look(ref pierceBonusDamagePerTarget, "pierceBonusDamagePerTarget", 0.15f);
+            Scribe_Values.Look(ref pierceSearchRange, "pierceSearchRange", 5f);
+
+            Scribe_Values.Look(ref dashEmpowerDurationTicks, "dashEmpowerDurationTicks", 180);
+            Scribe_Values.Look(ref dashEmpowerBonusDamageScale, "dashEmpowerBonusDamageScale", 0.5f);
+            Scribe_Values.Look(ref hitHealAmount, "hitHealAmount", 8f);
+            Scribe_Values.Look(ref hitHealRatio, "hitHealRatio", 0f);
+            Scribe_Values.Look(ref refundHotkeySlot, "refundHotkeySlot", AbilityRuntimeHotkeySlot.None);
+            Scribe_Values.Look(ref hitCooldownRefundPercent, "hitCooldownRefundPercent", 0.15f);
+
+            Scribe_Values.Look(ref splitProjectileCount, "splitProjectileCount", 2);
+            Scribe_Values.Look(ref splitDamageScale, "splitDamageScale", 0.5f);
+            Scribe_Values.Look(ref splitSearchRange, "splitSearchRange", 5f);
+            Scribe_Values.Look(ref flightDurationTicks, "flightDurationTicks", 180);
+            Scribe_Values.Look(ref flightHeightFactor, "flightHeightFactor", 0.35f);
+            Scribe_Values.Look(ref suppressCombatActionsDuringFlightState, "suppressCombatActionsDuringFlightState", true);
+
+            Scribe_Values.Look(ref flyerThingDefName, "flyerThingDefName", string.Empty);
+            Scribe_Values.Look(ref flyerWarmupTicks, "flyerWarmupTicks", 0);
+            Scribe_Values.Look(ref launchFromCasterPosition, "launchFromCasterPosition", true);
+            Scribe_Values.Look(ref requireValidTargetCell, "requireValidTargetCell", true);
+            Scribe_Values.Look(ref storeTargetForFollowup, "storeTargetForFollowup", true);
+            Scribe_Values.Look(ref enableFlightOnlyWindow, "enableFlightOnlyWindow", false);
+            Scribe_Values.Look(ref flightOnlyWindowTicks, "flightOnlyWindowTicks", 180);
+            Scribe_Values.Look(ref flightOnlyAbilityDefName, "flightOnlyAbilityDefName", string.Empty);
+            Scribe_Values.Look(ref hideCasterDuringTakeoff, "hideCasterDuringTakeoff", true);
+            Scribe_Values.Look(ref autoExpireFlightMarkerOnLanding, "autoExpireFlightMarkerOnLanding", true);
+            Scribe_Values.Look(ref requiredFlightSourceAbilityDefName, "requiredFlightSourceAbilityDefName", string.Empty);
+            Scribe_Values.Look(ref requireReservedTargetCell, "requireReservedTargetCell", false);
+            Scribe_Values.Look(ref consumeFlightStateOnCast, "consumeFlightStateOnCast", false);
+            Scribe_Values.Look(ref onlyUseDuringFlightWindow, "onlyUseDuringFlightWindow", true);
+
+            Scribe_Values.Look(ref landingBurstRadius, "landingBurstRadius", 3f);
+            Scribe_Values.Look(ref landingBurstDamage, "landingBurstDamage", 30f);
+            Scribe_Defs.Look(ref landingBurstDamageDef, "landingBurstDamageDef");
+            Scribe_Values.Look(ref landingEffecterDefName, "landingEffecterDefName", string.Empty);
+            Scribe_Values.Look(ref landingSoundDefName, "landingSoundDefName", string.Empty);
+            Scribe_Values.Look(ref affectBuildings, "affectBuildings", false);
+            Scribe_Values.Look(ref affectCells, "affectCells", true);
+            Scribe_Values.Look(ref knockbackTargets, "knockbackTargets", false);
+            Scribe_Values.Look(ref knockbackDistance, "knockbackDistance", 1.5f);
+
+            Scribe_Values.Look(ref timeStopDurationTicks, "timeStopDurationTicks", 60);
+            Scribe_Values.Look(ref freezeVisualsDuringTimeStop, "freezeVisualsDuringTimeStop", true);
+            Scribe_Values.Look(ref dashDistance, "dashDistance", 6);
+            Scribe_Values.Look(ref dashStepDurationTicks, "dashStepDurationTicks", 3);
+            Scribe_Values.Look(ref dashEffectTiming, "dashEffectTiming", DashEffectTiming.OnCollisionStop);
+            Scribe_Values.Look(ref dashUseAbilityRange, "dashUseAbilityRange", false);
+            Scribe_Values.Look(ref dashLanding, "dashLanding", false);
+            Scribe_Values.Look(ref dashSweepAcrossPath, "dashSweepAcrossPath", false);
+
+            Scribe_Values.Look(ref triggerEquipmentAnimationOnApply, "triggerEquipmentAnimationOnApply", false);
+            Scribe_Values.Look(ref equipmentAnimationTriggerKey, "equipmentAnimationTriggerKey", "Dash");
+            Scribe_Values.Look(ref equipmentAnimationDurationTicks, "equipmentAnimationDurationTicks", 30);
+
+            Scribe_Values.Look(ref weatherDefName, "weatherDefName", string.Empty);
+            Scribe_Values.Look(ref weatherDurationTicks, "weatherDurationTicks", 60000);
+            Scribe_Values.Look(ref weatherTransitionTicks, "weatherTransitionTicks", 3000);
+            Scribe_Values.Look(ref bezierWallDurationTicks, "bezierWallDurationTicks", 300);
+            Scribe_Values.Look(ref bezierWallThickness, "bezierWallThickness", 0.5f);
+            Scribe_Values.Look(ref bezierWallControlPointHeight, "bezierWallControlPointHeight", 3f);
+            Scribe_Values.Look(ref bezierWallSegmentCount, "bezierWallSegmentCount", 16);
+            Scribe_Values.Look(ref bezierWallBlockFriendly, "bezierWallBlockFriendly", false);
+            Scribe_Values.Look(ref bezierWallCurveDirection, "bezierWallCurveDirection", 1);
+            Scribe_Values.Look(ref bezierWallAbsorbMax, "bezierWallAbsorbMax", 200f);
+            Scribe_Values.Look(ref bezierWallCustomTexture, "bezierWallCustomTexture", string.Empty);
+            Scribe_Values.Look(ref bezierWallReflectsProjectiles, "bezierWallReflectsProjectiles", false);
+        }
+
+        public void LoadDataFromXmlCustom(XmlNode xmlRoot)
+        {
+            if (xmlRoot == null)
+            {
+                return;
+            }
+
+            foreach (XmlNode child in xmlRoot.ChildNodes)
+            {
+                if (child.NodeType != XmlNodeType.Element)
+                {
+                    continue;
+                }
+
+                if (string.Equals(child.Name, "type", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (Enum.TryParse(child.InnerText?.Trim(), true, out AbilityRuntimeComponentType parsedType))
+                    {
+                        loadedTypeValue = parsedType;
+                        loadedTypeInitialized = true;
+                    }
+
+                    continue;
+                }
+
+                if (!XmlFieldMap.TryGetValue(child.Name, out FieldInfo? field))
+                {
+                    continue;
+                }
+
+                TryAssignFieldFromXml(field, child);
+            }
+        }
+
+        private void TryAssignFieldFromXml(FieldInfo field, XmlNode child)
+        {
+            string rawValue = child.InnerText?.Trim() ?? string.Empty;
+            if (field.FieldType == typeof(string))
+            {
+                field.SetValue(this, rawValue);
+                return;
+            }
+
+            if (typeof(Def).IsAssignableFrom(field.FieldType))
+            {
+                if (!string.IsNullOrWhiteSpace(rawValue))
+                {
+                    DirectXmlCrossRefLoader.RegisterObjectWantsCrossRef(this, field.Name, rawValue);
+                }
+
+                return;
+            }
+
+            if (field.FieldType == typeof(AbilityRuntimeHotkeySlot))
+            {
+                if (TryParseHotkeySlot(rawValue, out AbilityRuntimeHotkeySlot slot))
+                {
+                    field.SetValue(this, slot);
+                }
+
+                return;
+            }
+
+            if (field.FieldType.IsEnum)
+            {
+                try
+                {
+                    object enumValue = Enum.Parse(field.FieldType, rawValue, true);
+                    field.SetValue(this, enumValue);
+                }
+                catch
+                {
+                }
+
+                return;
+            }
+
+            object? parsedValue = ParseHelper.FromString(rawValue, field.FieldType);
+            if (parsedValue != null || !field.FieldType.IsValueType)
+            {
+                field.SetValue(this, parsedValue);
+            }
+        }
+
+        private static bool TryParseHotkeySlot(string rawValue, out AbilityRuntimeHotkeySlot slot)
+        {
+            if (string.IsNullOrWhiteSpace(rawValue))
+            {
+                slot = AbilityRuntimeHotkeySlot.None;
+                return false;
+            }
+
+            if (!Enum.TryParse(rawValue.Trim(), true, out slot))
+            {
+                slot = AbilityRuntimeHotkeySlot.None;
+                return false;
+            }
+
+            slot = AbilityHotkeySlotUtility.NormalizeSupportedRuntimeSlot(slot);
+            return slot != AbilityRuntimeHotkeySlot.None;
+        }
+
+        public virtual AbilityRuntimeComponentConfig Clone()
         {
             return (AbilityRuntimeComponentConfig)MemberwiseClone();
         }
 
-        public void NormalizeForSave()
+        public virtual void NormalizeForSave()
         {
-            overrideAbilityDefName = AbilityEditorNormalizationUtility.TrimOrEmpty(overrideAbilityDefName);
-            slowFieldHediffDefName = AbilityEditorNormalizationUtility.TrimOrEmpty(slowFieldHediffDefName);
-            flyerThingDefName = AbilityEditorNormalizationUtility.TrimOrEmpty(flyerThingDefName);
-            flightOnlyAbilityDefName = AbilityEditorNormalizationUtility.TrimOrEmpty(flightOnlyAbilityDefName);
-            requiredFlightSourceAbilityDefName = AbilityEditorNormalizationUtility.TrimOrEmpty(requiredFlightSourceAbilityDefName);
-            landingEffecterDefName = AbilityEditorNormalizationUtility.TrimOrEmpty(landingEffecterDefName);
-            landingSoundDefName = AbilityEditorNormalizationUtility.TrimOrEmpty(landingSoundDefName);
-
-            comboWindowTicks = AbilityEditorNormalizationUtility.ClampInt(comboWindowTicks, 1, 9999);
-            overrideDurationTicks = AbilityEditorNormalizationUtility.ClampInt(overrideDurationTicks, 1, 99999);
-            followupCooldownTicks = AbilityEditorNormalizationUtility.ClampInt(followupCooldownTicks, 1, 99999);
-            cooldownTicks = AbilityEditorNormalizationUtility.ClampInt(cooldownTicks, 0, 99999);
-            jumpDistance = AbilityEditorNormalizationUtility.ClampInt(jumpDistance, 1, 100);
-            findCellRadius = AbilityEditorNormalizationUtility.ClampInt(findCellRadius, 0, 30);
-            smartCastOffsetCells = AbilityEditorNormalizationUtility.ClampInt(smartCastOffsetCells, 1, 100);
-            requiredStacks = AbilityEditorNormalizationUtility.ClampInt(requiredStacks, 1, 999);
-            delayTicks = AbilityEditorNormalizationUtility.ClampInt(delayTicks, 0, 99999);
-            wave1Radius = AbilityEditorNormalizationUtility.ClampFloat(wave1Radius, 0.1f, 99f);
-            wave1Damage = AbilityEditorNormalizationUtility.ClampFloat(wave1Damage, 1f, 99999f);
-            wave2Radius = AbilityEditorNormalizationUtility.ClampFloat(wave2Radius, 0.1f, 99f);
-            wave2Damage = AbilityEditorNormalizationUtility.ClampFloat(wave2Damage, 1f, 99999f);
-            wave3Radius = AbilityEditorNormalizationUtility.ClampFloat(wave3Radius, 0.1f, 99f);
-            wave3Damage = AbilityEditorNormalizationUtility.ClampFloat(wave3Damage, 1f, 99999f);
-            pulseIntervalTicks = AbilityEditorNormalizationUtility.ClampInt(pulseIntervalTicks, 1, 99999);
-            pulseTotalTicks = AbilityEditorNormalizationUtility.ClampInt(pulseTotalTicks, 1, 99999);
-            killRefreshCooldownPercent = AbilityEditorNormalizationUtility.ClampFloat(killRefreshCooldownPercent, 0.01f, 1f);
-            shieldMaxDamage = AbilityEditorNormalizationUtility.ClampFloat(shieldMaxDamage, 1f, 99999f);
-            shieldDurationTicks = AbilityEditorNormalizationUtility.ClampFloat(shieldDurationTicks, 1f, 99999f);
-            shieldHealRatio = AbilityEditorNormalizationUtility.ClampFloat(shieldHealRatio, 0f, 10f);
-            shieldBonusDamageRatio = AbilityEditorNormalizationUtility.ClampFloat(shieldBonusDamageRatio, 0f, 10f);
-            shieldVisualScale = AbilityEditorNormalizationUtility.ClampFloat(shieldVisualScale, 0.1f, 10f);
-            shieldVisualHeightOffset = AbilityEditorNormalizationUtility.ClampFloat(shieldVisualHeightOffset, -5f, 5f);
-            shieldInterceptorThingDefName = AbilityEditorNormalizationUtility.TrimOrEmpty(shieldInterceptorThingDefName);
-            shieldInterceptorDurationTicks = AbilityEditorNormalizationUtility.ClampInt(shieldInterceptorDurationTicks, 1, 99999);
-            maxBounceCount = AbilityEditorNormalizationUtility.ClampInt(maxBounceCount, 1, 99);
-            bounceRange = AbilityEditorNormalizationUtility.ClampFloat(bounceRange, 0.1f, 99f);
-            bounceDamageFalloff = AbilityEditorNormalizationUtility.ClampFloat(bounceDamageFalloff, -0.95f, 0.95f);
-            executeThresholdPercent = AbilityEditorNormalizationUtility.ClampFloat(executeThresholdPercent, 0.01f, 0.99f);
-            executeBonusDamageScale = AbilityEditorNormalizationUtility.ClampFloat(executeBonusDamageScale, 0.01f, 10f);
-            fullHealthThresholdPercent = AbilityEditorNormalizationUtility.ClampFloat(fullHealthThresholdPercent, 0.01f, 1f);
-            fullHealthBonusDamageScale = AbilityEditorNormalizationUtility.ClampFloat(fullHealthBonusDamageScale, 0.01f, 10f);
-            missingHealthBonusPerTenPercent = AbilityEditorNormalizationUtility.ClampFloat(missingHealthBonusPerTenPercent, 0.01f, 10f);
-            missingHealthBonusMaxScale = AbilityEditorNormalizationUtility.ClampFloat(missingHealthBonusMaxScale, 0.01f, 10f);
-            nearbyEnemyBonusMaxTargets = AbilityEditorNormalizationUtility.ClampInt(nearbyEnemyBonusMaxTargets, 1, 99);
-            nearbyEnemyBonusPerTarget = AbilityEditorNormalizationUtility.ClampFloat(nearbyEnemyBonusPerTarget, 0.01f, 10f);
-            nearbyEnemyBonusRadius = AbilityEditorNormalizationUtility.ClampFloat(nearbyEnemyBonusRadius, 0.1f, 99f);
-            isolatedTargetRadius = AbilityEditorNormalizationUtility.ClampFloat(isolatedTargetRadius, 0.1f, 99f);
-            isolatedTargetBonusDamageScale = AbilityEditorNormalizationUtility.ClampFloat(isolatedTargetBonusDamageScale, 0.01f, 10f);
-            markDurationTicks = AbilityEditorNormalizationUtility.ClampInt(markDurationTicks, 1, 99999);
-            markMaxStacks = AbilityEditorNormalizationUtility.ClampInt(markMaxStacks, 1, 99);
-            markDetonationDamage = AbilityEditorNormalizationUtility.ClampFloat(markDetonationDamage, 0.01f, 99999f);
-            comboStackWindowTicks = AbilityEditorNormalizationUtility.ClampInt(comboStackWindowTicks, 1, 99999);
-            comboStackMax = AbilityEditorNormalizationUtility.ClampInt(comboStackMax, 1, 99);
-            comboStackBonusDamagePerStack = AbilityEditorNormalizationUtility.ClampFloat(comboStackBonusDamagePerStack, 0.01f, 10f);
-            slowFieldDurationTicks = AbilityEditorNormalizationUtility.ClampInt(slowFieldDurationTicks, 1, 99999);
-            slowFieldRadius = AbilityEditorNormalizationUtility.ClampFloat(slowFieldRadius, 0.1f, 99f);
-            pierceMaxTargets = AbilityEditorNormalizationUtility.ClampInt(pierceMaxTargets, 1, 99);
-            pierceBonusDamagePerTarget = AbilityEditorNormalizationUtility.ClampFloat(pierceBonusDamagePerTarget, 0.01f, 10f);
-            pierceSearchRange = AbilityEditorNormalizationUtility.ClampFloat(pierceSearchRange, 0.1f, 99f);
-            dashEmpowerDurationTicks = AbilityEditorNormalizationUtility.ClampInt(dashEmpowerDurationTicks, 1, 99999);
-            dashEmpowerBonusDamageScale = AbilityEditorNormalizationUtility.ClampFloat(dashEmpowerBonusDamageScale, 0.01f, 10f);
-            hitHealAmount = AbilityEditorNormalizationUtility.ClampFloat(hitHealAmount, 0f, 99999f);
-            hitHealRatio = AbilityEditorNormalizationUtility.ClampFloat(hitHealRatio, 0f, 10f);
-            hitCooldownRefundPercent = AbilityEditorNormalizationUtility.ClampFloat(hitCooldownRefundPercent, 0.01f, 1f);
-            splitProjectileCount = AbilityEditorNormalizationUtility.ClampInt(splitProjectileCount, 1, 99);
-            splitDamageScale = AbilityEditorNormalizationUtility.ClampFloat(splitDamageScale, 0.01f, 10f);
-            splitSearchRange = AbilityEditorNormalizationUtility.ClampFloat(splitSearchRange, 0.1f, 99f);
-            flightDurationTicks = AbilityEditorNormalizationUtility.ClampInt(flightDurationTicks, 1, 99999);
-            flightHeightFactor = AbilityEditorNormalizationUtility.ClampFloat(flightHeightFactor, 0f, 5f);
-            flyerWarmupTicks = AbilityEditorNormalizationUtility.ClampInt(flyerWarmupTicks, 0, 99999);
-            flightOnlyWindowTicks = AbilityEditorNormalizationUtility.ClampInt(flightOnlyWindowTicks, 1, 99999);
-            landingBurstRadius = AbilityEditorNormalizationUtility.ClampFloat(landingBurstRadius, 0.1f, 99f);
-            landingBurstDamage = AbilityEditorNormalizationUtility.ClampFloat(landingBurstDamage, 0.01f, 99999f);
-            knockbackDistance = AbilityEditorNormalizationUtility.ClampFloat(knockbackDistance, 0f, 99f);
-            timeStopDurationTicks = AbilityEditorNormalizationUtility.ClampInt(timeStopDurationTicks, 1, 99999);
-            dashDistance = AbilityEditorNormalizationUtility.ClampInt(dashDistance, 1, 100);
-            dashStepDurationTicks = AbilityEditorNormalizationUtility.ClampInt(dashStepDurationTicks, 1, 60);
-            equipmentAnimationDurationTicks = AbilityEditorNormalizationUtility.ClampInt(equipmentAnimationDurationTicks, 1, 99999);
-            equipmentAnimationTriggerKey = AbilityEditorNormalizationUtility.TrimOrEmpty(equipmentAnimationTriggerKey);
+        }
+        
+        public virtual AbilityValidationResult Validate()
+        {
+            return new AbilityValidationResult();
+        }
+        
+        public virtual float DrawEditorUI(float x, float y, float width, float labelW, float valueW)
+        {
+            return 0f;
         }
 
-        public AbilityValidationResult Validate()
+        public virtual string GetPreviewSummary()
         {
-            var result = new AbilityValidationResult();
-            if (!enabled)
-            {
-                return result;
-            }
-
-            switch (type)
-            {
-                case AbilityRuntimeComponentType.SlotOverrideWindow:
-                    if (comboWindowTicks <= 0)
-                        result.AddError("CS_Ability_Validate_QComboWindowTicks".Translate());
-                    if (string.IsNullOrWhiteSpace(comboTargetAbilityDefName))
-                        result.AddError("CS_Ability_Validate_HotkeyOverrideAbilityDefName".Translate());
-                    break;
-                case AbilityRuntimeComponentType.HotkeyOverride:
-                    if (string.IsNullOrWhiteSpace(overrideAbilityDefName))
-                        result.AddError("CS_Ability_Validate_HotkeyOverrideAbilityDefName".Translate());
-                    if (overrideDurationTicks <= 0)
-                        result.AddError("CS_Ability_Validate_HotkeyOverrideDurationTicks".Translate());
-                    break;
-                case AbilityRuntimeComponentType.FollowupCooldownGate:
-                    if (followupCooldownTicks <= 0)
-                        result.AddError("CS_Ability_Validate_FollowupCooldownTicks".Translate());
-                    break;
-                case AbilityRuntimeComponentType.SmartJump:
-                case AbilityRuntimeComponentType.EShortJump:
-                    if (cooldownTicks < 0)
-                        result.AddError("CS_Ability_Validate_EShortJumpCooldown".Translate());
-                    if (jumpDistance <= 0)
-                        result.AddError("CS_Ability_Validate_EShortJumpDistance".Translate());
-                    if (findCellRadius < 0)
-                        result.AddError("CS_Ability_Validate_EShortJumpFindCellRadius".Translate());
-                    if (type == AbilityRuntimeComponentType.SmartJump && smartCastOffsetCells <= 0)
-                        result.AddError("CS_Ability_Validate_SmartJumpOffsetCells".Translate());
-                    break;
-                case AbilityRuntimeComponentType.RStackDetonation:
-                    if (requiredStacks <= 0)
-                        result.AddError("CS_Ability_Validate_RRequiredStacks".Translate());
-                    if (delayTicks < 0)
-                        result.AddError("CS_Ability_Validate_RDelayTicks".Translate());
-                    if (wave1Radius <= 0 || wave2Radius <= 0 || wave3Radius <= 0)
-                        result.AddError("CS_Ability_Validate_RWaveRadius".Translate());
-                    if (wave1Damage <= 0 || wave2Damage <= 0 || wave3Damage <= 0)
-                        result.AddError("CS_Ability_Validate_RWaveDamage".Translate());
-                    break;
-                case AbilityRuntimeComponentType.PeriodicPulse:
-                    if (pulseIntervalTicks <= 0)
-                        result.AddError("CS_Ability_Validate_PeriodicPulseIntervalTicks".Translate());
-                    if (pulseTotalTicks <= 0)
-                        result.AddError("CS_Ability_Validate_PeriodicPulseTotalTicks".Translate());
-                    break;
-                case AbilityRuntimeComponentType.KillRefresh:
-                    if (killRefreshCooldownPercent <= 0f || killRefreshCooldownPercent > 1f)
-                        result.AddError("CS_Ability_Validate_KillRefreshCooldownPercent".Translate());
-                    break;
-                case AbilityRuntimeComponentType.ShieldAbsorb:
-                    if (shieldMaxDamage <= 0f)
-                        result.AddError("CS_Ability_Validate_ShieldMaxDamage".Translate());
-                    if (shieldDurationTicks <= 0f)
-                        result.AddError("CS_Ability_Validate_ShieldDurationTicks".Translate());
-                    if (shieldHealRatio < 0f || shieldBonusDamageRatio < 0f)
-                        result.AddError("CS_Ability_Validate_ShieldRatios".Translate());
-                    break;
-                case AbilityRuntimeComponentType.AttachedShieldVisual:
-                    if (shieldVisualScale <= 0f)
-                        result.AddError("CS_Ability_Validate_AttachedShieldVisualScale".Translate());
-                    break;
-                case AbilityRuntimeComponentType.ProjectileInterceptorShield:
-                    if (string.IsNullOrWhiteSpace(shieldInterceptorThingDefName))
-                        result.AddError("CS_Ability_Validate_ProjectileInterceptorThingDef".Translate());
-                    if (shieldInterceptorDurationTicks <= 0)
-                        result.AddError("CS_Ability_Validate_ProjectileInterceptorDuration".Translate());
-                    break;
-                case AbilityRuntimeComponentType.ChainBounce:
-                    if (maxBounceCount <= 0)
-                        result.AddError("CS_Ability_Validate_ChainBounceCount".Translate());
-                    if (bounceRange <= 0f)
-                        result.AddError("CS_Ability_Validate_ChainBounceRange".Translate());
-                    if (bounceDamageFalloff < 0f || bounceDamageFalloff >= 1f)
-                        result.AddError("CS_Ability_Validate_ChainBounceFalloff".Translate());
-                    break;
-                case AbilityRuntimeComponentType.ExecuteBonusDamage:
-                    if (executeThresholdPercent <= 0f || executeThresholdPercent >= 1f)
-                        result.AddError("CS_Ability_Validate_ExecuteThreshold".Translate());
-                    if (executeBonusDamageScale <= 0f)
-                        result.AddError("CS_Ability_Validate_ExecuteBonusScale".Translate());
-                    break;
-                case AbilityRuntimeComponentType.FullHealthBonusDamage:
-                    if (fullHealthThresholdPercent <= 0f || fullHealthThresholdPercent > 1f)
-                        result.AddError("CS_Ability_Validate_FullHealthThreshold".Translate());
-                    if (fullHealthBonusDamageScale <= 0f)
-                        result.AddError("CS_Ability_Validate_FullHealthBonusScale".Translate());
-                    break;
-                case AbilityRuntimeComponentType.MissingHealthBonusDamage:
-                    if (missingHealthBonusPerTenPercent < 0f)
-                        result.AddError("CS_Ability_Validate_MissingHealthPerTen".Translate());
-                    if (missingHealthBonusMaxScale < 0f)
-                        result.AddError("CS_Ability_Validate_MissingHealthMaxScale".Translate());
-                    break;
-                case AbilityRuntimeComponentType.NearbyEnemyBonusDamage:
-                    if (nearbyEnemyBonusMaxTargets <= 0)
-                        result.AddError("CS_Ability_Validate_NearbyEnemyBonusMaxTargets".Translate());
-                    if (nearbyEnemyBonusPerTarget <= 0f)
-                        result.AddError("CS_Ability_Validate_NearbyEnemyBonusPerTarget".Translate());
-                    if (nearbyEnemyBonusRadius <= 0f)
-                        result.AddError("CS_Ability_Validate_NearbyEnemyBonusRadius".Translate());
-                    break;
-                case AbilityRuntimeComponentType.IsolatedTargetBonusDamage:
-                    if (isolatedTargetRadius <= 0f)
-                        result.AddError("CS_Ability_Validate_IsolatedTargetRadius".Translate());
-                    if (isolatedTargetBonusDamageScale <= 0f)
-                        result.AddError("CS_Ability_Validate_IsolatedTargetBonusScale".Translate());
-                    break;
-                case AbilityRuntimeComponentType.MarkDetonation:
-                    if (markDurationTicks <= 0)
-                        result.AddError("CS_Ability_Validate_MarkDurationTicks".Translate());
-                    if (markMaxStacks <= 0)
-                        result.AddError("CS_Ability_Validate_MarkMaxStacks".Translate());
-                    if (markDetonationDamage <= 0f)
-                        result.AddError("CS_Ability_Validate_MarkDetonationDamage".Translate());
-                    break;
-                case AbilityRuntimeComponentType.ComboStacks:
-                    if (comboStackWindowTicks <= 0)
-                        result.AddError("CS_Ability_Validate_ComboStackWindowTicks".Translate());
-                    if (comboStackMax <= 0)
-                        result.AddError("CS_Ability_Validate_ComboStackMax".Translate());
-                    if (comboStackBonusDamagePerStack < 0f)
-                        result.AddError("CS_Ability_Validate_ComboStackBonusPerStack".Translate());
-                    break;
-                case AbilityRuntimeComponentType.HitSlowField:
-                    if (slowFieldDurationTicks <= 0)
-                        result.AddError("CS_Ability_Validate_SlowFieldDurationTicks".Translate());
-                    if (slowFieldRadius <= 0f)
-                        result.AddError("CS_Ability_Validate_SlowFieldRadius".Translate());
-                    if (string.IsNullOrWhiteSpace(slowFieldHediffDefName))
-                        result.AddError("CS_Ability_Validate_SlowFieldHediffDefName".Translate());
-                    break;
-                case AbilityRuntimeComponentType.PierceBonusDamage:
-                    if (pierceMaxTargets <= 0)
-                        result.AddError("CS_Ability_Validate_PierceMaxTargets".Translate());
-                    if (pierceBonusDamagePerTarget < 0f)
-                        result.AddError("CS_Ability_Validate_PierceBonusPerTarget".Translate());
-                    if (pierceSearchRange <= 0f)
-                        result.AddError("CS_Ability_Validate_PierceSearchRange".Translate());
-                    break;
-                case AbilityRuntimeComponentType.DashEmpoweredStrike:
-                    if (dashEmpowerDurationTicks <= 0)
-                        result.AddError("CS_Ability_Validate_DashEmpowerDurationTicks".Translate());
-                    if (dashEmpowerBonusDamageScale <= 0f)
-                        result.AddError("CS_Ability_Validate_DashEmpowerBonusScale".Translate());
-                    break;
-                case AbilityRuntimeComponentType.HitHeal:
-                    if (hitHealAmount < 0f || hitHealRatio < 0f)
-                        result.AddError("CS_Ability_Validate_HitHealValues".Translate());
-                    if (hitHealAmount <= 0f && hitHealRatio <= 0f)
-                        result.AddError("CS_Ability_Validate_HitHealRequired".Translate());
-                    break;
-                case AbilityRuntimeComponentType.HitCooldownRefund:
-                    if (hitCooldownRefundPercent <= 0f || hitCooldownRefundPercent > 1f)
-                        result.AddError("CS_Ability_Validate_HitCooldownRefundPercent".Translate());
-                    break;
-                case AbilityRuntimeComponentType.ProjectileSplit:
-                    if (splitProjectileCount <= 0)
-                        result.AddError("CS_Ability_Validate_SplitProjectileCount".Translate());
-                    if (splitDamageScale <= 0f)
-                        result.AddError("CS_Ability_Validate_SplitDamageScale".Translate());
-                    if (splitSearchRange <= 0f)
-                        result.AddError("CS_Ability_Validate_SplitSearchRange".Translate());
-                    break;
-                case AbilityRuntimeComponentType.FlightState:
-                    if (flightDurationTicks <= 0)
-                        result.AddError("CS_Ability_Validate_FlightDurationTicks".Translate());
-                    if (flightHeightFactor < 0f)
-                        result.AddError("CS_Ability_Validate_FlightHeightFactor".Translate());
-                    if (flightHeightFactor > 5f)
-                        result.AddWarning("CS_Ability_Validate_FlightHeightFactorWarning".Translate());
-                    break;
-                case AbilityRuntimeComponentType.FlightOnlyFollowup:
-                    if (onlyUseDuringFlightWindow && string.IsNullOrWhiteSpace(requiredFlightSourceAbilityDefName))
-                        result.AddWarning("CS_Ability_Validate_FlightOnlyFollowupSourceRecommended".Translate());
-                    if (requireReservedTargetCell && !onlyUseDuringFlightWindow)
-                        result.AddWarning("CS_Ability_Validate_FlightOnlyFollowupReservedTargetRecommended".Translate());
-                    break;
-                case AbilityRuntimeComponentType.FlightLandingBurst:
-                    if (landingBurstRadius <= 0f)
-                        result.AddError("CS_Ability_Validate_LandingBurstRadius".Translate());
-                    if (landingBurstDamage <= 0f)
-                        result.AddError("CS_Ability_Validate_LandingBurstDamage".Translate());
-                    break;
-                case AbilityRuntimeComponentType.TimeStop:
-                    if (timeStopDurationTicks <= 0)
-                        result.AddError("CS_Ability_Validate_TimeStopDurationTicks".Translate());
-                    break;
-                case AbilityRuntimeComponentType.Dash:
-                    if (dashDistance <= 0)
-                        result.AddError("CS_Ability_Validate_DashDistance".Translate());
-                    if (dashStepDurationTicks <= 0)
-                        result.AddError("CS_Ability_Validate_DashStepDuration".Translate());
-                    if (triggerEquipmentAnimationOnApply && string.IsNullOrWhiteSpace(equipmentAnimationTriggerKey))
-                        result.AddError("CS_Ability_Validate_DashEquipAnimKey".Translate());
-                    break;
-            }
-
-            return result;
+            return string.Empty;
         }
     }
 }

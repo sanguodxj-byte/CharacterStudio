@@ -30,8 +30,11 @@ namespace CharacterStudio.Rendering
         private static readonly Dictionary<string, int> cacheAccessTimes = new Dictionary<string, int>();
 
         // 最大缓存数量
-        private const int MaxTextureCacheSize = 512;
-        private const int MaxMaterialCacheSize = 1024;
+        // 安全网（IsTextureInExternalGraphicCache）确保不会淘汰仍在渲染的纹理，
+        // 因此不需要过大的缓冲。512×512 RGBA ≈ 1MB/张，2048 张 ≈ 2GB 上限。
+        // 实际使用中 LRU 会自然淘汰不再使用的旧纹理。
+        private const int MaxTextureCacheSize = 2048;
+        private const int MaxMaterialCacheSize = 4096;
 
         // P2: 纹理 InstanceID → 缓存路径 反向索引（O(1) 查找替代 O(N) 遍历）
         private static readonly Dictionary<int, string> textureInstanceIdToPath = new Dictionary<int, string>();
@@ -789,6 +792,14 @@ namespace CharacterStudio.Rendering
                     {
                         if (item is Texture2D tex)
                         {
+                            // 安全网：如果纹理仍被 externalGraphicCache 引用，跳过淘汰。
+                            // 已被 Destroy 的纹理引用会让 Graphic_Runtime 渲染为透明。
+                            if (PawnRenderNodeWorker_CustomLayer.IsTextureInExternalGraphicCache(tex))
+                            {
+                                // 刷新访问时间，避免反复尝试淘汰
+                                accessTimes[key] = Environment.TickCount;
+                                continue;
+                            }
                             int textureInstanceId = tex.GetInstanceID();
                             RemoveMaterialCacheEntriesForTextureInternal(textureInstanceId);
                             textureSemiTransparencyCache.Remove(textureInstanceId);

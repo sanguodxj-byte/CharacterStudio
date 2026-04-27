@@ -133,6 +133,9 @@
     <CS_Studio_Prop_ScaleWest>西向缩放（倍率）</CS_Studio_Prop_ScaleWest>
     <CS_Studio_Prop_ShowNode>显示此节点</CS_Studio_Prop_ShowNode>
     <CS_Studio_Prop_TexturePath>纹理路径</CS_Studio_Prop_TexturePath>
+    <CS_Studio_Texture_BrowseExternal>外部文件浏览</CS_Studio_Texture_BrowseExternal>
+    <CS_Studio_Texture_BrowseInternal>内部纹理浏览 (Textures/)</CS_Studio_Texture_BrowseInternal>
+    <CS_Studio_Browser_TexturesDir>跳转到 CharacterStudio 的 Textures 目录。选择此目录下的文件会自动转为相对路径，由 RimWorld 原版管线加载，性能更优。</CS_Studio_Browser_TexturesDir>
     <CS_Studio_Prop_Visible>可见</CS_Studio_Prop_Visible>
     <CS_Studio_Prop_Shader>材质类型 (Shader)</CS_Studio_Prop_Shader>
     <CS_Studio_Prop_Shader_Tooltip>决定图层如何处理半透明与深度排序：

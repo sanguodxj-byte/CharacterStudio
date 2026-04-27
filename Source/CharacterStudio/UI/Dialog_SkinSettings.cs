@@ -21,11 +21,8 @@ namespace CharacterStudio.UI
         private string tempDescription;
         private string tempAuthor;
         private string tempVersion;
-        private bool tempHotkeysEnabled;
         private string tempXenotypeDefName;
         private string tempRaceDisplayName;
-        private Dictionary<string, string> tempHotkeySlotBindings;
-
         public override Vector2 InitialSize => new Vector2(500f, 560f);
 
         public Dialog_SkinSettings(PawnSkinDef skin, Action? onChangedCallback = null)
@@ -44,11 +41,9 @@ namespace CharacterStudio.UI
             tempDescription = skin.description ?? "";
             tempAuthor = skin.author ?? "";
             tempVersion = skin.version ?? "1.0.0";
-            tempHotkeysEnabled = skin.abilityHotkeys?.enabled ?? false;
             tempXenotypeDefName = skin.xenotypeDefName ?? "";
             tempRaceDisplayName = skin.raceDisplayName ?? "";
-            tempHotkeySlotBindings = new Dictionary<string, string>(skin.abilityHotkeys?.slotBindings ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase), StringComparer.OrdinalIgnoreCase);
-        }
+            }
 
         public override void PreClose()
         {
@@ -58,6 +53,8 @@ namespace CharacterStudio.UI
 
         public override void DoWindowContents(Rect inRect)
         {
+            UIHelper.DrawDialogFrame(inRect, this);
+
             Rect shellRect = new Rect(0f, 0f, inRect.width, inRect.height);
             Rect titleRect = UIHelper.DrawPanelShell(shellRect, "CS_Studio_Skin_Settings".Translate(), 0f);
 
@@ -92,6 +89,7 @@ namespace CharacterStudio.UI
             UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Skin_HideVanillaHead".Translate(), ref skinDef.hideVanillaHead);
             UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Skin_HideVanillaHair".Translate(), ref skinDef.hideVanillaHair);
             UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Skin_HideVanillaBody".Translate(), ref skinDef.hideVanillaBody);
+            UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Skin_HideVanillaApparel".Translate(), ref skinDef.hideVanillaApparel);
 
             // 目标限制
             UIHelper.DrawSectionTitle(ref vy, width, "CS_Studio_Section_Targets".Translate());
@@ -122,48 +120,7 @@ namespace CharacterStudio.UI
                 xenotypeDisplay,
                 ShowXenotypeSelector);
 
-            // 技能热键映射
-            UIHelper.DrawSectionTitle(ref vy, width, "CS_Studio_Section_AbilityHotkeys".Translate());
-            UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_Ability_Hotkey_Enable".Translate(), ref tempHotkeysEnabled);
-
-            DrawHotkeyMappingField(ref vy, width, "CS_Studio_Ability_Hotkey_Q".Translate(), () => tempHotkeySlotBindings.TryGetValue("Q", out string v) ? v : string.Empty, v => tempHotkeySlotBindings["Q"] = v);
-            DrawHotkeyMappingField(ref vy, width, "CS_Studio_Ability_Hotkey_W".Translate(), () => tempHotkeySlotBindings.TryGetValue("W", out string v) ? v : string.Empty, v => tempHotkeySlotBindings["W"] = v);
-            DrawHotkeyMappingField(ref vy, width, "CS_Studio_Ability_Hotkey_E".Translate(), () => tempHotkeySlotBindings.TryGetValue("E", out string v) ? v : string.Empty, v => tempHotkeySlotBindings["E"] = v);
-            DrawHotkeyMappingField(ref vy, width, "CS_Studio_Ability_Hotkey_R".Translate(), () => tempHotkeySlotBindings.TryGetValue("R", out string v) ? v : string.Empty, v => tempHotkeySlotBindings["R"] = v);
-
-            // 武器渲染覆写
-            UIHelper.DrawSectionTitle(ref vy, width, "CS_Studio_Section_WeaponRender".Translate());
-            if (skinDef.animationConfig == null)
-                skinDef.animationConfig = new CharacterStudio.Core.PawnAnimationConfig();
-            var wrc = skinDef.animationConfig;
-            UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_WeaponRender_Enable".Translate(), ref wrc.weaponOverrideEnabled);
-            if (wrc.weaponOverrideEnabled)
-            {
-                UIHelper.DrawPropertyCheckbox(ref vy, width, "CS_Studio_WeaponRender_ApplyOffHand".Translate(), ref wrc.applyToOffHand);
-                UIHelper.DrawPropertySlider(ref vy, width, "CS_Studio_WeaponRender_ScaleX".Translate(), ref wrc.scale.x, 0.1f, 3f, "F2");
-                UIHelper.DrawPropertySlider(ref vy, width, "CS_Studio_WeaponRender_ScaleY".Translate(), ref wrc.scale.y, 0.1f, 3f, "F2");
-                UIHelper.DrawPropertySlider(ref vy, width, "CS_Studio_WeaponRender_OffsetX".Translate(), ref wrc.offset.x, -2f, 2f, "F3");
-                UIHelper.DrawPropertySlider(ref vy, width, "CS_Studio_WeaponRender_OffsetY".Translate(), ref wrc.offset.y, -2f, 2f, "F3");
-                UIHelper.DrawPropertySlider(ref vy, width, "CS_Studio_WeaponRender_OffsetZ".Translate(), ref wrc.offset.z, -2f, 2f, "F3");
-                // 方向特定偏移 (南/北/东)
-                UIHelper.DrawSectionTitle(ref vy, width, "CS_Studio_WeaponRender_DirOffsets".Translate());
-                UIHelper.DrawPropertySlider(ref vy, width, "CS_Studio_WeaponRender_OffSouthX".Translate(), ref wrc.offsetSouth.x, -2f, 2f, "F3");
-                UIHelper.DrawPropertySlider(ref vy, width, "CS_Studio_WeaponRender_OffSouthZ".Translate(), ref wrc.offsetSouth.z, -2f, 2f, "F3");
-                UIHelper.DrawPropertySlider(ref vy, width, "CS_Studio_WeaponRender_OffNorthX".Translate(), ref wrc.offsetNorth.x, -2f, 2f, "F3");
-                UIHelper.DrawPropertySlider(ref vy, width, "CS_Studio_WeaponRender_OffNorthZ".Translate(), ref wrc.offsetNorth.z, -2f, 2f, "F3");
-                UIHelper.DrawPropertySlider(ref vy, width, "CS_Studio_WeaponRender_OffEastX".Translate(), ref wrc.offsetEast.x, -2f, 2f, "F3");
-                UIHelper.DrawPropertySlider(ref vy, width, "CS_Studio_WeaponRender_OffEastZ".Translate(), ref wrc.offsetEast.z, -2f, 2f, "F3");
-
-                // 重置按钮
-                if (UIHelper.DrawToolbarButton(new Rect(0, vy, 120, 24), "CS_Studio_WeaponRender_Reset".Translate()))
-                {
-                    skinDef.animationConfig = new CharacterStudio.Core.PawnAnimationConfig { weaponOverrideEnabled = true };
-                    onChanged?.Invoke();
-                }
-                vy += 30f;
-            }
-
-            Widgets.EndScrollView();
+                        Widgets.EndScrollView();
 
             // ─────────────────────────────────────────────
             // 底部按钮
@@ -185,60 +142,11 @@ namespace CharacterStudio.UI
             skinDef.description = tempDescription;
             skinDef.author = tempAuthor;
             skinDef.version = tempVersion;
-            if (skinDef.abilityHotkeys == null)
-            {
-                skinDef.abilityHotkeys = new SkinAbilityHotkeyConfig();
-            }
-
-            skinDef.abilityHotkeys.enabled = tempHotkeysEnabled;
-            skinDef.abilityHotkeys.slotBindings.Clear();
-            foreach (var kvp in tempHotkeySlotBindings)
-            {
-                skinDef.abilityHotkeys.slotBindings[kvp.Key] = kvp.Value ?? string.Empty;
-            }
-
             skinDef.xenotypeDefName = tempXenotypeDefName;
             skinDef.raceDisplayName = tempRaceDisplayName;
 
             onChanged?.Invoke();
         }
-
-        private void DrawHotkeyMappingField(ref float y, float width, string label, Func<string> getter, Action<string> setter)
-        {
-            string current = getter();
-            string display = string.IsNullOrEmpty(current) ? "CS_Studio_Ability_Hotkey_None".Translate() : current;
-            UIHelper.DrawPropertyFieldWithButton(ref y, width, label, display, () => ShowAbilitySelector(setter));
-        }
-
-        private void ShowAbilitySelector(Action<string> onSelect)
-        {
-            var options = new List<FloatMenuOption>
-            {
-                new FloatMenuOption("CS_Studio_Ability_Hotkey_None".Translate(), () =>
-                {
-                    onSelect("");
-                    onChanged?.Invoke();
-                })
-            };
-
-            if (skinDef.abilities != null)
-            {
-                foreach (var ability in skinDef.abilities)
-                {
-                    if (ability == null || string.IsNullOrEmpty(ability.defName)) continue;
-                    string abilityLabel = string.IsNullOrEmpty(ability.label) ? ability.defName : $"{ability.label} ({ability.defName})";
-
-                    options.Add(new FloatMenuOption(abilityLabel, () =>
-                    {
-                        onSelect(ability.defName);
-                        onChanged?.Invoke();
-                    }));
-                }
-            }
-
-            Find.WindowStack.Add(new FloatMenu(options));
-        }
-
         private void ShowXenotypeSelector()
         {
             var options = new List<FloatMenuOption>();

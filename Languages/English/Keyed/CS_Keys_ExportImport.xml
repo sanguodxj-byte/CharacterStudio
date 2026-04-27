@@ -79,4 +79,5 @@
     <CS_Studio_Import_Source_Map>Import from Map Pawn</CS_Studio_Import_Source_Map>
     <CS_Studio_Import_Source_ProjectSkin>Import from Project Character List</CS_Studio_Import_Source_ProjectSkin>
     <CS_Studio_Import_Source_Race>Import from Race List</CS_Studio_Import_Source_Race>
+    <CS_Studio_Browser_SelectFolder>Select Folder</CS_Studio_Browser_SelectFolder>
 </LanguageData>

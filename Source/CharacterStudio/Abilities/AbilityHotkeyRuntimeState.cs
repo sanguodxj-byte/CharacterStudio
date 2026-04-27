@@ -14,6 +14,8 @@ namespace CharacterStudio.Abilities
         public int slotOverrideWindowEndTick = 0;
         public string slotOverrideWindowAbilityDefName = string.Empty;
         public string slotOverrideWindowSlotId = string.Empty;
+
+        // Override Ability DefNames
         public string qOverrideAbilityDefName = string.Empty;
         public int qOverrideExpireTick = -1;
         public string wOverrideAbilityDefName = string.Empty;
@@ -40,6 +42,8 @@ namespace CharacterStudio.Abilities
         public int cOverrideExpireTick = -1;
         public string vOverrideAbilityDefName = string.Empty;
         public int vOverrideExpireTick = -1;
+
+        // Cooldowns
         public int qCooldownUntilTick = 0;
         public int wCooldownUntilTick = 0;
         public int eCooldownUntilTick = 0;
@@ -53,6 +57,7 @@ namespace CharacterStudio.Abilities
         public int xCooldownUntilTick = 0;
         public int cCooldownUntilTick = 0;
         public int vCooldownUntilTick = 0;
+
         public bool rStackingEnabled = false;
         public int rStackCount = 0;
         public bool rSecondStageReady = false;
@@ -60,28 +65,35 @@ namespace CharacterStudio.Abilities
         public bool rSecondStageHasTarget = false;
         public IntVec3 rSecondStageTargetCell = IntVec3.Invalid;
         public string rStackAbilityDefName = string.Empty;
+
         public int weaponCarryCastingUntilTick = -1;
         public int periodicPulseNextTick = -1;
         public int periodicPulseEndTick = -1;
+
         public float shieldRemainingDamage = 0f;
         public int shieldExpireTick = -1;
         public float shieldStoredHeal = 0f;
         public float shieldStoredBonusDamage = 0f;
+
         public int attachedShieldVisualExpireTick = -1;
         public float attachedShieldVisualScale = 1f;
         public float attachedShieldVisualHeightOffset = 0f;
         public string attachedShieldVisualThingId = string.Empty;
+
         public int projectileInterceptorShieldExpireTick = -1;
         public string projectileInterceptorShieldThingId = string.Empty;
+
         public int offensiveMarkExpireTick = -1;
         public int offensiveMarkStacks = 0;
         public int offensiveComboExpireTick = -1;
         public int offensiveComboStacks = 0;
         public int dashEmpowerExpireTick = -1;
+
         public int flightStateStartTick = -1;
         public int flightStateExpireTick = -1;
-        public float flightStateHeightFactor = 0.12f;
+        public float flightStateHeightFactor = 0.35f;
         public bool suppressCombatActionsDuringFlightState = true;
+
         public bool isInVanillaFlight = false;
         public int vanillaFlightStartTick = -1;
         public int vanillaFlightExpireTick = -1;
@@ -91,13 +103,16 @@ namespace CharacterStudio.Abilities
         public bool vanillaFlightHasReservedTargetCell = false;
         public int vanillaFlightFollowupWindowEndTick = -1;
         public bool vanillaFlightPendingLandingBurst = false;
+
         public string triggeredEquipmentAnimationAbilityDefName = string.Empty;
         public int triggeredEquipmentAnimationStartTick = -1;
         public int triggeredEquipmentAnimationEndTick = -1;
+
         public int abilityExpressionOverrideExpireTick = -1;
         public ExpressionType? abilityExpressionOverride = null;
         public float abilityPupilBrightnessOffset = 0f;
         public float abilityPupilContrastOffset = 0f;
+
         public bool forcedMoveActive = false;
         public IntVec3 forcedMoveStartCell = IntVec3.Invalid;
         public IntVec3 forcedMoveCurrentCell = IntVec3.Invalid;
@@ -109,6 +124,7 @@ namespace CharacterStudio.Abilities
         public int forcedMoveDirectionZ = 0;
         public int forcedMoveBusyUntilTick = -1;
         public bool forcedMoveCollisionTriggered = false;
+        public bool forcedMoveIsLanding = false;
         public float forcedMoveDirFloatX = 0f;
         public float forcedMoveDirFloatZ = 0f;
         public float forcedMoveTotalDistance = 0f;
@@ -116,6 +132,21 @@ namespace CharacterStudio.Abilities
         public float forcedMoveSpeedPerTick = 0f;
         public int forcedMoveStartTick = -1;
         public int forcedMoveDurationTicks = -1;
+        public bool forcedMoveSweepAcrossPath = false;
+        public System.Collections.Generic.HashSet<Pawn> forcedMoveHitPawns = new System.Collections.Generic.HashSet<Pawn>();
+
+        // ── Bezier Curve Wall ──
+        public int bezierWallExpireTick = -1;
+        public float bezierWallStartX;
+        public float bezierWallStartZ;
+        public float bezierWallEndX;
+        public float bezierWallEndZ;
+        public float bezierWallControlX;
+        public float bezierWallControlZ;
+        public float bezierWallThickness;
+        public int bezierWallSegmentCount;
+        public bool bezierWallBlockFriendly;
+        public float bezierWallAbsorbRemaining;
 
         public int GetCooldownUntilTick(AbilityRuntimeHotkeySlot slot)
         {
@@ -203,6 +234,7 @@ namespace CharacterStudio.Abilities
             Scribe_Values.Look(ref slotOverrideWindowEndTick, "slotOverrideWindowEndTick", 0);
             Scribe_Values.Look(ref slotOverrideWindowAbilityDefName, "slotOverrideWindowAbilityDefName", string.Empty);
             Scribe_Values.Look(ref slotOverrideWindowSlotId, "slotOverrideWindowSlotId", string.Empty);
+
             Scribe_Values.Look(ref qOverrideAbilityDefName, "qOverrideAbilityDefName", string.Empty);
             Scribe_Values.Look(ref qOverrideExpireTick, "qOverrideExpireTick", -1);
             Scribe_Values.Look(ref wOverrideAbilityDefName, "wOverrideAbilityDefName", string.Empty);
@@ -229,6 +261,7 @@ namespace CharacterStudio.Abilities
             Scribe_Values.Look(ref cOverrideExpireTick, "cOverrideExpireTick", -1);
             Scribe_Values.Look(ref vOverrideAbilityDefName, "vOverrideAbilityDefName", string.Empty);
             Scribe_Values.Look(ref vOverrideExpireTick, "vOverrideExpireTick", -1);
+
             Scribe_Values.Look(ref qCooldownUntilTick, "qCooldownUntilTick", 0);
             Scribe_Values.Look(ref wCooldownUntilTick, "wCooldownUntilTick", 0);
             Scribe_Values.Look(ref eCooldownUntilTick, "eCooldownUntilTick", 0);
@@ -242,69 +275,13 @@ namespace CharacterStudio.Abilities
             Scribe_Values.Look(ref xCooldownUntilTick, "xCooldownUntilTick", 0);
             Scribe_Values.Look(ref cCooldownUntilTick, "cCooldownUntilTick", 0);
             Scribe_Values.Look(ref vCooldownUntilTick, "vCooldownUntilTick", 0);
-            Scribe_Values.Look(ref rStackingEnabled, "rStackingEnabled", false);
-            Scribe_Values.Look(ref rStackCount, "rStackCount", 0);
-            Scribe_Values.Look(ref rSecondStageReady, "rSecondStageReady", false);
-            Scribe_Values.Look(ref rSecondStageExecuteTick, "rSecondStageExecuteTick", -1);
-            Scribe_Values.Look(ref rSecondStageHasTarget, "rSecondStageHasTarget", false);
-            Scribe_Values.Look(ref rSecondStageTargetCell, "rSecondStageTargetCell", IntVec3.Invalid);
-            Scribe_Values.Look(ref rStackAbilityDefName, "rStackAbilityDefName", string.Empty);
-            Scribe_Values.Look(ref weaponCarryCastingUntilTick, "weaponCarryCastingUntilTick", -1);
-            Scribe_Values.Look(ref periodicPulseNextTick, "periodicPulseNextTick", -1);
-            Scribe_Values.Look(ref periodicPulseEndTick, "periodicPulseEndTick", -1);
-            Scribe_Values.Look(ref isInVanillaFlight, "isInVanillaFlight", false);
-            Scribe_Values.Look(ref vanillaFlightStartTick, "vanillaFlightStartTick", -1);
-            Scribe_Values.Look(ref vanillaFlightExpireTick, "vanillaFlightExpireTick", -1);
-            Scribe_Values.Look(ref vanillaFlightSourceAbilityDefName, "vanillaFlightSourceAbilityDefName", string.Empty);
-            Scribe_Values.Look(ref vanillaFlightFollowupAbilityDefName, "vanillaFlightFollowupAbilityDefName", string.Empty);
-            Scribe_Values.Look(ref vanillaFlightReservedTargetCell, "vanillaFlightReservedTargetCell", IntVec3.Invalid);
-            Scribe_Values.Look(ref vanillaFlightHasReservedTargetCell, "vanillaFlightHasReservedTargetCell", false);
-            Scribe_Values.Look(ref vanillaFlightFollowupWindowEndTick, "vanillaFlightFollowupWindowEndTick", -1);
-            Scribe_Values.Look(ref vanillaFlightPendingLandingBurst, "vanillaFlightPendingLandingBurst", false);
-            Scribe_Values.Look(ref shieldRemainingDamage, "shieldRemainingDamage", 0f);
-            Scribe_Values.Look(ref shieldExpireTick, "shieldExpireTick", -1);
-            Scribe_Values.Look(ref shieldStoredHeal, "shieldStoredHeal", 0f);
-            Scribe_Values.Look(ref shieldStoredBonusDamage, "shieldStoredBonusDamage", 0f);
-            Scribe_Values.Look(ref attachedShieldVisualExpireTick, "attachedShieldVisualExpireTick", -1);
-            Scribe_Values.Look(ref attachedShieldVisualScale, "attachedShieldVisualScale", 1f);
-            Scribe_Values.Look(ref attachedShieldVisualHeightOffset, "attachedShieldVisualHeightOffset", 0f);
-            Scribe_Values.Look(ref attachedShieldVisualThingId, "attachedShieldVisualThingId", string.Empty);
-            Scribe_Values.Look(ref projectileInterceptorShieldExpireTick, "projectileInterceptorShieldExpireTick", -1);
-            Scribe_Values.Look(ref projectileInterceptorShieldThingId, "projectileInterceptorShieldThingId", string.Empty);
-            Scribe_Values.Look(ref offensiveMarkExpireTick, "offensiveMarkExpireTick", -1);
-            Scribe_Values.Look(ref offensiveMarkStacks, "offensiveMarkStacks", 0);
-            Scribe_Values.Look(ref offensiveComboExpireTick, "offensiveComboExpireTick", -1);
-            Scribe_Values.Look(ref offensiveComboStacks, "offensiveComboStacks", 0);
-            Scribe_Values.Look(ref dashEmpowerExpireTick, "dashEmpowerExpireTick", -1);
-            Scribe_Values.Look(ref flightStateStartTick, "flightStateStartTick", -1);
-            Scribe_Values.Look(ref flightStateExpireTick, "flightStateExpireTick", -1);
-            Scribe_Values.Look(ref flightStateHeightFactor, "flightStateHeightFactor", 0.35f);
-            Scribe_Values.Look(ref suppressCombatActionsDuringFlightState, "suppressCombatActionsDuringFlightState", true);
-            Scribe_Values.Look(ref triggeredEquipmentAnimationAbilityDefName, "triggeredEquipmentAnimationAbilityDefName", string.Empty);
-            Scribe_Values.Look(ref triggeredEquipmentAnimationStartTick, "triggeredEquipmentAnimationStartTick", -1);
-            Scribe_Values.Look(ref triggeredEquipmentAnimationEndTick, "triggeredEquipmentAnimationEndTick", -1);
-            Scribe_Values.Look(ref abilityExpressionOverrideExpireTick, "abilityExpressionOverrideExpireTick", -1);
-            Scribe_Values.Look(ref abilityExpressionOverride, "abilityExpressionOverride");
-            Scribe_Values.Look(ref abilityPupilBrightnessOffset, "abilityPupilBrightnessOffset", 0f);
-            Scribe_Values.Look(ref abilityPupilContrastOffset, "abilityPupilContrastOffset", 0f);
-            Scribe_Values.Look(ref forcedMoveActive, "forcedMoveActive", false);
-            Scribe_Values.Look(ref forcedMoveStartCell, "forcedMoveStartCell", IntVec3.Invalid);
-            Scribe_Values.Look(ref forcedMoveCurrentCell, "forcedMoveCurrentCell", IntVec3.Invalid);
-            Scribe_Values.Look(ref forcedMoveNextCell, "forcedMoveNextCell", IntVec3.Invalid);
-            Scribe_Values.Look(ref forcedMoveStepStartTick, "forcedMoveStepStartTick", -1);
-            Scribe_Values.Look(ref forcedMoveStepDurationTicks, "forcedMoveStepDurationTicks", 4);
-            Scribe_Values.Look(ref forcedMoveQueuedSteps, "forcedMoveQueuedSteps", 0);
-            Scribe_Values.Look(ref forcedMoveDirectionX, "forcedMoveDirectionX", 0);
-            Scribe_Values.Look(ref forcedMoveDirectionZ, "forcedMoveDirectionZ", 0);
-            Scribe_Values.Look(ref forcedMoveBusyUntilTick, "forcedMoveBusyUntilTick", -1);
-            Scribe_Values.Look(ref forcedMoveCollisionTriggered, "forcedMoveCollisionTriggered", false);
-            Scribe_Values.Look(ref forcedMoveDirFloatX, "forcedMoveDirFloatX", 0f);
-            Scribe_Values.Look(ref forcedMoveDirFloatZ, "forcedMoveDirFloatZ", 0f);
-            Scribe_Values.Look(ref forcedMoveTotalDistance, "forcedMoveTotalDistance", 0f);
-            Scribe_Values.Look(ref forcedMoveTraveledDistance, "forcedMoveTraveledDistance", 0f);
-            Scribe_Values.Look(ref forcedMoveSpeedPerTick, "forcedMoveSpeedPerTick", 0f);
-            Scribe_Values.Look(ref forcedMoveStartTick, "forcedMoveStartTick", -1);
-            Scribe_Values.Look(ref forcedMoveDurationTicks, "forcedMoveDurationTicks", -1);
+            Scribe_Values.Look(ref bezierWallEndZ, "bezierWallEndZ", 0f);
+            Scribe_Values.Look(ref bezierWallControlX, "bezierWallControlX", 0f);
+            Scribe_Values.Look(ref bezierWallControlZ, "bezierWallControlZ", 0f);
+            Scribe_Values.Look(ref bezierWallThickness, "bezierWallThickness", 0.5f);
+            Scribe_Values.Look(ref bezierWallSegmentCount, "bezierWallSegmentCount", 16);
+            Scribe_Values.Look(ref bezierWallBlockFriendly, "bezierWallBlockFriendly", false);
+            Scribe_Values.Look(ref bezierWallAbsorbRemaining, "bezierWallAbsorbRemaining", 0f);
         }
 
         public void Normalize()
@@ -353,6 +330,12 @@ namespace CharacterStudio.Abilities
             {
                 triggeredEquipmentAnimationStartTick = -1;
             }
+
+            // ── Bezier Curve Wall ──
+            if (bezierWallExpireTick < -1) bezierWallExpireTick = -1;
+            if (bezierWallThickness < 0f) bezierWallThickness = 0.5f;
+            if (bezierWallSegmentCount <= 0) bezierWallSegmentCount = 16;
+            if (bezierWallAbsorbRemaining < 0f) bezierWallAbsorbRemaining = 0f;
         }
     }
 }

@@ -27,6 +27,8 @@ namespace CharacterStudio.UI
 
         public override void DoWindowContents(Rect inRect)
         {
+            UIHelper.DrawDialogFrame(inRect, this);
+
             Text.Font = GameFont.Small;
 
             const float hintHeight = 28f;

@@ -73,15 +73,23 @@ namespace CharacterStudio.UI
             if (!layerModificationWorkflowActive &&
                 currentTab == EditorTab.Items &&
                 selectedEquipmentIndex >= 0 &&
-                selectedEquipmentIndex < (workingSkin.equipments?.Count ?? 0))
+                selectedEquipmentIndex < (WorkingEquipments?.Count ?? 0))
             {
-                DrawEquipmentProperties(rect);
+                DrawEquipmentProperties(rect, equipmentMode: false);
                 return;
             }
 
-            if (!layerModificationWorkflowActive && currentTab == EditorTab.Animation)
+            if (!layerModificationWorkflowActive && currentTab == EditorTab.Equipment)
             {
-                DrawAnimationProperties(rect);
+                if (selectedEquipmentIndex >= 0 &&
+                    selectedEquipmentIndex < (WorkingEquipments?.Count ?? 0))
+                {
+                    DrawEquipmentProperties(rect, equipmentMode: true);
+                }
+                else
+                {
+                    DrawAnimationProperties(rect);
+                }
                 return;
             }
 

@@ -23,6 +23,29 @@ namespace CharacterStudio.UI
                 { "Combat", ExpressionType.WaitCombat },
                 { "Melee", ExpressionType.AttackMelee },
                 { "Ranged", ExpressionType.AttackRanged },
+                { "Cry", ExpressionType.Sad },
+                { "Smile", ExpressionType.Happy },
+                { "Laugh", ExpressionType.Cheerful },
+                { "Grin", ExpressionType.Cheerful },
+                { "Loving", ExpressionType.Lovin },
+                { "Love", ExpressionType.Lovin },
+                { "Speak", ExpressionType.Eating },
+                { "Talking", ExpressionType.Eating },
+                { "Think", ExpressionType.Working },
+                { "Thinking", ExpressionType.Working },
+                { "Pain", ExpressionType.Pain },
+                { "Hurt", ExpressionType.Pain },
+                { "Dead", ExpressionType.Dead },
+                { "Blink", ExpressionType.Wink },
+                { "Sad", ExpressionType.Sad },
+                { "Happy", ExpressionType.Happy },
+                { "Cheerful", ExpressionType.Cheerful },
+                { "Gloomy", ExpressionType.Gloomy },
+                { "Hopeless", ExpressionType.Hopeless },
+                { "Tired", ExpressionType.Tired },
+                { "Angry", ExpressionType.Angry },
+                { "Scared", ExpressionType.Scared },
+                { "Shock", ExpressionType.Shock },
             };
 
         private static readonly Dictionary<string, LayeredFacePartType> LayeredFacePartFileAliases =
@@ -45,6 +68,7 @@ namespace CharacterStudio.UI
                 { "ReplacementEye", LayeredFacePartType.ReplacementEye },
                 { "ReplacementEyes", LayeredFacePartType.ReplacementEye },
                 { "Mouth", LayeredFacePartType.Mouth },
+                { "ReplacementMouth", LayeredFacePartType.ReplacementMouth },
                 { "Hair", LayeredFacePartType.Hair },
                 { "OverlayTop", LayeredFacePartType.OverlayTop },
             };
@@ -402,15 +426,6 @@ namespace CharacterStudio.UI
                     Rot4 resolvedFacing = facing ?? Rot4.South;
                     if (appendOnly && HasImportedLayeredEntry(importedFaceConfig, partType, expression, overlayId, side, resolvedFacing))
                         return false;
-
-                    if ((partType == LayeredFacePartType.ReplacementEye
-                            || partType == LayeredFacePartType.ReplacementMouth
-                            || partType == LayeredFacePartType.Overlay
-                            || partType == LayeredFacePartType.OverlayTop)
-                        && expression != ExpressionType.Neutral)
-                    {
-                        return false;
-                    }
 
                     ResolveAutoImportDirectionalPaths(
                         detectedFilePathMap,
@@ -1544,11 +1559,6 @@ namespace CharacterStudio.UI
                     tailSegments.RemoveAt(tailSegments.Count - 1);
                 }
 
-                if (segments.Length > 1 && tailSegments.Count == 0)
-                {
-                    return false;
-                }
-
                 if (tailSegments.Count == 0)
                 {
                     return false;
@@ -1556,11 +1566,7 @@ namespace CharacterStudio.UI
 
                 if (tailSegments.Count == 1)
                 {
-                    if (Enum.TryParse<ExpressionType>(tailSegments[0], true, out _))
-                    {
-                        return false;
-                    }
-
+                    // 单段 overlayId，无论是否匹配 ExpressionType 都作为 overlayId 导入
                     overlayId = PawnFaceConfig.NormalizeOverlayId(tailSegments[0]);
                     return !string.IsNullOrWhiteSpace(overlayId);
                 }
@@ -1640,10 +1646,8 @@ namespace CharacterStudio.UI
                 }
             }
 
-            if (partType == LayeredFacePartType.Mouth && !string.IsNullOrWhiteSpace(parsedExpressionSuffix))
-            {
-                partType = LayeredFacePartType.ReplacementMouth;
-            }
+            // Mouth 带后缀时保持为 Mouth（带表情变体），不再自动转为 ReplacementMouth。
+            // ReplacementMouth 仅在文件名前缀显式为 "ReplacementMouth" 时使用。
 
             if (tailSegments.Count == 0)
             {
@@ -1902,9 +1906,11 @@ namespace CharacterStudio.UI
             }
 
             string firstSegment = segments[0];
-            if (firstSegment.Equals("Overlay", StringComparison.OrdinalIgnoreCase)
-                || firstSegment.Equals("OverlayTop", StringComparison.OrdinalIgnoreCase)
-                || firstSegment.Equals("Eye", StringComparison.OrdinalIgnoreCase))
+            if (LayeredFacePartFileAliases.ContainsKey(firstSegment)
+                || firstSegment.Equals("Overlay", StringComparison.OrdinalIgnoreCase)
+                || firstSegment.Equals("Blush", StringComparison.OrdinalIgnoreCase)
+                || firstSegment.Equals("Tear", StringComparison.OrdinalIgnoreCase)
+                || firstSegment.Equals("Sweat", StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }

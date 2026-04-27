@@ -87,6 +87,8 @@ namespace CharacterStudio.UI
 
         public override void DoWindowContents(Rect inRect)
         {
+            UIHelper.DrawDialogFrame(inRect, this);
+
             Text.Font = GameFont.Medium;
             Widgets.Label(new Rect(0, 0, inRect.width, 30), "CS_Studio_Glossary_Title".Translate());
             Text.Font = GameFont.Small;

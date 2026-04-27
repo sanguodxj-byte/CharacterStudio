@@ -14,10 +14,12 @@ namespace CharacterStudio.UI
         {
             var originalMethod = AccessTools.Method(typeof(UIRoot_Play), nameof(UIRoot_Play.UIRootOnGUI));
             var prefixMethod = AccessTools.Method(typeof(Patch_UIRoot_AbilityHotkeys), nameof(UIRootOnGUI_Prefix));
-            if (originalMethod != null && prefixMethod != null)
+            var postfixMethod = AccessTools.Method(typeof(Patch_UIRoot_AbilityHotkeys), nameof(UIRootOnGUI_Postfix));
+            if (originalMethod != null)
             {
-                harmony.Patch(originalMethod, prefix: new HarmonyMethod(prefixMethod));
-                Log.Message("[CharacterStudio] UIRoot 技能热键拦截补丁已应用");
+                if (prefixMethod != null) harmony.Patch(originalMethod, prefix: new HarmonyMethod(prefixMethod));
+                if (postfixMethod != null) harmony.Patch(originalMethod, postfix: new HarmonyMethod(postfixMethod));
+                Log.Message("[CharacterStudio] UIRoot 技能热键与滤镜补丁已应用");
             }
         }
 
@@ -26,7 +28,7 @@ namespace CharacterStudio.UI
             var originalMethod = AccessTools.Method(typeof(UIRoot_Play), nameof(UIRoot_Play.UIRootOnGUI));
             if (originalMethod != null)
             {
-                harmony.Unpatch(originalMethod, HarmonyPatchType.Prefix, harmony.Id);
+                harmony.Unpatch(originalMethod, HarmonyPatchType.All, harmony.Id);
             }
         }
 
@@ -38,6 +40,11 @@ namespace CharacterStudio.UI
             }
 
             Abilities.AbilityHotkeyRuntimeComponent.ConsumeReservedHotkeyKeys(Event.current);
+        }
+
+        private static void UIRootOnGUI_Postfix()
+        {
+            Abilities.VfxGlobalFilterManager.OnGUI();
         }
     }
 

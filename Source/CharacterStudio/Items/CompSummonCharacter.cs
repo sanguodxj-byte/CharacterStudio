@@ -115,8 +115,18 @@ namespace CharacterStudio.Items
 
             foreach (ModContentPack mod in LoadedModManager.RunningModsListForReading)
             {
-                string filePath = Path.Combine(mod.RootDir, "Defs", "PawnKindDefs", fileName);
-                CharacterDefinition? loaded = CharacterDefinitionXmlUtility.Load(filePath);
+                // 优先从 CharacterData/ 目录加载（不被 RimWorld Defs 扫描器解析）
+                string charDataPath = Path.Combine(mod.RootDir, "CharacterData", fileName);
+                CharacterDefinition? loaded = CharacterDefinitionXmlUtility.Load(charDataPath);
+                if (loaded != null)
+                {
+                    loaded.EnsureDefaults(skin?.defName ?? $"Skin_{safeName}", ResolveFallbackRace(loaded, skin), skin?.attributes);
+                    return loaded;
+                }
+
+                // 回退到旧路径 Defs/PawnKindDefs/（兼容早期导出的模组）
+                string legacyPath = Path.Combine(mod.RootDir, "Defs", "PawnKindDefs", fileName);
+                loaded = CharacterDefinitionXmlUtility.Load(legacyPath);
                 if (loaded != null)
                 {
                     loaded.EnsureDefaults(skin?.defName ?? $"Skin_{safeName}", ResolveFallbackRace(loaded, skin), skin?.attributes);

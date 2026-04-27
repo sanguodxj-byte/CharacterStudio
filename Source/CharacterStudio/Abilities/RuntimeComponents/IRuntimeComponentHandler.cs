@@ -19,7 +19,7 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     /// </summary>
     public interface IOnApplyHandler : IRuntimeComponentHandler
     {
-        void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, int nowTick);
+        void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, LocalTargetInfo dest, int nowTick);
     }
 
     /// <summary>
@@ -27,7 +27,7 @@ namespace CharacterStudio.Abilities.RuntimeComponents
     /// </summary>
     public interface IGlobalOnApplyHandler : IRuntimeComponentHandler
     {
-        void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, LocalTargetInfo target, int nowTick);
+        void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, LocalTargetInfo target, LocalTargetInfo dest, int nowTick);
     }
 
     /// <summary>

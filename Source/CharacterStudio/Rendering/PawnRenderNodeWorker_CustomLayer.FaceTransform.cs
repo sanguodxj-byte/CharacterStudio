@@ -4,6 +4,7 @@ using UnityEngine;
 using Verse;
 using CharacterStudio.Core;
 using CharacterStudio.Abilities;
+using CharacterStudio.Performance;
 using System.Linq;
 using System.Collections.Generic;
 
@@ -14,9 +15,23 @@ namespace CharacterStudio.Rendering
     /// </summary>
     public partial class PawnRenderNodeWorker_CustomLayer : PawnRenderNodeWorker
     {
+        // P11: 复用默认配置实例，避免热路径反复 new 配置 struct/class
+        private static readonly PawnEyeDirectionConfig.LidMotionConfig DefaultLidMotionConfig = new PawnEyeDirectionConfig.LidMotionConfig();
+        private static readonly PawnEyeDirectionConfig.EyeMotionConfig DefaultEyeMotionConfig = new PawnEyeDirectionConfig.EyeMotionConfig();
+        private static readonly PawnEyeDirectionConfig.PupilMotionConfig DefaultPupilMotionConfig = new PawnEyeDirectionConfig.PupilMotionConfig();
+        private static readonly PawnFaceConfig.BrowMotionConfig DefaultBrowMotionConfig = new PawnFaceConfig.BrowMotionConfig();
+        private static readonly PawnFaceConfig.MouthMotionConfig DefaultMouthMotionConfig = new PawnFaceConfig.MouthMotionConfig();
+        private static readonly PawnFaceConfig.EmotionOverlayMotionConfig DefaultEmotionOverlayMotionConfig = new PawnFaceConfig.EmotionOverlayMotionConfig();
         private void EnsureProgrammaticFaceStateUpdated(PawnRenderNode_Custom customNode, Pawn? pawn)
         {
             if (!customNode.layeredFacePartType.HasValue || pawn == null)
+            {
+                ResetProgrammaticFaceTransform(customNode);
+                return;
+            }
+
+            CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
+            if (skinComp == null)
             {
                 ResetProgrammaticFaceTransform(customNode);
                 return;
@@ -26,11 +41,59 @@ namespace CharacterStudio.Rendering
                 ? AbilityTimeStopRuntimeController.ResolveVisualTickForPawn(pawn, Find.TickManager?.TicksGame ?? 0)
                 : (int)(Time.realtimeSinceStartup * 60f);
 
+            // 保持原语义：同一节点同一 tick 内多次调用只更新一次，避免 alpha fade 被 CanDraw/Offset/Scale/Rotation 多次推进。
             if (customNode.lastProgrammaticFaceTick == currentTick)
                 return;
 
+            var cacheKey = new CompPawnSkin.FaceTransformCacheKey(
+                customNode.layeredFacePartType.Value,
+                customNode.layeredFacePartSide,
+                customNode.layeredOverlayId,
+                currentTick);
+            if (skinComp.TryGetCachedFaceTransform(cacheKey, out var cachedTransform))
+            {
+                CharacterStudioPerformanceStats.RecordFaceTransformCacheLookup(hit: true);
+                ApplyCachedProgrammaticFaceTransform(customNode, cachedTransform);
+                customNode.lastProgrammaticFaceTick = currentTick;
+                return;
+            }
+
+            CharacterStudioPerformanceStats.RecordFaceTransformCacheLookup(hit: false);
+
             customNode.lastProgrammaticFaceTick = currentTick;
             CalculateProgrammaticFaceTransform(customNode, pawn, currentTick);
+            skinComp.SetCachedFaceTransform(
+                cacheKey,
+                new CompPawnSkin.FaceTransformCacheEntry(
+                    customNode.currentProgrammaticAngle,
+                    customNode.currentProgrammaticOffset,
+                    customNode.currentProgrammaticScale,
+                    customNode.targetProgrammaticAlpha));
+        }
+
+        private static void ApplyCachedProgrammaticFaceTransform(PawnRenderNode_Custom customNode, CompPawnSkin.FaceTransformCacheEntry cachedTransform)
+        {
+            customNode.currentProgrammaticAngle = cachedTransform.angle;
+            customNode.currentProgrammaticOffset = cachedTransform.offset;
+            customNode.currentProgrammaticScale = cachedTransform.scale;
+            customNode.targetProgrammaticAlpha = cachedTransform.targetAlpha;
+
+            float targetAlpha = Mathf.Clamp01(cachedTransform.targetAlpha);
+            if (!customNode.hasProgrammaticAlphaInitialized)
+            {
+                customNode.currentProgrammaticAlpha = targetAlpha;
+                customNode.hasProgrammaticAlphaInitialized = true;
+                return;
+            }
+
+            float step = customNode.currentProgrammaticAlpha < targetAlpha
+                ? ProgrammaticFaceFadeInStep
+                : ProgrammaticFaceFadeOutStep;
+            customNode.currentProgrammaticAlpha = Mathf.MoveTowards(customNode.currentProgrammaticAlpha, targetAlpha, step);
+            if (Mathf.Abs(customNode.currentProgrammaticAlpha - targetAlpha) <= ProgrammaticFaceAlphaSnapThreshold)
+            {
+                customNode.currentProgrammaticAlpha = targetAlpha;
+            }
         }
 
         private void ResetProgrammaticFaceTransform(PawnRenderNode_Custom customNode)
@@ -960,42 +1023,42 @@ namespace CharacterStudio.Rendering
         {
             CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
             return skinComp?.ActiveSkin?.faceConfig?.eyeDirectionConfig?.lidMotion
-                ?? new PawnEyeDirectionConfig.LidMotionConfig();
+                ?? DefaultLidMotionConfig;
         }
 
         private PawnEyeDirectionConfig.EyeMotionConfig GetLayeredEyeMotionConfig(PawnRenderNode_Custom customNode)
         {
             CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
             return skinComp?.ActiveSkin?.faceConfig?.eyeDirectionConfig?.eyeMotion
-                ?? new PawnEyeDirectionConfig.EyeMotionConfig();
+                ?? DefaultEyeMotionConfig;
         }
 
         private PawnEyeDirectionConfig.PupilMotionConfig GetLayeredPupilMotionConfig(PawnRenderNode_Custom customNode)
         {
             CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
             return skinComp?.ActiveSkin?.faceConfig?.eyeDirectionConfig?.pupilMotion
-                ?? new PawnEyeDirectionConfig.PupilMotionConfig();
+                ?? DefaultPupilMotionConfig;
         }
 
         private PawnFaceConfig.BrowMotionConfig GetBrowMotionConfig(PawnRenderNode_Custom customNode)
         {
             CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
             return skinComp?.ActiveSkin?.faceConfig?.browMotion
-                ?? new PawnFaceConfig.BrowMotionConfig();
+                ?? DefaultBrowMotionConfig;
         }
 
         private PawnFaceConfig.MouthMotionConfig GetMouthMotionConfig(PawnRenderNode_Custom customNode)
         {
             CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
             return skinComp?.ActiveSkin?.faceConfig?.mouthMotion
-                ?? new PawnFaceConfig.MouthMotionConfig();
+                ?? DefaultMouthMotionConfig;
         }
 
         private PawnFaceConfig.EmotionOverlayMotionConfig GetEmotionOverlayMotionConfig(PawnRenderNode_Custom customNode)
         {
             CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
             return skinComp?.ActiveSkin?.faceConfig?.emotionOverlayMotion
-                ?? new PawnFaceConfig.EmotionOverlayMotionConfig();
+                ?? DefaultEmotionOverlayMotionConfig;
         }
 
         private void ApplyProgrammaticMouthTransform(

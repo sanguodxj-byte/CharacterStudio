@@ -259,13 +259,16 @@ namespace CharacterStudio.UI
 
         private void DrawAbilityAudioFields(ref float y, float width, AbilityVisualEffectConfig vfx)
         {
-            string soundDefName = vfx.soundDefName ?? string.Empty;
-            UIHelper.DrawPropertyField(ref y, width, "CS_Studio_VFX_SoundDefName".Translate(), ref soundDefName);
-            if ((vfx.soundDefName ?? string.Empty) != soundDefName)
-            {
-                vfx.soundDefName = soundDefName;
-                NotifyAbilityPreviewDirty();
-            }
+            string soundDefDisplay = string.IsNullOrWhiteSpace(vfx.soundDefName)
+                ? "CS_Studio_None".Translate()
+                : vfx.soundDefName;
+            UIHelper.DrawControlledReferenceField(ref y, width, "CS_Studio_VFX_SoundDefName".Translate(), vfx.soundDefName, () => soundDefDisplay,
+                () => ShowSoundDefSelector(vfx, comp: null),
+                () =>
+                {
+                    vfx.soundDefName = string.Empty;
+                    NotifyAbilityPreviewDirty();
+                });
 
             int soundDelayBefore = vfx.soundDelayTicks;
             UIHelper.DrawNumericField(ref y, width, "CS_Studio_VFX_SoundDelay".Translate(), ref vfx.soundDelayTicks, 0, 60000);

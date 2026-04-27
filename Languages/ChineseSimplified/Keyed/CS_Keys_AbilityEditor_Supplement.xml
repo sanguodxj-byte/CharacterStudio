@@ -185,8 +185,9 @@
     <CS_Studio_Ability_PropertiesTitle>技能属性</CS_Studio_Ability_PropertiesTitle>
     <CS_Studio_Ability_Radius>爆炸半径</CS_Studio_Ability_Radius>
     <CS_Studio_Ability_Range>射程</CS_Studio_Ability_Range>
-    <CS_Studio_Ability_Save>保存</CS_Studio_Ability_Save>
-    <CS_Studio_Ability_SaveSuccess>技能已保存</CS_Studio_Ability_SaveSuccess>
+    <CS_Studio_Ability_Save>保存会话</CS_Studio_Ability_Save>
+    <CS_Studio_Ability_SaveSuccess>技能编辑会话已保存</CS_Studio_Ability_SaveSuccess>
+
     <CS_Studio_Ability_Search>搜索技能</CS_Studio_Ability_Search>
     <CS_Studio_Ability_SelectedSummary>当前选中：{0}</CS_Studio_Ability_SelectedSummary>
     <CS_Studio_Ability_SelectHint>请选择一个技能，或创建一个新技能。</CS_Studio_Ability_SelectHint>
@@ -553,6 +554,17 @@
     <CS_Studio_VFX_GlobalFilterTransition>过渡</CS_Studio_VFX_GlobalFilterTransition>
     <CS_Studio_VFX_GlobalFilterTransition_None>无</CS_Studio_VFX_GlobalFilterTransition_None>
     <CS_Studio_VFX_GlobalFilterTransitionTicks>过渡(tick)</CS_Studio_VFX_GlobalFilterTransitionTicks>
+    <!-- 全局滤镜模式 -->
+    <CS_Studio_VFX_GlobalFilterMode_Grayscale>灰度</CS_Studio_VFX_GlobalFilterMode_Grayscale>
+    <CS_Studio_VFX_GlobalFilterMode_Desaturate>降低饱和度</CS_Studio_VFX_GlobalFilterMode_Desaturate>
+    <CS_Studio_VFX_GlobalFilterMode_Sepia>怀旧</CS_Studio_VFX_GlobalFilterMode_Sepia>
+    <CS_Studio_VFX_GlobalFilterMode_Tint>着色</CS_Studio_VFX_GlobalFilterMode_Tint>
+    <CS_Studio_VFX_GlobalFilterMode_Negative>负片</CS_Studio_VFX_GlobalFilterMode_Negative>
+    <CS_Studio_VFX_GlobalFilterMode_BlackAndWhite>黑白</CS_Studio_VFX_GlobalFilterMode_BlackAndWhite>
+    <!-- 全局滤镜过渡方式 -->
+    <CS_Studio_VFX_GlobalFilterTransition_Linear>线性</CS_Studio_VFX_GlobalFilterTransition_Linear>
+    <CS_Studio_VFX_GlobalFilterTransition_EaseIn>缓入</CS_Studio_VFX_GlobalFilterTransition_EaseIn>
+    <CS_Studio_VFX_GlobalFilterTransition_EaseOut>缓出</CS_Studio_VFX_GlobalFilterTransition_EaseOut>
     <!-- VFX 大类名称 -->
     <CS_Studio_VFX_Category_Preset>预设特效</CS_Studio_VFX_Category_Preset>
     <CS_Studio_VFX_Category_CustomTexture>自定义贴图</CS_Studio_VFX_Category_CustomTexture>

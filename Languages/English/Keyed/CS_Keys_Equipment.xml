@@ -47,11 +47,16 @@
     <CS_Studio_Equip_LinkedThingDef_Hint>Optionally bind this equipment entry to an in-game ThingDef for integration or auto-matching.</CS_Studio_Equip_LinkedThingDef_Hint>
     <CS_Studio_Equip_NoAbilities>No abilities</CS_Studio_Equip_NoAbilities>
     <CS_Studio_Equip_NoAbilityPool>No shared abilities available. Create or import abilities first.</CS_Studio_Equip_NoAbilityPool>
+    <CS_Studio_Equip_NoAbilitiesToBind>No abilities available to bind. Please prepare an ability pool in the standalone ability editor first.</CS_Studio_Equip_NoAbilitiesToBind>
     <CS_Studio_Equip_NorthOffsetX>North Offset X</CS_Studio_Equip_NorthOffsetX>
     <CS_Studio_Equip_NorthOffsetY>North Offset Y</CS_Studio_Equip_NorthOffsetY>
     <CS_Studio_Equip_NorthOffsetZ>North Offset Z</CS_Studio_Equip_NorthOffsetZ>
     <CS_Studio_Equip_NoSelection>No equipment selected.</CS_Studio_Equip_NoSelection>
-    <CS_Studio_Equip_OpenAbilityEditor>Open Shared Ability Editor</CS_Studio_Equip_OpenAbilityEditor>
+    <CS_Studio_Equip_OpenAbilityEditor>Open Ability Editor</CS_Studio_Equip_OpenAbilityEditor>
+    <CS_Studio_Equip_ImportAbilities>Import Abilities</CS_Studio_Equip_ImportAbilities>
+    <CS_Studio_Equip_NoAbilitiesImported>No abilities found in the selected XML file.</CS_Studio_Equip_NoAbilitiesImported>
+    <CS_Studio_Equip_AbilitiesImported>Imported {0} abilities.</CS_Studio_Equip_AbilitiesImported>
+    <CS_Studio_Equip_AbilityImportFailed>Failed to import abilities.</CS_Studio_Equip_AbilityImportFailed>
     <CS_Studio_Equip_ParentThingDefName>Parent ThingDef</CS_Studio_Equip_ParentThingDefName>
     <CS_Studio_Equip_Preset_LeftWing>Left Wing</CS_Studio_Equip_Preset_LeftWing>
     <CS_Studio_Equip_Preset_LeftWingVfx>Left Wing VFX</CS_Studio_Equip_Preset_LeftWingVfx>
@@ -140,4 +145,16 @@
     <CS_Studio_Equip_WeaponTags>Weapon Tags</CS_Studio_Equip_WeaponTags>
     <CS_Studio_Equip_WeaponClasses>Weapon Classes</CS_Studio_Equip_WeaponClasses>
     <CS_Studio_Equip_WornTexPath>Worn Texture Path</CS_Studio_Equip_WornTexPath>
+    <CS_Studio_Equip_SwingPreset>Swing Preset</CS_Studio_Equip_SwingPreset>
+    <CS_Studio_Equip_SwingPreset_None>Custom (No Preset)</CS_Studio_Equip_SwingPreset_None>
+    <CS_Studio_Equip_SwingPreset_HorizontalSlash>Horizontal Slash</CS_Studio_Equip_SwingPreset_HorizontalSlash>
+    <CS_Studio_Equip_SwingPreset_VerticalSlash>Vertical Slash</CS_Studio_Equip_SwingPreset_VerticalSlash>
+    <CS_Studio_Equip_SwingPreset_Thrust>Thrust</CS_Studio_Equip_SwingPreset_Thrust>
+    <CS_Studio_Equip_SwingPreset_Uppercut>Uppercut</CS_Studio_Equip_SwingPreset_Uppercut>
+    <CS_Studio_Equip_SwingPreset_SpinSlash>Spin Slash</CS_Studio_Equip_SwingPreset_SpinSlash>
+    <CS_Studio_Equip_SwingPreset_LightAttack>Light Attack</CS_Studio_Equip_SwingPreset_LightAttack>
+    <CS_Studio_Equip_SwingPreset_HeavyAttack>Heavy Attack</CS_Studio_Equip_SwingPreset_HeavyAttack>
+    <CS_Studio_Equip_SwingPreset_Block>Block / Shield Raise</CS_Studio_Equip_SwingPreset_Block>
+    <CS_Studio_Equip_SelectThingDef>Select ThingDef</CS_Studio_Equip_SelectThingDef>
+    <CS_Studio_Equip_SelectRecipeDef>Select RecipeDef</CS_Studio_Equip_SelectRecipeDef>
 </LanguageData>

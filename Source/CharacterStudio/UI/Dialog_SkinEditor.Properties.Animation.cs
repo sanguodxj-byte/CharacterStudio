@@ -19,6 +19,18 @@ namespace CharacterStudio.UI
             float y = 0f;
             float width = viewRect.width;
 
+            DrawSkinAnimationSections(ref y, width);
+
+            viewRect.height = Mathf.Max(y + 10f, propsRect.height - 4f);
+            Widgets.EndScrollView();
+        }
+
+        /// <summary>
+        /// 绘制皮肤级动画配置段（程序化动画、持握视觉、渲染覆盖）。
+        /// 可从 DrawAnimationProperties 或 DrawEquipmentProperties(equipmentMode) 复用。
+        /// </summary>
+        private void DrawSkinAnimationSections(ref float y, float width)
+        {
             workingSkin.animationConfig ??= new PawnAnimationConfig();
             workingSkin.animationConfig.carryVisual ??= new WeaponCarryVisualConfig();
             var carry = workingSkin.animationConfig.carryVisual;
@@ -57,6 +69,70 @@ namespace CharacterStudio.UI
                     UIHelper.DrawPropertySlider(ref y, width, "  " + "CS_Studio_Anim_Amplitude".Translate(), ref hAmp, 0.001f, 0.2f, "F3");
                     if (Math.Abs(hAmp - proc.hoveringAmplitude) > 0.0001f) { MutateWithUndo(() => proc.hoveringAmplitude = hAmp, refreshPreview: true); }
                 }
+            }
+
+            if (DrawCollapsibleSection(ref y, width, "CS_Studio_Section_AnimationCarryVisual".Translate(), "AnimationCarryVisualTextures"))
+            {
+                bool carryEnabled = carry.enabled;
+                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_WeaponCarry_Enable".Translate(), ref carryEnabled);
+                if (carryEnabled != carry.enabled)
+                {
+                    MutateWithUndo(() => carry.enabled = carryEnabled, refreshPreview: true, refreshRenderTree: targetPawn != null);
+                }
+
+                UIHelper.DrawPropertyDropdown(ref y, width,
+                    "CS_Studio_WeaponCarry_PreviewState".Translate(),
+                    previewWeaponCarryState,
+                    CachedWeaponCarryVisualStates,
+                    state => ($"CS_Studio_WeaponCarry_State_{state}").Translate(),
+                    state =>
+                    {
+                        previewWeaponCarryState = state;
+                        RefreshPreview();
+                    });
+
+                string[] anchorOptions = { "Body", "Head", "Root" };
+                UIHelper.DrawPropertyDropdown(ref y, width,
+                    "CS_Studio_WeaponCarry_Anchor".Translate(),
+                    carry.anchorTag,
+                    anchorOptions,
+                    option => option,
+                    value =>
+                    {
+                        MutateWithUndo(() => carry.anchorTag = value, refreshPreview: true, refreshRenderTree: targetPawn != null);
+                    });
+
+                string texUndrafted = carry.texUndrafted ?? string.Empty;
+                if (UIHelper.DrawPathFieldWithBrowser(ref y, width, "CS_Studio_WeaponCarry_TexUndrafted".Translate(), ref texUndrafted, () =>
+                    Find.WindowStack.Add(new Dialog_FileBrowser(GetEquipmentTextureBrowseStartPath(carry.texUndrafted), path =>
+                    {
+                        MutateWithUndo(() => carry.texUndrafted = path ?? string.Empty, refreshPreview: true, refreshRenderTree: targetPawn != null);
+                    }, defaultRoot: GetEquipmentRootDir()))))
+                {
+                    MutateWithUndo(() => carry.texUndrafted = texUndrafted, refreshPreview: true, refreshRenderTree: targetPawn != null);
+                }
+
+                string texDrafted = carry.texDrafted ?? string.Empty;
+                if (UIHelper.DrawPathFieldWithBrowser(ref y, width, "CS_Studio_WeaponCarry_TexDrafted".Translate(), ref texDrafted, () =>
+                    Find.WindowStack.Add(new Dialog_FileBrowser(GetEquipmentTextureBrowseStartPath(carry.texDrafted), path =>
+                    {
+                        MutateWithUndo(() => carry.texDrafted = path ?? string.Empty, refreshPreview: true, refreshRenderTree: targetPawn != null);
+                    }, defaultRoot: GetEquipmentRootDir()))))
+                {
+                    MutateWithUndo(() => carry.texDrafted = texDrafted, refreshPreview: true, refreshRenderTree: targetPawn != null);
+                }
+
+                string texCasting = carry.texCasting ?? string.Empty;
+                if (UIHelper.DrawPathFieldWithBrowser(ref y, width, "CS_Studio_WeaponCarry_TexCasting".Translate(), ref texCasting, () =>
+                    Find.WindowStack.Add(new Dialog_FileBrowser(GetEquipmentTextureBrowseStartPath(carry.texCasting), path =>
+                    {
+                        MutateWithUndo(() => carry.texCasting = path ?? string.Empty, refreshPreview: true, refreshRenderTree: targetPawn != null);
+                    }, defaultRoot: GetEquipmentRootDir()))))
+                {
+                    MutateWithUndo(() => carry.texCasting = texCasting, refreshPreview: true, refreshRenderTree: targetPawn != null);
+                }
+
+                UIHelper.DrawInfoBanner(ref y, width, "CS_Studio_WeaponCarry_Hint".Translate());
             }
 
             if (DrawCollapsibleSection(ref y, width, "CS_Studio_Section_AnimationCarryVisual".Translate() + " - Transform", "AnimationCarryVisualTransform"))
@@ -150,9 +226,6 @@ namespace CharacterStudio.UI
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_WeaponRender_OffEastZ".Translate(), ref offEastZ, -2f, 2f, "F3");
                 if (Math.Abs(offEastZ - animationOverride.offsetEast.z) > 0.0001f) { MutateWithUndo(() => animationOverride.offsetEast.z = offEastZ, refreshPreview: true, refreshRenderTree: false); }
             }
-
-            viewRect.height = Mathf.Max(y + 10f, propsRect.height - 4f);
-            Widgets.EndScrollView();
         }
     }
 }

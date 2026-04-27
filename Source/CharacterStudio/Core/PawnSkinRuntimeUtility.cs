@@ -132,22 +132,6 @@ namespace CharacterStudio.Core
                 }
             }
 
-            if (skin.equipments != null)
-            {
-                foreach (CharacterEquipmentDef equipment in skin.equipments)
-                {
-                    if (equipment == null)
-                        continue;
-
-                    YieldIfExternal(equipment.previewTexPath);
-                    YieldIfExternal(equipment.worldTexPath);
-                    YieldIfExternal(equipment.wornTexPath);
-                    YieldIfExternal(equipment.maskTexPath);
-                    YieldIfExternal(equipment.renderData?.texPath);
-                    YieldIfExternal(equipment.renderData?.maskTexPath);
-                }
-            }
-
             if (skin.animationConfig?.carryVisual != null)
             {
                 WeaponCarryVisualConfig carryVisual = skin.animationConfig.carryVisual;

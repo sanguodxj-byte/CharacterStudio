@@ -12,6 +12,7 @@ namespace CharacterStudio.UI
     public sealed class Dialog_SpawnCharacter : Window
     {
         private readonly Action<CharacterSpawnSettings> onConfirm;
+        private readonly Action<CharacterSpawnSettings>? onTriggerConfirm;
         private readonly Action<bool>? onBusyStateChanged;
         private CharacterSpawnArrivalDef? arrivalDef;
         private CharacterSpawnEventDef? spawnEventDef;
@@ -27,9 +28,14 @@ namespace CharacterStudio.UI
 
         public override Vector2 InitialSize => new Vector2(520f, 440f);
 
-        public Dialog_SpawnCharacter(CharacterSpawnSettings? initialSettings, Action<CharacterSpawnSettings> onConfirm, Action<bool>? onBusyStateChanged = null)
+        public Dialog_SpawnCharacter(
+            CharacterSpawnSettings? initialSettings,
+            Action<CharacterSpawnSettings> onConfirm,
+            Action<CharacterSpawnSettings>? onTriggerConfirm = null,
+            Action<bool>? onBusyStateChanged = null)
         {
             this.onConfirm = onConfirm ?? throw new ArgumentNullException(nameof(onConfirm));
+            this.onTriggerConfirm = onTriggerConfirm;
             this.onBusyStateChanged = onBusyStateChanged;
             CharacterSpawnSettings settings = initialSettings?.Clone() ?? new CharacterSpawnSettings();
             arrivalDef = CharacterSpawnUtility.ResolveArrivalDef(settings);
@@ -86,6 +92,8 @@ namespace CharacterStudio.UI
 
         public override void DoWindowContents(Rect inRect)
         {
+            UIHelper.DrawDialogFrame(inRect, this);
+
             Rect shellRect = new Rect(0f, 0f, inRect.width, inRect.height);
             Widgets.DrawBoxSolid(shellRect, UIHelper.PanelFillColor);
             GUI.color = UIHelper.BorderColor;
@@ -139,32 +147,65 @@ namespace CharacterStudio.UI
 
             float btnWidth = 120f;
             float btnY = inRect.height - 40f;
-            if (UIHelper.DrawToolbarButton(new Rect(inRect.width / 2f - btnWidth - 8f, btnY, btnWidth, 28f), "CS_Studio_SpawnNewPawnConfirm".Translate(), accent: true))
+            if (onTriggerConfirm != null)
             {
-                CharacterSpawnArrivalDef resolvedArrival = arrivalDef ?? arrivalOptions.FirstOrDefault();
-                CharacterSpawnEventDef resolvedEvent = spawnEventDef ?? eventOptions.FirstOrDefault();
-                CharacterSpawnAnimationDef resolvedAnimation = spawnAnimationDef ?? animationOptions.FirstOrDefault();
+                float totalWidth = btnWidth * 3f + 16f;
+                float startX = inRect.width / 2f - totalWidth / 2f;
 
-                onConfirm(new CharacterSpawnSettings
+                if (UIHelper.DrawToolbarButton(new Rect(startX, btnY, btnWidth, 28f), "CS_Studio_SpawnUseTriggerConfirm".Translate(), accent: true))
                 {
-                    sourceMapForConditionCheck = Find.CurrentMap,
-                    arrivalDefName = resolvedArrival?.defName ?? string.Empty,
-                    arrivalMode = resolvedArrival?.mode ?? SummonArrivalMode.Standing,
-                    spawnEventDefName = resolvedEvent?.defName ?? string.Empty,
-                    spawnEvent = resolvedEvent?.mode ?? SummonSpawnEventMode.Message,
-                    eventMessageText = eventMessageText,
-                    eventLetterTitle = eventLetterTitle,
-                    spawnAnimationDefName = resolvedAnimation?.defName ?? string.Empty,
-                    spawnAnimation = resolvedAnimation?.mode ?? SummonSpawnAnimationMode.None,
-                    spawnAnimationScale = spawnAnimationScale
-                });
-                Close();
-            }
+                    onTriggerConfirm(BuildCurrentSettings(arrivalOptions, eventOptions, animationOptions));
+                    Close();
+                }
 
-            if (UIHelper.DrawToolbarButton(new Rect(inRect.width / 2f + 8f, btnY, btnWidth, 28f), "CS_Studio_Btn_Cancel".Translate()))
-            {
-                Close();
+                if (UIHelper.DrawToolbarButton(new Rect(startX + btnWidth + 8f, btnY, btnWidth, 28f), "CS_Studio_SpawnNewPawnConfirm".Translate(), accent: true))
+                {
+                    onConfirm(BuildCurrentSettings(arrivalOptions, eventOptions, animationOptions));
+                    Close();
+                }
+
+                if (UIHelper.DrawToolbarButton(new Rect(startX + (btnWidth + 8f) * 2f, btnY, btnWidth, 28f), "CS_Studio_Btn_Cancel".Translate()))
+                {
+                    Close();
+                }
             }
+            else
+            {
+                if (UIHelper.DrawToolbarButton(new Rect(inRect.width / 2f - btnWidth - 8f, btnY, btnWidth, 28f), "CS_Studio_SpawnNewPawnConfirm".Translate(), accent: true))
+                {
+                    onConfirm(BuildCurrentSettings(arrivalOptions, eventOptions, animationOptions));
+                    Close();
+                }
+
+                if (UIHelper.DrawToolbarButton(new Rect(inRect.width / 2f + 8f, btnY, btnWidth, 28f), "CS_Studio_Btn_Cancel".Translate()))
+                {
+                    Close();
+                }
+            }
+        }
+
+        private CharacterSpawnSettings BuildCurrentSettings(
+            List<CharacterSpawnArrivalDef> arrivalOptions,
+            List<CharacterSpawnEventDef> eventOptions,
+            List<CharacterSpawnAnimationDef> animationOptions)
+        {
+            CharacterSpawnArrivalDef resolvedArrival = arrivalDef ?? arrivalOptions.FirstOrDefault();
+            CharacterSpawnEventDef resolvedEvent = spawnEventDef ?? eventOptions.FirstOrDefault();
+            CharacterSpawnAnimationDef resolvedAnimation = spawnAnimationDef ?? animationOptions.FirstOrDefault();
+
+            return new CharacterSpawnSettings
+            {
+                sourceMapForConditionCheck = Find.CurrentMap,
+                arrivalDefName = resolvedArrival?.defName ?? string.Empty,
+                arrivalMode = resolvedArrival?.mode ?? SummonArrivalMode.Standing,
+                spawnEventDefName = resolvedEvent?.defName ?? string.Empty,
+                spawnEvent = resolvedEvent?.mode ?? SummonSpawnEventMode.Message,
+                eventMessageText = eventMessageText,
+                eventLetterTitle = eventLetterTitle,
+                spawnAnimationDefName = resolvedAnimation?.defName ?? string.Empty,
+                spawnAnimation = resolvedAnimation?.mode ?? SummonSpawnAnimationMode.None,
+                spawnAnimationScale = spawnAnimationScale
+            };
         }
 
         private void RefreshCachedOptions(bool force)

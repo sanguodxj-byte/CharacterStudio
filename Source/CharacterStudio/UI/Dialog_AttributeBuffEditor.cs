@@ -36,6 +36,8 @@ namespace CharacterStudio.UI
 
         public override void DoWindowContents(Rect inRect)
         {
+            UIHelper.DrawDialogFrame(inRect, this);
+
             Text.Font = GameFont.Medium;
             Widgets.Label(new Rect(0f, 0f, inRect.width, 32f), "CS_AttrBuff_Section".Translate());
             Text.Font = GameFont.Small;

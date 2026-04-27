@@ -200,13 +200,13 @@ namespace CharacterStudio.Exporter
 
         private void PrepareEquipmentExportBindings(ModExportConfig config)
         {
-            if (config.SkinDef?.equipments == null || config.SkinDef.equipments.Count == 0)
+            if (config.CharacterDefinition?.equipments == null || config.CharacterDefinition.equipments.Count == 0)
             {
                 return;
             }
 
             config.Abilities ??= new List<ModularAbilityDef>();
-            List<ModularAbilityDef> skinAbilities = config.SkinDef.abilities ?? new List<ModularAbilityDef>();
+            List<ModularAbilityDef> definitionAbilities = config.CharacterDefinition.abilityLoadout?.abilities ?? new List<ModularAbilityDef>();
             HashSet<string> existingAbilityNames = new HashSet<string>(
                 config.Abilities
                     .Where(static ability => ability != null && !string.IsNullOrWhiteSpace(ability.defName))
@@ -214,7 +214,7 @@ namespace CharacterStudio.Exporter
                 StringComparer.OrdinalIgnoreCase);
             Dictionary<string, string> flyerThingDefByAbility = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (CharacterEquipmentDef equipment in config.SkinDef.equipments)
+            foreach (CharacterEquipmentDef equipment in config.CharacterDefinition.equipments)
             {
                 if (equipment == null || !equipment.enabled)
                 {
@@ -249,7 +249,7 @@ namespace CharacterStudio.Exporter
                         continue;
                     }
 
-                    ModularAbilityDef? sourceAbility = skinAbilities.FirstOrDefault(ability =>
+                    ModularAbilityDef? sourceAbility = definitionAbilities.FirstOrDefault(ability =>
                         ability != null && string.Equals(ability.defName, abilityDefName, StringComparison.OrdinalIgnoreCase));
                     if (sourceAbility != null)
                     {
@@ -603,36 +603,6 @@ namespace CharacterStudio.Exporter
                 eyeCfg.texDown   = Remap(eyeCfg.texDown);
             }
 
-            if (skin.equipments != null)
-            {
-                foreach (var equipment in skin.equipments)
-                {
-                    if (equipment == null) continue;
-
-                    equipment.worldTexPath = Remap(equipment.worldTexPath);
-                    equipment.wornTexPath = Remap(equipment.wornTexPath);
-                    equipment.maskTexPath = Remap(equipment.maskTexPath);
-                    equipment.previewTexPath = Remap(equipment.previewTexPath);
-
-                    if (equipment.renderData != null)
-                    {
-                        equipment.renderData.texPath = Remap(equipment.renderData.texPath);
-                        equipment.renderData.maskTexPath = Remap(equipment.renderData.maskTexPath);
-                        equipment.renderData.triggeredIdleTexPath = Remap(equipment.renderData.triggeredIdleTexPath);
-                        equipment.renderData.triggeredDeployTexPath = Remap(equipment.renderData.triggeredDeployTexPath);
-                        equipment.renderData.triggeredHoldTexPath = Remap(equipment.renderData.triggeredHoldTexPath);
-                        equipment.renderData.triggeredReturnTexPath = Remap(equipment.renderData.triggeredReturnTexPath);
-                        equipment.renderData.triggeredIdleMaskTexPath = Remap(equipment.renderData.triggeredIdleMaskTexPath);
-                        equipment.renderData.triggeredDeployMaskTexPath = Remap(equipment.renderData.triggeredDeployMaskTexPath);
-                        equipment.renderData.triggeredHoldMaskTexPath = Remap(equipment.renderData.triggeredHoldMaskTexPath);
-                        equipment.renderData.triggeredReturnMaskTexPath = Remap(equipment.renderData.triggeredReturnMaskTexPath);
-                        RemapAnimationOverride(equipment.renderData.triggeredAnimationSouth, Remap);
-                        RemapAnimationOverride(equipment.renderData.triggeredAnimationEastWest, Remap);
-                        RemapAnimationOverride(equipment.renderData.triggeredAnimationNorth, Remap);
-                    }
-                }
-            }
-
             if (!string.IsNullOrWhiteSpace(config.GeneIconPath))
             {
                 config.GeneIconPath = Remap(config.GeneIconPath);
@@ -724,7 +694,7 @@ namespace CharacterStudio.Exporter
 
         private void GenerateEquipmentThingDefXml(string modPath, ModExportConfig config)
         {
-            var equipments = config.SkinDef?.equipments;
+            var equipments = config.CharacterDefinition?.equipments;
             if (equipments == null || equipments.Count == 0)
             {
                 return;
@@ -737,7 +707,7 @@ namespace CharacterStudio.Exporter
             }
 
             var doc = ModExportXmlWriter.CreateEquipmentThingDefsDocument(
-                equipments.Where(equipment => equipment != null && equipment.enabled).ToList());
+                equipments.Where(equipment => equipment != null && equipment.enabled).ToList(), includeModExtensions: true);
 
             string defsPath = Path.Combine(modPath, "Defs", "ThingDef", $"{SanitizeFileName(config.ModName)}_Apparels.xml");
             Directory.CreateDirectory(Path.GetDirectoryName(defsPath));
@@ -748,7 +718,7 @@ namespace CharacterStudio.Exporter
 
         private void GenerateEquipmentRecipeDefXml(string modPath, ModExportConfig config)
         {
-            var equipments = config.SkinDef?.equipments;
+            var equipments = config.CharacterDefinition?.equipments;
             if (equipments == null || equipments.Count == 0)
             {
                 return;
@@ -779,7 +749,7 @@ namespace CharacterStudio.Exporter
 
         private void GenerateEquipmentBundleManifestXml(string modPath, ModExportConfig config)
         {
-            var equipments = config.SkinDef?.equipments;
+            var equipments = config.CharacterDefinition?.equipments;
             if (equipments == null || equipments.Count == 0)
                 return;
 
@@ -834,12 +804,13 @@ namespace CharacterStudio.Exporter
             // ── XenotypeDef 独立文件（可选）────────────────────────────────
             if (!string.IsNullOrEmpty(config.SkinDef.xenotypeDefName))
             {
+                string xenoDefName = config.SkinDef.xenotypeDefName!;
                 string xenoLabel = string.IsNullOrEmpty(config.SkinDef.raceDisplayName)
-                    ? config.ModName
-                    : config.SkinDef.raceDisplayName;
+                    ? config.ModName ?? safeName
+                    : config.SkinDef.raceDisplayName!;
 
                 var xenoDoc = ModExportXmlWriter.CreateXenotypeDefDocument(
-                    config.SkinDef.xenotypeDefName,
+                    xenoDefName,
                     xenoLabel,
                     config.SkinDef.defName);
 
@@ -879,7 +850,7 @@ namespace CharacterStudio.Exporter
             }
 
             string safeName = SanitizeFileName(config.ModName);
-            string path = Path.Combine(modPath, "Defs", "PawnKindDefs", $"{safeName}_Character.xml");
+            string path = Path.Combine(modPath, "CharacterData", $"{safeName}_Character.xml");
             Directory.CreateDirectory(Path.GetDirectoryName(path));
             CharacterDefinitionXmlUtility.Save(definition, path);
             Log.Message($"[CharacterStudio] 角色定义已生成: {path}");
@@ -988,12 +959,9 @@ namespace CharacterStudio.Exporter
                 return "Unknown";
             }
 
-            // 移除不允许的字符
-            var invalid = Path.GetInvalidFileNameChars();
-            var sanitized = new string(name.Where(c => !invalid.Contains(c)).ToArray());
-
-            // 替换空格为下划线
-            sanitized = sanitized.Replace(' ', '_');
+            // 仅保留 ASCII 字母、数字、下划线和连字符，避免中文路径导致 RimWorld XML 加载异常
+            var sanitized = new string(name.Where(c =>
+                (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '-').ToArray());
 
             // 确保不为空
             if (string.IsNullOrEmpty(sanitized))
@@ -1011,9 +979,9 @@ namespace CharacterStudio.Exporter
                 return "unknown";
             }
 
-            // Package ID 只允许小写字母、数字和点
+            // Package ID 只允许 ASCII 小写字母、数字和点
             var sanitized = new string(name.ToLower()
-                .Where(c => char.IsLetterOrDigit(c) || c == '.')
+                .Where(c => (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '.')
                 .ToArray());
 
             if (string.IsNullOrEmpty(sanitized))
@@ -1029,7 +997,8 @@ namespace CharacterStudio.Exporter
             var sb = new System.Text.StringBuilder(value!.Length);
             foreach (char c in value)
             {
-                if (char.IsLetterOrDigit(c) || c == '_')
+                // RimWorld defName 只允许 ASCII 字母、数字、下划线、连字符
+                if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '-')
                     sb.Append(c);
             }
             return sb.Length == 0 ? "Unnamed" : sb.ToString();

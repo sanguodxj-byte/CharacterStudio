@@ -104,6 +104,9 @@
     <CS_Studio_Runtime_Desc_DashEmpoweredStrike>Empower the next strike after a dash or jump.</CS_Studio_Runtime_Desc_DashEmpoweredStrike>
     <CS_Studio_Runtime_Desc_HitHeal>Heal the caster when this ability successfully hits a target.</CS_Studio_Runtime_Desc_HitHeal>
     <CS_Studio_Runtime_Desc_HitCooldownRefund>Refund part of a chosen hotkey cooldown on hit.</CS_Studio_Runtime_Desc_HitCooldownRefund>
+    <CS_Studio_Runtime_DashUseAbilityRange>Use Ability Range for Distance</CS_Studio_Runtime_DashUseAbilityRange>
+    <CS_Studio_Runtime_DashLanding>Landing Animation Mode</CS_Studio_Runtime_DashLanding>
+    <CS_Studio_Runtime_DashSweepAcrossPath>Sweep Over Traversed Path</CS_Studio_Runtime_DashSweepAcrossPath>
     <CS_Studio_Runtime_Desc_FlightState>Apply a fake flight stance state with visual flight behavior.</CS_Studio_Runtime_Desc_FlightState>
     <CS_Studio_Runtime_Desc_FlightOnlyFollowup>Only usable while the caster is in a real PawnFlyer flight window.</CS_Studio_Runtime_Desc_FlightOnlyFollowup>
     <CS_Studio_Runtime_Desc_VanillaPawnFlyer>Launch a real RimWorld 1.6 PawnFlyer instead of a fake flight stance.</CS_Studio_Runtime_Desc_VanillaPawnFlyer>
@@ -176,4 +179,18 @@
     <CS_Ability_Validate_VfxIndexWarning>VFX #{0}: {1}</CS_Ability_Validate_VfxIndexWarning>
     <CS_Ability_RuntimeComponentType_Dash>Dash</CS_Ability_RuntimeComponentType_Dash>
     <CS_Studio_Runtime_Desc_Dash>Perform a straight-line dash toward the target direction with adjustable speed and distance.</CS_Studio_Runtime_Desc_Dash>
+    <CS_Ability_RuntimeComponentType_BezierCurveWall>Curve Wall</CS_Ability_RuntimeComponentType_BezierCurveWall>
+    <CS_Studio_Runtime_Desc_BezierCurveWall>Generate a curve-based wall that intercepts projectiles passing through it during its duration.</CS_Studio_Runtime_Desc_BezierCurveWall>
+    <CS_Studio_Runtime_BezierWallDurationTicks>Duration (Ticks)</CS_Studio_Runtime_BezierWallDurationTicks>
+    <CS_Studio_Runtime_BezierWallThickness>Wall Thickness</CS_Studio_Runtime_BezierWallThickness>
+    <CS_Studio_Runtime_BezierWallControlPointHeight>Control Point Height (Curve)</CS_Studio_Runtime_BezierWallControlPointHeight>
+    <CS_Studio_Runtime_BezierWallSegmentCount>Segment Count</CS_Studio_Runtime_BezierWallSegmentCount>
+    <CS_Studio_Runtime_BezierWallBlockFriendly>Block Friendly Projectiles</CS_Studio_Runtime_BezierWallBlockFriendly>
+    <CS_Studio_Runtime_BezierWallCurveDirection>Curve Direction</CS_Studio_Runtime_BezierWallCurveDirection>
+    <CS_Studio_Runtime_BezierWallAbsorbMax>Max Absorption Capacity</CS_Studio_Runtime_BezierWallAbsorbMax>
+    <CS_Studio_Runtime_BezierWallReflectsProjectiles>Reflect Enemy Projectiles</CS_Studio_Runtime_BezierWallReflectsProjectiles>
+    <CS_Ability_Validate_BezierWallDuration>Duration must be greater than 0.</CS_Ability_Validate_BezierWallDuration>
+    <CS_Ability_Validate_BezierWallThickness>Thickness must be greater than 0.</CS_Ability_Validate_BezierWallThickness>
+    <CS_Ability_Validate_BezierWallSegments>Segment count must be greater than 0.</CS_Ability_Validate_BezierWallSegments>
+    <CS_Ability_Validate_BezierWallAbsorbMax>Absorption capacity must be greater than 0.</CS_Ability_Validate_BezierWallAbsorbMax>
 </LanguageData>

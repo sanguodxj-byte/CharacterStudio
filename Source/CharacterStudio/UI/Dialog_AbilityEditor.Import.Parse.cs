@@ -405,7 +405,7 @@ namespace CharacterStudio.UI
                 enabled = ParseBool(GetChildText(node, "enabled"), false)
             };
 
-            foreach (string slotKey in new[] { "Q", "W", "E", "R", "T", "A", "S", "D", "F", "Z", "X", "C", "V" })
+            foreach (string slotKey in AbilityHotkeySlotUtility.SupportedSlotKeys)
             {
                 string elementName = slotKey.ToLowerInvariant() + "AbilityDefName";
                 string value = GetChildText(node, elementName);
@@ -414,6 +414,8 @@ namespace CharacterStudio.UI
                     config[slotKey] = value;
                 }
             }
+
+            config.NormalizeToSupportedSlots();
 
             return config;
         }

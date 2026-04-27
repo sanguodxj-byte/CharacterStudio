@@ -245,6 +245,8 @@ namespace CharacterStudio.Rendering
             foreach (var layer in skinDef.layers)
             {
                 if (layer == null || string.IsNullOrEmpty(layer.texPath)) continue;
+                // 关键修复：只有可见的图层才应该隐藏原版纹理
+                if (!layer.visible) continue;
                 if (layer.texPath == "Dynamic/Unknown" || layer.texPath == "Unknown" ||
                     layer.texPath.StartsWith("Dynamic/", StringComparison.OrdinalIgnoreCase))
                     continue;

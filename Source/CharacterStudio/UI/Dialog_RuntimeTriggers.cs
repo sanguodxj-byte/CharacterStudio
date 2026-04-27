@@ -30,6 +30,8 @@ namespace CharacterStudio.UI
 
         public override void DoWindowContents(Rect inRect)
         {
+            UIHelper.DrawDialogFrame(inRect, this);
+
             Rect shellRect = new Rect(0f, 0f, inRect.width, inRect.height);
             Rect titleRect = UIHelper.DrawPanelShell(shellRect, "CS_Studio_RuntimeTriggers_Title".Translate(), 0f);
 
@@ -430,6 +432,8 @@ namespace CharacterStudio.UI
 
             public override void DoWindowContents(Rect inRect)
             {
+                UIHelper.DrawDialogFrame(inRect, this);
+
                 float y = 0f;
                 Widgets.Label(new Rect(0f, y, inRect.width, 24f), title);
                 y += 30f;
@@ -465,6 +469,8 @@ namespace CharacterStudio.UI
 
             public override void DoWindowContents(Rect inRect)
             {
+                UIHelper.DrawDialogFrame(inRect, this);
+
                 float y = 0f;
                 Widgets.Label(new Rect(0f, y, inRect.width, 24f), title);
                 y += 30f;
@@ -498,6 +504,8 @@ namespace CharacterStudio.UI
 
             public override void DoWindowContents(Rect inRect)
             {
+                UIHelper.DrawDialogFrame(inRect, this);
+
                 float y = 0f;
                 Widgets.Label(new Rect(0f, y, inRect.width, 24f), title);
                 y += 30f;

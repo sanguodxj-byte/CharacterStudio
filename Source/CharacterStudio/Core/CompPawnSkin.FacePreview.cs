@@ -19,7 +19,7 @@ namespace CharacterStudio.Core
             if (oldExp != curExpression)
             {
                 faceExpressionState.ResetAnimatedFrameTracking();
-                RequestRenderRefresh(true);
+                MarkFaceGraphicDirty(true);
             }
         }
 
@@ -66,7 +66,7 @@ namespace CharacterStudio.Core
             if (faceExpressionState.lastAnimatedFrameIndex != currentFrameIndex)
             {
                 faceExpressionState.lastAnimatedFrameIndex = currentFrameIndex;
-                RequestRenderRefresh();
+                MarkFaceGraphicDirty();
             }
         }
 
@@ -103,7 +103,7 @@ namespace CharacterStudio.Core
             if (faceExpressionState != null && !faceExpressionState.IsBlinkActive)
             {
                 faceExpressionState.StartBlink(BlinkDuration);
-                RequestRenderRefresh();
+                MarkFaceGraphicDirty();
             }
         }
 
@@ -144,7 +144,7 @@ namespace CharacterStudio.Core
 
             if (blinkStateChanged)
             {
-                RequestRenderRefresh();
+                MarkFaceGraphicDirty();
             }
         }
 
@@ -155,14 +155,18 @@ namespace CharacterStudio.Core
 
             if (faceExpressionState.IsBlinkActive)
             {
-                if (faceExpressionState.ConsumeBlinkTick()) RequestRenderRefresh();
+                // 眨眼相位推进只影响 transform（alpha/offset），不需要重建 graphic
+                faceExpressionState.ConsumeBlinkTick();
+                RequestTransformRefresh();
             }
             else
             {
-                if (Pawn!.IsHashIntervalTick(10) && Rand.Value < 0.08f)
+                // 真实人类眨眼约每分钟 15~20 次（每 180~240 tick）。
+                // IsHashIntervalTick(30) × Rand < 0.12 ≈ 每 250 tick 一次。
+                if (Pawn!.IsHashIntervalTick(30) && Rand.Value < 0.12f)
                 {
                     faceExpressionState.StartBlink(BlinkDuration);
-                    RequestRenderRefresh();
+                    MarkFaceGraphicDirty();
                 }
             }
         }
@@ -180,7 +184,7 @@ namespace CharacterStudio.Core
             if (changed)
             {
                 faceExpressionState.ResetAnimatedFrameTracking();
-                RequestRenderRefresh();
+                MarkFaceGraphicDirty(true);
             }
         }
 
@@ -197,7 +201,7 @@ namespace CharacterStudio.Core
             if (changed)
             {
                 faceExpressionState.ResetAnimatedFrameTracking();
-                RequestRenderRefresh();
+                MarkFaceGraphicDirty(true);
             }
         }
 
@@ -212,7 +216,7 @@ namespace CharacterStudio.Core
                 faceExpressionState.SetWinkSide(normalized.Value);
 
             if (changed)
-                RequestRenderRefresh();
+                RequestTransformRefresh();
         }
 
         public LayeredFacePartSide GetEffectiveWinkSide()
@@ -310,28 +314,28 @@ namespace CharacterStudio.Core
         {
             bool changed = previewOverrides.SetMouthState(state);
             if (changed)
-                RequestRenderRefresh();
+                RequestTransformRefresh();
         }
 
         public void SetPreviewLidState(LidState? state)
         {
             bool changed = previewOverrides.SetLidState(state);
             if (changed)
-                RequestRenderRefresh();
+                RequestTransformRefresh();
         }
 
         public void SetPreviewBrowState(BrowState? state)
         {
             bool changed = previewOverrides.SetBrowState(state);
             if (changed)
-                RequestRenderRefresh();
+                RequestTransformRefresh();
         }
 
         public void SetPreviewEmotionOverlayState(EmotionOverlayState? state)
         {
             bool changed = previewOverrides.SetEmotionOverlayState(state);
             if (changed)
-                RequestRenderRefresh();
+                RequestTransformRefresh();
         }
 
         public void ClearPreviewChannelOverrides()
@@ -339,7 +343,7 @@ namespace CharacterStudio.Core
             bool changed = previewOverrides.ClearChannelOverrides();
 
             if (changed)
-                RequestRenderRefresh();
+                RequestTransformRefresh();
         }
 
         public MouthState GetEffectiveMouthState()
@@ -561,6 +565,17 @@ namespace CharacterStudio.Core
                 ExpressionType.Working => PupilScaleVariant.Focus,
                 ExpressionType.Reading => PupilScaleVariant.Focus,
                 ExpressionType.Angry => PupilScaleVariant.Focus,
+
+                // ── 战斗状态：瞳孔聚焦目标方向 ──
+                // AttackMelee / AttackRanged / WaitCombat 时瞳孔收缩为 Focus，
+                // 配合 EyeDirectionStateResolver 从 CurJob.targetA 计算目标位置，
+                // 使瞳孔朝向攻击目标（敌方 Pawn 或目标格子）。
+                // 眼睛方向由 EyeDirectionStateResolver.ResolveDirection 驱动，
+                // 瞳孔缩放由 Focus 变体提供轻微收缩效果，模拟战斗聚焦感。
+                ExpressionType.AttackMelee => PupilScaleVariant.Focus,
+                ExpressionType.AttackRanged => PupilScaleVariant.Focus,
+                ExpressionType.WaitCombat => PupilScaleVariant.Focus,
+
                 _ => needsVariant,
             };
         }
@@ -580,7 +595,7 @@ namespace CharacterStudio.Core
             {
                 runtimeState.eyeDirectionRuntimeVariant = nextEye;
                 runtimeState.pupilScaleRuntimeVariant = nextPupil;
-                RequestRenderRefresh();
+                MarkFaceGraphicDirty();
             }
         }
 
@@ -597,7 +612,7 @@ namespace CharacterStudio.Core
         {
             bool changed = previewOverrides.SetEyeDirection(dir);
             if (changed)
-                RequestRenderRefresh();
+                RequestTransformRefresh();
         }
 
         public void SetPreviewGazeOffset(Vector2? gazeOffset)
@@ -613,7 +628,7 @@ namespace CharacterStudio.Core
             if ((runtimeState.gazeOffset - target).sqrMagnitude > 0.000001f)
             {
                 runtimeState.gazeOffset = target;
-                RequestRenderRefresh();
+                RequestTransformRefresh();
             }
         }
 
@@ -623,9 +638,27 @@ namespace CharacterStudio.Core
 
             var pawn = Pawn!;
             EyeDirection resolvedDirection = EyeDirectionStateResolver.ResolveDirection(pawn);
+            bool directionChanged = eyeDirectionState.SetDirection(resolvedDirection);
 
-            if (eyeDirectionState.SetDirection(resolvedDirection))
-                RequestRenderRefresh();
+            // 攻击状态（AttackMelee / AttackRanged / WaitCombat）时，
+            // 根据目标距离计算连续注视偏移：近处瞳孔偏移小，远处偏移大。
+            // 非攻击状态保持 gazeOffset = zero，不影响现有行为。
+            ExpressionType expr = curExpression;
+            bool isAttackExpression = expr == ExpressionType.AttackMelee
+                || expr == ExpressionType.AttackRanged
+                || expr == ExpressionType.WaitCombat;
+
+            Vector2 targetGazeOffset = isAttackExpression
+                ? EyeDirectionStateResolver.ResolveGazeOffset(pawn)
+                : Vector2.zero;
+
+            FaceRuntimeState runtimeState = CurrentFaceRuntimeState;
+            bool gazeChanged = (runtimeState.gazeOffset - targetGazeOffset).sqrMagnitude > 0.000001f;
+            if (gazeChanged)
+                runtimeState.gazeOffset = targetGazeOffset;
+
+            if (directionChanged || gazeChanged)
+                RequestTransformRefresh();
         }
 
         private void UpdateGlobalFaceDriveState()

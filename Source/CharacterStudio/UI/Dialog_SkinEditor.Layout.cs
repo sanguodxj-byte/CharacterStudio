@@ -16,6 +16,8 @@ namespace CharacterStudio.UI
 
         public override void DoWindowContents(Rect inRect)
         {
+            UIHelper.DrawDialogFrame(inRect, this);
+
             try
             {
                 bool skipHeavyPreviewWork = suspendHeavyPreviewWork;
@@ -76,13 +78,9 @@ namespace CharacterStudio.UI
                 {
                     DrawFacePanel(leftContentRect);
                 }
-                else if (currentTab == EditorTab.Animation)
+                else if (IsEquipmentOrItemsTab)
                 {
-                    DrawAnimationPanel(leftContentRect);
-                }
-                else if (currentTab == EditorTab.Items)
-                {
-                    DrawEquipmentPanel(leftContentRect); // Temporarily keeping the name of the method but calling it Items
+                    DrawEquipmentPanel(leftContentRect);
                 }
                 else
                 {
@@ -172,9 +170,9 @@ namespace CharacterStudio.UI
             // 行 2
             if (UIHelper.DrawTabButton(
                 new Rect(rect.x, row2, halfW, halfH),
-                "CS_Studio_Tab_Animation".Translate(),
-                currentTab == EditorTab.Animation))
-                currentTab = EditorTab.Animation;
+                "CS_Studio_Tab_Equipment".Translate(),
+                currentTab == EditorTab.Equipment))
+                currentTab = EditorTab.Equipment;
 
             if (UIHelper.DrawTabButton(
                 new Rect(rect.x + halfW, row2, halfW, halfH),
@@ -251,20 +249,12 @@ namespace CharacterStudio.UI
                 return clicked;
             }
 
-            if (!layerModificationWorkflowActive)
-            {
-                DrawButton("CS_Studio_File_New".Translate(), OnNewSkin);
-                DrawButton("CS_Studio_File_Save".Translate(), OnSaveSkin, isDirty);
-                DrawButton("CS_Studio_Btn_Apply".Translate(), OnApplyToTargetPawn, true);
-                DrawButton("CS_Studio_SpawnNewPawnButton".Translate(), OnSpawnNewPawn, true);
-                DrawButton("CS_Studio_File_OpenSkinFolder".Translate(), OnOpenSkinFolder);
-                DrawButton("CS_Studio_File_Export".Translate(), OnExportMod);
-            }
-            DrawButton("CS_Studio_File_Import".Translate(), OnImportFromMap, layerModificationWorkflowActive);
-            if (!layerModificationWorkflowActive)
-            {
-                DrawButton("CS_Studio_Btn_Reset".Translate(), OnResetParameters);
-            }
+            DrawButton("CS_Studio_File_New".Translate(), OnNewSkin);
+            DrawButton("CS_Studio_File_Save".Translate(), layerModificationWorkflowActive ? OnSaveRenderFixPatch : (Action)OnSaveSkin, isDirty);
+            DrawButton("CS_Studio_SpawnNewPawnButton".Translate(), OnSpawnNewPawn, true);
+            DrawButton("CS_Studio_File_OpenSkinFolder".Translate(), OnOpenSkinFolder);
+            DrawButton("CS_Studio_File_Export".Translate(), OnExportMod);
+            DrawButton("CS_Studio_File_Import".Translate(), OnImportFromMap, isDirty);
 
             x += 8f;
             if (x < maxButtonX)
@@ -272,16 +262,9 @@ namespace CharacterStudio.UI
                 Widgets.DrawBoxSolid(new Rect(x - 4f, rect.y + 8f, 1f, rect.height - 16f), new Color(1f, 1f, 1f, 0.08f));
             }
 
-            if (!layerModificationWorkflowActive)
-            {
-                DrawButton("CS_Studio_Skin_Settings".Translate(), OnOpenSkinSettings);
-                DrawButton("CS_LLM_Settings_Title".Translate(), OnOpenLlmSettings);
-                DrawButton("CS_Studio_Menu_Abilities".Translate(), () =>
-                {
-                    SyncAbilitiesFromSkin();
-                    Find.WindowStack.Add(new Dialog_AbilityEditor(workingAbilities, workingSkin.abilityHotkeys, workingSkin));
-                });
-            }
+            DrawButton("CS_Studio_Skin_Settings".Translate(), OnOpenSkinSettings);
+            DrawButton("CS_LLM_Settings_Title".Translate(), OnOpenLlmSettings);
+            DrawButton("CS_Studio_Menu_Abilities".Translate(), OpenAbilityEditor);
 
             Rect helpRect = new Rect(Mathf.Min(x, maxButtonX - 28f), buttonY, 26f, buttonHeight);
             if (helpRect.xMax <= maxButtonX)

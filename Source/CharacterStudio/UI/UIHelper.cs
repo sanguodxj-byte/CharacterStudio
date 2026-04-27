@@ -32,6 +32,8 @@ namespace CharacterStudio.UI
             
             public override void DoWindowContents(Rect inRect)
             {
+                UIHelper.DrawDialogFrame(inRect, this);
+
                 float y = 0;
                 float width = inRect.width;
                 
@@ -399,6 +401,37 @@ namespace CharacterStudio.UI
             return rect;
         }
 
+        /// <summary>
+        /// 弹窗通用框架：遮盖原版 doCloseX 按钮，绘制自定义关闭按钮，
+        /// 并返回回收 5px 内边距后的内容区域。
+        /// 原版关闭按钮在 inRect 之外（窗口边框区域），需要用负坐标覆盖。
+        /// </summary>
+        public static Rect DrawDialogFrame(Rect inRect, Window window)
+        {
+            // 遮盖原版右上角关闭按钮区域（原版 X 在 inRect 右上角外侧约 -4px 处）
+            float coverSize = 36f;
+            Rect coverRect = new Rect(inRect.width - coverSize + 2f, -6f, coverSize, coverSize);
+            Widgets.DrawBoxSolid(coverRect, new Color(0.16f, 0.16f, 0.16f, 1f));
+            // 重绘边框
+            GUI.color = BorderColor;
+            Widgets.DrawBox(coverRect, 1);
+            GUI.color = Color.white;
+
+            // 自定义关闭按钮（居中于遮盖区域）
+            float closeBtnSize = 22f;
+            Rect closeBtnRect = new Rect(
+                coverRect.x + (coverRect.width - closeBtnSize) / 2f,
+                coverRect.y + (coverRect.height - closeBtnSize) / 2f,
+                closeBtnSize, closeBtnSize);
+            if (DrawToolbarButton(closeBtnRect, "✕"))
+            {
+                window.Close();
+            }
+
+            // 内容区域回收 5px
+            return new Rect(5f, 5f, inRect.width - 10f, inRect.height - 10f);
+        }
+
         public static Rect DrawSectionCard(ref float y, float width, string title, float height, bool accent = false)
         {
             Rect outerRect = new Rect(0f, y, width, height);
@@ -636,6 +669,60 @@ namespace CharacterStudio.UI
                 : value;
             Widgets.Label(new Rect(rect.x + actualLabelWidth, rect.y, fieldWidth, 24), displayValue);
             DrawBrowseButton(new Rect(rect.x + actualLabelWidth + fieldWidth + spacing, rect.y, btnWidth, 24), onButtonClick, buttonText);
+
+            y += RowHeight;
+        }
+
+        public static void DrawControlledReferenceField(ref float y, float width, string label, string? currentValue, Func<string> displayValueFactory, Action onSelect, Action? onClear = null, float labelWidth = LabelWidth, string selectButtonText = "选择", string clearButtonText = "清除")
+        {
+            Rect rect = new Rect(0, y, width, RowHeight);
+
+            Text.Font = GameFont.Small;
+            float selectButtonWidth = Mathf.Max(42f, Text.CalcSize(selectButtonText).x + 18f);
+            bool showClear = onClear != null && !string.IsNullOrWhiteSpace(currentValue);
+            float clearButtonWidth = showClear ? Mathf.Max(42f, Text.CalcSize(clearButtonText).x + 18f) : 0f;
+            float spacing = 5f;
+            float minFieldWidth = 40f;
+
+            float actualLabelWidth = Mathf.Max(labelWidth, Text.CalcSize(label).x + 10f);
+            float availableLabelWidth = rect.width - selectButtonWidth - clearButtonWidth - (showClear ? spacing * 2f : spacing) - minFieldWidth;
+            if (actualLabelWidth > availableLabelWidth)
+            {
+                actualLabelWidth = Mathf.Max(30f, availableLabelWidth);
+            }
+
+            Widgets.Label(new Rect(rect.x, rect.y, actualLabelWidth, 24), label);
+
+            float fieldWidth = rect.width - actualLabelWidth - selectButtonWidth - (showClear ? clearButtonWidth : 0f) - (showClear ? spacing * 2f : spacing);
+            fieldWidth = Mathf.Max(minFieldWidth, fieldWidth);
+            Rect fieldRect = new Rect(rect.x + actualLabelWidth, rect.y, fieldWidth, 24f);
+            Widgets.DrawBoxSolid(fieldRect, PanelFillSoftColor);
+            Widgets.DrawBoxSolid(new Rect(fieldRect.x, fieldRect.yMax - 2f, fieldRect.width, 2f), AccentSoftColor);
+            GUI.color = BorderColor;
+            Widgets.DrawBox(fieldRect, 1);
+            GUI.color = Color.white;
+
+            string displayValue = displayValueFactory?.Invoke() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(displayValue))
+            {
+                displayValue = "CS_Studio_None".Translate();
+            }
+
+            GameFont oldFont = Text.Font;
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.MiddleLeft;
+            GUI.color = string.IsNullOrWhiteSpace(currentValue) ? SubtleColor : HeaderColor;
+            Widgets.Label(fieldRect.ContractedBy(6f, 0f), GenText.Truncate(displayValue, fieldRect.width - 12f));
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = oldFont;
+
+            float buttonX = fieldRect.xMax + spacing;
+            DrawBrowseButton(new Rect(buttonX, rect.y, selectButtonWidth, 24f), onSelect, selectButtonText);
+            if (showClear)
+            {
+                DrawDangerButton(new Rect(buttonX + selectButtonWidth + spacing, rect.y, clearButtonWidth, 24f), clearButtonText, null, onClear);
+            }
 
             y += RowHeight;
         }

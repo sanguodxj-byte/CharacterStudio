@@ -147,6 +147,9 @@
     <CS_Studio_Prop_ScaleWest>Scale West (Multiplier)</CS_Studio_Prop_ScaleWest>
     <CS_Studio_Prop_ShowNode>Show Node</CS_Studio_Prop_ShowNode>
     <CS_Studio_Prop_TexturePath>Texture Path</CS_Studio_Prop_TexturePath>
+    <CS_Studio_Texture_BrowseExternal>External File Browse</CS_Studio_Texture_BrowseExternal>
+    <CS_Studio_Texture_BrowseInternal>Internal Textures (Textures/)</CS_Studio_Texture_BrowseInternal>
+    <CS_Studio_Browser_TexturesDir>Navigate to CharacterStudio's Textures directory. Files selected here are automatically converted to relative paths loaded by RimWorld's native pipeline for better performance.</CS_Studio_Browser_TexturesDir>
     <CS_Studio_Prop_Visible>Visible</CS_Studio_Prop_Visible>
     <CS_Studio_Prop_Shader>Shader</CS_Studio_Prop_Shader>
     <CS_Studio_Prop_Shader_Tooltip>Determines how the layer handles transparency and depth:

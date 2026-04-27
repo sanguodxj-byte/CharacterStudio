@@ -399,9 +399,7 @@ namespace CharacterStudio.Exporter
                         skin.applyAsDefaultForTargetRaces ? new XElement("applyAsDefaultForTargetRaces", "true") : null,
                         skin.defaultRacePriority != 0 ? new XElement("defaultRacePriority", skin.defaultRacePriority) : null,
                         skin.faceConfig != null && (skin.faceConfig.enabled || skin.faceConfig.HasAnyExpression() || skin.faceConfig.HasAnyLayeredPart() || skin.faceConfig.eyeDirectionConfig?.HasAnyTex() == true || skin.faceConfig.eyeDirectionConfig?.upperLidMoveDown != 0.0044f || skin.faceConfig.eyeDirectionConfig?.enabled == true) ? GenerateFaceConfigXml(skin.faceConfig) : null,
-                        skin.animationConfig != null && skin.animationConfig.enabled ? GenerateAnimationConfigXml(skin.animationConfig) : null,
-                        GenerateSkinAbilitiesXml(skin.abilities),
-                        GenerateAbilityHotkeysXml(skin.abilityHotkeys)
+                        skin.animationConfig != null && skin.animationConfig.enabled ? GenerateAnimationConfigXml(skin.animationConfig) : null
                     )
                 )
             );

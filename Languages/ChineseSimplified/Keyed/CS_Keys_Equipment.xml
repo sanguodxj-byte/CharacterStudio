@@ -47,11 +47,16 @@
     <CS_Studio_Equip_LinkedThingDef_Hint>可选择将该装备条目绑定到游戏内 ThingDef，用于集成或自动匹配。</CS_Studio_Equip_LinkedThingDef_Hint>
     <CS_Studio_Equip_NoAbilities>无技能</CS_Studio_Equip_NoAbilities>
     <CS_Studio_Equip_NoAbilityPool>当前没有可用的共享技能，请先创建或导入技能。</CS_Studio_Equip_NoAbilityPool>
+    <CS_Studio_Equip_NoAbilitiesToBind>当前没有可绑定技能。请先在独立技能编辑器中准备正式技能表。</CS_Studio_Equip_NoAbilitiesToBind>
     <CS_Studio_Equip_NorthOffsetX>北向偏移 X</CS_Studio_Equip_NorthOffsetX>
     <CS_Studio_Equip_NorthOffsetY>北向偏移 Y</CS_Studio_Equip_NorthOffsetY>
     <CS_Studio_Equip_NorthOffsetZ>北向偏移 Z</CS_Studio_Equip_NorthOffsetZ>
     <CS_Studio_Equip_NoSelection>未选择装备。</CS_Studio_Equip_NoSelection>
-    <CS_Studio_Equip_OpenAbilityEditor>打开共享技能编辑器</CS_Studio_Equip_OpenAbilityEditor>
+    <CS_Studio_Equip_OpenAbilityEditor>打开技能编辑器</CS_Studio_Equip_OpenAbilityEditor>
+    <CS_Studio_Equip_ImportAbilities>导入技能</CS_Studio_Equip_ImportAbilities>
+    <CS_Studio_Equip_NoAbilitiesImported>所选 XML 文件中未找到技能数据。</CS_Studio_Equip_NoAbilitiesImported>
+    <CS_Studio_Equip_AbilitiesImported>已导入 {0} 个技能。</CS_Studio_Equip_AbilitiesImported>
+    <CS_Studio_Equip_AbilityImportFailed>导入技能失败。</CS_Studio_Equip_AbilityImportFailed>
     <CS_Studio_Equip_ParentThingDefName>父级 ThingDef</CS_Studio_Equip_ParentThingDefName>
     <CS_Studio_Equip_Preset_LeftWing>左翼</CS_Studio_Equip_Preset_LeftWing>
     <CS_Studio_Equip_Preset_LeftWingVfx>左翼 VFX</CS_Studio_Equip_Preset_LeftWingVfx>
@@ -140,4 +145,16 @@
     <CS_Studio_Equip_WeaponTags>武器标签 (Weapon Tags)</CS_Studio_Equip_WeaponTags>
     <CS_Studio_Equip_WeaponClasses>武器类别 (Weapon Classes)</CS_Studio_Equip_WeaponClasses>
     <CS_Studio_Equip_WornTexPath>穿戴贴图路径</CS_Studio_Equip_WornTexPath>
+    <CS_Studio_Equip_SwingPreset>挥击预设</CS_Studio_Equip_SwingPreset>
+    <CS_Studio_Equip_SwingPreset_None>自定义（无预设）</CS_Studio_Equip_SwingPreset_None>
+    <CS_Studio_Equip_SwingPreset_HorizontalSlash>横斩</CS_Studio_Equip_SwingPreset_HorizontalSlash>
+    <CS_Studio_Equip_SwingPreset_VerticalSlash>纵劈</CS_Studio_Equip_SwingPreset_VerticalSlash>
+    <CS_Studio_Equip_SwingPreset_Thrust>突刺</CS_Studio_Equip_SwingPreset_Thrust>
+    <CS_Studio_Equip_SwingPreset_Uppercut>上挑</CS_Studio_Equip_SwingPreset_Uppercut>
+    <CS_Studio_Equip_SwingPreset_SpinSlash>回旋斩</CS_Studio_Equip_SwingPreset_SpinSlash>
+    <CS_Studio_Equip_SwingPreset_LightAttack>轻击</CS_Studio_Equip_SwingPreset_LightAttack>
+    <CS_Studio_Equip_SwingPreset_HeavyAttack>重击</CS_Studio_Equip_SwingPreset_HeavyAttack>
+    <CS_Studio_Equip_SwingPreset_Block>格挡/举盾</CS_Studio_Equip_SwingPreset_Block>
+    <CS_Studio_Equip_SelectThingDef>选择物品定义</CS_Studio_Equip_SelectThingDef>
+    <CS_Studio_Equip_SelectRecipeDef>选择配方定义</CS_Studio_Equip_SelectRecipeDef>
 </LanguageData>

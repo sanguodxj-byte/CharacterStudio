@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CharacterStudio.AI;
 using CharacterStudio.Attributes;
 using CharacterStudio.Core;
@@ -148,12 +149,14 @@ namespace CharacterStudio.UI
                 return;
             }
 
-            SyncAbilitiesToSkin();
             llmCharacterGenerating = true;
             ShowStatus("CS_LLM_Generating".Translate());
 
             var skinSnapshot = workingSkin.Clone();
-            var abilitiesSnapshot = new System.Collections.Generic.List<Abilities.ModularAbilityDef>(workingAbilities);
+            var abilitiesSnapshot = workingDocument?.characterDefinition?.abilityLoadout?.abilities?
+                .Where(ability => ability != null)
+                .Select(ability => ability.Clone())
+                .ToList() ?? new System.Collections.Generic.List<Abilities.ModularAbilityDef>();
 
             LlmGenerationService.GenerateCharacterDesignAsync(
                 settings,
@@ -180,20 +183,6 @@ namespace CharacterStudio.UI
 
                 workingSkin.attributes ??= new CharacterAttributeProfile();
                 MergeGeneratedCharacterAttributes(workingSkin.attributes, design.attributes);
-
-                workingAbilities.Clear();
-                if (design.abilities != null)
-                {
-                    foreach (var ability in design.abilities)
-                    {
-                        if (ability != null)
-                        {
-                            workingAbilities.Add(ability);
-                        }
-                    }
-                }
-
-                SyncAbilitiesToSkin();
             }, refreshPreview: true, refreshRenderTree: true);
         }
 

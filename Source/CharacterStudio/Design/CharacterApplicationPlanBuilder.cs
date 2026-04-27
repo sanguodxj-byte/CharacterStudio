@@ -26,4 +26,14 @@ namespace CharacterStudio.Design
             };
         }
     }
+
+    /// <summary>
+    /// Minimal marker to identify equipment-derived layers in the runtime skin.
+    /// Used by <see cref="CharacterDesignCompiler.ApplyEquipmentVisualLayers"/> to
+    /// replace (not duplicate) equipment layers when values change between compiles.
+    /// </summary>
+    internal static class EquipmentLayerMarker
+    {
+        public const string Prefix = "[Equipment]";
+    }
 }

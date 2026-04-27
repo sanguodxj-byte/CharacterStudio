@@ -178,8 +178,9 @@
     <CS_Studio_Ability_PropertiesTitle>Ability Properties</CS_Studio_Ability_PropertiesTitle>
     <CS_Studio_Ability_Radius>Explosion Radius</CS_Studio_Ability_Radius>
     <CS_Studio_Ability_Range>Range</CS_Studio_Ability_Range>
-    <CS_Studio_Ability_Save>Save</CS_Studio_Ability_Save>
-    <CS_Studio_Ability_SaveSuccess>Ability saved</CS_Studio_Ability_SaveSuccess>
+    <CS_Studio_Ability_Save>Save Session</CS_Studio_Ability_Save>
+    <CS_Studio_Ability_SaveSuccess>Ability editor session saved</CS_Studio_Ability_SaveSuccess>
+
     <CS_Studio_Ability_Search>Search Abilities</CS_Studio_Ability_Search>
     <CS_Studio_Ability_SelectedSummary>Selected: {0}</CS_Studio_Ability_SelectedSummary>
     <CS_Studio_Ability_SelectHint>Select an ability, or create a new one.</CS_Studio_Ability_SelectHint>
@@ -536,6 +537,17 @@
     <CS_Studio_VFX_GlobalFilterTransition>Transition</CS_Studio_VFX_GlobalFilterTransition>
     <CS_Studio_VFX_GlobalFilterTransition_None>None</CS_Studio_VFX_GlobalFilterTransition_None>
     <CS_Studio_VFX_GlobalFilterTransitionTicks>Transition(tick)</CS_Studio_VFX_GlobalFilterTransitionTicks>
+    <!-- Global Filter Modes -->
+    <CS_Studio_VFX_GlobalFilterMode_Grayscale>Grayscale</CS_Studio_VFX_GlobalFilterMode_Grayscale>
+    <CS_Studio_VFX_GlobalFilterMode_Desaturate>Desaturate</CS_Studio_VFX_GlobalFilterMode_Desaturate>
+    <CS_Studio_VFX_GlobalFilterMode_Sepia>Sepia</CS_Studio_VFX_GlobalFilterMode_Sepia>
+    <CS_Studio_VFX_GlobalFilterMode_Tint>Tint</CS_Studio_VFX_GlobalFilterMode_Tint>
+    <CS_Studio_VFX_GlobalFilterMode_Negative>Negative</CS_Studio_VFX_GlobalFilterMode_Negative>
+    <CS_Studio_VFX_GlobalFilterMode_BlackAndWhite>Black &amp; White</CS_Studio_VFX_GlobalFilterMode_BlackAndWhite>
+    <!-- Global Filter Transitions -->
+    <CS_Studio_VFX_GlobalFilterTransition_Linear>Linear</CS_Studio_VFX_GlobalFilterTransition_Linear>
+    <CS_Studio_VFX_GlobalFilterTransition_EaseIn>Ease In</CS_Studio_VFX_GlobalFilterTransition_EaseIn>
+    <CS_Studio_VFX_GlobalFilterTransition_EaseOut>Ease Out</CS_Studio_VFX_GlobalFilterTransition_EaseOut>
     <!-- VFX category names -->
     <CS_Studio_VFX_Category_Preset>Preset Effect</CS_Studio_VFX_Category_Preset>
     <CS_Studio_VFX_Category_CustomTexture>Custom Texture</CS_Studio_VFX_Category_CustomTexture>

@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using CharacterStudio.Abilities;
 using CharacterStudio.Core;
 using CharacterStudio.Design;
 using CharacterStudio.Exporter;
@@ -11,11 +14,17 @@ namespace CharacterStudio.UI
     public partial class Dialog_SkinEditor
     {
         // ─────────────────────────────────────────────
-        // 保存 / 应用
-        // ─────────────────────────────────────────────
+        private const string InternalizedXmlFileSuffix = ".internalized";
 
         private void OnSaveSkin()
         {
+            // 图层修改工作流：委托给 RenderFix 保存
+            if (layerModificationWorkflowActive)
+            {
+                OnSaveRenderFixPatch();
+                return;
+            }
+
             if (workingSkin == null)
             {
                 Log.Error("[CharacterStudio] 保存失败：workingSkin 为空");
@@ -43,57 +52,25 @@ namespace CharacterStudio.UI
                 workingSkin.label = workingSkin.defName;
             }
 
-            string exportDir = Path.Combine(GenFilePaths.ConfigFolderPath, "CharacterStudio", "Skins");
-            string fileName = workingSkin.defName + ".xml";
-            string filePath = Path.Combine(exportDir, fileName);
-
             try
             {
-                Directory.CreateDirectory(exportDir);
-
-                // 记录预览人偶的 Head Z 偏移基准值，用于后续自动补偿不同体型的面部 Z 差异
-                float mannequinHeadZ = GetMannequinHeadOffsetZ();
-                if (mannequinHeadZ != 0f)
-                    workingSkin.previewHeadOffsetZ = mannequinHeadZ;
-
-                var savePlanSkin = BuildRuntimeSkinForExecution();
-                if (savePlanSkin == null)
+                string savedFilePath;
+                PawnSkinDef? registeredSkin;
+                if (!PersistCurrentSkinDesign(showUserMessages: true, out savedFilePath, out registeredSkin))
                 {
-                    Log.Error("[CharacterStudio] 保存失败：未能构建运行时皮肤");
-                    ShowStatus("CS_Studio_Err_SaveFailed".Translate());
                     return;
                 }
 
-                savePlanSkin.RemoveApparelHidingData();
-
-                SkinSaver.SaveSkinDef(savePlanSkin, filePath);
-                string characterFilePath = Path.Combine(exportDir, (savePlanSkin.defName ?? workingSkin.defName ?? "CS_Character") + ".character.xml");
-                workingDocument.characterDefinition.EnsureDefaults(savePlanSkin.defName ?? workingSkin.defName ?? "CS_Character", ResolveSpawnRaceForCurrentDesign(savePlanSkin), savePlanSkin.attributes);
-                CharacterDefinitionXmlUtility.Save(workingDocument.characterDefinition, characterFilePath);
-                ModBuilder.ExportScatteredLooseFiles(savePlanSkin, workingDocument.characterDefinition);
-                CharacterRuntimeTriggerConfigUtility.SyncCharacterAssets(savePlanSkin, workingDocument.characterDefinition);
-
-                var registered = PawnSkinDefRegistry.RegisterOrReplace(savePlanSkin.Clone());
-                string? preferredRaceDefName = registered.targetRaces != null && registered.targetRaces.Count > 0
-                    ? registered.targetRaces[0]
-                    : null;
-                ReplaceWorkingSkin(registered, registered.defName, preferredRaceDefName, syncAbilities: false);
-
-                if (registered.applyAsDefaultForTargetRaces)
-                {
-                    PawnSkinBootstrapComponent.ApplyDefaultSkinsToCurrentGame();
-                }
-
                 string finalStatus = "CS_Studio_Msg_SaveSuccess".Translate();
-                if (targetPawn != null)
+                if (targetPawn != null && registeredSkin != null)
                 {
                     var applyPlan = BuildApplicationPlan(targetPawn, false, "SaveAndApplyToTargetPawn");
-                    applyPlan.runtimeSkin = registered.Clone();
+                    applyPlan.runtimeSkin = registeredSkin.Clone();
                     if (CharacterApplicationExecutor.Execute(applyPlan))
                     {
                         finalStatus = applyPlan.statusMessage.Translate(targetPawn.LabelShort);
                         Messages.Message(
-                            "CS_Appearance_Applied".Translate(registered.label ?? registered.defName, targetPawn.LabelShort),
+                            "CS_Appearance_Applied".Translate(registeredSkin.label ?? registeredSkin.defName, targetPawn.LabelShort),
                             MessageTypeDefOf.PositiveEvent,
                             false
                         );
@@ -114,8 +91,7 @@ namespace CharacterStudio.UI
                 }
 
                 ShowStatus(finalStatus);
-                Messages.Message("CS_Studio_Msg_SavePath".Translate(filePath), MessageTypeDefOf.PositiveEvent, false);
-                isDirty = false;
+                Messages.Message("CS_Studio_Msg_SavePath".Translate(savedFilePath), MessageTypeDefOf.PositiveEvent, false);
             }
             catch (Exception ex)
             {
@@ -128,18 +104,110 @@ namespace CharacterStudio.UI
             }
         }
 
-        private void OnApplyToTargetPawn()
+        private bool PersistCurrentSkinDesign(bool showUserMessages, out string savedFilePath, out PawnSkinDef? registeredSkin)
         {
-            if (targetPawn == null)
+            return PersistCurrentSkinDesign(showUserMessages, null, null, out savedFilePath, out registeredSkin);
+        }
+
+        private bool PersistCurrentSkinDesign(bool showUserMessages, PawnSkinDef? skinToSave, out string savedFilePath, out PawnSkinDef? registeredSkin)
+        {
+            return PersistCurrentSkinDesign(showUserMessages, skinToSave, null, out savedFilePath, out registeredSkin);
+        }
+
+        private bool PersistCurrentSkinDesign(bool showUserMessages, PawnSkinDef? skinToSave, string? fileNameSuffix, out string savedFilePath, out PawnSkinDef? registeredSkin)
+        {
+            savedFilePath = string.Empty;
+            registeredSkin = null;
+
+            if (workingSkin == null)
             {
-                ShowStatus("CS_Studio_Msg_TargetPawnRequired".Translate());
-                return;
+                return false;
             }
 
-            OnApplySkinToTargetPawn();
+            PawnSkinDef saveSourceSkin = skinToSave ?? workingSkin;
+
+            if (string.IsNullOrEmpty(saveSourceSkin.label))
+            {
+                saveSourceSkin.label = saveSourceSkin.defName;
+            }
+
+            string exportDir = Path.Combine(GenFilePaths.ConfigFolderPath, "CharacterStudio", "Skins");
+            string fileSuffix = fileNameSuffix?.Trim() ?? string.Empty;
+            string baseFileStem = saveSourceSkin.defName ?? "CS_Skin";
+            string fileName = baseFileStem + fileSuffix + ".xml";
+            string filePath = Path.Combine(exportDir, fileName);
+
+            Directory.CreateDirectory(exportDir);
+
+            float mannequinHeadZ = GetMannequinHeadOffsetZ();
+            if (mannequinHeadZ != 0f)
+                saveSourceSkin.previewHeadOffsetZ = mannequinHeadZ;
+
+            PawnSkinDef savePlanSkin;
+            if (skinToSave != null)
+            {
+                savePlanSkin = skinToSave.Clone();
+            }
+            else
+            {
+                savePlanSkin = BuildRuntimeSkinForExecution();
+                if (savePlanSkin == null)
+                {
+                    Log.Error("[CharacterStudio] 保存失败：未能构建运行时皮肤");
+                    if (showUserMessages)
+                    {
+                        ShowStatus("CS_Studio_Err_SaveFailed".Translate());
+                    }
+                    return false;
+                }
+            }
+
+            savePlanSkin.RemoveApparelHidingData();
+
+            CharacterDefinition characterDefinitionToSave = workingDocument.characterDefinition;
+            if (skinToSave != null)
+            {
+                characterDefinitionToSave = workingDocument.characterDefinition?.Clone() ?? new CharacterDefinition();
+            }
+
+            string ownerDefName = savePlanSkin.defName ?? workingSkin.defName ?? "CS_Character";
+            string characterFilePath = Path.Combine(exportDir, ownerDefName + fileSuffix + ".character.xml");
+            ThingDef resolvedRace = ResolveSpawnRaceForCurrentDesign(savePlanSkin);
+            characterDefinitionToSave.EnsureDefaults(ownerDefName, resolvedRace, savePlanSkin.attributes);
+            characterDefinitionToSave.defName = ownerDefName;
+            if (string.IsNullOrWhiteSpace(characterDefinitionToSave.displayName))
+            {
+                characterDefinitionToSave.displayName = savePlanSkin.label ?? ownerDefName;
+            }
+
+            SkinSaver.SaveSkinDef(savePlanSkin, filePath);
+            CharacterDefinitionXmlUtility.Save(characterDefinitionToSave, characterFilePath);
+            ModBuilder.ExportScatteredLooseFiles(savePlanSkin, characterDefinitionToSave);
+            CharacterRuntimeTriggerConfigUtility.SyncCharacterAssets(savePlanSkin, characterDefinitionToSave);
+
+            var registered = PawnSkinDefRegistry.RegisterOrReplace(savePlanSkin.Clone());
+            string? preferredRaceDefName = registered.targetRaces != null && registered.targetRaces.Count > 0
+                ? registered.targetRaces[0]
+                : null;
+            ReplaceWorkingSkin(registered, registered.defName, preferredRaceDefName, syncAbilities: false);
+            workingDocument.characterDefinition = characterDefinitionToSave.Clone();
+            workingDocument.sourceSkinDefName = registered.defName ?? string.Empty;
+            workingDocument.lastSavedFilePath = filePath;
+            workingDocument.SyncMetadataFromRuntimeSkin();
+
+            if (registered.applyAsDefaultForTargetRaces)
+            {
+                PawnSkinBootstrapComponent.ApplyDefaultSkinsToCurrentGame();
+            }
+
+            savedFilePath = filePath;
+            registeredSkin = registered;
+            isDirty = false;
+            return true;
         }
 
         private void OnApplySkinToTargetPawn()
+
         {
             if (targetPawn == null)
             {
@@ -192,6 +260,13 @@ namespace CharacterStudio.UI
 
         private void OnSpawnNewPawn()
         {
+            // 图层修改工作流不支持生成新角色（无完整皮肤可应用）
+            if (layerModificationWorkflowActive)
+            {
+                ShowStatus("图层修改工作流不支持生成新角色，请先导出补丁后在游戏中激活。");
+                return;
+            }
+
             if (Find.CurrentMap == null)
             {
                 ShowStatus("CS_Studio_Err_NoMap".Translate());
@@ -249,6 +324,105 @@ namespace CharacterStudio.UI
                 catch (Exception ex)
                 {
                     Log.Error($"[CharacterStudio] 生成新角色失败: {ex}");
+                    ShowStatus("CS_Studio_Err_ApplyFailedCheckLog".Translate());
+                }
+            }, triggerSettings =>
+            {
+                directSpawnSettings = triggerSettings?.Clone() ?? new CharacterSpawnSettings();
+                directSpawnSettings.sourceMapForConditionCheck = Find.CurrentMap;
+
+                try
+                {
+                    PawnSkinDef runtimeSkin = BuildRuntimeSkinForExecution();
+                    ThingDef spawnRace = ResolveSpawnRaceForCurrentDesign(runtimeSkin);
+                    CharacterDefinition characterDefinition = workingDocument.characterDefinition?.Clone() ?? new CharacterDefinition();
+                    string ownerCharacterDefName = runtimeSkin.defName ?? workingSkin.defName ?? "CS_Character";
+                    characterDefinition.EnsureDefaults(ownerCharacterDefName, spawnRace, runtimeSkin.attributes);
+
+                    CharacterSpawnProfileDef profile = new CharacterSpawnProfileDef
+                    {
+                        defName = $"CS_EditorPreviewProfile_{CharacterSpawnProfileRegistry.SanitizeDefName(ownerCharacterDefName)}",
+                        label = characterDefinition.displayName,
+                        ownerCharacterDefName = ownerCharacterDefName,
+                        skinDefName = runtimeSkin.defName ?? ownerCharacterDefName,
+                        raceDefName = spawnRace.defName,
+                        pawnKindDefName = CharacterSpawnUtility.ResolvePawnKindForRace(spawnRace).defName,
+                        forcePlayerFaction = true,
+                        characterDefinition = characterDefinition.Clone()
+                    };
+
+                    CharacterRuntimeTriggerDef trigger = new CharacterRuntimeTriggerDef
+                    {
+                        defName = $"CS_EditorPreviewTrigger_{CharacterSpawnProfileRegistry.SanitizeDefName(ownerCharacterDefName)}",
+                        label = characterDefinition.displayName,
+                        ownerCharacterDefName = ownerCharacterDefName,
+                        spawnProfileDefName = profile.defName,
+                        spawnNearColonist = true,
+                        requirePlayerHomeMap = false,
+                        evaluationIntervalTicks = 1,
+                        cooldownTicks = 0,
+                        fireOncePerGame = false,
+                        fireOncePerMap = false,
+                        conditionLogic = CharacterSpawnConditionLogic.All,
+                        requiredConditions = new System.Collections.Generic.List<CharacterRuntimeTriggerCondition>
+                        {
+                            new CharacterRuntimeTriggerCondition
+                            {
+                                conditionType = CharacterRuntimeTriggerConditionType.Always
+                            }
+                        },
+
+                        spawnSettings = directSpawnSettings.Clone()
+                    };
+
+                    profile.characterDefinition.EnsureDefaults(profile.skinDefName, spawnRace, runtimeSkin.attributes);
+                    CharacterStudioAPI.RegisterOrReplaceSkin(runtimeSkin);
+                    CharacterStudioAPI.RegisterRuntimeSpawnProfile(profile);
+                    CharacterStudioAPI.RegisterRuntimeTrigger(trigger);
+
+                    Pawn? spawnedPawn = null;
+                    Action<CharacterRuntimeTriggerDef, CharacterSpawnProfileDef?, Map, Pawn?> handler =
+                        (firedTrigger, firedProfile, firedMap, firedPawn) =>
+                        {
+                            if (firedTrigger == trigger)
+                                spawnedPawn = firedPawn;
+                        };
+                    CharacterStudioAPI.RuntimeTriggerFiredGlobal += handler;
+                    try
+                    {
+                        bool executed = CharacterRuntimeTriggerExecutor.TryExecute(trigger, Find.CurrentMap);
+                        if (!executed)
+                        {
+                            Log.Warning($"[CharacterStudio] 触发器执行返回 false，尝试直接使用 Profile 生成");
+                            spawnedPawn = CharacterRuntimeTriggerExecutor.TrySpawnProfile(
+                                profile, Find.CurrentMap, null, directSpawnSettings, "SpawnTriggerFromEditor");
+                        }
+                    }
+                    finally
+                    {
+                        CharacterStudioAPI.RuntimeTriggerFiredGlobal -= handler;
+                    }
+
+                    if (spawnedPawn != null)
+                    {
+                        targetPawn = spawnedPawn;
+                        if (workingDocument != null)
+                        {
+                            workingDocument.preferredPreviewRaceDefName = targetPawn.def.defName;
+                            workingDocument.preferredTargetRaceDefName = targetPawn.def.defName;
+                        }
+
+                        RefreshRenderTree();
+                        ShowStatus("CS_Studio_SpawnedNewPawn".Translate(targetPawn.LabelShort));
+                    }
+                    else
+                    {
+                        ShowStatus("CS_Studio_Err_ApplyFailedCheckLog".Translate());
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"[CharacterStudio] 使用触发器生成角色失败: {ex}");
                     ShowStatus("CS_Studio_Err_ApplyFailedCheckLog".Translate());
                 }
             }, isBusy => suspendHeavyPreviewWork = isBusy));

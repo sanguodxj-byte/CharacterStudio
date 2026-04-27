@@ -212,7 +212,6 @@ namespace CharacterStudio.UI
 
             workingDocument = snapshot.Document.Clone();
             workingSkin = workingDocument.runtimeSkin;
-            SyncAbilitiesFromSkin();
             selectedLayerIndex = snapshot.SelectedLayerIndex;
             selectedLayerIndices = new HashSet<int>(snapshot.SelectedLayerIndices);
             selectedEquipmentIndex = snapshot.SelectedEquipmentIndex;
@@ -249,7 +248,6 @@ namespace CharacterStudio.UI
 
             workingDocument = snapshot.Document.Clone();
             workingSkin = workingDocument.runtimeSkin;
-            SyncAbilitiesFromSkin();
             selectedLayerIndex = snapshot.SelectedLayerIndex;
             selectedLayerIndices = new HashSet<int>(snapshot.SelectedLayerIndices);
             selectedEquipmentIndex = snapshot.SelectedEquipmentIndex;

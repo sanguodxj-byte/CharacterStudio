@@ -104,7 +104,7 @@
     <CS_Studio_BaseSlot_PrimaryColor>主颜色</CS_Studio_BaseSlot_PrimaryColor>
     <CS_Studio_BaseSlot_PrimaryColorSource>主颜色来源</CS_Studio_BaseSlot_PrimaryColorSource>
     <CS_Studio_BaseSlot_SecondColorMask>第二颜色（Mask）</CS_Studio_BaseSlot_SecondColorMask>
-    <CS_Studio_Btn_Apply>应用</CS_Studio_Btn_Apply>
+    <CS_Studio_Btn_Apply>内化纹理</CS_Studio_Btn_Apply>
     <CS_Studio_Btn_Cancel>取消</CS_Studio_Btn_Cancel>
     <CS_Studio_Btn_ClearShort>清空</CS_Studio_Btn_ClearShort>
     <CS_Studio_Btn_ContinueExport>继续导出</CS_Studio_Btn_ContinueExport>
@@ -258,6 +258,7 @@
     <CS_Studio_SpawnedNewPawnLetter>已生成角色：{0}</CS_Studio_SpawnedNewPawnLetter>
     <CS_Studio_SpawnedNewPawnMessage>已根据当前设计生成角色：{0}</CS_Studio_SpawnedNewPawnMessage>
     <CS_Studio_SpawnNewPawnConfirm>生成</CS_Studio_SpawnNewPawnConfirm>
+    <CS_Studio_SpawnUseTriggerConfirm>使用触发器生成</CS_Studio_SpawnUseTriggerConfirm>
     <CS_Studio_SpawnNewPawnSection>角色生成</CS_Studio_SpawnNewPawnSection>
     <CS_Studio_SpawnNewPawnTitle>生成角色</CS_Studio_SpawnNewPawnTitle>
     <CS_Studio_SpawnEvent_MessageText>事件文本</CS_Studio_SpawnEvent_MessageText>
@@ -457,5 +458,28 @@
     <CS_Settings_DraftedBonus>征召加成</CS_Settings_DraftedBonus>
     <CS_Settings_ColonistBonus>殖民者加成</CS_Settings_ColonistBonus>
     <CS_Settings_UnstableBonus>不稳定加成</CS_Settings_UnstableBonus>
-    <CS_Settings_ResetToDefaults>恢复默认</CS_Settings_ResetToDefaults>
+    <CS_Studio_Performance_FaceCaches>面部缓存统计</CS_Studio_Performance_FaceCaches>
+    <CS_Studio_Performance_FaceTransformCacheHits>面部变换缓存命中：{0}</CS_Studio_Performance_FaceTransformCacheHits>
+    <CS_Studio_Performance_FaceTransformCacheMisses>面部变换缓存未命中：{0}</CS_Studio_Performance_FaceTransformCacheMisses>
+    <CS_Studio_Performance_FacePathCacheHits>面部路径缓存命中：{0}</CS_Studio_Performance_FacePathCacheHits>
+    <CS_Studio_Performance_FacePathCacheMisses>面部路径缓存未命中：{0}</CS_Studio_Performance_FacePathCacheMisses>
+    <CS_Studio_Performance_GraphicDirtyTriggers>图形脏标记触发次数：{0}</CS_Studio_Performance_GraphicDirtyTriggers>
+    <CS_Studio_Performance_GraphicDirtySkipped>图形脏标记节流跳过次数：{0}</CS_Studio_Performance_GraphicDirtySkipped>
+
+    <!-- 纹理内化 -->
+    <CS_Studio_Internalize_Title>纹理性能优化</CS_Studio_Internalize_Title>
+    <CS_Studio_Internalize_Desc>检测到 {0} 个外部纹理路径。外部纹理在运行时会产生额外的性能开销（每帧磁盘 I/O 和额外缓存查找）。
+
+点击"确认优化"将：
+1. 在 Mods 目录创建子模组（CharacterStudio_UserTextures）
+2. 复制纹理到子模组并自动重定向所有路径
+3. 保存皮肤配置
+
+需要重启游戏并启用子模组后，优化后的路径才会生效。</CS_Studio_Internalize_Desc>
+    <CS_Studio_Internalize_Confirm>确认优化</CS_Studio_Internalize_Confirm>
+    <CS_Studio_Internalize_Cancel>取消</CS_Studio_Internalize_Cancel>
+    <CS_Studio_Internalize_SkipApply>仅应用（跳过优化）</CS_Studio_Internalize_SkipApply>
+    <CS_Studio_Internalize_Success>已复制 {0} 个纹理到子模组，请重启游戏并启用 {1} 使更改生效。</CS_Studio_Internalize_Success>
+    <CS_Studio_Internalize_Failed>纹理内化失败：{0}</CS_Studio_Internalize_Failed>
 </LanguageData>
+

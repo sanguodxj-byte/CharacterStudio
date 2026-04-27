@@ -472,19 +472,19 @@ namespace CharacterStudio.UI
 
         private string GetSelectedEquipmentAnimationTriggerKey()
         {
-            if (currentTab != EditorTab.Items)
+            if (!IsEquipmentOrItemsTab)
             {
                 return string.Empty;
             }
 
-            workingSkin.equipments ??= new List<CharacterEquipmentDef>();
+            WorkingEquipments ??= new List<CharacterEquipmentDef>();
             SanitizeEquipmentSelection();
-            if (selectedEquipmentIndex < 0 || selectedEquipmentIndex >= workingSkin.equipments.Count)
+            if (selectedEquipmentIndex < 0 || selectedEquipmentIndex >= WorkingEquipments.Count)
             {
                 return string.Empty;
             }
 
-            CharacterEquipmentDef? equipment = workingSkin.equipments[selectedEquipmentIndex];
+            CharacterEquipmentDef? equipment = WorkingEquipments[selectedEquipmentIndex];
             CharacterEquipmentRenderData? renderData = equipment?.renderData;
             if (renderData == null)
             {
@@ -515,19 +515,19 @@ namespace CharacterStudio.UI
 
         private int GetSelectedEquipmentAnimationDurationTicks()
         {
-            if (currentTab != EditorTab.Items)
+            if (!IsEquipmentOrItemsTab)
             {
                 return 0;
             }
 
-            workingSkin.equipments ??= new List<CharacterEquipmentDef>();
+            WorkingEquipments ??= new List<CharacterEquipmentDef>();
             SanitizeEquipmentSelection();
-            if (selectedEquipmentIndex < 0 || selectedEquipmentIndex >= workingSkin.equipments.Count)
+            if (selectedEquipmentIndex < 0 || selectedEquipmentIndex >= WorkingEquipments.Count)
             {
                 return 0;
             }
 
-            CharacterEquipmentDef? equipment = workingSkin.equipments[selectedEquipmentIndex];
+            CharacterEquipmentDef? equipment = WorkingEquipments[selectedEquipmentIndex];
             CharacterEquipmentRenderData? renderData = equipment?.renderData;
             if (renderData == null)
             {
@@ -942,8 +942,8 @@ namespace CharacterStudio.UI
                 btnX += apparelBtnWidth + Margin;
             }
 
-            // ── 装备动画控制（仅 Items 选项卡） ──
-            if (currentTab == EditorTab.Items)
+            // ── 装备动画控制（Equipment / Items 选项卡） ──
+            if (IsEquipmentOrItemsTab)
             {
                 float equipmentPreviewBtnWidth = 76f;
                 bool canPreviewEquipmentAnimation = !string.IsNullOrWhiteSpace(GetSelectedEquipmentAnimationTriggerKey());
@@ -1350,19 +1350,19 @@ namespace CharacterStudio.UI
 
         private void DrawSelectedEquipmentPivotOverlay(Rect previewRect)
         {
-            if (currentTab != EditorTab.Items)
+            if (currentTab != EditorTab.Equipment)
             {
                 return;
             }
 
-            workingSkin.equipments ??= new List<CharacterEquipmentDef>();
+            WorkingEquipments ??= new List<CharacterEquipmentDef>();
             SanitizeEquipmentSelection();
-            if (selectedEquipmentIndex < 0 || selectedEquipmentIndex >= workingSkin.equipments.Count)
+            if (selectedEquipmentIndex < 0 || selectedEquipmentIndex >= WorkingEquipments.Count)
             {
                 return;
             }
 
-            CharacterEquipmentDef? equipment = workingSkin.equipments[selectedEquipmentIndex];
+            CharacterEquipmentDef? equipment = WorkingEquipments[selectedEquipmentIndex];
             CharacterEquipmentRenderData? renderData = equipment?.renderData;
             if (renderData == null)
             {
@@ -1414,19 +1414,19 @@ namespace CharacterStudio.UI
             renderData = null;
             pivotScreenPos = Vector2.zero;
 
-            if (currentTab != EditorTab.Items)
+            if (currentTab != EditorTab.Equipment)
             {
                 return false;
             }
 
-            workingSkin.equipments ??= new List<CharacterEquipmentDef>();
+            WorkingEquipments ??= new List<CharacterEquipmentDef>();
             SanitizeEquipmentSelection();
-            if (selectedEquipmentIndex < 0 || selectedEquipmentIndex >= workingSkin.equipments.Count)
+            if (selectedEquipmentIndex < 0 || selectedEquipmentIndex >= WorkingEquipments.Count)
             {
                 return false;
             }
 
-            CharacterEquipmentDef? equipment = workingSkin.equipments[selectedEquipmentIndex];
+            CharacterEquipmentDef? equipment = WorkingEquipments[selectedEquipmentIndex];
             renderData = equipment?.renderData;
             if (renderData == null)
             {
@@ -1460,7 +1460,7 @@ namespace CharacterStudio.UI
         private void UpdateEquipmentPivotDragState(Rect previewRect)
         {
             Event evt = Event.current;
-            if (!equipmentPivotEditMode || currentTab != EditorTab.Items)
+            if (!equipmentPivotEditMode || currentTab != EditorTab.Equipment)
             {
                 isDraggingEquipmentPivot = false;
                 return;
@@ -1482,7 +1482,7 @@ namespace CharacterStudio.UI
 
         private bool TryApplyDragToSelectedEquipmentPivot(Rect previewRect)
         {
-            if (!equipmentPivotEditMode || currentTab != EditorTab.Items || !isDraggingEquipmentPivot)
+            if (!equipmentPivotEditMode || currentTab != EditorTab.Equipment || !isDraggingEquipmentPivot)
             {
                 return false;
             }
@@ -1687,6 +1687,14 @@ namespace CharacterStudio.UI
                     layer.offsetWest.x += dx;
                     layer.offsetWest.z += dz;
                 }
+                else if (editLayerOffsetPerFacing)
+                {
+                    // 自动启用独立 West 偏移，以镜像当前 offsetEast 为起点
+                    layer.useWestOffset = true;
+                    layer.offsetWest = new Vector3(-layer.offsetEast.x, layer.offsetEast.y, layer.offsetEast.z);
+                    layer.offsetWest.x += dx;
+                    layer.offsetWest.z += dz;
+                }
                 else
                 {
                     layer.offsetEast.x -= dx;
@@ -1717,8 +1725,24 @@ namespace CharacterStudio.UI
 
             if (previewRotation == Rot4.West)
             {
-                layer.offsetEast.x -= dx;
-                layer.offsetEast.z += dz;
+                if (layer.useWestOffset)
+                {
+                    layer.offsetWest.x += dx;
+                    layer.offsetWest.z += dz;
+                }
+                else if (editLayerOffsetPerFacing)
+                {
+                    // 自动启用独立 West 偏移，以镜像当前 offsetEast 为起点
+                    layer.useWestOffset = true;
+                    layer.offsetWest = new Vector3(-layer.offsetEast.x, layer.offsetEast.y, layer.offsetEast.z);
+                    layer.offsetWest.x += dx;
+                    layer.offsetWest.z += dz;
+                }
+                else
+                {
+                    layer.offsetEast.x -= dx;
+                    layer.offsetEast.z += dz;
+                }
                 return;
             }
 
@@ -1728,7 +1752,7 @@ namespace CharacterStudio.UI
 
         private bool TryApplyDragToWeaponPreview(float dx, float dz)
         {
-            if (currentTab != EditorTab.Animation)
+            if (currentTab != EditorTab.Equipment)
             {
                 return false;
             }
@@ -1743,7 +1767,7 @@ namespace CharacterStudio.UI
 
         private bool TryApplyNudgeToWeaponPreview(float dx, float dz)
         {
-            if (currentTab != EditorTab.Animation)
+            if (currentTab != EditorTab.Equipment)
             {
                 return false;
             }
@@ -1758,21 +1782,21 @@ namespace CharacterStudio.UI
 
         private bool TryApplyDragToSelectedEquipmentPreview(float dx, float dz)
         {
-            if (currentTab != EditorTab.Items)
+            if (currentTab != EditorTab.Equipment)
             {
                 return false;
             }
 
-            workingSkin.equipments ??= new List<CharacterEquipmentDef>();
+            WorkingEquipments ??= new List<CharacterEquipmentDef>();
             SanitizeEquipmentSelection();
-            if (selectedEquipmentIndex < 0 || selectedEquipmentIndex >= workingSkin.equipments.Count)
+            if (selectedEquipmentIndex < 0 || selectedEquipmentIndex >= WorkingEquipments.Count)
             {
                 return false;
             }
 
-            var equipment = workingSkin.equipments[selectedEquipmentIndex] ?? new CharacterEquipmentDef();
+            var equipment = WorkingEquipments[selectedEquipmentIndex] ?? new CharacterEquipmentDef();
             equipment.EnsureDefaults();
-            workingSkin.equipments[selectedEquipmentIndex] = equipment;
+            WorkingEquipments[selectedEquipmentIndex] = equipment;
 
             ApplyPreviewDeltaToLayer(equipment.renderData, dx, dz);
             isDirty = true;
@@ -1782,21 +1806,21 @@ namespace CharacterStudio.UI
 
         private bool TryApplyNudgeToSelectedEquipmentPreview(float dx, float dz)
         {
-            if (currentTab != EditorTab.Items)
+            if (currentTab != EditorTab.Equipment)
             {
                 return false;
             }
 
-            workingSkin.equipments ??= new List<CharacterEquipmentDef>();
+            WorkingEquipments ??= new List<CharacterEquipmentDef>();
             SanitizeEquipmentSelection();
-            if (selectedEquipmentIndex < 0 || selectedEquipmentIndex >= workingSkin.equipments.Count)
+            if (selectedEquipmentIndex < 0 || selectedEquipmentIndex >= WorkingEquipments.Count)
             {
                 return false;
             }
 
-            var equipment = workingSkin.equipments[selectedEquipmentIndex] ?? new CharacterEquipmentDef();
+            var equipment = WorkingEquipments[selectedEquipmentIndex] ?? new CharacterEquipmentDef();
             equipment.EnsureDefaults();
-            workingSkin.equipments[selectedEquipmentIndex] = equipment;
+            WorkingEquipments[selectedEquipmentIndex] = equipment;
 
             ApplyPreviewDeltaToLayer(equipment.renderData, dx, dz);
             isDirty = true;
@@ -1915,11 +1939,17 @@ namespace CharacterStudio.UI
             if (previewRotation == Rot4.North)
                 return layer.offsetNorth;
 
-            Vector3 offset = layer.offsetEast;
             if (previewRotation == Rot4.West)
-                offset.x = -offset.x;
+            {
+                if (layer.useWestOffset)
+                    return layer.offsetWest;
 
-            return offset;
+                Vector3 eastMirror = layer.offsetEast;
+                eastMirror.x = -eastMirror.x;
+                return eastMirror;
+            }
+
+            return layer.offsetEast;
         }
 
         private void SetEditableLayerOffsetForPreview(PawnLayerConfig layer, Vector3 value)
@@ -1940,6 +1970,12 @@ namespace CharacterStudio.UI
             {
                 if (layer.useWestOffset)
                 {
+                    layer.offsetWest = value;
+                }
+                else if (editLayerOffsetPerFacing)
+                {
+                    // 自动启用独立 West 偏移
+                    layer.useWestOffset = true;
                     layer.offsetWest = value;
                 }
                 else
@@ -1968,7 +2004,24 @@ namespace CharacterStudio.UI
             }
 
             if (previewRotation == Rot4.West)
-                value.x = -value.x;
+            {
+                if (layer.useWestOffset)
+                {
+                    layer.offsetWest = value;
+                }
+                else if (editLayerOffsetPerFacing)
+                {
+                    // 自动启用独立 West 偏移
+                    layer.useWestOffset = true;
+                    layer.offsetWest = value;
+                }
+                else
+                {
+                    value.x = -value.x;
+                    layer.offsetEast = value;
+                }
+                return;
+            }
 
             layer.offsetEast = value;
         }

@@ -44,6 +44,8 @@ namespace CharacterStudio.Core
         public List<string> traitDefNames = new List<string>();
         public List<string> startingApparelDefNames = new List<string>();
         public List<CharacterSkillEntry> skills = new List<CharacterSkillEntry>();
+        public CharacterAbilityLoadout abilityLoadout = new CharacterAbilityLoadout();
+        public List<CharacterEquipmentDef> equipments = new List<CharacterEquipmentDef>();
         public List<CharacterRuntimeTriggerDef> runtimeTriggers = new List<CharacterRuntimeTriggerDef>();
         public CharacterStudio.Attributes.CharacterStatModifierProfile statModifiers = new CharacterStudio.Attributes.CharacterStatModifierProfile();
 
@@ -68,6 +70,8 @@ namespace CharacterStudio.Core
                 traitDefNames = new List<string>(traitDefNames ?? new List<string>()),
                 startingApparelDefNames = new List<string>(startingApparelDefNames ?? new List<string>()),
                 skills = (skills ?? new List<CharacterSkillEntry>()).Where(static entry => entry != null).Select(static entry => entry.Clone()).ToList(),
+                abilityLoadout = abilityLoadout?.Clone() ?? new CharacterAbilityLoadout(),
+                equipments = (equipments ?? new List<CharacterEquipmentDef>()).Where(static equipment => equipment != null).Select(static equipment => equipment.Clone()).ToList(),
                 runtimeTriggers = (runtimeTriggers ?? new List<CharacterRuntimeTriggerDef>())
                     .Where(static trigger => trigger != null)
                     .Select(static trigger => trigger.Clone())
@@ -94,6 +98,8 @@ namespace CharacterStudio.Core
             traitDefNames ??= new List<string>();
             startingApparelDefNames ??= new List<string>();
             skills ??= new List<CharacterSkillEntry>();
+            abilityLoadout ??= new CharacterAbilityLoadout();
+            equipments ??= new List<CharacterEquipmentDef>();
             runtimeTriggers ??= new List<CharacterRuntimeTriggerDef>();
             statModifiers ??= new CharacterStudio.Attributes.CharacterStatModifierProfile();
 
@@ -119,6 +125,21 @@ namespace CharacterStudio.Core
                 .Where(static entry => entry != null && !string.IsNullOrWhiteSpace(entry.skillDefName))
                 .GroupBy(static entry => entry.skillDefName, StringComparer.OrdinalIgnoreCase)
                 .Select(static group => group.First().Clone())
+                .ToList();
+            abilityLoadout.hotkeys ??= new SkinAbilityHotkeyConfig();
+            abilityLoadout.abilities = (abilityLoadout.abilities ?? new List<Abilities.ModularAbilityDef>())
+                .Where(static ability => ability != null)
+                .Select(static ability => ability.Clone())
+                .ToList();
+            abilityLoadout.hotkeys.NormalizeToSupportedSlots();
+            equipments = equipments
+                .Where(static equipment => equipment != null)
+                .Select(static equipment =>
+                {
+                    CharacterEquipmentDef clone = equipment.Clone();
+                    clone.EnsureDefaults();
+                    return clone;
+                })
                 .ToList();
             runtimeTriggers = runtimeTriggers
                 .Where(static trigger => trigger != null)

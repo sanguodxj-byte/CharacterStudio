@@ -44,6 +44,20 @@ namespace CharacterStudio.Abilities
             base.GameComponentTick();
             CleanupExpiredStates();
             UpdateCameraGrayscale();
+
+            // 诊断：每 600 tick (10秒) 输出一次当前时停状态
+            int tick = Find.TickManager?.TicksGame ?? 0;
+            if (tick > 0 && tick % 600 == 0 && activeStates.Count > 0)
+            {
+                Log.Message($"[CharacterStudio] TimeStop 状态报告 tick={tick}: {activeStates.Count} 个活跃时停状态");
+                foreach (var state in activeStates)
+                {
+                    if (state != null)
+                    {
+                        Log.Message($"[CharacterStudio]   map={state.mapId}, caster={state.casterThingId}, [{state.startTick}..{state.endTick}], frozenVisualTick={state.frozenVisualTick}, freezeVisuals={state.freezeVisualsDuringTimeStop}, active={state.IsActive(tick)}");
+                    }
+                }
+            }
         }
 
         public override void GameComponentOnGUI()
@@ -167,6 +181,7 @@ namespace CharacterStudio.Abilities
             Map? map = caster.MapHeld;
             if (map == null)
             {
+                Log.Warning("[CharacterStudio] TimeStop Activate: caster.MapHeld 为 null，无法启动时停。");
                 return;
             }
 
@@ -179,6 +194,7 @@ namespace CharacterStudio.Abilities
                 existing.endTick = Math.Max(existing.endTick, nowTick + durationTicks);
                 existing.freezeVisualsDuringTimeStop = existing.freezeVisualsDuringTimeStop || component.freezeVisualsDuringTimeStop;
                 ReleaseCasterForTimeStop(caster);
+                Log.Message($"[CharacterStudio] TimeStop 已续期: map={mapId}, endTick={existing.endTick}, duration={durationTicks}");
                 return;
             }
 
@@ -195,6 +211,7 @@ namespace CharacterStudio.Abilities
 
             ReleaseCasterForTimeStop(caster);
             UpdateCameraGrayscale();
+            Log.Message($"[CharacterStudio] TimeStop 已激活: map={mapId}, caster={caster.LabelShort}, tick={nowTick}, endTick={nowTick + durationTicks}, duration={durationTicks}, freezeVisuals={component.freezeVisualsDuringTimeStop}");
         }
 
         private void CleanupExpiredStates()
@@ -515,9 +532,9 @@ namespace CharacterStudio.Abilities
         public static void Apply(Harmony harmony)
         {
             PatchPrefix(harmony, typeof(Thing), nameof(Thing.DoTick), nameof(Thing_DoTick_Prefix));
-            PatchPrefix(harmony, typeof(ThingWithComps), nameof(ThingWithComps.TickLong), nameof(ThingWithComps_TickLong_Prefix));
-            PatchPrefix(harmony, typeof(ThingWithComps), nameof(ThingWithComps.TickRare), nameof(ThingWithComps_TickRare_Prefix));
-            PatchPrefix(harmony, typeof(Pawn), nameof(Pawn.TickRare), nameof(Pawn_TickRare_Prefix));
+            PatchPrefix(harmony, typeof(ThingWithComps), "TickLong", nameof(ThingWithComps_TickLong_Prefix));
+            PatchPrefix(harmony, typeof(ThingWithComps), "TickRare", nameof(ThingWithComps_TickRare_Prefix));
+            PatchPrefix(harmony, typeof(Pawn), "TickRare", nameof(Pawn_TickRare_Prefix));
             // Do NOT skip MapPreTick/MapPostTick entirely — doing so prevents
             // ALL pawn ticks from running (including the caster).  Per-entity
             // patches (Thing_DoTick, Pawn_TickRare, etc.) already freeze
@@ -551,6 +568,10 @@ namespace CharacterStudio.Abilities
             {
                 harmony.Patch(target, prefix: new HarmonyMethod(prefix));
             }
+            else
+            {
+                Log.Warning($"[CharacterStudio] Patch_AbilityTimeStop: 无法绑定 {type.Name}.{methodName} → {prefixName} (target={target != null}, prefix={prefix != null})");
+            }
         }
 
         private static void PatchPrefix(Harmony harmony, System.Reflection.MethodBase? target, string prefixName)
@@ -559,6 +580,10 @@ namespace CharacterStudio.Abilities
             if (target != null && prefix != null)
             {
                 harmony.Patch(target, prefix: new HarmonyMethod(prefix));
+            }
+            else
+            {
+                Log.Warning($"[CharacterStudio] Patch_AbilityTimeStop: 无法绑定 {(target?.DeclaringType?.Name ?? "null")}.{(target?.Name ?? "null")} → {prefixName} (target={target != null}, prefix={prefix != null})");
             }
         }
 

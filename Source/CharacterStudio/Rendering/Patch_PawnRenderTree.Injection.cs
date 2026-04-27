@@ -178,8 +178,6 @@ namespace CharacterStudio.Rendering
                 allLayers.AddRange(skinDef.layers);
 
             allLayers.AddRange(BaseAppearanceUtility.BuildSyntheticLayers(skinDef));
-            allLayers.AddRange(BuildEquipmentVisualLayers(pawn, skinDef));
-
             allLayers.AddRange(BuildWeaponCarryVisualLayers(pawn, skinDef));
 
             if (allLayers.Count == 0) return false;
@@ -302,9 +300,6 @@ namespace CharacterStudio.Rendering
             foreach (PawnLayerConfig layer in BaseAppearanceUtility.BuildSyntheticLayers(skinDef))
                 yield return layer;
 
-            foreach (PawnLayerConfig layer in BuildEquipmentVisualLayers(pawn, skinDef))
-                yield return layer;
-
             foreach (PawnLayerConfig layer in BuildWeaponCarryVisualLayers(pawn, skinDef))
                 yield return layer;
         }
@@ -411,88 +406,7 @@ namespace CharacterStudio.Rendering
 
             HashSet<string> injectedSkinEquipmentThingDefs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            if (skinDef?.equipments != null && skinDef.equipments.Count > 0)
-            {
-                foreach (var equipment in skinDef.equipments)
-                {
-                    if (equipment == null || !equipment.enabled)
-                        continue;
-
-                    equipment.EnsureDefaults();
-
-                    if (!equipment.HasRenderTexture())
-                        continue;
-
-                    string resolvedThingDefName = equipment.GetResolvedThingDefName();
-                    if (!string.IsNullOrWhiteSpace(resolvedThingDefName))
-                    {
-                        injectedSkinEquipmentThingDefs.Add(resolvedThingDefName);
-                    }
-
-                    CharacterEquipmentRenderData renderData = equipment.renderData ?? CharacterEquipmentRenderData.CreateDefault();
-                    string resolvedLayerName = string.IsNullOrWhiteSpace(renderData.layerName)
-                        ? equipment.GetDisplayLabel()
-                        : renderData.layerName;
-
-                    yield return new PawnLayerConfig
-                    {
-                        layerName = $"[EquipmentPreview] {resolvedLayerName}",
-                        texPath = renderData.GetResolvedTexPath(),
-                        maskTexPath = renderData.maskTexPath ?? string.Empty,
-                        anchorTag = string.IsNullOrWhiteSpace(renderData.anchorTag) ? "Apparel" : renderData.anchorTag,
-                        anchorPath = renderData.anchorPath ?? string.Empty,
-                        shaderDefName = string.IsNullOrWhiteSpace(renderData.shaderDefName) ? "Cutout" : renderData.shaderDefName,
-                        offset = renderData.offset,
-                        offsetEast = renderData.offsetEast,
-                        offsetNorth = renderData.offsetNorth,
-                        useWestOffset = renderData.useWestOffset,
-                        offsetWest = renderData.offsetWest,
-                        scale = renderData.scale,
-                        scaleEastMultiplier = renderData.scaleEastMultiplier,
-                        scaleNorthMultiplier = renderData.scaleNorthMultiplier,
-                        scaleWestMultiplier = renderData.scaleWestMultiplier,
-                        rotation = renderData.rotation,
-                        rotationEastOffset = renderData.rotationEastOffset,
-                        rotationNorthOffset = renderData.rotationNorthOffset,
-                        rotationWestOffset = renderData.rotationWestOffset,
-                        drawOrder = renderData.drawOrder,
-                        flipHorizontal = renderData.flipHorizontal,
-                        directionalFacing = renderData.directionalFacing ?? string.Empty,
-                        visible = renderData.visible,
-                        colorSource = renderData.colorSource,
-                        customColor = renderData.customColor,
-                        colorTwoSource = renderData.colorTwoSource,
-                        customColorTwo = renderData.customColorTwo,
-                        useTriggeredEquipmentAnimation = renderData.useTriggeredLocalAnimation,
-                        triggerAbilityDefName = renderData.triggerAbilityDefName ?? string.Empty,
-                        triggeredAnimationGroupKey = renderData.animationGroupKey ?? string.Empty,
-                        triggeredAnimationRole = renderData.triggeredAnimationRole,
-                        triggeredDeployAngle = renderData.triggeredDeployAngle,
-                        triggeredReturnAngle = renderData.triggeredReturnAngle,
-                        triggeredDeployTicks = renderData.triggeredDeployTicks,
-                        triggeredHoldTicks = renderData.triggeredHoldTicks,
-                        triggeredReturnTicks = renderData.triggeredReturnTicks,
-                        animPivotOffset = renderData.triggeredPivotOffset,
-                        triggeredPivotOffset = renderData.triggeredPivotOffset,
-                        triggeredDeployOffset = renderData.triggeredDeployOffset,
-                        triggeredUseVfxVisibility = renderData.triggeredUseVfxVisibility,
-                        triggeredIdleTexPath = renderData.triggeredIdleTexPath ?? string.Empty,
-                        triggeredDeployTexPath = renderData.triggeredDeployTexPath ?? string.Empty,
-                        triggeredHoldTexPath = renderData.triggeredHoldTexPath ?? string.Empty,
-                        triggeredReturnTexPath = renderData.triggeredReturnTexPath ?? string.Empty,
-                        triggeredIdleMaskTexPath = renderData.triggeredIdleMaskTexPath ?? string.Empty,
-                        triggeredDeployMaskTexPath = renderData.triggeredDeployMaskTexPath ?? string.Empty,
-                        triggeredHoldMaskTexPath = renderData.triggeredHoldMaskTexPath ?? string.Empty,
-                        triggeredReturnMaskTexPath = renderData.triggeredReturnMaskTexPath ?? string.Empty,
-                        triggeredVisibleDuringDeploy = renderData.triggeredVisibleDuringDeploy,
-                        triggeredVisibleDuringHold = renderData.triggeredVisibleDuringHold,
-                        triggeredVisibleDuringReturn = renderData.triggeredVisibleDuringReturn,
-                        triggeredVisibleOutsideCycle = renderData.triggeredVisibleOutsideCycle
-                    };
-                }
-            }
-
-            // 2. 从 pawn 实际穿戴的装备中读取 DefModExtension_EquipmentRender
+            // 从 pawn 实际穿戴的装备中读取 DefModExtension_EquipmentRender
             //    这处理了导出后的装备在运行时被穿上时的自定义图层注入
             if (pawn.apparel?.WornApparel != null)
             {
@@ -500,7 +414,7 @@ namespace CharacterStudio.Rendering
                 {
                     if (apparel?.def == null) continue;
 
-                    var ext = apparel.def.GetModExtension<DefModExtension_EquipmentRender>();
+                    var ext = DefModExtensionCache.GetEquipmentRender(apparel.def);
                     if (ext == null || !ext.enabled || !ext.HasRenderableTexture()) continue;
 
                     // 如果该装备的 ThingDef 已经通过 skinDef.equipments 注入过，跳过
@@ -547,7 +461,7 @@ namespace CharacterStudio.Rendering
             {
                 foreach (var eq in pawn.equipment.AllEquipmentListForReading)
                 {
-                    var ext = eq.def.GetModExtension<DefModExtension_WeaponRender>();
+                    var ext = DefModExtensionCache.GetWeaponRender(eq.def);
                     if (ext != null && ext.enabled && ext.carryVisual != null && ext.carryVisual.enabled && !string.IsNullOrWhiteSpace(ext.carryVisual.GetAnyTexPath()))
                     {
                         yield return new PawnLayerConfig

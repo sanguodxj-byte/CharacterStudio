@@ -52,9 +52,10 @@ namespace CharacterStudio.Core
 
             EffectiveFaceStateSnapshot effectiveState = BuildEffectiveFaceStateSnapshot();
             FaceRuntimeSyncCoordinator.SyncEffectiveState(runtimeState, effectiveState);
+            MarkFaceTransformDirty();
 
             if (shouldRefresh)
-                RequestRenderRefresh();
+                MarkFaceGraphicDirty();
         }
     }
 }

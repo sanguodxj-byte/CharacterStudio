@@ -20,10 +20,11 @@ namespace CharacterStudio.UI
 
         private void DrawEquipmentPanel(Rect rect)
         {
-            workingSkin.equipments ??= new List<CharacterEquipmentDef>();
+            WorkingEquipments ??= new List<CharacterEquipmentDef>();
             SanitizeEquipmentSelection();
 
-            Rect titleRect = UIHelper.DrawPanelShell(rect, "CS_Studio_Tab_Equipment".Translate(), Margin);
+            string panelTitle = currentTab == EditorTab.Items ? "CS_Studio_Tab_Items".Translate() : "CS_Studio_Tab_Equipment".Translate();
+            Rect titleRect = UIHelper.DrawPanelShell(rect, panelTitle, Margin);
 
             float btnY = titleRect.yMax + 6f;
             float btnCount = 8f;
@@ -32,11 +33,7 @@ namespace CharacterStudio.UI
 
             float startX = rect.x + Margin;
             UIHelper.DrawIconButton(new Rect(startX + (btnWidth + Margin) * 0f, btnY, btnWidth, btnHeight), "+", "CS_Studio_Equip_Btn_New".Translate(), AddNewEquipment, true);
-            UIHelper.DrawIconButton(new Rect(startX + (btnWidth + Margin) * 1f, btnY, btnWidth, btnHeight), "A", "CS_Studio_Equip_Btn_Abilities".Translate(), () =>
-            {
-                SyncAbilitiesFromSkin();
-                Find.WindowStack.Add(new Dialog_AbilityEditor(workingAbilities, workingSkin.abilityHotkeys, workingSkin));
-            });
+            UIHelper.DrawIconButton(new Rect(startX + (btnWidth + Margin) * 1f, btnY, btnWidth, btnHeight), "A", "CS_Studio_Equip_Btn_Abilities".Translate(), OpenAbilityEditor);
             UIHelper.DrawIconButton(new Rect(startX + (btnWidth + Margin) * 2f, btnY, btnWidth, btnHeight), "✈", "CS_Studio_Equip_AircraftPreset".Translate(), AddAircraftWingAnimationPreset, true);
             UIHelper.DrawIconButton(new Rect(startX + (btnWidth + Margin) * 3f, btnY, btnWidth, btnHeight), "-", "CS_Studio_Btn_Delete".Translate(), DeleteSelectedEquipment);
             UIHelper.DrawIconButton(new Rect(startX + (btnWidth + Margin) * 4f, btnY, btnWidth, btnHeight), "C", "CS_Studio_Panel_Duplicate".Translate(), DuplicateSelectedEquipment);
@@ -53,7 +50,7 @@ namespace CharacterStudio.UI
             Widgets.DrawBox(listRect, 1);
             GUI.color = Color.white;
 
-            float entriesHeight = workingSkin.equipments.Count * 38f;
+            float entriesHeight = WorkingEquipments.Count * 38f;
             float headerHeight = 44f;
             Rect viewRect = new Rect(0f, 0f, listRect.width - 16f, Mathf.Max(headerHeight + entriesHeight + 6f, listRect.height - 6f));
 
@@ -66,14 +63,15 @@ namespace CharacterStudio.UI
             Text.Font = GameFont.Tiny;
             Text.Anchor = TextAnchor.MiddleLeft;
             GUI.color = UIHelper.HeaderColor;
-            Widgets.Label(new Rect(6f, y, viewRect.width - 12f, 18f), "CS_Studio_Tab_Equipment".Translate());
+            string listHeader = currentTab == EditorTab.Items ? "CS_Studio_Tab_Items".Translate() : "CS_Studio_Tab_Equipment".Translate();
+            Widgets.Label(new Rect(6f, y, viewRect.width - 12f, 18f), listHeader);
             GUI.color = Color.white;
             Text.Anchor = TextAnchor.UpperLeft;
             y += 20f;
 
-            if (workingSkin.equipments.Count > 0)
+            if (WorkingEquipments.Count > 0)
             {
-                for (int i = 0; i < workingSkin.equipments.Count; i++)
+                for (int i = 0; i < WorkingEquipments.Count; i++)
                 {
                     DrawEquipmentListRow(i, ref y, viewRect.width);
                 }
@@ -85,15 +83,15 @@ namespace CharacterStudio.UI
 
         private void DrawEquipmentListRow(int index, ref float y, float width)
         {
-            if (index < 0 || index >= workingSkin.equipments.Count)
+            if (index < 0 || index >= WorkingEquipments.Count)
             {
                 return;
             }
 
-            var equipment = workingSkin.equipments[index];
+            var equipment = WorkingEquipments[index];
             equipment ??= CreateDefaultEquipment(index);
-            workingSkin.equipments[index] = equipment;
-            equipment.EnsureDefaults();
+            WorkingEquipments[index] = equipment;
+            equipment?.EnsureDefaults();
 
             Rect rowRect = new Rect(0f, y, width, 34f);
 
@@ -167,8 +165,8 @@ namespace CharacterStudio.UI
 
         private void ShowEquipmentContextMenu(int index)
         {
-            workingSkin.equipments ??= new List<CharacterEquipmentDef>();
-            if (index < 0 || index >= workingSkin.equipments.Count)
+            WorkingEquipments ??= new List<CharacterEquipmentDef>();
+            if (index < 0 || index >= WorkingEquipments.Count)
             {
                 return;
             }
@@ -184,8 +182,7 @@ namespace CharacterStudio.UI
             options.Add(new FloatMenuOption("CS_Studio_Equip_Btn_Abilities".Translate(), () =>
             {
                 SelectEquipment(index);
-                SyncAbilitiesFromSkin();
-                Find.WindowStack.Add(new Dialog_AbilityEditor(workingAbilities, workingSkin.abilityHotkeys, workingSkin));
+                OpenAbilityEditor();
             }));
 
             options.Add(new FloatMenuOption("CS_Studio_Equip_Btn_ExportXml".Translate(), () =>
@@ -205,7 +202,7 @@ namespace CharacterStudio.UI
 
         private void SelectEquipment(int index)
         {
-            if (index < 0 || index >= workingSkin.equipments.Count)
+            if (index < 0 || index >= WorkingEquipments.Count)
             {
                 selectedEquipmentIndex = -1;
                 return;
@@ -213,17 +210,16 @@ namespace CharacterStudio.UI
 
             selectedEquipmentIndex = index;
             selectedLayerIndex = -1;
-            selectedLayerIndices.Clear();
+            selectedLayerIndices?.Clear();
             selectedNodePath = string.Empty;
             selectedBaseSlotType = null;
-            currentTab = EditorTab.Items;
             equipmentPivotEditMode = false;
             isDraggingEquipmentPivot = false;
         }
 
         private void SanitizeEquipmentSelection()
         {
-            int count = workingSkin.equipments?.Count ?? 0;
+            int count = WorkingEquipments?.Count ?? 0;
             if (count <= 0)
             {
                 selectedEquipmentIndex = -1;
@@ -245,28 +241,28 @@ namespace CharacterStudio.UI
                 return;
             }
 
-            workingSkin.equipments ??= new List<CharacterEquipmentDef>();
+            WorkingEquipments ??= new List<CharacterEquipmentDef>();
 
-            var equipment = CreateDefaultEquipment(workingSkin.equipments.Count);
+            var equipment = CreateDefaultEquipment(WorkingEquipments.Count);
             MutateWithUndo(() =>
             {
-                workingSkin.equipments.Add(equipment);
-                SelectEquipment(workingSkin.equipments.Count - 1);
+                WorkingEquipments.Add(equipment);
+                SelectEquipment(WorkingEquipments.Count - 1);
             }, refreshPreview: true, refreshRenderTree: true);
             ShowStatus("CS_Studio_Equip_Added".Translate(equipment.GetDisplayLabel()));
         }
 
         private void DuplicateSelectedEquipment()
         {
-            workingSkin.equipments ??= new List<CharacterEquipmentDef>();
+            WorkingEquipments ??= new List<CharacterEquipmentDef>();
             SanitizeEquipmentSelection();
-            if (selectedEquipmentIndex < 0 || selectedEquipmentIndex >= workingSkin.equipments.Count)
+            if (selectedEquipmentIndex < 0 || selectedEquipmentIndex >= WorkingEquipments.Count)
             {
                 ShowStatus("CS_Studio_Equip_NoSelection".Translate());
                 return;
             }
 
-            var sourceEquipment = workingSkin.equipments[selectedEquipmentIndex];
+            var sourceEquipment = WorkingEquipments[selectedEquipmentIndex];
             if (sourceEquipment == null)
             {
                 Log.Warning($"[CharacterStudio] 复制装备失败：选中索引 {selectedEquipmentIndex} 为空");
@@ -277,7 +273,7 @@ namespace CharacterStudio.UI
             var duplicate = sourceEquipment.Clone();
             duplicate.defName = BuildUniqueEquipmentDefName(
                 string.IsNullOrWhiteSpace(duplicate.defName) ? "CS_Studio_Equip_DefaultCopyDefName".Translate().ToString() : duplicate.defName + "_Copy",
-                workingSkin.equipments);
+                WorkingEquipments);
             duplicate.label = string.IsNullOrWhiteSpace(duplicate.label)
                 ? duplicate.defName
                 : "CS_Studio_Equip_Label_Copy".Translate(duplicate.label).ToString();
@@ -285,7 +281,7 @@ namespace CharacterStudio.UI
 
             MutateWithUndo(() =>
             {
-                workingSkin.equipments.Insert(selectedEquipmentIndex + 1, duplicate);
+                WorkingEquipments.Insert(selectedEquipmentIndex + 1, duplicate);
                 SelectEquipment(selectedEquipmentIndex + 1);
             }, refreshPreview: true, refreshRenderTree: true);
             ShowStatus("CS_Studio_Equip_Duplicated".Translate(duplicate.GetDisplayLabel()));
@@ -293,15 +289,15 @@ namespace CharacterStudio.UI
 
         private void DeleteSelectedEquipment()
         {
-            workingSkin.equipments ??= new List<CharacterEquipmentDef>();
+            WorkingEquipments ??= new List<CharacterEquipmentDef>();
             SanitizeEquipmentSelection();
-            if (selectedEquipmentIndex < 0 || selectedEquipmentIndex >= workingSkin.equipments.Count)
+            if (selectedEquipmentIndex < 0 || selectedEquipmentIndex >= WorkingEquipments.Count)
             {
                 ShowStatus("CS_Studio_Equip_NoSelection".Translate());
                 return;
             }
 
-            var selected = workingSkin.equipments[selectedEquipmentIndex];
+            var selected = WorkingEquipments[selectedEquipmentIndex];
             if (selected == null)
             {
                 Log.Warning($"[CharacterStudio] 删除装备失败：选中索引 {selectedEquipmentIndex} 为空");
@@ -312,15 +308,15 @@ namespace CharacterStudio.UI
             string removedLabel = selected.GetDisplayLabel();
             MutateWithUndo(() =>
             {
-                workingSkin.equipments.RemoveAt(selectedEquipmentIndex);
+                WorkingEquipments.RemoveAt(selectedEquipmentIndex);
 
-                if (workingSkin.equipments.Count == 0)
+                if (WorkingEquipments.Count == 0)
                 {
                     selectedEquipmentIndex = -1;
                 }
                 else
                 {
-                    selectedEquipmentIndex = Mathf.Clamp(selectedEquipmentIndex, 0, workingSkin.equipments.Count - 1);
+                    selectedEquipmentIndex = Mathf.Clamp(selectedEquipmentIndex, 0, WorkingEquipments.Count - 1);
                 }
             }, refreshPreview: true, refreshRenderTree: true);
             ShowStatus("CS_Studio_Equip_Deleted".Translate(removedLabel));
@@ -328,15 +324,15 @@ namespace CharacterStudio.UI
 
         private void SpawnSelectedEquipmentForTest()
         {
-            workingSkin.equipments ??= new List<CharacterEquipmentDef>();
+            WorkingEquipments ??= new List<CharacterEquipmentDef>();
             SanitizeEquipmentSelection();
-            if (selectedEquipmentIndex < 0 || selectedEquipmentIndex >= workingSkin.equipments.Count)
+            if (selectedEquipmentIndex < 0 || selectedEquipmentIndex >= WorkingEquipments.Count)
             {
                 ShowStatus("CS_Studio_Equip_NoSelection".Translate());
                 return;
             }
 
-            CharacterEquipmentDef? selected = workingSkin.equipments[selectedEquipmentIndex]?.Clone();
+            CharacterEquipmentDef? selected = WorkingEquipments[selectedEquipmentIndex]?.Clone();
             if (selected == null)
             {
                 ShowStatus("CS_Studio_Equip_InvalidSelection".Translate());
@@ -643,7 +639,7 @@ namespace CharacterStudio.UI
 
             var equipment = new CharacterEquipmentDef
             {
-                defName = BuildUniqueEquipmentDefName($"CS_Equipment_{index + 1}", workingSkin.equipments),
+                defName = BuildUniqueEquipmentDefName($"CS_Equipment_{index + 1}", WorkingEquipments),
                 label = defaultEquipmentLabel,
                 enabled = true,
                 slotTag = CharacterEquipmentDef.DefaultSlotTag,
@@ -673,10 +669,10 @@ namespace CharacterStudio.UI
                 return;
             }
 
-            workingSkin.equipments ??= new List<CharacterEquipmentDef>();
+            WorkingEquipments ??= new List<CharacterEquipmentDef>();
 
             var usedDefNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var existingEquipment in workingSkin.equipments)
+            foreach (var existingEquipment in WorkingEquipments)
             {
                 if (existingEquipment != null && !string.IsNullOrWhiteSpace(existingEquipment.defName))
                 {
@@ -746,9 +742,8 @@ namespace CharacterStudio.UI
 
             MutateWithUndo(() =>
             {
-                workingSkin.equipments.AddRange(presets);
-                SelectEquipment(Mathf.Max(0, workingSkin.equipments.Count - presets.Count));
-                currentTab = EditorTab.Items;
+                WorkingEquipments.AddRange(presets);
+                SelectEquipment(Mathf.Max(0, WorkingEquipments.Count - presets.Count));
             }, refreshPreview: true, refreshRenderTree: true);
             ShowStatus("CS_Studio_Equip_PresetAdded".Translate());
         }
@@ -850,7 +845,7 @@ namespace CharacterStudio.UI
         private void ExportSelectedEquipmentToDefaultPath()
         {
             SanitizeEquipmentSelection();
-            if (selectedEquipmentIndex < 0 || selectedEquipmentIndex >= workingSkin.equipments.Count)
+            if (selectedEquipmentIndex < 0 || selectedEquipmentIndex >= WorkingEquipments.Count)
             {
                 ShowStatus("CS_Studio_Equip_NoSelection".Translate());
                 return;
@@ -862,16 +857,19 @@ namespace CharacterStudio.UI
                 Directory.CreateDirectory(exportDir);
                 string exportPath = GetDefaultEquipmentExportFilePath();
 
-                var selected = workingSkin.equipments[selectedEquipmentIndex]?.Clone();
+                var selected = WorkingEquipments[selectedEquipmentIndex];
                 if (selected == null)
                 {
-                    ShowStatus("CS_Studio_Equip_InvalidSelection".Translate());
+                    ShowStatus("CS_Studio_Equip_NoSelection".Translate());
                     return;
                 }
-
+                
                 selected.EnsureDefaults();
+                var cloned = selected.Clone();
+
                 List<CharacterEquipmentDef> exportEquipments = ResolveExportEquipmentGroup(selected);
-                CreateEquipmentsDocument(exportEquipments).Save(exportPath);
+                bool includeModExtensions = currentTab == EditorTab.Equipment;
+                CreateEquipmentsDocument(exportEquipments, includeModExtensions).Save(exportPath);
 
                 XDocument recipeDoc = ModExportXmlWriter.CreateEquipmentRecipeDefsDocument(exportEquipments);
                 recipeDoc.Save(Path.Combine(exportDir, "EquipmentEditor_FormalDefs_Recipes.xml"));
@@ -892,21 +890,21 @@ namespace CharacterStudio.UI
             }
         }
 
-        private static XDocument CreateEquipmentsDocument(List<CharacterEquipmentDef> equipmentList)
+        private static XDocument CreateEquipmentsDocument(List<CharacterEquipmentDef> equipmentList, bool includeModExtensions = false)
         {
-            return ModExportXmlWriter.CreateEquipmentThingDefsDocument(equipmentList);
+            return ModExportXmlWriter.CreateEquipmentThingDefsDocument(equipmentList, includeModExtensions);
         }
 
         private List<CharacterEquipmentDef> ResolveExportEquipmentGroup(CharacterEquipmentDef selected)
         {
-            workingSkin.equipments ??= new List<CharacterEquipmentDef>();
+            WorkingEquipments ??= new List<CharacterEquipmentDef>();
 
             if (string.IsNullOrWhiteSpace(selected.exportGroupKey))
             {
                 return new List<CharacterEquipmentDef> { selected };
             }
 
-            return workingSkin.equipments
+            return WorkingEquipments
                 .Where(equipment => equipment != null && equipment.enabled && string.Equals(equipment.exportGroupKey, selected.exportGroupKey, StringComparison.OrdinalIgnoreCase))
                 .Select(equipment => equipment.Clone())
                 .ToList();
@@ -948,15 +946,15 @@ namespace CharacterStudio.UI
                     return;
                 }
 
-                workingSkin.equipments ??= new List<CharacterEquipmentDef>();
+                WorkingEquipments ??= new List<CharacterEquipmentDef>();
                 MutateWithUndo(() =>
                 {
                     if (replaceExisting)
                     {
-                        workingSkin.equipments.Clear();
+                        WorkingEquipments.Clear();
                     }
 
-                    NormalizeImportedEquipmentDefNames(importedEquipments, workingSkin.equipments);
+                    NormalizeImportedEquipmentDefNames(importedEquipments, WorkingEquipments);
                     foreach (var imported in importedEquipments)
                     {
                         if (imported == null)
@@ -965,14 +963,14 @@ namespace CharacterStudio.UI
                         }
 
                         imported.EnsureDefaults();
-                        workingSkin.equipments.Add(imported.Clone());
+                        WorkingEquipments.Add(imported.Clone());
                     }
 
                     lastImportedEquipmentXmlPath = normalizedPath;
 
-                    if (workingSkin.equipments.Count > 0)
+                    if (WorkingEquipments.Count > 0)
                     {
-                        SelectEquipment(replaceExisting ? 0 : workingSkin.equipments.Count - importedEquipments.Count);
+                        SelectEquipment(replaceExisting ? 0 : WorkingEquipments.Count - importedEquipments.Count);
                     }
                     else
                     {
@@ -1126,89 +1124,220 @@ namespace CharacterStudio.UI
                 if (defNameNode == null || string.IsNullOrWhiteSpace(defNameNode.InnerText))
                     return null;
 
+                string thingDefName = defNameNode.InnerText.Trim();
+                string label = FindEquipmentChildNode(node, "label")?.InnerText?.Trim() ?? thingDefName;
+                string description = FindEquipmentChildNode(node, "description")?.InnerText?.Trim() ?? string.Empty;
+
+                // 通用字段提取
+                string? parentName = node.Attributes?["ParentName"]?.Value;
+                string? tradeability = FindEquipmentChildNode(node, "tradeability")?.InnerText?.Trim();
+                bool allowTrading = tradeability == null || !string.Equals(tradeability, "None", StringComparison.OrdinalIgnoreCase);
+                string? marketValueText = FindEquipmentChildNode(FindEquipmentChildNode(node, "statBases"), "MarketValue")?.InnerText?.Trim();
+                float marketValue = float.TryParse(marketValueText, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float mv) ? mv : 250f;
+
+                XmlNode? graphicDataNode = FindEquipmentChildNode(node, "graphicData");
+                string worldTexPath = FindEquipmentChildNode(graphicDataNode, "texPath")?.InnerText?.Trim() ?? string.Empty;
+                string shaderDefName = FindEquipmentChildNode(graphicDataNode, "shaderType")?.InnerText?.Trim() ?? CharacterEquipmentDef.DefaultShaderDefName;
+
+                XmlNode? apparelNode = FindEquipmentChildNode(node, "apparel");
+                string wornTexPath = FindEquipmentChildNode(apparelNode, "wornGraphicPath")?.InnerText?.Trim() ?? string.Empty;
+                bool useWornGraphicMask = string.Equals(FindEquipmentChildNode(apparelNode, "useWornGraphicMask")?.InnerText?.Trim(), "true", StringComparison.OrdinalIgnoreCase);
+
                 XmlNode? extensionNode = FindEquipmentRenderExtensionNode(node);
-                if (extensionNode == null)
-                    return null;
+                DefModExtension_EquipmentRender? extension = null;
+                if (extensionNode != null)
+                {
+                    extension = DirectXmlToObject.ObjectFromXml<DefModExtension_EquipmentRender>(extensionNode, true);
+                    extension?.EnsureDefaults();
+                }
 
-                var extension = DirectXmlToObject.ObjectFromXml<DefModExtension_EquipmentRender>(extensionNode, true);
-                if (extension == null)
-                    return null;
+                string resolvedLabel = string.IsNullOrWhiteSpace(label) ? thingDefName : label;
+                string resolvedTexPath = !string.IsNullOrWhiteSpace(worldTexPath) ? worldTexPath : (extension?.texPath ?? string.Empty);
+                string resolvedWornTexPath = !string.IsNullOrWhiteSpace(wornTexPath) ? wornTexPath : (extension?.texPath ?? string.Empty);
 
-                extension.EnsureDefaults();
+                var renderData = new CharacterEquipmentRenderData
+                {
+                    layerName = !string.IsNullOrWhiteSpace(extension?.label) ? extension!.label : resolvedLabel,
+                    texPath = extension?.texPath ?? resolvedTexPath,
+                    maskTexPath = extension?.maskTexPath ?? string.Empty,
+                    anchorTag = extension?.anchorTag ?? CharacterEquipmentDef.DefaultAnchorTag,
+                    anchorPath = extension?.anchorPath ?? string.Empty,
+                    shaderDefName = !string.IsNullOrWhiteSpace(extension?.shaderDefName) ? extension!.shaderDefName : shaderDefName,
+                    directionalFacing = extension?.directionalFacing ?? "South",
+                    offset = extension?.offset ?? Vector3.zero,
+                    offsetEast = extension?.offsetEast ?? Vector3.zero,
+                    offsetNorth = extension?.offsetNorth ?? Vector3.zero,
+                    useWestOffset = extension?.useWestOffset ?? false,
+                    offsetWest = extension?.offsetWest ?? Vector3.zero,
+                    scale = extension?.scale ?? Vector2.one,
+                    scaleEastMultiplier = extension?.scaleEastMultiplier ?? Vector2.one,
+                    scaleNorthMultiplier = extension?.scaleNorthMultiplier ?? Vector2.one,
+                    scaleWestMultiplier = extension?.scaleWestMultiplier ?? Vector2.one,
+                    rotation = extension?.rotation ?? 0f,
+                    rotationEastOffset = extension?.rotationEastOffset ?? 0f,
+                    rotationNorthOffset = extension?.rotationNorthOffset ?? 0f,
+                    rotationWestOffset = extension?.rotationWestOffset ?? 0f,
+                    drawOrder = extension?.drawOrder ?? 0,
+                    flipHorizontal = extension?.flipHorizontal ?? false,
+                    visible = extension?.visible ?? true,
+                    colorSource = extension?.colorSource ?? LayerColorSource.PawnSkin,
+                    customColor = extension?.customColor ?? Color.white,
+                    colorTwoSource = extension?.colorTwoSource ?? LayerColorSource.PawnHair,
+                    customColorTwo = extension?.customColorTwo ?? Color.white,
+                    useTriggeredLocalAnimation = extension?.useTriggeredLocalAnimation ?? false,
+                    triggerAbilityDefName = extension?.triggerAbilityDefName ?? string.Empty,
+                    animationGroupKey = extension?.animationGroupKey ?? string.Empty,
+                    triggeredAnimationRole = extension?.triggeredAnimationRole ?? EquipmentTriggeredAnimationRole.MovablePart,
+                    triggeredDeployAngle = extension?.triggeredDeployAngle ?? 0f,
+                    triggeredReturnAngle = extension?.triggeredReturnAngle ?? 0f,
+                    triggeredDeployTicks = extension?.triggeredDeployTicks ?? 0,
+                    triggeredHoldTicks = extension?.triggeredHoldTicks ?? 0,
+                    triggeredReturnTicks = extension?.triggeredReturnTicks ?? 0,
+                    triggeredPivotOffset = extension?.triggeredPivotOffset ?? Vector2.zero,
+                    triggeredUseVfxVisibility = extension?.triggeredUseVfxVisibility ?? false,
+                    triggeredIdleTexPath = extension?.triggeredIdleTexPath ?? string.Empty,
+                    triggeredDeployTexPath = extension?.triggeredDeployTexPath ?? string.Empty,
+                    triggeredHoldTexPath = extension?.triggeredHoldTexPath ?? string.Empty,
+                    triggeredReturnTexPath = extension?.triggeredReturnTexPath ?? string.Empty,
+                    triggeredIdleMaskTexPath = extension?.triggeredIdleMaskTexPath ?? string.Empty,
+                    triggeredDeployMaskTexPath = extension?.triggeredDeployMaskTexPath ?? string.Empty,
+                    triggeredHoldMaskTexPath = extension?.triggeredHoldMaskTexPath ?? string.Empty,
+                    triggeredReturnMaskTexPath = extension?.triggeredReturnMaskTexPath ?? string.Empty,
+                    triggeredVisibleDuringDeploy = extension?.triggeredVisibleDuringDeploy ?? true,
+                    triggeredVisibleDuringHold = extension?.triggeredVisibleDuringHold ?? true,
+                    triggeredVisibleDuringReturn = extension?.triggeredVisibleDuringReturn ?? true,
+                    triggeredVisibleOutsideCycle = extension?.triggeredVisibleOutsideCycle ?? true,
+                    triggeredAnimationSouth = extension?.triggeredAnimationSouth?.Clone(),
+                    triggeredAnimationEastWest = extension?.triggeredAnimationEastWest?.Clone(),
+                    triggeredAnimationNorth = extension?.triggeredAnimationNorth?.Clone()
+                };
 
                 var equipment = new CharacterEquipmentDef
                 {
-                    defName = extension.equipmentDefName,
-                    thingDefName = defNameNode.InnerText.Trim(),
-                    label = FindEquipmentChildNode(node, "label")?.InnerText?.Trim() ?? extension.label,
-                    description = FindEquipmentChildNode(node, "description")?.InnerText?.Trim() ?? string.Empty,
-                    slotTag = extension.slotTag,
-                    worldTexPath = FindEquipmentChildNode(FindEquipmentChildNode(node, "graphicData"), "texPath")?.InnerText?.Trim() ?? extension.texPath,
-                    wornTexPath = FindEquipmentChildNode(FindEquipmentChildNode(node, "apparel"), "wornGraphicPath")?.InnerText?.Trim() ?? extension.texPath,
-                    maskTexPath = extension.maskTexPath,
-                    shaderDefName = extension.shaderDefName,
+                    defName = extension?.equipmentDefName ?? thingDefName,
+                    thingDefName = thingDefName,
+                    label = resolvedLabel,
+                    description = description,
+                    slotTag = extension?.slotTag ?? CharacterEquipmentDef.DefaultSlotTag,
+                    worldTexPath = resolvedTexPath,
+                    wornTexPath = resolvedWornTexPath,
+                    maskTexPath = extension?.maskTexPath ?? string.Empty,
+                    shaderDefName = !string.IsNullOrWhiteSpace(extension?.shaderDefName) ? extension!.shaderDefName : shaderDefName,
                     exportGroupKey = string.Empty,
-                    flyerThingDefName = extension.flyerThingDefName,
-                    flyerClassName = extension.flyerClassName,
-                    flyerFlightSpeed = extension.flyerFlightSpeed,
-                    abilityDefNames = extension.abilityDefNames != null ? new List<string>(extension.abilityDefNames) : new List<string>(),
-                    renderData = new CharacterEquipmentRenderData
-                    {
-                        layerName = string.IsNullOrWhiteSpace(extension.label) ? defNameNode.InnerText.Trim() : extension.label,
-                        texPath = extension.texPath,
-                        maskTexPath = extension.maskTexPath,
-                        anchorTag = extension.anchorTag,
-                        anchorPath = extension.anchorPath,
-                        shaderDefName = extension.shaderDefName,
-                        directionalFacing = extension.directionalFacing,
-                        offset = extension.offset,
-                        offsetEast = extension.offsetEast,
-                        offsetNorth = extension.offsetNorth,
-                        useWestOffset = extension.useWestOffset,
-                        offsetWest = extension.offsetWest,
-                        scale = extension.scale,
-                        scaleEastMultiplier = extension.scaleEastMultiplier,
-                        scaleNorthMultiplier = extension.scaleNorthMultiplier,
-                        scaleWestMultiplier = extension.scaleWestMultiplier,
-                        rotation = extension.rotation,
-                        rotationEastOffset = extension.rotationEastOffset,
-                        rotationNorthOffset = extension.rotationNorthOffset,
-                        rotationWestOffset = extension.rotationWestOffset,
-                        drawOrder = extension.drawOrder,
-                        flipHorizontal = extension.flipHorizontal,
-                        visible = extension.visible,
-                        colorSource = extension.colorSource,
-                        customColor = extension.customColor,
-                        colorTwoSource = extension.colorTwoSource,
-                        customColorTwo = extension.customColorTwo,
-                        useTriggeredLocalAnimation = extension.useTriggeredLocalAnimation,
-                        triggerAbilityDefName = extension.triggerAbilityDefName,
-                        animationGroupKey = extension.animationGroupKey,
-                        triggeredAnimationRole = extension.triggeredAnimationRole,
-                        triggeredDeployAngle = extension.triggeredDeployAngle,
-                        triggeredReturnAngle = extension.triggeredReturnAngle,
-                        triggeredDeployTicks = extension.triggeredDeployTicks,
-                        triggeredHoldTicks = extension.triggeredHoldTicks,
-                        triggeredReturnTicks = extension.triggeredReturnTicks,
-                        triggeredPivotOffset = extension.triggeredPivotOffset,
-                        triggeredUseVfxVisibility = extension.triggeredUseVfxVisibility,
-                        triggeredIdleTexPath = extension.triggeredIdleTexPath,
-                        triggeredDeployTexPath = extension.triggeredDeployTexPath,
-                        triggeredHoldTexPath = extension.triggeredHoldTexPath,
-                        triggeredReturnTexPath = extension.triggeredReturnTexPath,
-                        triggeredIdleMaskTexPath = extension.triggeredIdleMaskTexPath,
-                        triggeredDeployMaskTexPath = extension.triggeredDeployMaskTexPath,
-                        triggeredHoldMaskTexPath = extension.triggeredHoldMaskTexPath,
-                        triggeredReturnMaskTexPath = extension.triggeredReturnMaskTexPath,
-                        triggeredVisibleDuringDeploy = extension.triggeredVisibleDuringDeploy,
-                        triggeredVisibleDuringHold = extension.triggeredVisibleDuringHold,
-                        triggeredVisibleDuringReturn = extension.triggeredVisibleDuringReturn,
-                        triggeredVisibleOutsideCycle = extension.triggeredVisibleOutsideCycle,
-                        triggeredAnimationSouth = extension.triggeredAnimationSouth?.Clone(),
-                        triggeredAnimationEastWest = extension.triggeredAnimationEastWest?.Clone(),
-                        triggeredAnimationNorth = extension.triggeredAnimationNorth?.Clone()
-                    }
+                    flyerThingDefName = extension?.flyerThingDefName ?? string.Empty,
+                    flyerClassName = extension?.flyerClassName ?? "CharacterStudio.Abilities.CharacterStudioPawnFlyer_Default",
+                    flyerFlightSpeed = extension?.flyerFlightSpeed ?? 22f,
+                    abilityDefNames = extension?.abilityDefNames != null ? new List<string>(extension.abilityDefNames) : new List<string>(),
+                    allowTrading = allowTrading,
+                    marketValue = marketValue,
+                    useWornGraphicMask = useWornGraphicMask,
+                    parentThingDefName = !string.IsNullOrWhiteSpace(parentName) ? parentName! : CharacterEquipmentDef.DefaultParentThingDefName,
+                    renderData = renderData
                 };
+
+                // 提取 statBases
+                XmlNode? statBasesNode = FindEquipmentChildNode(node, "statBases");
+                if (statBasesNode != null)
+                {
+                    foreach (XmlNode child in statBasesNode.ChildNodes)
+                    {
+                        if (child.NodeType != XmlNodeType.Element || string.IsNullOrWhiteSpace(child.Name))
+                            continue;
+                        if (float.TryParse(child.InnerText.Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float statVal))
+                        {
+                            equipment.statBases.Add(new CharacterEquipmentStatEntry { statDefName = child.Name, value = statVal });
+                        }
+                    }
+                }
+
+                // 提取 equippedStatOffsets
+                XmlNode? equippedStatOffsetsNode = FindEquipmentChildNode(node, "equippedStatOffsets");
+                if (equippedStatOffsetsNode != null)
+                {
+                    foreach (XmlNode child in equippedStatOffsetsNode.ChildNodes)
+                    {
+                        if (child.NodeType != XmlNodeType.Element || string.IsNullOrWhiteSpace(child.Name))
+                            continue;
+                        if (float.TryParse(child.InnerText.Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float statVal))
+                        {
+                            equipment.equippedStatOffsets.Add(new CharacterEquipmentStatEntry { statDefName = child.Name, value = statVal });
+                        }
+                    }
+                }
+
+                // 提取 thingCategories
+                XmlNode? thingCategoriesNode = FindEquipmentChildNode(node, "thingCategories");
+                if (thingCategoriesNode != null)
+                {
+                    foreach (XmlNode child in thingCategoriesNode.ChildNodes)
+                    {
+                        if (child.NodeType == XmlNodeType.Element && !string.IsNullOrWhiteSpace(child.InnerText))
+                            equipment.thingCategories.Add(child.InnerText.Trim());
+                    }
+                }
+
+                // 提取 apparel bodyPartGroups / layers / tags
+                if (apparelNode != null)
+                {
+                    XmlNode? bodyPartGroupsNode = FindEquipmentChildNode(apparelNode, "bodyPartGroups");
+                    if (bodyPartGroupsNode != null)
+                    {
+                        foreach (XmlNode child in bodyPartGroupsNode.ChildNodes)
+                        {
+                            if (child.NodeType == XmlNodeType.Element && !string.IsNullOrWhiteSpace(child.InnerText))
+                                equipment.bodyPartGroups.Add(child.InnerText.Trim());
+                        }
+                    }
+                    XmlNode? apparelLayersNode = FindEquipmentChildNode(apparelNode, "layers");
+                    if (apparelLayersNode != null)
+                    {
+                        foreach (XmlNode child in apparelLayersNode.ChildNodes)
+                        {
+                            if (child.NodeType == XmlNodeType.Element && !string.IsNullOrWhiteSpace(child.InnerText))
+                                equipment.apparelLayers.Add(child.InnerText.Trim());
+                        }
+                    }
+                    XmlNode? apparelTagsNode = FindEquipmentChildNode(apparelNode, "tags");
+                    if (apparelTagsNode != null)
+                    {
+                        foreach (XmlNode child in apparelTagsNode.ChildNodes)
+                        {
+                            if (child.NodeType == XmlNodeType.Element && !string.IsNullOrWhiteSpace(child.InnerText))
+                                equipment.apparelTags.Add(child.InnerText.Trim());
+                        }
+                    }
+                }
+
+                // 提取 weaponTags / weaponClasses
+                XmlNode? weaponTagsNode = FindEquipmentChildNode(node, "weaponTags");
+                if (weaponTagsNode != null)
+                {
+                    foreach (XmlNode child in weaponTagsNode.ChildNodes)
+                    {
+                        if (child.NodeType == XmlNodeType.Element && !string.IsNullOrWhiteSpace(child.InnerText))
+                            equipment.weaponTags.Add(child.InnerText.Trim());
+                    }
+                }
+                XmlNode? weaponClassesNode = FindEquipmentChildNode(node, "weaponClasses");
+                if (weaponClassesNode != null)
+                {
+                    foreach (XmlNode child in weaponClassesNode.ChildNodes)
+                    {
+                        if (child.NodeType == XmlNodeType.Element && !string.IsNullOrWhiteSpace(child.InnerText))
+                            equipment.weaponClasses.Add(child.InnerText.Trim());
+                    }
+                }
+
+                // 提取 tradeTags
+                XmlNode? tradeTagsNode = FindEquipmentChildNode(node, "tradeTags");
+                if (tradeTagsNode != null)
+                {
+                    foreach (XmlNode child in tradeTagsNode.ChildNodes)
+                    {
+                        if (child.NodeType == XmlNodeType.Element && !string.IsNullOrWhiteSpace(child.InnerText))
+                            equipment.tradeTags.Add(child.InnerText.Trim());
+                    }
+                }
 
                 equipment.EnsureDefaults();
                 if (string.IsNullOrWhiteSpace(equipment.defName))

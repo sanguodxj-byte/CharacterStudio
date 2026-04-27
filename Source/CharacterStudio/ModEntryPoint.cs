@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Reflection;
 using HarmonyLib;
 using CharacterStudio.Core;
@@ -41,6 +42,11 @@ namespace CharacterStudio
             CharacterSpawnProfileRegistry.LoadFromConfig();
             CharacterRuntimeTriggerRegistry.LoadFromConfig();
 
+            // 从项目角色文件恢复运行时角色资产注册（spawn profile / runtime trigger），
+            // 确保编辑器保存到 Config 的项目角色在重启与读档后继续可用。
+            // TODO: 暂时禁用，排查 BakeStaticAtlases 崩溃是否与此相关
+            // CharacterProjectRegistry.LoadProjectCharactersFromConfig();
+
             // 将 DefDatabase 中由 XML Defs 加载的 PawnSkinDef（如导出模组提供的）同步到运行时注册表，
             // 使 GetDefaultSkinForRace 等运行时查询能找到这些 Def，
             // 从而让 PawnSkinBootstrapComponent 在加载存档时自动应用导出模组的皮肤到匹配种族的 Pawn。
@@ -52,6 +58,12 @@ namespace CharacterStudio
             // 预热字符串规范化缓存，避免渲染管线首次调用时分配
             Core.PawnFaceConfig.PrewarmOverlayIdCache();
             Core.PawnFaceConfig.PrewarmSemanticKeyCache();
+
+            // 预热 DefModExtension 缓存，将热路径的 GetModExtension O(N) 遍历降为 O(1) 字典查找
+            Core.DefModExtensionCache.BuildAll();
+
+            // 日志：列出已注册的 CS_PawnKind_* PawnKindDef
+            LogRegisteredPawnKinds();
 
             // 应用补丁
             ApplyPatches();
@@ -127,8 +139,40 @@ namespace CharacterStudio
             ApplyPatch("CharacterAttributeBuffStat", () => Patches.Patch_CharacterAttributeBuffStat.Apply(harmony));
             ApplyPatch("AbilityTimeStop", () => Abilities.Patch_AbilityTimeStop.Apply(harmony));
             ApplyPatch("AbilityRuntimeTick", () => Abilities.Patch_AbilityRuntimeTick.Apply(harmony));
+            ApplyPatch("ProjectileBezierWallIntercept", () => Patches.Patch_ProjectileBezierWallIntercept.Apply(harmony));
 
             Log.Message("[CharacterStudio] 补丁应用流程完成");
+        }
+
+        /// <summary>
+        /// 记录已注册的 CS_PawnKind_* PawnKindDef，便于排查导出模组是否正确加载
+        /// </summary>
+        private static void LogRegisteredPawnKinds()
+        {
+            try
+            {
+                var csPawnKinds = Verse.DefDatabase<Verse.PawnKindDef>.AllDefsListForReading
+                    .Where(def => def.defName != null && def.defName.StartsWith("CS_PawnKind_"))
+                    .ToList();
+
+                if (csPawnKinds.Count == 0)
+                {
+                    Log.Message("[CharacterStudio] 未发现已注册的 CS_PawnKind_* PawnKindDef");
+                    return;
+                }
+
+                Log.Message($"[CharacterStudio] 已注册 {csPawnKinds.Count} 个 CS_PawnKind_* PawnKindDef：\n" +
+                    string.Join("\n", csPawnKinds.Select(def =>
+                    {
+                        string race = def.race?.defName ?? "null";
+                        string label = def.label ?? def.defName;
+                        return $"  - {def.defName} (race={race}, label={label})";
+                    })));
+            }
+            catch (System.Exception ex)
+            {
+                Log.Warning($"[CharacterStudio] 枚举 PawnKindDef 时出错: {ex.Message}");
+            }
         }
     }
 }

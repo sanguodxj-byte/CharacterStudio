@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Xml;
 using System.Xml.Linq;
 using CharacterStudio.Abilities;
 using CharacterStudio.Core;
@@ -93,29 +94,7 @@ namespace CharacterStudio.Exporter
                     continue;
                 }
 
-                effectsElement.Add(new XElement("li",
-                    new XElement("type", effect.type.ToString()),
-                    new XElement("amount", effect.amount),
-                    new XElement("duration", effect.duration),
-                    new XElement("chance", effect.chance),
-                    effect.damageDef != null ? new XElement("damageDef", effect.damageDef.defName) : null,
-                    effect.hediffDef != null ? new XElement("hediffDef", effect.hediffDef.defName) : null,
-                    effect.summonKind != null ? new XElement("summonKind", effect.summonKind.defName) : null,
-                    new XElement("summonFactionType", effect.summonFactionType.ToString()),
-                    !string.IsNullOrEmpty(effect.summonFactionDefName) ? new XElement("summonFactionDefName", effect.summonFactionDefName) : null,
-                    effect.summonFactionDef != null ? new XElement("summonFactionDef", effect.summonFactionDef.defName) : null,
-                    new XElement("summonCount", effect.summonCount),
-                    new XElement("controlMode", effect.controlMode.ToString()),
-                    new XElement("controlMoveDistance", effect.controlMoveDistance),
-                    new XElement("terraformMode", effect.terraformMode.ToString()),
-                    effect.terraformThingDef != null ? new XElement("terraformThingDef", effect.terraformThingDef.defName) : null,
-                    effect.terraformTerrainDef != null ? new XElement("terraformTerrainDef", effect.terraformTerrainDef.defName) : null,
-                    new XElement("terraformSpawnCount", effect.terraformSpawnCount),
-                    new XElement("canHurtSelf", SerializeBool(effect.canHurtSelf)),
-                    !string.IsNullOrWhiteSpace(effect.weatherDefName) ? new XElement("weatherDefName", effect.weatherDefName) : null,
-                    new XElement("weatherDurationTicks", effect.weatherDurationTicks),
-                    new XElement("weatherTransitionTicks", effect.weatherTransitionTicks)
-                ));
+                effectsElement.Add(new XElement("li", SerializePublicFields(effect)));
             }
 
             return effectsElement;
@@ -139,78 +118,7 @@ namespace CharacterStudio.Exporter
                 visualEffect.NormalizeLegacyData();
                 visualEffect.SyncLegacyFields();
 
-                root.Add(new XElement("li",
-                    new XElement("enabled", SerializeBool(visualEffect.enabled)),
-                    new XElement("type", visualEffect.type.ToString()),
-                    new XElement("sourceMode", visualEffect.sourceMode.ToString()),
-                    new XElement("spatialMode", visualEffect.spatialMode.ToString()),
-                    new XElement("anchorMode", visualEffect.anchorMode.ToString()),
-                    new XElement("secondaryAnchorMode", visualEffect.secondaryAnchorMode.ToString()),
-                    new XElement("pathMode", visualEffect.pathMode.ToString()),
-                    new XElement("facingMode", visualEffect.facingMode.ToString()),
-                    visualEffect.UsesCustomTextureType ? new XElement("textureSource", visualEffect.textureSource.ToString()) : null,
-                    !string.IsNullOrWhiteSpace(visualEffect.presetDefName) ? new XElement("presetDefName", visualEffect.presetDefName) : null,
-                    !string.IsNullOrWhiteSpace(visualEffect.customTexturePath) ? new XElement("customTexturePath", visualEffect.customTexturePath) : null,
-                    !string.IsNullOrWhiteSpace(visualEffect.assetBundlePath) ? new XElement("assetBundlePath", visualEffect.assetBundlePath) : null,
-                    !string.IsNullOrWhiteSpace(visualEffect.assetBundleEffectName) ? new XElement("assetBundleEffectName", visualEffect.assetBundleEffectName) : null,
-                    !string.IsNullOrWhiteSpace(visualEffect.assetBundleTextureName) ? new XElement("assetBundleTextureName", visualEffect.assetBundleTextureName) : null,
-                    new XElement("assetBundleEffectScale", visualEffect.assetBundleEffectScale),
-                    new XElement("bundleRenderStrategy", visualEffect.bundleRenderStrategy.ToString()),
-                    !string.IsNullOrWhiteSpace(visualEffect.shaderPath) ? new XElement("shaderPath", visualEffect.shaderPath) : null,
-                    !string.IsNullOrWhiteSpace(visualEffect.shaderAssetBundlePath) ? new XElement("shaderAssetBundlePath", visualEffect.shaderAssetBundlePath) : null,
-                    !string.IsNullOrWhiteSpace(visualEffect.shaderAssetBundleShaderName) ? new XElement("shaderAssetBundleShaderName", visualEffect.shaderAssetBundleShaderName) : null,
-                    new XElement("shaderLoadFromAssetBundle", SerializeBool(visualEffect.shaderLoadFromAssetBundle)),
-                    !string.IsNullOrWhiteSpace(visualEffect.shaderTexturePath) ? new XElement("shaderTexturePath", visualEffect.shaderTexturePath) : null,
-                    new XElement("shaderTintColor", XmlExportHelper.FormatColor(visualEffect.shaderTintColor)),
-                    new XElement("shaderIntensity", visualEffect.shaderIntensity),
-                    new XElement("shaderSpeed", visualEffect.shaderSpeed),
-                    new XElement("shaderParam1", visualEffect.shaderParam1),
-                    new XElement("shaderParam2", visualEffect.shaderParam2),
-                    new XElement("shaderParam3", visualEffect.shaderParam3),
-                    new XElement("shaderParam4", visualEffect.shaderParam4),
-                    new XElement("target", visualEffect.target.ToString()),
-                    new XElement("trigger", visualEffect.trigger.ToString()),
-                    new XElement("delayTicks", visualEffect.delayTicks),
-                    new XElement("displayDurationTicks", visualEffect.displayDurationTicks),
-                    new XElement("globalFilterMode", visualEffect.globalFilterMode.ToString()),
-                    new XElement("globalFilterTransition", visualEffect.globalFilterTransition.ToString()),
-                    new XElement("globalFilterTransitionTicks", visualEffect.globalFilterTransitionTicks),
-                    visualEffect.linkedExpression.HasValue ? new XElement("linkedExpression", visualEffect.linkedExpression.Value.ToString()) : null,
-                    new XElement("linkedExpressionDurationTicks", visualEffect.linkedExpressionDurationTicks),
-                    new XElement("linkedPupilBrightnessOffset", visualEffect.linkedPupilBrightnessOffset),
-                    new XElement("linkedPupilContrastOffset", visualEffect.linkedPupilContrastOffset),
-                    new XElement("scale", visualEffect.scale),
-                    new XElement("drawSize", visualEffect.drawSize),
-                    new XElement("useCasterFacing", SerializeBool(visualEffect.useCasterFacing)),
-                    new XElement("forwardOffset", visualEffect.forwardOffset),
-                    new XElement("sideOffset", visualEffect.sideOffset),
-                    new XElement("heightOffset", visualEffect.heightOffset),
-                    new XElement("rotation", visualEffect.rotation),
-                    visualEffect.textureScale != Vector2.one ? new XElement("textureScale", XmlExportHelper.FormatVector2(visualEffect.textureScale)) : null,
-                    new XElement("lineWidth", visualEffect.lineWidth),
-                    new XElement("wallHeight", visualEffect.wallHeight),
-                    new XElement("wallThickness", visualEffect.wallThickness),
-                    new XElement("tileByLength", SerializeBool(visualEffect.tileByLength)),
-                    new XElement("followGround", SerializeBool(visualEffect.followGround)),
-                    new XElement("segmentCount", visualEffect.segmentCount),
-                    new XElement("revealBySegments", SerializeBool(visualEffect.revealBySegments)),
-                    new XElement("segmentRevealIntervalTicks", visualEffect.segmentRevealIntervalTicks),
-                    visualEffect.offset != Vector3.zero ? new XElement("offset", XmlExportHelper.FormatVector3(visualEffect.offset)) : null,
-                    !string.IsNullOrWhiteSpace(visualEffect.vfxSourceLayerName) ? new XElement("vfxSourceLayerName", visualEffect.vfxSourceLayerName) : null,
-                    new XElement("repeatCount", visualEffect.repeatCount),
-                    new XElement("repeatIntervalTicks", visualEffect.repeatIntervalTicks),
-                    new XElement("attachToPawn", SerializeBool(visualEffect.attachToPawn)),
-                    new XElement("attachToTargetCell", SerializeBool(visualEffect.attachToTargetCell)),
-                    new XElement("playSound", SerializeBool(visualEffect.playSound)),
-                    !string.IsNullOrWhiteSpace(visualEffect.soundDefName) ? new XElement("soundDefName", visualEffect.soundDefName) : null,
-                    new XElement("soundDelayTicks", visualEffect.soundDelayTicks),
-                    new XElement("soundVolume", visualEffect.soundVolume),
-                    new XElement("soundPitch", visualEffect.soundPitch),
-                    new XElement("enableFrameAnimation", SerializeBool(visualEffect.enableFrameAnimation)),
-                    new XElement("frameCount", visualEffect.frameCount),
-                    new XElement("frameIntervalTicks", visualEffect.frameIntervalTicks),
-                    new XElement("frameLoop", SerializeBool(visualEffect.frameLoop))
-                ));
+                root.Add(new XElement("li", SerializePublicFields(visualEffect)));
             }
 
             return root;
@@ -231,7 +139,15 @@ namespace CharacterStudio.Exporter
                     continue;
                 }
 
-                root.Add(new XElement("li", SerializePublicFields(component)));
+                // type 是 virtual property 而非 public field，SerializePublicFields 不会序列化它。
+                // 必须显式写出 <type> 元素，否则 LoadDataFromXmlCustom 反序列化时会丢失类型，
+                // 导致所有运行时组件回退为 SlotOverrideWindow（默认值），造成功能失效。
+                var elements = new List<object?>
+                {
+                    new XElement("type", component.type.ToString())
+                };
+                elements.AddRange(SerializePublicFields(component));
+                root.Add(new XElement("li", elements.ToArray()));
             }
 
             return root;
@@ -239,7 +155,7 @@ namespace CharacterStudio.Exporter
 
         /// <summary>
         /// 通过反射将对象的全部 public 实例字段序列化为 XElement 数组。
-        /// 自动处理 int/float/bool/string/enum/Def? 类型。
+        /// 自动处理 int/float/bool/string/enum/Def? 以及 Unity 基础类型。
         /// 新增字段时无需更新此方法。
         /// </summary>
         private static object?[] SerializePublicFields(object obj)
@@ -252,16 +168,15 @@ namespace CharacterStudio.Exporter
                 var value = field.GetValue(obj);
                 var fieldType = field.FieldType;
 
-                // DamageDef? 等 Def 引用 → 写 defName，null 跳过
+                if (value == null) continue;
+
+                // DamageDef? 等 Def 引用 → 写 defName
                 if (typeof(Def).IsAssignableFrom(fieldType))
                 {
-                    if (value != null)
+                    string? defName = (value as Def)?.defName;
+                    if (!string.IsNullOrWhiteSpace(defName))
                     {
-                        string? defName = (value as Def)?.defName;
-                        if (!string.IsNullOrWhiteSpace(defName))
-                        {
-                            elements.Add(new XElement(field.Name, defName));
-                        }
+                        elements.Add(new XElement(field.Name, defName));
                     }
                     continue;
                 }
@@ -283,21 +198,42 @@ namespace CharacterStudio.Exporter
                 // enum → ToString()
                 if (fieldType.IsEnum)
                 {
-                    elements.Add(new XElement(field.Name, value!.ToString()));
+                    elements.Add(new XElement(field.Name, value.ToString()));
                     continue;
                 }
 
                 // string → 直接写
                 if (fieldType == typeof(string))
                 {
-                    elements.Add(new XElement(field.Name, (string?)value ?? string.Empty));
+                    elements.Add(new XElement(field.Name, (string)value));
+                    continue;
+                }
+
+                // Vector2
+                if (fieldType == typeof(Vector2))
+                {
+                    elements.Add(new XElement(field.Name, XmlExportHelper.FormatVector2((Vector2)value)));
+                    continue;
+                }
+
+                // Vector3
+                if (fieldType == typeof(Vector3))
+                {
+                    elements.Add(new XElement(field.Name, XmlExportHelper.FormatVector3((Vector3)value)));
+                    continue;
+                }
+
+                // Color
+                if (fieldType == typeof(Color))
+                {
+                    elements.Add(new XElement(field.Name, XmlExportHelper.FormatColor((Color)value)));
                     continue;
                 }
 
                 // int, double 等 值类型 → 直接 ToString()
                 if (fieldType.IsValueType)
                 {
-                    elements.Add(new XElement(field.Name, value!.ToString()));
+                    elements.Add(new XElement(field.Name, value.ToString()));
                     continue;
                 }
             }
@@ -319,11 +255,70 @@ namespace CharacterStudio.Exporter
 
             foreach (var kvp in hotkeys.slotBindings)
             {
-                if (!string.IsNullOrEmpty(kvp.Value))
+                if (AbilityHotkeySlotUtility.IsSupportedSlotKey(kvp.Key) && !string.IsNullOrEmpty(kvp.Value))
                     elements.Add(new XElement(kvp.Key.ToLowerInvariant() + "AbilityDefName", kvp.Value));
             }
 
             return new XElement("abilityHotkeys", elements.ToArray());
+        }
+
+        internal static List<ModularAbilityDef> ParseAbilities(XElement? abilitiesElement)
+        {
+            List<ModularAbilityDef> result = new List<ModularAbilityDef>();
+            if (abilitiesElement == null)
+            {
+                return result;
+            }
+
+            foreach (XElement element in abilitiesElement.Elements("li"))
+            {
+                try
+                {
+                    string xml = element.ToString(SaveOptions.DisableFormatting);
+                    XmlDocument doc = new XmlDocument();
+                    doc.LoadXml(xml);
+                    XmlElement? root = doc.DocumentElement;
+                    if (root == null)
+                    {
+                        continue;
+                    }
+
+                    ModularAbilityDef? ability = DirectXmlToObject.ObjectFromXml<ModularAbilityDef>(root, true);
+                    if (ability != null)
+                    {
+                        result.Add(ability);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning($"[CharacterStudio] 解析技能能力节点失败: {ex.Message}");
+                }
+            }
+
+            return result;
+        }
+
+        internal static SkinAbilityHotkeyConfig ParseHotkeys(XElement? hotkeysElement)
+        {
+            SkinAbilityHotkeyConfig config = new SkinAbilityHotkeyConfig();
+            if (hotkeysElement == null)
+            {
+                return config;
+            }
+
+            config.enabled = bool.TryParse(hotkeysElement.Element("enabled")?.Value ?? "false", out bool enabled) && enabled;
+            foreach (string slotKey in AbilityHotkeySlotUtility.SupportedSlotKeys)
+            {
+                string elementName = slotKey.ToLowerInvariant() + "AbilityDefName";
+                string? value = hotkeysElement.Element(elementName)?.Value?.Trim();
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    config[slotKey] = value ?? string.Empty;
+                }
+            }
+
+            config.NormalizeToSupportedSlots();
+            return config;
         }
 
         private static XElement? GenerateAbilityElement(ModularAbilityDef? ability)
@@ -333,28 +328,20 @@ namespace CharacterStudio.Exporter
                 return null;
             }
 
-            return new XElement("li",
-                new XElement("defName", ability.defName),
-                !string.IsNullOrWhiteSpace(ability.label) ? new XElement("label", ability.label) : null,
-                !string.IsNullOrWhiteSpace(ability.description) ? new XElement("description", ability.description) : null,
-                !string.IsNullOrWhiteSpace(ability.iconPath) ? new XElement("iconPath", ability.iconPath) : null,
-                new XElement("cooldownTicks", ability.cooldownTicks),
-                new XElement("warmupTicks", ability.warmupTicks),
-                new XElement("charges", ability.charges),
-                new XElement("aiCanUse", ability.aiCanUse),
-                new XElement("carrierType", ability.carrierType.ToString()),
-                new XElement("targetType", ability.targetType.ToString()),
-                new XElement("useRadius", SerializeBool(ability.useRadius)),
-                new XElement("areaCenter", ability.areaCenter.ToString()),
-                new XElement("areaShape", ability.areaShape.ToString()),
-                !string.IsNullOrWhiteSpace(ability.irregularAreaPattern) ? new XElement("irregularAreaPattern", ability.irregularAreaPattern) : null,
-                new XElement("range", ability.range),
-                new XElement("radius", ability.radius),
-                ability.projectileDef != null ? new XElement("projectileDef", ability.projectileDef.defName) : null,
-                GenerateAbilityEffectsElement(ability.effects),
-                GenerateAbilityVisualEffectsElement(ability.visualEffects),
-                GenerateRuntimeComponentsElement(ability.runtimeComponents)
-            );
+            var element = new XElement("li");
+            element.Add(SerializePublicFields(ability));
+
+            // 列表和特殊嵌套字段需要手动处理，因为 SerializePublicFields 只处理简单字段
+            var effectsElem = GenerateAbilityEffectsElement(ability.effects);
+            if (effectsElem != null) element.Add(effectsElem);
+
+            var vfxElem = GenerateAbilityVisualEffectsElement(ability.visualEffects);
+            if (vfxElem != null) element.Add(vfxElem);
+
+            var rcElem = GenerateRuntimeComponentsElement(ability.runtimeComponents);
+            if (rcElem != null) element.Add(rcElem);
+
+            return element;
         }
 
         private static string SerializeBool(bool value)

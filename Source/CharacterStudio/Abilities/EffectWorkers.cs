@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CharacterStudio.Core;
 using RimWorld;
 using UnityEngine;
@@ -163,7 +164,6 @@ namespace CharacterStudio.Abilities
 
     /// <summary>
     /// 控制效果（击晕/强制移动）
-    /// 使用 StunHandler 实现真正的眩晕效果，而不是麻醉 Hediff
     /// </summary>
     public class EffectWorker_Control : EffectWorker
     {
@@ -194,10 +194,6 @@ namespace CharacterStudio.Abilities
             if (targetPawn.stances != null && targetPawn.stances.stunner != null)
             {
                 targetPawn.stances.stunner.StunFor(durationTicks, caster, false);
-            }
-            else
-            {
-                FallbackStun(targetPawn, durationTicks);
             }
         }
 
@@ -247,41 +243,11 @@ namespace CharacterStudio.Abilities
 
             int absX = Math.Abs(delta.x);
             int absZ = Math.Abs(delta.z);
-            if (absX == 0 && absZ == 0)
-            {
-                return IntVec3.Zero;
-            }
+            if (absX == 0 && absZ == 0) return IntVec3.Zero;
 
-            if (absX > absZ)
-            {
-                return new IntVec3(Math.Sign(delta.x), 0, 0);
-            }
-
-            if (absZ > absX)
-            {
-                return new IntVec3(0, 0, Math.Sign(delta.z));
-            }
-
+            if (absX > absZ) return new IntVec3(Math.Sign(delta.x), 0, 0);
+            if (absZ > absX) return new IntVec3(0, 0, Math.Sign(delta.z));
             return new IntVec3(Math.Sign(delta.x), 0, Math.Sign(delta.z));
-        }
-
-        /// <summary>
-        /// 回退眩晕方案：创建临时眩晕 Hediff
-        /// </summary>
-        private void FallbackStun(Pawn target, int durationTicks)
-        {
-            // 使用 PsychicallyDeafened 作为临时眩晕效果（不会导致倒地）
-            // 如果没有更好的选择，使用 Anesthetic 但设置较短时间
-            var stunHediff = HediffMaker.MakeHediff(HediffDefOf.Anesthetic, target);
-            var disappears = stunHediff.TryGetComp<HediffComp_Disappears>();
-            if (disappears != null)
-            {
-                disappears.ticksToDisappear = durationTicks;
-            }
-            target.health.AddHediff(stunHediff);
-            
-            // 记录警告，建议检查 StunHandler
-            Log.Warning($"[CharacterStudio] StunHandler 不可用于 {target.LabelShort}，已使用回退眩晕方案");
         }
     }
 
@@ -324,20 +290,13 @@ namespace CharacterStudio.Abilities
         private static void SpawnThing(AbilityEffectConfig config, IntVec3 cell, Map map)
         {
             ThingDef? thingDef = config.terraformThingDef;
-            if (thingDef == null)
-            {
-                return;
-            }
+            if (thingDef == null) return;
 
             int count = Math.Max(1, config.terraformSpawnCount);
             for (int i = 0; i < count; i++)
             {
                 Thing thing = ThingMaker.MakeThing(thingDef);
-                if (thing.stackCount > 1)
-                {
-                    thing.stackCount = 1;
-                }
-
+                if (thing.stackCount > 1) thing.stackCount = 1;
                 GenSpawn.Spawn(thing, cell, map, WipeMode.Vanish);
             }
         }
@@ -345,21 +304,51 @@ namespace CharacterStudio.Abilities
         private static void ReplaceTerrain(AbilityEffectConfig config, IntVec3 cell, Map map)
         {
             TerrainDef? terrainDef = config.terraformTerrainDef;
-            if (terrainDef == null)
-            {
-                return;
-            }
-
+            if (terrainDef == null) return;
             map.terrainGrid.SetTerrain(cell, terrainDef);
         }
     }
 
+    public class EffectWorker_WeatherChange : EffectWorker
+    {
+        public override void Apply(AbilityEffectConfig effectConfig, LocalTargetInfo target, Pawn caster)
+        {
+            if (caster.Map == null || effectConfig == null) return;
+
+            if (string.IsNullOrWhiteSpace(effectConfig.weatherDefName))
+            {
+                Log.Warning("[CharacterStudio] Weather change failed: weatherDefName is empty.");
+                return;
+            }
+
+            WeatherDef? weatherDef = DefDatabase<WeatherDef>.GetNamedSilentFail(effectConfig.weatherDefName.Trim());
+            if (weatherDef == null)
+            {
+                Log.Warning($"[CharacterStudio] Ability weather change failed: WeatherDef '{effectConfig.weatherDefName}' not found.");
+                return;
+            }
+
+            Map map = caster.Map;
+            if (map.weatherManager == null) return;
+
+            Log.Message($"[CharacterStudio] Force changing weather to '{weatherDef.defName}' on map '{map.uniqueID}'");
+
+            var traverse = HarmonyLib.Traverse.Create(map.weatherManager);
+            traverse.Field("lastWeather").SetValue(weatherDef);
+            traverse.Field("curWeather").SetValue(weatherDef);
+            traverse.Field("curWeatherDuration").SetValue(effectConfig.weatherDurationTicks);
+            traverse.Field("transitionEndTick").SetValue(Find.TickManager.TicksGame);
+            traverse.Method("InternalTick").GetValue();
+
+            Messages.Message("CS_Ability_WeatherChanged".Translate(weatherDef.LabelCap), MessageTypeDefOf.PositiveEvent, false);
+        }
+    }
+
     /// <summary>
-    /// 工厂类 - 使用单例缓存，EffectWorker 子类均为无状态，单例安全
+    /// 工厂类 - 使用单例缓存
     /// </summary>
     public static class EffectWorkerFactory
     {
-        // 单例缓存，EffectWorker 子类均为无状态（Apply 不依赖实例字段），单例完全安全
         private static readonly Dictionary<AbilityEffectType, EffectWorker> workerInstances = new Dictionary<AbilityEffectType, EffectWorker>
         {
             { AbilityEffectType.Damage, new EffectWorker_Damage() },
@@ -373,23 +362,13 @@ namespace CharacterStudio.Abilities
             { AbilityEffectType.WeatherChange, new EffectWorker_WeatherChange() }
         };
 
-        /// <summary>
-        /// 获取效果工作器（返回缓存的单例实例）
-        /// </summary>
         public static EffectWorker GetWorker(AbilityEffectType type)
         {
-            if (workerInstances.TryGetValue(type, out var worker))
-            {
-                return worker;
-            }
-            
+            if (workerInstances.TryGetValue(type, out var worker)) return worker;
             Log.Warning($"[CharacterStudio] [EffectWorkerFactory] 未知的效果类型: {type}, 使用默认伤害效果");
             return workerInstances[AbilityEffectType.Damage];
         }
 
-        /// <summary>
-        /// 注册自定义效果工作器类型
-        /// </summary>
         public static void RegisterWorkerType(AbilityEffectType type, Type workerType)
         {
             if (!typeof(EffectWorker).IsAssignableFrom(workerType))
@@ -397,7 +376,6 @@ namespace CharacterStudio.Abilities
                 Log.Error($"[CharacterStudio] [EffectWorkerFactory] 类型 {workerType.Name} 不是 EffectWorker 的子类");
                 return;
             }
-
             workerInstances[type] = (EffectWorker)Activator.CreateInstance(workerType);
         }
     }

@@ -346,18 +346,14 @@ namespace CharacterStudio.UI
             int cooldownUntilTick = slotEntry.slotId switch
             {
                 "Q" => state.qCooldownUntilTick,
-                "W" => state.wCooldownUntilTick,
                 "E" => state.eCooldownUntilTick,
+                "R" => state.rCooldownUntilTick,
                 "T" => state.tCooldownUntilTick,
-                "A" => state.aCooldownUntilTick,
-                "S" => state.sCooldownUntilTick,
-                "D" => state.dCooldownUntilTick,
                 "F" => state.fCooldownUntilTick,
                 "Z" => state.zCooldownUntilTick,
                 "X" => state.xCooldownUntilTick,
                 "C" => state.cCooldownUntilTick,
                 "V" => state.vCooldownUntilTick,
-                "R" => state.rCooldownUntilTick,
                 _ => 0
             };
 

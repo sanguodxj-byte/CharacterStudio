@@ -192,6 +192,8 @@ namespace CharacterStudio.Rendering
                         if (externalGraphicCache.TryGetValue(evictedKey, out Graphic evictedGraphic))
                         {
                             externalGraphicCache.Remove(evictedKey);
+                            // P10: 同步移除纹理 ID 跟踪
+                            RemoveTextureTrackingFromGraphic(evictedGraphic);
                             if (evictedGraphic is Graphic_Runtime runtimeEvicted)
                             {
                                 GraphicRuntimePool.Return(runtimeEvicted);
@@ -205,6 +207,8 @@ namespace CharacterStudio.Rendering
                     {
                         externalGraphicEvictionQueue.Enqueue(cacheKey);
                         externalGraphicCache[cacheKey] = graphic;
+                        // P10: 添加纹理 ID 跟踪
+                        TrackTextureFromGraphic(graphic);
                         resultGraphic = graphic;
                     }
                     else
@@ -372,7 +376,7 @@ namespace CharacterStudio.Rendering
                     Material? mat = single.MatSingle;
                     if (mat != null)
                     {
-                        if (mat.GetInt("_ZWrite") == 1)
+                        if (!SupportsZWriteProperty(mat) || mat.GetInt(CachedZWriteID) == 1)
                         {
                             _zWriteAppliedInstanceIds.Add(instanceId);
                         }
@@ -391,7 +395,9 @@ namespace CharacterStudio.Rendering
                         bool alreadyZWrite = true;
                         for (int i = 0; i < existingMats.Length; i++)
                         {
-                            if (existingMats[i] != null && existingMats[i].GetInt("_ZWrite") == 0)
+                            if (existingMats[i] != null
+                                && SupportsZWriteProperty(existingMats[i])
+                                && existingMats[i].GetInt(CachedZWriteID) == 0)
                             {
                                 alreadyZWrite = false;
                                 break;
@@ -409,7 +415,9 @@ namespace CharacterStudio.Rendering
                             {
                                 if (existingMats[i] != null)
                                 {
-                                    newMats[i] = GetSharedZWriteMaterial(existingMats[i]);
+                                    newMats[i] = SupportsZWriteProperty(existingMats[i])
+                                        ? GetSharedZWriteMaterial(existingMats[i])
+                                        : existingMats[i];
                                 }
                             }
                             _graphicMultiMatsField.SetValue(multi, newMats);
@@ -428,16 +436,27 @@ namespace CharacterStudio.Rendering
 
         private Material GetSharedZWriteMaterial(Material baseMat)
         {
+            if (!SupportsZWriteProperty(baseMat))
+                return baseMat;
+
             // P-PERF: 基于原始材质 ID 获取共享的 ZWrite 版本，极大提升合批概率
             int baseMatId = baseMat.GetInstanceID();
             if (_sharedZWriteMaterials.TryGetValue(baseMatId, out Material shared))
                 return shared;
 
             Material zWriteMat = new Material(baseMat);
-            zWriteMat.SetInt("_ZWrite", 1);
+            if (!SupportsZWriteProperty(zWriteMat))
+                return baseMat;
+
+            zWriteMat.SetInt(CachedZWriteID, 1);
             // 保持原始 renderQueue，仅开启 ZWrite
             _sharedZWriteMaterials[baseMatId] = zWriteMat;
             return zWriteMat;
+        }
+
+        private static bool SupportsZWriteProperty(Material? material)
+        {
+            return material != null && material.HasProperty(CachedZWriteID);
         }
 
         // P-PERF: 缓存 LoadShader / Shader.Find 结果，避免每帧重复查找
@@ -476,6 +495,44 @@ namespace CharacterStudio.Rendering
             return sb.ToString();
         }
 
+        // P10: O(1) 纹理引用计数跟踪辅助方法
+        private static void TrackTextureFromGraphic(Graphic graphic)
+        {
+            try
+            {
+                Material? mat = graphic?.MatAt(Rot4.South, null);
+                if (mat?.mainTexture is Texture2D tex)
+                {
+                    int id = tex.GetInstanceID();
+                    if (_externalGraphicTextureRefCounts.TryGetValue(id, out int count))
+                        _externalGraphicTextureRefCounts[id] = count + 1;
+                    else
+                        _externalGraphicTextureRefCounts[id] = 1;
+                }
+            }
+            catch { }
+        }
+
+        private static void RemoveTextureTrackingFromGraphic(Graphic graphic)
+        {
+            try
+            {
+                Material? mat = graphic?.MatAt(Rot4.South, null);
+                if (mat?.mainTexture is Texture2D tex)
+                {
+                    int id = tex.GetInstanceID();
+                    if (_externalGraphicTextureRefCounts.TryGetValue(id, out int count))
+                    {
+                        if (count <= 1)
+                            _externalGraphicTextureRefCounts.Remove(id);
+                        else
+                            _externalGraphicTextureRefCounts[id] = count - 1;
+                    }
+                }
+            }
+            catch { }
+        }
+
         public static void ClearExternalGraphicCache()
         {
             foreach (var graphic in externalGraphicCache.Values)
@@ -487,6 +544,8 @@ namespace CharacterStudio.Rendering
             }
             externalGraphicCache.Clear();
             externalGraphicEvictionQueue.Clear();
+            // P10: 同步清除纹理引用计数跟踪
+            _externalGraphicTextureRefCounts.Clear();
         }
 
         /// <summary>

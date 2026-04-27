@@ -84,4 +84,5 @@
     <CS_Studio_Import_Source_Race>从种族列表导入</CS_Studio_Import_Source_Race>
     <CS_Studio_Export_ExternalFilesSelected>已指定 {0} 个外部文件</CS_Studio_Export_ExternalFilesSelected>
     <CS_Studio_Export_DefaultGenerated>缺省（保存时自动生成）</CS_Studio_Export_DefaultGenerated>
+    <CS_Studio_Browser_SelectFolder>选择文件夹</CS_Studio_Browser_SelectFolder>
 </LanguageData>

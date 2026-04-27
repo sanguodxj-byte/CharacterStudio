@@ -72,6 +72,12 @@ namespace CharacterStudio.Performance
         public int renderRefreshDispatched;
         public int renderRefreshCoalesced;
         public int lastRenderRefreshTick = -1;
+        public int faceTransformCacheHits;
+        public int faceTransformCacheMisses;
+        public int facePathCacheHits;
+        public int facePathCacheMisses;
+        public int graphicDirtyTriggers;
+        public int graphicDirtySkippedByThrottle;
 
         public float RenderRefreshCoalescedRate
         {
@@ -109,6 +115,12 @@ namespace CharacterStudio.Performance
         private static int renderRefreshDispatched;
         private static int renderRefreshCoalesced;
         private static int lastRenderRefreshTick = -1;
+        private static int faceTransformCacheHits;
+        private static int faceTransformCacheMisses;
+        private static int facePathCacheHits;
+        private static int facePathCacheMisses;
+        private static int graphicDirtyTriggers;
+        private static int graphicDirtySkippedByThrottle;
 
         public static void RecordBootstrapEntryCall(BootstrapEntryPoint entryPoint)
         {
@@ -202,6 +214,45 @@ namespace CharacterStudio.Performance
             return dispatched;
         }
 
+        public static void RecordFaceTransformCacheLookup(bool hit)
+        {
+            EnsureGameContext();
+
+            if (!CaptureEnabled)
+                return;
+
+            if (hit)
+                faceTransformCacheHits++;
+            else
+                faceTransformCacheMisses++;
+        }
+
+        public static void RecordFacePathCacheLookup(bool hit)
+        {
+            EnsureGameContext();
+
+            if (!CaptureEnabled)
+                return;
+
+            if (hit)
+                facePathCacheHits++;
+            else
+                facePathCacheMisses++;
+        }
+
+        public static void RecordGraphicDirtyTrigger(bool throttled)
+        {
+            EnsureGameContext();
+
+            if (!CaptureEnabled)
+                return;
+
+            if (throttled)
+                graphicDirtySkippedByThrottle++;
+            else
+                graphicDirtyTriggers++;
+        }
+
         public static CharacterStudioPerformanceSnapshot CreateSnapshot()
         {
             EnsureGameContext();
@@ -224,7 +275,13 @@ namespace CharacterStudio.Performance
                 renderRefreshRequests = renderRefreshRequests,
                 renderRefreshDispatched = renderRefreshDispatched,
                 renderRefreshCoalesced = renderRefreshCoalesced,
-                lastRenderRefreshTick = lastRenderRefreshTick
+                lastRenderRefreshTick = lastRenderRefreshTick,
+                faceTransformCacheHits = faceTransformCacheHits,
+                faceTransformCacheMisses = faceTransformCacheMisses,
+                facePathCacheHits = facePathCacheHits,
+                facePathCacheMisses = facePathCacheMisses,
+                graphicDirtyTriggers = graphicDirtyTriggers,
+                graphicDirtySkippedByThrottle = graphicDirtySkippedByThrottle
             };
         }
 
@@ -264,6 +321,12 @@ namespace CharacterStudio.Performance
             renderRefreshDispatched = 0;
             renderRefreshCoalesced = 0;
             lastRenderRefreshTick = -1;
+            faceTransformCacheHits = 0;
+            faceTransformCacheMisses = 0;
+            facePathCacheHits = 0;
+            facePathCacheMisses = 0;
+            graphicDirtyTriggers = 0;
+            graphicDirtySkippedByThrottle = 0;
         }
     }
 }

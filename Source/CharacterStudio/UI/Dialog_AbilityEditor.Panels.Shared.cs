@@ -401,7 +401,7 @@ namespace CharacterStudio.UI
             {
                 AbilityRuntimeComponentType.SlotOverrideWindow => 138f,
                 AbilityRuntimeComponentType.HotkeyOverride => 164f,
-                AbilityRuntimeComponentType.FollowupCooldownGate => 112f,
+                AbilityRuntimeComponentType.FollowupCooldownGate => 164f,
                 AbilityRuntimeComponentType.SmartJump => 244f,
                 AbilityRuntimeComponentType.EShortJump => 244f,
                 AbilityRuntimeComponentType.Dash => 244f,
@@ -430,6 +430,7 @@ namespace CharacterStudio.UI
                 AbilityRuntimeComponentType.FlightLandingBurst => 242f,
                 AbilityRuntimeComponentType.TimeStop => 86f,
                 AbilityRuntimeComponentType.WeatherChange => 112f,
+                AbilityRuntimeComponentType.BezierCurveWall => 246f,
                 _ => 64f
             };
         }
@@ -506,7 +507,7 @@ namespace CharacterStudio.UI
                         ($"CS_Studio_Ability_Hotkey_{comp.comboTargetHotkeySlot}").Translate(), () =>
                         {
                             var options = new List<FloatMenuOption>();
-                            foreach (AbilityRuntimeHotkeySlot slot in Enum.GetValues(typeof(AbilityRuntimeHotkeySlot)))
+                            foreach (AbilityRuntimeHotkeySlot slot in GetRuntimeHotkeySlotOptions())
                             {
                                 AbilityRuntimeHotkeySlot localSlot = slot;
                                 options.Add(new FloatMenuOption(($"CS_Studio_Ability_Hotkey_{localSlot}").Translate(), () =>
@@ -546,7 +547,7 @@ namespace CharacterStudio.UI
                         ($"CS_Studio_Ability_Hotkey_{comp.overrideHotkeySlot}").Translate(), () =>
                         {
                             var options = new List<FloatMenuOption>();
-                            foreach (AbilityRuntimeHotkeySlot slot in Enum.GetValues(typeof(AbilityRuntimeHotkeySlot)))
+                            foreach (AbilityRuntimeHotkeySlot slot in GetRuntimeHotkeySlotOptions())
                             {
                                 AbilityRuntimeHotkeySlot localSlot = slot;
                                 options.Add(new FloatMenuOption(($"CS_Studio_Ability_Hotkey_{localSlot}").Translate(), () =>
@@ -570,17 +571,6 @@ namespace CharacterStudio.UI
                     }
                     rowY += 26f;
 
-                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_HotkeyOverrideAbilityDefName".Translate(), labelW);
-                    string overrideAbilityDefName = comp.overrideAbilityDefName ?? string.Empty;
-                    string overrideAbilityBefore = overrideAbilityDefName;
-                    overrideAbilityDefName = Widgets.TextField(new Rect(inner.x + labelW, rowY, valueW, 24f), overrideAbilityDefName);
-                    if (!string.Equals(overrideAbilityBefore, overrideAbilityDefName, StringComparison.Ordinal))
-                    {
-                        comp.overrideAbilityDefName = overrideAbilityDefName;
-                        NotifyAbilityPreviewDirty(true);
-                    }
-                    rowY += 26f;
-
                     DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_HotkeyOverrideDuration".Translate(), labelW);
                     string duration = comp.overrideDurationTicks.ToString();
                     int durationBefore = comp.overrideDurationTicks;
@@ -597,7 +587,7 @@ namespace CharacterStudio.UI
                         ($"CS_Studio_Ability_Hotkey_{comp.followupCooldownHotkeySlot}").Translate(), () =>
                         {
                             var options = new List<FloatMenuOption>();
-                            foreach (AbilityRuntimeHotkeySlot slot in Enum.GetValues(typeof(AbilityRuntimeHotkeySlot)))
+                            foreach (AbilityRuntimeHotkeySlot slot in GetRuntimeHotkeySlotOptions())
                             {
                                 AbilityRuntimeHotkeySlot localSlot = slot;
                                 options.Add(new FloatMenuOption(($"CS_Studio_Ability_Hotkey_{localSlot}").Translate(), () =>
@@ -617,6 +607,26 @@ namespace CharacterStudio.UI
                     int cooldownGateBefore = comp.followupCooldownTicks;
                     UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.followupCooldownTicks, ref cooldownGate, 1, 99999);
                     if (comp.followupCooldownTicks != cooldownGateBefore)
+                    {
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_MaxComboFollowupDelayTicks".Translate(), labelW);
+                    string delayStr = comp.maxComboFollowupDelayTicks.ToString();
+                    int delayBefore = comp.maxComboFollowupDelayTicks;
+                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.maxComboFollowupDelayTicks, ref delayStr, -1, 9999);
+                    if (comp.maxComboFollowupDelayTicks != delayBefore)
+                    {
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_CooldownPunishScale".Translate(), labelW);
+                    string punishStr = comp.cooldownPunishScale.ToString();
+                    float punishBefore = comp.cooldownPunishScale;
+                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.cooldownPunishScale, ref punishStr, 0.5f, 50f);
+                    if (Math.Abs(comp.cooldownPunishScale - punishBefore) > 0.001f)
                     {
                         NotifyAbilityPreviewDirty(true);
                     }
@@ -895,7 +905,7 @@ namespace CharacterStudio.UI
                         ($"CS_Studio_Ability_Hotkey_{comp.killRefreshHotkeySlot}").Translate(), () =>
                         {
                             var options = new List<FloatMenuOption>();
-                            foreach (AbilityRuntimeHotkeySlot slot in Enum.GetValues(typeof(AbilityRuntimeHotkeySlot)))
+                            foreach (AbilityRuntimeHotkeySlot slot in GetRuntimeHotkeySlotOptions())
                             {
                                 AbilityRuntimeHotkeySlot localSlot = slot;
                                 options.Add(new FloatMenuOption(($"CS_Studio_Ability_Hotkey_{localSlot}").Translate(), () =>
@@ -1167,16 +1177,6 @@ namespace CharacterStudio.UI
                     {
                     }
                     rowY += 26f;
-
-                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_SlowFieldHediffDefName".Translate(), labelW);
-                    string slowHediffDefName = comp.slowFieldHediffDefName ?? string.Empty;
-                    string slowHediffBefore = slowHediffDefName;
-                    slowHediffDefName = Widgets.TextField(new Rect(inner.x + labelW, rowY, valueW, 24f), slowHediffDefName);
-                    if (!string.Equals(slowHediffBefore, slowHediffDefName, StringComparison.Ordinal))
-                    {
-                        comp.slowFieldHediffDefName = slowHediffDefName;
-                        NotifyAbilityPreviewDirty(true);
-                    }
                 }
                 else if (comp.type == AbilityRuntimeComponentType.PierceBonusDamage)
                 {
@@ -1258,7 +1258,7 @@ namespace CharacterStudio.UI
                         ($"CS_Studio_Ability_Hotkey_{comp.refundHotkeySlot}").Translate(), () =>
                         {
                             var options = new List<FloatMenuOption>();
-                            foreach (AbilityRuntimeHotkeySlot slot in Enum.GetValues(typeof(AbilityRuntimeHotkeySlot)))
+                            foreach (AbilityRuntimeHotkeySlot slot in GetRuntimeHotkeySlotOptions())
                             {
                                 AbilityRuntimeHotkeySlot localSlot = slot;
                                 options.Add(new FloatMenuOption(($"CS_Studio_Ability_Hotkey_{localSlot}").Translate(), () =>
@@ -1411,24 +1411,20 @@ namespace CharacterStudio.UI
                     rowY += 26f;
 
                     DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_LandingEffecterDefName".Translate(), labelW);
-                    string landingEffecterDefName = comp.landingEffecterDefName ?? string.Empty;
-                    string landingEffecterDefNameBefore = landingEffecterDefName;
-                    landingEffecterDefName = Widgets.TextField(new Rect(inner.x + labelW, rowY, valueW, 24f), landingEffecterDefName);
-                    if (!string.Equals(landingEffecterDefNameBefore, landingEffecterDefName, StringComparison.Ordinal))
+                    string effecterLabel = string.IsNullOrWhiteSpace(comp.landingEffecterDefName)
+                        ? "CS_Studio_None".Translate()
+                        : comp.landingEffecterDefName;
+                    if (DrawSelectionFieldButton(new Rect(inner.x + labelW, rowY, valueW, 24f), effecterLabel, () => ShowEffecterDefSelector(vfx: null, comp: comp)))
                     {
-                        comp.landingEffecterDefName = landingEffecterDefName;
-                        NotifyAbilityPreviewDirty(true);
                     }
                     rowY += 26f;
 
                     DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_LandingSoundDefName".Translate(), labelW);
-                    string landingSoundDefName = comp.landingSoundDefName ?? string.Empty;
-                    string landingSoundDefNameBefore = landingSoundDefName;
-                    landingSoundDefName = Widgets.TextField(new Rect(inner.x + labelW, rowY, valueW, 24f), landingSoundDefName);
-                    if (!string.Equals(landingSoundDefNameBefore, landingSoundDefName, StringComparison.Ordinal))
+                    string soundLabel = string.IsNullOrWhiteSpace(comp.landingSoundDefName)
+                        ? "CS_Studio_None".Translate()
+                        : comp.landingSoundDefName;
+                    if (DrawSelectionFieldButton(new Rect(inner.x + labelW, rowY, valueW, 24f), soundLabel, () => ShowSoundDefSelector(vfx: null, comp: comp)))
                     {
-                        comp.landingSoundDefName = landingSoundDefName;
-                        NotifyAbilityPreviewDirty(true);
                     }
                     rowY += 26f;
 
@@ -1522,6 +1518,77 @@ namespace CharacterStudio.UI
                         NotifyAbilityPreviewDirty(true);
                     }
                 }
+                else if (comp.type == AbilityRuntimeComponentType.BezierCurveWall)
+                {
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_BezierWallDurationTicks".Translate(), labelW);
+                    string dur = comp.bezierWallDurationTicks.ToString();
+                    int durBefore = comp.bezierWallDurationTicks;
+                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.bezierWallDurationTicks, ref dur, 1, 99999);
+                    if (comp.bezierWallDurationTicks != durBefore)
+                    {
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_BezierWallThickness".Translate(), labelW);
+                    string thick = comp.bezierWallThickness.ToString();
+                    float thickBefore = comp.bezierWallThickness;
+                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.bezierWallThickness, ref thick, 0.1f, 5f);
+                    if (Math.Abs(comp.bezierWallThickness - thickBefore) > 0.001f)
+                    {
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_BezierWallControlPointHeight".Translate(), labelW);
+                    string cpH = comp.bezierWallControlPointHeight.ToString();
+                    float cpHBefore = comp.bezierWallControlPointHeight;
+                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.bezierWallControlPointHeight, ref cpH, -20f, 20f);
+                    if (Math.Abs(comp.bezierWallControlPointHeight - cpHBefore) > 0.001f)
+                    {
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_BezierWallSegmentCount".Translate(), labelW);
+                    string seg = comp.bezierWallSegmentCount.ToString();
+                    int segBefore = comp.bezierWallSegmentCount;
+                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.bezierWallSegmentCount, ref seg, 4, 64);
+                    if (comp.bezierWallSegmentCount != segBefore)
+                    {
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_BezierWallBlockFriendly".Translate(), labelW);
+                    bool blockFriendly = comp.bezierWallBlockFriendly;
+                    Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref blockFriendly, 24f, false);
+                    if (comp.bezierWallBlockFriendly != blockFriendly)
+                    {
+                        comp.bezierWallBlockFriendly = blockFriendly;
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_BezierWallCurveDirection".Translate(), labelW);
+                    string dir = comp.bezierWallCurveDirection.ToString();
+                    int dirBefore = comp.bezierWallCurveDirection;
+                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.bezierWallCurveDirection, ref dir, -1, 1);
+                    if (comp.bezierWallCurveDirection != dirBefore)
+                    {
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    rowY += 26f;
+
+                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_BezierWallAbsorbMax".Translate(), labelW);
+                    string absorb = comp.bezierWallAbsorbMax.ToString();
+                    float absorbBefore = comp.bezierWallAbsorbMax;
+                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.bezierWallAbsorbMax, ref absorb, 1f, 99999f);
+                    if (Math.Abs(comp.bezierWallAbsorbMax - absorbBefore) > 0.001f)
+                    {
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                }
 
                 y += blockHeight + 6f;
             }
@@ -1576,6 +1643,39 @@ namespace CharacterStudio.UI
                     {
                         field.SetValue(comp, val);
                         NotifyAbilityPreviewDirty(true);
+                    }
+                }
+                else if (field.FieldType == typeof(bool))
+                {
+                    bool val = (bool)(field.GetValue(comp) ?? false);
+                    bool oldVal = val;
+                    Widgets.Checkbox(new Vector2(inner.x + labelW, rowY + 2f), ref val, 24f, false);
+                    if (val != oldVal)
+                    {
+                        field.SetValue(comp, val);
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                }
+                else if (field.FieldType.IsEnum)
+                {
+                    object enumValue = field.GetValue(comp) ?? Activator.CreateInstance(field.FieldType);
+                    string enumLabel = enumValue.ToString();
+                    Rect buttonRect = new Rect(inner.x + labelW, rowY, valueW, 24f);
+                    if (DrawSelectionFieldButton(buttonRect, enumLabel, () =>
+                    {
+                        var options = new List<FloatMenuOption>();
+                        foreach (object option in Enum.GetValues(field.FieldType))
+                        {
+                            object localOption = option;
+                            options.Add(new FloatMenuOption(localOption.ToString(), () =>
+                            {
+                                field.SetValue(comp, localOption);
+                                NotifyAbilityPreviewDirty(true);
+                            }));
+                        }
+                        Find.WindowStack.Add(new FloatMenu(options));
+                    }))
+                    {
                     }
                 }
                 rowY += 26f;

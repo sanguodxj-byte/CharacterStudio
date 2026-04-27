@@ -8,6 +8,7 @@ namespace CharacterStudio.UI
     /// <summary>
     /// 在原版右下角 PlaySettings 复选功能栏中插入“技能热键”开关。
     /// </summary>
+    [StaticConstructorOnStartup]
     public static class Patch_PlaySettings_AbilityHotkeys
     {
         private static readonly Texture2D ToggleIcon = ContentFinder<Texture2D>.Get("UI/Commands/DesirePower", false)

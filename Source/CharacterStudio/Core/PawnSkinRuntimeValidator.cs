@@ -33,8 +33,6 @@ namespace CharacterStudio.Core
             prepared.hiddenTags ??= new List<string>();
 #pragma warning restore CS0618
             prepared.targetRaces ??= new List<string>();
-            prepared.abilities ??= new List<ModularAbilityDef>();
-            prepared.abilityHotkeys ??= new SkinAbilityHotkeyConfig();
             prepared.attributes ??= new CharacterAttributeProfile();
             prepared.statModifiers ??= new CharacterStatModifierProfile();
             prepared.animationConfig ??= new PawnAnimationConfig();
@@ -54,7 +52,6 @@ namespace CharacterStudio.Core
             prepared.hiddenTags.RemoveAll(string.IsNullOrWhiteSpace);
 #pragma warning restore CS0618
             prepared.targetRaces.RemoveAll(string.IsNullOrWhiteSpace);
-            prepared.abilities.RemoveAll(a => a == null);
 
             NormalizeBaseAppearance(prepared.baseAppearance);
             NormalizeLayers(prepared.layers);

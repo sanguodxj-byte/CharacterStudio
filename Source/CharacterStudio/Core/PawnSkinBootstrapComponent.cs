@@ -1,21 +1,36 @@
+using System;
 using System.Collections.Generic;
 using HarmonyLib;
 using CharacterStudio.Abilities;
 using CharacterStudio.Performance;
 using RimWorld;
 using Verse;
+using UnityEngine;
 
 namespace CharacterStudio.Core
 {
     /// <summary>
     /// 游戏组件：为现有 Pawn 补充 CompPawnSkin，并自动应用 defaultForRace 皮肤、补发 Ability。
-    /// 优化：
-    /// 1. 将原来的三次全图扫描合并为单次扫描。
-    /// 2. 使用世界签名去重，避免 LoadedGame / StartedNewGame / FinalizeInit 对同一世界状态重复执行。
-    /// 3. 对每个 Pawn 记录已完成的 bootstrap 项，避免世界状态变化后重复处理老 Pawn。
+    /// 同时作为皮肤状态的持久化层——因为 CompPawnSkin 是动态添加的 ThingComp，
+    /// RimWorld 不会在读档时重建它，所以需要通过 GameComponent 保存/恢复皮肤映射。
     /// </summary>
     public class PawnSkinBootstrapComponent : GameComponent
     {
+        private struct PawnSkinSaveRecord : IExposable
+        {
+            public string? skinDefName;
+            public bool fromDefaultRaceBinding;
+            public CharacterAbilityLoadout? abilityLoadout;
+
+            public void ExposeData()
+            {
+                Scribe_Values.Look(ref skinDefName, "skinDefName");
+                Scribe_Values.Look(ref fromDefaultRaceBinding, "fromDefaultRaceBinding", false);
+                Scribe_Deep.Look(ref abilityLoadout, "abilityLoadout");
+            }
+        }
+
+        private Dictionary<int, PawnSkinSaveRecord> savedPawnSkins = new Dictionary<int, PawnSkinSaveRecord>();
         private static readonly System.Reflection.FieldInfo? CompsField =
             AccessTools.Field(typeof(ThingWithComps), "comps");
 
@@ -27,17 +42,191 @@ namespace CharacterStudio.Core
 
         public PawnSkinBootstrapComponent(Game game) { }
 
-        public override void GameComponentTick()
+        public override void ExposeData()
         {
-            base.GameComponentTick();
-            Rendering.RuntimeAssetLoader.TickProcessPendingTextures();
+            base.ExposeData();
+
+            if (Scribe.mode == LoadSaveMode.Saving)
+            {
+                CollectPawnSkinStates();
+            }
+
+            List<PawnSkinSaveRecordEntry>? saveList = null;
+            if (Scribe.mode == LoadSaveMode.Saving)
+            {
+                saveList = new List<PawnSkinSaveRecordEntry>(savedPawnSkins.Count);
+                foreach (var kv in savedPawnSkins)
+                {
+                    saveList.Add(new PawnSkinSaveRecordEntry { thingIdNumber = kv.Key, record = kv.Value });
+                }
+            }
+
+            Scribe_Collections.Look(ref saveList, "savedPawnSkins", LookMode.Deep);
+            if (Scribe.mode == LoadSaveMode.LoadingVars && saveList != null)
+            {
+                savedPawnSkins.Clear();
+                for (int i = 0; i < saveList.Count; i++)
+                {
+                    savedPawnSkins[saveList[i].thingIdNumber] = saveList[i].record;
+                }
+            }
+        }
+
+        private void CollectPawnSkinStates()
+        {
+            savedPawnSkins.Clear();
+            Game? game = Current.Game;
+            if (game == null) return;
+
+            foreach (Map map in game.Maps)
+            {
+                foreach (Pawn pawn in map.mapPawns.AllPawnsSpawned)
+                {
+                    CompPawnSkin? comp = pawn.GetComp<CompPawnSkin>();
+                    if (comp == null || !comp.HasActiveSkin) continue;
+
+                    var record = new PawnSkinSaveRecord
+                    {
+                        skinDefName = comp.ActiveSkin?.defName,
+                        fromDefaultRaceBinding = comp.ActiveSkinFromDefaultRaceBinding,
+                    };
+
+                    var abilityComp = pawn.GetComp<CompCharacterAbilityRuntime>();
+                    if (abilityComp != null && abilityComp.HasExplicitAbilityLoadout)
+                    {
+                        record.abilityLoadout = abilityComp.ActiveAbilityLoadout;
+                    }
+
+                    savedPawnSkins[pawn.thingIDNumber] = record;
+                }
+            }
+        }
+
+        private void RestorePawnSkinStates()
+        {
+            if (savedPawnSkins.Count == 0) return;
+
+            Game? game = Current.Game;
+            if (game == null) return;
+
+            List<Pawn> allPawns = new List<Pawn>();
+            foreach (Map map in game.Maps)
+            {
+                allPawns.AddRange(map.mapPawns.AllPawnsSpawned);
+            }
+
+            List<int> restored = new List<int>();
+            foreach (Pawn pawn in allPawns)
+            {
+                if (!savedPawnSkins.TryGetValue(pawn.thingIDNumber, out var record))
+                    continue;
+
+                try
+                {
+                    if (string.IsNullOrWhiteSpace(record.skinDefName))
+                    {
+                        restored.Add(pawn.thingIDNumber);
+                        continue;
+                    }
+
+                    CompPawnSkin? comp = pawn.GetComp<CompPawnSkin>();
+
+                    if (comp == null)
+                        continue;
+
+                    if (comp.HasActiveSkin)
+                    {
+                        if (record.abilityLoadout != null)
+                        {
+                            var abilityComp = pawn.GetComp<CompCharacterAbilityRuntime>();
+                            if (abilityComp != null)
+                            {
+                                abilityComp.ActiveAbilityLoadout = record.abilityLoadout;
+                            }
+                        }
+
+                        AbilityLoadoutRuntimeUtility.GrantEffectiveLoadoutToPawn(pawn);
+
+                        restored.Add(pawn.thingIDNumber);
+                        continue;
+                    }
+
+                    PawnSkinDef? skinDef = PawnSkinDefRegistry.TryGet(record.skinDefName)
+                        ?? DefDatabase<PawnSkinDef>.GetNamedSilentFail(record.skinDefName);
+
+                    if (skinDef != null)
+                    {
+                        PawnSkinRuntimeUtility.ApplySkinToPawn(pawn, skinDef.Clone(),
+                            fromDefaultRaceBinding: record.fromDefaultRaceBinding,
+                            applicationSource: "BootstrapRestore");
+
+                        Log.Message($"[CharacterStudio] 已从 GameComponent 恢复皮肤: {pawn.LabelShort} -> {record.skinDefName}");
+                    }
+                    else
+                    {
+                        Log.Warning($"[CharacterStudio] 恢复皮肤失败，定义未找到: {record.skinDefName} (pawn={pawn.LabelShort})");
+                    }
+
+                    if (record.abilityLoadout != null)
+                    {
+                        var abilityComp = pawn.GetComp<CompCharacterAbilityRuntime>();
+                        if (abilityComp != null)
+                        {
+                            abilityComp.ActiveAbilityLoadout = record.abilityLoadout;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"[CharacterStudio] 恢复单个 Pawn 皮肤失败: {pawn.LabelShort} - {ex.Message}");
+                }
+
+                restored.Add(pawn.thingIDNumber);
+            }
+        }
+
+        private class PawnSkinSaveRecordEntry : IExposable
+        {
+            public int thingIdNumber;
+            public PawnSkinSaveRecord record;
+
+            public void ExposeData()
+            {
+                Scribe_Values.Look(ref thingIdNumber, "thingId");
+                record.ExposeData();
+            }
         }
 
         public override void LoadedGame()
         {
             base.LoadedGame();
             RunBootstrapPass(BootstrapEntryPoint.LoadedGame);
+            // 延迟恢复皮肤状态到下一帧，避免在存档加载期间触发大量纹理创建导致显存不足崩溃
+            _pendingRestore = true;
         }
+
+        private bool _pendingRestore = false;
+
+        public override void GameComponentTick()
+        {
+            base.GameComponentTick();
+            Rendering.RuntimeAssetLoader.TickProcessPendingTextures();
+            Abilities.VfxGlobalFilterManager.Tick();
+
+            if (_pendingRestore)
+            {
+                _pendingRestore = false;
+                try
+                {
+                    RestorePawnSkinStates();
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"[CharacterStudio] RestorePawnSkinStates failed: {ex.Message}\n{ex.StackTrace}");
+                }
+            }
+        }
+
 
         public override void StartedNewGame()
         {
@@ -154,6 +343,11 @@ namespace CharacterStudio.Core
             defaultSkinProcessedPawnIds.Add(pawnId);
 
             if (comp.HasActiveSkin)
+                return false;
+
+            // 如果 GameComponent 里有该 Pawn 的保存记录，跳过自动应用默认皮肤，
+            // 等待 RestorePawnSkinStates 恢复真实皮肤。
+            if (savedPawnSkins.ContainsKey(pawnId))
                 return false;
 
             if (!ShouldAutoApplyDefaultSkinDuringBootstrap(pawn, comp))

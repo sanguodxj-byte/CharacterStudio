@@ -537,5 +537,25 @@ namespace CharacterStudio.UI
             }
 #pragma warning restore CS0618
         }
+
+        private void OnSaveRenderFixPatch()
+        {
+            if (targetPawn == null)
+            {
+                ShowStatus("CS_Studio_Msg_TargetPawnRequired".Translate());
+                return;
+            }
+
+            if (workingRenderFixPatch == null)
+            {
+                workingRenderFixPatch = BuildRenderFixPatchFromCurrentState(targetPawn);
+            }
+
+            workingRenderFixPatch.Normalize();
+            RenderFixPatchRegistry.SavePatch(workingRenderFixPatch);
+
+            isDirty = false;
+            ShowStatus("CS_Studio_Msg_PatchSaved".Translate());
+        }
     }
 }

@@ -167,6 +167,12 @@ namespace CharacterStudio.UI
                 height += SectionPadding + RowHeight * 3;
             }
 
+            // Fleck section
+            if (vfx.RequiresFleckDef)
+            {
+                height += SectionPadding + (vfx.type == AbilityVisualEffectType.FleckConnectingLine ? 2 : 1) * RowHeight;
+            }
+
             // Section 4: 动画/表情
             height += SectionPadding + RowHeight * 3;
 
@@ -378,6 +384,20 @@ namespace CharacterStudio.UI
                         vfx.SyncLegacyFields();
                         NotifyAbilityPreviewDirty(true);
                     }),
+                    new FloatMenuOption(GetVfxCategoryLabel(AbilityVisualEffectType.Fleck), () =>
+                    {
+                        vfx.type = AbilityVisualEffectType.Fleck;
+                        vfx.textureSource = AbilityVisualEffectTextureSource.Vanilla;
+                        vfx.SyncLegacyFields();
+                        NotifyAbilityPreviewDirty(true);
+                    }),
+                    new FloatMenuOption(GetVfxCategoryLabel(AbilityVisualEffectType.FleckConnectingLine), () =>
+                    {
+                        vfx.type = AbilityVisualEffectType.FleckConnectingLine;
+                        vfx.textureSource = AbilityVisualEffectTextureSource.Vanilla;
+                        vfx.SyncLegacyFields();
+                        NotifyAbilityPreviewDirty(true);
+                    }),
                     new FloatMenuOption(GetVfxCategoryLabel(AbilityVisualEffectType.GlobalFilter), () =>
                     {
                         vfx.type = AbilityVisualEffectType.GlobalFilter;
@@ -475,8 +495,11 @@ namespace CharacterStudio.UI
                     {
                     }
                 }
+
                 y += RowHeight;
             }
+
+
 
             DrawVfxDropdownRow(inner.x, y, labelW, fieldW, "CS_Studio_VFX_TargetShort".Translate(), GetVfxTargetLabel(vfx.target), () =>
             {
@@ -593,21 +616,8 @@ namespace CharacterStudio.UI
                         })
                     };
 
-                    if (boundSkin?.layers != null)
-                    {
-                        foreach (var layer in boundSkin.layers)
-                        {
-                            if (string.IsNullOrWhiteSpace(layer.layerName)) continue;
-                            string captured = layer.layerName;
-                            layerOptions.Add(new FloatMenuOption(captured, () =>
-                            {
-                                vfx.vfxSourceLayerName = captured;
-                                NotifyAbilityPreviewDirty();
-                            }));
-                        }
-                    }
-
                     Find.WindowStack.Add(new FloatMenu(layerOptions));
+
                 });
                 y += RowHeight;
 
@@ -652,10 +662,36 @@ namespace CharacterStudio.UI
                 }
             }
 
+            // ── Section: Fleck 设置 ──
+            if (vfx.RequiresFleckDef)
+            {
+                DrawSectionBg(inner.x, y, inner.width, (vfx.type == AbilityVisualEffectType.FleckConnectingLine ? 2 : 1) * RowHeight);
+
+                float fleckLabelW = Mathf.Max(44f, Text.CalcSize("FleckDef").x + 4f);
+                Widgets.Label(new Rect(inner.x, y + 2f, fleckLabelW, 20f), "FleckDef");
+                string fleckDisplay = string.IsNullOrWhiteSpace(vfx.fleckDefName)
+                    ? "CS_Studio_None".Translate()
+                    : vfx.fleckDefName;
+                if (DrawSelectionFieldButton(new Rect(inner.x + fleckLabelW, y, inner.width - fleckLabelW - 4f, 24f), fleckDisplay, () => ShowFleckDefSelector(vfx)))
+                {
+                }
+                y += RowHeight;
+
+                if (vfx.type == AbilityVisualEffectType.FleckConnectingLine)
+                {
+                    string fleckLineWStr = vfx.lineWidth.ToString("F2");
+                    DrawNumberRow(y, inner.x, "CS_Studio_VFX_LineWidthShort".Translate(), ref vfx.lineWidth, ref fleckLineWStr, 0.05f, 20f);
+                    y += RowHeight;
+                }
+            }
+
             // ── Section 3: 空间设置（Line/Wall） ──
             if (vfx.type == AbilityVisualEffectType.LineTexture || vfx.type == AbilityVisualEffectType.WallTexture)
             {
-                DrawSectionBg(inner.x, y, inner.width, 3 * RowHeight);
+                int spatialRows = vfx.type == AbilityVisualEffectType.LineTexture
+                    ? (vfx.revealBySegments ? 6 : 5)
+                    : 3;
+                DrawSectionBg(inner.x, y, inner.width, spatialRows * RowHeight);
 
                 DrawVfxDropdownRow(inner.x, y, labelW, fieldW, "CS_Studio_VFX_SpatialShort".Translate(), GetVfxSpatialModeLabel(vfx.spatialMode), () =>
                 {
@@ -719,6 +755,38 @@ namespace CharacterStudio.UI
 
                 if (vfx.type == AbilityVisualEffectType.LineTexture)
                 {
+                    DrawVfxDropdownRow(inner.x, y, labelW, fieldW, "线模式", vfx.lineRenderMode.ToString(), () =>
+                    {
+                        var options = new List<FloatMenuOption>();
+                        foreach (AbilityLineRenderMode mode in Enum.GetValues(typeof(AbilityLineRenderMode)))
+                        {
+                            AbilityLineRenderMode captured = mode;
+                            options.Add(new FloatMenuOption(captured.ToString(), () =>
+                            {
+                                vfx.lineRenderMode = captured;
+                                NotifyAbilityPreviewDirty(true);
+                            }));
+                        }
+                        Find.WindowStack.Add(new FloatMenu(options));
+                    });
+
+                    bool revealBefore = vfx.revealBySegments;
+                    Widgets.Checkbox(new Vector2(rightX, y + 2f), ref vfx.revealBySegments, 24f, false);
+                    Widgets.Label(new Rect(rightX + 28f, y, inner.width - rightX + inner.x - 28f, RowHeight), "逐段推进");
+                    if (vfx.revealBySegments != revealBefore)
+                    {
+                        if (vfx.revealBySegments)
+                        {
+                            vfx.lineRenderMode = AbilityLineRenderMode.SegmentedLine;
+                            vfx.segmentCount = Mathf.Max(2, vfx.segmentCount);
+                        }
+                        NotifyAbilityPreviewDirty(true);
+                    }
+                    y += RowHeight;
+                }
+
+                if (vfx.type == AbilityVisualEffectType.LineTexture)
+                {
                     string lineWidthStr = vfx.lineWidth.ToString("F2");
                     DrawNumberRow(y, inner.x, "CS_Studio_VFX_LineWidthShort".Translate(), ref vfx.lineWidth, ref lineWidthStr, 0.05f, 20f);
                 }
@@ -733,6 +801,18 @@ namespace CharacterStudio.UI
                 string segmentCountStr = vfx.segmentCount.ToString();
                 DrawIntRow(y, rightX, "CS_Studio_VFX_SegmentsShort".Translate(), ref vfx.segmentCount, ref segmentCountStr, 1, 512);
                 y += RowHeight;
+
+                if (vfx.type == AbilityVisualEffectType.LineTexture && vfx.revealBySegments)
+                {
+                    string segmentRevealIntervalStr = vfx.segmentRevealIntervalTicks.ToString();
+                    DrawIntRow(y, inner.x, "推进间隔", ref vfx.segmentRevealIntervalTicks, ref segmentRevealIntervalStr, 0, 60000);
+                    Text.Font = GameFont.Tiny;
+                    GUI.color = UIHelper.SubtleColor;
+                    Widgets.Label(new Rect(rightX, y + 3f, inner.width - rightX + inner.x, 18f), "每段延迟的 tick 数；用于蓝光沿裂纹逐段推进。");
+                    GUI.color = Color.white;
+                    Text.Font = GameFont.Small;
+                    y += RowHeight;
+                }
             }
 
             // ── Section 4: 动画/表情 ──
@@ -775,9 +855,6 @@ namespace CharacterStudio.UI
             string pupilContrastStr = vfx.linkedPupilContrastOffset.ToString("F2");
             DrawNumberRow(y, inner.x, "CS_Studio_VFX_PupilContrastShort".Translate(), ref vfx.linkedPupilContrastOffset, ref pupilContrastStr, -2f, 2f);
             y += RowHeight;
-
-            // ── 全局滤镜 ──
-            DrawVfxGlobalFilterSection(inner, y, vfx, labelW, fieldW, rightX);
         }
 
         private void DrawVfxGlobalFilterSection(Rect inner, float startY, AbilityVisualEffectConfig vfx, float labelW, float fieldW, float rightX)
@@ -802,7 +879,7 @@ namespace CharacterStudio.UI
             // 全局滤镜模式选择
             string filterLabel = string.IsNullOrWhiteSpace(vfx.globalFilterMode)
                 ? "CS_Studio_VFX_GlobalFilter_None".Translate()
-                : vfx.globalFilterMode;
+                : ("CS_Studio_VFX_GlobalFilterMode_" + vfx.globalFilterMode).Translate();
             DrawVfxDropdownRow(inner.x, y, labelW, fieldW, "CS_Studio_VFX_GlobalFilterMode".Translate(), filterLabel, () =>
             {
                 var options = new List<FloatMenuOption>
@@ -812,29 +889,34 @@ namespace CharacterStudio.UI
                         vfx.globalFilterMode = string.Empty;
                         NotifyAbilityPreviewDirty();
                     }),
-                    new FloatMenuOption("Grayscale", () =>
+                    new FloatMenuOption("CS_Studio_VFX_GlobalFilterMode_Grayscale".Translate(), () =>
                     {
                         vfx.globalFilterMode = VfxGlobalFilterManager.ModeGrayscale;
                         NotifyAbilityPreviewDirty();
                     }),
-                    new FloatMenuOption("Desaturate", () =>
+                    new FloatMenuOption("CS_Studio_VFX_GlobalFilterMode_Desaturate".Translate(), () =>
                     {
                         vfx.globalFilterMode = VfxGlobalFilterManager.ModeDesaturate;
                         NotifyAbilityPreviewDirty();
                     }),
-                    new FloatMenuOption("Sepia", () =>
+                    new FloatMenuOption("CS_Studio_VFX_GlobalFilterMode_Sepia".Translate(), () =>
                     {
                         vfx.globalFilterMode = VfxGlobalFilterManager.ModeSepia;
                         NotifyAbilityPreviewDirty();
                     }),
-                    new FloatMenuOption("Tint", () =>
+                    new FloatMenuOption("CS_Studio_VFX_GlobalFilterMode_Tint".Translate(), () =>
                     {
                         vfx.globalFilterMode = VfxGlobalFilterManager.ModeTint;
                         NotifyAbilityPreviewDirty();
                     }),
-                    new FloatMenuOption("Negative", () =>
+                    new FloatMenuOption("CS_Studio_VFX_GlobalFilterMode_Negative".Translate(), () =>
                     {
                         vfx.globalFilterMode = VfxGlobalFilterManager.ModeNegative;
+                        NotifyAbilityPreviewDirty();
+                    }),
+                    new FloatMenuOption("CS_Studio_VFX_GlobalFilterMode_BlackAndWhite".Translate(), () =>
+                    {
+                        vfx.globalFilterMode = VfxGlobalFilterManager.ModeBlackAndWhite;
                         NotifyAbilityPreviewDirty();
                     })
                 };
@@ -844,7 +926,7 @@ namespace CharacterStudio.UI
             // 过渡方式选择
             string transitionLabel = string.IsNullOrWhiteSpace(vfx.globalFilterTransition)
                 ? "CS_Studio_VFX_GlobalFilterTransition_None".Translate()
-                : vfx.globalFilterTransition;
+                : ("CS_Studio_VFX_GlobalFilterTransition_" + vfx.globalFilterTransition).Translate();
             DrawVfxDropdownRow(rightX, y, labelW, fieldW, "CS_Studio_VFX_GlobalFilterTransition".Translate(), transitionLabel, () =>
             {
                 var options = new List<FloatMenuOption>
@@ -854,17 +936,17 @@ namespace CharacterStudio.UI
                         vfx.globalFilterTransition = string.Empty;
                         NotifyAbilityPreviewDirty();
                     }),
-                    new FloatMenuOption("Linear", () =>
+                    new FloatMenuOption("CS_Studio_VFX_GlobalFilterTransition_Linear".Translate(), () =>
                     {
                         vfx.globalFilterTransition = "Linear";
                         NotifyAbilityPreviewDirty();
                     }),
-                    new FloatMenuOption("EaseIn", () =>
+                    new FloatMenuOption("CS_Studio_VFX_GlobalFilterTransition_EaseIn".Translate(), () =>
                     {
                         vfx.globalFilterTransition = "EaseIn";
                         NotifyAbilityPreviewDirty();
                     }),
-                    new FloatMenuOption("EaseOut", () =>
+                    new FloatMenuOption("CS_Studio_VFX_GlobalFilterTransition_EaseOut".Translate(), () =>
                     {
                         vfx.globalFilterTransition = "EaseOut";
                         NotifyAbilityPreviewDirty();
@@ -1040,6 +1122,41 @@ namespace CharacterStudio.UI
                 NotifyAbilityPreviewDirty(true);
             }));
 
+            // Fleck 特效
+            options.Add(new FloatMenuOption(GetVfxCategoryLabel(AbilityVisualEffectType.Fleck), () =>
+            {
+                var vfx = new AbilityVisualEffectConfig
+                {
+                    type = AbilityVisualEffectType.Fleck,
+                    target = VisualEffectTarget.Target,
+                    trigger = AbilityVisualEffectTrigger.OnTargetApply,
+                    delayTicks = 0,
+                    scale = 1f,
+                    textureSource = AbilityVisualEffectTextureSource.Vanilla
+                };
+                vfx.SyncLegacyFields();
+                selectedAbility?.visualEffects.Add(vfx);
+                NotifyAbilityPreviewDirty(true);
+            }));
+
+            // Fleck 连接线
+            options.Add(new FloatMenuOption(GetVfxCategoryLabel(AbilityVisualEffectType.FleckConnectingLine), () =>
+            {
+                var vfx = new AbilityVisualEffectConfig
+                {
+                    type = AbilityVisualEffectType.FleckConnectingLine,
+                    target = VisualEffectTarget.Target,
+                    trigger = AbilityVisualEffectTrigger.OnTargetApply,
+                    delayTicks = 0,
+                    scale = 1f,
+                    lineWidth = 0.35f,
+                    textureSource = AbilityVisualEffectTextureSource.Vanilla
+                };
+                vfx.SyncLegacyFields();
+                selectedAbility?.visualEffects.Add(vfx);
+                NotifyAbilityPreviewDirty(true);
+            }));
+
             // 全局滤镜
             options.Add(new FloatMenuOption("CS_Studio_VFX_AddCategory_GlobalFilter".Translate(), () =>
             {
@@ -1094,10 +1211,14 @@ namespace CharacterStudio.UI
         private static string GetVfxCategoryLabel(AbilityVisualEffectType type)
         {
             // 内置特效类型（DustPuff~FlameSurge）统一显示为"预设特效"
+            // Fleck / FleckConnectingLine / CustomMesh 有独立标签
             if (type != AbilityVisualEffectType.CustomTexture
                 && type != AbilityVisualEffectType.LineTexture
                 && type != AbilityVisualEffectType.WallTexture
-                && type != AbilityVisualEffectType.GlobalFilter)
+                && type != AbilityVisualEffectType.GlobalFilter
+                && type != AbilityVisualEffectType.Fleck
+                && type != AbilityVisualEffectType.FleckConnectingLine
+                && type != AbilityVisualEffectType.CustomMesh)
             {
                 return "CS_Studio_VFX_Category_Preset".Translate();
             }
@@ -1222,5 +1343,35 @@ namespace CharacterStudio.UI
             selectedAbility.visualEffects[indexB] = temp;
             NotifyAbilityPreviewDirty(true);
         }
+
+        private void ShowFleckDefSelector(AbilityVisualEffectConfig vfx)
+        {
+            var options = new List<FloatMenuOption>
+            {
+                new FloatMenuOption("CS_Studio_None".Translate(), () =>
+                {
+                    vfx.fleckDefName = string.Empty;
+                    NotifyAbilityPreviewDirty(true);
+                })
+            };
+
+            var sorted = DefDatabase<FleckDef>.AllDefsListForReading
+                .OrderBy(def => def.label ?? def.defName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            foreach (var fleckDef in sorted)
+            {
+                var localDef = fleckDef;
+                string label = (localDef.label ?? localDef.defName) + $" ({localDef.defName})";
+                options.Add(new FloatMenuOption(label, () =>
+                {
+                    vfx.fleckDefName = localDef.defName;
+                    NotifyAbilityPreviewDirty(true);
+                }));
+            }
+
+            Find.WindowStack.Add(new FloatMenu(options));
+        }
     }
 }
+

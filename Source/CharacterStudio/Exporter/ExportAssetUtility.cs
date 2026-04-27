@@ -149,6 +149,50 @@ namespace CharacterStudio.Exporter
 
                     yield return layer.texPath;
                     yield return layer.maskTexPath;
+                    yield return layer.triggeredIdleTexPath;
+                    yield return layer.triggeredDeployTexPath;
+                    yield return layer.triggeredHoldTexPath;
+                    yield return layer.triggeredReturnTexPath;
+                    yield return layer.triggeredIdleMaskTexPath;
+                    yield return layer.triggeredDeployMaskTexPath;
+                    yield return layer.triggeredHoldMaskTexPath;
+                    yield return layer.triggeredReturnMaskTexPath;
+
+                    if (layer.triggeredAnimationSouth != null)
+                    {
+                        yield return layer.triggeredAnimationSouth.triggeredIdleTexPath;
+                        yield return layer.triggeredAnimationSouth.triggeredDeployTexPath;
+                        yield return layer.triggeredAnimationSouth.triggeredHoldTexPath;
+                        yield return layer.triggeredAnimationSouth.triggeredReturnTexPath;
+                        yield return layer.triggeredAnimationSouth.triggeredIdleMaskTexPath;
+                        yield return layer.triggeredAnimationSouth.triggeredDeployMaskTexPath;
+                        yield return layer.triggeredAnimationSouth.triggeredHoldMaskTexPath;
+                        yield return layer.triggeredAnimationSouth.triggeredReturnMaskTexPath;
+                    }
+
+                    if (layer.triggeredAnimationEastWest != null)
+                    {
+                        yield return layer.triggeredAnimationEastWest.triggeredIdleTexPath;
+                        yield return layer.triggeredAnimationEastWest.triggeredDeployTexPath;
+                        yield return layer.triggeredAnimationEastWest.triggeredHoldTexPath;
+                        yield return layer.triggeredAnimationEastWest.triggeredReturnTexPath;
+                        yield return layer.triggeredAnimationEastWest.triggeredIdleMaskTexPath;
+                        yield return layer.triggeredAnimationEastWest.triggeredDeployMaskTexPath;
+                        yield return layer.triggeredAnimationEastWest.triggeredHoldMaskTexPath;
+                        yield return layer.triggeredAnimationEastWest.triggeredReturnMaskTexPath;
+                    }
+
+                    if (layer.triggeredAnimationNorth != null)
+                    {
+                        yield return layer.triggeredAnimationNorth.triggeredIdleTexPath;
+                        yield return layer.triggeredAnimationNorth.triggeredDeployTexPath;
+                        yield return layer.triggeredAnimationNorth.triggeredHoldTexPath;
+                        yield return layer.triggeredAnimationNorth.triggeredReturnTexPath;
+                        yield return layer.triggeredAnimationNorth.triggeredIdleMaskTexPath;
+                        yield return layer.triggeredAnimationNorth.triggeredDeployMaskTexPath;
+                        yield return layer.triggeredAnimationNorth.triggeredHoldMaskTexPath;
+                        yield return layer.triggeredAnimationNorth.triggeredReturnMaskTexPath;
+                    }
                 }
             }
 
@@ -163,70 +207,6 @@ namespace CharacterStudio.Exporter
 
                     yield return slot.texPath;
                     yield return slot.maskTexPath;
-                }
-            }
-
-            if (skinDef.equipments != null)
-            {
-                foreach (var equipment in skinDef.equipments)
-                {
-                    if (equipment == null)
-                    {
-                        continue;
-                    }
-
-                    equipment.EnsureDefaults();
-
-                    yield return equipment.previewTexPath;
-                    yield return equipment.worldTexPath;
-                    yield return equipment.wornTexPath;
-                    yield return equipment.maskTexPath;
-                    yield return equipment.renderData?.texPath;
-                    yield return equipment.renderData?.maskTexPath;
-                    yield return equipment.renderData?.triggeredIdleTexPath;
-                    yield return equipment.renderData?.triggeredDeployTexPath;
-                    yield return equipment.renderData?.triggeredHoldTexPath;
-                    yield return equipment.renderData?.triggeredReturnTexPath;
-                    yield return equipment.renderData?.triggeredIdleMaskTexPath;
-                    yield return equipment.renderData?.triggeredDeployMaskTexPath;
-                    yield return equipment.renderData?.triggeredHoldMaskTexPath;
-                    yield return equipment.renderData?.triggeredReturnMaskTexPath;
-
-                    if (equipment.renderData?.triggeredAnimationSouth != null)
-                    {
-                        yield return equipment.renderData.triggeredAnimationSouth.triggeredIdleTexPath;
-                        yield return equipment.renderData.triggeredAnimationSouth.triggeredDeployTexPath;
-                        yield return equipment.renderData.triggeredAnimationSouth.triggeredHoldTexPath;
-                        yield return equipment.renderData.triggeredAnimationSouth.triggeredReturnTexPath;
-                        yield return equipment.renderData.triggeredAnimationSouth.triggeredIdleMaskTexPath;
-                        yield return equipment.renderData.triggeredAnimationSouth.triggeredDeployMaskTexPath;
-                        yield return equipment.renderData.triggeredAnimationSouth.triggeredHoldMaskTexPath;
-                        yield return equipment.renderData.triggeredAnimationSouth.triggeredReturnMaskTexPath;
-                    }
-
-                    if (equipment.renderData?.triggeredAnimationEastWest != null)
-                    {
-                        yield return equipment.renderData.triggeredAnimationEastWest.triggeredIdleTexPath;
-                        yield return equipment.renderData.triggeredAnimationEastWest.triggeredDeployTexPath;
-                        yield return equipment.renderData.triggeredAnimationEastWest.triggeredHoldTexPath;
-                        yield return equipment.renderData.triggeredAnimationEastWest.triggeredReturnTexPath;
-                        yield return equipment.renderData.triggeredAnimationEastWest.triggeredIdleMaskTexPath;
-                        yield return equipment.renderData.triggeredAnimationEastWest.triggeredDeployMaskTexPath;
-                        yield return equipment.renderData.triggeredAnimationEastWest.triggeredHoldMaskTexPath;
-                        yield return equipment.renderData.triggeredAnimationEastWest.triggeredReturnMaskTexPath;
-                    }
-
-                    if (equipment.renderData?.triggeredAnimationNorth != null)
-                    {
-                        yield return equipment.renderData.triggeredAnimationNorth.triggeredIdleTexPath;
-                        yield return equipment.renderData.triggeredAnimationNorth.triggeredDeployTexPath;
-                        yield return equipment.renderData.triggeredAnimationNorth.triggeredHoldTexPath;
-                        yield return equipment.renderData.triggeredAnimationNorth.triggeredReturnTexPath;
-                        yield return equipment.renderData.triggeredAnimationNorth.triggeredIdleMaskTexPath;
-                        yield return equipment.renderData.triggeredAnimationNorth.triggeredDeployMaskTexPath;
-                        yield return equipment.renderData.triggeredAnimationNorth.triggeredHoldMaskTexPath;
-                        yield return equipment.renderData.triggeredAnimationNorth.triggeredReturnMaskTexPath;
-                    }
                 }
             }
 
@@ -261,6 +241,9 @@ namespace CharacterStudio.Exporter
                     if (part != null)
                     {
                         yield return part.texPath;
+                        yield return part.texPathSouth;
+                        yield return part.texPathEast;
+                        yield return part.texPathNorth;
                     }
                 }
             }

@@ -21,7 +21,9 @@ namespace CharacterStudio.Patches
             typeof(PawnSkinBootstrapComponent),
             typeof(AbilityHotkeyRuntimeComponent),
             typeof(AbilityTimeStopRuntimeController),
-            typeof(CharacterRuntimeTriggerComponent)
+            typeof(CharacterRuntimeTriggerComponent),
+            typeof(VfxCustomMeshGameComponent),
+            typeof(BezierCurveWallGameComponent)
         };
 
         public static void Apply(Harmony harmony)

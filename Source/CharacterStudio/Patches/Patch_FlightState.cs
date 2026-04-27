@@ -51,7 +51,7 @@ namespace CharacterStudio.Patches
             TryPatch(harmony, typeof(Pawn_PathFollower), "PawnCanOccupy", null, null, typeof(AnywhereOccupiable));
 
             // ─── 战斗：免疫地面近战 ───
-            TryPatch(harmony, typeof(Verb_MeleeAttack), "CanHitTargetFrom", null, typeof(BlockMeleePatch), null);
+            TryPatch(harmony, typeof(Verb), "CanHitTargetFrom", new[] { typeof(IntVec3), typeof(LocalTargetInfo) }, typeof(BlockMeleePatch), null);
         }
 
         private static void TryPatch(Harmony harmony, Type targetType, string methodName,
@@ -208,6 +208,11 @@ namespace CharacterStudio.Patches
         {
             public static bool Prefix(Verb __instance, LocalTargetInfo targ, ref bool __result)
             {
+                if (__instance is not Verb_MeleeAttack)
+                {
+                    return true;
+                }
+
                 if (targ.Thing is Pawn target && IsAirborne(target))
                 {
                     var comp = target.GetComp<CompCharacterAbilityRuntime>();

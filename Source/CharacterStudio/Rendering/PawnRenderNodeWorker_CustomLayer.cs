@@ -21,13 +21,23 @@ namespace CharacterStudio.Rendering
     ///   .Variant.cs      — 变体后缀 / 表情变体 / 帧序列
     ///   .Graphic.cs      — Graphic 获取 / 颜色 / 材质属性 / 缓存
     /// </summary>
+    [StaticConstructorOnStartup]
     public partial class PawnRenderNodeWorker_CustomLayer : PawnRenderNodeWorker
     {
+        static PawnRenderNodeWorker_CustomLayer()
+        {
+            _cachedTransparentPostLight ??= ShaderDatabase.LoadShader("TransparentPostLight");
+            _cachedItemTransparent ??= ShaderDatabase.LoadShader("ItemTransparent");
+        }
+
         private static readonly Dictionary<string, Graphic> externalGraphicCache
             = new Dictionary<string, Graphic>(StringComparer.Ordinal);
         // P-PERF: Queue 跟踪插入顺序，确保 FIFO 淘汰可靠性（Dictionary.Keys 顺序不保证）
         private static readonly Queue<string> externalGraphicEvictionQueue = new Queue<string>();
         private const int MaxExternalGraphicCacheSize = 2048;
+
+        // P10: O(1) texture-in-use check；使用引用计数避免多个 Graphic 共享同一 Texture 时误移除
+        private static readonly Dictionary<int, int> _externalGraphicTextureRefCounts = new Dictionary<int, int>();
 
         // 避免在每帧重复打印同一节点的缩放回退日志
         private static readonly System.Collections.Generic.HashSet<int> _loggedScaleFallbackNodes = new System.Collections.Generic.HashSet<int>();
@@ -39,6 +49,7 @@ namespace CharacterStudio.Rendering
         // P4: 缓存 Shader.PropertyToID 结果（避免每帧字符串哈希查找）
         private static readonly int CachedColorTwoID = Shader.PropertyToID("_ColorTwo");
         private static readonly int CachedMainTexSTID = Shader.PropertyToID("_MainTex_ST");
+        private static readonly int CachedZWriteID = Shader.PropertyToID("_ZWrite");
 
         // P6: ContentFinder 图形类型探测结果缓存（避免重复资源查找）
         private static readonly Dictionary<string, Type> graphicTypeProbeCache = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
@@ -63,6 +74,17 @@ namespace CharacterStudio.Rendering
         private const float ProgrammaticFaceFadeOutStep = 0.08f;
         private const float ProgrammaticFaceAlphaSnapThreshold = 0.01f;
         private const int MaxTextureExistsCacheSize = 4096;
+
+        /// <summary>
+        /// 检查指定纹理是否仍被 externalGraphicCache 中的 Graphic 引用。
+        /// 供 RuntimeAssetLoader LRU 淘汰时使用，避免销毁仍在渲染的纹理。
+        /// P10: O(1) 引用计数查找替代 O(n) 遍历 + MatAt() 调用。
+        /// </summary>
+        public static bool IsTextureInExternalGraphicCache(Texture2D texture)
+        {
+            if (texture == null) return false;
+            return _externalGraphicTextureRefCounts.TryGetValue(texture.GetInstanceID(), out int count) && count > 0;
+        }
 
         // P3: _lastTextureResolveCachedSkinComp 线程本地缓存
         [ThreadStatic]
@@ -266,7 +288,7 @@ namespace CharacterStudio.Rendering
 
             // 根据朝向应用额外的方向特定偏移
             Rot4 facing = parms.facing;
-CompPawnSkin? skinComp = (node is PawnRenderNode_Custom cn) ? cn.GetCachedSkinComp() : parms.pawn?.TryGetComp<CompPawnSkin>();
+            CompPawnSkin? skinComp = (node is PawnRenderNode_Custom cn) ? cn.GetCachedSkinComp() : parms.pawn?.TryGetComp<CompPawnSkin>();
 // 注意：飞行高度偏移现在由 Patch_PawnRenderer 在 GetBodyDrawPos 中全局处理。
 // 不再在这里重复累加，否则自定义图层会产生双倍偏移。
 /*
@@ -278,9 +300,13 @@ if (skinComp != null && skinComp.IsFlightStateActive())
 }
 */
 
-// 根据朝向应用额外的方向特定偏移
+// 当 skin 级别的 editLayerOffsetPerFacing 关闭时，忽略所有朝向特定偏移，
+            // 只使用 base offset（已在 base.OffsetFor 中通过 config.offset 应用）。
+            bool usePerFacingOffsets = skinComp?.ActiveSkin?.editLayerOffsetPerFacing ?? false;
+
+            // 根据朝向应用额外的方向特定偏移
             // 侧面朝向（East或West）应用 offsetEast
-            if (facing == Rot4.East || facing == Rot4.West)
+            if (usePerFacingOffsets && (facing == Rot4.East || facing == Rot4.West))
             {
                 Vector3 eastOffset = Vector3.zero;
                 bool hasEastOffset = false;
@@ -320,7 +346,7 @@ if (skinComp != null && skinComp.IsFlightStateActive())
                 }
             }
             // 北面朝向应用 offsetNorth
-            else if (facing == Rot4.North)
+            else if (usePerFacingOffsets && facing == Rot4.North)
             {
                 Vector3 northOffset = Vector3.zero;
                 bool hasNorthOffset = false;

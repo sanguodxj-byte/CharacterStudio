@@ -513,6 +513,7 @@ namespace CharacterStudio.UI
                 new FloatMenuOption("CS_Studio_None".Translate(), () =>
                 {
                     effect.summonFactionDef = null;
+                    effect.summonFactionDefName = string.Empty;
                     NotifyAbilityPreviewDirty(true);
                 })
             };
@@ -524,6 +525,7 @@ namespace CharacterStudio.UI
                 options.Add(new FloatMenuOption(label, () =>
                 {
                     effect.summonFactionDef = localDef;
+                    effect.summonFactionDefName = localDef.defName;
                     NotifyAbilityPreviewDirty(true);
                 }));
             }
@@ -572,7 +574,9 @@ namespace CharacterStudio.UI
             effect.hediffDef = null;
             effect.summonKind = null;
             effect.summonCount = 1;
+            effect.summonFactionType = SummonFactionType.Player;
             effect.summonFactionDef = null;
+            effect.summonFactionDefName = string.Empty;
             effect.controlMode = ControlEffectMode.Stun;
             effect.controlMoveDistance = 3;
             effect.terraformMode = TerraformEffectMode.CleanFilth;
@@ -589,7 +593,9 @@ namespace CharacterStudio.UI
             effect.hediffDef = defaults.hediffDef;
             effect.summonKind = defaults.summonKind;
             effect.summonCount = defaults.summonCount;
+            effect.summonFactionType = defaults.summonFactionType;
             effect.summonFactionDef = defaults.summonFactionDef;
+            effect.summonFactionDefName = defaults.summonFactionDefName;
             effect.controlMode = defaults.controlMode;
             effect.controlMoveDistance = defaults.controlMoveDistance;
             effect.terraformMode = defaults.terraformMode;

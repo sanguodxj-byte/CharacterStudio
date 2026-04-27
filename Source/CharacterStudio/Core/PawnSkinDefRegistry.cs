@@ -122,11 +122,6 @@ namespace CharacterStudio.Core
 
                 // 导出模组的 PawnSkinDef 通过 RimWorld 标准 DefDatabase 加载时，
                 // abilityHotkeys.slotBindings（Dictionary<string,string>）无法被 DirectXmlToObject 正确反序列化，
-                // 导致 hotkeys.enabled=false 或 slotBindings 为空。
-                // 自定义 Gizmo 的显示依赖 EnumerateVisibleAbilitySlots → hotkeys.enabled && HasAnyBinding()，
-                // 所以这里需要自动补齐。
-                EnsureDefaultHotkeyBindings(def);
-
                 runtimeDefsByName[def.defName] = def;
                 count++;
             }
@@ -137,38 +132,6 @@ namespace CharacterStudio.Core
             }
 
             return count;
-        }
-
-        /// <summary>
-        /// 为含 abilities 但缺少有效热键配置的 PawnSkinDef 自动分配默认热键绑定。
-        /// 按 Q/W/E/R/T/A/S/D/F/Z/X/C/V 顺序将技能映射到槽位。
-        /// </summary>
-        private static void EnsureDefaultHotkeyBindings(PawnSkinDef def)
-        {
-            if (def.abilities == null || def.abilities.Count == 0)
-                return;
-
-            // 如果 hotkeys 已经有有效绑定，不需要覆盖
-            if (def.abilityHotkeys != null && def.abilityHotkeys.enabled && def.abilityHotkeys.HasAnyBinding())
-                return;
-
-            def.abilityHotkeys ??= new SkinAbilityHotkeyConfig();
-            def.abilityHotkeys.enabled = true;
-
-            // 收集有效技能 defName，按原始顺序
-            var validAbilities = def.abilities
-                .Where(a => a != null && !string.IsNullOrWhiteSpace(a.defName))
-                .ToList();
-
-            if (validAbilities.Count == 0)
-                return;
-
-            // 按 Q/W/E/R/T/A/S/D/F/Z/X/C/V 顺序分配
-            string[] slotKeys = { "Q", "W", "E", "R", "T", "A", "S", "D", "F", "Z", "X", "C", "V" };
-            for (int i = 0; i < validAbilities.Count && i < slotKeys.Length; i++)
-            {
-                def.abilityHotkeys[slotKeys[i]] = validAbilities[i].defName!;
-            }
         }
 
         public static int LoadFromConfig()
@@ -240,6 +203,16 @@ namespace CharacterStudio.Core
             return Path.Combine(GenFilePaths.ConfigFolderPath, "CharacterStudio", "Skins");
         }
 
+        public static PawnSkinDef? LoadFromXml(string filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            {
+                return null;
+            }
+
+            return LoadSkinDefFromFile(filePath);
+        }
+
         private static PawnSkinDef? LoadSkinDefFromFile(string file)
         {
             try
@@ -271,7 +244,8 @@ namespace CharacterStudio.Core
                     return null;
                 }
 
-                var def = DirectXmlToObject.ObjectFromXml<PawnSkinDef>(defNode, true);
+                XmlNode parseNode = PrepareLegacyCompatibleDefNode(defNode);
+                var def = DirectXmlToObject.ObjectFromXml<PawnSkinDef>(parseNode, true);
                 if (def == null)
                 {
                     LogSkinXmlWarningOnce(file, $"[CharacterStudio] 皮肤 XML 解析结果为空，已跳过: {file}");
@@ -279,8 +253,6 @@ namespace CharacterStudio.Core
                 }
 
                 RestoreStatModifiersFromXml(defNode, def);
-                RestoreAbilitiesFromXml(defNode, def);
-                RestoreAbilityHotkeysFromXml(defNode, def);
                 EnsureDefIdentity(def);
                 return def;
             }
@@ -289,6 +261,18 @@ namespace CharacterStudio.Core
                 LogSkinXmlWarningOnce(file, $"[CharacterStudio] 解析皮肤 XML 失败，已跳过: {file}, {ex.Message}");
                 return null;
             }
+        }
+
+        private static XmlNode PrepareLegacyCompatibleDefNode(XmlNode defNode)
+        {
+            XmlNode clonedNode = defNode.CloneNode(deep: true);
+            XmlNode? legacyHotkeysNode = clonedNode.SelectSingleNode("abilityHotkeys");
+            if (legacyHotkeysNode != null)
+            {
+                legacyHotkeysNode.ParentNode?.RemoveChild(legacyHotkeysNode);
+            }
+
+            return clonedNode;
         }
 
         private static void LogSkinXmlWarningOnce(string filePath, string message)
@@ -363,220 +347,6 @@ namespace CharacterStudio.Core
             def.statModifiers = parsedProfile;
         }
 
-        /// <summary>
-        /// 从皮肤 XML 节点手动恢复技能列表。
-        /// DirectXmlToObject 对嵌套 ModularAbilityDef（继承 Def）的子对象
-        /// 反序列化不完整，需要手动解析并解析 Def 引用。
-        /// </summary>
-        private static void RestoreAbilitiesFromXml(XmlNode defNode, PawnSkinDef def)
-        {
-            if (defNode == null || def == null)
-            {
-                return;
-            }
-
-            XmlNode? abilitiesNode = defNode.SelectSingleNode("abilities");
-            if (abilitiesNode == null)
-            {
-                def.abilities ??= new List<ModularAbilityDef>();
-                return;
-            }
-
-            var restored = new List<ModularAbilityDef>();
-            foreach (XmlNode child in abilitiesNode.ChildNodes)
-            {
-                if (child.NodeType != XmlNodeType.Element)
-                {
-                    continue;
-                }
-
-                if (!string.Equals(child.Name, "li", StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                try
-                {
-                    var ability = DirectXmlToObject.ObjectFromXml<ModularAbilityDef>(child, true);
-                    if (ability != null)
-                    {
-                        ResolveAbilityDefReferences(ability, child);
-                        if (string.IsNullOrWhiteSpace(ability.defName))
-                        {
-                            ability.defName = $"CS_RestoredAbility_{restored.Count}";
-                        }
-
-                        if (string.IsNullOrWhiteSpace(ability.label))
-                        {
-                            ability.label = ability.defName;
-                        }
-
-                        // 注册到 DefDatabase，以便 WarmupAllRuntimeAbilityDefs 能预热运行时 AbilityDef，
-                        // 以及存档加载时 RehydrateAbilities 能通过 DefDatabase 查找恢复。
-                        RegisterOrReplaceAbilityDef(ability);
-
-                        restored.Add(ability);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    LogSkinXmlWarningOnce("(abilities)", $"[CharacterStudio] 恢复技能数据失败: {ex.Message}");
-                }
-            }
-
-            def.abilities = restored;
-        }
-
-        /// <summary>
-        /// 将 ModularAbilityDef 注册到 DefDatabase。
-        /// 如果已存在同名 def 则跳过（保持首次注册的版本），
-        /// 否则调用 Add 注册新 def。
-        /// 这确保 WarmupAllRuntimeAbilityDefs 能预热运行时 AbilityDef，
-        /// 以及存档加载时 RehydrateAbilities 能通过 DefDatabase 查找恢复。
-        /// </summary>
-        private static void RegisterOrReplaceAbilityDef(ModularAbilityDef def)
-        {
-            if (def == null || string.IsNullOrWhiteSpace(def.defName))
-                return;
-
-            try
-            {
-                if (DefDatabase<ModularAbilityDef>.GetNamedSilentFail(def.defName) != null)
-                    return;
-
-                DefDatabase<ModularAbilityDef>.Add(def);
-            }
-            catch (Exception ex)
-            {
-                Log.Warning($"[CharacterStudio] 注册 ModularAbilityDef [{def.defName}] 到 DefDatabase 失败: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// 手动解析技能 XML 节点中的 Def 引用，确保 ThingDef / DamageDef 等在运行时可用。
-        /// </summary>
-        private static void ResolveAbilityDefReferences(ModularAbilityDef ability, XmlNode abilityNode)
-        {
-            // 顶层 projectileDef
-            string? projectileDefName = abilityNode.SelectSingleNode("projectileDef")?.InnerText?.Trim();
-            ability.projectileDef = !string.IsNullOrWhiteSpace(projectileDefName)
-                ? DefDatabase<ThingDef>.GetNamedSilentFail(projectileDefName)
-                : null;
-
-            // 效果列表中的 Def 引用
-            if (ability.effects != null)
-            {
-                XmlNode? effectsNode = abilityNode.SelectSingleNode("effects");
-                XmlNodeList? effectNodes = effectsNode?.SelectNodes("li");
-                if (effectNodes != null)
-                {
-                    for (int i = 0; i < effectNodes.Count && i < ability.effects.Count; i++)
-                    {
-                        ResolveEffectDefReferences(ability.effects[i], effectNodes[i]);
-                    }
-                }
-            }
-
-            // 视觉特效：归一化遗留数据
-            if (ability.visualEffects != null)
-            {
-                foreach (var vfx in ability.visualEffects)
-                {
-                    vfx?.NormalizeLegacyData();
-                    vfx?.SyncLegacyFields();
-                }
-            }
-
-            // 运行时组件中的 Def 引用
-            if (ability.runtimeComponents != null)
-            {
-                XmlNode? rcNode = abilityNode.SelectSingleNode("runtimeComponents");
-                XmlNodeList? rcNodes = rcNode?.SelectNodes("li");
-                if (rcNodes != null)
-                {
-                    for (int i = 0; i < rcNodes.Count && i < ability.runtimeComponents.Count; i++)
-                    {
-                        ResolveRuntimeComponentDefReferences(ability.runtimeComponents[i], rcNodes[i]);
-                    }
-                }
-            }
-        }
-
-        private static void ResolveEffectDefReferences(AbilityEffectConfig? effect, XmlNode? effectNode)
-        {
-            if (effect == null || effectNode == null)
-            {
-                return;
-            }
-
-            effect.damageDef = ResolveDef<DamageDef>(effectNode, "damageDef");
-            effect.hediffDef = ResolveDef<HediffDef>(effectNode, "hediffDef");
-            effect.summonKind = ResolveDef<PawnKindDef>(effectNode, "summonKind");
-            effect.summonFactionDef = ResolveDef<FactionDef>(effectNode, "summonFactionDef");
-            effect.terraformThingDef = ResolveDef<ThingDef>(effectNode, "terraformThingDef");
-            effect.terraformTerrainDef = ResolveDef<TerrainDef>(effectNode, "terraformTerrainDef");
-        }
-
-        private static void ResolveRuntimeComponentDefReferences(AbilityRuntimeComponentConfig? component, XmlNode? componentNode)
-        {
-            if (component == null || componentNode == null)
-            {
-                return;
-            }
-
-            component.waveDamageDef = ResolveDef<DamageDef>(componentNode, "waveDamageDef");
-            component.markDamageDef = ResolveDef<DamageDef>(componentNode, "markDamageDef");
-            component.landingBurstDamageDef = ResolveDef<DamageDef>(componentNode, "landingBurstDamageDef");
-        }
-
-        /// <summary>
-        /// 从 XML 子节点按名称查找 defName 文本，再从 DefDatabase 获取对应 Def。
-        /// 找不到或为空时返回 null。
-        /// </summary>
-        private static T? ResolveDef<T>(XmlNode parentNode, string elementName) where T : Def, new()
-        {
-            string? defName = parentNode.SelectSingleNode(elementName)?.InnerText?.Trim();
-            return !string.IsNullOrWhiteSpace(defName)
-                ? DefDatabase<T>.GetNamedSilentFail(defName)
-                : null;
-        }
-
-        /// <summary>
-        /// 从皮肤 XML 节点手动恢复热键配置。
-        /// SkinAbilityHotkeyConfig.slotBindings 使用动态键名（如 qAbilityDefName），
-        /// DirectXmlToObject 无法将其映射回 Dictionary，因此需要手动解析。
-        /// </summary>
-        private static void RestoreAbilityHotkeysFromXml(XmlNode defNode, PawnSkinDef def)
-        {
-            if (defNode == null || def == null)
-            {
-                return;
-            }
-
-            XmlNode? hotkeysNode = defNode.SelectSingleNode("abilityHotkeys");
-            if (hotkeysNode == null)
-            {
-                def.abilityHotkeys ??= new SkinAbilityHotkeyConfig();
-                return;
-            }
-
-            var config = new SkinAbilityHotkeyConfig();
-
-            string enabledText = hotkeysNode.SelectSingleNode("enabled")?.InnerText?.Trim() ?? "false";
-            config.enabled = bool.TryParse(enabledText, out bool enabled) && enabled;
-
-            foreach (string slotKey in new[] { "Q", "W", "E", "R", "T", "A", "S", "D", "F", "Z", "X", "C", "V" })
-            {
-                string elementName = slotKey.ToLowerInvariant() + "AbilityDefName";
-                string? rawValue = hotkeysNode.SelectSingleNode(elementName)?.InnerText?.Trim();
-                if (!string.IsNullOrWhiteSpace(rawValue))
-                {
-                    config[slotKey] = rawValue!;
-                }
-            }
-
-            def.abilityHotkeys = config;
-        }
 
         /// <summary>
         /// 将 source 的内容覆写到 target，保留 target 的 defName / defNameHash / modContentPack。
@@ -606,23 +376,23 @@ namespace CharacterStudio.Core
             target.version          = cloned.version;
             target.previewTexPath   = cloned.previewTexPath;
             target.globalTextureScale = cloned.globalTextureScale;
+            target.editLayerOffsetPerFacing = cloned.editLayerOffsetPerFacing;
+            target.previewHeadOffsetZ = cloned.previewHeadOffsetZ;
             target.attributes       = cloned.attributes;
             target.statModifiers    = cloned.statModifiers;
-            target.abilityHotkeys   = cloned.abilityHotkeys;
             target.faceConfig       = cloned.faceConfig;
             target.baseAppearance   = cloned.baseAppearance;
             target.animationConfig  = cloned.animationConfig ?? new PawnAnimationConfig();
             target.xenotypeDefName  = cloned.xenotypeDefName;
             target.raceDisplayName  = cloned.raceDisplayName;
 
-            target.equipments.Clear();
-            target.equipments.AddRange(cloned.equipments);
-
-            target.abilities.Clear();
-            target.abilities.AddRange(cloned.abilities);
-
             target.layers.Clear();
             target.layers.AddRange(cloned.layers);
+
+            target.expressions.Clear();
+            target.expressions.AddRange(cloned.expressions);
+
+            target.eyeDirection = cloned.eyeDirection;
 
             target.targetRaces.Clear();
             target.targetRaces.AddRange(cloned.targetRaces);

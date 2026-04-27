@@ -4,6 +4,7 @@ using UnityEngine;
 using Verse;
 using CharacterStudio.Core;
 using CharacterStudio.Abilities;
+using CharacterStudio.Performance;
 using System.Linq;
 using System.Collections.Generic;
 
@@ -23,6 +24,35 @@ namespace CharacterStudio.Rendering
                 return null;
 
             CompPawnSkin? skinComp = customNode.GetCachedSkinComp();
+            if (skinComp != null)
+            {
+                var pathCacheKey = new CompPawnSkin.FacePathCacheKey(
+                    customNode.layeredFacePartType.Value,
+                    customNode.layeredFacePartSide,
+                    customNode.layeredOverlayId,
+                    facing,
+                    skinComp.FaceGraphicVersion);
+                if (skinComp.TryGetCachedFacePath(pathCacheKey, out var cachedPath))
+                {
+                    CharacterStudioPerformanceStats.RecordFacePathCacheLookup(hit: true);
+                    return cachedPath.hasPath ? cachedPath.path : null;
+                }
+
+                CharacterStudioPerformanceStats.RecordFacePathCacheLookup(hit: false);
+                string? resolvedCachedPath = ResolveLayeredFacePartBasePathUncached(customNode, pawn, facing, skinComp);
+                skinComp.SetCachedFacePath(pathCacheKey, new CompPawnSkin.FacePathCacheEntry(resolvedCachedPath));
+                return resolvedCachedPath;
+            }
+
+            return ResolveLayeredFacePartBasePathUncached(customNode, pawn, facing, null);
+        }
+
+        private string? ResolveLayeredFacePartBasePathUncached(PawnRenderNode_Custom customNode, Pawn? pawn, Rot4 facing, CompPawnSkin? cachedSkinComp)
+        {
+            if (!customNode.layeredFacePartType.HasValue || pawn == null)
+                return null;
+
+            CompPawnSkin? skinComp = cachedSkinComp ?? customNode.GetCachedSkinComp();
             PawnFaceConfig? faceConfig = skinComp?.ActiveSkin?.faceConfig;
             FaceRuntimeCompiledData? compiledData = skinComp?.CurrentFaceRuntimeCompiledData;
             FaceRenderTrack currentTrack = skinComp?.CurrentFaceRuntimeState.currentTrack ?? FaceRenderTrack.World;
@@ -479,7 +509,7 @@ namespace CharacterStudio.Rendering
             PawnLayerConfig? config,
             CompPawnSkin skinComp)
         {
-            var results = new List<string>();
+            var results = new List<string>(8);
 
             EyeDirection eyeDirection = skinComp.CurEyeDirection;
             switch (eyeDirection)
@@ -522,7 +552,7 @@ namespace CharacterStudio.Rendering
             PawnLayerConfig? config,
             CompPawnSkin skinComp)
         {
-            var results = new List<string>();
+            var results = new List<string>(8);
 
             LayerRole role = config?.role ?? LayerRole.Decoration;
             string? channelState = skinComp.GetChannelStateSuffix(role);

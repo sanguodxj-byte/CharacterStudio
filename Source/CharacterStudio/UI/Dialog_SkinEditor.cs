@@ -37,6 +37,7 @@ namespace CharacterStudio.UI
         private CharacterDesignDocument workingDocument;
         private PawnSkinDef workingSkin;
         private List<ModularAbilityDef> workingAbilities = new List<ModularAbilityDef>();
+        private List<CharacterEquipmentDef>? WorkingEquipments;
         private CharacterRenderFixPatch? workingRenderFixPatch;
         private bool layerModificationWorkflowActive = false;
         private readonly SkinEditorSession session = new SkinEditorSession();
@@ -144,10 +145,11 @@ namespace CharacterStudio.UI
         private readonly Dictionary<string, string> overlayFollowTargetCache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private WeaponCarryVisualState previewWeaponCarryState = WeaponCarryVisualState.Undrafted;
  
-        private enum EditorTab { BaseAppearance, Layers, Face, Attributes, Animation, Items }
+        private enum EditorTab { BaseAppearance, Layers, Face, Attributes, Animation, Items, Equipment }
         private EditorTab currentTab = EditorTab.BaseAppearance;
         private string statusMessage = "";
         private float statusMessageTime = 0f;
+        private bool IsEquipmentOrItemsTab => currentTab == EditorTab.Equipment || currentTab == EditorTab.Items;
         private bool suspendHeavyPreviewWork = false;
         private bool pendingFacePreviewRefresh = false;
         private float nextFacePreviewRefreshRealtime = 0f;
@@ -693,5 +695,10 @@ namespace CharacterStudio.UI
         // 其余职责由各 partial 文件承载
         // ─────────────────────────────────────────────
 
+        private void OpenAbilityEditor()
+        {
+            SyncAbilitiesToSkin();
+            Find.WindowStack.Add(new Dialog_AbilityEditor(workingAbilities));
+        }
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using CharacterStudio.Abilities;
 using RimWorld;
 using Verse;
 
@@ -20,6 +21,8 @@ namespace CharacterStudio.Core
             ApplyTraits(pawn, definition);
             ApplySkills(pawn, definition);
             ApplyStartingApparel(pawn, definition);
+            ApplyAbilityLoadout(pawn, definition);
+            ApplyEquipments(pawn, definition);
         }
 
         private static void ApplyBasicIdentity(Pawn pawn, CharacterDefinition definition)
@@ -182,6 +185,71 @@ namespace CharacterStudio.Core
                 if (ThingMaker.MakeThing(apparelDef) is Apparel apparel)
                 {
                     pawn.apparel.Wear(apparel, dropReplacedApparel: false, locked: false);
+                }
+            }
+        }
+
+        private static void ApplyAbilityLoadout(Pawn pawn, CharacterDefinition definition)
+        {
+            CharacterAbilityLoadout? loadout = definition.abilityLoadout;
+            if (loadout == null)
+            {
+                AbilityLoadoutRuntimeUtility.ClearExplicitLoadout(pawn);
+                return;
+            }
+
+            AbilityLoadoutRuntimeUtility.ApplyExplicitLoadout(pawn, loadout);
+        }
+
+        private static void ApplyEquipments(Pawn pawn, CharacterDefinition definition)
+        {
+            List<CharacterEquipmentDef> equipments = definition.equipments ?? new List<CharacterEquipmentDef>();
+            if (equipments.Count == 0)
+            {
+                return;
+            }
+
+            foreach (CharacterEquipmentDef equipment in equipments)
+            {
+                if (equipment == null || !equipment.enabled)
+                {
+                    continue;
+                }
+
+                equipment.EnsureDefaults();
+                string resolvedThingDefName = equipment.GetResolvedThingDefName();
+                if (string.IsNullOrWhiteSpace(resolvedThingDefName))
+                {
+                    continue;
+                }
+
+                ThingDef? thingDef = DefDatabase<ThingDef>.GetNamedSilentFail(resolvedThingDefName);
+                if (thingDef == null)
+                {
+                    continue;
+                }
+
+                switch (equipment.itemType)
+                {
+                    case EquipmentType.Apparel:
+                        if (pawn.apparel != null && typeof(Apparel).IsAssignableFrom(thingDef.thingClass) && ThingMaker.MakeThing(thingDef) is Apparel apparel)
+                        {
+                            pawn.apparel.Wear(apparel, dropReplacedApparel: false, locked: false);
+                        }
+                        break;
+                    case EquipmentType.WeaponMelee:
+                    case EquipmentType.WeaponRanged:
+                        if (pawn.equipment != null && typeof(ThingWithComps).IsAssignableFrom(thingDef.thingClass) && ThingMaker.MakeThing(thingDef) is ThingWithComps weapon)
+                        {
+                            pawn.equipment.AddEquipment(weapon);
+                        }
+                        break;
+                    case EquipmentType.Item:
+                        if (pawn.inventory != null && ThingMaker.MakeThing(thingDef) is Thing item)
+                        {
+                            pawn.inventory.innerContainer.TryAdd(item);
+                        }
+                        break;
                 }
             }
         }

@@ -85,7 +85,7 @@
     <CS_Studio_Anim_Twitch>Random Twitch</CS_Studio_Anim_Twitch>
     <CS_Studio_Anim_Type>Type</CS_Studio_Anim_Type>
     <CS_Studio_Author>Author</CS_Studio_Author>
-    <CS_Studio_Btn_Apply>Apply</CS_Studio_Btn_Apply>
+    <CS_Studio_Btn_Apply>Internalize Textures</CS_Studio_Btn_Apply>
     <CS_Studio_Btn_Cancel>Cancel</CS_Studio_Btn_Cancel>
     <CS_Studio_Btn_ClearShort>Clear</CS_Studio_Btn_ClearShort>
     <CS_Studio_Btn_ContinueExport>Export Anyway</CS_Studio_Btn_ContinueExport>
@@ -211,6 +211,7 @@
     <CS_Studio_SpawnedNewPawnLetter>Character generated: {0}</CS_Studio_SpawnedNewPawnLetter>
     <CS_Studio_SpawnedNewPawnMessage>Generated character from current design: {0}</CS_Studio_SpawnedNewPawnMessage>
     <CS_Studio_SpawnNewPawnConfirm>Generate</CS_Studio_SpawnNewPawnConfirm>
+    <CS_Studio_SpawnUseTriggerConfirm>Generate via Trigger</CS_Studio_SpawnUseTriggerConfirm>
     <CS_Studio_SpawnNewPawnSection>Character Generation</CS_Studio_SpawnNewPawnSection>
     <CS_Studio_SpawnNewPawnTitle>Generate Character</CS_Studio_SpawnNewPawnTitle>
     <CS_Studio_SpawnEvent_MessageText>Event Text</CS_Studio_SpawnEvent_MessageText>
@@ -385,5 +386,28 @@
     <CS_Settings_DraftedBonus>Drafted Bonus</CS_Settings_DraftedBonus>
     <CS_Settings_ColonistBonus>Colonist Bonus</CS_Settings_ColonistBonus>
     <CS_Settings_UnstableBonus>Unstable Bonus</CS_Settings_UnstableBonus>
-    <CS_Settings_ResetToDefaults>Reset to Defaults</CS_Settings_ResetToDefaults>
+    <CS_Studio_Performance_FaceCaches>Face cache stats</CS_Studio_Performance_FaceCaches>
+    <CS_Studio_Performance_FaceTransformCacheHits>Face transform cache hits: {0}</CS_Studio_Performance_FaceTransformCacheHits>
+    <CS_Studio_Performance_FaceTransformCacheMisses>Face transform cache misses: {0}</CS_Studio_Performance_FaceTransformCacheMisses>
+    <CS_Studio_Performance_FacePathCacheHits>Face path cache hits: {0}</CS_Studio_Performance_FacePathCacheHits>
+    <CS_Studio_Performance_FacePathCacheMisses>Face path cache misses: {0}</CS_Studio_Performance_FacePathCacheMisses>
+    <CS_Studio_Performance_GraphicDirtyTriggers>Graphic dirty triggers: {0}</CS_Studio_Performance_GraphicDirtyTriggers>
+    <CS_Studio_Performance_GraphicDirtySkipped>Graphic dirty skips by throttle: {0}</CS_Studio_Performance_GraphicDirtySkipped>
+
+    <!-- Texture Internalization -->
+    <CS_Studio_Internalize_Title>Texture Optimization</CS_Studio_Internalize_Title>
+    <CS_Studio_Internalize_Desc>Detected {0} external texture path(s). External textures cause additional performance overhead at runtime (disk I/O and extra cache lookups per frame).
+
+Clicking "Confirm" will:
+1. Create a sub-mod (CharacterStudio_UserTextures) in the Mods directory
+2. Copy textures into the sub-mod and redirect all paths automatically
+3. Save the skin configuration
+
+You will need to restart the game and enable the sub-mod for the optimized paths to take effect.</CS_Studio_Internalize_Desc>
+    <CS_Studio_Internalize_Confirm>Confirm Optimization</CS_Studio_Internalize_Confirm>
+    <CS_Studio_Internalize_Cancel>Cancel</CS_Studio_Internalize_Cancel>
+    <CS_Studio_Internalize_SkipApply>Apply Only (Skip Optimization)</CS_Studio_Internalize_SkipApply>
+    <CS_Studio_Internalize_Success>Copied {0} textures to sub-mod. Please restart the game and enable {1} for the changes to take effect.</CS_Studio_Internalize_Success>
+    <CS_Studio_Internalize_Failed>Texture internalization failed: {0}</CS_Studio_Internalize_Failed>
 </LanguageData>
+

@@ -139,11 +139,12 @@ namespace CharacterStudio.Exporter
             // ── XenotypeDef（若皮肤绑定了 xenotypeDefName 则生成）────────────
             if (!string.IsNullOrEmpty(config.SkinDef.xenotypeDefName))
             {
+                string xenoLabel = string.IsNullOrEmpty(config.SkinDef.raceDisplayName)
+                    ? (config.ModName ?? skinDefName)
+                    : config.SkinDef.raceDisplayName!;
                 var xenoDef = BuildXenotypeDef(
                     ModBuilder.SanitizeDefName(config.SkinDef.xenotypeDefName),
-                    string.IsNullOrEmpty(config.SkinDef.raceDisplayName)
-                        ? config.ModName
-                        : config.SkinDef.raceDisplayName,
+                    xenoLabel,
                     skinDefName);
                 defsRoot.AddFirst(xenoDef); // XenotypeDef 放在 PawnKindDef 前面
             }

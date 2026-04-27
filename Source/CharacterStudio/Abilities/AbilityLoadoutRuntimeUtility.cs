@@ -3,154 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using CharacterStudio.Core;
 using RimWorld;
+using UnityEngine;
 using Verse;
 
 namespace CharacterStudio.Abilities
 {
-    public sealed class CharacterAbilityLoadout : IExposable
-    {
-        public List<ModularAbilityDef> abilities = new List<ModularAbilityDef>();
-        public SkinAbilityHotkeyConfig hotkeys = new SkinAbilityHotkeyConfig();
-        private List<string> serializedAbilityDefNames = new List<string>();
-
-        public CharacterAbilityLoadout Clone()
-        {
-            var clone = new CharacterAbilityLoadout
-            {
-                hotkeys = hotkeys?.Clone() ?? new SkinAbilityHotkeyConfig(),
-                serializedAbilityDefNames = GetAbilityDefNamesSnapshot()
-            };
-
-            if (abilities != null)
-            {
-                foreach (var ability in abilities)
-                {
-                    if (ability != null)
-                    {
-                        clone.abilities.Add(ability.Clone());
-                    }
-                }
-            }
-
-            if (clone.abilities.Count > 0)
-            {
-                clone.SyncSerializedAbilityDefNamesFromAbilities();
-            }
-
-            return clone;
-        }
-
-        public void ExposeData()
-        {
-            if (Scribe.mode != LoadSaveMode.LoadingVars)
-            {
-                if (abilities != null && abilities.Any(static a => a != null && !string.IsNullOrWhiteSpace(a.defName)))
-                {
-                    SyncSerializedAbilityDefNamesFromAbilities();
-                }
-            }
-
-            Scribe_Collections.Look(ref serializedAbilityDefNames, "abilityDefNames", LookMode.Value);
-            Scribe_Deep.Look(ref hotkeys, "hotkeys");
-
-            serializedAbilityDefNames ??= new List<string>();
-            serializedAbilityDefNames = serializedAbilityDefNames
-                .Where(static defName => !string.IsNullOrWhiteSpace(defName))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-            abilities ??= new List<ModularAbilityDef>();
-            if (Scribe.mode == LoadSaveMode.LoadingVars)
-            {
-                abilities.Clear();
-            }
-            else
-            {
-                abilities.RemoveAll(static ability => ability == null || string.IsNullOrWhiteSpace(ability.defName));
-                if (abilities.Any(static a => a != null && !string.IsNullOrWhiteSpace(a.defName)))
-                {
-                    SyncSerializedAbilityDefNamesFromAbilities();
-                }
-            }
-
-            hotkeys ??= new SkinAbilityHotkeyConfig();
-        }
-
-        public void RehydrateAbilities(IEnumerable<ModularAbilityDef>? preferredAbilities = null)
-        {
-            var snapshot = GetAbilityDefNamesSnapshot();
-            List<ModularAbilityDef> resolvedAbilities = new List<ModularAbilityDef>();
-            List<ModularAbilityDef> preferredAbilityList = preferredAbilities?
-                .Where(static ability => ability != null && !string.IsNullOrWhiteSpace(ability.defName))
-                .ToList() ?? new List<ModularAbilityDef>();
-
-            Log.Message($"[CS-DEBUG] Rehydrate: snapshot=[{string.Join(",", snapshot)}] preferred={preferredAbilityList.Count} dbCount={DefDatabase<ModularAbilityDef>.DefCount}");
-
-            foreach (string defName in snapshot)
-            {
-                ModularAbilityDef? fromPreferred = preferredAbilityList
-                    .FirstOrDefault(ability => string.Equals(ability.defName, defName, StringComparison.OrdinalIgnoreCase));
-                ModularAbilityDef? fromDb = DefDatabase<ModularAbilityDef>.GetNamedSilentFail(defName);
-                ModularAbilityDef? source = fromPreferred ?? fromDb;
-
-                Log.Message($"[CS-DEBUG] Rehydrate defName={defName}: preferred={fromPreferred?.defName} db={fromDb?.defName} resolved={source?.defName}");
-
-                if (source != null)
-                {
-                    resolvedAbilities.Add(source.Clone());
-                }
-            }
-
-            Log.Message($"[CS-DEBUG] Rehydrate result: {resolvedAbilities.Count} abilities");
-            abilities = resolvedAbilities;
-            SyncSerializedAbilityDefNamesFromAbilities();
-        }
-
-        public void EnsureAbilitiesRehydrated(IEnumerable<ModularAbilityDef>? preferredAbilities = null)
-        {
-            bool hasResolvedAbilities = abilities != null
-                && abilities.Any(static ability => ability != null && !string.IsNullOrWhiteSpace(ability.defName));
-            Log.Message($"[CS-DEBUG] EnsureRehydrated: hasResolved={hasResolvedAbilities} abilities={abilities?.Count ?? -1}");
-
-            if (hasResolvedAbilities)
-            {
-                SyncSerializedAbilityDefNamesFromAbilities();
-                return;
-            }
-
-            bool hasSerializedAbilities = serializedAbilityDefNames != null
-                && serializedAbilityDefNames.Any(static defName => !string.IsNullOrWhiteSpace(defName));
-            if (hasSerializedAbilities)
-            {
-                RehydrateAbilities(preferredAbilities);
-            }
-        }
-
-        private List<string> GetAbilityDefNamesSnapshot()
-        {
-            if (serializedAbilityDefNames == null || serializedAbilityDefNames.Count == 0)
-            {
-                SyncSerializedAbilityDefNamesFromAbilities();
-            }
-
-            return serializedAbilityDefNames?
-                .Where(static defName => !string.IsNullOrWhiteSpace(defName))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList()
-                ?? new List<string>();
-        }
-
-        private void SyncSerializedAbilityDefNamesFromAbilities()
-        {
-            serializedAbilityDefNames = abilities?
-                .Where(static ability => ability != null && !string.IsNullOrWhiteSpace(ability.defName))
-                .Select(static ability => ability.defName)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList()
-                ?? new List<string>();
-        }
-    }
-
     public sealed class VisibleAbilitySlotEntry
     {
         public string slotId = string.Empty;
@@ -219,42 +76,35 @@ namespace CharacterStudio.Abilities
             }
 
             var abilityComp = pawn.GetComp<CompCharacterAbilityRuntime>();
-            var skinComp = pawn.GetComp<CompPawnSkin>();
             CharacterAbilityLoadout? explicitLoadout = abilityComp?.ActiveAbilityLoadout;
-
-            PawnSkinDef? skin = skinComp?.ActiveSkin;
-            explicitLoadout?.EnsureAbilitiesRehydrated(skin?.abilities);
-
-            CharacterAbilityLoadout? skinLoadout = skin == null
-                ? null
-                : CreateLoadout(skin.abilities, skin.abilityHotkeys);
+            CharacterAbilityLoadout? activeSkinLoadout = pawn.GetComp<CompPawnSkin>()?.ActiveAbilityLoadout;
 
             if (explicitLoadout == null)
             {
-                return MergeEquipmentAbilitiesIntoLoadout(pawn, skinLoadout);
+                return MergeEquipmentAbilitiesIntoLoadout(pawn, activeSkinLoadout?.Clone());
             }
 
-            if (skinLoadout == null)
+            if (activeSkinLoadout == null)
             {
-                return MergeEquipmentAbilitiesIntoLoadout(pawn, explicitLoadout);
+                return MergeEquipmentAbilitiesIntoLoadout(pawn, explicitLoadout.Clone());
             }
 
             bool explicitHasAbilities = HasAbilities(explicitLoadout);
             bool explicitHasConfiguredHotkeys = HasConfiguredHotkeys(explicitLoadout.hotkeys);
-            bool skinHasConfiguredHotkeys = HasConfiguredHotkeys(skinLoadout.hotkeys);
+            bool skinHasConfiguredHotkeys = HasConfiguredHotkeys(activeSkinLoadout.hotkeys);
 
             if (!explicitHasAbilities)
             {
-                return MergeEquipmentAbilitiesIntoLoadout(pawn, skinLoadout);
+                return MergeEquipmentAbilitiesIntoLoadout(pawn, activeSkinLoadout.Clone());
             }
 
             if (explicitHasConfiguredHotkeys || !skinHasConfiguredHotkeys)
             {
-                return MergeEquipmentAbilitiesIntoLoadout(pawn, explicitLoadout);
+                return MergeEquipmentAbilitiesIntoLoadout(pawn, explicitLoadout.Clone());
             }
 
             var repairedLoadout = explicitLoadout.Clone();
-            repairedLoadout.hotkeys = skinLoadout.hotkeys?.Clone() ?? new SkinAbilityHotkeyConfig();
+            repairedLoadout.hotkeys = activeSkinLoadout.hotkeys?.Clone() ?? new SkinAbilityHotkeyConfig();
             return MergeEquipmentAbilitiesIntoLoadout(pawn, repairedLoadout);
         }
 
@@ -369,6 +219,22 @@ namespace CharacterStudio.Abilities
             CharacterAbilityLoadout loadout = CreateLoadout(abilities, hotkeys);
             SetExplicitLoadout(pawn, loadout);
             AbilityGrantUtility.GrantAbilitiesToPawn(pawn, loadout.abilities);
+        }
+
+        public static void ApplyExplicitLoadout(Pawn pawn, CharacterAbilityLoadout loadout, bool previewMode = false)
+        {
+            if (pawn == null)
+            {
+                return;
+            }
+
+            SetExplicitLoadout(pawn, loadout);
+            AbilityGrantUtility.GrantAbilitiesToPawn(pawn, loadout.abilities);
+        }
+
+        public static void ApplyExplicitLoadout(Pawn pawn, List<ModularAbilityDef> abilities, SkinAbilityHotkeyConfig hotkeys, bool previewMode = false)
+        {
+            ApplyExplicitLoadout(pawn, (IEnumerable<ModularAbilityDef>?)abilities, hotkeys);
         }
 
         public static void ClearExplicitLoadout(Pawn? pawn)
@@ -682,3 +548,4 @@ namespace CharacterStudio.Abilities
         }
     }
 }
+

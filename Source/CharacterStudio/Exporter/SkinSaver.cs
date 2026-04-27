@@ -188,13 +188,8 @@ namespace CharacterStudio.Exporter
                 // 动画配置
                 skin.animationConfig != null && skin.animationConfig.enabled ? GenerateAnimationConfigXml(skin.animationConfig) : null,
 
-                // 装备配置
-                GenerateEquipmentsXml(skin.equipments),
-
-                // 技能与热键
-                AbilityXmlSerialization.GenerateAbilitiesElement(skin.abilities),
                 GenerateStatModifiersXml(skin.statModifiers),
-                AbilityXmlSerialization.GenerateAbilityHotkeysElement(skin.abilityHotkeys)
+                null
             );
         }
 
@@ -319,6 +314,8 @@ namespace CharacterStudio.Exporter
                 new XElement("offset", $"({renderData.offset.x:F3}, {renderData.offset.y:F3}, {renderData.offset.z:F3})"),
                 renderData.offsetEast != Vector3.zero ? new XElement("offsetEast", $"({renderData.offsetEast.x:F3}, {renderData.offsetEast.y:F3}, {renderData.offsetEast.z:F3})") : null,
                 renderData.offsetNorth != Vector3.zero ? new XElement("offsetNorth", $"({renderData.offsetNorth.x:F3}, {renderData.offsetNorth.y:F3}, {renderData.offsetNorth.z:F3})") : null,
+                  renderData.useWestOffset ? new XElement("useWestOffset", "true") : null,
+                  renderData.offsetWest != Vector3.zero ? new XElement("offsetWest", $"({renderData.offsetWest.x:F3}, {renderData.offsetWest.y:F3}, {renderData.offsetWest.z:F3})") : null,
                 new XElement("drawOrder", renderData.drawOrder),
                 new XElement("scale", $"({renderData.scale.x:F2}, {renderData.scale.y:F2})"),
                 renderData.scaleEastMultiplier != Vector2.one ? new XElement("scaleEastMultiplier", $"({renderData.scaleEastMultiplier.x:F3}, {renderData.scaleEastMultiplier.y:F3})") : null,
@@ -478,7 +475,7 @@ namespace CharacterStudio.Exporter
             var elements = new List<object> { new XElement("enabled", hotkeys.enabled.ToString().ToLower()) };
             foreach (var kvp in hotkeys.slotBindings)
             {
-                if (!string.IsNullOrEmpty(kvp.Value))
+                if (AbilityHotkeySlotUtility.IsSupportedSlotKey(kvp.Key) && !string.IsNullOrEmpty(kvp.Value))
                     elements.Add(new XElement(kvp.Key.ToLowerInvariant() + "AbilityDefName", kvp.Value));
             }
             return new XElement("abilityHotkeys", elements.ToArray());
@@ -581,7 +578,7 @@ namespace CharacterStudio.Exporter
             if (baseAppearance == null || baseAppearance.slots == null || baseAppearance.slots.Count == 0) return null;
 
             var root = new XElement("baseAppearance");
-            root.Add(new XElement("globalScale", baseAppearance.drawSizeScale.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            root.Add(new XElement("globalScale", baseAppearance.globalScale.ToString(System.Globalization.CultureInfo.InvariantCulture)));
             root.Add(new XElement("drawSizeScale", baseAppearance.drawSizeScale.ToString(System.Globalization.CultureInfo.InvariantCulture)));
             var slotsEl = new XElement("slots");
 
@@ -602,12 +599,16 @@ namespace CharacterStudio.Exporter
                     new XElement("scale", $"({slot.scale.x:F2}, {slot.scale.y:F2})"),
                     slot.scaleEastMultiplier != Vector2.one ? new XElement("scaleEastMultiplier", $"({slot.scaleEastMultiplier.x:F3}, {slot.scaleEastMultiplier.y:F3})") : null,
                     slot.scaleNorthMultiplier != Vector2.one ? new XElement("scaleNorthMultiplier", $"({slot.scaleNorthMultiplier.x:F3}, {slot.scaleNorthMultiplier.y:F3})") : null,
+                    slot.scaleWestMultiplier != Vector2.one ? new XElement("scaleWestMultiplier", $"({slot.scaleWestMultiplier.x:F3}, {slot.scaleWestMultiplier.y:F3})") : null,
                     new XElement("offset", $"({slot.offset.x:F3}, {slot.offset.y:F3}, {slot.offset.z:F3})"),
                     slot.offsetEast != Vector3.zero ? new XElement("offsetEast", $"({slot.offsetEast.x:F3}, {slot.offsetEast.y:F3}, {slot.offsetEast.z:F3})") : null,
                     slot.offsetNorth != Vector3.zero ? new XElement("offsetNorth", $"({slot.offsetNorth.x:F3}, {slot.offsetNorth.y:F3}, {slot.offsetNorth.z:F3})") : null,
+                    slot.useWestOffset ? new XElement("useWestOffset", "true") : null,
+                    slot.offsetWest != Vector3.zero ? new XElement("offsetWest", $"({slot.offsetWest.x:F3}, {slot.offsetWest.y:F3}, {slot.offsetWest.z:F3})") : null,
                     new XElement("rotation", slot.rotation),
                     slot.rotationEastOffset != 0f ? new XElement("rotationEastOffset", slot.rotationEastOffset) : null,
                     slot.rotationNorthOffset != 0f ? new XElement("rotationNorthOffset", slot.rotationNorthOffset) : null,
+                    slot.rotationWestOffset != 0f ? new XElement("rotationWestOffset", slot.rotationWestOffset) : null,
                     new XElement("flipHorizontal", slot.flipHorizontal.ToString().ToLower()),
                     new XElement("drawOrderOffset", slot.drawOrderOffset),
                     slot.graphicClass != null ? new XElement("graphicClass", slot.graphicClass.FullName) : null
@@ -640,14 +641,19 @@ namespace CharacterStudio.Exporter
                     new XElement("offset", $"({layer.offset.x:F3}, {layer.offset.y:F3}, {layer.offset.z:F3})"),
                     layer.offsetEast != Vector3.zero ? new XElement("offsetEast", $"({layer.offsetEast.x:F3}, {layer.offsetEast.y:F3}, {layer.offsetEast.z:F3})") : null,
                     layer.offsetNorth != Vector3.zero ? new XElement("offsetNorth", $"({layer.offsetNorth.x:F3}, {layer.offsetNorth.y:F3}, {layer.offsetNorth.z:F3})") : null,
+                    // 始终保存useWestOffset，确保导入后状态正确
+                    new XElement("useWestOffset", layer.useWestOffset.ToString().ToLower()),
+                    layer.offsetWest != Vector3.zero ? new XElement("offsetWest", $"({layer.offsetWest.x:F3}, {layer.offsetWest.y:F3}, {layer.offsetWest.z:F3})") : null,
 
                     new XElement("drawOrder", layer.drawOrder),
                     new XElement("scale", $"({layer.scale.x:F2}, {layer.scale.y:F2})"),
                     layer.scaleEastMultiplier != Vector2.one ? new XElement("scaleEastMultiplier", $"({layer.scaleEastMultiplier.x:F3}, {layer.scaleEastMultiplier.y:F3})") : null,
                     layer.scaleNorthMultiplier != Vector2.one ? new XElement("scaleNorthMultiplier", $"({layer.scaleNorthMultiplier.x:F3}, {layer.scaleNorthMultiplier.y:F3})") : null,
+                    layer.scaleWestMultiplier != Vector2.one ? new XElement("scaleWestMultiplier", $"({layer.scaleWestMultiplier.x:F3}, {layer.scaleWestMultiplier.y:F3})") : null,
                     new XElement("rotation", layer.rotation),
                     layer.rotationEastOffset != 0f ? new XElement("rotationEastOffset", layer.rotationEastOffset) : null,
                     layer.rotationNorthOffset != 0f ? new XElement("rotationNorthOffset", layer.rotationNorthOffset) : null,
+                    layer.rotationWestOffset != 0f ? new XElement("rotationWestOffset", layer.rotationWestOffset) : null,
                     new XElement("flipHorizontal", layer.flipHorizontal.ToString().ToLower()),
 
                     // 颜色

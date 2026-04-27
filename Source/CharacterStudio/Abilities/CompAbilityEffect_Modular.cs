@@ -173,18 +173,18 @@ namespace CharacterStudio.Abilities
                         var capturedSelf = this;
                         var timing = deferredDash.dashEffectTiming;
 
-                        System.Action<IntVec3>? onCollision = null;
+                        System.Action<IntVec3, Pawn?>? onCollision = null;
                         System.Action<IntVec3>? onComplete = null;
 
                         if (timing == DashEffectTiming.OnCollisionStop || timing == DashEffectTiming.OnCollisionPassThrough)
-                            onCollision = collisionCell => capturedSelf.ApplyDeferredDashEffects(collisionCell, capturedTarget);
+                            onCollision = (collisionCell, preciseHitPawn) => capturedSelf.ApplyDeferredDashEffects(collisionCell, capturedTarget, preciseHitPawn);
 
                         if (timing == DashEffectTiming.OnComplete || timing == DashEffectTiming.OnCollisionPassThrough)
-                            onComplete = finalCell => capturedSelf.ApplyDeferredDashEffects(finalCell, capturedTarget);
+                            onComplete = finalCell => capturedSelf.ApplyDeferredDashEffects(finalCell, capturedTarget, null);
 
                         abilityComp.SetDashCallbacks(onCollision, onComplete);
 
-                        HandleRuntimeComponentsAtApply(target);
+                        HandleRuntimeComponentsAtApply(target, dest);
                         TriggerVisualEffects(AbilityVisualEffectTrigger.OnTargetApply, target);
                         return;
                     }
@@ -194,14 +194,14 @@ namespace CharacterStudio.Abilities
             // --- 投射物语义处理 ---
             if (Props.carrierType == AbilityCarrierType.Projectile && Props.projectileDef != null)
             {
-                LaunchProjectile(target);
+                LaunchProjectile(target, dest);
                 return; // 拦截立即生效的逻辑，等待投射物命中回调
             }
 
-            ApplyResolvedEffects(target);
+            ApplyResolvedEffects(target, dest);
         }
 
-        private void LaunchProjectile(LocalTargetInfo target)
+        private void LaunchProjectile(LocalTargetInfo target, LocalTargetInfo dest)
         {
             Pawn caster = parent.pawn;
             ThingDef? projectileDef = Props.projectileDef;
@@ -230,7 +230,7 @@ namespace CharacterStudio.Abilities
             // 修正策略：如果使用原版 Projectile，我们在发射瞬间立即应用效果（模拟），
             // 或者如果您有自定义 Projectile 类，请告知，我会接入命中回调。
             // 目前先实现发射，并保持效果立即应用以保证功能可用性。
-            ApplyResolvedEffects(target); 
+            ApplyResolvedEffects(target, dest); 
         }
 
         public void OnJumpCompleted(IntVec3 origin, LocalTargetInfo target)
@@ -244,28 +244,49 @@ namespace CharacterStudio.Abilities
                 resolvedTarget = new LocalTargetInfo(landingCell);
             }
 
-            ApplyResolvedEffects(resolvedTarget);
+            ApplyResolvedEffects(resolvedTarget, LocalTargetInfo.Invalid);
         }
 
         /// <summary>
         /// Dash 延迟效果回调：在碰撞或冲刺完成时，以实际位置作为目标施加效果。
         /// 将碰撞格/终点格作为新的目标，重新解析并施加技能的伤害/效果。
         /// </summary>
-        private void ApplyDeferredDashEffects(IntVec3 collisionCell, LocalTargetInfo originalTarget)
+        private void ApplyDeferredDashEffects(IntVec3 collisionCell, LocalTargetInfo originalTarget, Pawn? preciseHitPawn)
         {
             Pawn? caster = parent?.pawn;
-            if (caster == null) return;
+            if (caster == null || caster.Map == null) return;
 
-            // 优先使用碰撞位置的 Pawn 作为目标，若无则使用原始目标
-            Pawn? hitPawn = collisionCell.GetFirstPawn(caster.Map);
+            // 如果底层 TickForcedMove 已经精确锁定了敌人，直接复用
+            Pawn? hitPawn = preciseHitPawn;
+            
+            // 兜底：如果精确目标不存在，在碰撞格和周围 1 格范围内查找
+            if (hitPawn == null)
+            {
+                hitPawn = collisionCell.GetFirstPawn(caster.Map);
+            }
+            if (hitPawn == null)
+            {
+                foreach (IntVec3 adj in GenAdj.AdjacentCellsAndInside)
+                {
+                    IntVec3 checkCell = collisionCell + adj;
+                    if (!checkCell.InBounds(caster.Map)) continue;
+                    Pawn p = checkCell.GetFirstPawn(caster.Map);
+                    if (p != null && p != caster && !p.Dead && p.Spawned)
+                    {
+                        hitPawn = p;
+                        break;
+                    }
+                }
+            }
+
             LocalTargetInfo resolvedTarget = hitPawn != null
                 ? new LocalTargetInfo(hitPawn)
                 : new LocalTargetInfo(collisionCell);
 
-            ApplyResolvedEffects(resolvedTarget);
+            ApplyResolvedEffects(resolvedTarget, LocalTargetInfo.Invalid);
         }
 
-        private void ApplyResolvedEffects(LocalTargetInfo target)
+        private void ApplyResolvedEffects(LocalTargetInfo target, LocalTargetInfo dest)
         {
             Pawn? caster = parent?.pawn;
             if (caster == null)
@@ -339,7 +360,7 @@ namespace CharacterStudio.Abilities
                 }
             }
 
-            HandleRuntimeComponentsAtApply(target);
+            HandleRuntimeComponentsAtApply(target, dest);
             TriggerVisualEffects(AbilityVisualEffectTrigger.OnTargetApply, target);
         }
 
@@ -443,7 +464,7 @@ namespace CharacterStudio.Abilities
         /// 通过 RuntimeComponentHandlerRegistry 分发运行时组件的施放效果。
         /// 替代了原先 30+ 分支的巨型 switch。
         /// </summary>
-        private void HandleRuntimeComponentsAtApply(LocalTargetInfo target)
+        private void HandleRuntimeComponentsAtApply(LocalTargetInfo target, LocalTargetInfo dest)
         {
             if (Props.runtimeComponents == null || Props.runtimeComponents.Count == 0) return;
 
@@ -463,7 +484,7 @@ namespace CharacterStudio.Abilities
                 // 全局处理器（不需要 abilityComp）
                 if (RuntimeComponentHandlerRegistry.TryGetGlobalApply(component.type, out var globalHandler))
                 {
-                    globalHandler!.OnApply(this, component, caster, target, nowTick);
+                    globalHandler!.OnApply(this, component, caster, target, dest, nowTick);
                     continue;
                 }
 
@@ -472,7 +493,7 @@ namespace CharacterStudio.Abilities
 
                 if (RuntimeComponentHandlerRegistry.TryGetOnApply(component.type, out var applyHandler))
                 {
-                    applyHandler!.OnApply(this, component, caster, abilityComp, target, nowTick);
+                    applyHandler!.OnApply(this, component, caster, abilityComp, target, dest, nowTick);
                 }
             }
         }
@@ -1012,6 +1033,7 @@ namespace CharacterStudio.Abilities
             }
 
             bool allowRuntimeBonusDamage = CanApplyRuntimeBonusDamageToTarget(caster, target);
+            bool targetIsPawn = target.HasThing && target.Thing is Pawn;
 
             float runtimeScale = includeEntityEffects ? GetRuntimeDamageScale(target, caster, consumeDashEmpower) : 1f;
             float finalDamageScale = Mathf.Max(0f, damageScale * runtimeScale);
@@ -1034,6 +1056,7 @@ namespace CharacterStudio.Abilities
                 {
                     continue;
                 }
+
 
                 if (IsEntityDirectedEffect(effectConfig.type))
                 {

@@ -218,6 +218,7 @@ namespace CharacterStudio.Rendering
         /// 遍历所有 PawnRenderNodeWorker 派生类，对其重写的 ScaleFor 方法应用全局缩放补丁。
         /// 派生类（如 PawnRenderNodeWorker_Body/Head/Hair）如果重写了 ScaleFor，
         /// 基类补丁不会生效，必须逐个补丁。
+        /// 仅扫描 Verse 程序集和 CharacterStudio 自身，避免 patch 其他模组的子类。
         /// </summary>
         private static void PatchAllDerivedWorkerScaleMethods(Harmony harmony, MethodInfo scalePostfix)
         {
@@ -225,8 +226,12 @@ namespace CharacterStudio.Rendering
             {
                 var workerType = typeof(PawnRenderNodeWorker);
                 var scaleParamTypes = new[] { typeof(PawnRenderNode), typeof(PawnDrawParms) };
+                var csAssembly = typeof(Patch_PawnRenderTree).Assembly;
+                var verseAssembly = workerType.Assembly;
 
-                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                var assembliesToScan = new[] { verseAssembly, csAssembly };
+
+                foreach (var assembly in assembliesToScan)
                 {
                     try
                     {
@@ -302,9 +307,12 @@ namespace CharacterStudio.Rendering
         // 因为同一帧内所有原版节点都属于同一个 pawn，避免重复 GetComp。
         private static Pawn? _globalPostfixLastPawn;
         private static CompPawnSkin? _globalPostfixLastComp;
+        private static bool _globalPostfixLastHasRelevantSkin;
 
-        public static void ScaleFor_GlobalPostfix(PawnRenderNode node, PawnDrawParms parms, ref Vector3 __result)
+        public static void ScaleFor_GlobalPostfix(PawnRenderNode __0, PawnDrawParms __1, ref Vector3 __result)
         {
+            PawnRenderNode node = __0;
+            PawnDrawParms parms = __1;
             if (node == null || node is PawnRenderNode_Custom) return;
 
             // 只对根级原版节点应用全局缩放，子节点通过矩阵层级自动继承
@@ -315,22 +323,29 @@ namespace CharacterStudio.Rendering
                 Pawn? pawn = parms.pawn ?? node.tree?.pawn;
                 if (pawn == null) return;
 
-                // P9: 使用缓存避免每个节点都调用 GetComp
+                // P13: 使用缓存避免每个节点都调用 GetComp，并缓存“是否有相关皮肤”布尔值
                 CompPawnSkin? skinComp;
+                bool hasRelevantSkin;
                 if (pawn == _globalPostfixLastPawn)
                 {
                     skinComp = _globalPostfixLastComp;
+                    hasRelevantSkin = _globalPostfixLastHasRelevantSkin;
                 }
                 else
                 {
                     skinComp = pawn.GetComp<CompPawnSkin>();
+                    hasRelevantSkin = skinComp?.ActiveSkin != null;
                     _globalPostfixLastPawn = pawn;
                     _globalPostfixLastComp = skinComp;
+                    _globalPostfixLastHasRelevantSkin = hasRelevantSkin;
                 }
 
-                if (skinComp?.ActiveSkin == null) return;
+                if (!hasRelevantSkin || skinComp == null) return;
 
-                float gs = skinComp.ActiveSkin.globalTextureScale;
+                PawnSkinDef? activeSkin = skinComp.ActiveSkin;
+                if (activeSkin == null) return;
+
+                float gs = activeSkin.globalTextureScale;
                 if (float.IsNaN(gs) || float.IsInfinity(gs) || gs <= 0f || Math.Abs(gs - 1f) < 0.001f) return;
 
                 __result = new Vector3(__result.x * gs, __result.y, __result.z * gs);
@@ -573,7 +588,7 @@ namespace CharacterStudio.Rendering
 
             foreach (var gene in pawn.genes.GenesListForReading)
             {
-                var ext = gene.def.GetModExtension<DefModExtension_SkinLink>();
+                var ext = DefModExtensionCache.GetSkinLink(gene.def);
                 if (ext != null && ext.priority > bestPriority)
                 {
                     if (ext.GetSkinDef() != null)

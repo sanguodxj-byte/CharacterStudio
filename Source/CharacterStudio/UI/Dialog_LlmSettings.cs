@@ -33,6 +33,8 @@ namespace CharacterStudio.UI
 
         public override void DoWindowContents(Rect inRect)
         {
+            UIHelper.DrawDialogFrame(inRect, this);
+
             if (statusExpireTime > 0f)
             {
                 statusExpireTime -= Time.deltaTime;

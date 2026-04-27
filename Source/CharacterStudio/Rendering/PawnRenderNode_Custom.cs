@@ -186,6 +186,12 @@ namespace CharacterStudio.Rendering
             _hasVanillaAncestorState = -1;
         }
 
+        public void InvalidateProgrammaticFaceCache()
+        {
+            lastProgrammaticFaceTick = int.MinValue;
+            hasProgrammaticAlphaInitialized = false;
+        }
+
         public PawnRenderNode_Custom(Pawn pawn, PawnRenderNodeProperties props, PawnRenderTree tree)
             : base(pawn, props, tree)
         {

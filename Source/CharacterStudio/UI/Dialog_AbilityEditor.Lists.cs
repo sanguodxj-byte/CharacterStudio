@@ -35,6 +35,7 @@ namespace CharacterStudio.UI
                 }
                 compactY += 30f;
                 if (DrawToolbarButton(new Rect(bodyRect.x, compactY, compactW, 24f), "💾", () => PersistAbilityEditorState(true), true))
+
                 {
                 }
                 return;
@@ -83,7 +84,8 @@ namespace CharacterStudio.UI
             }
 
             float saveRowY = secondRowY + 30f;
-            if (DrawToolbarButton(new Rect(inner.x, saveRowY, inner.width, 24f), "CS_Studio_Ability_Save".Translate(), () => PersistAbilityEditorState(true), true))
+            if (DrawToolbarButton(new Rect(inner.x, saveRowY, inner.width, 24f), GetPersistActionLabel(), () => PersistAbilityEditorState(true), true))
+
             {
             }
 
@@ -329,8 +331,9 @@ namespace CharacterStudio.UI
             {
                 if (selectedAbility != ability)
                 {
+                    UIHelper.ClearNumericFieldFocusAndBuffers();
                     selectedAbility = ability;
-                    NotifyAbilityPreviewDirty(true);
+                    RefreshAbilityPreviewSelection(true);
                 }
             }
 
@@ -391,8 +394,9 @@ namespace CharacterStudio.UI
                     return;
                 }
 
-                PawnSkinDef skinContext = boundSkin ?? new PawnSkinDef();
-                var result = LlmGenerationService.GenerateAbilities(settings, llmAbilityPrompt, skinContext, abilities);
+                PawnSkinDef generationContext = new PawnSkinDef();
+
+                var result = LlmGenerationService.GenerateAbilities(settings, llmAbilityPrompt, generationContext, abilities);
                 List<ModularAbilityDef> generated = result.payload ?? new List<ModularAbilityDef>();
                 generated = generated.Where(a => a != null).ToList();
                 if (generated.Count == 0)
@@ -411,6 +415,7 @@ namespace CharacterStudio.UI
                 int beforeCount = abilities.Count;
                 abilities.AddRange(generated);
                 selectedAbility = generated[0];
+                NotifyAbilityPreviewDirty(true);
                 validationSummary = replaceExisting
                     ? "CS_LLM_GenerateAbilitiesReplaced".Translate(generated.Count)
                     : "CS_LLM_GenerateAbilitiesAppended".Translate(generated.Count, beforeCount, abilities.Count);

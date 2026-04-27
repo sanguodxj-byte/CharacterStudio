@@ -5,6 +5,7 @@ using System.Text;
 using CharacterStudio.Abilities;
 using CharacterStudio.AI;
 using CharacterStudio.Core;
+using CharacterStudio.Exporter;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -17,9 +18,10 @@ namespace CharacterStudio.UI
     /// </summary>
     public partial class Dialog_AbilityEditor : Window
     {
+        public static Dialog_AbilityEditor? Current;
         private static string GetAbilityTextureRootDir()
         {
-            string path = System.IO.Path.Combine(GenFilePaths.ConfigFolderPath, "CharacterStudio", "Abilities", "Textures");
+            string path = TextureInternalizer.GetUserTexturesAbilitiesDir();
             System.IO.Directory.CreateDirectory(path);
             return path;
         }
@@ -87,8 +89,8 @@ namespace CharacterStudio.UI
         private string abilitySearchText = string.Empty;
         private string selectedExtensionPanelId = string.Empty;
         private string llmAbilityPrompt = string.Empty;
-        private readonly SkinAbilityHotkeyConfig? boundHotkeys;
-        private readonly SkinAbilityHotkeyConfig standaloneHotkeys = new();
+        private readonly SkinAbilityHotkeyConfig editableHotkeys = new();
+
         // LLM 生成状态（异步）
 #pragma warning disable CS0414
         private bool llmAbilitiesGenerating = false;
@@ -96,30 +98,37 @@ namespace CharacterStudio.UI
         private string? llmAbilitiesPendingError = null;
 #pragma warning restore CS0414
 
-        private readonly PawnSkinDef? boundSkin;
         // 绑定目标 Pawn（可从编辑器直接授予/撤销技能）
         private Pawn? boundPawn;
 
         public override Vector2 InitialSize => new Vector2(1360f, 760f);
 
-        public Dialog_AbilityEditor(List<ModularAbilityDef> abilityList, SkinAbilityHotkeyConfig? hotkeyConfig = null, PawnSkinDef? skin = null)
+        public Dialog_AbilityEditor(
+            List<ModularAbilityDef> abilityList,
+            SkinAbilityHotkeyConfig? hotkeyConfig = null)
         {
-            this.abilities = abilityList;
-            this.boundHotkeys = hotkeyConfig;
-            this.boundSkin = skin;
+            Current = this;
+            this.abilities = CloneAbilities(abilityList);
+            if (hotkeyConfig != null)
+            {
+                CopyHotkeyConfig(hotkeyConfig, editableHotkeys);
+            }
             this.doCloseX = true;
             this.doCloseButton = false;
             this.draggable = false;
             this.resizeable = true;
             this.forcePause = true;
 
+
             if (this.abilities.Count == 0)
             {
                 var persisted = TryLoadAbilityEditorSessionFromDisk(out SkinAbilityHotkeyConfig? persistedHotkeys, out string? persistedSelectedDefName);
                 if (persisted.Count > 0)
                 {
-                    this.abilities = persisted;
+                    this.abilities.Clear();
+                    this.abilities.AddRange(persisted);
                     ApplyHotkeyConfig(persistedHotkeys);
+
 
                     // 尝试恢复上次选中的技能
                     selectedAbility = !string.IsNullOrWhiteSpace(persistedSelectedDefName)
@@ -231,6 +240,7 @@ namespace CharacterStudio.UI
         {
             base.PreClose();
             PersistAbilityEditorState(false);
+            if (Current == this) Current = null;
         }
 
         private void PersistAbilityEditorState(bool notifyUser)
@@ -247,64 +257,49 @@ namespace CharacterStudio.UI
             SanitizeHotkeyConfigAgainstAbilities(activeHotkeys);
             SaveAbilityEditorSessionToDisk();
 
-            if (boundSkin != null)
-            {
-                boundSkin.abilities.Clear();
-                if (abilities != null)
-                {
-                    foreach (var ability in abilities)
-                    {
-                        if (ability != null)
-                        {
-                            boundSkin.abilities.Add(ability.Clone());
-                        }
-                    }
-                }
-
-                boundSkin.abilityHotkeys ??= new SkinAbilityHotkeyConfig();
-                if (!ReferenceEquals(boundSkin.abilityHotkeys, activeHotkeys))
-                {
-                    CopyHotkeyConfig(activeHotkeys, boundSkin.abilityHotkeys);
-                }
-                SanitizeHotkeyConfigAgainstAbilities(boundSkin.abilityHotkeys);
-            }
-
-            if (boundHotkeys != null && !ReferenceEquals(boundHotkeys, activeHotkeys))
-            {
-                CopyHotkeyConfig(activeHotkeys, boundHotkeys);
-                SanitizeHotkeyConfigAgainstAbilities(boundHotkeys);
-            }
-
             if (boundPawn != null)
             {
-                AbilityLoadoutRuntimeUtility.ApplyExplicitLoadout(boundPawn, abilities, activeHotkeys);
+                AbilityLoadoutRuntimeUtility.ApplyExplicitLoadout(boundPawn, abilities ?? new List<ModularAbilityDef>(), activeHotkeys);
             }
 
             if (notifyUser)
             {
-                validationSummary = "CS_Studio_Ability_SaveSuccess".Translate();
+                validationSummary = GetPersistSuccessMessage();
             }
+        }
+
+        private string GetPersistActionLabel()
+        {
+            return "CS_Studio_Ability_Save".Translate();
+        }
+
+        private string GetPersistSuccessMessage()
+        {
+            return "CS_Studio_Ability_SaveSuccess".Translate();
+        }
+
+        private static List<ModularAbilityDef> CloneAbilities(IEnumerable<ModularAbilityDef>? source)
+
+        {
+            if (source == null)
+            {
+                return new List<ModularAbilityDef>();
+            }
+
+            return source
+                .Where(a => a != null)
+                .Select(a => a.Clone())
+                .ToList();
         }
 
         private SkinAbilityHotkeyConfig GetEditableHotkeyConfig()
         {
-            if (boundSkin != null)
-            {
-                boundSkin.abilityHotkeys ??= boundHotkeys?.Clone() ?? new SkinAbilityHotkeyConfig();
-                return boundSkin.abilityHotkeys;
-            }
-
-            return boundHotkeys ?? standaloneHotkeys;
+            return editableHotkeys;
         }
 
         private SkinAbilityHotkeyConfig GetCurrentHotkeyConfig()
         {
-            if (boundSkin?.abilityHotkeys != null)
-            {
-                return boundSkin.abilityHotkeys;
-            }
-
-            return boundHotkeys ?? standaloneHotkeys;
+            return editableHotkeys;
         }
 
         private void ApplyHotkeyConfig(SkinAbilityHotkeyConfig? source)
@@ -334,6 +329,8 @@ namespace CharacterStudio.UI
             {
                 return;
             }
+
+            hotkeyConfig.NormalizeToSupportedSlots();
 
             string[] keys = new List<string>(hotkeyConfig.slotBindings.Keys).ToArray();
             foreach (string key in keys)
@@ -422,19 +419,23 @@ namespace CharacterStudio.UI
  
         public override void DoWindowContents(Rect inRect)
         {
+            UIHelper.DrawDialogFrame(inRect, this);
+
             Rect titleRect = new Rect(0f, 0f, inRect.width, 28f);
             Widgets.DrawBoxSolid(titleRect, UIHelper.PanelFillSoftColor);
             Widgets.DrawBoxSolid(new Rect(titleRect.x, titleRect.yMax - 2f, titleRect.width, 2f), UIHelper.AccentSoftColor);
             Text.Font = GameFont.Tiny;
             Text.Anchor = TextAnchor.MiddleLeft;
             GUI.color = UIHelper.HeaderColor;
-            Widgets.Label(new Rect(titleRect.x + 8f, titleRect.y, titleRect.width - 140f, titleRect.height), "CS_Studio_Ability_EditorTitle".Translate());
+            float titleButtonWidth = 76f;
+            Widgets.Label(new Rect(titleRect.x + 8f, titleRect.y, titleRect.width - titleButtonWidth - 20f, titleRect.height), "CS_Studio_Ability_EditorTitle".Translate());
+
             GUI.color = Color.white;
             Text.Anchor = TextAnchor.UpperLeft;
             Text.Font = GameFont.Small;
 
-            float titleButtonWidth = 58f;
-            if (DrawToolbarButton(new Rect(titleRect.xMax - titleButtonWidth, titleRect.y + 2f, titleButtonWidth, 24f), "CS_Studio_Ability_Save".Translate(), () => PersistAbilityEditorState(true), true))
+            if (DrawToolbarButton(new Rect(titleRect.xMax - titleButtonWidth, titleRect.y + 2f, titleButtonWidth, 24f), GetPersistActionLabel(), () => PersistAbilityEditorState(true), true))
+
             {
             }
 

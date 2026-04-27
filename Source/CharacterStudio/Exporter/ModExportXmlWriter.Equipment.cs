@@ -220,7 +220,7 @@ namespace CharacterStudio.Exporter
                 new XElement("triggeredVisibleOutsideCycle", animation.triggeredVisibleOutsideCycle.ToString().ToLower())
             );
         }
-        public static XDocument CreateEquipmentThingDefsDocument(List<CharacterEquipmentDef>? equipments)
+        public static XDocument CreateEquipmentThingDefsDocument(List<CharacterEquipmentDef>? equipments, bool includeModExtensions = false)
         {
             var defsRoot = new XElement("Defs");
 
@@ -228,7 +228,7 @@ namespace CharacterStudio.Exporter
             {
                 foreach (var equipment in equipments)
                 {
-                    var equipmentEl = GenerateEquipmentThingDefXml(equipment);
+                    var equipmentEl = GenerateEquipmentThingDefXml(equipment, includeModExtensions);
                     if (equipmentEl != null)
                     {
                         defsRoot.Add(equipmentEl);
@@ -248,7 +248,7 @@ namespace CharacterStudio.Exporter
             );
         }
 
-        public static XElement? GenerateEquipmentThingDefXml(CharacterEquipmentDef? equipment)
+        public static XElement? GenerateEquipmentThingDefXml(CharacterEquipmentDef? equipment, bool includeModExtensions = false)
         {
             if (equipment == null)
             {
@@ -276,8 +276,7 @@ namespace CharacterStudio.Exporter
                 equipment.itemType == EquipmentType.WeaponMelee || equipment.itemType == EquipmentType.WeaponRanged ? GenerateWeaponClassesXml(equipment.weaponClasses) : null,
                 GenerateEquipmentStatEntryContainerXml("statBases", equipment.statBases),
                 GenerateEquipmentStatEntryContainerXml("equippedStatOffsets", equipment.equippedStatOffsets),
-                equipment.itemType == EquipmentType.Apparel ? GenerateEquipmentApparelXml(equipment) : null,
-                GenerateEquipmentModExtensionsXml(equipment)
+                equipment.itemType == EquipmentType.Apparel ? GenerateEquipmentApparelXml(equipment) : null
             );
 
             XElement statBasesEl = thingDef.Element("statBases") ?? new XElement("statBases");
@@ -286,6 +285,11 @@ namespace CharacterStudio.Exporter
             if (statBasesEl.Element("MarketValue") == null)
             {
                 statBasesEl.Add(new XElement("MarketValue", equipment.marketValue.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            }
+
+            if (includeModExtensions)
+            {
+                thingDef.Add(GenerateEquipmentModExtensionsXml(equipment));
             }
 
             return thingDef;

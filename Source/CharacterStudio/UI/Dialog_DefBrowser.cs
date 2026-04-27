@@ -40,6 +40,8 @@ namespace CharacterStudio.UI
 
         public override void DoWindowContents(Rect inRect)
         {
+            UIHelper.DrawDialogFrame(inRect, this);
+
             Rect titleRect = new Rect(0f, 0f, inRect.width, 30f);
             Widgets.DrawBoxSolid(titleRect, UIHelper.PanelFillSoftColor);
             Widgets.DrawBoxSolid(new Rect(titleRect.x, titleRect.yMax - 2f, titleRect.width, 2f), UIHelper.AccentSoftColor);

@@ -51,6 +51,9 @@ namespace CharacterStudio.UI
         private readonly Action<List<string>>? onFilesSelected;
         private readonly HashSet<string> multiSelectedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+        private readonly bool folderSelect;
+        private readonly Action<string>? onFolderSelected;
+
         private List<FileSystemInfo> currentFiles = new List<FileSystemInfo>();
 
         public override Vector2 InitialSize => new Vector2(640f, 680f);
@@ -71,8 +74,8 @@ namespace CharacterStudio.UI
 
             onFileSelected = onSelect;
             filter = fileFilter;
-            doCloseX = true;
-            doCloseButton = true;
+            doCloseX = false;
+            doCloseButton = false;
             draggable = true;
             resizeable = true;
             absorbInputAroundWindow = true;
@@ -97,12 +100,42 @@ namespace CharacterStudio.UI
             this.onFilesSelected = onSelectMulti;
             this.multiSelect = true;
             filter = fileFilter;
-            doCloseX = true;
-            doCloseButton = true;
+            doCloseX = false;
+            doCloseButton = false;
             draggable = true;
             resizeable = true;
             absorbInputAroundWindow = true;
             optionalTitle = "CS_Studio_Browser_Title".Translate();
+
+            RefreshFileList();
+        }
+
+        /// <summary>
+        /// 文件夹选择模式构造函数。用户可以浏览目录并选择一个文件夹作为输出路径。
+        /// </summary>
+        public Dialog_FileBrowser(string initialPath, Action<string> onFolderSelect, bool isFolderMode, string? defaultRoot = null)
+        {
+            string fallbackPath = !string.IsNullOrWhiteSpace(defaultRoot) ? defaultRoot! : Path.Combine(GenFilePaths.ConfigFolderPath, "CharacterStudio");
+            try
+            {
+                if (!Directory.Exists(fallbackPath))
+                {
+                    Directory.CreateDirectory(fallbackPath);
+                }
+            }
+            catch { }
+
+            currentPath = ResolveStartingPath(initialPath, fallbackPath);
+
+            this.folderSelect = true;
+            this.onFolderSelected = onFolderSelect;
+            filter = "";
+            doCloseX = false;
+            doCloseButton = false;
+            draggable = true;
+            resizeable = true;
+            absorbInputAroundWindow = true;
+            optionalTitle = "CS_Studio_Browser_SelectFolder".Translate();
 
             RefreshFileList();
         }
@@ -160,20 +193,24 @@ namespace CharacterStudio.UI
 
                 currentFiles.AddRange(dir.GetDirectories());
 
-                HashSet<string> seenFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                string[] filters = filter.Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
-                if (filters.Length == 0)
+                // 文件夹选择模式下不显示文件，只显示子文件夹
+                if (!folderSelect)
                 {
-                    filters = new[] { "*.*" };
-                }
-
-                foreach (string fileFilter in filters)
-                {
-                    foreach (FileInfo file in dir.GetFiles(fileFilter.Trim()))
+                    HashSet<string> seenFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    string[] filters = filter.Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (filters.Length == 0)
                     {
-                        if (seenFiles.Add(file.FullName))
+                        filters = new[] { "*.*" };
+                    }
+
+                    foreach (string fileFilter in filters)
+                    {
+                        foreach (FileInfo file in dir.GetFiles(fileFilter.Trim()))
                         {
-                            currentFiles.Add(file);
+                            if (seenFiles.Add(file.FullName))
+                            {
+                                currentFiles.Add(file);
+                            }
                         }
                     }
                 }
@@ -199,6 +236,8 @@ namespace CharacterStudio.UI
         {
             ProcessPendingThumbnails();
 
+            UIHelper.DrawDialogFrame(inRect, this);
+
             Rect titleRect = new Rect(0f, 0f, inRect.width, HeaderHeight);
             Widgets.DrawBoxSolid(titleRect, UIHelper.PanelFillSoftColor);
             Widgets.DrawBoxSolid(new Rect(titleRect.x, titleRect.yMax - 2f, titleRect.width, 2f), UIHelper.AccentSoftColor);
@@ -209,7 +248,7 @@ namespace CharacterStudio.UI
             Text.Font = GameFont.Tiny;
             Text.Anchor = TextAnchor.MiddleLeft;
             GUI.color = UIHelper.HeaderColor;
-            Widgets.Label(new Rect(titleRect.x + 8f, titleRect.y, titleRect.width - 16f, titleRect.height), "CS_Studio_Browser_Title".Translate());
+            Widgets.Label(new Rect(titleRect.x + 8f, titleRect.y, titleRect.width - 40f, titleRect.height), "CS_Studio_Browser_Title".Translate());
             GUI.color = Color.white;
             Text.Anchor = TextAnchor.UpperLeft;
             Text.Font = GameFont.Small;
@@ -266,6 +305,8 @@ namespace CharacterStudio.UI
 
             Rect inner = searchRect.ContractedBy(4f);
             float modsBtnWidth = 64f;
+            float texturesBtnWidth = 80f;
+            float btnGap = 6f;
             
             // Mods 快速访问按钮
             Rect modsBtnRect = new Rect(inner.x, inner.y, modsBtnWidth, inner.height);
@@ -278,15 +319,32 @@ namespace CharacterStudio.UI
             }
             TooltipHandler.TipRegion(modsBtnRect, "CS_Studio_Browser_ModsDir".Translate());
 
+            // Textures 快速访问按钮 — 跳转到 CharacterStudio 的 Textures 目录
+            Rect texturesBtnRect = new Rect(modsBtnRect.xMax + btnGap, inner.y, texturesBtnWidth, inner.height);
+            if (DrawBrowserButton(texturesBtnRect, "Textures", accent: true))
+            {
+                var modContent = CharacterStudioMod.ModContent;
+                if (modContent != null)
+                {
+                    string texDir = Path.Combine(modContent.RootDir, "Textures");
+                    try { Directory.CreateDirectory(texDir); } catch { }
+                    currentPath = texDir;
+                    searchText = "";
+                    scrollPos = Vector2.zero;
+                    RefreshFileList();
+                }
+            }
+            TooltipHandler.TipRegion(texturesBtnRect, "CS_Studio_Browser_TexturesDir".Translate());
+
             // 搜索输入框
-            Rect searchInnerRect = new Rect(modsBtnRect.xMax + 8f, inner.y, inner.width - modsBtnWidth - 8f, inner.height);
+            Rect searchInnerRect = new Rect(texturesBtnRect.xMax + 8f, inner.y, inner.width - texturesBtnRect.xMax - 8f + inner.x, inner.height);
             searchText = Widgets.TextEntryLabeled(searchInnerRect, "CS_Studio_Browser_Search".Translate() + " ", searchText);
             y += searchRect.height + SectionGap;
         }
 
         private void DrawBody(Rect inRect, float y)
         {
-            float bottomReserved = multiSelect ? 40f : 0f;
+            float bottomReserved = (multiSelect || folderSelect) ? 40f : 0f;
             Rect bodyRect = new Rect(0f, y, inRect.width, inRect.height - y - bottomReserved - 10f);
             DrawFileList(bodyRect);
             
@@ -300,6 +358,22 @@ namespace CharacterStudio.UI
                 }
                 Text.Anchor = TextAnchor.MiddleLeft;
                 Widgets.Label(new Rect(bottomBar.x, bottomBar.y, bottomBar.width - 130f, 40f), "已选择 {0} 个文件".Formatted(multiSelectedPaths.Count));
+                Text.Anchor = TextAnchor.UpperLeft;
+            }
+            else if (folderSelect)
+            {
+                Rect bottomBar = new Rect(0f, inRect.height - 40f, inRect.width, 40f);
+                if (UIHelper.DrawToolbarButton(new Rect(bottomBar.xMax - 120f, bottomBar.y + 4f, 120f, 32f), "CS_Studio_Btn_OK".Translate(), accent: true))
+                {
+                    onFolderSelected?.Invoke(currentPath);
+                    Close();
+                }
+                Text.Anchor = TextAnchor.MiddleLeft;
+                GUI.color = UIHelper.SubtleColor;
+                Text.Font = GameFont.Tiny;
+                Widgets.Label(new Rect(bottomBar.x, bottomBar.y + 4f, bottomBar.width - 130f, 40f), currentPath);
+                Text.Font = GameFont.Small;
+                GUI.color = Color.white;
                 Text.Anchor = TextAnchor.UpperLeft;
             }
         }
@@ -487,7 +561,8 @@ namespace CharacterStudio.UI
                     continue;
                 }
 
-                Texture2D? texture = RuntimeAssetLoader.LoadTextureRaw(resolvedPath);
+                // 不使用全局缓存，每次打开浏览器都从磁盘重新读取以确保外部修改可见
+                Texture2D? texture = RuntimeAssetLoader.LoadTextureRaw(resolvedPath, useCache: false);
                 if (texture == null)
                 {
                     thumbnailLoadFailures.Add(resolvedPath);

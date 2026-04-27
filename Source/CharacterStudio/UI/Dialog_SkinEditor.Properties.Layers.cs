@@ -109,15 +109,27 @@ namespace CharacterStudio.UI
             bool isSouthActive = previewRotation == Rot4.South;
             if (DrawCollapsibleSection(ref y, width, "CS_Studio_Section_Transform".Translate(), "Transform", isSouthActive))
             {
-                // 属性面板始终根据预览朝向读写偏移，不受 editLayerOffsetPerFacing 影响
-                Vector3 currentOffset = GetLayerOffsetForRotation(layer, previewRotation);
+                // 当 editLayerOffsetPerFacing 关闭时，所有朝向统一读写 layer.offset，
+                // 与预览拖拽行为保持一致；开启时按当前预览朝向读写对应朝向偏移。
+                Vector3 currentOffset;
+                Action<PawnLayerConfig, float?, float?, float?> applyOffset;
+                if (!editLayerOffsetPerFacing || previewRotation == Rot4.South)
+                {
+                    currentOffset = layer.offset;
+                    applyOffset = (l, nx, ny, nz) => { if (nx.HasValue) l.offset.x = nx.Value; if (ny.HasValue) l.offset.y = ny.Value; if (nz.HasValue) l.offset.z = nz.Value; };
+                }
+                else
+                {
+                    currentOffset = GetLayerOffsetForRotation(layer, previewRotation);
+                    applyOffset = (l, nx, ny, nz) => SetLayerOffsetForRotation(l, previewRotation, newOffsetX: nx, newOffsetY: ny, newOffsetZ: nz);
+                }
 
-                float ox = currentOffset.x;
+                 float ox = currentOffset.x;
                 UIHelper.DrawPropertySlider(ref y, width, "CS_Studio_Prop_OffsetX".Translate(), ref ox, -1f, 1f);
                 if (Math.Abs(ox - currentOffset.x) > 0.0001f)
                 {
                     float val = ox;
-                    MutateSelectedLayersWithUndo(layer, l => SetLayerOffsetForRotation(l, previewRotation, newOffsetX: val));
+                    MutateSelectedLayersWithUndo(layer, l => applyOffset(l, val, null, null));
                 }
 
                 float oy = currentOffset.y;
@@ -125,7 +137,7 @@ namespace CharacterStudio.UI
                 if (Math.Abs(oy - currentOffset.y) > 0.0001f)
                 {
                     float val = oy;
-                    MutateSelectedLayersWithUndo(layer, l => SetLayerOffsetForRotation(l, previewRotation, newOffsetY: val));
+                    MutateSelectedLayersWithUndo(layer, l => applyOffset(l, null, val, null));
                 }
 
                 float oz = currentOffset.z;
@@ -133,7 +145,7 @@ namespace CharacterStudio.UI
                 if (Math.Abs(oz - currentOffset.z) > 0.0001f)
                 {
                     float val = oz;
-                    MutateSelectedLayersWithUndo(layer, l => SetLayerOffsetForRotation(l, previewRotation, newOffsetZ: val));
+                    MutateSelectedLayersWithUndo(layer, l => applyOffset(l, null, null, val));
                 }
 
                 float uniformScale = layer.scale.x;
@@ -169,27 +181,14 @@ namespace CharacterStudio.UI
             bool isEastActive = previewRotation == Rot4.East || previewRotation == Rot4.West;
             if (DrawCollapsibleSection(ref y, width, "CS_Studio_Section_EastOffset".Translate(), "EastOffset", isEastActive))
             {
-                bool useWest = layer.useWestOffset;
-                UIHelper.DrawPropertyCheckbox(ref y, width, "CS_Studio_Prop_IndependentWest".Translate(), ref useWest);
-                if (useWest != layer.useWestOffset)
-                {
-                    bool newValue = useWest;
-                    MutateSelectedLayersWithUndo(layer, l =>
-                    {
-                        l.useWestOffset = newValue;
-                        if (newValue && l.offsetWest == Vector3.zero)
-                            l.offsetWest = new Vector3(-l.offsetEast.x, l.offsetEast.y, l.offsetEast.z);
-                    });
-                }
-
-                bool editingWest = (layer.useWestOffset || editLayerOffsetPerFacing) && previewRotation == Rot4.West;
+                bool editingWest = previewRotation == Rot4.West;
                 Vector3 sideOffset;
                 if (editingWest)
                 {
-                    if (!layer.useWestOffset && layer.offsetWest == Vector3.zero)
-                        sideOffset = new Vector3(-layer.offsetEast.x, layer.offsetEast.y, layer.offsetEast.z);
-                    else
+                    if (layer.useWestOffset)
                         sideOffset = layer.offsetWest;
+                    else
+                        sideOffset = new Vector3(-layer.offsetEast.x, layer.offsetEast.y, layer.offsetEast.z);
                 }
                 else
                 {

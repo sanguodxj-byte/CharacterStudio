@@ -28,6 +28,8 @@ namespace CharacterStudio.UI
 
         public override void DoWindowContents(Rect inRect)
         {
+            UIHelper.DrawDialogFrame(inRect, this);
+
             Rect shellRect = new Rect(0f, 0f, inRect.width, inRect.height);
             Rect titleRect = UIHelper.DrawPanelShell(shellRect, "CS_Studio_CharacterDefinition_Title".Translate(), 0f);
 

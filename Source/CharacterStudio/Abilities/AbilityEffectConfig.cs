@@ -10,7 +10,7 @@ using Verse;
 
 namespace CharacterStudio.Abilities
 {
-    public class AbilityEffectConfig
+    public class AbilityEffectConfig : IExposable
     {
         public AbilityEffectType type;
         public float amount = 0f;
@@ -35,6 +35,31 @@ namespace CharacterStudio.Abilities
         public string weatherDefName = string.Empty; // Added for WeatherChange
         public int weatherDurationTicks = 60000; // Added for WeatherChange (default 1 day)
         public int weatherTransitionTicks = 3000; // Added for WeatherChange (default 0.5 hour)
+
+        public void ExposeData()
+        {
+            Scribe_Values.Look(ref type, "type");
+            Scribe_Values.Look(ref amount, "amount", 0f);
+            Scribe_Values.Look(ref duration, "duration", 0f);
+            Scribe_Values.Look(ref chance, "chance", 1f);
+            Scribe_Defs.Look(ref damageDef, "damageDef");
+            Scribe_Defs.Look(ref hediffDef, "hediffDef");
+            Scribe_Defs.Look(ref summonKind, "summonKind");
+            Scribe_Values.Look(ref summonCount, "summonCount", 1);
+            Scribe_Values.Look(ref summonFactionType, "summonFactionType", SummonFactionType.Player);
+            Scribe_Defs.Look(ref summonFactionDef, "summonFactionDef");
+            Scribe_Values.Look(ref summonFactionDefName, "summonFactionDefName", string.Empty);
+            Scribe_Values.Look(ref controlMode, "controlMode", ControlEffectMode.Stun);
+            Scribe_Values.Look(ref controlMoveDistance, "controlMoveDistance", 3);
+            Scribe_Values.Look(ref terraformMode, "terraformMode", TerraformEffectMode.CleanFilth);
+            Scribe_Defs.Look(ref terraformThingDef, "terraformThingDef");
+            Scribe_Defs.Look(ref terraformTerrainDef, "terraformTerrainDef");
+            Scribe_Values.Look(ref terraformSpawnCount, "terraformSpawnCount", 1);
+            Scribe_Values.Look(ref canHurtSelf, "canHurtSelf", false);
+            Scribe_Values.Look(ref weatherDefName, "weatherDefName", string.Empty);
+            Scribe_Values.Look(ref weatherDurationTicks, "weatherDurationTicks", 60000);
+            Scribe_Values.Look(ref weatherTransitionTicks, "weatherTransitionTicks", 3000);
+        }
 
         public AbilityEffectConfig Clone()
         {

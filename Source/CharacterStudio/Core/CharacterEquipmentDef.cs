@@ -625,6 +625,71 @@ namespace CharacterStudio.Core
         {
             return texPath ?? string.Empty;
         }
+
+        /// <summary>
+        /// 将装备渲染数据转换为渲染管线可用的 PawnLayerConfig。
+        /// 用于编辑器预览和运行时图层注入。
+        /// </summary>
+        public PawnLayerConfig ToPawnLayerConfig()
+        {
+            return new PawnLayerConfig
+            {
+                layerName = string.IsNullOrWhiteSpace(layerName) ? "Equipment" : layerName,
+                texPath = texPath ?? string.Empty,
+                maskTexPath = maskTexPath ?? string.Empty,
+                anchorTag = string.IsNullOrWhiteSpace(anchorTag) ? "Apparel" : anchorTag,
+                anchorPath = anchorPath ?? string.Empty,
+                shaderDefName = string.IsNullOrWhiteSpace(shaderDefName) ? "Cutout" : shaderDefName,
+                directionalFacing = directionalFacing ?? string.Empty,
+                offset = offset,
+                offsetEast = offsetEast,
+                offsetNorth = offsetNorth,
+                useWestOffset = useWestOffset,
+                offsetWest = offsetWest,
+                scale = scale,
+                scaleEastMultiplier = scaleEastMultiplier,
+                scaleNorthMultiplier = scaleNorthMultiplier,
+                scaleWestMultiplier = scaleWestMultiplier,
+                rotation = rotation,
+                rotationEastOffset = rotationEastOffset,
+                rotationNorthOffset = rotationNorthOffset,
+                rotationWestOffset = rotationWestOffset,
+                drawOrder = drawOrder,
+                flipHorizontal = flipHorizontal,
+                visible = visible,
+                colorSource = colorSource,
+                customColor = customColor,
+                colorTwoSource = colorTwoSource,
+                customColorTwo = customColorTwo,
+                useTriggeredEquipmentAnimation = useTriggeredLocalAnimation,
+                triggerAbilityDefName = triggerAbilityDefName ?? string.Empty,
+                triggeredAnimationGroupKey = animationGroupKey ?? string.Empty,
+                triggeredAnimationRole = triggeredAnimationRole,
+                triggeredDeployAngle = triggeredDeployAngle,
+                triggeredReturnAngle = triggeredReturnAngle,
+                triggeredDeployTicks = triggeredDeployTicks,
+                triggeredHoldTicks = triggeredHoldTicks,
+                triggeredReturnTicks = triggeredReturnTicks,
+                triggeredPivotOffset = triggeredPivotOffset,
+                triggeredDeployOffset = triggeredDeployOffset,
+                triggeredUseVfxVisibility = triggeredUseVfxVisibility,
+                triggeredIdleTexPath = triggeredIdleTexPath ?? string.Empty,
+                triggeredDeployTexPath = triggeredDeployTexPath ?? string.Empty,
+                triggeredHoldTexPath = triggeredHoldTexPath ?? string.Empty,
+                triggeredReturnTexPath = triggeredReturnTexPath ?? string.Empty,
+                triggeredIdleMaskTexPath = triggeredIdleMaskTexPath ?? string.Empty,
+                triggeredDeployMaskTexPath = triggeredDeployMaskTexPath ?? string.Empty,
+                triggeredHoldMaskTexPath = triggeredHoldMaskTexPath ?? string.Empty,
+                triggeredReturnMaskTexPath = triggeredReturnMaskTexPath ?? string.Empty,
+                triggeredVisibleDuringDeploy = triggeredVisibleDuringDeploy,
+                triggeredVisibleDuringHold = triggeredVisibleDuringHold,
+                triggeredVisibleDuringReturn = triggeredVisibleDuringReturn,
+                triggeredVisibleOutsideCycle = triggeredVisibleOutsideCycle,
+                triggeredAnimationSouth = triggeredAnimationSouth?.Clone(),
+                triggeredAnimationEastWest = triggeredAnimationEastWest?.Clone(),
+                triggeredAnimationNorth = triggeredAnimationNorth?.Clone()
+            };
+        }
     }
 
     public enum EquipmentTriggeredAnimationRole

@@ -276,6 +276,63 @@ namespace CharacterStudio.Abilities
     }
 
     /// <summary>
+    /// 通用 Fleck 特效：用户选择任意 FleckDef，在指定位置生成。
+    /// 支持 scale / rotation / 颜色 / 速度等参数。
+    /// </summary>
+    public class VisualEffectWorker_Fleck : VisualEffectWorker
+    {
+        public override void Play(AbilityVisualEffectConfig config, LocalTargetInfo target, Pawn caster)
+        {
+            Map map = caster.Map;
+            if (map == null) return;
+
+            FleckDef? fleckDef = DefDatabase<FleckDef>.GetNamedSilentFail(config.fleckDefName);
+            if (fleckDef == null)
+            {
+                Log.Warning($"[CharacterStudio] FleckDef '{config.fleckDefName}' 未找到，跳止播放。");
+                return;
+            }
+
+            foreach (Vector3 pos in ResolvePositions(config, target, caster))
+            {
+                FleckCreationData data = FleckMaker.GetDataStatic(pos, map, fleckDef, config.scale);
+                data.rotation = config.rotation;
+                if (config.textureScale != Vector2.one)
+                {
+                    data.exactScale = new Vector3(config.textureScale.x, 1f, config.textureScale.y);
+                }
+                map.flecks.CreateFleck(data);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Fleck 连接线特效：在施法者与目标之间画一条 Fleck 连接线。
+    /// 复用原版 FleckMaker.ConnectingLine。
+    /// </summary>
+    public class VisualEffectWorker_FleckConnectingLine : VisualEffectWorker
+    {
+        public override void Play(AbilityVisualEffectConfig config, LocalTargetInfo target, Pawn caster)
+        {
+            Map map = caster.Map;
+            if (map == null) return;
+
+            FleckDef? fleckDef = DefDatabase<FleckDef>.GetNamedSilentFail(config.fleckDefName);
+            if (fleckDef == null)
+            {
+                Log.Warning($"[CharacterStudio] FleckDef '{config.fleckDefName}' 未找到，跳止播放。");
+                return;
+            }
+
+            Vector3 start = caster.DrawPos;
+            Vector3 end = target.CenterVector3;
+
+            float width = Mathf.Max(0.05f, config.lineWidth) * Mathf.Max(0.1f, config.scale);
+            FleckMaker.ConnectingLine(start, end, fleckDef, map, width);
+        }
+    }
+
+    /// <summary>
     /// 工厂：根据特效类型创建对应 Worker
     /// </summary>
     public static class VisualEffectWorkerFactory
@@ -297,6 +354,9 @@ namespace CharacterStudio.Abilities
             { AbilityVisualEffectType.FlameSurge,      typeof(VisualEffectWorker_FlameSurge) },
             { (AbilityVisualEffectType)1001, typeof(VisualEffectWorker_FlightJetBlue) },
             { (AbilityVisualEffectType)1002, typeof(VisualEffectWorker_FlightJetTrail) },
+            { AbilityVisualEffectType.CustomMesh, typeof(VisualEffectWorker_CustomMesh) },
+            { AbilityVisualEffectType.Fleck, typeof(VisualEffectWorker_Fleck) },
+            { AbilityVisualEffectType.FleckConnectingLine, typeof(VisualEffectWorker_FleckConnectingLine) },
         };
 
         private static readonly Dictionary<string, AbilityVisualEffectType> presetTypes
@@ -317,6 +377,14 @@ namespace CharacterStudio.Abilities
             { "FlameSurge", AbilityVisualEffectType.FlameSurge },
             { "FlightJetBlue", (AbilityVisualEffectType)1001 },
             { "FlightJetTrail", (AbilityVisualEffectType)1002 },
+            { "CustomMesh", AbilityVisualEffectType.CustomMesh },
+            { "LightningBolt", AbilityVisualEffectType.CustomMesh },
+            { "Ring", AbilityVisualEffectType.CustomMesh },
+            { "Spiral", AbilityVisualEffectType.CustomMesh },
+            { "Beam", AbilityVisualEffectType.CustomMesh },
+            { "Fleck", AbilityVisualEffectType.Fleck },
+            { "FleckConnectingLine", AbilityVisualEffectType.FleckConnectingLine },
+            { "ConnectingLine", AbilityVisualEffectType.FleckConnectingLine },
         };
 
         public static IReadOnlyList<string> GetRegisteredPresetNames()
