@@ -165,12 +165,9 @@ namespace CharacterStudio.UI
         {
             // 只对玩家殖民者显示
             if (!__instance.IsColonistPlayerControlled) return;
-            if (!__instance.RaceProps.Humanlike) return;
 
-            // 添加外观 Gizmo
-            var originalGizmos = __result.ToList();
-            originalGizmos.Add(new Gizmo_ChangeAppearance(__instance));
-            __result = originalGizmos;
+            // P-PERF: 使用 Concat 延迟追加，避免 ToList() 分配
+            __result = __result.Concat(new[] { new Gizmo_ChangeAppearance(__instance) });
         }
     }
 }

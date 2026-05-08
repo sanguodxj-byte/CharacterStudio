@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -221,6 +221,7 @@ namespace CharacterStudio.Abilities
                 modAbility.aiCanUse.ToString("F3"),
                 modAbility.carrierType.ToString(),
                 modAbility.targetType.ToString(),
+                modAbility.useTwoPointTargeting.ToString(),
                 modAbility.useRadius.ToString(),
                 modAbility.areaCenter.ToString(),
                 modAbility.areaShape.ToString(),
@@ -235,7 +236,7 @@ namespace CharacterStudio.Abilities
                 foreach (var effect in modAbility.effects)
                 {
                     if (effect == null) continue;
-                    parts.Add($"E:{effect.type}|{effect.amount:F3}|{effect.duration:F3}|{effect.chance:F3}|{effect.damageDef?.defName}|{effect.hediffDef?.defName}|{effect.summonKind?.defName}|{effect.summonCount}|{effect.summonFactionType}|{effect.summonFactionDefName}|{effect.summonFactionDef?.defName}|{effect.controlMode}|{effect.controlMoveDistance}|{effect.terraformMode}|{effect.terraformThingDef?.defName}|{effect.terraformTerrainDef?.defName}|{effect.terraformSpawnCount}|{effect.canHurtSelf}|{effect.weatherDefName}|{effect.weatherDurationTicks}|{effect.weatherTransitionTicks}");
+                    parts.Add($"E:{effect.type}|{effect.amount:F3}|{effect.duration:F3}|{effect.chance:F3}|{effect.damageDef?.defName}|{effect.hediffDef?.defName}|{effect.summonKind?.defName}|{effect.summonCount}|{effect.summonFactionType}|{effect.summonFactionDefName}|{effect.summonFactionDef?.defName}|{effect.controlMode}|{effect.controlMoveDistance}|{effect.terraformMode}|{effect.terraformThingDef?.defName}|{effect.terraformTerrainDef?.defName}|{effect.terraformSpawnCount}|{effect.canHurtSelf}|{effect.delayTicks}|{effect.weatherDefName}|{effect.weatherDurationTicks}|{effect.weatherTransitionTicks}");
                 }
             }
 
@@ -244,8 +245,8 @@ namespace CharacterStudio.Abilities
                 foreach (var vfx in modAbility.visualEffects)
                 {
                     if (vfx == null) continue;
-                    vfx.NormalizeLegacyData();
-                    vfx.SyncLegacyFields();
+                    vfx.NormalizeFieldConsistency();
+                    vfx.SyncDerivedFields();
                     parts.Add($"V:{vfx.type}|{vfx.sourceMode}|{vfx.textureSource}|{vfx.presetDefName}|{vfx.customTexturePath}|{vfx.target}|{vfx.trigger}|{vfx.delayTicks}|{vfx.displayDurationTicks}|{vfx.linkedExpression}|{vfx.linkedExpressionDurationTicks}|{vfx.linkedPupilBrightnessOffset:F3}|{vfx.linkedPupilContrastOffset:F3}|{vfx.scale:F3}|{vfx.drawSize:F3}|{vfx.useCasterFacing}|{vfx.forwardOffset:F3}|{vfx.sideOffset:F3}|{vfx.heightOffset:F3}|{vfx.rotation:F3}|{vfx.textureScale.x:F3},{vfx.textureScale.y:F3}|{vfx.repeatCount}|{vfx.repeatIntervalTicks}|{vfx.offset.x:F3},{vfx.offset.y:F3},{vfx.offset.z:F3}|{vfx.playSound}|{vfx.soundDefName}|{vfx.soundDelayTicks}|{vfx.soundVolume:F3}|{vfx.soundPitch:F3}|{vfx.attachToPawn}|{vfx.attachToTargetCell}|{vfx.enabled}");
                 }
             }

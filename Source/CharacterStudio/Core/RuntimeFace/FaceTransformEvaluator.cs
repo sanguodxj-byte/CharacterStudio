@@ -103,7 +103,7 @@ namespace CharacterStudio.Core
     internal static class FaceTransformEvaluator
     {
         // ─────────────────────────────────────────────────────────────
-        // 旧接口：保持向后兼容，供未迁移的调用方使用
+        // 基础求值接口：按 partType 分发到对应的求值方法
         // ─────────────────────────────────────────────────────────────
 
         public static FaceTransformResult Evaluate(
@@ -129,7 +129,7 @@ namespace CharacterStudio.Core
                 LayeredFacePartType.Blush => EvaluateBlush(context, emotionOverlayMotion),
                 LayeredFacePartType.Tear => EvaluateTear(context, emotionOverlayMotion),
                 LayeredFacePartType.Sweat => EvaluateSweat(context, emotionOverlayMotion),
-                LayeredFacePartType.Overlay => EvaluateOverlay(context),
+                LayeredFacePartType.Overlay => EvaluateOverlay(context, emotionOverlayMotion),
                 _ => FaceTransformResult.Visible(0f, Vector3.zero, Vector3.one)
             };
         }
@@ -210,12 +210,11 @@ namespace CharacterStudio.Core
             bool isSideFacing = context.facing == Rot4.East || context.facing == Rot4.West;
             bool isLeftEye = context.side == LayeredFacePartSide.Left;
 
-            // 根据朝向和瞳孔侧选择对应的方向偏移
+            // 根据朝向选择对应的方向偏移
             float dirLeftX, dirRightX, dirUpZ, dirDownZ;
             if (isSideFacing)
             {
-                // 侧面朝向：使用侧面偏移配置
-                offsetX += SideBias(context.side, motion.side_baseX);
+                offsetX += motion.side_baseX;
                 dirLeftX = motion.side_dirLeftX;
                 dirRightX = motion.side_dirRightX;
                 dirUpZ = motion.side_dirUpZ;
@@ -223,23 +222,13 @@ namespace CharacterStudio.Core
             }
             else
             {
-                // 正面朝向：使用左/右瞳孔独立配置
-                if (isLeftEye)
-                {
-                    offsetX += motion.leftPupil_frontBaseX;
-                    dirLeftX = motion.leftPupil_dirLeftX;
-                    dirRightX = motion.leftPupil_dirRightX;
-                    dirUpZ = motion.leftPupil_dirUpZ;
-                    dirDownZ = motion.leftPupil_dirDownZ;
-                }
-                else
-                {
-                    offsetX += motion.rightPupil_frontBaseX;
-                    dirLeftX = motion.rightPupil_dirLeftX;
-                    dirRightX = motion.rightPupil_dirRightX;
-                    dirUpZ = motion.rightPupil_dirUpZ;
-                    dirDownZ = motion.rightPupil_dirDownZ;
-                }
+                // 正面朝向：frontBaseX 是幅度，左瞳孔取反
+                float eyeSign = isLeftEye ? -1f : 1f;
+                offsetX += eyeSign * motion.frontBaseX;
+                dirLeftX = motion.dirLeftX;
+                dirRightX = motion.dirRightX;
+                dirUpZ = motion.dirUpZ;
+                dirDownZ = motion.dirDownZ;
             }
 
             // 叠加连续 gaze 偏移
@@ -593,12 +582,11 @@ namespace CharacterStudio.Core
             bool isSideFacing = context.facing == Rot4.East || context.facing == Rot4.West;
             bool isLeftEye = context.side == LayeredFacePartSide.Left;
 
-            // 根据朝向和瞳孔侧选择对应的方向偏移
+            // 根据朝向选择对应的方向偏移
             float dirLeftX, dirRightX, dirUpZ, dirDownZ;
             if (isSideFacing)
             {
-                // 侧面朝向：使用侧面偏移配置
-                offsetX += SideBias(context.side, motion.side_baseX);
+                offsetX += motion.side_baseX;
                 dirLeftX = motion.side_dirLeftX;
                 dirRightX = motion.side_dirRightX;
                 dirUpZ = motion.side_dirUpZ;
@@ -606,23 +594,12 @@ namespace CharacterStudio.Core
             }
             else
             {
-                // 正面朝向：使用左/右瞳孔独立配置
-                if (isLeftEye)
-                {
-                    offsetX += motion.leftPupil_frontBaseX;
-                    dirLeftX = motion.leftPupil_dirLeftX;
-                    dirRightX = motion.leftPupil_dirRightX;
-                    dirUpZ = motion.leftPupil_dirUpZ;
-                    dirDownZ = motion.leftPupil_dirDownZ;
-                }
-                else
-                {
-                    offsetX += motion.rightPupil_frontBaseX;
-                    dirLeftX = motion.rightPupil_dirLeftX;
-                    dirRightX = motion.rightPupil_dirRightX;
-                    dirUpZ = motion.rightPupil_dirUpZ;
-                    dirDownZ = motion.rightPupil_dirDownZ;
-                }
+                float eyeSign = isLeftEye ? -1f : 1f;
+                offsetX += eyeSign * motion.frontBaseX;
+                dirLeftX = motion.dirLeftX;
+                dirRightX = motion.dirRightX;
+                dirUpZ = motion.dirUpZ;
+                dirDownZ = motion.dirDownZ;
             }
 
             offsetX += clampedGazeOffset.x * Mathf.Max(Mathf.Abs(dirLeftX), Mathf.Abs(dirRightX));
@@ -890,8 +867,18 @@ namespace CharacterStudio.Core
                 new Vector3(pulse, 1f, pulse));
         }
 
-        private static FaceTransformResult EvaluateOverlay(FaceTransformContext context)
+        private static FaceTransformResult EvaluateOverlay(FaceTransformContext context, PawnFaceConfig.EmotionOverlayMotionConfig motion)
         {
+            // Sleep overlay: subtle breathing pulse for closed-eye sleep state
+            if (context.emotionState == EmotionOverlayState.Sleep)
+            {
+                float pulse = motion.sleepPulseBase + context.absSlowWave * motion.sleepPulseWave;
+                return FaceTransformResult.Visible(
+                    0f,
+                    new Vector3(0f, 0f, motion.sleepOffsetZBase + context.slowWave * motion.sleepSlowWaveOffsetZ),
+                    new Vector3(pulse, 1f, motion.sleepScaleZBase + context.absSlowWave * motion.sleepScaleZWave));
+            }
+
             return FaceTransformResult.Visible(0f, Vector3.zero, Vector3.one);
         }
 

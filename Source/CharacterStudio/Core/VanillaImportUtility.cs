@@ -42,6 +42,22 @@ namespace CharacterStudio.Core
             "Label"
         };
 
+        /// <summary>
+        /// 纹理文件名（不含扩展名）黑名单。
+        /// 这些文件名对应的是占位符、体型参考或工具纹理，
+        /// 不应作为用户可见的自定义图层导入。
+        /// </summary>
+        private static readonly HashSet<string> ExcludedTexFileNames = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase)
+        {
+            "dummy",
+            "normal",
+            "thin",
+            "fat",
+            "hulk",
+            "blank",
+            "placeholder"
+        };
+
         public static List<PawnLayerConfig> ImportFromPawn(Pawn pawn)
         {
             var result = ImportFromPawnWithPaths(pawn);
@@ -387,6 +403,7 @@ namespace CharacterStudio.Core
             if (string.IsNullOrEmpty(node.texPath)) return false;
             if (node.texPath == "No Graphic (Logic Only)") return false;
             if (node.texPath == "Error") return false;
+            if (node.texPath.StartsWith("Dynamic/")) return false;
             
             if (node.tagDefName != null && ExcludedTags.Contains(node.tagDefName)) return false;
             if (node.tagDefName != null && (node.tagDefName.Contains("Apparel") || node.tagDefName.Contains("Headgear"))) return false;
@@ -397,6 +414,18 @@ namespace CharacterStudio.Core
             
             string labelLower = label.ToLower();
             if (labelLower.Contains("swaddl") || labelLower.Contains("襁褓")) return false;
+
+            // 过滤占位符/体型参考纹理（dummy、normal 等）
+            if (!string.IsNullOrEmpty(node.texPath))
+            {
+                try
+                {
+                    string fileName = System.IO.Path.GetFileNameWithoutExtension(node.texPath);
+                    if (!string.IsNullOrEmpty(fileName) && ExcludedTexFileNames.Contains(fileName))
+                        return false;
+                }
+                catch { }
+            }
 
             return true;
         }
@@ -422,12 +451,10 @@ namespace CharacterStudio.Core
                 result.sourcePaths = new List<string>(skinDef.hiddenPaths);
             }
 
-#pragma warning disable CS0618 // hiddenTags 仅用于旧数据兼容
             if (skinDef.hiddenTags != null)
             {
                 result.sourceTags = new List<string>(skinDef.hiddenTags);
             }
-#pragma warning restore CS0618
             
             Log.Message($"[CharacterStudio] 从现有皮肤导入 {result.layers.Count} 个图层，{result.sourcePaths.Count} 个隐藏路径，{result.sourceTags.Count} 个隐藏标签");
             return result;

@@ -92,11 +92,7 @@ namespace CharacterStudio.UI
         private readonly SkinAbilityHotkeyConfig editableHotkeys = new();
 
         // LLM 生成状态（异步）
-#pragma warning disable CS0414
         private bool llmAbilitiesGenerating = false;
-        private (bool replaceExisting, List<ModularAbilityDef> result)? llmAbilitiesPendingResult = null;
-        private string? llmAbilitiesPendingError = null;
-#pragma warning restore CS0414
 
         // 绑定目标 Pawn（可从编辑器直接授予/撤销技能）
         private Pawn? boundPawn;

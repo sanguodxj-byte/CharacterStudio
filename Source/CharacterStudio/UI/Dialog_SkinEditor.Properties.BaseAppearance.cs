@@ -193,7 +193,8 @@ namespace CharacterStudio.UI
                         {
                             slot.texPath = path ?? string.Empty;
                             slot.enabled = !string.IsNullOrWhiteSpace(slot.texPath);
-                            TryAutoNormalizeBaseSlotTexture(slot, slotType, slot.texPath);
+                            if (!textureOnlyReplace)
+                                TryAutoNormalizeBaseSlotTexture(slot, slotType, slot.texPath);
                         }, refreshPreview: true, refreshRenderTree: true);
                     }))))
                 {
@@ -201,7 +202,8 @@ namespace CharacterStudio.UI
                     {
                         slot.texPath = texPath;
                         slot.enabled = !string.IsNullOrWhiteSpace(texPath);
-                        TryAutoNormalizeBaseSlotTexture(slot, slotType, slot.texPath);
+                        if (!textureOnlyReplace)
+                            TryAutoNormalizeBaseSlotTexture(slot, slotType, slot.texPath);
                     }, refreshPreview: true, refreshRenderTree: true);
                 }
 
@@ -215,7 +217,7 @@ namespace CharacterStudio.UI
                     MutateWithUndo(() => slot.maskTexPath = maskPath, refreshPreview: true, refreshRenderTree: true);
                 }
 
-                string[] shaderOptions = { "Cutout", "CutoutComplex", "Transparent", "TransparentPostLight", "TransparentZWrite", "ItemTransparent", "MetaOverlay", "Custom" };
+                string[] shaderOptions = { "Cutout", "CutoutComplex", "Transparent", "TransparentPostLight", "TransparentZWrite", "ItemTransparent", "CutoutPlant", "TransparentPlant", "MetaOverlay", "Custom" };
                 UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_BaseSlot_Shader".Translate(), slot.shaderDefName ?? "Cutout",
                     shaderOptions,
                     val => val,

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using CharacterStudio.Core;
 using CharacterStudio.Rendering;
 using UnityEngine;
 using RimWorld;
@@ -10,8 +11,9 @@ using Verse;
 namespace CharacterStudio.Abilities
 {
     /// <summary>
-    /// AssetBundle 特效资源加载器
-    /// 负责从文件系统动态加载 .ab 包，提取其中的特效预制体（Prefab）、材质、Shader 等资源。
+    /// AssetBundle 特效资源加载器（VFX 专用层）
+    /// 负责特效预制体加载、播放和生命周期管理。
+    /// 通用 AssetBundle 加载已委托给 <see cref="AssetBundleManager"/>。
     /// 
     /// 使用方式：
     /// 1. 在 Unity 编辑器中制作特效，导出为 AssetBundle（.ab 文件）
@@ -24,9 +26,6 @@ namespace CharacterStudio.Abilities
     /// </summary>
     public static class VfxAssetBundleLoader
     {
-        // 已加载的 AssetBundle 缓存（路径 → AssetBundle）
-        private static readonly Dictionary<string, AssetBundle> loadedBundles = new Dictionary<string, AssetBundle>(StringComparer.OrdinalIgnoreCase);
-
         // 已加载的 GameObject 缓存（bundlePath|effectName → GameObject）
         private static readonly Dictionary<string, GameObject> loadedPrefabs = new Dictionary<string, GameObject>(StringComparer.OrdinalIgnoreCase);
 
@@ -42,39 +41,6 @@ namespace CharacterStudio.Abilities
         // CompAbilityEffect_Modular.CompTick() 可能在同一游戏 Tick 内被多个技能实例重复调用。
         // VFX 生命周期更新是全局状态，限制为每游戏 Tick 仅处理一次，避免按技能实例数重复遍历活跃特效。
         private static int lastProcessedGameTick = -1;
-
-        /// <summary>
-        /// 获取 Mod 根目录下的完整路径
-        /// </summary>
-        private static string ResolveFullBundlePath(string relativePath)
-        {
-            if (string.IsNullOrWhiteSpace(relativePath))
-                return string.Empty;
-
-            // 如果已经是绝对路径且文件存在，直接使用
-            if (Path.IsPathRooted(relativePath) && File.Exists(relativePath))
-                return relativePath;
-
-            // 尝试相对于当前 Mod 的多个可能路径
-            string? modRoot = CharacterStudioMod.ModContent?.RootDir;
-            if (!string.IsNullOrEmpty(modRoot))
-            {
-                // 先尝试直接路径
-                string fullPath = Path.Combine(modRoot, relativePath);
-                if (File.Exists(fullPath))
-                    return fullPath;
-
-                // 尝试添加 .ab 扩展名
-                if (!fullPath.EndsWith(".ab", StringComparison.OrdinalIgnoreCase))
-                {
-                    fullPath += ".ab";
-                    if (File.Exists(fullPath))
-                        return fullPath;
-                }
-            }
-
-            return relativePath;
-        }
 
         /// <summary>
         /// 加载 AssetBundle 并提取指定名称的 GameObject Prefab
@@ -97,80 +63,29 @@ namespace CharacterStudio.Abilities
                 loadedPrefabs.Remove(cacheKey);
             }
 
-            string fullPath = ResolveFullBundlePath(relativeBundlePath);
-            if (!File.Exists(fullPath))
+            // 委托给 AssetBundleManager 加载
+            GameObject? prefab = AssetBundleManager.LoadAsset<GameObject>(relativeBundlePath, effectName);
+            if (prefab == null)
             {
-                LogWarningOnce($"BundleNotFound:{fullPath}",
-                    $"[CharacterStudio] AssetBundle 文件不存在: {relativeBundlePath} (解析为: {fullPath})");
+                LogWarningOnce($"EffectNotFound:{cacheKey}",
+                    $"[CharacterStudio] AssetBundle '{relativeBundlePath}' 中未找到特效资源: {effectName}");
                 return null;
             }
 
-            // 加载或获取已缓存的 AssetBundle
-            AssetBundle? bundle = LoadBundle(fullPath);
-            if (bundle == null)
-                return null;
-
-            try
-            {
-                GameObject? prefab = bundle.LoadAsset<GameObject>(effectName);
-                if (prefab == null)
-                {
-                    LogWarningOnce($"EffectNotFound:{cacheKey}",
-                        $"[CharacterStudio] AssetBundle '{relativeBundlePath}' 中未找到特效资源: {effectName}");
-                    return null;
-                }
-
-                loadedPrefabs[cacheKey] = prefab;
-                return prefab;
-            }
-            catch (Exception ex)
-            {
-                LogWarningOnce($"LoadEffectError:{cacheKey}",
-                    $"[CharacterStudio] 加载 AB 特效资源异常: {relativeBundlePath}/{effectName} - {ex.Message}");
-                return null;
-            }
+            loadedPrefabs[cacheKey] = prefab;
+            return prefab;
         }
 
         public static string[]? EnumerateBundleAssets(string relativeBundlePath)
         {
-            if (string.IsNullOrWhiteSpace(relativeBundlePath))
-            {
-                return null;
-            }
-
-            string fullPath = ResolveFullBundlePath(relativeBundlePath);
-            if (!File.Exists(fullPath))
-            {
-                LogWarningOnce($"BundleEnumerateMissing:{fullPath}",
-                    $"[CharacterStudio] 枚举 AssetBundle 资源失败，文件不存在: {relativeBundlePath} (解析为: {fullPath})");
-                return null;
-            }
-
-            AssetBundle? bundle = LoadBundle(fullPath);
-            if (bundle == null)
-            {
-                return null;
-            }
-
-            try
-            {
-                return bundle.GetAllAssetNames();
-            }
-            catch (Exception ex)
-            {
-                LogWarningOnce($"BundleEnumerateError:{fullPath}",
-                    $"[CharacterStudio] 枚举 AssetBundle 资源异常: {relativeBundlePath} - {ex.Message}");
-                return null;
-            }
+            return AssetBundleManager.EnumerateAssets(relativeBundlePath);
         }
 
         public static string[]? EnumerateEffectNames(string relativeBundlePath)
         {
-            string[]? assetNames = EnumerateBundleAssets(relativeBundlePath);
+            string[]? assetNames = AssetBundleManager.EnumerateAssets(relativeBundlePath);
             if (assetNames == null)
-            {
                 return null;
-            }
 
             return assetNames
                 .Where(static name => name.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase))
@@ -182,11 +97,9 @@ namespace CharacterStudio.Abilities
 
         public static string[]? EnumerateTextureNames(string relativeBundlePath)
         {
-            string[]? assetNames = EnumerateBundleAssets(relativeBundlePath);
+            string[]? assetNames = AssetBundleManager.EnumerateAssets(relativeBundlePath);
             if (assetNames == null)
-            {
                 return null;
-            }
 
             return assetNames
                 .Where(static name => name.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
@@ -204,161 +117,12 @@ namespace CharacterStudio.Abilities
 
         public static Texture2D? LoadTexture(string relativeBundlePath, string textureName)
         {
-            if (string.IsNullOrWhiteSpace(relativeBundlePath) || string.IsNullOrWhiteSpace(textureName))
-            {
-                return null;
-            }
-
-            string fullPath = ResolveFullBundlePath(relativeBundlePath);
-            if (!File.Exists(fullPath))
-            {
-                LogWarningOnce($"TextureBundleMissing:{fullPath}",
-                    $"[CharacterStudio] AssetBundle 贴图加载失败，文件不存在: {relativeBundlePath} (解析为: {fullPath})");
-                return null;
-            }
-
-            AssetBundle? bundle = LoadBundle(fullPath);
-            if (bundle == null)
-            {
-                return null;
-            }
-
-            string[] candidates = BuildAssetLookupCandidates(textureName,
-                ".png", ".jpg", ".jpeg", ".tga", ".psd", ".tif", ".tiff");
-
-            foreach (string candidate in candidates)
-            {
-                try
-                {
-                    Texture2D? texture = bundle.LoadAsset<Texture2D>(candidate);
-                    if (texture != null)
-                    {
-                        return texture;
-                    }
-                }
-                catch
-                {
-                }
-            }
-
-            LogWarningOnce($"TextureMissing:{relativeBundlePath}|{textureName}",
-                $"[CharacterStudio] AssetBundle '{relativeBundlePath}' 中未找到贴图资源: {textureName}");
-            return null;
+            return AssetBundleManager.LoadTexture(relativeBundlePath, textureName);
         }
 
         public static T? LoadAsset<T>(string relativeBundlePath, string assetName) where T : UnityEngine.Object
         {
-            if (string.IsNullOrWhiteSpace(relativeBundlePath) || string.IsNullOrWhiteSpace(assetName))
-            {
-                return null;
-            }
-
-            string fullPath = ResolveFullBundlePath(relativeBundlePath);
-            if (!File.Exists(fullPath))
-            {
-                LogWarningOnce($"GenericBundleMissing:{fullPath}",
-                    $"[CharacterStudio] AssetBundle 资源加载失败，文件不存在: {relativeBundlePath} (解析为: {fullPath})");
-                return null;
-            }
-
-            AssetBundle? bundle = LoadBundle(fullPath);
-            if (bundle == null)
-            {
-                return null;
-            }
-
-            foreach (string candidate in BuildAssetLookupCandidates(assetName))
-            {
-                try
-                {
-                    T? asset = bundle.LoadAsset<T>(candidate);
-                    if (asset != null)
-                    {
-                        return asset;
-                    }
-                }
-                catch
-                {
-                }
-            }
-
-            LogWarningOnce($"GenericAssetMissing:{relativeBundlePath}|{assetName}|{typeof(T).Name}",
-                $"[CharacterStudio] AssetBundle '{relativeBundlePath}' 中未找到资源 '{assetName}' ({typeof(T).Name})");
-            return null;
-        }
-
-        /// <summary>
-        /// 加载 AssetBundle（带缓存）
-        /// </summary>
-        private static AssetBundle? LoadBundle(string fullPath)
-        {
-            if (loadedBundles.TryGetValue(fullPath, out AssetBundle? cached))
-            {
-                if (cached != null)
-                    return cached;
-                loadedBundles.Remove(fullPath);
-            }
-
-            try
-            {
-                AssetBundle bundle = AssetBundle.LoadFromFile(fullPath);
-                if (bundle == null)
-                {
-                    LogWarningOnce($"BundleLoadFailed:{fullPath}",
-                        $"[CharacterStudio] AssetBundle 加载失败: {fullPath}");
-                    return null;
-                }
-
-                loadedBundles[fullPath] = bundle;
-                return bundle;
-            }
-            catch (Exception ex)
-            {
-                LogWarningOnce($"BundleLoadError:{fullPath}",
-                    $"[CharacterStudio] AssetBundle 加载异常: {fullPath} - {ex.Message}");
-                return null;
-            }
-        }
-
-        private static string[] BuildAssetLookupCandidates(string assetName, params string[] extensions)
-        {
-            string trimmed = assetName?.Trim() ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(trimmed))
-            {
-                return Array.Empty<string>();
-            }
-
-            var candidates = new List<string> { trimmed };
-            string fileName = Path.GetFileName(trimmed);
-            if (!string.Equals(fileName, trimmed, StringComparison.OrdinalIgnoreCase))
-            {
-                candidates.Add(fileName);
-            }
-
-            string withoutExtension = Path.GetFileNameWithoutExtension(trimmed);
-            if (!string.IsNullOrWhiteSpace(withoutExtension)
-                && !string.Equals(withoutExtension, trimmed, StringComparison.OrdinalIgnoreCase))
-            {
-                candidates.Add(withoutExtension);
-            }
-
-            foreach (string extension in extensions)
-            {
-                if (!trimmed.EndsWith(extension, StringComparison.OrdinalIgnoreCase))
-                {
-                    candidates.Add(trimmed + extension);
-                }
-
-                if (!string.IsNullOrWhiteSpace(withoutExtension))
-                {
-                    candidates.Add(withoutExtension + extension);
-                }
-            }
-
-            return candidates
-                .Where(static candidate => !string.IsNullOrWhiteSpace(candidate))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToArray();
+            return AssetBundleManager.LoadAsset<T>(relativeBundlePath, assetName);
         }
 
         /// <summary>
@@ -471,15 +235,9 @@ namespace CharacterStudio.Abilities
             }
             activeInstances.Clear();
 
-            foreach (var kvp in loadedBundles)
-            {
-                try
-                {
-                    kvp.Value?.Unload(true);
-                }
-                catch { /* 忽略卸载异常 */ }
-            }
-            loadedBundles.Clear();
+            // 委托通用卸载到 AssetBundleManager
+            AssetBundleManager.UnloadAll();
+
             loadedPrefabs.Clear();
             VfxAssetBundleInstance.ClearCachedDefs();
             loadFailureWarnings.Clear();
@@ -592,7 +350,7 @@ namespace CharacterStudio.Abilities
                 return;
             }
 
-            Texture2D? bundleTexture = VfxAssetBundleLoader.LoadTexture(config.assetBundlePath, config.assetBundleTextureName);
+            Texture2D? bundleTexture = AssetBundleManager.LoadTexture(config.assetBundlePath, config.assetBundleTextureName);
             if (bundleTexture == null)
             {
                 return;

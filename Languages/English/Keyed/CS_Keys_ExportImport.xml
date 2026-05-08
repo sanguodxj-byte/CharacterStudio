@@ -80,4 +80,10 @@
     <CS_Studio_Import_Source_ProjectSkin>Import from Project Character List</CS_Studio_Import_Source_ProjectSkin>
     <CS_Studio_Import_Source_Race>Import from Race List</CS_Studio_Import_Source_Race>
     <CS_Studio_Browser_SelectFolder>Select Folder</CS_Studio_Browser_SelectFolder>
+    <CS_Studio_Browser_SelectedCount>{0} files selected</CS_Studio_Browser_SelectedCount>
+    <CS_Studio_Browser_Folder>Folder</CS_Studio_Browser_Folder>
+    <CS_Studio_Browser_File>File</CS_Studio_Browser_File>
+    <CS_Studio_Browser_CompactView>Compact View</CS_Studio_Browser_CompactView>
+    <CS_Studio_Browser_StandardView>Standard View</CS_Studio_Browser_StandardView>
+    <CS_Studio_Browser_Go>Go</CS_Studio_Browser_Go>
 </LanguageData>

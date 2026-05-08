@@ -28,45 +28,7 @@ namespace CharacterStudio.Exporter
 
                 equipment.EnsureDefaults();
 
-                var equipmentEl = new XElement("li",
-                    !string.IsNullOrWhiteSpace(equipment.defName) ? new XElement("defName", equipment.defName) : null,
-                    !string.IsNullOrWhiteSpace(equipment.label) ? new XElement("label", equipment.label) : null,
-                    !string.IsNullOrWhiteSpace(equipment.description) ? new XElement("description", equipment.description) : null,
-                    new XElement("enabled", equipment.enabled.ToString().ToLower()),
-                    !string.IsNullOrWhiteSpace(equipment.slotTag) ? new XElement("slotTag", equipment.slotTag) : null,
-                    !string.IsNullOrWhiteSpace(equipment.exportGroupKey) ? new XElement("exportGroupKey", equipment.exportGroupKey) : null,
-                    !string.IsNullOrWhiteSpace(equipment.thingDefName) ? new XElement("thingDefName", equipment.thingDefName) : null,
-                    !string.IsNullOrWhiteSpace(equipment.parentThingDefName) ? new XElement("parentThingDefName", equipment.parentThingDefName) : null,
-                    !string.IsNullOrWhiteSpace(equipment.worldTexPath) ? new XElement("worldTexPath", equipment.worldTexPath) : null,
-                    !string.IsNullOrWhiteSpace(equipment.wornTexPath) ? new XElement("wornTexPath", equipment.wornTexPath) : null,
-                    !string.IsNullOrWhiteSpace(equipment.maskTexPath) ? new XElement("maskTexPath", equipment.maskTexPath) : null,
-                    !string.IsNullOrWhiteSpace(equipment.shaderDefName) ? new XElement("shaderDefName", equipment.shaderDefName) : null,
-                    equipment.useWornGraphicMask ? new XElement("useWornGraphicMask", equipment.useWornGraphicMask.ToString().ToLower()) : null,
-                    new XElement("allowCrafting", equipment.allowCrafting.ToString().ToLower()),
-                    !string.IsNullOrWhiteSpace(equipment.recipeDefName) ? new XElement("recipeDefName", equipment.recipeDefName) : null,
-                    !string.IsNullOrWhiteSpace(equipment.recipeWorkbenchDefName) ? new XElement("recipeWorkbenchDefName", equipment.recipeWorkbenchDefName) : null,
-                    Math.Abs(equipment.recipeWorkAmount - 1200f) > 0.0001f ? new XElement("recipeWorkAmount", equipment.recipeWorkAmount.ToString(System.Globalization.CultureInfo.InvariantCulture)) : null,
-                    equipment.recipeProductCount != 1 ? new XElement("recipeProductCount", equipment.recipeProductCount) : null,
-                    new XElement("allowTrading", equipment.allowTrading.ToString().ToLower()),
-                    Math.Abs(equipment.marketValue - 250f) > 0.0001f ? new XElement("marketValue", equipment.marketValue.ToString(System.Globalization.CultureInfo.InvariantCulture)) : null,
-                    !string.IsNullOrWhiteSpace(equipment.previewTexPath) ? new XElement("previewTexPath", equipment.previewTexPath) : null,
-                    !string.IsNullOrWhiteSpace(equipment.sourceNote) ? new XElement("sourceNote", equipment.sourceNote) : null,
-                    !string.IsNullOrWhiteSpace(equipment.flyerThingDefName) ? new XElement("flyerThingDefName", equipment.flyerThingDefName) : null,
-                    !string.IsNullOrWhiteSpace(equipment.flyerClassName) ? new XElement("flyerClassName", equipment.flyerClassName) : null,
-                    Math.Abs(equipment.flyerFlightSpeed - 22f) > 0.0001f ? new XElement("flyerFlightSpeed", equipment.flyerFlightSpeed.ToString(System.Globalization.CultureInfo.InvariantCulture)) : null,
-                    GenerateStringListXml("tags", equipment.tags),
-                    GenerateStringListXml("tradeTags", equipment.tradeTags),
-                    GenerateStringListXml("abilityDefNames", equipment.abilityDefNames),
-                    GenerateStringListXml("thingCategories", equipment.thingCategories),
-                    GenerateStringListXml("bodyPartGroups", equipment.bodyPartGroups),
-                    GenerateStringListXml("apparelLayers", equipment.apparelLayers),
-                    GenerateStringListXml("apparelTags", equipment.apparelTags),
-                    GenerateEquipmentCostEntriesXml("recipeIngredients", equipment.recipeIngredients),
-                    GenerateEquipmentStatEntriesXml("statBases", equipment.statBases),
-                    GenerateEquipmentStatEntriesXml("equippedStatOffsets", equipment.equippedStatOffsets),
-                    GenerateEquipmentRenderDataXml(equipment.renderData)
-                );
-
+                var equipmentEl = new XElement("li", AbilityXmlSerialization.SerializePublicFields(equipment));
                 element.Add(equipmentEl);
             }
 
@@ -128,61 +90,13 @@ namespace CharacterStudio.Exporter
                 return null;
             }
 
-            return new XElement("renderData",
-                !string.IsNullOrWhiteSpace(renderData.layerName) ? new XElement("layerName", renderData.layerName) : null,
-                !string.IsNullOrWhiteSpace(renderData.texPath) ? new XElement("texPath", renderData.texPath) : null,
-                !string.IsNullOrWhiteSpace(renderData.anchorTag) ? new XElement("anchorTag", renderData.anchorTag) : null,
-                !string.IsNullOrWhiteSpace(renderData.anchorPath) ? new XElement("anchorPath", renderData.anchorPath) : null,
-                !string.IsNullOrWhiteSpace(renderData.maskTexPath) ? new XElement("maskTexPath", renderData.maskTexPath) : null,
-                !string.IsNullOrWhiteSpace(renderData.shaderDefName) ? new XElement("shaderDefName", renderData.shaderDefName) : null,
-                !string.IsNullOrWhiteSpace(renderData.directionalFacing) ? new XElement("directionalFacing", renderData.directionalFacing) : null,
-                new XElement("offset", FormatVector3(renderData.offset)),
-                renderData.offsetEast != Vector3.zero ? new XElement("offsetEast", FormatVector3(renderData.offsetEast)) : null,
-                renderData.offsetNorth != Vector3.zero ? new XElement("offsetNorth", FormatVector3(renderData.offsetNorth)) : null,
-                renderData.useWestOffset ? new XElement("useWestOffset", "true") : null,
-                renderData.offsetWest != Vector3.zero ? new XElement("offsetWest", FormatVector3(renderData.offsetWest)) : null,
-                new XElement("scale", FormatVector2(renderData.scale)),
-                renderData.scaleEastMultiplier != Vector2.one ? new XElement("scaleEastMultiplier", FormatVector2(renderData.scaleEastMultiplier)) : null,
-                renderData.scaleNorthMultiplier != Vector2.one ? new XElement("scaleNorthMultiplier", FormatVector2(renderData.scaleNorthMultiplier)) : null,
-                renderData.scaleWestMultiplier != Vector2.one ? new XElement("scaleWestMultiplier", FormatVector2(renderData.scaleWestMultiplier)) : null,
-                new XElement("rotation", renderData.rotation),
-                renderData.rotationEastOffset != 0f ? new XElement("rotationEastOffset", renderData.rotationEastOffset) : null,
-                renderData.rotationNorthOffset != 0f ? new XElement("rotationNorthOffset", renderData.rotationNorthOffset) : null,
-                renderData.rotationWestOffset != 0f ? new XElement("rotationWestOffset", renderData.rotationWestOffset) : null,
-                new XElement("drawOrder", renderData.drawOrder),
-                new XElement("flipHorizontal", renderData.flipHorizontal.ToString().ToLower()),
-                new XElement("visible", renderData.visible.ToString().ToLower()),
-                new XElement("colorSource", renderData.colorSource.ToString()),
-                renderData.colorSource == LayerColorSource.Fixed ? new XElement("customColor", FormatColor(renderData.customColor)) : null,
-                new XElement("colorTwoSource", renderData.colorTwoSource.ToString()),
-                renderData.colorTwoSource == LayerColorSource.Fixed ? new XElement("customColorTwo", FormatColor(renderData.customColorTwo)) : null,
-                renderData.useTriggeredLocalAnimation ? new XElement("useTriggeredLocalAnimation", renderData.useTriggeredLocalAnimation.ToString().ToLower()) : null,
-                !string.IsNullOrWhiteSpace(renderData.triggerAbilityDefName) ? new XElement("triggerAbilityDefName", renderData.triggerAbilityDefName) : null,
-                !string.IsNullOrWhiteSpace(renderData.animationGroupKey) ? new XElement("animationGroupKey", renderData.animationGroupKey) : null,
-                renderData.triggeredAnimationRole != EquipmentTriggeredAnimationRole.MovablePart ? new XElement("triggeredAnimationRole", renderData.triggeredAnimationRole.ToString()) : null,
-                renderData.triggeredDeployAngle != 45f ? new XElement("triggeredDeployAngle", renderData.triggeredDeployAngle.ToString(System.Globalization.CultureInfo.InvariantCulture)) : null,
-                renderData.triggeredReturnAngle != 0f ? new XElement("triggeredReturnAngle", renderData.triggeredReturnAngle.ToString(System.Globalization.CultureInfo.InvariantCulture)) : null,
-                renderData.triggeredDeployTicks != 12 ? new XElement("triggeredDeployTicks", renderData.triggeredDeployTicks) : null,
-                renderData.triggeredHoldTicks != 24 ? new XElement("triggeredHoldTicks", renderData.triggeredHoldTicks) : null,
-                renderData.triggeredReturnTicks != 12 ? new XElement("triggeredReturnTicks", renderData.triggeredReturnTicks) : null,
-                renderData.triggeredPivotOffset != Vector2.zero ? new XElement("triggeredPivotOffset", FormatVector2(renderData.triggeredPivotOffset)) : null,
-                renderData.triggeredUseVfxVisibility ? new XElement("triggeredUseVfxVisibility", renderData.triggeredUseVfxVisibility.ToString().ToLower()) : null,
-                !string.IsNullOrWhiteSpace(renderData.triggeredIdleTexPath) ? new XElement("triggeredIdleTexPath", renderData.triggeredIdleTexPath) : null,
-                !string.IsNullOrWhiteSpace(renderData.triggeredDeployTexPath) ? new XElement("triggeredDeployTexPath", renderData.triggeredDeployTexPath) : null,
-                !string.IsNullOrWhiteSpace(renderData.triggeredHoldTexPath) ? new XElement("triggeredHoldTexPath", renderData.triggeredHoldTexPath) : null,
-                !string.IsNullOrWhiteSpace(renderData.triggeredReturnTexPath) ? new XElement("triggeredReturnTexPath", renderData.triggeredReturnTexPath) : null,
-                !string.IsNullOrWhiteSpace(renderData.triggeredIdleMaskTexPath) ? new XElement("triggeredIdleMaskTexPath", renderData.triggeredIdleMaskTexPath) : null,
-                !string.IsNullOrWhiteSpace(renderData.triggeredDeployMaskTexPath) ? new XElement("triggeredDeployMaskTexPath", renderData.triggeredDeployMaskTexPath) : null,
-                !string.IsNullOrWhiteSpace(renderData.triggeredHoldMaskTexPath) ? new XElement("triggeredHoldMaskTexPath", renderData.triggeredHoldMaskTexPath) : null,
-                !string.IsNullOrWhiteSpace(renderData.triggeredReturnMaskTexPath) ? new XElement("triggeredReturnMaskTexPath", renderData.triggeredReturnMaskTexPath) : null,
-                !renderData.triggeredVisibleDuringDeploy ? new XElement("triggeredVisibleDuringDeploy", renderData.triggeredVisibleDuringDeploy.ToString().ToLower()) : null,
-                !renderData.triggeredVisibleDuringHold ? new XElement("triggeredVisibleDuringHold", renderData.triggeredVisibleDuringHold.ToString().ToLower()) : null,
-                !renderData.triggeredVisibleDuringReturn ? new XElement("triggeredVisibleDuringReturn", renderData.triggeredVisibleDuringReturn.ToString().ToLower()) : null,
-                !renderData.triggeredVisibleOutsideCycle ? new XElement("triggeredVisibleOutsideCycle", renderData.triggeredVisibleOutsideCycle.ToString().ToLower()) : null,
-                GenerateEquipmentTriggeredAnimationOverrideXml("triggeredAnimationSouth", renderData.triggeredAnimationSouth),
-                GenerateEquipmentTriggeredAnimationOverrideXml("triggeredAnimationEastWest", renderData.triggeredAnimationEastWest),
-                GenerateEquipmentTriggeredAnimationOverrideXml("triggeredAnimationNorth", renderData.triggeredAnimationNorth)
-            );
+            var elements = AbilityXmlSerialization.SerializePublicFields(renderData);
+            if (elements == null || elements.Length == 0)
+            {
+                return null;
+            }
+
+            return new XElement("renderData", elements);
         }
 
         private static XElement? GenerateEquipmentTriggeredAnimationOverrideXml(string tagName, EquipmentTriggeredAnimationOverride? animation)
@@ -257,34 +171,131 @@ namespace CharacterStudio.Exporter
 
             equipment.EnsureDefaults();
 
+            // 非破坏性导出：有原始 ThingDef XML 时，在原始 XML 上做 patch
+            if (!string.IsNullOrWhiteSpace(equipment.rawOriginalThingDefXml))
+            {
+                try
+                {
+                    XElement? patched = MergeWithOriginalXml(equipment, includeModExtensions);
+                    if (patched != null)
+                        return patched;
+                    // patch 失败则回退到常规路径
+                    UnityEngine.Debug.LogWarning("[CharacterStudio] 非破坏性装备导出失败，回退到常规导出");
+                }
+                catch (Exception ex)
+                {
+                    UnityEngine.Debug.LogWarning($"[CharacterStudio] 非破坏性装备导出异常，回退到常规导出: {ex.Message}");
+                }
+            }
+
             string resolvedThingDefName = equipment.GetResolvedThingDefName();
             if (string.IsNullOrWhiteSpace(resolvedThingDefName))
             {
                 return null;
             }
 
-            var thingDef = new XElement("ThingDef",
-                new XAttribute("ParentName", string.IsNullOrWhiteSpace(equipment.parentThingDefName) ? "ApparelMakeableBase" : equipment.parentThingDefName),
+            var I = System.Globalization.CultureInfo.InvariantCulture;
+
+            var content = new List<object?>
+            {
                 new XElement("defName", resolvedThingDefName),
                 new XElement("label", equipment.GetDisplayLabel()),
                 !string.IsNullOrWhiteSpace(equipment.description) ? new XElement("description", equipment.description) : null,
-                new XElement("tradeability", equipment.allowTrading ? "All" : "None"),
+                // tradeability（原版 ThingDef 合法字段）
+                !equipment.allowTrading ? new XElement("tradeability", "None") : null,
+                // thingClass
+                !string.IsNullOrWhiteSpace(equipment.thingClass) ? new XElement("thingClass", equipment.thingClass) : null,
+                // techLevel
+                !string.IsNullOrWhiteSpace(equipment.techLevel) ? new XElement("techLevel", equipment.techLevel) : null,
+                // 顶层布尔/数值字段（非默认才输出）
+                equipment.pathCost > 0 ? new XElement("pathCost", equipment.pathCost.ToString(I)) : null,
+                !equipment.useHitPoints ? new XElement("useHitPoints", "false") : null,
+                !string.IsNullOrWhiteSpace(equipment.altitudeLayer) ? new XElement("altitudeLayer", equipment.altitudeLayer) : null,
+                !string.IsNullOrWhiteSpace(equipment.tickerType) ? new XElement("tickerType", equipment.tickerType) : null,
+                equipment.smeltable ? new XElement("smeltable", "true") : null,
+                equipment.rotatable ? new XElement("rotatable", "true") : null,
+                !equipment.selectable ? new XElement("selectable", "false") : null,
+                !equipment.drawGUIOverlay ? new XElement("drawGUIOverlay", "false") : null,
+                !equipment.alwaysHaulable ? new XElement("alwaysHaulable", "false") : null,
+                // graphicData
                 GenerateEquipmentGraphicDataXml(equipment),
+                // stuffCategories + costStuffCount
+                GenerateStringListXml("stuffCategories", equipment.stuffCategories),
+                equipment.costStuffCount > 0 ? new XElement("costStuffCount", equipment.costStuffCount.ToString(I)) : null,
+                // costList (ThingDef 级直接材料消耗)
+                GenerateEquipmentCostListXml(equipment.costList),
+                // 分类与标签
                 GenerateEquipmentThingCategoriesXml(equipment.thingCategories),
                 GenerateEquipmentTradeTagsXml(equipment.tradeTags),
                 equipment.itemType == EquipmentType.WeaponMelee || equipment.itemType == EquipmentType.WeaponRanged ? GenerateWeaponTagsXml(equipment.weaponTags) : null,
                 equipment.itemType == EquipmentType.WeaponMelee || equipment.itemType == EquipmentType.WeaponRanged ? GenerateWeaponClassesXml(equipment.weaponClasses) : null,
+                // statBases
                 GenerateEquipmentStatEntryContainerXml("statBases", equipment.statBases),
+                // equippedStatOffsets
                 GenerateEquipmentStatEntryContainerXml("equippedStatOffsets", equipment.equippedStatOffsets),
-                equipment.itemType == EquipmentType.Apparel ? GenerateEquipmentApparelXml(equipment) : null
-            );
+                // apparel 节点
+                equipment.itemType == EquipmentType.Apparel ? GenerateEquipmentApparelXml(equipment) : null,
+                // building 节点（Building / Turret）
+                equipment.itemType == EquipmentType.Building || equipment.itemType == EquipmentType.Turret ? GenerateEquipmentBuildingXml(equipment) : null,
+                // 建筑/炮塔专有顶层字段（展开列表）
+            };
 
-            XElement statBasesEl = thingDef.Element("statBases") ?? new XElement("statBases");
-            if (thingDef.Element("statBases") == null)
-                thingDef.Add(statBasesEl);
-            if (statBasesEl.Element("MarketValue") == null)
+            // 建筑专有顶层字段展开
+            if (equipment.itemType == EquipmentType.Building || equipment.itemType == EquipmentType.Turret)
             {
-                statBasesEl.Add(new XElement("MarketValue", equipment.marketValue.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+                var buildingFields = GenerateBuildingTopLevelFieldsXml(equipment);
+                content.AddRange(buildingFields);
+            }
+
+            // recipeMaker 内联节点
+            content.Add(GenerateEquipmentRecipeMakerXml(equipment));
+
+            var thingDef = new XElement("ThingDef",
+                new XAttribute("ParentName", string.IsNullOrWhiteSpace(equipment.parentThingDefName)
+                    ? (equipment.itemType == EquipmentType.Building || equipment.itemType == EquipmentType.Turret ? "BuildingBase" : "ApparelMakeableBase")
+                    : equipment.parentThingDefName),
+                content.Where(c => c != null).Cast<object>().ToArray());
+
+            // 保证 statBases 存在并注入 MarketValue（仅非建筑类型）
+            bool isBuildingType = equipment.itemType == EquipmentType.Building || equipment.itemType == EquipmentType.Turret;
+            if (!isBuildingType)
+            {
+                XElement statBasesEl = thingDef.Element("statBases") ?? new XElement("statBases");
+                if (thingDef.Element("statBases") == null)
+                    thingDef.Add(statBasesEl);
+                if (statBasesEl.Element("MarketValue") == null)
+                {
+                    statBasesEl.Add(new XElement("MarketValue", equipment.marketValue.ToString(I)));
+                }
+            }
+
+            // 原始 XML 块（comps/verbs/tools 等）
+            if (equipment.rawXmlEntries != null)
+            {
+                foreach (var entry in equipment.rawXmlEntries)
+                {
+                    if (entry == null || string.IsNullOrWhiteSpace(entry.tagName) || string.IsNullOrWhiteSpace(entry.innerXml))
+                        continue;
+                    try
+                    {
+                        var parsed = XElement.Parse($"<{entry.tagName}>{entry.innerXml}</{entry.tagName}>");
+                        thingDef.Add(parsed);
+                    }
+                    catch (Exception ex)
+                    {
+                        UnityEngine.Debug.LogWarning($"[CharacterStudio] 装备导出：rawXmlEntries 的 {entry.tagName} 解析失败: {ex.Message}");
+                    }
+                }
+            }
+
+            // 额外字段（字段补充器添加的 key-value 对）
+            if (equipment.extraFields != null && equipment.extraFields.Count > 0)
+            {
+                foreach (var kv in equipment.extraFields)
+                {
+                    if (string.IsNullOrWhiteSpace(kv.Key)) continue;
+                    thingDef.Add(new XElement(kv.Key, kv.Value ?? ""));
+                }
             }
 
             if (includeModExtensions)
@@ -427,11 +438,16 @@ namespace CharacterStudio.Exporter
                 ? "CharacterStudio.Rendering.Graphic_Runtime"
                 : "Graphic_Single";
 
-            return new XElement("graphicData",
+            var graphicContent = new List<object?>
+            {
                 new XElement("texPath", texPath),
                 !string.IsNullOrWhiteSpace(equipment.shaderDefName) ? new XElement("shaderType", equipment.shaderDefName) : null,
-                new XElement("graphicClass", graphicClass)
-            );
+                new XElement("graphicClass", graphicClass),
+                !string.IsNullOrWhiteSpace(equipment.graphicDrawSize) ? new XElement("drawSize", equipment.graphicDrawSize) : null,
+                equipment.graphicRandomRotateAngle > 0f ? new XElement("onGroundRandomRotateAngle", equipment.graphicRandomRotateAngle.ToString(System.Globalization.CultureInfo.InvariantCulture)) : null,
+            };
+
+            return new XElement("graphicData", graphicContent.Where(c => c != null).Cast<object>().ToArray());
         }
 
         private static XElement? GenerateEquipmentThingCategoriesXml(List<string>? categories)
@@ -475,6 +491,118 @@ namespace CharacterStudio.Exporter
             return ingredients.HasElements ? ingredients : null;
         }
 
+        /// <summary>
+        /// 生成建筑顶层字段（size、passability、fillPercent 等 ThingDef 直接字段）。
+        /// 空字段不写入。
+        /// </summary>
+        private static List<object?> GenerateBuildingTopLevelFieldsXml(CharacterEquipmentDef equipment)
+        {
+            var I = System.Globalization.CultureInfo.InvariantCulture;
+            var fields = new List<object?>();
+
+            if (!string.IsNullOrWhiteSpace(equipment.buildingSize))
+                fields.Add(new XElement("size", equipment.buildingSize));
+            if (!string.IsNullOrWhiteSpace(equipment.passability))
+                fields.Add(new XElement("passability", equipment.passability));
+            if (equipment.fillPercent > 0f)
+                fields.Add(new XElement("fillPercent", equipment.fillPercent.ToString(I)));
+            if (!string.IsNullOrWhiteSpace(equipment.terrainAffordanceNeeded))
+                fields.Add(new XElement("terrainAffordanceNeeded", equipment.terrainAffordanceNeeded));
+            if (equipment.blockWind.HasValue && equipment.blockWind.Value)
+                fields.Add(new XElement("blockWind", "true"));
+            if (equipment.castEdgeShadows.HasValue && equipment.castEdgeShadows.Value)
+                fields.Add(new XElement("castEdgeShadows", "true"));
+            if (!string.IsNullOrWhiteSpace(equipment.drawerType))
+                fields.Add(new XElement("drawerType", equipment.drawerType));
+            if (equipment.canOverlapZones.HasValue && !equipment.canOverlapZones.Value)
+                fields.Add(new XElement("canOverlapZones", "false"));
+            if (equipment.hasInteractionCell)
+                fields.Add(new XElement("hasInteractionCell", "true"));
+            if (!string.IsNullOrWhiteSpace(equipment.interactionCellOffset))
+                fields.Add(new XElement("interactionCellOffset", equipment.interactionCellOffset));
+            if (!string.IsNullOrWhiteSpace(equipment.designationCategory))
+                fields.Add(new XElement("designationCategory", equipment.designationCategory));
+            if (equipment.isMechClusterThreat)
+                fields.Add(new XElement("isMechClusterThreat", "true"));
+
+            // killedLeavings
+            if (equipment.killedLeavings != null && equipment.killedLeavings.Count > 0)
+            {
+                var leavingsEl = new XElement("killedLeavings");
+                foreach (var entry in equipment.killedLeavings)
+                {
+                    if (entry != null && !string.IsNullOrWhiteSpace(entry.thingDefName) && entry.count > 0)
+                        leavingsEl.Add(new XElement(entry.thingDefName, entry.count.ToString(I)));
+                }
+                if (leavingsEl.HasElements)
+                    fields.Add(leavingsEl);
+            }
+
+            // damageMultipliers
+            if (equipment.damageMultipliers != null && equipment.damageMultipliers.Count > 0)
+            {
+                var dmgEl = new XElement("damageMultipliers");
+                foreach (var entry in equipment.damageMultipliers)
+                {
+                    if (entry != null && !string.IsNullOrWhiteSpace(entry.damageDefName))
+                        dmgEl.Add(new XElement("li",
+                            new XElement("damageDef", entry.damageDefName),
+                            new XElement("multiplier", entry.multiplier.ToString(I))));
+                }
+                if (dmgEl.HasElements)
+                    fields.Add(dmgEl);
+            }
+
+            return fields;
+        }
+
+        /// <summary>
+        /// 生成 building 子节点。空字段不写入。
+        /// </summary>
+        private static XElement? GenerateEquipmentBuildingXml(CharacterEquipmentDef equipment)
+        {
+            var I = System.Globalization.CultureInfo.InvariantCulture;
+            var children = new List<object?>();
+
+            // buildingTags
+            if (equipment.buildingTags != null && equipment.buildingTags.Count > 0)
+            {
+                var tagsEl = new XElement("buildingTags");
+                foreach (var tag in equipment.buildingTags)
+                {
+                    if (!string.IsNullOrWhiteSpace(tag))
+                        tagsEl.Add(new XElement("li", tag));
+                }
+                if (tagsEl.HasElements)
+                    children.Add(tagsEl);
+            }
+
+            if (equipment.combatPower > 0f)
+                children.Add(new XElement("combatPower", equipment.combatPower.ToString(I)));
+            if (equipment.roofCollapseDamageMultiplier > 0f)
+                children.Add(new XElement("roofCollapseDamageMultiplier", equipment.roofCollapseDamageMultiplier.ToString(I)));
+            if (!string.IsNullOrWhiteSpace(equipment.destroySound))
+                children.Add(new XElement("destroySound", equipment.destroySound));
+
+            // 炮塔专有字段
+            if (equipment.itemType == EquipmentType.Turret)
+            {
+                if (!string.IsNullOrWhiteSpace(equipment.turretGunDef))
+                    children.Add(new XElement("turretGunDef", equipment.turretGunDef));
+                if (equipment.turretBurstWarmupTime > 0f)
+                    children.Add(new XElement("turretBurstWarmupTime", equipment.turretBurstWarmupTime.ToString(I)));
+                if (equipment.turretBurstCooldownTime > 0f)
+                    children.Add(new XElement("turretBurstCooldownTime", equipment.turretBurstCooldownTime.ToString(I)));
+                if (equipment.turretInitialCooldownTime > 0f)
+                    children.Add(new XElement("turretInitialCooldownTime", equipment.turretInitialCooldownTime.ToString(I)));
+            }
+
+            if (children.Count == 0)
+                return null;
+
+            return new XElement("building", children.Where(c => c != null).Cast<object>().ToArray());
+        }
+
         private static XElement GenerateEquipmentApparelXml(CharacterEquipmentDef equipment)
         {
             // 如果 wornTexPath 是外部绝对路径（如 D:/...），RimWorld 原生 ContentFinder 无法解析，
@@ -484,15 +612,35 @@ namespace CharacterStudio.Exporter
             bool wornTexPathIsExternal = !string.IsNullOrWhiteSpace(equipment.wornTexPath)
                 && Rendering.RuntimeAssetLoader.LooksLikeExternalTexturePath(equipment.wornTexPath);
 
-            return new XElement("apparel",
+            var apparelContent = new List<object?>
+            {
                 !string.IsNullOrWhiteSpace(equipment.wornTexPath) && !wornTexPathIsExternal
                     ? new XElement("wornGraphicPath", equipment.wornTexPath)
                     : null,
                 equipment.useWornGraphicMask ? new XElement("useWornGraphicMask", equipment.useWornGraphicMask.ToString().ToLower()) : null,
                 GenerateStringListXml("bodyPartGroups", equipment.bodyPartGroups),
                 GenerateStringListXml("layers", equipment.apparelLayers),
-                GenerateStringListXml("tags", equipment.apparelTags)
-            );
+                GenerateStringListXml("tags", equipment.apparelTags),
+                // 新增 apparel 子字段
+                equipment.wearPerDay > 0f ? new XElement("wearPerDay", equipment.wearPerDay.ToString(System.Globalization.CultureInfo.InvariantCulture)) : null,
+                equipment.careIfDamaged.HasValue ? new XElement("careIfDamaged", equipment.careIfDamaged.Value.ToString().ToLower()) : null,
+                equipment.careIfWornByCorpse.HasValue ? new XElement("careIfWornByCorpse", equipment.careIfWornByCorpse.Value.ToString().ToLower()) : null,
+                equipment.countsAsClothingForNudity.HasValue ? new XElement("countsAsClothingForNudity", equipment.countsAsClothingForNudity.Value.ToString().ToLower()) : null,
+                equipment.slaveApparel.HasValue && equipment.slaveApparel.Value ? new XElement("slaveApparel", "true") : null,
+                equipment.canBeDesiredForIdeo.HasValue ? new XElement("canBeDesiredForIdeo", equipment.canBeDesiredForIdeo.Value.ToString().ToLower()) : null,
+                !string.IsNullOrWhiteSpace(equipment.soundWear) ? new XElement("soundWear", equipment.soundWear) : null,
+                !string.IsNullOrWhiteSpace(equipment.soundRemove) ? new XElement("soundRemove", equipment.soundRemove) : null,
+                equipment.useDeflectMetalEffect ? new XElement("useDeflectMetalEffect", "true") : null,
+                equipment.apparelRenderSkipFlags != null && equipment.apparelRenderSkipFlags.Count > 0 ? GenerateStringListXml("renderSkipFlags", equipment.apparelRenderSkipFlags) : null,
+                !string.IsNullOrWhiteSpace(equipment.developmentalStageFilter) ? new XElement("developmentalStageFilter", equipment.developmentalStageFilter) : null,
+                equipment.blocksVision.HasValue && equipment.blocksVision.Value ? new XElement("blocksVision", "true") : null,
+                equipment.ignoredByNonViolent.HasValue && equipment.ignoredByNonViolent.Value ? new XElement("ignoredByNonViolent", "true") : null,
+                Math.Abs(equipment.apparelScoreOffset) > 0.0001f ? new XElement("scoreOffset", equipment.apparelScoreOffset.ToString(System.Globalization.CultureInfo.InvariantCulture)) : null,
+                // drawData（原版 ApparelDrawData 原始 XML，导入时保留，导出时原样输出）
+                !string.IsNullOrWhiteSpace(equipment.apparelDrawDataXml) ? ParseRawXmlBlock("drawData", equipment.apparelDrawDataXml) : null,
+            };
+
+            return new XElement("apparel", apparelContent.Where(c => c != null).Cast<object>().ToArray());
         }
 
         private static XElement? GenerateEquipmentStatEntryContainerXml(string tagName, List<CharacterEquipmentStatEntry>? entries)
@@ -514,6 +662,89 @@ namespace CharacterStudio.Exporter
             }
 
             return element.HasElements ? element : null;
+        }
+
+        /// <summary>
+        /// 生成 ThingDef 级 costList（如 &lt;Steel&gt;120&lt;/Steel&gt;）。
+        /// </summary>
+        private static XElement? GenerateEquipmentCostListXml(List<CharacterEquipmentCostEntry>? entries)
+        {
+            if (entries == null || entries.Count == 0)
+                return null;
+
+            var root = new XElement("costList");
+            foreach (var entry in entries)
+            {
+                if (entry == null || string.IsNullOrWhiteSpace(entry.thingDefName) || entry.count <= 0)
+                    continue;
+                root.Add(new XElement(entry.thingDefName, entry.count.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            }
+            return root.HasElements ? root : null;
+        }
+
+        /// <summary>
+        /// 生成内联 recipeMaker 节点。仅在有至少一个非空子字段时输出。
+        /// </summary>
+        private static XElement? GenerateEquipmentRecipeMakerXml(CharacterEquipmentDef equipment)
+        {
+            var I = System.Globalization.CultureInfo.InvariantCulture;
+            var children = new List<object?>();
+
+            if (!string.IsNullOrWhiteSpace(equipment.recipeResearchPrerequisite))
+                children.Add(new XElement("researchPrerequisite", equipment.recipeResearchPrerequisite));
+
+            if (equipment.recipeSkillRequirements != null && equipment.recipeSkillRequirements.Count > 0)
+            {
+                var skillReq = new XElement("skillRequirements");
+                foreach (var entry in equipment.recipeSkillRequirements)
+                {
+                    if (entry != null && !string.IsNullOrWhiteSpace(entry.statDefName))
+                        skillReq.Add(new XElement(entry.statDefName, entry.value.ToString(I)));
+                }
+                if (skillReq.HasElements)
+                    children.Add(skillReq);
+            }
+
+            if (!string.IsNullOrWhiteSpace(equipment.recipeEffectWorking))
+                children.Add(new XElement("effectWorking", equipment.recipeEffectWorking));
+
+            if (!string.IsNullOrWhiteSpace(equipment.recipeSoundWorking))
+                children.Add(new XElement("soundWorking", equipment.recipeSoundWorking));
+
+            // recipeUsers：优先使用 recipeUsers 列表，否则回退到 recipeWorkbenchDefName
+            var users = equipment.recipeUsers != null && equipment.recipeUsers.Count > 0
+                ? equipment.recipeUsers
+                : (!string.IsNullOrWhiteSpace(equipment.recipeWorkbenchDefName)
+                    ? new List<string> { equipment.recipeWorkbenchDefName }
+                    : null);
+            if (users != null && users.Count > 0)
+            {
+                var usersEl = new XElement("recipeUsers");
+                foreach (var user in users)
+                {
+                    if (!string.IsNullOrWhiteSpace(user))
+                        usersEl.Add(new XElement("li", user));
+                }
+                if (usersEl.HasElements)
+                    children.Add(usersEl);
+            }
+
+            if (!string.IsNullOrWhiteSpace(equipment.recipeUnfinishedThingDef))
+                children.Add(new XElement("unfinishedThingDef", equipment.recipeUnfinishedThingDef));
+
+            if (equipment.recipeDisplayPriority > 0f)
+                children.Add(new XElement("displayPriority", equipment.recipeDisplayPriority.ToString(I)));
+
+            if (!string.IsNullOrWhiteSpace(equipment.recipeWorkSkill))
+                children.Add(new XElement("workSkill", equipment.recipeWorkSkill));
+
+            if (!string.IsNullOrWhiteSpace(equipment.recipeWorkSpeedStat))
+                children.Add(new XElement("workSpeedStat", equipment.recipeWorkSpeedStat));
+
+            if (children.Count == 0)
+                return null;
+
+            return new XElement("recipeMaker", children.Where(c => c != null).Cast<object>().ToArray());
         }
 
         private static XElement GenerateEquipmentModExtensionsXml(CharacterEquipmentDef equipment)
@@ -586,6 +817,308 @@ namespace CharacterStudio.Exporter
                     GenerateStringListXml("abilityDefNames", renderExtension.abilityDefNames)
                 )
             );
+        }
+
+        /// <summary>
+        /// 将原始 XML 文本包裹在 tagName 节点中解析为 XElement。
+        /// 用于 drawData 等需要原样保留的嵌套 XML 块。
+        /// </summary>
+        private static XElement? ParseRawXmlBlock(string tagName, string innerXml)
+        {
+            if (string.IsNullOrWhiteSpace(innerXml))
+                return null;
+            try
+            {
+                return XElement.Parse($"<{tagName}>{innerXml}</{tagName}>");
+            }
+            catch (Exception ex)
+            {
+                UnityEngine.Debug.LogWarning($"[CharacterStudio] XML 块解析失败 ({tagName}): {ex.Message}");
+                return null;
+            }
+        }
+
+        // ─────────────────────────────────────────────
+        // 非破坏性导出：在原始 ThingDef XML 上做 patch
+        // ─────────────────────────────────────────────
+
+        /// <summary>
+        /// 编辑器已知管理的顶层子节点名称。
+        /// 这些节点会被编辑器值覆盖；不在此集合中的节点原样保留。
+        /// </summary>
+        private static readonly HashSet<string> ManagedTopLevelNodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "defName", "label", "description", "tradeability",
+            "thingClass", "techLevel",
+            "pathCost", "useHitPoints", "altitudeLayer", "tickerType",
+            "smeltable", "rotatable", "selectable", "drawGUIOverlay", "alwaysHaulable",
+            "graphicData", "stuffCategories", "costStuffCount", "costList",
+            "thingCategories", "tradeTags", "weaponTags", "weaponClasses",
+            "statBases", "equippedStatOffsets",
+            "apparel", "recipeMaker", "building",
+            "comps", "verbs", "tools",
+            "modExtensions",
+            // 建筑专有顶层字段
+            "size", "passability", "fillPercent", "terrainAffordanceNeeded",
+            "blockWind", "castEdgeShadows", "drawerType", "canOverlapZones",
+            "hasInteractionCell", "interactionCellOffset",
+            "killedLeavings", "damageMultipliers",
+            "designationCategory", "isMechClusterThreat",
+        };
+
+        /// <summary>
+        /// 在原始 ThingDef XML 上做非破坏性 patch：
+        /// 已知管理的节点用编辑器当前值替换/新增/删除；
+        /// 未知节点（如 alienRace、raceRestriction 等）原样保留。
+        /// </summary>
+        private static XElement? MergeWithOriginalXml(CharacterEquipmentDef equipment, bool includeModExtensions)
+        {
+            XElement original = XElement.Parse(equipment.rawOriginalThingDefXml);
+
+            // 如果原始节点名不是 ThingDef，无法 patch
+            if (!string.Equals(original.Name.LocalName, "ThingDef", StringComparison.OrdinalIgnoreCase))
+                return null;
+
+            var I = System.Globalization.CultureInfo.InvariantCulture;
+
+            // 1. 收集需要替换/新增的已知节点
+            var replacementNodes = new Dictionary<string, XElement?>(StringComparer.OrdinalIgnoreCase);
+            void SetOrRemove(string name, XElement? node)
+            {
+                replacementNodes[name] = node;
+            }
+
+            string resolvedThingDefName = equipment.GetResolvedThingDefName();
+
+            // defName
+            SetOrRemove("defName", new XElement("defName", resolvedThingDefName));
+            // label
+            SetOrRemove("label", new XElement("label", equipment.GetDisplayLabel()));
+            // description
+            SetOrRemove("description", !string.IsNullOrWhiteSpace(equipment.description)
+                ? new XElement("description", equipment.description) : null);
+            // tradeability
+            SetOrRemove("tradeability", !equipment.allowTrading ? new XElement("tradeability", "None") : null);
+            // thingClass
+            SetOrRemove("thingClass", !string.IsNullOrWhiteSpace(equipment.thingClass)
+                ? new XElement("thingClass", equipment.thingClass) : null);
+            // techLevel
+            SetOrRemove("techLevel", !string.IsNullOrWhiteSpace(equipment.techLevel)
+                ? new XElement("techLevel", equipment.techLevel) : null);
+            // 顶层布尔/数值
+            SetOrRemove("pathCost", equipment.pathCost > 0 ? new XElement("pathCost", equipment.pathCost.ToString(I)) : null);
+            SetOrRemove("useHitPoints", !equipment.useHitPoints ? new XElement("useHitPoints", "false") : null);
+            SetOrRemove("altitudeLayer", !string.IsNullOrWhiteSpace(equipment.altitudeLayer) ? new XElement("altitudeLayer", equipment.altitudeLayer) : null);
+            SetOrRemove("tickerType", !string.IsNullOrWhiteSpace(equipment.tickerType) ? new XElement("tickerType", equipment.tickerType) : null);
+            SetOrRemove("smeltable", equipment.smeltable ? new XElement("smeltable", "true") : null);
+            SetOrRemove("rotatable", equipment.rotatable ? new XElement("rotatable", "true") : null);
+            SetOrRemove("selectable", !equipment.selectable ? new XElement("selectable", "false") : null);
+            SetOrRemove("drawGUIOverlay", !equipment.drawGUIOverlay ? new XElement("drawGUIOverlay", "false") : null);
+            SetOrRemove("alwaysHaulable", !equipment.alwaysHaulable ? new XElement("alwaysHaulable", "false") : null);
+            // graphicData
+            SetOrRemove("graphicData", GenerateEquipmentGraphicDataXml(equipment));
+            // stuffCategories
+            SetOrRemove("stuffCategories", GenerateStringListXml("stuffCategories", equipment.stuffCategories));
+            // costStuffCount
+            SetOrRemove("costStuffCount", equipment.costStuffCount > 0 ? new XElement("costStuffCount", equipment.costStuffCount.ToString(I)) : null);
+            // costList
+            SetOrRemove("costList", GenerateEquipmentCostListXml(equipment.costList));
+            // 分类与标签
+            SetOrRemove("thingCategories", GenerateEquipmentThingCategoriesXml(equipment.thingCategories));
+            SetOrRemove("tradeTags", GenerateEquipmentTradeTagsXml(equipment.tradeTags));
+            SetOrRemove("weaponTags", equipment.itemType == EquipmentType.WeaponMelee || equipment.itemType == EquipmentType.WeaponRanged
+                ? GenerateWeaponTagsXml(equipment.weaponTags) : null);
+            SetOrRemove("weaponClasses", equipment.itemType == EquipmentType.WeaponMelee || equipment.itemType == EquipmentType.WeaponRanged
+                ? GenerateWeaponClassesXml(equipment.weaponClasses) : null);
+            // statBases（含 MarketValue 注入）
+            {
+                var statEl = GenerateEquipmentStatEntryContainerXml("statBases", equipment.statBases);
+                if (statEl == null)
+                    statEl = new XElement("statBases");
+                // 确保 MarketValue 存在
+                if (statEl.Element("MarketValue") == null)
+                    statEl.Add(new XElement("MarketValue", equipment.marketValue.ToString(I)));
+                SetOrRemove("statBases", statEl);
+            }
+            // equippedStatOffsets
+            SetOrRemove("equippedStatOffsets", GenerateEquipmentStatEntryContainerXml("equippedStatOffsets", equipment.equippedStatOffsets));
+            // apparel
+            SetOrRemove("apparel", equipment.itemType == EquipmentType.Apparel ? GenerateEquipmentApparelXml(equipment) : null);
+            // building
+            SetOrRemove("building", equipment.itemType == EquipmentType.Building || equipment.itemType == EquipmentType.Turret
+                ? GenerateEquipmentBuildingXml(equipment) : null);
+            // 建筑专有顶层字段
+            {
+                bool isBldg = equipment.itemType == EquipmentType.Building || equipment.itemType == EquipmentType.Turret;
+                SetOrRemove("size", isBldg && !string.IsNullOrWhiteSpace(equipment.buildingSize) ? new XElement("size", equipment.buildingSize) : null);
+                SetOrRemove("passability", isBldg && !string.IsNullOrWhiteSpace(equipment.passability) ? new XElement("passability", equipment.passability) : null);
+                SetOrRemove("fillPercent", isBldg && equipment.fillPercent > 0f ? new XElement("fillPercent", equipment.fillPercent.ToString(I)) : null);
+                SetOrRemove("terrainAffordanceNeeded", isBldg && !string.IsNullOrWhiteSpace(equipment.terrainAffordanceNeeded) ? new XElement("terrainAffordanceNeeded", equipment.terrainAffordanceNeeded) : null);
+                SetOrRemove("blockWind", isBldg && equipment.blockWind.HasValue && equipment.blockWind.Value ? new XElement("blockWind", "true") : null);
+                SetOrRemove("castEdgeShadows", isBldg && equipment.castEdgeShadows.HasValue && equipment.castEdgeShadows.Value ? new XElement("castEdgeShadows", "true") : null);
+                SetOrRemove("drawerType", isBldg && !string.IsNullOrWhiteSpace(equipment.drawerType) ? new XElement("drawerType", equipment.drawerType) : null);
+                SetOrRemove("canOverlapZones", isBldg && equipment.canOverlapZones.HasValue && !equipment.canOverlapZones.Value ? new XElement("canOverlapZones", "false") : null);
+                SetOrRemove("hasInteractionCell", isBldg && equipment.hasInteractionCell ? new XElement("hasInteractionCell", "true") : null);
+                SetOrRemove("interactionCellOffset", isBldg && !string.IsNullOrWhiteSpace(equipment.interactionCellOffset) ? new XElement("interactionCellOffset", equipment.interactionCellOffset) : null);
+                SetOrRemove("killedLeavings", null); // managed via rawXmlEntries or building fields
+                SetOrRemove("damageMultipliers", null); // managed via rawXmlEntries or building fields
+                SetOrRemove("designationCategory", isBldg && !string.IsNullOrWhiteSpace(equipment.designationCategory) ? new XElement("designationCategory", equipment.designationCategory) : null);
+                SetOrRemove("isMechClusterThreat", isBldg && equipment.isMechClusterThreat ? new XElement("isMechClusterThreat", "true") : null);
+            }
+            // recipeMaker
+            SetOrRemove("recipeMaker", GenerateEquipmentRecipeMakerXml(equipment));
+            // rawXmlEntries (comps/verbs/tools 等)
+            SetOrRemove("comps", null);
+            SetOrRemove("verbs", null);
+            SetOrRemove("tools", null);
+            // modExtensions
+            SetOrRemove("modExtensions", includeModExtensions ? GenerateEquipmentModExtensionsXml(equipment) : null);
+
+            // 2. 重建节点序列
+            var result = new XElement(original.Name, original.Attributes());
+            var insertedManaged = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            // 2a. 遍历原始子节点：保留未管理的，替换管理的
+            foreach (var child in original.Elements())
+            {
+                string childName = child.Name.LocalName;
+                if (ManagedTopLevelNodes.Contains(childName))
+                {
+                    // 已管理节点：首次遇到时插入替换值
+                    if (!insertedManaged.Contains(childName))
+                    {
+                        if (replacementNodes.TryGetValue(childName, out XElement? replacement) && replacement != null)
+                            result.Add(replacement);
+                        insertedManaged.Add(childName);
+                    }
+                    // 已插入过则跳过（合并多个同名的情况）
+                }
+                else
+                {
+                    // 未管理节点：原样保留
+                    result.Add(child);
+                }
+            }
+
+            // 2b. 追加原始 XML 中不存在但需要新增的已管理节点
+            foreach (var kvp in replacementNodes)
+            {
+                if (!insertedManaged.Contains(kvp.Key))
+                {
+                    if (kvp.Value != null)
+                        result.Add(kvp.Value);
+                    insertedManaged.Add(kvp.Key);
+                }
+            }
+
+            // 2c. 追加 rawXmlEntries（comps/verbs/tools 等）
+            if (equipment.rawXmlEntries != null)
+            {
+                foreach (var entry in equipment.rawXmlEntries)
+                {
+                    if (entry == null || string.IsNullOrWhiteSpace(entry.tagName) || string.IsNullOrWhiteSpace(entry.innerXml))
+                        continue;
+                    try
+                    {
+                        var parsed = XElement.Parse($"<{entry.tagName}>{entry.innerXml}</{entry.tagName}>");
+                        result.Add(parsed);
+                    }
+                    catch (Exception ex)
+                    {
+                        UnityEngine.Debug.LogWarning($"[CharacterStudio] 装备非破坏性导出：rawXmlEntries 的 {entry.tagName} 解析失败: {ex.Message}");
+                    }
+                }
+            }
+
+            // 2d. 更新 ParentName 属性
+            var parentAttr = result.Attribute("ParentName");
+            string newParent = string.IsNullOrWhiteSpace(equipment.parentThingDefName)
+                ? "ApparelMakeableBase" : equipment.parentThingDefName;
+            if (parentAttr != null)
+                parentAttr.Value = newParent;
+            else
+                result.Add(new XAttribute("ParentName", newParent));
+
+            return result;
+        }
+
+        /// <summary>
+        /// 生成 CS 抽象基类定义 XML（模板模式时导出到 CS_BaseClasses.xml）。
+        /// </summary>
+        public static XElement GenerateBaseClassesXml()
+        {
+            var defs = new XElement("Defs");
+
+            // 远程武器基类
+            defs.Add(new XElement("ThingDef",
+                new XAttribute("Name", "CS_GunBase"),
+                new XAttribute("ParentName", "BaseHumanMakeableGun"),
+                new XAttribute("Abstract", "True"),
+                new XElement("tradeability", "All"),
+                new XElement("smeltable", "true"),
+                new XElement("weaponTags", new XAttribute("Inherit", "false")),
+                new XElement("tradeTags", new XAttribute("Inherit", "false"))
+            ));
+
+            // 近战锐器基类
+            defs.Add(new XElement("ThingDef",
+                new XAttribute("Name", "CS_MeleeSharpBase"),
+                new XAttribute("ParentName", "BaseMeleeWeapon_Sharp_Quality"),
+                new XAttribute("Abstract", "True"),
+                new XElement("smeltable", "true"),
+                new XElement("weaponTags", new XAttribute("Inherit", "false")),
+                new XElement("tradeTags", new XAttribute("Inherit", "false"))
+            ));
+
+            // 近战钝器基类
+            defs.Add(new XElement("ThingDef",
+                new XAttribute("Name", "CS_MeleeBluntBase"),
+                new XAttribute("ParentName", "BaseMeleeWeapon_Blunt_Quality"),
+                new XAttribute("Abstract", "True"),
+                new XElement("smeltable", "true"),
+                new XElement("weaponTags", new XAttribute("Inherit", "false")),
+                new XElement("tradeTags", new XAttribute("Inherit", "false"))
+            ));
+
+            // 服装基类
+            defs.Add(new XElement("ThingDef",
+                new XAttribute("Name", "CS_ApparelBase"),
+                new XAttribute("ParentName", "ApparelMakeableBase"),
+                new XAttribute("Abstract", "True"),
+                new XElement("smeltable", "true"),
+                new XElement("tradeTags", new XAttribute("Inherit", "false"))
+            ));
+
+            // 建筑基类
+            defs.Add(new XElement("ThingDef",
+                new XAttribute("Name", "CS_BuildingBase"),
+                new XAttribute("ParentName", "BuildingBase"),
+                new XAttribute("Abstract", "True")
+            ));
+
+            // 炮塔基类
+            defs.Add(new XElement("ThingDef",
+                new XAttribute("Name", "CS_TurretBase"),
+                new XAttribute("ParentName", "BuildingBase"),
+                new XAttribute("Abstract", "True")
+            ));
+
+            // 物品基类
+            defs.Add(new XElement("ThingDef",
+                new XAttribute("Name", "CS_ItemBase"),
+                new XAttribute("ParentName", "ResourceBase"),
+                new XAttribute("Abstract", "True")
+            ));
+
+            return defs;
+        }
+
+        /// <summary>
+        /// 判断给定的装备列表中是否有任何装备使用模板模式。
+        /// </summary>
+        public static bool HasTemplateModeEquipment(List<CharacterEquipmentDef> equipments)
+        {
+            return equipments != null && equipments.Any(e => e != null && e.useTemplateMode);
         }
     }
 }

@@ -289,7 +289,7 @@ namespace CharacterStudio.Core
 
         public int GetSafeCooldownTicks()
         {
-            return Math.Max(0, cooldownTicks);
+            return Math.Max(60, cooldownTicks);
         }
 
         public string DescribeConditions()

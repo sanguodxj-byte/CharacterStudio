@@ -15,6 +15,12 @@ namespace CharacterStudio.UI
     public class MannequinManager
     {
         public static readonly Vector3 PreviewCameraOffset = new Vector3(0f, 0.22f, 0.15f);
+
+        /// <summary>
+        /// 当前活跃的人偶管理器实例。供 Harmony 补丁识别预览人偶。
+        /// </summary>
+        public static MannequinManager? ActiveInstance { get; private set; }
+
         // ─────────────────────────────────────────────
         // 状态
         // ─────────────────────────────────────────────
@@ -63,7 +69,7 @@ namespace CharacterStudio.UI
 
             try
             {
-                // 默认使用人类
+                ActiveInstance = this;
                 currentRace = ThingDefOf.Human;
                 CreateMannequin();
                 isInitialized = true;
@@ -79,6 +85,9 @@ namespace CharacterStudio.UI
         /// </summary>
         public void Cleanup()
         {
+            if (ActiveInstance == this)
+                ActiveInstance = null;
+
             DestroyMannequin();
 
             if (previewTexture != null)
@@ -330,14 +339,13 @@ namespace CharacterStudio.UI
             if (!manualApparelDefs.Contains(apparelDef))
                 manualApparelDefs.Add(apparelDef);
 
-            // 穿上新衣服
             try
             {
                 Apparel apparel = (Apparel)ThingMaker.MakeThing(apparelDef);
                 // Wear 会自动处理层级冲突并脱掉冲突的旧衣服
+                // 种族兼容性由 Patch_MannequinApparel 补丁对预览人偶放行
                 mannequinPawn.apparel.Wear(apparel, false);
                 
-                // 同步 manualApparelDefs 以反映实际穿着情况（Wear 可能会导致其他衣服脱落）
                 SyncManualApparelFromPawn();
             }
             catch (Exception ex)
@@ -370,6 +378,11 @@ namespace CharacterStudio.UI
             manualApparelDefs = mannequinPawn.apparel.WornApparel.Select(a => a.def).ToList();
         }
 
+        /// <summary>
+        /// 判断指定 Pawn 是否为当前预览人偶。
+        /// </summary>
+        public static bool IsMannequinPawn(Pawn pawn) => ActiveInstance != null && pawn == ActiveInstance.mannequinPawn;
+
         private void ReapplyManualApparel()
         {
             if (mannequinPawn == null || manualApparelDefs.Count == 0) return;
@@ -384,12 +397,12 @@ namespace CharacterStudio.UI
                 try
                 {
                     Apparel apparel = (Apparel)ThingMaker.MakeThing(def);
+                    // 种族兼容性由 Patch_MannequinApparel 补丁对预览人偶放行
                     mannequinPawn.apparel.Wear(apparel, false);
                 }
                 catch { }
             }
             
-            // 再次同步，防止因种族限制等原因导致的穿着失败
             SyncManualApparelFromPawn();
         }
 

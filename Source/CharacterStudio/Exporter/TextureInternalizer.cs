@@ -192,6 +192,15 @@ namespace CharacterStudio.Exporter
             return Path.Combine(GetUserTexturesModPath(), "Textures", "Abilities");
         }
 
+        /// <summary>
+        /// 获取子 mod 的 defs 目录绝对路径。
+        /// 用于存放用户自定义的 XML 定义文件（武器、装备 ThingDef 等）。
+        /// </summary>
+        public static string GetDefsDir()
+        {
+            return Path.Combine(GetUserTexturesModPath(), "defs");
+        }
+
         public static void EnsureUserTexturesSubModExists()
         {
             string subModPath = GetUserTexturesModPath();
@@ -199,6 +208,7 @@ namespace CharacterStudio.Exporter
             Directory.CreateDirectory(GetUserTexturesSkinsDir());
             Directory.CreateDirectory(GetUserTexturesEquipmentsDir());
             Directory.CreateDirectory(GetUserTexturesAbilitiesDir());
+            Directory.CreateDirectory(GetDefsDir());
         }
 
         /// <summary>

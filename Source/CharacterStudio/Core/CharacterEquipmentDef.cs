@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using CharacterStudio.Exporter;
 
 namespace CharacterStudio.Core
 {
@@ -9,7 +11,9 @@ namespace CharacterStudio.Core
         Apparel,
         WeaponMelee,
         WeaponRanged,
-        Item
+        Item,
+        Building,
+        Turret
     }
 
     /// <summary>
@@ -23,6 +27,30 @@ namespace CharacterStudio.Core
         public const string DefaultAnchorTag = "Apparel";
         public const string DefaultShaderDefName = "Cutout";
         public const string DefaultParentThingDefName = "ApparelMakeableBase";
+
+        /// <summary>模板模式下各类型对应的 CS 抽象基类名</summary>
+        public static string GetTemplateBaseName(EquipmentType type) => type switch
+        {
+            EquipmentType.Apparel => "CS_ApparelBase",
+            EquipmentType.WeaponRanged => "CS_GunBase",
+            EquipmentType.WeaponMelee => "CS_MeleeSharpBase",
+            EquipmentType.Building => "CS_BuildingBase",
+            EquipmentType.Turret => "CS_TurretBase",
+            EquipmentType.Item => "CS_ItemBase",
+            _ => "ApparelMakeableBase"
+        };
+
+        /// <summary>全量模式下各类型的 RimWorld 原版基类名</summary>
+        public static string GetFullModeBaseName(EquipmentType type) => type switch
+        {
+            EquipmentType.Apparel => "ApparelMakeableBase",
+            EquipmentType.WeaponRanged => "BaseHumanMakeableGun",
+            EquipmentType.WeaponMelee => "BaseMeleeWeapon_Sharp_Quality",
+            EquipmentType.Building => "BuildingBase",
+            EquipmentType.Turret => "BuildingBase",
+            EquipmentType.Item => "ResourceBase",
+            _ => "ApparelMakeableBase"
+        };
 
         /// <summary>物品类型，决定导出格式</summary>
         public EquipmentType itemType = EquipmentType.Apparel;
@@ -38,6 +66,17 @@ namespace CharacterStudio.Core
 
         /// <summary>是否启用该装备。</summary>
         public bool enabled = true;
+
+        /// <summary>
+        /// 编辑模式：true = 模板模式（继承CS基类，主面板精简），false = 全量模式（继承原版基类，所有字段展开）
+        /// </summary>
+        public bool useTemplateMode = true;
+
+        /// <summary>
+        /// 额外字段存储（低频字段补充器添加的 key-value 对）。
+        /// 导出时作为 &lt;key&gt;value&lt;/key&gt; 直接写入 ThingDef。
+        /// </summary>
+        public Dictionary<string, string> extraFields = new Dictionary<string, string>();
 
         /// <summary>
         /// 编辑器内语义槽位。
@@ -150,24 +189,248 @@ namespace CharacterStudio.Core
         /// <summary>装备后数值偏移（equippedStatOffsets）。</summary>
         public List<CharacterEquipmentStatEntry> equippedStatOffsets = new List<CharacterEquipmentStatEntry>();
 
+        // ── ThingDef 完整字段补全 ──
+
+        /// <summary>自定义 thingClass 完整类型名（如 Axolotl.ApparelWithOutColor）。</summary>
+        public string thingClass = "";
+
+        /// <summary>科技等级（Neolithic/Medieval/Industrial/Spacer/Ultra 等）。</summary>
+        public string techLevel = "";
+
+        /// <summary>材料类别列表（stuffCategories，如 Fabric/Leathery/Metallic）。</summary>
+        public List<string> stuffCategories = new List<string>();
+
+        /// <summary>材料消耗数量（costStuffCount）。0 表示不输出。</summary>
+        public int costStuffCount = 0;
+
+        /// <summary>ThingDef 级直接材料消耗列表（costList，如 Steel&gt;120）。</summary>
+        public List<CharacterEquipmentCostEntry> costList = new List<CharacterEquipmentCostEntry>();
+
+        /// <summary>graphicData/drawSize（默认 1,1）。</summary>
+        public string graphicDrawSize = "";
+
+        /// <summary>graphicData/onGroundRandomRotateAngle。</summary>
+        public float graphicRandomRotateAngle = 0f;
+
+        /// <summary>pathCost。</summary>
+        public int pathCost = 0;
+
+        /// <summary>useHitPoints。</summary>
+        public bool useHitPoints = true;
+
+        /// <summary>altitudeLayer（如 Item/Mote/Misc 等）。</summary>
+        public string altitudeLayer = "";
+
+        /// <summary>tickerType（如 Never/Normal/Rare 等）。</summary>
+        public string tickerType = "";
+
+        /// <summary>smeltable。</summary>
+        public bool smeltable = false;
+
+        /// <summary>rotatable。</summary>
+        public bool rotatable = false;
+
+        /// <summary>selectable。</summary>
+        public bool selectable = true;
+
+        /// <summary>drawGUIOverlay。</summary>
+        public bool drawGUIOverlay = true;
+
+        /// <summary>alwaysHaulable。</summary>
+        public bool alwaysHaulable = true;
+
+        /// <summary>useHitPoints 的物品耐久相关。</summary>
+        public bool burningByRecipe = false;
+
+        // ── recipeMaker 子字段 ──
+
+        /// <summary>前置研究 defName。</summary>
+        public string recipeResearchPrerequisite = "";
+
+        /// <summary>技能需求列表（skillRequirements，如 Crafting=5,Artistic=3）。</summary>
+        public List<CharacterEquipmentStatEntry> recipeSkillRequirements = new List<CharacterEquipmentStatEntry>();
+
+        /// <summary>工作特效（effectWorking，如 Tailor/Smith）。</summary>
+        public string recipeEffectWorking = "";
+
+        /// <summary>工作音效（soundWorking）。</summary>
+        public string recipeSoundWorking = "";
+
+        /// <summary>制作台列表（recipeUsers，覆盖 recipeWorkbenchDefName）。</summary>
+        public List<string> recipeUsers = new List<string>();
+
+        /// <summary>半成品 Def（unfinishedThingDef）。</summary>
+        public string recipeUnfinishedThingDef = "";
+
+        /// <summary>显示优先级（displayPriority）。</summary>
+        public float recipeDisplayPriority = 0f;
+
+        /// <summary>工作技能（workSkill，如 Crafting）。</summary>
+        public string recipeWorkSkill = "";
+
+        /// <summary>工作速度 stat（workSpeedStat，如 GeneralLaborSpeed）。</summary>
+        public string recipeWorkSpeedStat = "";
+
+        /// <summary>每日磨损率（apparel/wearPerDay）。</summary>
+        public float wearPerDay = 0f;
+
+        /// <summary>是否检查损坏（apparel/careIfDamaged）。null=不输出。</summary>
+        public bool? careIfDamaged = null;
+
+        /// <summary>是否检查尸体穿着（apparel/careIfWornByCorpse）。null=不输出。</summary>
+        public bool? careIfWornByCorpse = null;
+
+        /// <summary>算作服装避免裸体惩罚（apparel/countsAsClothingForNudity）。null=不输出。</summary>
+        public bool? countsAsClothingForNudity = null;
+
+        /// <summary>是否奴隶服装（apparel/slaveApparel）。null=不输出。</summary>
+        public bool? slaveApparel = null;
+
+        /// <summary>是否可被Ideo需求（apparel/canBeDesignedForIdeo）。null=不输出。</summary>
+        public bool? canBeDesiredForIdeo = null;
+
+        /// <summary>穿戴音效（apparel/soundWear）。</summary>
+        public string soundWear = "";
+
+        /// <summary>脱下音效（apparel/soundRemove）。</summary>
+        public string soundRemove = "";
+
+        /// <summary>使用金属偏转特效（apparel/useDeflectMetalEffect）。</summary>
+        public bool useDeflectMetalEffect = false;
+
+        /// <summary>渲染跳过标记（apparel/renderSkipFlags）。</summary>
+        public List<string> apparelRenderSkipFlags = new List<string>();
+
+        /// <summary>发育阶段过滤（apparel/developmentalStageFilter，如 Child/Adult）。</summary>
+        public string developmentalStageFilter = "";
+
+        /// <summary>是否遮挡视线（apparel/blocksVision）。null=不输出。</summary>
+        public bool? blocksVision = null;
+
+        /// <summary>不可由非暴力角色穿戴（apparel/ignoredByNonViolent）。null=不输出。</summary>
+        public bool? ignoredByNonViolent = null;
+
+        /// <summary>裸体评分偏移（apparel/scoreOffset）。</summary>
+        public float apparelScoreOffset = 0f;
+
+        /// <summary>
+        /// apparel/drawData 的原始 XML 内容。RimWorld 1.6 原生 ApparelDrawData 结构，
+        /// 包含每方向渲染层级偏移。CS renderData 用 drawOrder 替代其功能，
+        /// 但为保持原版兼容性，导入时保留此原始XML，导出时原样输出。
+        /// </summary>
+        public string apparelDrawDataXml = "";
+
+        // ── 原始 XML 块（comps/verbs/tools — 无法类型化的高级内容） ──
+
+        /// <summary>
+        /// 原始 XML 条目，用于 comps/verbs/tools 等无法类型化的高级 ThingDef 子节点。
+        /// 每项的 tagName 决定输出节点名（如 "comps"/"verbs"/"tools"），
+        /// innerXml 为该节点内部的原始 XML 文本。
+        /// </summary>
+        public List<RawXmlEntry> rawXmlEntries = new List<RawXmlEntry>();
+
+        /// <summary>
+        /// 从正式 ThingDef XML 导入时保存的完整原始 XML。
+        /// 非破坏性导出时在此 XML 上做 patch，保留编辑器未管理的字段不变。
+        /// 为空时走常规从零构建导出路径。
+        /// </summary>
+        public string rawOriginalThingDefXml = "";
+
+        // ── 建筑专有字段（itemType == Building / Turret 时有效） ──
+
+        /// <summary>建筑占地尺寸，如 "2,2"。</summary>
+        public string buildingSize = "";
+
+        /// <summary>通行类型（PassThroughOnly / Impassable / Standable 等）。</summary>
+        public string passability = "";
+
+        /// <summary>填充百分比（0.0-1.0），影响遮挡和射击掩体。</summary>
+        public float fillPercent = 0f;
+
+        /// <summary>地形需求（Heavy / Medium / Light）。</summary>
+        public string terrainAffordanceNeeded = "";
+
+        /// <summary>是否阻挡风。</summary>
+        public bool? blockWind = null;
+
+        /// <summary>是否投射边缘阴影。</summary>
+        public bool? castEdgeShadows = null;
+
+        /// <summary>绘制类型（MapMeshOnly / MapMeshAndRealTime / RealtimeOnly）。</summary>
+        public string drawerType = "";
+
+        /// <summary>是否可与区域重叠。</summary>
+        public bool? canOverlapZones = null;
+
+        /// <summary>是否有交互格子。</summary>
+        public bool hasInteractionCell = false;
+
+        /// <summary>交互格子偏移，如 "(0,0,1)"。</summary>
+        public string interactionCellOffset = "";
+
+        /// <summary>被摧毁时的掉落物列表。</summary>
+        public List<CharacterEquipmentCostEntry> killedLeavings = new List<CharacterEquipmentCostEntry>();
+
+        /// <summary>伤害倍率列表（DamageDef:multiplier）。</summary>
+        public List<CharacterEquipmentDamageMultiplierEntry> damageMultipliers = new List<CharacterEquipmentDamageMultiplierEntry>();
+
+        /// <summary>建筑分类目录（如 Security / Misc / Structure）。</summary>
+        public string designationCategory = "";
+
+        /// <summary>建筑标签列表（building/buildingTags）。</summary>
+        public List<string> buildingTags = new List<string>();
+
+        /// <summary>建筑战斗强度（building/combatPower）。</summary>
+        public float combatPower = 0f;
+
+        /// <summary>屋顶坍塌伤害倍率（building/roofCollapseDamageMultiplier）。</summary>
+        public float roofCollapseDamageMultiplier = 0f;
+
+        /// <summary>建筑销毁音效（building/destroySound）。</summary>
+        public string destroySound = "";
+
+        // ── 炮塔专有字段（itemType == Turret 时有效） ──
+
+        /// <summary>炮塔关联的武器 ThingDef defName（building/turretGunDef）。</summary>
+        public string turretGunDef = "";
+
+        /// <summary>炮塔射击预热时间（building/turretBurstWarmupTime）。</summary>
+        public float turretBurstWarmupTime = 0f;
+
+        /// <summary>炮塔射击冷却时间（building/turretBurstCooldownTime）。</summary>
+        public float turretBurstCooldownTime = 0f;
+
+        /// <summary>炮塔初始冷却时间（building/turretInitialCooldownTime）。</summary>
+        public float turretInitialCooldownTime = 0f;
+
+        /// <summary>是否为机械集群威胁（building/isMechClusterThreat）。</summary>
+        public bool isMechClusterThreat = false;
+
         /// <summary>CharacterStudio 自定义渲染数据。</summary>
         public CharacterEquipmentRenderData renderData = CharacterEquipmentRenderData.CreateDefault();
 
         /// <summary>
-        /// 兼容旧存档/旧 XML 导入：
-        /// 旧版本将导出目标写在 linkedThingDefName，并把可视参数写在 visual。
-        /// 新版本不再把它们作为主数据来源，但保留字段避免旧数据直接丢失。
+        /// 根据 useTemplateMode 和 itemType 刷新 parentThingDefName。
+        /// 如果 parentThingDefName 是已知的基类名（模板或原版），则自动切换；用户自定义的不动。
         /// </summary>
-        [Obsolete("Use thingDefName/renderData instead.")]
-        public string linkedThingDefName = "";
-
-        /// <summary>
-        /// 兼容旧存档/旧 XML 导入：
-        /// 旧版本将装备当作 PawnLayerConfig 图层编辑。
-        /// 新版本仅在导入迁移时读取，不应再作为主编辑模型。
-        /// </summary>
-        [Obsolete("Use renderData instead.")]
-        public PawnLayerConfig? visual = null;
+        public void RefreshParentThingDefName()
+        {
+            string templateBase = GetTemplateBaseName(itemType);
+            string fullModeBase = GetFullModeBaseName(itemType);
+            // 已知的所有模板基类名和原版基类名
+            var allKnownBases = new HashSet<string>
+            {
+                "CS_ApparelBase", "CS_GunBase", "CS_MeleeSharpBase", "CS_MeleeBluntBase",
+                "CS_BuildingBase", "CS_TurretBase", "CS_ItemBase",
+                "ApparelMakeableBase", "BaseHumanMakeableGun",
+                "BaseMeleeWeapon_Sharp_Quality", "BaseMeleeWeapon_Blunt_Quality",
+                "BuildingBase", "ResourceBase", "BaseMakeableGrenade"
+            };
+            if (allKnownBases.Contains(parentThingDefName) || string.IsNullOrWhiteSpace(parentThingDefName))
+            {
+                parentThingDefName = useTemplateMode ? templateBase : fullModeBase;
+            }
+        }
 
         public string GetDisplayLabel()
         {
@@ -182,11 +445,6 @@ namespace CharacterStudio.Core
         {
             if (!string.IsNullOrWhiteSpace(thingDefName))
                 return thingDefName;
-
-#pragma warning disable CS0618
-            if (!string.IsNullOrWhiteSpace(linkedThingDefName))
-                return linkedThingDefName;
-#pragma warning restore CS0618
 
             if (!string.IsNullOrWhiteSpace(defName))
                 return defName;
@@ -213,6 +471,8 @@ namespace CharacterStudio.Core
                 label = label,
                 description = description,
                 enabled = enabled,
+                useTemplateMode = useTemplateMode,
+                extraFields = extraFields != null ? new Dictionary<string, string>(extraFields) : new Dictionary<string, string>(),
                 slotTag = slotTag,
                 thingDefName = thingDefName,
                 parentThingDefName = parentThingDefName,
@@ -249,18 +509,88 @@ namespace CharacterStudio.Core
                 statBases = CloneStatEntries(statBases),
                 equippedStatOffsets = CloneStatEntries(equippedStatOffsets),
                 renderData = renderData?.Clone() ?? CharacterEquipmentRenderData.CreateDefault(),
-#pragma warning disable CS0618
-                linkedThingDefName = linkedThingDefName,
-                visual = visual?.Clone()
-#pragma warning restore CS0618
+                // ThingDef 完整字段
+                thingClass = thingClass,
+                techLevel = techLevel,
+                stuffCategories = stuffCategories != null ? new List<string>(stuffCategories) : new List<string>(),
+                costStuffCount = costStuffCount,
+                costList = CloneCostEntries(costList),
+                graphicDrawSize = graphicDrawSize,
+                graphicRandomRotateAngle = graphicRandomRotateAngle,
+                pathCost = pathCost,
+                useHitPoints = useHitPoints,
+                altitudeLayer = altitudeLayer,
+                tickerType = tickerType,
+                smeltable = smeltable,
+                rotatable = rotatable,
+                selectable = selectable,
+                drawGUIOverlay = drawGUIOverlay,
+                alwaysHaulable = alwaysHaulable,
+                burningByRecipe = burningByRecipe,
+                // recipeMaker 子字段
+                recipeResearchPrerequisite = recipeResearchPrerequisite,
+                recipeSkillRequirements = CloneStatEntries(recipeSkillRequirements),
+                recipeEffectWorking = recipeEffectWorking,
+                recipeSoundWorking = recipeSoundWorking,
+                recipeUsers = recipeUsers != null ? new List<string>(recipeUsers) : new List<string>(),
+                recipeUnfinishedThingDef = recipeUnfinishedThingDef,
+                recipeDisplayPriority = recipeDisplayPriority,
+                recipeWorkSkill = recipeWorkSkill,
+                recipeWorkSpeedStat = recipeWorkSpeedStat,
+                // apparel 子字段
+                wearPerDay = wearPerDay,
+                careIfDamaged = careIfDamaged,
+                careIfWornByCorpse = careIfWornByCorpse,
+                countsAsClothingForNudity = countsAsClothingForNudity,
+                slaveApparel = slaveApparel,
+                canBeDesiredForIdeo = canBeDesiredForIdeo,
+                soundWear = soundWear,
+                soundRemove = soundRemove,
+                useDeflectMetalEffect = useDeflectMetalEffect,
+                apparelRenderSkipFlags = apparelRenderSkipFlags != null ? new List<string>(apparelRenderSkipFlags) : new List<string>(),
+                developmentalStageFilter = developmentalStageFilter,
+                blocksVision = blocksVision,
+                ignoredByNonViolent = ignoredByNonViolent,
+                apparelScoreOffset = apparelScoreOffset,
+                // 原始 XML
+                rawXmlEntries = rawXmlEntries != null ? rawXmlEntries.Where(e => e != null).Select(e => e.Clone()).ToList() : new List<RawXmlEntry>(),
+                apparelDrawDataXml = apparelDrawDataXml ?? string.Empty,
+                rawOriginalThingDefXml = rawOriginalThingDefXml ?? string.Empty,
+                // 建筑专有字段
+                buildingSize = buildingSize ?? string.Empty,
+                passability = passability ?? string.Empty,
+                fillPercent = fillPercent,
+                terrainAffordanceNeeded = terrainAffordanceNeeded ?? string.Empty,
+                blockWind = blockWind,
+                castEdgeShadows = castEdgeShadows,
+                drawerType = drawerType ?? string.Empty,
+                canOverlapZones = canOverlapZones,
+                hasInteractionCell = hasInteractionCell,
+                interactionCellOffset = interactionCellOffset ?? string.Empty,
+                killedLeavings = CloneCostEntries(killedLeavings),
+                damageMultipliers = damageMultipliers != null ? damageMultipliers.Where(e => e != null).Select(e => e.Clone()).ToList() : new List<CharacterEquipmentDamageMultiplierEntry>(),
+                designationCategory = designationCategory ?? string.Empty,
+                buildingTags = buildingTags != null ? new List<string>(buildingTags) : new List<string>(),
+                combatPower = combatPower,
+                roofCollapseDamageMultiplier = roofCollapseDamageMultiplier,
+                destroySound = destroySound ?? string.Empty,
+                // 炮塔专有字段
+                turretGunDef = turretGunDef ?? string.Empty,
+                turretBurstWarmupTime = turretBurstWarmupTime,
+                turretBurstCooldownTime = turretBurstCooldownTime,
+                turretInitialCooldownTime = turretInitialCooldownTime,
+                isMechClusterThreat = isMechClusterThreat
             };
         }
 
         public void EnsureDefaults()
         {
             slotTag = string.IsNullOrWhiteSpace(slotTag) ? DefaultSlotTag : slotTag;
-            parentThingDefName = string.IsNullOrWhiteSpace(parentThingDefName) ? DefaultParentThingDefName : parentThingDefName;
+            parentThingDefName = string.IsNullOrWhiteSpace(parentThingDefName)
+                ? (useTemplateMode ? GetTemplateBaseName(itemType) : GetFullModeBaseName(itemType))
+                : parentThingDefName;
             shaderDefName = string.IsNullOrWhiteSpace(shaderDefName) ? DefaultShaderDefName : shaderDefName;
+            extraFields ??= new Dictionary<string, string>();
 
             tags ??= new List<string>();
             exportGroupKey = exportGroupKey?.Trim() ?? string.Empty;
@@ -287,15 +617,9 @@ namespace CharacterStudio.Core
                 : flyerClassName.Trim();
             flyerFlightSpeed = Math.Max(0.05f, flyerFlightSpeed);
 
-            MigrateLegacyVisualIfNeeded();
-
             if (string.IsNullOrWhiteSpace(thingDefName))
             {
-#pragma warning disable CS0618
-                thingDefName = !string.IsNullOrWhiteSpace(linkedThingDefName)
-                    ? linkedThingDefName
-                    : defName;
-#pragma warning restore CS0618
+                thingDefName = defName;
             }
 
             if (string.IsNullOrWhiteSpace(worldTexPath) && !string.IsNullOrWhiteSpace(renderData.texPath))
@@ -328,50 +652,57 @@ namespace CharacterStudio.Core
             renderData.EnsureDefaults(GetDisplayLabel(), wornTexPath, maskTexPath, shaderDefName);
             NormalizeStatEntries(statBases);
             NormalizeStatEntries(equippedStatOffsets);
-        }
 
-        private void MigrateLegacyVisualIfNeeded()
-        {
-#pragma warning disable CS0618
-            if (visual == null)
-                return;
+            // ThingDef 完整字段默认值
+            stuffCategories ??= new List<string>();
+            costList ??= new List<CharacterEquipmentCostEntry>();
+            NormalizeCostEntries(costList);
+            recipeSkillRequirements ??= new List<CharacterEquipmentStatEntry>();
+            NormalizeStatEntries(recipeSkillRequirements);
+            recipeUsers ??= new List<string>();
+            apparelRenderSkipFlags ??= new List<string>();
+            rawXmlEntries ??= new List<RawXmlEntry>();
+            for (int i = rawXmlEntries.Count - 1; i >= 0; i--)
+            {
+                if (rawXmlEntries[i] == null || string.IsNullOrWhiteSpace(rawXmlEntries[i].tagName))
+                    rawXmlEntries.RemoveAt(i);
+            }
+            thingClass ??= string.Empty;
+            techLevel ??= string.Empty;
+            altitudeLayer ??= string.Empty;
+            tickerType ??= string.Empty;
+            recipeResearchPrerequisite ??= string.Empty;
+            recipeEffectWorking ??= string.Empty;
+            recipeSoundWorking ??= string.Empty;
+            recipeUnfinishedThingDef ??= string.Empty;
+            recipeWorkSkill ??= string.Empty;
+            recipeWorkSpeedStat ??= string.Empty;
+            soundWear ??= string.Empty;
+            soundRemove ??= string.Empty;
+            developmentalStageFilter ??= string.Empty;
+            graphicDrawSize ??= string.Empty;
+            apparelDrawDataXml ??= string.Empty;
+            rawOriginalThingDefXml ??= string.Empty;
 
-            bool hasModernRenderData = renderData != null && (
-                !string.IsNullOrWhiteSpace(renderData.texPath)
-                || !string.IsNullOrWhiteSpace(renderData.layerName)
-                || renderData.offset != Vector3.zero
-                || renderData.offsetEast != Vector3.zero
-                || renderData.offsetNorth != Vector3.zero
-                || renderData.drawOrder != 50f
-                || renderData.scale != Vector2.one);
-
-            if (hasModernRenderData)
-                return;
-
-            renderData ??= CharacterEquipmentRenderData.CreateDefault();
-            renderData.layerName = string.IsNullOrWhiteSpace(renderData.layerName) ? visual.layerName : renderData.layerName;
-            renderData.texPath = string.IsNullOrWhiteSpace(renderData.texPath) ? visual.texPath : renderData.texPath;
-            renderData.maskTexPath = string.IsNullOrWhiteSpace(renderData.maskTexPath) ? visual.maskTexPath : renderData.maskTexPath;
-            renderData.anchorTag = string.IsNullOrWhiteSpace(renderData.anchorTag) ? visual.anchorTag : renderData.anchorTag;
-            renderData.anchorPath = string.IsNullOrWhiteSpace(renderData.anchorPath) ? visual.anchorPath : renderData.anchorPath;
-            renderData.shaderDefName = string.IsNullOrWhiteSpace(renderData.shaderDefName) ? visual.shaderDefName : renderData.shaderDefName;
-            renderData.offset = visual.offset;
-            renderData.offsetEast = visual.offsetEast;
-            renderData.offsetNorth = visual.offsetNorth;
-            renderData.scale = visual.scale;
-            renderData.scaleEastMultiplier = visual.scaleEastMultiplier;
-            renderData.scaleNorthMultiplier = visual.scaleNorthMultiplier;
-            renderData.rotation = visual.rotation;
-            renderData.rotationEastOffset = visual.rotationEastOffset;
-            renderData.rotationNorthOffset = visual.rotationNorthOffset;
-            renderData.drawOrder = visual.drawOrder;
-            renderData.flipHorizontal = visual.flipHorizontal;
-            renderData.visible = visual.visible;
-            renderData.colorSource = visual.colorSource;
-            renderData.customColor = visual.customColor;
-            renderData.colorTwoSource = visual.colorTwoSource;
-            renderData.customColorTwo = visual.customColorTwo;
-#pragma warning restore CS0618
+            // 建筑专有字段默认值
+            buildingSize ??= string.Empty;
+            passability ??= string.Empty;
+            terrainAffordanceNeeded ??= string.Empty;
+            drawerType ??= string.Empty;
+            interactionCellOffset ??= string.Empty;
+            designationCategory ??= string.Empty;
+            destroySound ??= string.Empty;
+            killedLeavings ??= new List<CharacterEquipmentCostEntry>();
+            NormalizeCostEntries(killedLeavings);
+            damageMultipliers ??= new List<CharacterEquipmentDamageMultiplierEntry>();
+            for (int i = damageMultipliers.Count - 1; i >= 0; i--)
+            {
+                if (damageMultipliers[i] == null || string.IsNullOrWhiteSpace(damageMultipliers[i].damageDefName))
+                    damageMultipliers.RemoveAt(i);
+            }
+            buildingTags ??= new List<string>();
+            // 炮塔专有字段默认值
+            turretGunDef ??= string.Empty;
         }
 
         private static List<CharacterEquipmentStatEntry> CloneStatEntries(List<CharacterEquipmentStatEntry>? entries)
@@ -469,66 +800,66 @@ namespace CharacterStudio.Core
 
     public class CharacterEquipmentRenderData
     {
-        public string layerName = "Equipment";
-        public string texPath = "";
-        public string maskTexPath = "";
-        public string anchorTag = "Apparel";
-        public string anchorPath = "";
-        public string shaderDefName = "Cutout";
-        public string directionalFacing = "";
-        public Vector3 offset = Vector3.zero;
-        public Vector3 offsetEast = Vector3.zero;
-        public Vector3 offsetNorth = Vector3.zero;
-        public bool useWestOffset = false;
-        public Vector3 offsetWest = Vector3.zero;
-        public Vector2 scale = Vector2.one;
-        public Vector2 scaleEastMultiplier = Vector2.one;
-        public Vector2 scaleNorthMultiplier = Vector2.one;
-        public Vector2 scaleWestMultiplier = Vector2.one;
-        public float rotation = 0f;
-        public float rotationEastOffset = 0f;
-        public float rotationNorthOffset = 0f;
-        public float rotationWestOffset = 0f;
-        public float drawOrder = 50f;
-        public bool flipHorizontal = false;
-        public bool visible = true;
-        public LayerColorSource colorSource = LayerColorSource.White;
-        public Color customColor = Color.white;
-        public LayerColorSource colorTwoSource = LayerColorSource.White;
-        public Color customColorTwo = Color.white;
+        [XmlExportField] public string layerName = "Equipment";
+        [XmlExportField] public string texPath = "";
+        [XmlExportField(SkipEmptyString = true)] public string maskTexPath = "";
+        [XmlExportField] public string anchorTag = "Apparel";
+        [XmlExportField(SkipEmptyString = true)] public string anchorPath = "";
+        [XmlExportField] public string shaderDefName = "Cutout";
+        [XmlExportField(SkipEmptyString = true)] public string directionalFacing = "";
+        [XmlExportField] public Vector3 offset = Vector3.zero;
+        [XmlExportField] public Vector3 offsetEast = Vector3.zero;
+        [XmlExportField] public Vector3 offsetNorth = Vector3.zero;
+        [XmlExportField(BoolToLower = true)] public bool useWestOffset = false;
+        [XmlExportField] public Vector3 offsetWest = Vector3.zero;
+        [XmlExportField] public Vector2 scale = Vector2.one;
+        [XmlExportField] public Vector2 scaleEastMultiplier = Vector2.one;
+        [XmlExportField] public Vector2 scaleNorthMultiplier = Vector2.one;
+        [XmlExportField] public Vector2 scaleWestMultiplier = Vector2.one;
+        [XmlExportField] public float rotation = 0f;
+        [XmlExportField(SkipDefault = 0f, SkipDefaultFloat = true)] public float rotationEastOffset = 0f;
+        [XmlExportField(SkipDefault = 0f, SkipDefaultFloat = true)] public float rotationNorthOffset = 0f;
+        [XmlExportField(SkipDefault = 0f, SkipDefaultFloat = true)] public float rotationWestOffset = 0f;
+        [XmlExportField] public float drawOrder = 50f;
+        [XmlExportField(BoolToLower = true)] public bool flipHorizontal = false;
+        [XmlExportField(BoolToLower = true)] public bool visible = true;
+        [XmlExportField] public LayerColorSource colorSource = LayerColorSource.White;
+        [XmlExportField(Ignore = true)] public Color customColor = Color.white;
+        [XmlExportField] public LayerColorSource colorTwoSource = LayerColorSource.White;
+        [XmlExportField(Ignore = true)] public Color customColorTwo = Color.white;
 
         // 技能驱动的闭环局部动画（装备侧）
-        public bool useTriggeredLocalAnimation = false;
-        public string triggerAbilityDefName = string.Empty;
-        public string animationGroupKey = string.Empty;
-        public EquipmentTriggeredAnimationRole triggeredAnimationRole = EquipmentTriggeredAnimationRole.MovablePart;
-        public float triggeredDeployAngle = 45f;
-        public float triggeredReturnAngle = 0f;
-        public int triggeredDeployTicks = 12;
-        public int triggeredHoldTicks = 24;
-        public int triggeredReturnTicks = 12;
-        public Vector2 triggeredPivotOffset = Vector2.zero;
-        public Vector3 triggeredDeployOffset = Vector3.zero;
-        public bool triggeredUseVfxVisibility = false;
+        [XmlExportField(BoolToLower = true)] public bool useTriggeredLocalAnimation = false;
+        [XmlExportField(SkipEmptyString = true)] public string triggerAbilityDefName = string.Empty;
+        [XmlExportField(SkipEmptyString = true)] public string animationGroupKey = string.Empty;
+        [XmlExportField] public EquipmentTriggeredAnimationRole triggeredAnimationRole = EquipmentTriggeredAnimationRole.MovablePart;
+        [XmlExportField(SkipDefault = 45f, SkipDefaultFloat = true)] public float triggeredDeployAngle = 45f;
+        [XmlExportField] public float triggeredReturnAngle = 0f;
+        [XmlExportField(SkipDefault = 12)] public int triggeredDeployTicks = 12;
+        [XmlExportField(SkipDefault = 24)] public int triggeredHoldTicks = 24;
+        [XmlExportField(SkipDefault = 12)] public int triggeredReturnTicks = 12;
+        [XmlExportField] public Vector2 triggeredPivotOffset = Vector2.zero;
+        [XmlExportField] public Vector3 triggeredDeployOffset = Vector3.zero;
+        [XmlExportField(BoolToLower = true)] public bool triggeredUseVfxVisibility = false;
 
-        public string triggeredIdleTexPath = string.Empty;
-        public string triggeredDeployTexPath = string.Empty;
-        public string triggeredHoldTexPath = string.Empty;
-        public string triggeredReturnTexPath = string.Empty;
+        [XmlExportField(SkipEmptyString = true)] public string triggeredIdleTexPath = string.Empty;
+        [XmlExportField(SkipEmptyString = true)] public string triggeredDeployTexPath = string.Empty;
+        [XmlExportField(SkipEmptyString = true)] public string triggeredHoldTexPath = string.Empty;
+        [XmlExportField(SkipEmptyString = true)] public string triggeredReturnTexPath = string.Empty;
 
-        public string triggeredIdleMaskTexPath = string.Empty;
-        public string triggeredDeployMaskTexPath = string.Empty;
-        public string triggeredHoldMaskTexPath = string.Empty;
-        public string triggeredReturnMaskTexPath = string.Empty;
+        [XmlExportField(SkipEmptyString = true)] public string triggeredIdleMaskTexPath = string.Empty;
+        [XmlExportField(SkipEmptyString = true)] public string triggeredDeployMaskTexPath = string.Empty;
+        [XmlExportField(SkipEmptyString = true)] public string triggeredHoldMaskTexPath = string.Empty;
+        [XmlExportField(SkipEmptyString = true)] public string triggeredReturnMaskTexPath = string.Empty;
 
-        public bool triggeredVisibleDuringDeploy = true;
-        public bool triggeredVisibleDuringHold = true;
-        public bool triggeredVisibleDuringReturn = true;
-        public bool triggeredVisibleOutsideCycle = true;
+        [XmlExportField] public bool triggeredVisibleDuringDeploy = true;
+        [XmlExportField] public bool triggeredVisibleDuringHold = true;
+        [XmlExportField] public bool triggeredVisibleDuringReturn = true;
+        [XmlExportField] public bool triggeredVisibleOutsideCycle = true;
 
-        public EquipmentTriggeredAnimationOverride? triggeredAnimationSouth;
-        public EquipmentTriggeredAnimationOverride? triggeredAnimationEastWest;
-        public EquipmentTriggeredAnimationOverride? triggeredAnimationNorth;
+        [XmlExportField] public EquipmentTriggeredAnimationOverride? triggeredAnimationSouth;
+        [XmlExportField] public EquipmentTriggeredAnimationOverride? triggeredAnimationEastWest;
+        [XmlExportField] public EquipmentTriggeredAnimationOverride? triggeredAnimationNorth;
 
         public static CharacterEquipmentRenderData CreateDefault()
         {
@@ -793,6 +1124,234 @@ namespace CharacterStudio.Core
             {
                 statDefName = statDefName,
                 value = value
+            };
+        }
+    }
+
+    /// <summary>
+    /// 原始 XML 条目，用于 comps/verbs/tools 等 RimWorld 原生但无法在编辑器中类型化的 ThingDef 子节点。
+    /// </summary>
+    public class CharacterEquipmentDamageMultiplierEntry
+    {
+        /// <summary>伤害类型 defName（如 Flame、Bomb、Thump）。</summary>
+        public string damageDefName = "";
+
+        /// <summary>伤害倍率（0 = 免疫，1 = 正常，>1 = 增伤）。</summary>
+        public float multiplier = 1f;
+
+        public CharacterEquipmentDamageMultiplierEntry Clone()
+        {
+            return new CharacterEquipmentDamageMultiplierEntry
+            {
+                damageDefName = damageDefName,
+                multiplier = multiplier
+            };
+        }
+    }
+
+    /// <summary>
+    /// 武器 tools 条目，用于结构化编辑近战/远程武器的攻击动作。
+    /// </summary>
+    public class WeaponToolEntry
+    {
+        public string label = "";
+        /// <summary>攻击类型列表，逗号分隔 (Cut/Blunt/Stab/Poke 等)</summary>
+        public string capacities = "";
+        public float power = 0f;
+        public float cooldownTime = 0f;
+        public float armorPenetration = -1f;
+        /// <summary>可选，-1 表示不输出</summary>
+        public float chanceFactor = -1f;
+        public bool labelUsedInLogging = true;
+
+        public WeaponToolEntry Clone()
+        {
+            return new WeaponToolEntry
+            {
+                label = label,
+                capacities = capacities,
+                power = power,
+                cooldownTime = cooldownTime,
+                armorPenetration = armorPenetration,
+                chanceFactor = chanceFactor,
+                labelUsedInLogging = labelUsedInLogging
+            };
+        }
+
+        /// <summary>从 XML 字符串解析 tools 列表</summary>
+        public static List<WeaponToolEntry> ParseFromXml(string innerXml)
+        {
+            var result = new List<WeaponToolEntry>();
+            if (string.IsNullOrWhiteSpace(innerXml)) return result;
+            try
+            {
+                var root = System.Xml.Linq.XElement.Parse($"<root>{innerXml}</root>");
+                foreach (var li in root.Elements("li"))
+                {
+                    var entry = new WeaponToolEntry();
+                    entry.label = (string)li.Element("label") ?? "";
+                    var capsEl = li.Element("capacities");
+                    if (capsEl != null)
+                        entry.capacities = string.Join(", ", capsEl.Elements("li").Select(e => e.Value));
+                    entry.power = (float?)li.Element("power") ?? 0f;
+                    entry.cooldownTime = (float?)li.Element("cooldownTime") ?? 0f;
+                    entry.armorPenetration = (float?)li.Element("armorPenetration") ?? -1f;
+                    entry.chanceFactor = (float?)li.Element("chanceFactor") ?? -1f;
+                    entry.labelUsedInLogging = (bool?)li.Element("labelUsedInLogging") ?? true;
+                    result.Add(entry);
+                }
+            }
+            catch { }
+            return result;
+        }
+
+        /// <summary>将 tools 列表序列化为 XML innerXml 字符串</summary>
+        public static string SerializeToXml(List<WeaponToolEntry> tools)
+        {
+            if (tools == null || tools.Count == 0) return "";
+            var sb = new System.Text.StringBuilder();
+            foreach (var t in tools)
+            {
+                sb.AppendLine("      <li>");
+                if (!string.IsNullOrWhiteSpace(t.label))
+                    sb.AppendLine($"        <label>{t.label}</label>");
+                if (!t.labelUsedInLogging)
+                    sb.AppendLine("        <labelUsedInLogging>false</labelUsedInLogging>");
+                if (!string.IsNullOrWhiteSpace(t.capacities))
+                {
+                    sb.AppendLine("        <capacities>");
+                    foreach (var cap in t.capacities.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        var trimmed = cap.Trim();
+                        if (!string.IsNullOrEmpty(trimmed))
+                            sb.AppendLine($"          <li>{trimmed}</li>");
+                    }
+                    sb.AppendLine("        </capacities>");
+                }
+                if (t.power > 0f)
+                    sb.AppendLine($"        <power>{t.power}</power>");
+                if (t.cooldownTime > 0f)
+                    sb.AppendLine($"        <cooldownTime>{t.cooldownTime}</cooldownTime>");
+                if (t.armorPenetration >= 0f)
+                    sb.AppendLine($"        <armorPenetration>{t.armorPenetration}</armorPenetration>");
+                if (t.chanceFactor >= 0f)
+                    sb.AppendLine($"        <chanceFactor>{t.chanceFactor}</chanceFactor>");
+                sb.AppendLine("      </li>");
+            }
+            return sb.ToString().TrimEnd('\r', '\n');
+        }
+    }
+
+    /// <summary>
+    /// 武器 verbs 条目，用于结构化编辑远程武器的射击属性。
+    /// </summary>
+    public class WeaponVerbEntry
+    {
+        public string verbClass = "Verb_Shoot";
+        public bool hasStandardCommand = true;
+        /// <summary>默认弹射物 ThingDef defName</summary>
+        public string defaultProjectile = "";
+        public float warmupTime = 0f;
+        public float range = 0f;
+        /// <summary>射击音效 SoundDef defName</summary>
+        public string soundCast = "";
+        /// <summary>射击尾音 SoundDef defName</summary>
+        public string soundCastTail = "";
+        public float muzzleFlashScale = 9f;
+        public int burstShotCount = 0;
+        public float burstShotDelay = 0f;
+
+        public WeaponVerbEntry Clone()
+        {
+            return new WeaponVerbEntry
+            {
+                verbClass = verbClass,
+                hasStandardCommand = hasStandardCommand,
+                defaultProjectile = defaultProjectile,
+                warmupTime = warmupTime,
+                range = range,
+                soundCast = soundCast,
+                soundCastTail = soundCastTail,
+                muzzleFlashScale = muzzleFlashScale,
+                burstShotCount = burstShotCount,
+                burstShotDelay = burstShotDelay
+            };
+        }
+
+        public static List<WeaponVerbEntry> ParseFromXml(string innerXml)
+        {
+            var result = new List<WeaponVerbEntry>();
+            if (string.IsNullOrWhiteSpace(innerXml)) return result;
+            try
+            {
+                var root = System.Xml.Linq.XElement.Parse($"<root>{innerXml}</root>");
+                foreach (var li in root.Elements("li"))
+                {
+                    var entry = new WeaponVerbEntry();
+                    entry.verbClass = (string)li.Element("verbClass") ?? "Verb_Shoot";
+                    entry.hasStandardCommand = (bool?)li.Element("hasStandardCommand") ?? true;
+                    entry.defaultProjectile = (string)li.Element("defaultProjectile") ?? "";
+                    entry.warmupTime = (float?)li.Element("warmupTime") ?? 0f;
+                    entry.range = (float?)li.Element("range") ?? 0f;
+                    entry.soundCast = (string)li.Element("soundCast") ?? "";
+                    entry.soundCastTail = (string)li.Element("soundCastTail") ?? "";
+                    entry.muzzleFlashScale = (float?)li.Element("muzzleFlashScale") ?? 9f;
+                    entry.burstShotCount = (int?)li.Element("burstShotCount") ?? 0;
+                    entry.burstShotDelay = (float?)li.Element("burstShotDelay") ?? 0f;
+                    result.Add(entry);
+                }
+            }
+            catch { }
+            return result;
+        }
+
+        public static string SerializeToXml(List<WeaponVerbEntry> verbs)
+        {
+            if (verbs == null || verbs.Count == 0) return "";
+            var sb = new System.Text.StringBuilder();
+            foreach (var v in verbs)
+            {
+                sb.AppendLine("      <li>");
+                if (!string.IsNullOrWhiteSpace(v.verbClass))
+                    sb.AppendLine($"        <verbClass>{v.verbClass}</verbClass>");
+                if (!v.hasStandardCommand)
+                    sb.AppendLine("        <hasStandardCommand>false</hasStandardCommand>");
+                if (!string.IsNullOrWhiteSpace(v.defaultProjectile))
+                    sb.AppendLine($"        <defaultProjectile>{v.defaultProjectile}</defaultProjectile>");
+                if (v.warmupTime > 0f)
+                    sb.AppendLine($"        <warmupTime>{v.warmupTime}</warmupTime>");
+                if (v.range > 0f)
+                    sb.AppendLine($"        <range>{v.range}</range>");
+                if (!string.IsNullOrWhiteSpace(v.soundCast))
+                    sb.AppendLine($"        <soundCast>{v.soundCast}</soundCast>");
+                if (!string.IsNullOrWhiteSpace(v.soundCastTail))
+                    sb.AppendLine($"        <soundCastTail>{v.soundCastTail}</soundCastTail>");
+                if (Math.Abs(v.muzzleFlashScale - 9f) > 0.01f)
+                    sb.AppendLine($"        <muzzleFlashScale>{v.muzzleFlashScale}</muzzleFlashScale>");
+                if (v.burstShotCount > 0)
+                    sb.AppendLine($"        <burstShotCount>{v.burstShotCount}</burstShotCount>");
+                if (v.burstShotDelay > 0f)
+                    sb.AppendLine($"        <burstShotDelay>{v.burstShotDelay}</burstShotDelay>");
+                sb.AppendLine("      </li>");
+            }
+            return sb.ToString().TrimEnd('\r', '\n');
+        }
+    }
+
+    public class RawXmlEntry
+    {
+        /// <summary>输出 XML 节点名（如 "comps"、"verbs"、"tools"）。</summary>
+        public string tagName = "";
+
+        /// <summary>节点内部的原始 XML 文本。</summary>
+        public string innerXml = "";
+
+        public RawXmlEntry Clone()
+        {
+            return new RawXmlEntry
+            {
+                tagName = tagName,
+                innerXml = innerXml
             };
         }
     }

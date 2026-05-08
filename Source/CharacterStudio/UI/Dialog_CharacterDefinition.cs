@@ -133,7 +133,7 @@ namespace CharacterStudio.UI
         private void ShowRaceSelector()
         {
             List<FloatMenuOption> options = DefDatabase<ThingDef>.AllDefsListForReading
-                .Where(static def => def.race != null && def.race.Humanlike)
+                .Where(static def => def.race != null)
                 .OrderBy(static def => def.label ?? def.defName)
                 .Select(def => new FloatMenuOption($"{(def.label ?? def.defName)} ({def.defName})", () => definition.raceDefName = def.defName))
                 .ToList();

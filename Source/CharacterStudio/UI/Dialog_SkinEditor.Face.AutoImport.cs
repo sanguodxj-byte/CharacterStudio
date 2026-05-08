@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -10,6 +10,34 @@ namespace CharacterStudio.UI
 {
     public partial class Dialog_SkinEditor
     {
+        private static readonly string[] FaceTextureDirectionSuffixes =
+            new[] { "_south", "_north", "_east", "_west", "_front", "_back", "_side" };
+
+        /// <summary>
+        /// 判断文件名（不含扩展名）是否为基底贴图。
+        /// 支持 Base / Neutral / Idle / Default 及其方向后缀变体（如 Base_south、Neutral_front）。
+        /// </summary>
+        private static bool IsBaseFaceFileName(string fileName)
+        {
+            if (string.IsNullOrWhiteSpace(fileName))
+                return false;
+
+            string normalized = fileName.Trim();
+            foreach (string suffix in FaceTextureDirectionSuffixes)
+            {
+                if (normalized.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+                {
+                    normalized = normalized.Substring(0, normalized.Length - suffix.Length);
+                    break;
+                }
+            }
+
+            return normalized.Equals("Base", StringComparison.OrdinalIgnoreCase)
+                || normalized.Equals("Neutral", StringComparison.OrdinalIgnoreCase)
+                || normalized.Equals("Idle", StringComparison.OrdinalIgnoreCase)
+                || normalized.Equals("Default", StringComparison.OrdinalIgnoreCase);
+        }
+
         private static readonly Dictionary<string, ExpressionType> FullFaceExpressionFileAliases =
             new Dictionary<string, ExpressionType>(StringComparer.OrdinalIgnoreCase)
             {
@@ -17,6 +45,7 @@ namespace CharacterStudio.UI
                 { "Neutral", ExpressionType.Neutral },
                 { "Idle", ExpressionType.Neutral },
                 { "Default", ExpressionType.Neutral },
+                { "Closed", ExpressionType.Sleeping },
                 { "Sleep", ExpressionType.Sleeping },
                 { "Sleeping", ExpressionType.Sleeping },
                 { "Wink", ExpressionType.Wink },
@@ -131,11 +160,10 @@ namespace CharacterStudio.UI
             }
 
             string fileName = Path.GetFileNameWithoutExtension(resolvedPath) ?? string.Empty;
-            if (!fileName.Equals("Base", StringComparison.OrdinalIgnoreCase)
-                && !fileName.Equals("Neutral", StringComparison.OrdinalIgnoreCase))
+            if (!IsBaseFaceFileName(fileName))
             {
                 Find.WindowStack.Add(new Dialog_MessageBox(
-                    "自动识别需要先选择基底贴图。\n\n请选择命名为 Base.png 或 Neutral.png 的文件，系统会自动扫描同文件夹中的其余表情贴图。"));
+                    "自动识别需要先选择基底贴图。\n\n请选择命名为 Base.png、Base_south.png、Neutral.png 等的文件，系统会自动扫描同文件夹中的其余表情贴图。"));
                 return false;
             }
 
@@ -201,7 +229,8 @@ namespace CharacterStudio.UI
                 ApplyImportedFaceConfig(fc, importedFaceConfig);
                 RebuildFaceImportBuffers(fc);
                 SyncLayeredFacePartsToEditableLayers(fc);
-                workingSkin.hideVanillaHead = false;
+                if (!textureOnlyReplace)
+                    workingSkin.hideVanillaHead = false;
                 ForceResetPreviewMannequin();
                 FinalizeMutatedEditorState(refreshPreview: true, refreshRenderTree: true);
 
@@ -230,7 +259,32 @@ namespace CharacterStudio.UI
                 return true;
             }
 
-            return Enum.TryParse(normalized, true, out expression);
+            if (Enum.TryParse(normalized, true, out expression))
+            {
+                return true;
+            }
+
+            // 尝试剥离方向后缀（_south, _north, _east, _west, _front, _back, _side）后再匹配
+            foreach (string suffix in FaceTextureDirectionSuffixes)
+            {
+                if (normalized.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+                {
+                    string stripped = normalized.Substring(0, normalized.Length - suffix.Length);
+                    if (FullFaceExpressionFileAliases.TryGetValue(stripped, out expression))
+                    {
+                        return true;
+                    }
+
+                    if (Enum.TryParse(stripped, true, out expression))
+                    {
+                        return true;
+                    }
+
+                    break;
+                }
+            }
+
+            return false;
         }
 
         private static bool TryParseExpressionToken(string? token, out ExpressionType expression)
@@ -299,7 +353,7 @@ namespace CharacterStudio.UI
             }
 
             string fileName = Path.GetFileNameWithoutExtension(resolvedPath) ?? string.Empty;
-            if (!fileName.Equals("Base", StringComparison.OrdinalIgnoreCase))
+            if (!IsBaseFaceFileName(fileName))
             {
                 return false;
             }
@@ -358,7 +412,11 @@ namespace CharacterStudio.UI
                 if (!appendOnly)
                     importedFaceConfig.eyeDirectionConfig = null;
 
-                List<string> files = Directory.EnumerateFiles(directoryPath)
+                // 解析物理目录：相对路径从 Mod Textures 查找，绝对路径直接使用
+                string physicalDir = ResolveSourceRootToPhysicalDirectory(directoryPath);
+                bool isInternal = !IsExternalPath(directoryPath);
+
+                List<string> files = Directory.EnumerateFiles(physicalDir)
                     .Where(IsSupportedLayeredFaceTextureFile)
                     .OrderBy(Path.GetFileNameWithoutExtension, StringComparer.OrdinalIgnoreCase)
                     .ToList();
@@ -372,9 +430,15 @@ namespace CharacterStudio.UI
                 var detectedFileNames = new HashSet<string>(
                     files.Select(file => Path.GetFileNameWithoutExtension(file) ?? string.Empty),
                     StringComparer.OrdinalIgnoreCase);
+                // 内部纹理：value 为无扩展名的 ContentFinder 相对路径；外部纹理：value 为绝对路径
                 var detectedFilePathMap = files
                     .GroupBy(file => Path.GetFileNameWithoutExtension(file) ?? string.Empty, StringComparer.OrdinalIgnoreCase)
-                    .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+                    .ToDictionary(
+                        group => group.Key,
+                        group => isInternal
+                            ? ConvertScannedFileToStoragePath(group.First(), physicalDir, directoryPath)
+                            : group.First(),
+                        StringComparer.OrdinalIgnoreCase);
                 var recognizedFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 var matchedLines = new List<string>();
                 var synthesizedLines = new List<string>();
@@ -513,51 +577,51 @@ namespace CharacterStudio.UI
                     return applied;
                 }
 
-                bool hasLayeredFaceBase = TryApplyFirstAvailableStem(LayeredFacePartType.Base, ExpressionType.Neutral, new[] { "Base" });
+                bool hasLayeredFaceBase = TryApplyFirstAvailableStem(LayeredFacePartType.Base, ExpressionType.Neutral, new[] { "Base_south", "Base" });
 
-                TryApplyFirstAvailableStem(LayeredFacePartType.Brow, ExpressionType.Neutral, new[] { "Brows", "Brow" });
+                TryApplyFirstAvailableStem(LayeredFacePartType.Brow, ExpressionType.Neutral, new[] { "Brows_south", "Brow_south", "Brows", "Brow" });
                 TryApplyPairedNeutralParts(
                     LayeredFacePartType.Brow,
-                    new[] { "Brow_Left", "Brows_Left" },
-                    new[] { "Brow_Right", "Brows_Right" });
+                    new[] { "Brow_Left_south", "Brows_Left_south", "Brow_Left", "Brows_Left" },
+                    new[] { "Brow_Right_south", "Brows_Right_south", "Brow_Right", "Brows_Right" });
 
-                TryApplyFirstAvailableStem(LayeredFacePartType.ReplacementEye, ExpressionType.Neutral, new[] { "Eye" });
+                TryApplyFirstAvailableStem(LayeredFacePartType.ReplacementEye, ExpressionType.Neutral, new[] { "Eye_south", "Eye" });
                 TryApplyPairedNeutralParts(
                     LayeredFacePartType.ReplacementEye,
-                    new[] { "Eye_Left" },
-                    new[] { "Eye_Right" });
+                    new[] { "Eye_Left_south", "Eye_Left" },
+                    new[] { "Eye_Right_south", "Eye_Right" });
 
-                TryApplyFirstAvailableStem(LayeredFacePartType.Sclera, ExpressionType.Neutral, new[] { "Sclera" });
+                TryApplyFirstAvailableStem(LayeredFacePartType.Sclera, ExpressionType.Neutral, new[] { "Sclera_south", "Sclera" });
                 TryApplyPairedNeutralParts(
                     LayeredFacePartType.Sclera,
-                    new[] { "Sclera_Left" },
-                    new[] { "Sclera_Right" });
+                    new[] { "Sclera_Left_south", "Sclera_Left" },
+                    new[] { "Sclera_Right_south", "Sclera_Right" });
 
-                TryApplyFirstAvailableStem(LayeredFacePartType.UpperLid, ExpressionType.Neutral, new[] { "LidUpper", "UpperLid" });
+                TryApplyFirstAvailableStem(LayeredFacePartType.UpperLid, ExpressionType.Neutral, new[] { "LidUpper_south", "UpperLid_south", "LidUpper", "UpperLid" });
                 TryApplyPairedNeutralParts(
                     LayeredFacePartType.UpperLid,
-                    new[] { "UpperLid_Left", "LidUpper_Left" },
-                    new[] { "UpperLid_Right", "LidUpper_Right" });
+                    new[] { "UpperLid_Left_south", "LidUpper_Left_south", "UpperLid_Left", "LidUpper_Left" },
+                    new[] { "UpperLid_Right_south", "LidUpper_Right_south", "UpperLid_Right", "LidUpper_Right" });
 
-                TryApplyFirstAvailableStem(LayeredFacePartType.LowerLid, ExpressionType.Neutral, new[] { "LidLower", "LowerLid" });
+                TryApplyFirstAvailableStem(LayeredFacePartType.LowerLid, ExpressionType.Neutral, new[] { "LidLower_south", "LowerLid_south", "LidLower", "LowerLid" });
                 TryApplyPairedNeutralParts(
                     LayeredFacePartType.LowerLid,
-                    new[] { "LowerLid_Left", "LidLower_Left" },
-                    new[] { "LowerLid_Right", "LidLower_Right" });
+                    new[] { "LowerLid_Left_south", "LidLower_Left_south", "LowerLid_Left", "LidLower_Left" },
+                    new[] { "LowerLid_Right_south", "LidLower_Right_south", "LowerLid_Right", "LidLower_Right" });
 
-                TryApplyFirstAvailableStem(LayeredFacePartType.Mouth, ExpressionType.Neutral, new[] { "Mouth" });
+                TryApplyFirstAvailableStem(LayeredFacePartType.Mouth, ExpressionType.Neutral, new[] { "Mouth_south", "Mouth" });
 
-                TryApplyFirstAvailableStem(LayeredFacePartType.Pupil, ExpressionType.Neutral, new[] { "Pupil", "Pupil_Center" });
+                TryApplyFirstAvailableStem(LayeredFacePartType.Pupil, ExpressionType.Neutral, new[] { "Pupil_south", "Pupil_Center_south", "Pupil", "Pupil_Center" });
                 TryApplyPairedNeutralParts(
                     LayeredFacePartType.Pupil,
-                    new[] { "Pupil_Left" },
-                    new[] { "Pupil_Right" });
+                    new[] { "Pupil_Left_south", "Pupil_Left" },
+                    new[] { "Pupil_Right_south", "Pupil_Right" });
 
-                TryApplyFirstAvailableStem(LayeredFacePartType.Hair, ExpressionType.Neutral, new[] { "Hair_front" }, "front");
-                TryApplyFirstAvailableStem(LayeredFacePartType.Hair, ExpressionType.Neutral, new[] { "Hair_back" }, "back");
-                TryApplyFirstAvailableStem(LayeredFacePartType.Hair, ExpressionType.Neutral, new[] { "Hair_east", "Hair_side" }, "east");
-                TryApplyFirstAvailableStem(LayeredFacePartType.Hair, ExpressionType.Neutral, new[] { "Hair_north" }, "north");
-                TryApplyFirstAvailableStem(LayeredFacePartType.Hair, ExpressionType.Neutral, new[] { "Hair" });
+                TryApplyFirstAvailableStem(LayeredFacePartType.Hair, ExpressionType.Neutral, new[] { "Hair_front_south", "Hair_front" }, "front");
+                TryApplyFirstAvailableStem(LayeredFacePartType.Hair, ExpressionType.Neutral, new[] { "Hair_back_south", "Hair_back" }, "back");
+                TryApplyFirstAvailableStem(LayeredFacePartType.Hair, ExpressionType.Neutral, new[] { "Hair_east_south", "Hair_side_south", "Hair_east", "Hair_side" }, "east");
+                TryApplyFirstAvailableStem(LayeredFacePartType.Hair, ExpressionType.Neutral, new[] { "Hair_north_south", "Hair_north" }, "north");
+                TryApplyFirstAvailableStem(LayeredFacePartType.Hair, ExpressionType.Neutral, new[] { "Hair_south", "Hair" });
 
                 // ReplacementEye / ReplacementMouth / Overlay / OverlayTop are imported as raw assets
                 // only and must be mapped manually in the dedicated semantic mapping UI.
@@ -592,6 +656,12 @@ namespace CharacterStudio.UI
                     {
                         ApplyRecognized(scannedPartType, scannedExpression, filePath, fileStem, overlayId, scannedSide, scannedFacing);
                     }
+                    else
+                    {
+                        // 后缀无法识别为表情时，只要前缀匹配了部件名且后缀匹配了方向（side/facing），
+                        // 就按 Neutral 导入，确保 _left/_right 文件不被跳过
+                        ApplyRecognized(scannedPartType, ExpressionType.Neutral, filePath, fileStem, overlayId, scannedSide, scannedFacing);
+                    }
                 }
 
                 foreach (string filePath in files)
@@ -622,6 +692,7 @@ namespace CharacterStudio.UI
                 AutoConfigureProgrammaticLayeredFaceLogic(importedFaceConfig, detectedFileNames, detectedFilePathMap);
                 InheritUnsidedDirectionalPathsForPairedParts(importedFaceConfig);
                 NormalizeImportedPairedLayeredFaceParts(importedFaceConfig);
+                MirrorMouthToReplacementMouth(importedFaceConfig);
 
                 List<string> runtimeVariantFiles = files
                     .Where(file =>
@@ -644,10 +715,11 @@ namespace CharacterStudio.UI
                     .ToList();
 
                 ApplyImportedFaceConfig(fc, importedFaceConfig);
-                SyncImportedLayeredFaceBaseToHeadSlot(fc, hasLayeredFaceBase);
+                if (!textureOnlyReplace)
+                    SyncImportedLayeredFaceBaseToHeadSlot(fc, hasLayeredFaceBase);
                 RebuildFaceImportBuffers(fc);
                 SyncLayeredFacePartsToEditableLayers(fc);
-                if (!appendOnly)
+                if (!textureOnlyReplace && !appendOnly)
                     workingSkin.hideVanillaHead = hasLayeredFaceBase;
 
                 ForceResetPreviewMannequin();
@@ -700,7 +772,8 @@ namespace CharacterStudio.UI
                 {
                     overlayConfig.enabled = !string.IsNullOrWhiteSpace(texPathSouth)
                         || !string.IsNullOrWhiteSpace(texPathEast)
-                        || !string.IsNullOrWhiteSpace(texPathNorth);
+                        || !string.IsNullOrWhiteSpace(texPathNorth)
+                        || !string.IsNullOrWhiteSpace(primaryTexturePath);
                     overlayConfig.overlayId = resolvedOverlayId;
                     overlayConfig.overlayOrder = overlayOrder;
                 }
@@ -717,7 +790,8 @@ namespace CharacterStudio.UI
             {
                 partConfig.enabled = !string.IsNullOrWhiteSpace(texPathSouth)
                     || !string.IsNullOrWhiteSpace(texPathEast)
-                    || !string.IsNullOrWhiteSpace(texPathNorth);
+                    || !string.IsNullOrWhiteSpace(texPathNorth)
+                    || !string.IsNullOrWhiteSpace(primaryTexturePath);
                 partConfig.side = normalizedSide;
             }
 
@@ -726,6 +800,12 @@ namespace CharacterStudio.UI
 
         private void ApplyImportedFaceConfig(PawnFaceConfig target, PawnFaceConfig source)
         {
+            if (textureOnlyReplace)
+            {
+                ApplyTextureOnlyImportedFaceConfig(target, source);
+                return;
+            }
+
             target.enabled = source.enabled;
             target.workflowMode = source.workflowMode;
             target.layeredSourceRoot = source.layeredSourceRoot ?? string.Empty;
@@ -768,6 +848,70 @@ namespace CharacterStudio.UI
             }
 
             target.eyeDirectionConfig = source.eyeDirectionConfig?.Clone();
+        }
+
+        /// <summary>
+        /// 仅贴图替换模式：只更新已有部件的纹理路径，不修改 enabled / workflowMode / eyeDirectionConfig 等配置。
+        /// 对于整脸模式，更新已有表情的 texPath；对于分层模式，更新已有 layeredPart 的 texPath。
+        /// </summary>
+        private void ApplyTextureOnlyImportedFaceConfig(PawnFaceConfig target, PawnFaceConfig source)
+        {
+            // 整脸表情：按 ExpressionType 合并 texPath
+            if (source.expressions != null)
+            {
+                foreach (ExpressionTexPath srcExp in source.expressions)
+                {
+                    if (string.IsNullOrWhiteSpace(srcExp.texPath))
+                        continue;
+
+                    ExpressionTexPath? existingExp = target.expressions.FirstOrDefault(e => e.expression == srcExp.expression);
+                    if (existingExp != null)
+                    {
+                        existingExp.texPath = srcExp.texPath;
+                    }
+                    else
+                    {
+                        target.expressions.Add(new ExpressionTexPath
+                        {
+                            expression = srcExp.expression,
+                            texPath = srcExp.texPath
+                        });
+                    }
+                }
+            }
+
+            // 分层部件：按 partType + expression + overlayId/side 匹配合并 texPath
+            if (source.layeredParts != null)
+            {
+                target.layeredParts ??= new List<LayeredFacePartConfig>();
+
+                foreach (LayeredFacePartConfig srcPart in source.layeredParts)
+                {
+                    if (srcPart == null || string.IsNullOrWhiteSpace(srcPart.texPath))
+                        continue;
+
+                    LayeredFacePartConfig? existingPart = PawnFaceConfig.IsOverlayPart(srcPart.partType)
+                        ? target.GetLayeredPartConfig(srcPart.partType, srcPart.expression, PawnFaceConfig.NormalizeOverlayId(srcPart.overlayId))
+                        : target.GetLayeredPartConfig(srcPart.partType, srcPart.expression, srcPart.side);
+
+                    if (existingPart != null)
+                    {
+                        existingPart.texPath = srcPart.texPath;
+                        if (!string.IsNullOrWhiteSpace(srcPart.texPathSouth))
+                            existingPart.texPathSouth = srcPart.texPathSouth;
+                        if (!string.IsNullOrWhiteSpace(srcPart.texPathEast))
+                            existingPart.texPathEast = srcPart.texPathEast;
+                        if (!string.IsNullOrWhiteSpace(srcPart.texPathNorth))
+                            existingPart.texPathNorth = srcPart.texPathNorth;
+                    }
+                    else
+                    {
+                        target.layeredParts.Add(srcPart.Clone());
+                    }
+                }
+            }
+
+            target.InvalidateLookup();
         }
 
         private void RebuildFaceImportBuffers(PawnFaceConfig fc)
@@ -1163,7 +1307,7 @@ namespace CharacterStudio.UI
                 layer.anchorPath = string.Empty;
                 layer.drawOrder = GetLayeredFaceDefaultDrawOrder(displayPartType, overlayOrder, normalizedOverlayId);
             }
-            else if (ShouldMigrateLegacyOverlayDrawOrder(displayPartType, layer.drawOrder, overlayOrder, normalizedOverlayId))
+            else if (ShouldResolveOverlayDrawOrder(displayPartType, layer.drawOrder, overlayOrder, normalizedOverlayId))
             {
                 layer.drawOrder = GetLayeredFaceDefaultDrawOrder(displayPartType, overlayOrder, normalizedOverlayId);
             }
@@ -1387,7 +1531,7 @@ namespace CharacterStudio.UI
                 || partType == LayeredFacePartType.Overlay;
         }
 
-        private static bool ShouldMigrateLegacyOverlayDrawOrder(LayeredFacePartType partType, float drawOrder, int overlayOrder, string overlayId)
+        private static bool ShouldResolveOverlayDrawOrder(LayeredFacePartType partType, float drawOrder, int overlayOrder, string overlayId)
         {
             if (!IsOverlayRenderableDisplayPart(partType))
                 return false;
@@ -1434,8 +1578,76 @@ namespace CharacterStudio.UI
                 LayeredFacePartType.LowerLid,
             };
 
+            // 第一步：检查 Neutral 是否有显式 Left/Right 条目，作为是否需要拆分的依据。
+            // 只要 Neutral 有任意一侧的显式 Left/Right 条目，即认为该部件类型需要左右分离。
             foreach (LayeredFacePartType partType in pairedTypes)
             {
+                bool neutralHasExplicitSided = fc.layeredParts.Any(part =>
+                    part != null
+                    && part.partType == partType
+                    && part.expression == ExpressionType.Neutral
+                    && part.enabled
+                    && PawnFaceConfig.NormalizePartSide(partType, part.side) != LayeredFacePartSide.None
+                    && part.HasAnyTexture());
+
+                if (!neutralHasExplicitSided)
+                    continue;
+
+                foreach (ExpressionType expression in Enum.GetValues(typeof(ExpressionType)))
+                {
+                    // 当前表情已有显式 Left/Right 条目：移除 side=None 条目（如果有）
+                    bool hasExplicitSided = fc.layeredParts.Any(part =>
+                        part != null
+                        && part.partType == partType
+                        && part.expression == expression
+                        && part.enabled
+                        && PawnFaceConfig.NormalizePartSide(partType, part.side) != LayeredFacePartSide.None
+                        && part.HasAnyTexture());
+
+                    if (hasExplicitSided)
+                    {
+                        fc.RemoveLayeredPart(partType, expression, LayeredFacePartSide.None);
+                        continue;
+                    }
+
+                    // 当前表情只有 side=None 条目：将其拆分为 Left/Right 条目，
+                    // 使运行时能按左右渲染节点分别选取表情纹理。
+                    LayeredFacePartConfig? unsided = fc.GetLayeredPartConfig(partType, expression, LayeredFacePartSide.None);
+                    if (unsided == null || !unsided.enabled || !unsided.HasAnyTexture())
+                        continue;
+
+                    string texSouth = !string.IsNullOrWhiteSpace(unsided.texPathSouth)
+                        ? unsided.texPathSouth
+                        : unsided.texPath;
+                    string texEast = !string.IsNullOrWhiteSpace(unsided.texPathEast)
+                        ? unsided.texPathEast
+                        : string.Empty;
+                    string texNorth = !string.IsNullOrWhiteSpace(unsided.texPathNorth)
+                        ? unsided.texPathNorth
+                        : string.Empty;
+
+                    fc.SetLayeredPartDirectional(partType, expression, texSouth, texEast, texNorth, LayeredFacePartSide.Left);
+                    fc.SetLayeredPartDirectional(partType, expression, texSouth, texEast, texNorth, LayeredFacePartSide.Right);
+
+                    // 拆分后移除原始 side=None 条目
+                    fc.RemoveLayeredPart(partType, expression, LayeredFacePartSide.None);
+                }
+            }
+
+            // 第二步：处理 Neutral 没有显式 Left/Right 但其他表情有的情况（直接移除 side=None）。
+            foreach (LayeredFacePartType partType in pairedTypes)
+            {
+                bool neutralHasExplicitSided = fc.layeredParts.Any(part =>
+                    part != null
+                    && part.partType == partType
+                    && part.expression == ExpressionType.Neutral
+                    && part.enabled
+                    && PawnFaceConfig.NormalizePartSide(partType, part.side) != LayeredFacePartSide.None
+                    && part.HasAnyTexture());
+
+                if (neutralHasExplicitSided)
+                    continue; // 已在第一步处理
+
                 foreach (ExpressionType expression in Enum.GetValues(typeof(ExpressionType)))
                 {
                     bool hasExplicitSided = fc.layeredParts.Any(part =>
@@ -1450,6 +1662,90 @@ namespace CharacterStudio.UI
                         continue;
 
                     fc.RemoveLayeredPart(partType, expression, LayeredFacePartSide.None);
+                }
+            }
+
+            // 第三步：对于 paired 部件，如果只有一侧有条目（Left 或 Right），
+            // 自动从该侧复制到对侧，确保左右渲染节点都有纹理可用。
+            // 例如只有 Eye_Left 时，自动创建 Eye_Right 使用相同纹理。
+            foreach (LayeredFacePartType partType in pairedTypes)
+            {
+                foreach (ExpressionType expression in Enum.GetValues(typeof(ExpressionType)))
+                {
+                    bool hasLeft = fc.layeredParts.Any(part =>
+                        part != null
+                        && part.partType == partType
+                        && part.expression == expression
+                        && part.enabled
+                        && PawnFaceConfig.NormalizePartSide(partType, part.side) == LayeredFacePartSide.Left
+                        && part.HasAnyTexture());
+
+                    bool hasRight = fc.layeredParts.Any(part =>
+                        part != null
+                        && part.partType == partType
+                        && part.expression == expression
+                        && part.enabled
+                        && PawnFaceConfig.NormalizePartSide(partType, part.side) == LayeredFacePartSide.Right
+                        && part.HasAnyTexture());
+
+                    if (hasLeft && !hasRight)
+                    {
+                        LayeredFacePartConfig? leftPart = fc.GetLayeredPartConfig(partType, expression, LayeredFacePartSide.Left);
+                        if (leftPart != null)
+                        {
+                            fc.SetLayeredPartDirectional(partType, expression,
+                                leftPart.texPathSouth, leftPart.texPathEast, leftPart.texPathNorth,
+                                LayeredFacePartSide.Right);
+                        }
+                    }
+                    else if (hasRight && !hasLeft)
+                    {
+                        LayeredFacePartConfig? rightPart = fc.GetLayeredPartConfig(partType, expression, LayeredFacePartSide.Right);
+                        if (rightPart != null)
+                        {
+                            fc.SetLayeredPartDirectional(partType, expression,
+                                rightPart.texPathSouth, rightPart.texPathEast, rightPart.texPathNorth,
+                                LayeredFacePartSide.Left);
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 将 Mouth 部件的所有条目自动镜像到 ReplacementMouth，
+        /// 确保运行时 ReplacementMouth 渲染节点有纹理可用。
+        /// 文件名 Mouth_smile.png 映射到 Mouth 而非 ReplacementMouth，
+        /// 但运行时两者是独立的渲染节点，需要分别有数据。
+        /// </summary>
+        private static void MirrorMouthToReplacementMouth(PawnFaceConfig fc)
+        {
+            if (fc?.layeredParts == null || fc.layeredParts.Count == 0)
+                return;
+
+            var mouthEntries = fc.layeredParts.Where(p =>
+                p != null
+                && p.partType == LayeredFacePartType.Mouth
+                && p.enabled
+                && p.HasAnyTexture()).ToList();
+
+            if (mouthEntries.Count == 0)
+                return;
+
+            foreach (var mouth in mouthEntries)
+            {
+                LayeredFacePartConfig? existing = fc.GetLayeredPartConfig(
+                    LayeredFacePartType.ReplacementMouth, mouth.expression, mouth.side);
+
+                if (existing == null)
+                {
+                    fc.SetLayeredPartDirectional(
+                        LayeredFacePartType.ReplacementMouth,
+                        mouth.expression,
+                        mouth.texPathSouth,
+                        mouth.texPathEast,
+                        mouth.texPathNorth,
+                        mouth.side);
                 }
             }
         }

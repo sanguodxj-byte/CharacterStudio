@@ -4,18 +4,14 @@ using Verse;
 namespace CharacterStudio.Core
 {
     /// <summary>
-    /// 双轨面部系统的运行时决策策略。
-    /// 当前版本：
-    /// 1. 编辑器预览人偶始终走肖像轨；
-    /// 2. 地图内 Pawn 优先按玩家当前可见范围判断是否进入肖像轨；
-    /// 3. 仍保留较保守的 LOD 与更新间隔策略。
+    /// 面部运行时 LOD 决策策略。
+    /// 简化设计：直接根据角色状态判定 LOD 级别，
+    /// Track 由 LOD 派生（HighFocus/Standard → Portrait, Reduced/Dormant → World）。
     /// </summary>
     public static class FaceRuntimePolicy
     {
         /// <summary>
-        /// 更新 Pawn 的双轨运行时状态。
-        /// 这里只负责轨道 / LOD / 更新时机与 dirty flag，
-        /// 不直接介入具体渲染 worker。
+        /// 更新 Pawn 的运行时状态（LOD / Track / 更新时机 / dirty flag）。
         /// </summary>
         public static void UpdateRuntimeState(
             Pawn pawn,
@@ -27,82 +23,95 @@ namespace CharacterStudio.Core
             if (pawn == null || comp == null || runtimeState == null)
                 return;
 
-            FaceRenderTrack nextTrack = EvaluateTrack(pawn);
-            if (runtimeState.currentTrack != nextTrack)
-            {
-                runtimeState.currentTrack = nextTrack;
-                runtimeState.trackDirty = true;
-            }
-
-            FaceRenderLod nextLod = EvaluateLod(pawn, nextTrack);
+            FaceRenderLod nextLod = EvaluateLod(pawn);
             if (runtimeState.currentLod != nextLod)
             {
                 runtimeState.currentLod = nextLod;
                 runtimeState.lodDirty = true;
             }
 
-            if (nextTrack == FaceRenderTrack.Portrait)
+            // Track 从 LOD 派生：高精度用 Portrait，低精度用 World
+            FaceRenderTrack nextTrack = DeriveTrack(nextLod);
+            if (runtimeState.currentTrack != nextTrack)
             {
-                runtimeState.nextPortraitUpdateTick = currentTick + GetPortraitUpdateIntervalTicks(nextLod);
+                runtimeState.currentTrack = nextTrack;
+                runtimeState.trackDirty = true;
             }
-            else
-            {
-                runtimeState.nextWorldUpdateTick = currentTick + GetWorldUpdateIntervalTicks(compiledData, nextLod);
-            }
+
+            runtimeState.nextWorldUpdateTick = currentTick + GetUpdateIntervalTicks(compiledData, nextLod);
         }
 
         /// <summary>
-        /// 是否使用肖像轨。
-        /// 当前规则：
-        /// - 未 Spawned / 预览人偶：Portrait
-        /// - 当前被玩家单选：Portrait
-        /// - 位于玩家当前视口可见范围，且通过缩放 + 距离预算筛选：Portrait
-        /// - 其他：World
+        /// 评估当前 Pawn 的面部 LOD。
+        /// 规则：
+        /// - 未 Spawned / 预览人偶 → HighFocus
+        /// - 当前被玩家单选 → HighFocus
+        /// - 征召中 → Standard
+        /// - 不在可见区域 → Dormant
+        /// - 其他 → Reduced
         /// </summary>
-        public static FaceRenderTrack EvaluateTrack(Pawn pawn)
+        public static FaceRenderLod EvaluateLod(Pawn pawn)
         {
             if (pawn == null)
-                return FaceRenderTrack.World;
+                return FaceRenderLod.Reduced;
 
-            // 编辑器预览人偶通常不会出现在地图中，也不会进入游戏选择器。
-            // 若仍按 World Track 处理，会导致 LayeredDynamic 只保留 Base 节点，
-            // 进而让表情/嘴型/眼睑/眉毛等预览覆盖看起来全部失效。
+            // 编辑器预览人偶
             if (!pawn.Spawned || pawn.MapHeld == null)
-                return FaceRenderTrack.Portrait;
+                return FaceRenderLod.HighFocus;
 
-            Pawn? selectedPawn = Find.Selector?.SingleSelectedThing as Pawn;
-            if (selectedPawn == pawn)
-                return FaceRenderTrack.Portrait;
+            // 当前选中角色
+            if (Find.Selector?.SingleSelectedThing is Pawn selectedPawn && selectedPawn == pawn)
+                return FaceRenderLod.HighFocus;
 
-            if (CanUsePortraitTrackByVisibilityBudget(pawn))
-                return FaceRenderTrack.Portrait;
+            // 低缩放时（近景），视口内所有角色无条件进入 HighFocus
+            float rootSize = Find.CameraDriver?.RootSize ?? 999f;
+            if (rootSize <= HighFocusRootSizeThreshold && IsInVisibleRect(pawn))
+                return FaceRenderLod.HighFocus;
 
-            return FaceRenderTrack.World;
+            // 征召中
+            if (pawn.Drafted)
+                return FaceRenderLod.Standard;
+
+            // 不可见
+            if (!IsInVisibleRect(pawn))
+                return FaceRenderLod.Dormant;
+
+            // 视口内近处 → Standard（有状态评估，无动画）
+            if (IsNearViewportCenter(pawn))
+                return FaceRenderLod.Standard;
+
+            return FaceRenderLod.Reduced;
         }
 
-        private static bool CanUsePortraitTrackByVisibilityBudget(Pawn pawn)
+        /// <summary>低缩放阈值：RootSize ≤ 此值时视口内所有角色进入 HighFocus。</summary>
+        public const float HighFocusRootSizeThreshold = 18f;
+
+        /// <summary>
+        /// 角色是否在视口中心附近的近距范围内。
+        /// 用屏幕中心到角色的格子距离与阈值比较。
+        /// </summary>
+        public static bool IsNearViewportCenter(Pawn pawn)
         {
             if (pawn == null || !pawn.Spawned || pawn.Map == null)
                 return false;
 
-            if (pawn.Position.Fogged(pawn.Map))
-                return false;
-
-            CameraDriver? cameraDriver = Find.CameraDriver;
-            CellRect visibleRect = cameraDriver?.CurrentViewRect ?? CellRect.Empty;
+            CellRect visibleRect = Find.CameraDriver?.CurrentViewRect ?? CellRect.Empty;
             if (!visibleRect.Contains(pawn.Position))
                 return false;
 
-            float rootSize = cameraDriver?.RootSize ?? 0f;
-            float maxDistance = GetPortraitTrackDistanceBudget(rootSize, pawn);
-            if (maxDistance <= 0f)
+            float threshold = CharacterStudioMod.Settings?.visibleRangeStandardLod ?? 15f;
+            if (threshold <= 0f)
                 return false;
 
-            IntVec3 centerCell = visibleRect.CenterCell;
-            IntVec3 delta = pawn.Position - centerCell;
-            float distanceToCenter = delta.LengthHorizontal;
-            return distanceToCenter <= maxDistance;
+            float dist = (pawn.Position - visibleRect.CenterCell).LengthHorizontal;
+            return dist <= threshold;
         }
+
+        /// <summary>从 LOD 派生 Track：高精度用 Portrait，低精度用 World。</summary>
+        public static FaceRenderTrack DeriveTrack(FaceRenderLod lod)
+            => lod is FaceRenderLod.HighFocus or FaceRenderLod.Standard
+                ? FaceRenderTrack.Portrait
+                : FaceRenderTrack.World;
 
         public static bool IsInVisibleRect(Pawn pawn)
         {
@@ -112,89 +121,16 @@ namespace CharacterStudio.Core
             if (pawn.Position.Fogged(pawn.Map))
                 return false;
 
-            CameraDriver? cameraDriver = Find.CameraDriver;
-            CellRect visibleRect = cameraDriver?.CurrentViewRect ?? CellRect.Empty;
+            CellRect visibleRect = Find.CameraDriver?.CurrentViewRect ?? CellRect.Empty;
             return visibleRect.Contains(pawn.Position);
         }
 
-        private static float GetPortraitTrackDistanceBudget(float rootSize, Pawn pawn)
+        // ── 更新间隔 ──
+
+        /// <summary>状态评估间隔（统一，不再区分 Portrait/World）。</summary>
+        public static int GetUpdateIntervalTicks(FaceRuntimeCompiledData compiledData, FaceRenderLod lod)
         {
-            // RootSize 越大镜头越远，允许进入 Portrait 轨的距离预算越小；
-            // 高优先级角色可获得更高预算，提升玩家关注对象的细节表现。
-            float baseBudget;
-            if (rootSize <= 18f)
-                baseBudget = 999f;
-            else if (rootSize <= 24f)
-                baseBudget = 18f;
-            else if (rootSize <= 32f)
-                baseBudget = 10f;
-            else if (rootSize <= 40f)
-                baseBudget = 6f;
-            else
-                baseBudget = 0f;
-
-            float priorityBonus = GetPortraitTrackPriorityBudgetBonus(pawn);
-            if (baseBudget <= 0f)
-                return priorityBonus >= 10f ? 4f : 0f;
-
-            return baseBudget + priorityBonus;
-        }
-
-        private static float GetPortraitTrackPriorityBudgetBonus(Pawn pawn)
-        {
-            if (pawn == null)
-                return 0f;
-
-            float bonus = 0f;
-
-            if (pawn.Drafted)
-                bonus += 8f;
-
-            if (pawn.IsColonistPlayerControlled)
-                bonus += 6f;
-
-            if (pawn.InMentalState || pawn.Downed)
-                bonus += 5f;
-
-            return bonus;
-        }
-
-        /// <summary>
-        /// 评估当前 Pawn 的面部 LOD。
-        /// 第一阶段使用保守规则：
-        /// - 肖像轨对象始终 HighFocus；
-        /// - 玩家草稿兵、玩家控制人形、或当前激活心灵/战斗状态的单位 -> Standard；
-        /// - 其他对象 -> Reduced。
-        /// </summary>
-        public static FaceRenderLod EvaluateLod(Pawn pawn, FaceRenderTrack track)
-        {
-            if (pawn == null)
-                return FaceRenderLod.Reduced;
-
-            if (track == FaceRenderTrack.Portrait)
-                return FaceRenderLod.HighFocus;
-
-            if (pawn.Drafted)
-                return FaceRenderLod.Standard;
-
-            if (pawn.IsColonistPlayerControlled)
-                return FaceRenderLod.Standard;
-
-            if (pawn.InMentalState || pawn.Downed)
-                return FaceRenderLod.Standard;
-
-            if (!IsInVisibleRect(pawn))
-                return FaceRenderLod.Dormant;
-
-            return FaceRenderLod.Reduced;
-        }
-
-        /// <summary>
-        /// 世界轨更新间隔。
-        /// 优先读取编译结果中的 LOD 配置；缺失时使用保底值。
-        /// </summary>
-        public static int GetWorldUpdateIntervalTicks(FaceRuntimeCompiledData compiledData, FaceRenderLod lod)
-        {
+            // 优先读取编译结果中的 LOD 配置
             if (compiledData?.worldTrack?.lodUpdateIntervals != null
                 && compiledData.worldTrack.lodUpdateIntervals.TryGetValue(lod, out int configured)
                 && configured > 0)
@@ -202,36 +138,25 @@ namespace CharacterStudio.Core
                 return configured;
             }
 
-            switch (lod)
-            {
-                case FaceRenderLod.HighFocus:
-                    return 10;
-                case FaceRenderLod.Standard:
-                    return 20;
-                case FaceRenderLod.Dormant:
-                    return 999999;
-                default:
-                    return 45;
-            }
+            return IsFrozen(lod) ? 999999 : GetStateEvaluationInterval();
         }
 
-        /// <summary>
-        /// 肖像轨更新间隔。
-        /// 当前先使用固定策略，后续可改为配置化。
-        /// </summary>
-        public static int GetPortraitUpdateIntervalTicks(FaceRenderLod lod)
-        {
-            switch (lod)
-            {
-                case FaceRenderLod.HighFocus:
-                    return 5;
-                case FaceRenderLod.Standard:
-                    return 10;
-                case FaceRenderLod.Dormant:
-                    return 999999;
-                default:
-                    return 20;
-            }
-        }
+        // ── LOD 行为查询 ──
+
+        /// <summary>状态评估间隔（表情解析/LOD 判定）。所有可更新 LOD 共用。</summary>
+        public static int GetStateEvaluationInterval()
+            => CharacterStudioMod.Settings?.stateEvaluationInterval ?? 3000;
+
+        /// <summary>HighFocus 动画帧推进间隔（眨眼/帧动画/程序动画）。</summary>
+        public static int GetHighFocusAnimationInterval()
+            => CharacterStudioMod.Settings?.highFocusAnimationInterval ?? 5;
+
+        /// <summary>该 LOD 是否需要运行状态评估。</summary>
+        public static bool ShouldEvaluateState(FaceRenderLod lod)
+            => lod is FaceRenderLod.HighFocus or FaceRenderLod.Standard;
+
+        /// <summary>该 LOD 是否完全冻结。</summary>
+        public static bool IsFrozen(FaceRenderLod lod)
+            => lod is FaceRenderLod.Reduced or FaceRenderLod.Dormant;
     }
 }

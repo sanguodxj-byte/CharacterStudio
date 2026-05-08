@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -115,8 +115,8 @@ namespace CharacterStudio.Exporter
                     continue;
                 }
 
-                visualEffect.NormalizeLegacyData();
-                visualEffect.SyncLegacyFields();
+                visualEffect.NormalizeFieldConsistency();
+                visualEffect.SyncDerivedFields();
 
                 root.Add(new XElement("li", SerializePublicFields(visualEffect)));
             }
@@ -154,102 +154,162 @@ namespace CharacterStudio.Exporter
         }
 
         /// <summary>
-        /// 通过反射将对象的全部 public 实例字段序列化为 XElement 数组。
+        /// 通过反射将对象的全部 public 实例字段序列化为 XElement 数组，
+        /// 供 SkinSaver 和技能序列化共用。
+        ///
+        /// 当字段标注了 [XmlExportField] 时按标注规则过滤和格式化；
+        /// 未标注的字段走原逻辑（技能路径向后兼容）。
         /// 自动处理 int/float/bool/string/enum/Def? 以及 Unity 基础类型。
         /// 新增字段时无需更新此方法。
         /// </summary>
-        private static object?[] SerializePublicFields(object obj)
+        internal static object?[] SerializePublicFields(object obj)
         {
             var fields = obj.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance);
             var elements = new List<object?>();
 
             foreach (var field in fields)
             {
+                var attr = field.GetCustomAttribute<XmlExportFieldAttribute>();
+
+                // [XmlExportField(Ignore = true)] → 跳过
+                if (attr != null && attr.Ignore) continue;
+
                 var value = field.GetValue(obj);
                 var fieldType = field.FieldType;
 
+                // ── Attribute 感知过滤 ──
+                if (attr != null)
+                {
+                    if (value == null) continue;
+                    string elemName = attr.ElementName ?? field.Name;
+
+                    // string 过滤
+                    if (fieldType == typeof(string) && attr.SkipEmptyString
+                        && string.IsNullOrWhiteSpace((string)value)) continue;
+
+                    // SkipDefault 值比较
+                    if (attr.SkipDefault != null)
+                    {
+                        if (fieldType == typeof(float) && attr.SkipDefaultFloat
+                            && Math.Abs((float)value - Convert.ToSingle(attr.SkipDefault)) < 0.0001f) continue;
+                        if (fieldType == typeof(float) && !attr.SkipDefaultFloat
+                            && Equals(value, attr.SkipDefault)) continue;
+                        if (fieldType == typeof(int) && (int)value == Convert.ToInt32(attr.SkipDefault)) continue;
+                        if (fieldType == typeof(bool) && (bool)value == Convert.ToBoolean(attr.SkipDefault)) continue;
+                        if (fieldType.IsEnum && Equals(value, attr.SkipDefault)) continue;
+                    }
+
+                    // List<T> / 集合类型
+                    if (attr.SkipEmptyCollection && typeof(System.Collections.ICollection).IsAssignableFrom(fieldType)
+                        && ((System.Collections.ICollection)value).Count == 0) continue;
+
+                    var xelem = SerializeFieldByType(elemName, value, fieldType, attr);
+                    if (xelem != null) elements.Add(xelem);
+                    continue;
+                }
+
+                // ── 原始路径（技能 / 无 Attribute 标注） ──
                 if (value == null) continue;
-
-                // DamageDef? 等 Def 引用 → 写 defName
-                if (IsDefCompatibleType(fieldType))
-                {
-                    string? defName = (value as Def)?.defName;
-                    if (!string.IsNullOrWhiteSpace(defName))
-                    {
-                        elements.Add(new XElement(field.Name, defName));
-                    }
-                    continue;
-                }
-
-                // PawnKindDef 特殊处理（以防万一它在特定环境下未被识别为 Def）
-                if (value is PawnKindDef pkd)
-                {
-                    if (!string.IsNullOrWhiteSpace(pkd.defName))
-                    {
-                        elements.Add(new XElement(field.Name, pkd.defName));
-                    }
-                    continue;
-                }
-
-                // bool → "true"/"false"
-                if (fieldType == typeof(bool))
-                {
-                    elements.Add(new XElement(field.Name, SerializeBool((bool)value)));
-                    continue;
-                }
-
-                // float → InvariantCulture 避免逗号
-                if (fieldType == typeof(float))
-                {
-                    elements.Add(new XElement(field.Name, ((float)value).ToString(CultureInfo.InvariantCulture)));
-                    continue;
-                }
-
-                // enum → ToString()
-                if (fieldType.IsEnum)
-                {
-                    elements.Add(new XElement(field.Name, value.ToString()));
-                    continue;
-                }
-
-                // string → 直接写
-                if (fieldType == typeof(string))
-                {
-                    elements.Add(new XElement(field.Name, (string)value));
-                    continue;
-                }
-
-                // Vector2
-                if (fieldType == typeof(Vector2))
-                {
-                    elements.Add(new XElement(field.Name, XmlExportHelper.FormatVector2((Vector2)value)));
-                    continue;
-                }
-
-                // Vector3
-                if (fieldType == typeof(Vector3))
-                {
-                    elements.Add(new XElement(field.Name, XmlExportHelper.FormatVector3((Vector3)value)));
-                    continue;
-                }
-
-                // Color
-                if (fieldType == typeof(Color))
-                {
-                    elements.Add(new XElement(field.Name, XmlExportHelper.FormatColor((Color)value)));
-                    continue;
-                }
-
-                // int, double 等 值类型 → 直接 ToString()
-                if (fieldType.IsValueType)
-                {
-                    elements.Add(new XElement(field.Name, value.ToString()));
-                    continue;
-                }
+                var origElem = SerializeFieldByType(field.Name, value, fieldType, null);
+                if (origElem != null) elements.Add(origElem);
             }
 
             return elements.ToArray();
         }
+
+        /// <summary>
+        /// 将单个字段值序列化为 XElement。Attribute 和原始路径共用。
+        /// </summary>
+        private static XElement? SerializeFieldByType(string elemName, object value, Type fieldType, XmlExportFieldAttribute? attr)
+        {
+            // Def 引用 → defName
+            if (IsDefCompatibleType(fieldType))
+            {
+                string? defName = (value as Def)?.defName;
+                return !string.IsNullOrWhiteSpace(defName) ? new XElement(elemName, defName) : null;
+            }
+
+            // PawnKindDef 特殊处理
+            if (value is PawnKindDef pkd)
+                return !string.IsNullOrWhiteSpace(pkd.defName) ? new XElement(elemName, pkd.defName) : null;
+
+            // bool
+            if (fieldType == typeof(bool))
+            {
+                bool b = (bool)value;
+                bool toLower = attr?.BoolToLower ?? true;
+                return new XElement(elemName, toLower ? b.ToString().ToLowerInvariant() : b.ToString());
+            }
+
+            // float
+            if (fieldType == typeof(float))
+            {
+                string fmt = attr?.Format ?? "G";
+                return new XElement(elemName, ((float)value).ToString(fmt, CultureInfo.InvariantCulture));
+            }
+
+            // int
+            if (fieldType == typeof(int))
+                return new XElement(elemName, (int)value);
+
+            // enum
+            if (fieldType.IsEnum)
+                return new XElement(elemName, value.ToString());
+
+            // string
+            if (fieldType == typeof(string))
+                return new XElement(elemName, (string)value);
+
+            // Vector2
+            if (fieldType == typeof(Vector2))
+                return new XElement(elemName, XmlExportHelper.FormatVector2((Vector2)value));
+
+            // Vector3
+            if (fieldType == typeof(Vector3))
+                return new XElement(elemName, XmlExportHelper.FormatVector3((Vector3)value));
+
+            // Color
+            if (fieldType == typeof(Color))
+                return new XElement(elemName, XmlExportHelper.FormatColor((Color)value));
+
+            // List<string> → <tagName><li>...
+            if (fieldType == typeof(List<string>))
+            {
+                var list = (List<string>)value;
+                if (list.Count == 0) return null;
+                var el = new XElement(elemName);
+                foreach (var item in list)
+                    if (!string.IsNullOrEmpty(item)) el.Add(new XElement("li", item));
+                return el.HasElements ? el : null;
+            }
+
+            // List<T>（复杂对象） → <tagName><li>递归</li>...</tagName>
+            if (fieldType.IsGenericType && fieldType.GetGenericTypeDefinition() == typeof(List<>))
+            {
+                var collection = (System.Collections.IEnumerable)value;
+                var container = new XElement(elemName);
+                bool hasElements = false;
+                foreach (var item in collection)
+                {
+                    if (item == null) continue;
+                    container.Add(new XElement("li", SerializePublicFields(item)));
+                    hasElements = true;
+                }
+                return hasElements ? container : null;
+            }
+
+            // 其他值类型
+            if (fieldType.IsValueType)
+                return new XElement(elemName, value.ToString());
+
+            // 复杂引用对象 — 递归 SerializePublicFields
+            var complexFields = SerializePublicFields(value);
+            if (complexFields != null && complexFields.Length > 0)
+                return new XElement(elemName, complexFields);
+
+            return null;
+        }
+
 
         internal static XElement? GenerateAbilityHotkeysElement(SkinAbilityHotkeyConfig? hotkeys)
         {

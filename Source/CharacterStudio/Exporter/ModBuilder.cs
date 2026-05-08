@@ -491,7 +491,7 @@ namespace CharacterStudio.Exporter
             var remap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             int assetIndex = 0;
 
-            foreach (var texPath in ExportAssetUtility.EnumerateTexturePaths(config.SkinDef, config.Abilities, config.GeneIconPath))
+            foreach (var texPath in ExportAssetUtility.EnumerateTexturePaths(config.SkinDef, config.Abilities, config.GeneIconPath, config.CharacterDefinition?.equipments))
             {
                 string? sourceFile = FindSourceTexture(texPath, config.SourceTexturePaths);
                 if (sourceFile == null)
@@ -714,6 +714,16 @@ namespace CharacterStudio.Exporter
             doc.Save(defsPath);
 
             Log.Message($"[CharacterStudio] 装备 ThingDef 已生成: {defsPath}");
+
+            // 模板模式时导出 CS 抽象基类
+            if (ModExportXmlWriter.HasTemplateModeEquipment(equipments.Where(e => e != null && e.enabled).ToList()))
+            {
+                var baseClassesDoc = new XDocument(new XDeclaration("1.0", "utf-8", "yes"),
+                    ModExportXmlWriter.GenerateBaseClassesXml());
+                string baseClassesPath = Path.Combine(modPath, "Defs", "ThingDef", "CS_BaseClasses.xml");
+                baseClassesDoc.Save(baseClassesPath);
+                Log.Message($"[CharacterStudio] CS 抽象基类已生成: {baseClassesPath}");
+            }
         }
 
         private void GenerateEquipmentRecipeDefXml(string modPath, ModExportConfig config)
@@ -928,6 +938,16 @@ namespace CharacterStudio.Exporter
             doc.Save(abilityDefsPath);
 
             Log.Message($"[CharacterStudio] 技能定义已生成: {abilityDefsPath}");
+
+            // 生成 ThoughtDef（心情条目定义）
+            var thoughtDoc = ModExportXmlWriter.CreateThoughtDefsDocument(config.Abilities);
+            if (thoughtDoc != null)
+            {
+                string thoughtDefsPath = Path.Combine(modPath, "Defs", "ThoughtDefs", $"{SanitizeFileName(config.ModName)}_Thoughts.xml");
+                Directory.CreateDirectory(Path.GetDirectoryName(thoughtDefsPath));
+                thoughtDoc.Save(thoughtDefsPath);
+                Log.Message($"[CharacterStudio] 心情条目定义已生成: {thoughtDefsPath}");
+            }
         }
 
 
@@ -1027,12 +1047,8 @@ namespace CharacterStudio.Exporter
                     CopyTextures = false
                 };
 
-                // Because Remap relies on dumping textures to "Textures/" directory, we bypass texture dumping
-                // by overriding modName temporarily or just letting the Builder run in "dry-run" mode essentially 
-                // but for now let it just generate into exportDir blindly (textures will be placed in scattered textues folder too, which is very helpful)
+                // 纹理会输出到 exportDir 的散列目录，装备模组不需要额外打包纹理
                 var builder = new ModBuilder();
-                
-                // Set the active builder states manually if necessary, or just run them:
                 builder.GenerateEquipmentThingDefXml(exportDir, dummyConfig);
                 builder.GenerateEquipmentRecipeDefXml(exportDir, dummyConfig);
                 builder.GenerateEquipmentBundleManifestXml(exportDir, dummyConfig);

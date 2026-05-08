@@ -17,12 +17,6 @@ namespace CharacterStudio
             EnsureTexturesDirectoryExists(content);
         }
 
-        /// <summary>
-        /// 确保 mod 目录下的 Textures 文件夹存在。
-        /// RimWorld 启动时自动扫描每个 mod 的 Textures/ 目录并载入其中的纹理，
-        /// 用户事先放入的 PNG/JPG 会通过原版 ContentFinder 管线加载，
-        /// 无需运行时磁盘 I/O（RuntimeAssetLoader），渲染性能更优。
-        /// </summary>
         private static void EnsureTexturesDirectoryExists(ModContentPack content)
         {
             try
@@ -48,7 +42,8 @@ namespace CharacterStudio
             Listing_Standard listing = new Listing_Standard();
             listing.Begin(inRect);
 
-            listing.Label("CS_Settings_FaceTrackThresholds".Translate());
+            // ── 预设按钮 ──
+            listing.Label("CS_Settings_Presets".Translate());
             listing.GapLine();
 
             Rect presetRow = listing.GetRect(30f);
@@ -70,23 +65,18 @@ namespace CharacterStudio
             }
             listing.Gap(6f);
 
-            DrawSlider(listing, "CS_Settings_RootSizeNear".Translate(), ref Settings.portraitTrackRootSizeNear, 1f, 64f);
-            DrawSlider(listing, "CS_Settings_BudgetNear".Translate(), ref Settings.portraitTrackBudgetNear, 0f, 999f);
-            DrawSlider(listing, "CS_Settings_RootSizeMid1".Translate(), ref Settings.portraitTrackRootSizeMid1, 1f, 64f);
-            DrawSlider(listing, "CS_Settings_BudgetMid1".Translate(), ref Settings.portraitTrackBudgetMid1, 0f, 64f);
-            DrawSlider(listing, "CS_Settings_RootSizeMid2".Translate(), ref Settings.portraitTrackRootSizeMid2, 1f, 64f);
-            DrawSlider(listing, "CS_Settings_BudgetMid2".Translate(), ref Settings.portraitTrackBudgetMid2, 0f, 64f);
-            DrawSlider(listing, "CS_Settings_RootSizeFar".Translate(), ref Settings.portraitTrackRootSizeFar, 1f, 64f);
-            DrawSlider(listing, "CS_Settings_BudgetFar".Translate(), ref Settings.portraitTrackBudgetFar, 0f, 64f);
-            DrawSlider(listing, "CS_Settings_FallbackBudget".Translate(), ref Settings.portraitTrackBudgetFallback, 0f, 32f);
-            DrawSlider(listing, "CS_Settings_FallbackPriorityThreshold".Translate(), ref Settings.portraitTrackFallbackPriorityThreshold, 0f, 32f);
-            DrawSlider(listing, "CS_Settings_FallbackPriorityBudget".Translate(), ref Settings.portraitTrackFallbackPriorityBudget, 0f, 32f);
-
+            // ── 更新频率 ──
             listing.GapLine();
-            listing.Label("CS_Settings_PriorityBonuses".Translate());
-            DrawSlider(listing, "CS_Settings_DraftedBonus".Translate(), ref Settings.draftedPriorityBonus, 0f, 32f);
-            DrawSlider(listing, "CS_Settings_ColonistBonus".Translate(), ref Settings.colonistPriorityBonus, 0f, 32f);
-            DrawSlider(listing, "CS_Settings_UnstableBonus".Translate(), ref Settings.unstablePriorityBonus, 0f, 32f);
+            listing.Label("CS_Settings_UpdateFrequency".Translate());
+            listing.GapLine();
+            DrawIntSlider(listing, "CS_Settings_StateEvalInterval".Translate(), ref Settings.stateEvaluationInterval, 500, 10000);
+            DrawIntSlider(listing, "CS_Settings_HighFocusAnimInterval".Translate(), ref Settings.highFocusAnimationInterval, 1, 30);
+
+            // ── 视距阈值 ──
+            listing.GapLine();
+            listing.Label("CS_Settings_VisibleRange".Translate());
+            listing.GapLine();
+            DrawSlider(listing, "CS_Settings_VisibleRangeStandardLod".Translate(), ref Settings.visibleRangeStandardLod, 0f, 50f);
 
             if (listing.ButtonText("CS_Settings_ResetToDefaults".Translate()))
             {
@@ -94,8 +84,32 @@ namespace CharacterStudio
                 WriteSettings();
             }
 
+            listing.Gap(12f);
+            listing.GapLine();
+
+            // ── 调试工具 ──
+            listing.Label("CS_Settings_DebugTools".Translate());
+            listing.GapLine();
+
+            bool showOverlay = Settings.showPerformanceOverlay;
+            Widgets.CheckboxLabeled(listing.GetRect(30f), "CS_Settings_ShowPerformanceOverlay".Translate(), ref showOverlay);
+            if (showOverlay != Settings.showPerformanceOverlay)
+            {
+                Settings.showPerformanceOverlay = showOverlay;
+                Settings.Write();
+            }
+
             listing.End();
             Settings.Write();
+        }
+
+        private static void DrawIntSlider(Listing_Standard listing, string label, ref int value, int min, int max)
+        {
+            listing.Label($"{label}: {value}");
+            float fVal = value;
+            fVal = Widgets.HorizontalSlider(listing.GetRect(22f), fVal, min, max, true);
+            value = Mathf.RoundToInt(fVal);
+            listing.Gap(4f);
         }
 
         private static void DrawSlider(Listing_Standard listing, string label, ref float value, float min, float max)

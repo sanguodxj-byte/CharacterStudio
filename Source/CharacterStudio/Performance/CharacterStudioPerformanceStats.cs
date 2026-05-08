@@ -79,6 +79,28 @@ namespace CharacterStudio.Performance
         public int graphicDirtyTriggers;
         public int graphicDirtySkippedByThrottle;
 
+        // 纹理加载统计
+        public int textureLoadsFromDisk;
+        public int textureCacheHits;
+        public int textureLruEvictions;
+        public int textureSafeDestroySkipped;
+        public int textureSafeDestroyed;
+        public int texturePressureReleases;
+        public int pendingTextureQueuePeak;
+
+        // 引用计数统计
+        public int refTrackerTrackedTextures;
+
+        // 池统计
+        public int graphicRuntimePoolAvailable;
+
+        // Worker 缓存快照
+        public string customLayerCacheStats = "";
+        public string faceComponentCacheStats = "";
+        public string eyeDirectionCacheStats = "";
+        public string runtimeAssetLoaderCacheStats = "";
+        public string textureMemoryStats = "";
+
         public float RenderRefreshCoalescedRate
         {
             get
@@ -89,12 +111,83 @@ namespace CharacterStudio.Performance
                 return (float)renderRefreshCoalesced / renderRefreshRequests;
             }
         }
+
+        /// <summary>
+        /// 生成可复制的纯文本报告，方便用户粘贴到 Issue / 讨论中。
+        /// </summary>
+        public string ToReportString()
+        {
+            int ftTotal = faceTransformCacheHits + faceTransformCacheMisses;
+            float ftHitRate = ftTotal > 0 ? (float)faceTransformCacheHits / ftTotal : 0f;
+            int fpTotal = facePathCacheHits + facePathCacheMisses;
+            float fpHitRate = fpTotal > 0 ? (float)facePathCacheHits / fpTotal : 0f;
+            int texTotal = textureLoadsFromDisk + textureCacheHits;
+            float texHitRate = texTotal > 0 ? (float)textureCacheHits / texTotal : 0f;
+
+            return $@"[CharacterStudio Performance Report]
+Capture: {(captureEnabled ? "ON" : "OFF")}
+Game: {Verse.Find.TickManager?.TicksGame ?? -1} ticks
+
+--- Bootstrap ---
+LoadedGame calls: {bootstrapLoadedGameCalls}
+StartedNewGame calls: {bootstrapStartedNewGameCalls}
+FinalizeInit calls: {bootstrapFinalizeInitCalls}
+Passes executed: {bootstrapPassesExecuted}
+Passes skipped: {bootstrapPassesSkipped}
+Maps visited: {bootstrapMapsVisited}
+Pawns visited: {bootstrapPawnsVisited}
+Comps added: {bootstrapCompsAdded}
+Default skins applied: {bootstrapDefaultSkinsApplied}
+Loadouts granted: {bootstrapLoadoutsGranted}
+Last entry point: {lastBootstrapEntryPoint}
+Last signature: {lastBootstrapSignature}
+
+--- Render Refresh ---
+Requests: {renderRefreshRequests}
+Dispatched: {renderRefreshDispatched}
+Coalesced: {renderRefreshCoalesced}
+Coalesce rate: {RenderRefreshCoalescedRate:P1}
+Last refresh tick: {(lastRenderRefreshTick >= 0 ? lastRenderRefreshTick.ToString() : "N/A")}
+Graphic dirty triggers: {graphicDirtyTriggers}
+Graphic dirty throttled: {graphicDirtySkippedByThrottle}
+
+--- Face Caches ---
+Transform hits: {faceTransformCacheHits} / misses: {faceTransformCacheMisses} (hit rate: {ftHitRate:P1})
+Path hits: {facePathCacheHits} / misses: {facePathCacheMisses} (hit rate: {fpHitRate:P1})
+
+--- Texture Loading ---
+Loads from disk: {textureLoadsFromDisk}
+Cache hits: {textureCacheHits} (hit rate: {texHitRate:P1})
+LRU evictions: {textureLruEvictions}
+SafeDestroy: {textureSafeDestroyed} destroyed / {textureSafeDestroySkipped} skipped (still referenced)
+Pressure releases: {texturePressureReleases}
+Pending read queue peak: {pendingTextureQueuePeak}
+
+--- Ref Tracker ---
+Tracked textures: {refTrackerTrackedTextures}
+
+--- Object Pool ---
+Graphic_Runtime pool available: {graphicRuntimePoolAvailable}
+
+--- Worker Caches ---
+CustomLayer: {customLayerCacheStats}
+FaceComponent: {faceComponentCacheStats}
+EyeDirection: {eyeDirectionCacheStats}
+
+--- Asset Loader ---
+{runtimeAssetLoaderCacheStats}
+
+--- Texture Memory ---
+{textureMemoryStats}";
+        }
     }
 
     public static class CharacterStudioPerformanceStats
     {
         private static Game? trackedGame;
         private static readonly Dictionary<int, int> lastRefreshTickByPawnId = new Dictionary<int, int>();
+        private static int _nextPawnIdCleanupTick;
+        private const int PawnIdCleanupIntervalTicks = 3600; // ~60 秒
 
         public static bool CaptureEnabled { get; set; } = true;
 
@@ -121,6 +214,15 @@ namespace CharacterStudio.Performance
         private static int facePathCacheMisses;
         private static int graphicDirtyTriggers;
         private static int graphicDirtySkippedByThrottle;
+
+        // 纹理加载统计
+        private static int textureLoadsFromDisk;
+        private static int textureCacheHits;
+        private static int textureLruEvictions;
+        private static int textureSafeDestroySkipped;
+        private static int textureSafeDestroyed;
+        private static int texturePressureReleases;
+        private static int pendingTextureQueuePeak;
 
         public static void RecordBootstrapEntryCall(BootstrapEntryPoint entryPoint)
         {
@@ -182,6 +284,13 @@ namespace CharacterStudio.Performance
         public static bool TryBeginRenderRefresh(Pawn pawn, int currentTick)
         {
             EnsureGameContext();
+
+            // P-CAP: 定期清理已失效的 Pawn ID，防止长期运行后字典无限增长
+            if (currentTick >= _nextPawnIdCleanupTick)
+            {
+                _nextPawnIdCleanupTick = currentTick + PawnIdCleanupIntervalTicks;
+                CleanupStalePawnRefreshIds();
+            }
 
             bool dispatched = true;
             if (pawn != null && currentTick >= 0)
@@ -253,6 +362,44 @@ namespace CharacterStudio.Performance
                 graphicDirtyTriggers++;
         }
 
+        public static void RecordTextureLoadFromDisk()
+        {
+            if (!CaptureEnabled) return;
+            textureLoadsFromDisk++;
+        }
+
+        public static void RecordTextureCacheHit()
+        {
+            if (!CaptureEnabled) return;
+            textureCacheHits++;
+        }
+
+        public static void RecordTextureLruEviction()
+        {
+            if (!CaptureEnabled) return;
+            textureLruEvictions++;
+        }
+
+        public static void RecordTextureSafeDestroy(bool destroyed)
+        {
+            if (!CaptureEnabled) return;
+            if (destroyed) textureSafeDestroyed++;
+            else textureSafeDestroySkipped++;
+        }
+
+        public static void RecordPressureRelease()
+        {
+            if (!CaptureEnabled) return;
+            texturePressureReleases++;
+        }
+
+        public static void UpdatePendingQueuePeak(int currentCount)
+        {
+            if (!CaptureEnabled) return;
+            if (currentCount > pendingTextureQueuePeak)
+                pendingTextureQueuePeak = currentCount;
+        }
+
         public static CharacterStudioPerformanceSnapshot CreateSnapshot()
         {
             EnsureGameContext();
@@ -281,7 +428,21 @@ namespace CharacterStudio.Performance
                 facePathCacheHits = facePathCacheHits,
                 facePathCacheMisses = facePathCacheMisses,
                 graphicDirtyTriggers = graphicDirtyTriggers,
-                graphicDirtySkippedByThrottle = graphicDirtySkippedByThrottle
+                graphicDirtySkippedByThrottle = graphicDirtySkippedByThrottle,
+                textureLoadsFromDisk = textureLoadsFromDisk,
+                textureCacheHits = textureCacheHits,
+                textureLruEvictions = textureLruEvictions,
+                textureSafeDestroySkipped = textureSafeDestroySkipped,
+                textureSafeDestroyed = textureSafeDestroyed,
+                texturePressureReleases = texturePressureReleases,
+                pendingTextureQueuePeak = pendingTextureQueuePeak,
+                refTrackerTrackedTextures = Rendering.TextureRefTracker.TotalTrackedCount,
+                graphicRuntimePoolAvailable = Rendering.GraphicRuntimePool.AvailableCount,
+                customLayerCacheStats = Rendering.PawnRenderNodeWorker_CustomLayer.GetCacheStats(),
+                faceComponentCacheStats = Rendering.PawnRenderNodeWorker_FaceComponent.GetCacheStats(),
+                eyeDirectionCacheStats = Rendering.PawnRenderNodeWorker_EyeDirection.GetCacheStats(),
+                runtimeAssetLoaderCacheStats = Rendering.RuntimeAssetLoader.GetCacheStats(),
+                textureMemoryStats = Rendering.TextureMemoryMonitor.GetStats(),
             };
         }
 
@@ -289,6 +450,34 @@ namespace CharacterStudio.Performance
         {
             EnsureGameContext();
             ResetCounters();
+        }
+
+        /// <summary>
+        /// 清理已不在地图上的 Pawn ID，防止字典长期累积。
+        /// </summary>
+        private static void CleanupStalePawnRefreshIds()
+        {
+            Game? game = Current.Game;
+            if (game == null || game.Maps.Count == 0)
+            {
+                lastRefreshTickByPawnId.Clear();
+                return;
+            }
+
+            var activeIds = new HashSet<int>();
+            foreach (Map map in game.Maps)
+                foreach (Pawn pawn in map.mapPawns.AllPawnsSpawned)
+                    activeIds.Add(pawn.thingIDNumber);
+
+            // 字典无 RemoveWhere，遍历收集需要移除的 key
+            var staleKeys = new List<int>();
+            foreach (var kv in lastRefreshTickByPawnId)
+            {
+                if (!activeIds.Contains(kv.Key))
+                    staleKeys.Add(kv.Key);
+            }
+            foreach (int key in staleKeys)
+                lastRefreshTickByPawnId.Remove(key);
         }
 
         private static void EnsureGameContext()
@@ -327,6 +516,13 @@ namespace CharacterStudio.Performance
             facePathCacheMisses = 0;
             graphicDirtyTriggers = 0;
             graphicDirtySkippedByThrottle = 0;
+            textureLoadsFromDisk = 0;
+            textureCacheHits = 0;
+            textureLruEvictions = 0;
+            textureSafeDestroySkipped = 0;
+            textureSafeDestroyed = 0;
+            texturePressureReleases = 0;
+            pendingTextureQueuePeak = 0;
         }
     }
 }

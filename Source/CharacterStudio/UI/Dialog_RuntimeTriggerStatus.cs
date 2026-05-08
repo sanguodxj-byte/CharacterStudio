@@ -16,11 +16,10 @@ namespace CharacterStudio.UI
 
         public Dialog_RuntimeTriggerStatus()
         {
-            doCloseX = true;
+            doCloseX = false;
             absorbInputAroundWindow = true;
             closeOnClickedOutside = false;
             draggable = true;
-            optionalTitle = "CS_Studio_RuntimeTriggerStatus_Title".Translate();
         }
 
         public override void DoWindowContents(Rect inRect)

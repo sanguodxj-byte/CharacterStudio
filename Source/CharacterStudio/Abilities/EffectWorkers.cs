@@ -345,6 +345,78 @@ namespace CharacterStudio.Abilities
     }
 
     /// <summary>
+    /// 心情条目效果 - 给目标添加一个 Thought_Memory
+    /// </summary>
+    public class EffectWorker_Thought : EffectWorker
+    {
+        public override void Apply(AbilityEffectConfig config, LocalTargetInfo target, Pawn caster)
+        {
+            if (target.Thing is not Pawn pawn) return;
+
+            ThoughtDef? thoughtDef = ResolveThoughtDef(config);
+            if (thoughtDef == null) return;
+
+            pawn.needs?.mood?.thoughts?.memories?.TryGainMemory(thoughtDef, caster);
+        }
+
+        /// <summary>
+        /// 运行时查找或创建 ThoughtDef。
+        /// 导出的模组中 ThoughtDef 已在 XML 中预定义，直接按 defName 查找即可。
+        /// 编辑器测试时动态注册一个临时 ThoughtDef。
+        /// </summary>
+        private static ThoughtDef? ResolveThoughtDef(AbilityEffectConfig config)
+        {
+            string defName = GenerateThoughtDefName(config.thoughtLabel);
+
+            ThoughtDef? existing = DefDatabase<ThoughtDef>.GetNamedSilentFail(defName);
+            if (existing != null) return existing;
+
+            var def = new ThoughtDef
+            {
+                defName = defName,
+                label = config.thoughtLabel ?? "Custom Thought",
+                description = config.thoughtDescription ?? string.Empty,
+                durationDays = config.thoughtDurationDays,
+                stackLimit = config.thoughtStackLimit,
+                showBubble = config.thoughtShowBubble
+            };
+
+            if (!string.IsNullOrWhiteSpace(config.thoughtIconPath))
+            {
+                // iconPath is used in exported XML; runtime icon resolution handled by RimWorld's Def system
+            }
+
+            var stage = new ThoughtStage
+            {
+                label = config.thoughtLabel ?? "Custom Thought",
+                description = config.thoughtDescription ?? string.Empty,
+                baseMoodEffect = config.thoughtMoodOffset
+            };
+            def.stages = new List<ThoughtStage> { stage };
+
+            DefDatabase<ThoughtDef>.Add(def);
+            return def;
+        }
+
+        /// <summary>
+        /// 基于 thoughtLabel 生成确定性的 ThoughtDef defName（FNV-1a 哈希）。
+        /// 必须与导出时 ModExportXmlWriter.CreateThoughtDefsDocument 中的生成逻辑保持一致。
+        /// </summary>
+        public static string GenerateThoughtDefName(string thoughtLabel)
+        {
+            // 使用确定性 FNV-1a 哈希替代不稳定的 GetHashCode()
+            uint hash = 2166136261u;
+            string input = thoughtLabel ?? string.Empty;
+            foreach (char c in input)
+            {
+                hash ^= (uint)c;
+                hash *= 16777619u;
+            }
+            return $"CS_Thought_{hash}";
+        }
+    }
+
+    /// <summary>
     /// 工厂类 - 使用单例缓存
     /// </summary>
     public static class EffectWorkerFactory
@@ -359,7 +431,8 @@ namespace CharacterStudio.Abilities
             { AbilityEffectType.Teleport, new EffectWorker_Teleport() },
             { AbilityEffectType.Control, new EffectWorker_Control() },
             { AbilityEffectType.Terraform, new EffectWorker_Terraform() },
-            { AbilityEffectType.WeatherChange, new EffectWorker_WeatherChange() }
+            { AbilityEffectType.WeatherChange, new EffectWorker_WeatherChange() },
+            { AbilityEffectType.Thought, new EffectWorker_Thought() }
         };
 
         public static EffectWorker GetWorker(AbilityEffectType type)

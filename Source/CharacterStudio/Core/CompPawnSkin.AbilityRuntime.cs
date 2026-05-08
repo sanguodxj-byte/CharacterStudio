@@ -9,7 +9,6 @@ namespace CharacterStudio.Core
     public partial class CompPawnSkin
     {
         // ─── 技能运行时转发（所有 ability 状态已迁移到 CompCharacterAbilityRuntime） ───
-
         public void ApplyAbilityFaceOverride(ExpressionType? expression, int durationTicks, float pupilBrightnessOffset = 0f, float pupilContrastOffset = 0f)
         {
             AbilityComp?.ApplyAbilityFaceOverride(expression, durationTicks, pupilBrightnessOffset, pupilContrastOffset);

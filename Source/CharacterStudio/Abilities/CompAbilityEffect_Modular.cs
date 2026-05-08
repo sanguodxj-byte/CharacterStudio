@@ -143,6 +143,10 @@ namespace CharacterStudio.Abilities
         private readonly List<(int triggerTick, AbilityVisualEffectConfig vfxConfig, LocalTargetInfo target, Vector3? sourceOverride)> pendingVfxSounds
             = new List<(int, AbilityVisualEffectConfig, LocalTargetInfo, Vector3?)>();
 
+        // 延迟效果队列：(触发时间tick, 效果配置, 目标, 施法者, 伤害缩放, 额外伤害)
+        private readonly List<(int triggerTick, AbilityEffectConfig effectConfig, LocalTargetInfo target, Pawn caster, float damageScale, float flatBonusDamage)> pendingEffects
+            = new List<(int, AbilityEffectConfig, LocalTargetInfo, Pawn, float, float)>();
+
         public override void Apply(LocalTargetInfo target, LocalTargetInfo dest)
         {
             base.Apply(target, dest);
@@ -223,13 +227,7 @@ namespace CharacterStudio.Abilities
                 null, 
                 null);
             
-            // 注意：原版 Projectile 命中时只会造成其定义的伤害。
-            // 为了完全符合模块化语义，我们理想情况下需要一个自定义 Projectile 类。
-            // 但如果暂时使用原版 Projectile，则效果应用只能是即时的。
-            // 
-            // 修正策略：如果使用原版 Projectile，我们在发射瞬间立即应用效果（模拟），
-            // 或者如果您有自定义 Projectile 类，请告知，我会接入命中回调。
-            // 目前先实现发射，并保持效果立即应用以保证功能可用性。
+            // 原版 Projectile 命中时只造成定义的伤害；使用原版发射时在发射瞬间立即应用效果
             ApplyResolvedEffects(target, dest); 
         }
 
@@ -552,6 +550,20 @@ namespace CharacterStudio.Abilities
                     {
                         AbilityVfxPlayer.PlayVfxSound(vfxConfig, target, caster, sourceOverride);
                         pendingVfxSounds.RemoveAt(i);
+                    }
+                }
+            }
+
+            // 延迟效果队列处理
+            if (pendingEffects.Count > 0)
+            {
+                for (int i = pendingEffects.Count - 1; i >= 0; i--)
+                {
+                    var entry = pendingEffects[i];
+                    if (nowTick >= entry.triggerTick)
+                    {
+                        ApplySingleEffect(entry.effectConfig, entry.target, entry.caster, entry.damageScale, entry.flatBonusDamage);
+                        pendingEffects.RemoveAt(i);
                     }
                 }
             }
@@ -1033,12 +1045,12 @@ namespace CharacterStudio.Abilities
             }
 
             bool allowRuntimeBonusDamage = CanApplyRuntimeBonusDamageToTarget(caster, target);
-            bool targetIsPawn = target.HasThing && target.Thing is Pawn;
 
             float runtimeScale = includeEntityEffects ? GetRuntimeDamageScale(target, caster, consumeDashEmpower) : 1f;
             float finalDamageScale = Mathf.Max(0f, damageScale * runtimeScale);
             float appliedDamage = 0f;
             bool damageApplied = false;
+            int nowTick = Find.TickManager?.TicksGame ?? 0;
 
             foreach (var effectConfig in Props.effects)
             {
@@ -1080,20 +1092,19 @@ namespace CharacterStudio.Abilities
                     }
                 }
 
-                var worker = EffectWorkerFactory.GetWorker(effectConfig.type);
-                if (effectConfig.type == AbilityEffectType.Damage)
+                // 延迟效果：入队等待到期执行
+                if (effectConfig.delayTicks > 0)
                 {
-                    AbilityEffectConfig scaledConfig = effectConfig.Clone();
-                    float extraDamage = allowRuntimeBonusDamage ? flatBonusDamage : 0f;
-                    scaledConfig.amount = (scaledConfig.amount * finalDamageScale) + extraDamage;
-
-                    appliedDamage += Mathf.Max(0f, scaledConfig.amount);
-                    damageApplied = true;
-                    worker.Apply(scaledConfig, target, caster);
+                    float extraDamage = (effectConfig.type == AbilityEffectType.Damage && allowRuntimeBonusDamage) ? flatBonusDamage : 0f;
+                    pendingEffects.Add((nowTick + effectConfig.delayTicks, effectConfig.Clone(), target, caster, finalDamageScale, extraDamage));
+                    continue;
                 }
-                else
+
+                float dmgAmount = ApplySingleEffect(effectConfig, target, caster, finalDamageScale, allowRuntimeBonusDamage ? flatBonusDamage : 0f);
+                if (effectConfig.type == AbilityEffectType.Damage && dmgAmount > 0f)
                 {
-                    worker.Apply(effectConfig, target, caster);
+                    appliedDamage += dmgAmount;
+                    damageApplied = true;
                 }
             }
 
@@ -1111,26 +1122,35 @@ namespace CharacterStudio.Abilities
             }
         }
 
-        private static bool IsEntityDirectedEffect(AbilityEffectType effectType)
+        /// <summary>
+        /// 应用单个效果配置到目标。返回实际造成的伤害量（仅 Damage 类型有意义）。
+        /// </summary>
+        private static float ApplySingleEffect(AbilityEffectConfig effectConfig, LocalTargetInfo target, Pawn caster, float damageScale, float flatBonusDamage)
         {
-            return effectType == AbilityEffectType.Damage
-                || effectType == AbilityEffectType.Heal
-                || effectType == AbilityEffectType.Buff
-                || effectType == AbilityEffectType.Debuff
-                || effectType == AbilityEffectType.Control;
+            var worker = EffectWorkerFactory.GetWorker(effectConfig.type);
+            if (effectConfig.type == AbilityEffectType.Damage)
+            {
+                AbilityEffectConfig scaledConfig = effectConfig.Clone();
+                scaledConfig.amount = (scaledConfig.amount * damageScale) + flatBonusDamage;
+                float appliedDmg = Mathf.Max(0f, scaledConfig.amount);
+                worker.Apply(scaledConfig, target, caster);
+                return appliedDmg;
+            }
+            else
+            {
+                worker.Apply(effectConfig, target, caster);
+                return 0f;
+            }
         }
+
+        private static bool IsEntityDirectedEffect(AbilityEffectType effectType)
+            => EffectBehaviorRegistry.Get(effectType).Category == EffectTargetCategory.EntityDirected;
 
         private static bool IsPrimaryCellEffect(AbilityEffectType effectType)
-        {
-            return effectType == AbilityEffectType.Teleport
-                || effectType == AbilityEffectType.WeatherChange
-                || effectType == AbilityEffectType.Summon;
-        }
+            => EffectBehaviorRegistry.Get(effectType).Category == EffectTargetCategory.PrimaryCell;
 
         private static bool IsAreaCellEffect(AbilityEffectType effectType)
-        {
-            return effectType == AbilityEffectType.Terraform;
-        }
+            => EffectBehaviorRegistry.Get(effectType).Category == EffectTargetCategory.AreaCell;
 
     }
 

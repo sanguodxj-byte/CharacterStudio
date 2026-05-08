@@ -47,7 +47,10 @@ namespace CharacterStudio.UI
 
             DrawToolbar(ref y, width);
 
-            string newSearch = Widgets.TextEntryLabeled(new Rect(0f, y, width, 24f), "CS_AttrBuff_Search".Translate(), attributeBuffSearchText);
+            float searchLabelWidth = Text.CalcSize("CS_AttrBuff_Search".Translate()).x + 4f;
+            Rect attrSearchRect = new Rect(0f, y, width, 24f);
+            Widgets.Label(new Rect(attrSearchRect.x, attrSearchRect.y, searchLabelWidth, attrSearchRect.height), "CS_AttrBuff_Search".Translate());
+            string newSearch = Widgets.TextField(new Rect(attrSearchRect.x + searchLabelWidth, attrSearchRect.y, attrSearchRect.width - searchLabelWidth, attrSearchRect.height), attributeBuffSearchText);
             if (!string.Equals(newSearch, attributeBuffSearchText, StringComparison.Ordinal))
             {
                 attributeBuffSearchText = newSearch;

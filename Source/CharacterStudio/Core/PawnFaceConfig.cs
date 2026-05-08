@@ -1,6 +1,7 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using CharacterStudio.Exporter;
 using Verse;
 using UnityEngine;
 
@@ -107,12 +108,14 @@ namespace CharacterStudio.Core
     public class ExpressionFrame
     {
         /// <summary>该帧的贴图路径（支持绝对路径和游戏内相对路径）</summary>
+        [XmlExportField]
         public string texPath = "";
 
         /// <summary>
         /// 该帧持续时间（单位：Tick，60 Tick = 1秒）。
         /// 设为 0 或负数时视为静态帧（不参与循环推进）。
         /// </summary>
+        [XmlExportField]
         public int durationTicks = 60;
     }
 
@@ -128,25 +131,33 @@ namespace CharacterStudio.Core
     /// </summary>
     public class ExpressionTexPath
     {
+        [XmlExportField]
         public ExpressionType expression;
 
         /// <summary>静态贴图路径（单张，向后兼容）</summary>
+        [XmlExportField]
         public string texPath = "";
 
         /// <summary>
         /// 帧动画序列。不为空时优先于 texPath 使用。
         /// 循环播放，每帧按 durationTicks 推进。
         /// </summary>
+        [XmlExportField]
         public List<ExpressionFrame> frames = new List<ExpressionFrame>();
 
         // --- 表情状态显式覆盖 (可选) ---
-        // 为 null 时遵循代码内置的“家族式”硬编码逻辑映射。
+        // 为 null 时遵循代码内置的"家族式"硬编码逻辑映射。
         // 设置后将跳过家族映射，直接使用指定的显式状态。
 
+        [XmlExportField]
         public MouthState? mouthStateOverride;
+        [XmlExportField]
         public LidState? lidStateOverride;
+        [XmlExportField]
         public BrowState? browStateOverride;
+        [XmlExportField]
         public EyeAnimationVariant? eyeVariantOverride;
+        [XmlExportField]
         public PupilScaleVariant? pupilVariantOverride;
 
         /// <summary>是否为帧动画（有多帧定义）</summary>
@@ -191,48 +202,61 @@ namespace CharacterStudio.Core
     /// </summary>
     public class LayeredFacePartConfig
     {
+        [XmlExportField]
         public LayeredFacePartType partType = LayeredFacePartType.Base;
+        [XmlExportField]
         public ExpressionType expression = ExpressionType.Neutral;
+        [XmlExportField]
         public string texPath = string.Empty;
+        [XmlExportField]
         public bool enabled = true;
+        [XmlExportField]
         public LayeredFacePartSide side = LayeredFacePartSide.None;
 
         /// <summary>south / 默认朝向资源路径。</summary>
+        [XmlExportField]
         public string texPathSouth = string.Empty;
 
         /// <summary>east / west 朝向资源路径。</summary>
+        [XmlExportField]
         public string texPathEast = string.Empty;
 
         /// <summary>north 朝向资源路径。</summary>
+        [XmlExportField]
         public string texPathNorth = string.Empty;
 
         /// <summary>
         /// 当 partType = Overlay 时，用于区分多个 Overlay 条目。
         /// 旧数据为空时会在运行时被视为默认 "Overlay"。
         /// </summary>
+        [XmlExportField]
         public string overlayId = string.Empty;
 
         /// <summary>
         /// 当 partType = Overlay 时，表示编辑器内排序顺序。数值越小越先绘制。
         /// </summary>
+        [XmlExportField]
         public int overlayOrder = 0;
 
         /// <summary>
         /// Overlay 跟随的程序动画部件目标。
         /// 仅对 Overlay/Hair 生效。
         /// </summary>
+        [XmlExportField]
         public string followTarget = string.Empty;
 
         /// <summary>
         /// 程序控制动画可移动距离。
         /// 值越大，代码驱动表情时允许的位移幅度越大。
         /// </summary>
+        [XmlExportField(SkipDefaultFloat = true, SkipDefault = 0f)]
         public float motionAmplitude = 0f;
 
         /// <summary>
         /// 旧版二维 anchor correction，仅用于兼容历史导入数据。
         /// 新逻辑会在首次访问时将其折算到 motionAmplitude。
         /// </summary>
+        [XmlExportField(Ignore = true)]
         public Vector2 anchorCorrection = Vector2.zero;
 
         public bool HasAnyTexture()
@@ -280,12 +304,12 @@ namespace CharacterStudio.Core
             return string.Empty;
         }
 
-        public void SyncDirectionalTexPathsFromLegacy()
+        public void EnsureDirectionalTexPathsConsistent()
         {
             if (string.IsNullOrWhiteSpace(texPathSouth) && !string.IsNullOrWhiteSpace(texPath))
                 texPathSouth = texPath;
 
-            SyncLegacyMotionAmplitude();
+            EnsureMotionAmplitudeInitialized();
 
             if (string.IsNullOrWhiteSpace(texPath))
             {
@@ -300,12 +324,22 @@ namespace CharacterStudio.Core
             }
         }
 
-        public void SyncLegacyMotionAmplitude()
+        public void EnsureMotionAmplitudeInitialized()
         {
             if (motionAmplitude > 0f || anchorCorrection == Vector2.zero)
                 return;
 
             motionAmplitude = Mathf.Max(Mathf.Abs(anchorCorrection.x), Mathf.Abs(anchorCorrection.y));
+        }
+
+        /// <summary>
+        /// 将旧版 anchorCorrection 同步到 motionAmplitude 并重置 anchorCorrection。
+        /// 用于编辑器中用户修改 motionAmplitude 后清理旧数据。
+        /// </summary>
+        public void SyncLegacyMotionAmplitude()
+        {
+            EnsureMotionAmplitudeInitialized();
+            anchorCorrection = Vector2.zero;
         }
 
         public LayeredFacePartConfig Clone()
@@ -345,19 +379,19 @@ namespace CharacterStudio.Core
     {
         public class ExpressionOverlayRule
         {
-            public ExpressionType expression = ExpressionType.Neutral;
-            public string semanticKey = string.Empty;
-            public string emotionState = nameof(EmotionOverlayState.None);
+            [XmlExportField] public ExpressionType expression = ExpressionType.Neutral;
+            [XmlExportField] public string semanticKey = string.Empty;
+            [XmlExportField] public string emotionState = nameof(EmotionOverlayState.None);
 
             public ExpressionOverlayRule Clone() => (ExpressionOverlayRule)MemberwiseClone();
         }
 
         public class EmotionOverlayRule
         {
-            public string semanticKey = string.Empty;
-            public List<string> overlayIds = new List<string>();
-            public string emotionState = nameof(EmotionOverlayState.None);
-            public string overlayId = string.Empty;
+            [XmlExportField] public string semanticKey = string.Empty;
+            [XmlExportField(SkipEmptyCollection = true)] public List<string> overlayIds = new List<string>();
+            [XmlExportField] public string emotionState = nameof(EmotionOverlayState.None);
+            [XmlExportField] public string overlayId = string.Empty;
 
             public EmotionOverlayRule Clone()
             {
@@ -373,144 +407,197 @@ namespace CharacterStudio.Core
 
         public class BrowMotionConfig
         {
-            public float angryAngleBase = -4.5f;
-            public float angryAngleWave = 0.6f;
-            public float angryOffsetZBase = -0.004f;
-            public float angrySlowWaveOffsetZ = 0.0008f;
-            public float angryScaleX = 1.04f;
-            public float angryScaleZ = 0.97f;
+            [XmlExportField] public float angryAngleBase = -4.5f;
+            [XmlExportField] public float angryAngleWave = 0.6f;
+            [XmlExportField] public float angryOffsetZBase = -0.004f;
+            [XmlExportField] public float angrySlowWaveOffsetZ = 0.0008f;
+            [XmlExportField] public float angryScaleX = 1.04f;
+            [XmlExportField] public float angryScaleZ = 0.97f;
 
-            public float sadAngleBase = 3.25f;
-            public float sadAngleWave = 0.45f;
-            public float sadOffsetZBase = 0.0045f;
-            public float sadSlowWaveOffsetZ = 0.0008f;
-            public float sadScaleX = 1.02f;
-            public float sadScaleZ = 0.98f;
+            [XmlExportField] public float sadAngleBase = 3.25f;
+            [XmlExportField] public float sadAngleWave = 0.45f;
+            [XmlExportField] public float sadOffsetZBase = 0.0045f;
+            [XmlExportField] public float sadSlowWaveOffsetZ = 0.0008f;
+            [XmlExportField] public float sadScaleX = 1.02f;
+            [XmlExportField] public float sadScaleZ = 0.98f;
 
-            public float happyAngleBase = -1.5f;
-            public float happyAngleWave = 0.25f;
-            public float happyOffsetZBase = -0.0015f;
-            public float happySlowWaveOffsetZ = 0.0004f;
-            public float happyScaleX = 1.03f;
-            public float happyScaleZ = 0.97f;
+            [XmlExportField] public float happyAngleBase = -1.5f;
+            [XmlExportField] public float happyAngleWave = 0.25f;
+            [XmlExportField] public float happyOffsetZBase = -0.0015f;
+            [XmlExportField] public float happySlowWaveOffsetZ = 0.0004f;
+            [XmlExportField] public float happyScaleX = 1.03f;
+            [XmlExportField] public float happyScaleZ = 0.97f;
 
-            public float defaultSlowWaveOffsetZ = 0.0006f;
+            [XmlExportField] public float defaultSlowWaveOffsetZ = 0.0006f;
 
             public BrowMotionConfig Clone() => (BrowMotionConfig)MemberwiseClone();
         }
 
         public class MouthMotionConfig
         {
-            public float smileAngleWave = 0.6f;
-            public float smileOffsetZBase = -0.001f;
-            public float smilePrimaryWaveOffsetZ = 0.0006f;
-            public float smileScaleXBase = 1.06f;
-            public float smileScaleXWave = 0.02f;
-            public float smileScaleZ = 0.94f;
+            [XmlExportField] public float smileAngleWave = 0.6f;
+            [XmlExportField] public float smileOffsetZBase = -0.001f;
+            [XmlExportField] public float smilePrimaryWaveOffsetZ = 0.0006f;
+            [XmlExportField] public float smileScaleXBase = 1.06f;
+            [XmlExportField] public float smileScaleXWave = 0.02f;
+            [XmlExportField] public float smileScaleZ = 0.94f;
 
-            public float openAngleWave = 0.8f;
-            public float openOffsetZBase = 0.004f;
-            public float openPrimaryWaveOffsetZ = 0.0015f;
-            public float openScaleX = 1.03f;
-            public float openScaleZBase = 1.14f;
-            public float openScaleZWave = 0.04f;
+            [XmlExportField] public float openAngleWave = 0.8f;
+            [XmlExportField] public float openOffsetZBase = 0.004f;
+            [XmlExportField] public float openPrimaryWaveOffsetZ = 0.0015f;
+            [XmlExportField] public float openScaleX = 1.03f;
+            [XmlExportField] public float openScaleZBase = 1.14f;
+            [XmlExportField] public float openScaleZWave = 0.04f;
 
-            public float downAngleBase = -0.75f;
-            public float downAngleWave = 0.3f;
-            public float downOffsetZBase = 0.0025f;
-            public float downSlowWaveOffsetZ = 0.0006f;
-            public float downScaleX = 0.99f;
-            public float downScaleZ = 0.90f;
+            [XmlExportField] public float downAngleBase = -0.75f;
+            [XmlExportField] public float downAngleWave = 0.3f;
+            [XmlExportField] public float downOffsetZBase = 0.0025f;
+            [XmlExportField] public float downSlowWaveOffsetZ = 0.0006f;
+            [XmlExportField] public float downScaleX = 0.99f;
+            [XmlExportField] public float downScaleZ = 0.90f;
 
-            public float sleepOffsetZ = 0.002f;
-            public float sleepScaleX = 0.97f;
-            public float sleepScaleZ = 0.84f;
+            [XmlExportField] public float sleepOffsetZ = 0.002f;
+            [XmlExportField] public float sleepScaleX = 0.97f;
+            [XmlExportField] public float sleepScaleZ = 0.88f;
 
-            public float eatingAngleWave = 1.25f;
-            public float eatingOffsetZBase = 0.002f;
-            public float eatingPrimaryWaveOffsetZ = 0.001f;
-            public float eatingScaleX = 1.01f;
-            public float eatingScaleZBase = 1.05f;
-            public float eatingScaleZWave = 0.04f;
+            [XmlExportField] public float eatingAngleWave = 1.25f;
+            [XmlExportField] public float eatingOffsetZBase = 0.002f;
+            [XmlExportField] public float eatingPrimaryWaveOffsetZ = 0.001f;
+            [XmlExportField] public float eatingScaleX = 1.01f;
+            [XmlExportField] public float eatingScaleZBase = 1.05f;
+            [XmlExportField] public float eatingScaleZWave = 0.04f;
 
-            public float shockScaredAngleWave = 0.75f;
-            public float shockScaredOffsetZBase = 0.0032f;
-            public float shockScaredPrimaryWaveOffsetZ = 0.001f;
-            public float shockScaredScaleX = 1.02f;
-            public float shockScaredScaleZBase = 1.10f;
-            public float shockScaredScaleZWave = 0.03f;
+            [XmlExportField] public float shockScaredAngleWave = 0.75f;
+            [XmlExportField] public float shockScaredOffsetZBase = 0.0032f;
+            [XmlExportField] public float shockScaredPrimaryWaveOffsetZ = 0.001f;
+            [XmlExportField] public float shockScaredScaleX = 1.02f;
+            [XmlExportField] public float shockScaredScaleZBase = 1.10f;
+            [XmlExportField] public float shockScaredScaleZWave = 0.03f;
 
-            public float defaultSlowWaveOffsetZ = 0.0005f;
+            [XmlExportField] public float defaultSlowWaveOffsetZ = 0.0005f;
 
             public MouthMotionConfig Clone() => (MouthMotionConfig)MemberwiseClone();
         }
 
         public class EmotionOverlayMotionConfig
         {
-            public float blushPulseBase = 1.04f;
-            public float blushPulseWave = 0.05f;
-            public float blushOffsetZBase = -0.001f;
-            public float blushSlowWaveOffsetZ = 0.001f;
-            public float blushScaleZBase = 1.02f;
-            public float blushScaleZWave = 0.02f;
+            [XmlExportField] public float blushPulseBase = 1.04f;
+            [XmlExportField] public float blushPulseWave = 0.05f;
+            [XmlExportField] public float blushOffsetZBase = -0.001f;
+            [XmlExportField] public float blushSlowWaveOffsetZ = 0.001f;
+            [XmlExportField] public float blushScaleZBase = 1.02f;
+            [XmlExportField] public float blushScaleZWave = 0.02f;
 
-            public float tearPulseBase = 1.01f;
-            public float tearPulseWave = 0.02f;
-            public float tearAngleWave = 0.5f;
-            public float tearOffsetZBase = 0.002f;
-            public float tearPrimaryWaveOffsetZ = 0.0015f;
+            [XmlExportField] public float tearPulseBase = 1.01f;
+            [XmlExportField] public float tearPulseWave = 0.02f;
+            [XmlExportField] public float tearAngleWave = 0.5f;
+            [XmlExportField] public float tearOffsetZBase = 0.002f;
+            [XmlExportField] public float tearPrimaryWaveOffsetZ = 0.0015f;
 
-            public float sweatPulseBase = 1f;
-            public float sweatPulseWave = 0.03f;
-            public float sweatAngleWave = 2.5f;
-            public float sweatOffsetXWave = 0.0025f;
-            public float sweatOffsetZBase = 0.0015f;
-            public float sweatSlowWaveOffsetZ = 0.001f;
+            [XmlExportField] public float sweatPulseBase = 1f;
+            [XmlExportField] public float sweatPulseWave = 0.03f;
+            [XmlExportField] public float sweatAngleWave = 2.5f;
+            [XmlExportField] public float sweatOffsetXWave = 0.0025f;
+            [XmlExportField] public float sweatOffsetZBase = 0.0015f;
+            [XmlExportField] public float sweatSlowWaveOffsetZ = 0.001f;
+
+            // ── Sleep overlay: subtle breathing pulse for closed-eye sleep state ──
+            [XmlExportField] public float sleepPulseBase = 1f;
+            [XmlExportField] public float sleepPulseWave = 0.02f;
+            [XmlExportField] public float sleepOffsetZBase = 0.001f;
+            [XmlExportField] public float sleepSlowWaveOffsetZ = 0.0006f;
+            [XmlExportField] public float sleepScaleZBase = 1.01f;
+            [XmlExportField] public float sleepScaleZWave = 0.01f;
 
             public EmotionOverlayMotionConfig Clone() => (EmotionOverlayMotionConfig)MemberwiseClone();
         }
 
-        public bool enabled = false;
+        /// <summary>
+        /// 待机随机微表情与张望调度配置。
+        /// 控制角色在无特殊状态时的随机表情变化和眼方向偏移频率。
+        /// </summary>
+        public class IdleMicroExpressionConfig
+        {
+            /// <summary>是否启用待机随机微表情。关闭后角色待机始终显示基础表情。</summary>
+            [XmlExportField(BoolToLower = true)]
+            public bool enabled = true;
+
+            /// <summary>微表情最短触发间隔（tick）。默认 1200（约 20 秒现实时间）。</summary>
+            [XmlExportField]
+            public int intervalMinTicks = 1200;
+
+            /// <summary>微表情最长触发间隔（tick）。默认 3600（约 60 秒现实时间）。</summary>
+            [XmlExportField]
+            public int intervalMaxTicks = 3600;
+
+            /// <summary>微表情最短持续时长（tick）。默认 120（约 2 秒）。</summary>
+            [XmlExportField]
+            public int durationMinTicks = 120;
+
+            /// <summary>微表情最长持续时长（tick）。默认 360（约 6 秒）。</summary>
+            [XmlExportField]
+            public int durationMaxTicks = 360;
+
+            /// <summary>待机张望最短停留（tick）。默认 240（约 4 秒）。</summary>
+            [XmlExportField]
+            public int gazeHoldMinTicks = 240;
+
+            /// <summary>待机张望最长停留（tick）。默认 800（约 13 秒）。</summary>
+            [XmlExportField]
+            public int gazeHoldMaxTicks = 800;
+
+            /// <summary>张望偏移概率 (0~1)。0 = 始终面朝方向，1 = 总是偏移。默认 0.35。</summary>
+            [XmlExportField]
+            public float gazeShiftChance = 0.35f;
+
+            public IdleMicroExpressionConfig Clone() => (IdleMicroExpressionConfig)MemberwiseClone();
+        }
+
+        [XmlExportField(BoolToLower = true)] public bool enabled = false;
 
         /// <summary>表情工作流模式：整脸换图 / 分层动态</summary>
-        public FaceWorkflowMode workflowMode = FaceWorkflowMode.FullFaceSwap;
+        [XmlExportField] public FaceWorkflowMode workflowMode = FaceWorkflowMode.FullFaceSwap;
 
         /// <summary>分层模式的资源根目录（可选）</summary>
-        public string layeredSourceRoot = string.Empty;
+        [XmlExportField(SkipEmptyString = true)] public string layeredSourceRoot = string.Empty;
 
         /// <summary>分层模式识别到的部件资源列表</summary>
-        public List<LayeredFacePartConfig> layeredParts = new List<LayeredFacePartConfig>();
+        [XmlExportField(SkipEmptyCollection = true)] public List<LayeredFacePartConfig> layeredParts = new List<LayeredFacePartConfig>();
 
         /// <summary>各表情对应的贴图/帧序列配置（XML 序列化用）</summary>
-        public List<ExpressionTexPath> expressions = new List<ExpressionTexPath>();
+        [XmlExportField(SkipEmptyCollection = true)] public List<ExpressionTexPath> expressions = new List<ExpressionTexPath>();
 
         /// <summary>
         /// 眼睛方向覆盖层配置（可选，为 null 时不启用方向功能）
         /// 空值安全：渲染与编辑器侧均需做 null 防护。
         /// </summary>
-        public PawnEyeDirectionConfig? eyeDirectionConfig = null;
+        [XmlExportField(Ignore = true)] public PawnEyeDirectionConfig? eyeDirectionConfig = null;
 
-        public BrowMotionConfig browMotion = new BrowMotionConfig();
-        public MouthMotionConfig mouthMotion = new MouthMotionConfig();
-        public EmotionOverlayMotionConfig emotionOverlayMotion = new EmotionOverlayMotionConfig();
+        [XmlExportField] public BrowMotionConfig browMotion = new BrowMotionConfig();
+        [XmlExportField] public MouthMotionConfig mouthMotion = new MouthMotionConfig();
+        [XmlExportField] public EmotionOverlayMotionConfig emotionOverlayMotion = new EmotionOverlayMotionConfig();
 
         /// <summary>全局眉毛运动幅度乘数。1.0 = 默认；>1 更夸张；<1 更柔和。</summary>
-        public float browAmplitude = 1f;
+        [XmlExportField(SkipDefault = 1f, SkipDefaultFloat = true)] public float browAmplitude = 1f;
 
         /// <summary>全局嘴部运动幅度乘数。1.0 = 默认；>1 更夸张；<1 更柔和。</summary>
-        public float mouthAmplitude = 1f;
+        [XmlExportField(SkipDefault = 1f, SkipDefaultFloat = true)] public float mouthAmplitude = 1f;
 
         /// <summary>全局瞳孔缩放幅度乘数。1.0 = 默认；>1 更夸张；<1 更柔和。</summary>
-        public float pupilScaleAmplitude = 1f;
+        [XmlExportField(SkipDefault = 1f, SkipDefaultFloat = true)] public float pupilScaleAmplitude = 1f;
+
+        /// <summary>待机随机微表情与张望调度配置。</summary>
+        [XmlExportField]
+        public IdleMicroExpressionConfig idleMicroExpression = new IdleMicroExpressionConfig();
 
         // ── Profile 驱动的动画参数（JSON 可编辑）──
         // null 时从旧 MotionConfig 字段实时构建（无缓存，编辑器修改立即生效）
 
         /// <summary>眉毛通道动画参数。null 时从 browMotion 实时构建。</summary>
-        public FaceChannelProfileSet? browProfiles;
+        [XmlExportField(Ignore = true)] public FaceChannelProfileSet? browProfiles;
 
         /// <summary>嘴部通道动画参数。null 时从 mouthMotion 实时构建。</summary>
-        public FaceChannelProfileSet? mouthProfiles;
+        [XmlExportField(Ignore = true)] public FaceChannelProfileSet? mouthProfiles;
 
         public FaceChannelProfileSet GetOrBuildBrowProfiles()
         {
@@ -521,8 +608,8 @@ namespace CharacterStudio.Core
         {
             return mouthProfiles ?? FaceProfileBuilder.BuildMouthDefaults(mouthMotion ?? new MouthMotionConfig());
         }
-        public List<ExpressionOverlayRule> expressionOverlayRules = new List<ExpressionOverlayRule>();
-        public List<EmotionOverlayRule> emotionOverlayRules = new List<EmotionOverlayRule>();
+        [XmlExportField(SkipEmptyCollection = true)] public List<ExpressionOverlayRule> expressionOverlayRules = new List<ExpressionOverlayRule>();
+        [XmlExportField(SkipEmptyCollection = true)] public List<EmotionOverlayRule> emotionOverlayRules = new List<EmotionOverlayRule>();
 
         // Dictionary 缓存，首次 GetExpression 时懒初始化
         private Dictionary<ExpressionType, ExpressionTexPath>? _lookupCache;
@@ -542,7 +629,7 @@ namespace CharacterStudio.Core
             return _lookupCache;
         }
 
-        private void InvalidateLookup() => _lookupCache = null;
+        public void InvalidateLookup() => _lookupCache = null;
 
         public void EnsureDefaultOverlayRules()
         {
@@ -564,7 +651,7 @@ namespace CharacterStudio.Core
                     new ExpressionOverlayRule { expression = ExpressionType.Hopeless, semanticKey = "hopeless", emotionState = nameof(EmotionOverlayState.Tear) },
                     new ExpressionOverlayRule { expression = ExpressionType.Dead, semanticKey = "dead", emotionState = nameof(EmotionOverlayState.Tear) },
                     new ExpressionOverlayRule { expression = ExpressionType.Gloomy, semanticKey = "gloomy", emotionState = nameof(EmotionOverlayState.Gloomy) },
-                    new ExpressionOverlayRule { expression = ExpressionType.Sleeping, semanticKey = "sleeping", emotionState = nameof(EmotionOverlayState.None) },
+                    new ExpressionOverlayRule { expression = ExpressionType.Sleeping, semanticKey = "sleeping", emotionState = nameof(EmotionOverlayState.Sleep) },
                 };
             }
 
@@ -586,13 +673,14 @@ namespace CharacterStudio.Core
                     new EmotionOverlayRule { semanticKey = "hopeless", emotionState = nameof(EmotionOverlayState.Tear), overlayIds = new List<string> { "Tear" }, overlayId = "Tear" },
                     new EmotionOverlayRule { semanticKey = "dead", emotionState = nameof(EmotionOverlayState.Tear), overlayIds = new List<string> { "Tear" }, overlayId = "Tear" },
                     new EmotionOverlayRule { semanticKey = "gloomy", emotionState = nameof(EmotionOverlayState.Gloomy), overlayIds = new List<string> { "Gloomy" }, overlayId = "Gloomy" },
-                    new EmotionOverlayRule { semanticKey = "sleeping", emotionState = nameof(EmotionOverlayState.None), overlayIds = new List<string> { "Sleep" }, overlayId = "Sleep" },
+                    new EmotionOverlayRule { semanticKey = "sleeping", emotionState = nameof(EmotionOverlayState.Sleep), overlayIds = new List<string> { "Sleep" }, overlayId = "Sleep" },
                 };
             }
 
             NormalizeOverlayRules();
         }
 
+        private static readonly object _normalizeCacheLock = new object();
         private static readonly Dictionary<string, string> _normalizedSemanticKeyCache
             = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
@@ -623,8 +711,11 @@ namespace CharacterStudio.Core
 
             string input = semanticKey!;
 
-            if (_normalizedSemanticKeyCache.TryGetValue(input, out string cached))
-                return cached;
+            lock (_normalizeCacheLock)
+            {
+                if (_normalizedSemanticKeyCache.TryGetValue(input, out string cached))
+                    return cached;
+            }
 
             string normalized = input.Trim().Replace('-', '_').Replace(' ', '_');
             string[] segments = normalized
@@ -634,7 +725,10 @@ namespace CharacterStudio.Core
                 .ToArray();
 
             string result = segments.Length == 0 ? string.Empty : string.Join("_", segments);
-            _normalizedSemanticKeyCache[input] = result;
+            lock (_normalizeCacheLock)
+            {
+                _normalizedSemanticKeyCache[input] = result;
+            }
             return result;
         }
 
@@ -650,6 +744,7 @@ namespace CharacterStudio.Core
                 "tear" => "sad",
                 "gloomy" => "gloomy",
                 "sweat" => "scared",
+                "sleep" => "sleeping",
                 _ => string.Empty
             };
         }
@@ -918,49 +1013,50 @@ namespace CharacterStudio.Core
 
             string input = overlayId!;
 
-            if (_normalizedOverlayIdCache.TryGetValue(input, out string cached))
-                return cached;
+            lock (_normalizeCacheLock)
+            {
+                if (_normalizedOverlayIdCache.TryGetValue(input, out string cached))
+                    return cached;
+            }
 
             string normalized = input.Trim().Replace('-', '_').Replace(' ', '_');
 
+            string result;
             if (normalized.Equals("Blush", StringComparison.OrdinalIgnoreCase))
             {
-                _normalizedOverlayIdCache[input] = "Blush";
-                return "Blush";
+                result = "Blush";
             }
-
-            if (normalized.Equals("Tear", StringComparison.OrdinalIgnoreCase))
+            else if (normalized.Equals("Tear", StringComparison.OrdinalIgnoreCase))
             {
-                _normalizedOverlayIdCache[input] = "Tear";
-                return "Tear";
+                result = "Tear";
             }
-
-            if (normalized.Equals("Sweat", StringComparison.OrdinalIgnoreCase))
+            else if (normalized.Equals("Sweat", StringComparison.OrdinalIgnoreCase))
             {
-                _normalizedOverlayIdCache[input] = "Sweat";
-                return "Sweat";
+                result = "Sweat";
             }
-
-            if (normalized.Equals("Sleep", StringComparison.OrdinalIgnoreCase))
+            else if (normalized.Equals("Sleep", StringComparison.OrdinalIgnoreCase))
             {
-                _normalizedOverlayIdCache[input] = "Sleep";
-                return "Sleep";
+                result = "Sleep";
             }
-
-            if (normalized.Equals("Gloomy", StringComparison.OrdinalIgnoreCase))
+            else if (normalized.Equals("Gloomy", StringComparison.OrdinalIgnoreCase))
             {
-                _normalizedOverlayIdCache[input] = "Gloomy";
-                return "Gloomy";
+                result = "Gloomy";
+            }
+            else
+            {
+                string[] segments = normalized
+                    .Split(new[] { '_' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(segment => segment.Trim())
+                    .Where(segment => !string.IsNullOrWhiteSpace(segment))
+                    .ToArray();
+
+                result = segments.Length == 0 ? string.Empty : string.Join("_", segments);
             }
 
-            string[] segments = normalized
-                .Split(new[] { '_' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(segment => segment.Trim())
-                .Where(segment => !string.IsNullOrWhiteSpace(segment))
-                .ToArray();
-
-            string result = segments.Length == 0 ? string.Empty : string.Join("_", segments);
-            _normalizedOverlayIdCache[input] = result;
+            lock (_normalizeCacheLock)
+            {
+                _normalizedOverlayIdCache[input] = result;
+            }
             return result;
         }
 
@@ -1015,7 +1111,7 @@ namespace CharacterStudio.Core
                 .Where(p => p != null && p.partType == partType)
                 .Select(p =>
                 {
-                    p.SyncDirectionalTexPathsFromLegacy();
+                    p.EnsureDirectionalTexPathsConsistent();
                     return p;
                 });
 
@@ -1079,7 +1175,7 @@ namespace CharacterStudio.Core
                         continue;
                     if (checkSide && NormalizePartSide(partType, p.side) != normalizedSide!.Value)
                         continue;
-                    p.SyncDirectionalTexPathsFromLegacy();
+                    p.EnsureDirectionalTexPathsConsistent();
                     return p;
                 }
                 return null;
@@ -1096,7 +1192,7 @@ namespace CharacterStudio.Core
                         continue;
                     if (NormalizePartSide(partType, p.side) != LayeredFacePartSide.None)
                         continue;
-                    p.SyncDirectionalTexPathsFromLegacy();
+                    p.EnsureDirectionalTexPathsConsistent();
                     return p;
                 }
                 return null;
@@ -1113,7 +1209,7 @@ namespace CharacterStudio.Core
                         continue;
                     if (NormalizePartSide(partType, p.side) == LayeredFacePartSide.None)
                         continue;
-                    p.SyncDirectionalTexPathsFromLegacy();
+                    p.EnsureDirectionalTexPathsConsistent();
                     return p;
                 }
                 return null;
@@ -1169,7 +1265,26 @@ namespace CharacterStudio.Core
                         return neutralPreferred;
                 }
 
-                if (hasExplicitSidedContent)
+                // 只有当当前表情存在显式左右分离条目时，才阻止 unsided 回退。
+                // 如果当前表情只有 side=None 条目（如 Eye_blink），但其他表情有左右分离（如 Neutral 的 Eye_Left），
+                // 仍然允许回退到当前表情的 side=None 条目。
+                bool hasExplicitSidedForCurrentExpression = false;
+                for (int i = 0; i < layeredParts.Count; i++)
+                {
+                    LayeredFacePartConfig p = layeredParts[i];
+                    if (p == null || p.partType != partType || !p.enabled || !p.HasAnyTexture())
+                        continue;
+                    if (filterOverlay && !MatchesOverlayId(p, normalizedOverlayId))
+                        continue;
+                    if (NormalizePartSide(partType, p.side) != LayeredFacePartSide.None
+                        && p.expression == expression)
+                    {
+                        hasExplicitSidedForCurrentExpression = true;
+                        break;
+                    }
+                }
+
+                if (hasExplicitSidedForCurrentExpression)
                     return null;
 
                 LayeredFacePartConfig? exactUnsided = FindUnsided(expression);
@@ -1798,7 +1913,7 @@ namespace CharacterStudio.Core
                     || !string.IsNullOrWhiteSpace(existing.texPathEast)
                     || !string.IsNullOrWhiteSpace(existing.texPathNorth);
                 existing.side = normalizedSide;
-                existing.SyncDirectionalTexPathsFromLegacy();
+                existing.EnsureDirectionalTexPathsConsistent();
             }
             else
             {
@@ -1815,7 +1930,7 @@ namespace CharacterStudio.Core
                         || !string.IsNullOrWhiteSpace(texPathNorth),
                     side = normalizedSide
                 };
-                created.SyncDirectionalTexPathsFromLegacy();
+                created.EnsureDirectionalTexPathsConsistent();
                 layeredParts.Add(created);
             }
         }
@@ -1863,7 +1978,7 @@ namespace CharacterStudio.Core
                     || !string.IsNullOrWhiteSpace(existing.texPathNorth);
                 existing.overlayId = normalizedOverlayId;
                 existing.overlayOrder = resolvedOverlayOrder;
-                existing.SyncDirectionalTexPathsFromLegacy();
+                existing.EnsureDirectionalTexPathsConsistent();
             }
             else
             {
@@ -1881,7 +1996,7 @@ namespace CharacterStudio.Core
                     overlayId = normalizedOverlayId,
                     overlayOrder = resolvedOverlayOrder
                 };
-                created.SyncDirectionalTexPathsFromLegacy();
+                created.EnsureDirectionalTexPathsConsistent();
                 layeredParts.Add(created);
             }
         }
@@ -1976,6 +2091,7 @@ namespace CharacterStudio.Core
             clone.browMotion = this.browMotion?.Clone() ?? new BrowMotionConfig();
             clone.mouthMotion = this.mouthMotion?.Clone() ?? new MouthMotionConfig();
             clone.emotionOverlayMotion = this.emotionOverlayMotion?.Clone() ?? new EmotionOverlayMotionConfig();
+            clone.idleMicroExpression = this.idleMicroExpression?.Clone() ?? new IdleMicroExpressionConfig();
             clone.expressionOverlayRules = this.expressionOverlayRules?.Select(r => r.Clone()).ToList() ?? new List<ExpressionOverlayRule>();
             clone.emotionOverlayRules = this.emotionOverlayRules?.Select(r => r.Clone()).ToList() ?? new List<EmotionOverlayRule>();
             // _lookupCache 保持 null，首次使用时懒初始化

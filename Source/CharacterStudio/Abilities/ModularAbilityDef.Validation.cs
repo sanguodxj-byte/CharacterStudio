@@ -262,7 +262,7 @@ namespace CharacterStudio.Abilities
             WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.SlotOverrideWindow);
             WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.HotkeyOverride);
             WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.FollowupCooldownGate);
-            WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.RStackDetonation);
+            WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.ExecuteBonusDamage);
             WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.KillRefresh);
             WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.PeriodicPulse);
             WarnForDuplicateSingleton(result, enabledComponents, AbilityRuntimeComponentType.ShieldAbsorb);

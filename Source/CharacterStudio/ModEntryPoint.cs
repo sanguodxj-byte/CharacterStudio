@@ -44,8 +44,11 @@ namespace CharacterStudio
 
             // 从项目角色文件恢复运行时角色资产注册（spawn profile / runtime trigger），
             // 确保编辑器保存到 Config 的项目角色在重启与读档后继续可用。
-            // TODO: 暂时禁用，排查 BakeStaticAtlases 崩溃是否与此相关
-            // CharacterProjectRegistry.LoadProjectCharactersFromConfig();
+            // 通过 ExecuteWhenFinished 延迟到 BakeStaticAtlases 完成后执行，避免启动时崩溃。
+            LongEventHandler.ExecuteWhenFinished(() =>
+            {
+                CharacterProjectRegistry.LoadProjectCharactersFromConfig();
+            });
 
             // 将 DefDatabase 中由 XML Defs 加载的 PawnSkinDef（如导出模组提供的）同步到运行时注册表，
             // 使 GetDefaultSkinForRace 等运行时查询能找到这些 Def，
@@ -61,6 +64,9 @@ namespace CharacterStudio
 
             // 预热 DefModExtension 缓存，将热路径的 GetModExtension O(N) 遍历降为 O(1) 字典查找
             Core.DefModExtensionCache.BuildAll();
+
+            // 验证装备定义 XML 序列化/反序列化往返一致性
+            VerifyEquipmentDefRoundtrip();
 
             // 日志：列出已注册的 CS_PawnKind_* PawnKindDef
             LogRegisteredPawnKinds();
@@ -140,6 +146,7 @@ namespace CharacterStudio
             ApplyPatch("AbilityTimeStop", () => Abilities.Patch_AbilityTimeStop.Apply(harmony));
             ApplyPatch("AbilityRuntimeTick", () => Abilities.Patch_AbilityRuntimeTick.Apply(harmony));
             ApplyPatch("ProjectileBezierWallIntercept", () => Patches.Patch_ProjectileBezierWallIntercept.Apply(harmony));
+            ApplyPatch("MannequinApparel", () => Patches.Patch_MannequinApparel.Apply(harmony));
 
             Log.Message("[CharacterStudio] 补丁应用流程完成");
         }
@@ -172,6 +179,161 @@ namespace CharacterStudio
             catch (System.Exception ex)
             {
                 Log.Warning($"[CharacterStudio] 枚举 PawnKindDef 时出错: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 验证装备定义的 XML 序列化/反序列化往返一致性。
+        /// 创建一个包含典型数据的 CharacterEquipmentDef，通过 XML 往返后验证所有字段正确。
+        /// </summary>
+        private static void VerifyEquipmentDefRoundtrip()
+        {
+            try
+            {
+                // 1. 构造一个包含所有典型字段的装备定义
+                var original = new Core.CharacterEquipmentDef
+                {
+                    defName = "CS_Test_Equipment",
+                    label = "Test Equipment",
+                    description = "A test equipment for verifying XML roundtrip",
+                    enabled = true,
+                    slotTag = "Apparel",
+                    thingDefName = "CS_Test_Equipment_Thing",
+                    parentThingDefName = "ApparelMakeableBase",
+                    shaderDefName = "CutoutComplex",
+                    allowCrafting = true,
+                    allowTrading = true,
+                    marketValue = 500f,
+                    wornTexPath = "Things/TestEquipment/Worn",
+                    worldTexPath = "Things/TestEquipment/World",
+                    maskTexPath = "Things/TestEquipment/Mask",
+                    renderData = new Core.CharacterEquipmentRenderData
+                    {
+                        layerName = "TestLayer",
+                        texPath = "Things/TestEquipment/Texture",
+                        anchorTag = "Head",
+                        anchorPath = "Body/Head",
+                        shaderDefName = "CutoutComplex",
+                        offset = new UnityEngine.Vector3(0.1f, 0f, 0.2f),
+                        offsetEast = new UnityEngine.Vector3(0.05f, 0f, 0.1f),
+                        offsetNorth = new UnityEngine.Vector3(-0.1f, 0f, 0.05f),
+                        drawOrder = 55f,
+                        scale = new UnityEngine.Vector2(1.1f, 1.1f),
+                        colorSource = Core.LayerColorSource.PawnHair,
+                        visible = true,
+                        flipHorizontal = false
+                    }
+                };
+                original.tags.Add("TestTag");
+                original.apparelLayers.Add("OnSkin");
+                original.bodyPartGroups.Add("Torso");
+                original.apparelTags.Add("TestApparel");
+
+                // 2. 通过 EnsureDefaults 确保数据合法
+                original.EnsureDefaults();
+
+                // 3. 序列化为 XML（通过 SkinSaver 使用的公共序列化路径）
+                var definition = new Core.CharacterDefinition
+                {
+                    defName = "CS_Test_CharacterDef",
+                    equipments = new System.Collections.Generic.List<Core.CharacterEquipmentDef> { original }
+                };
+
+                // 4. 使用 CharacterDefinitionXmlUtility 做完整往返
+                var xmlElement = Core.CharacterDefinitionXmlUtility.ToXElement("CharacterDefinition", definition, false);
+
+                // 保存到临时文件再加载回来（验证完整的文件 I/O 路径）
+                string tempFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "CS_Test_EquipmentRoundtrip.xml");
+                Core.CharacterDefinitionXmlUtility.Save(definition, tempFile);
+
+                // 5. 反序列化回来
+                var loaded = Core.CharacterDefinitionXmlUtility.Load(tempFile);
+                if (loaded == null)
+                {
+                    Log.Error("[CharacterStudio] 装备验证失败：ParseFromXElement 返回 null");
+                    return;
+                }
+
+                if (loaded.equipments == null || loaded.equipments.Count == 0)
+                {
+                    Log.Error("[CharacterStudio] 装备验证失败：equipments 为空");
+                    return;
+                }
+
+                var loadedEquip = loaded.equipments[0];
+
+                // 6. 逐字段验证
+                int errors = 0;
+                void Check(string fieldName, string expected, string actual)
+                {
+                    if (expected != actual)
+                    {
+                        Log.Warning($"[CharacterStudio] 装备验证字段不匹配 {fieldName}: expected='{expected}', actual='{actual}'");
+                        errors++;
+                    }
+                }
+
+                Check("defName", original.defName, loadedEquip.defName);
+                Check("label", original.label, loadedEquip.label);
+                Check("description", original.description, loadedEquip.description);
+                Check("thingDefName", original.thingDefName, loadedEquip.thingDefName);
+                Check("slotTag", original.slotTag, loadedEquip.slotTag);
+                Check("shaderDefName", original.shaderDefName, loadedEquip.shaderDefName);
+                Check("wornTexPath", original.wornTexPath, loadedEquip.wornTexPath);
+                Check("worldTexPath", original.worldTexPath, loadedEquip.worldTexPath);
+                Check("maskTexPath", original.maskTexPath, loadedEquip.maskTexPath);
+
+                if (original.enabled != loadedEquip.enabled) { Log.Warning("[CharacterStudio] 装备验证字段不匹配: enabled"); errors++; }
+                if (original.allowCrafting != loadedEquip.allowCrafting) { Log.Warning("[CharacterStudio] 装备验证字段不匹配: allowCrafting"); errors++; }
+                if (System.Math.Abs(original.marketValue - loadedEquip.marketValue) > 0.01f) { Log.Warning($"[CharacterStudio] 装备验证字段不匹配: marketValue ({original.marketValue} vs {loadedEquip.marketValue})"); errors++; }
+
+                // renderData 验证
+                if (loadedEquip.renderData == null)
+                {
+                    Log.Error("[CharacterStudio] 装备验证失败：renderData 为 null");
+                    errors++;
+                }
+                else
+                {
+                    Check("renderData.layerName", original.renderData.layerName, loadedEquip.renderData.layerName);
+                    Check("renderData.texPath", original.renderData.texPath, loadedEquip.renderData.texPath);
+                    Check("renderData.anchorTag", original.renderData.anchorTag, loadedEquip.renderData.anchorTag);
+                    Check("renderData.anchorPath", original.renderData.anchorPath, loadedEquip.renderData.anchorPath);
+                    Check("renderData.shaderDefName", original.renderData.shaderDefName, loadedEquip.renderData.shaderDefName);
+                    if (System.Math.Abs(original.renderData.drawOrder - loadedEquip.renderData.drawOrder) > 0.01f)
+                    {
+                        Log.Warning($"[CharacterStudio] 装备验证字段不匹配: renderData.drawOrder ({original.renderData.drawOrder} vs {loadedEquip.renderData.drawOrder})");
+                        errors++;
+                    }
+                    if (original.renderData.colorSource != loadedEquip.renderData.colorSource)
+                    {
+                        Log.Warning($"[CharacterStudio] 装备验证字段不匹配: renderData.colorSource ({original.renderData.colorSource} vs {loadedEquip.renderData.colorSource})");
+                        errors++;
+                    }
+                }
+
+                if (errors == 0)
+                {
+                    Log.Message("[CharacterStudio] ✅ 装备定义 XML 往返验证通过：所有字段正确序列化/反序列化");
+                }
+                else
+                {
+                    Log.Warning($"[CharacterStudio] ⚠️ 装备定义 XML 往返验证完成，发现 {errors} 个字段不匹配");
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Log.Error($"[CharacterStudio] 装备验证异常：{ex}");
+            }
+            finally
+            {
+                try
+                {
+                    string tempFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "CS_Test_EquipmentRoundtrip.xml");
+                    if (System.IO.File.Exists(tempFile))
+                        System.IO.File.Delete(tempFile);
+                }
+                catch { }
             }
         }
     }

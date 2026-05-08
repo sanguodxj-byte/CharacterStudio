@@ -10,6 +10,7 @@
 // ─────────────────────────────────────────────
 
 using System.Collections.Generic;
+using CharacterStudio.Exporter;
 using Verse;
 
 namespace CharacterStudio.Abilities
@@ -37,8 +38,11 @@ namespace CharacterStudio.Abilities
         public float radius = 0f;
         public ThingDef? projectileDef;
 
+        [XmlExportField(Ignore = true)]
         public List<AbilityEffectConfig> effects = new List<AbilityEffectConfig>();
+        [XmlExportField(Ignore = true)]
         public List<AbilityVisualEffectConfig> visualEffects = new List<AbilityVisualEffectConfig>();
+        [XmlExportField(Ignore = true)]
         public List<AbilityRuntimeComponentConfig> runtimeComponents = new List<AbilityRuntimeComponentConfig>();
 
         public void ExposeData()

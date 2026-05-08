@@ -1,4 +1,4 @@
-// ─────────────────────────────────────────────
+﻿// ─────────────────────────────────────────────
 // 视觉特效配置（VFX 类型、位置、朝向、Shader 等）
 // 从 ModularAbilityDef.cs 提取
 // ─────────────────────────────────────────────
@@ -225,7 +225,8 @@ namespace CharacterStudio.Abilities
         public bool RequiresTexturePath => UsesCustomTextureType || type == AbilityVisualEffectType.LineTexture || type == AbilityVisualEffectType.WallTexture;
         public bool UsesFrameAnimation => enableFrameAnimation && frameCount > 1 && UsesCustomTextureType;
 
-        public void NormalizeLegacyData()
+        /// <summary>规范化枚举值和派生字段，确保数据一致性。</summary>
+        public void NormalizeFieldConsistency()
         {
             if (!System.Enum.IsDefined(typeof(AbilityVisualSpatialMode), spatialMode))
             {
@@ -332,7 +333,8 @@ namespace CharacterStudio.Abilities
             }
         }
 
-        public void SyncLegacyFields()
+        /// <summary>同步冗余字段的派生值（sourceMode/useCasterFacing）。</summary>
+        public void SyncDerivedFields()
         {
             sourceMode = type switch
             {
@@ -347,7 +349,7 @@ namespace CharacterStudio.Abilities
         public AbilityVisualEffectConfig Clone()
         {
             AbilityVisualEffectConfig clone = (AbilityVisualEffectConfig)MemberwiseClone();
-            clone.SyncLegacyFields();
+            clone.SyncDerivedFields();
             return clone;
         }
 
@@ -356,7 +358,7 @@ namespace CharacterStudio.Abilities
             presetDefName = AbilityEditorNormalizationUtility.TrimOrEmpty(presetDefName);
             customTexturePath = AbilityEditorNormalizationUtility.TrimOrEmpty(customTexturePath);
             soundDefName = AbilityEditorNormalizationUtility.TrimOrEmpty(soundDefName);
-            NormalizeLegacyData();
+            NormalizeFieldConsistency();
             if (!Enum.IsDefined(typeof(AbilityVisualEffectTrigger), trigger))
             {
                 trigger = AbilityVisualEffectTrigger.OnTargetApply;
@@ -384,7 +386,7 @@ namespace CharacterStudio.Abilities
             soundVolume = AbilityEditorNormalizationUtility.ClampFloat(soundVolume, 0f, 4f);
             soundPitch = AbilityEditorNormalizationUtility.ClampFloat(soundPitch, 0.25f, 3f);
             vfxSourceLayerName = AbilityEditorNormalizationUtility.TrimOrEmpty(vfxSourceLayerName);
-            SyncLegacyFields();
+            SyncDerivedFields();
             frameCount = AbilityEditorNormalizationUtility.ClampInt(frameCount, 2, 120);
             frameIntervalTicks = AbilityEditorNormalizationUtility.ClampInt(frameIntervalTicks, 1, 60000);
         }

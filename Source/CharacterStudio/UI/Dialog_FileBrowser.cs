@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using CharacterStudio.Exporter;
 using CharacterStudio.Rendering;
 using UnityEngine;
 using Verse;
@@ -15,8 +16,10 @@ namespace CharacterStudio.UI
         private const float SearchHeight = 24f;
         private const float SectionGap = 10f;
         private const float HoverPreviewSize = 300f;
-        private const float EntryHeight = 72f;
-        private const float ThumbnailSize = 56f;
+        private const float EntryHeightStandard = 72f;
+        private const float ThumbnailSizeStandard = 56f;
+        private const float EntryHeightCompact = 40f;
+        private const float ThumbnailSizeCompact = 28f;
         private const float EntryPadding = 8f;
         private const float BorderThickness = 1f;
 
@@ -40,6 +43,8 @@ namespace CharacterStudio.UI
         private readonly HashSet<string> queuedThumbnailLoads = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         private string currentPath;
+        private string pendingPathInput = "";
+        private bool pathFieldFocused;
         private readonly Action<string>? onFileSelected;
         private readonly string filter;
         private Vector2 scrollPos;
@@ -50,6 +55,10 @@ namespace CharacterStudio.UI
         private readonly bool multiSelect;
         private readonly Action<List<string>>? onFilesSelected;
         private readonly HashSet<string> multiSelectedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        private bool compactMode;
+        private float EntryHeight => compactMode ? EntryHeightCompact : EntryHeightStandard;
+        private float ThumbnailSize => compactMode ? ThumbnailSizeCompact : ThumbnailSizeStandard;
 
         private readonly bool folderSelect;
         private readonly Action<string>? onFolderSelected;
@@ -257,6 +266,7 @@ namespace CharacterStudio.UI
 
             DrawNavigationBar(inRect, ref y);
             DrawSearchBar(inRect, ref y);
+            DrawBreadcrumbBar(inRect, ref y);
             DrawBody(inRect, y);
             DrawHoverPreviewOverlay(inRect);
         }
@@ -264,19 +274,35 @@ namespace CharacterStudio.UI
         private void DrawNavigationBar(Rect inRect, ref float y)
         {
             Rect upButtonRect = new Rect(0f, y, 78f, 26f);
-            if (DrawBrowserButton(upButtonRect, "CS_Studio_Browser_Up".Translate(), accent: true))
+            if (UIHelper.DrawToolbarButton(upButtonRect, "CS_Studio_Browser_Up".Translate(), accent: true))
             {
                 DirectoryInfo parent = Directory.GetParent(currentPath);
                 if (parent != null)
                 {
                     currentPath = parent.FullName;
+                    pendingPathInput = currentPath;
                     searchText = "";
                     scrollPos = Vector2.zero;
                     RefreshFileList();
                 }
             }
 
-            Rect pathRect = new Rect(upButtonRect.xMax + 8f, y, inRect.width - upButtonRect.width - 8f, 42f);
+            // 确认导航按钮
+            float goBtnWidth = 36f;
+            Rect goBtnRect = new Rect(upButtonRect.xMax + 4f, y, goBtnWidth, 26f);
+            if (UIHelper.DrawToolbarButton(goBtnRect, "CS_Studio_Browser_Go".Translate(), accent: true))
+            {
+                string target = pendingPathInput.Trim();
+                if (Directory.Exists(target))
+                {
+                    currentPath = target;
+                    searchText = "";
+                    scrollPos = Vector2.zero;
+                    RefreshFileList();
+                }
+            }
+
+            Rect pathRect = new Rect(goBtnRect.xMax + 8f, y, inRect.width - goBtnRect.xMax - 8f, 42f);
             Widgets.DrawBoxSolid(pathRect, UIHelper.PanelFillSoftColor);
             Widgets.DrawBoxSolid(new Rect(pathRect.x, pathRect.yMax - 2f, pathRect.width, 2f), UIHelper.AccentSoftColor);
             GUI.color = UIHelper.BorderColor;
@@ -285,13 +311,160 @@ namespace CharacterStudio.UI
 
             GameFont oldFont = Text.Font;
             Text.Font = GameFont.Tiny;
-            GUI.color = UIHelper.SubtleColor;
-            Widgets.Label(pathRect.ContractedBy(6f), currentPath);
+
+            // 可编辑路径文本框
+            Rect pathFieldRect = pathRect.ContractedBy(6f);
+            if (!pathFieldFocused)
+                pendingPathInput = currentPath;
+
+            int prevKbControl = GUIUtility.keyboardControl;
+            GUI.SetNextControlName("FilePathField");
+            string newPath = Widgets.TextField(pathFieldRect, pendingPathInput);
+            pendingPathInput = newPath;
+
+            // 通过 keyboardControl 变化检测焦点
+            int curKbControl = GUIUtility.keyboardControl;
+            if (curKbControl != prevKbControl)
+            {
+                // 用户点击了路径框，获得了焦点
+                pathFieldFocused = true;
+            }
+
+            // 按 Enter 确认导航
+            if (pathFieldFocused && Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Return)
+            {
+                Event.current.Use();
+                string target = pendingPathInput.Trim();
+                if (Directory.Exists(target) && !string.Equals(target, currentPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    currentPath = target;
+                    searchText = "";
+                    scrollPos = Vector2.zero;
+                    RefreshFileList();
+                }
+                else if (!Directory.Exists(target))
+                {
+                    pendingPathInput = currentPath;
+                }
+                GUI.FocusControl(null);
+                pathFieldFocused = false;
+            }
+
+            // 按 Escape 取消编辑
+            if (pathFieldFocused && Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape)
+            {
+                Event.current.Use();
+                pendingPathInput = currentPath;
+                GUI.FocusControl(null);
+                pathFieldFocused = false;
+            }
+
+            // 点击路径框外部 → 失去焦点时尝试导航
+            if (pathFieldFocused && Event.current.type == EventType.MouseDown && !pathFieldRect.Contains(Event.current.mousePosition))
+            {
+                string target = pendingPathInput.Trim();
+                if (Directory.Exists(target) && !string.Equals(target, currentPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    currentPath = target;
+                    searchText = "";
+                    scrollPos = Vector2.zero;
+                    RefreshFileList();
+                }
+                else
+                {
+                    pendingPathInput = currentPath;
+                }
+                pathFieldFocused = false;
+            }
+
             GUI.color = Color.white;
             Text.Font = oldFont;
             TooltipHandler.TipRegion(pathRect, currentPath);
 
             y += 48f;
+        }
+
+        private void DrawBreadcrumbBar(Rect inRect, ref float y)
+        {
+            // 解析当前路径为段
+            string path = currentPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            string root = Path.GetPathRoot(path) ?? "";
+            string relative = path.Length > root.Length ? path.Substring(root.Length) : "";
+            var segments = new List<string>();
+            if (!string.IsNullOrWhiteSpace(root))
+                segments.Add(root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+            foreach (string part in relative.Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries))
+                segments.Add(part);
+
+            // 绘制面包屑按钮
+            GameFont prevFont = Text.Font;
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.MiddleLeft;
+
+            float breadcrumbHeight = 22f;
+            float bx = 2f;
+            string accumulated = "";
+
+            for (int i = 0; i < segments.Count; i++)
+            {
+                string seg = segments[i];
+                accumulated = i == 0 ? seg : Path.Combine(accumulated, seg);
+                string targetPath = accumulated;
+
+                float segWidth = Text.CalcSize(seg).x + 16f;
+                if (bx + segWidth > inRect.width - 16f)
+                {
+                    // 空间不够，用 "..." 表示
+                    segWidth = Text.CalcSize("...").x + 16f;
+                    if (bx + segWidth > inRect.width - 16f) break;
+                    GUI.color = UIHelper.SubtleColor;
+                    Widgets.Label(new Rect(bx, y + 3f, segWidth, breadcrumbHeight), "...");
+                    bx += segWidth;
+                    break;
+                }
+
+                Rect segRect = new Rect(bx, y + 1f, segWidth, breadcrumbHeight);
+                bool isLast = (i == segments.Count - 1);
+                if (isLast)
+                {
+                    GUI.color = UIHelper.HeaderColor;
+                }
+                else
+                {
+                    GUI.color = UIHelper.SubtleColor;
+                    if (Mouse.IsOver(segRect))
+                        GUI.color = UIHelper.AccentColor;
+                }
+
+                if (Widgets.ButtonInvisible(segRect))
+                {
+                    if (Directory.Exists(targetPath))
+                    {
+                        currentPath = targetPath;
+                        pendingPathInput = targetPath;
+                        searchText = "";
+                        scrollPos = Vector2.zero;
+                        RefreshFileList();
+                        break;
+                    }
+                }
+                Widgets.Label(segRect, seg);
+                bx += segWidth;
+
+                // 分隔符 " > "
+                if (!isLast)
+                {
+                    float sepWidth = Text.CalcSize(" > ").x;
+                    GUI.color = UIHelper.SubtleColor;
+                    Widgets.Label(new Rect(bx, y + 3f, sepWidth, breadcrumbHeight), " > ");
+                    bx += sepWidth;
+                }
+            }
+
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = prevFont;
+            y += breadcrumbHeight + 2f;
         }
 
         private void DrawSearchBar(Rect inRect, ref float y)
@@ -306,11 +479,12 @@ namespace CharacterStudio.UI
             Rect inner = searchRect.ContractedBy(4f);
             float modsBtnWidth = 64f;
             float texturesBtnWidth = 80f;
+            float defsBtnWidth = 48f;
             float btnGap = 6f;
             
             // Mods 快速访问按钮
             Rect modsBtnRect = new Rect(inner.x, inner.y, modsBtnWidth, inner.height);
-            if (DrawBrowserButton(modsBtnRect, "Mods", accent: true))
+            if (UIHelper.DrawToolbarButton(modsBtnRect, "Mods", accent: true))
             {
                 currentPath = GenFilePaths.ModsFolderPath;
                 searchText = "";
@@ -319,26 +493,48 @@ namespace CharacterStudio.UI
             }
             TooltipHandler.TipRegion(modsBtnRect, "CS_Studio_Browser_ModsDir".Translate());
 
-            // Textures 快速访问按钮 — 跳转到 CharacterStudio 的 Textures 目录
+            // Textures 快速访问按钮 — 跳转到用户纹理子 mod 的 Textures 目录
             Rect texturesBtnRect = new Rect(modsBtnRect.xMax + btnGap, inner.y, texturesBtnWidth, inner.height);
-            if (DrawBrowserButton(texturesBtnRect, "Textures", accent: true))
+            if (UIHelper.DrawToolbarButton(texturesBtnRect, "Textures", accent: true))
             {
-                var modContent = CharacterStudioMod.ModContent;
-                if (modContent != null)
-                {
-                    string texDir = Path.Combine(modContent.RootDir, "Textures");
-                    try { Directory.CreateDirectory(texDir); } catch { }
-                    currentPath = texDir;
-                    searchText = "";
-                    scrollPos = Vector2.zero;
-                    RefreshFileList();
-                }
+                string texDir = Path.Combine(TextureInternalizer.GetUserTexturesModPath(), "Textures");
+                try { Directory.CreateDirectory(texDir); } catch { }
+                currentPath = texDir;
+                searchText = "";
+                scrollPos = Vector2.zero;
+                RefreshFileList();
             }
             TooltipHandler.TipRegion(texturesBtnRect, "CS_Studio_Browser_TexturesDir".Translate());
 
+            // Defs 快速访问按钮 — 跳转到用户纹理子 mod 的 defs 目录
+            Rect defsBtnRect = new Rect(texturesBtnRect.xMax + btnGap, inner.y, defsBtnWidth, inner.height);
+            if (UIHelper.DrawToolbarButton(defsBtnRect, "Defs", accent: true))
+            {
+                string defsDir = TextureInternalizer.GetDefsDir();
+                try { Directory.CreateDirectory(defsDir); } catch { }
+                currentPath = defsDir;
+                searchText = "";
+                scrollPos = Vector2.zero;
+                RefreshFileList();
+            }
+            TooltipHandler.TipRegion(defsBtnRect, "CS_Studio_Browser_DefsDir".Translate());
+
+            // 紧凑模式切换按钮
+            float compactBtnWidth = 28f;
+            Rect compactBtnRect = new Rect(defsBtnRect.xMax + btnGap, inner.y, compactBtnWidth, inner.height);
+            string compactLabel = compactMode ? "=" : "≡";
+            string compactTip = compactMode ? "CS_Studio_Browser_StandardView".Translate() : "CS_Studio_Browser_CompactView".Translate();
+            if (UIHelper.DrawToolbarButton(compactBtnRect, compactLabel, accent: compactMode))
+            {
+                compactMode = !compactMode;
+            }
+            TooltipHandler.TipRegion(compactBtnRect, compactTip);
+
             // 搜索输入框
-            Rect searchInnerRect = new Rect(texturesBtnRect.xMax + 8f, inner.y, inner.width - texturesBtnRect.xMax - 8f + inner.x, inner.height);
-            searchText = Widgets.TextEntryLabeled(searchInnerRect, "CS_Studio_Browser_Search".Translate() + " ", searchText);
+            float searchLabelWidth = Text.CalcSize("CS_Studio_Browser_Search".Translate()).x + 4f;
+            Rect searchInnerRect = new Rect(compactBtnRect.xMax + 8f, inner.y, inner.width - compactBtnRect.xMax - 8f + inner.x, inner.height);
+            Widgets.Label(new Rect(searchInnerRect.x, searchInnerRect.y, searchLabelWidth, searchInnerRect.height), "CS_Studio_Browser_Search".Translate());
+            searchText = Widgets.TextField(new Rect(searchInnerRect.x + searchLabelWidth, searchInnerRect.y, searchInnerRect.width - searchLabelWidth, searchInnerRect.height), searchText);
             y += searchRect.height + SectionGap;
         }
 
@@ -357,7 +553,7 @@ namespace CharacterStudio.UI
                     Close();
                 }
                 Text.Anchor = TextAnchor.MiddleLeft;
-                Widgets.Label(new Rect(bottomBar.x, bottomBar.y, bottomBar.width - 130f, 40f), "已选择 {0} 个文件".Formatted(multiSelectedPaths.Count));
+                Widgets.Label(new Rect(bottomBar.x, bottomBar.y, bottomBar.width - 130f, 40f), "CS_Studio_Browser_SelectedCount".Translate(multiSelectedPaths.Count));
                 Text.Anchor = TextAnchor.UpperLeft;
             }
             else if (folderSelect)
@@ -447,21 +643,35 @@ namespace CharacterStudio.UI
             Rect thumbRect = new Rect(entryRect.x + EntryPadding, entryRect.y + (EntryHeight - ThumbnailSize) / 2f, ThumbnailSize, ThumbnailSize);
             DrawEntryThumbnail(item, thumbRect);
 
-            float textX = thumbRect.xMax + 10f;
+            float textX = thumbRect.xMax + 8f;
             float textWidth = Mathf.Max(40f, entryRect.width - textX - EntryPadding - 20f);
 
             Text.Anchor = TextAnchor.UpperLeft;
             GUI.color = isSelected ? Color.white : UIHelper.HeaderColor;
-            Widgets.Label(new Rect(textX, entryRect.y + 8f, textWidth, 24f), item.Name);
+            float nameY = compactMode ? entryRect.y + (entryRect.height - 16f) / 2f : entryRect.y + 8f;
+            Widgets.Label(new Rect(textX, nameY, textWidth, compactMode ? 18f : 24f), item.Name);
 
-            Text.Font = GameFont.Tiny;
-            GUI.color = isSelected ? new Color(1f, 1f, 1f, 0.82f) : UIHelper.SubtleColor;
-            Widgets.Label(new Rect(textX, entryRect.y + 34f, textWidth, 18f), GetMetadataLabel(item));
+            if (!compactMode)
+            {
+                Text.Font = GameFont.Tiny;
+                GUI.color = isSelected ? new Color(1f, 1f, 1f, 0.82f) : UIHelper.SubtleColor;
+                Widgets.Label(new Rect(textX, entryRect.y + 34f, textWidth, 18f), GetMetadataLabel(item));
+            }
+            else
+            {
+                // 紧凑模式：元数据显示在文件名右侧
+                Text.Font = GameFont.Tiny;
+                GUI.color = isSelected ? new Color(1f, 1f, 1f, 0.82f) : UIHelper.SubtleColor;
+                float nameActualWidth = Text.CalcSize(item.Name).x;
+                float metaX = textX + nameActualWidth + 12f;
+                if (metaX + 80f < textX + textWidth)
+                    Widgets.Label(new Rect(metaX, nameY, textWidth - nameActualWidth - 12f, 18f), GetMetadataLabel(item));
+            }
             GUI.color = Color.white;
             Text.Font = GameFont.Small;
             Text.Anchor = TextAnchor.UpperLeft;
 
-            if (isHovered && item is FileInfo)
+            if (!compactMode && isHovered && item is FileInfo)
             {
                 Rect hoverHintRect = new Rect(entryRect.xMax - 20f, entryRect.y + 8f, 14f, 14f);
                 Text.Font = GameFont.Tiny;
@@ -628,7 +838,7 @@ namespace CharacterStudio.UI
         {
             if (item is DirectoryInfo)
             {
-                return "文件夹";
+                return "CS_Studio_Browser_Folder".Translate();
             }
 
             if (item is FileInfo file)
@@ -636,11 +846,13 @@ namespace CharacterStudio.UI
                 return $"{file.Extension.ToUpperInvariant()}  ·  {FormatFileSize(file.Length)}";
             }
 
-            return "文件";
+            return "CS_Studio_Browser_File".Translate();
         }
 
         private void DrawHoverPreviewOverlay(Rect inRect)
         {
+            if (compactMode) return;
+
             FileSystemInfo? hoveredItem = ResolveHoveredItem();
             if (hoveredItem == null || hoveredItem is DirectoryInfo)
             {
@@ -704,26 +916,6 @@ namespace CharacterStudio.UI
             GUI.color = UIHelper.BorderColor;
             Widgets.DrawBox(rect, 1);
             GUI.color = Color.white;
-        }
-
-        private static bool DrawBrowserButton(Rect rect, string label, bool accent = false)
-        {
-            Widgets.DrawBoxSolid(rect, accent ? UIHelper.ActiveTabColor : UIHelper.PanelFillSoftColor);
-            Widgets.DrawBoxSolid(new Rect(rect.x, rect.yMax - 2f, rect.width, 2f), accent ? UIHelper.AccentColor : UIHelper.AccentSoftColor);
-            GUI.color = Mouse.IsOver(rect) ? UIHelper.HoverOutlineColor : UIHelper.BorderColor;
-            Widgets.DrawBox(rect, 1);
-            GUI.color = Color.white;
-
-            GameFont oldFont = Text.Font;
-            Text.Font = GameFont.Tiny;
-            Text.Anchor = TextAnchor.MiddleCenter;
-            GUI.color = accent ? Color.white : UIHelper.HeaderColor;
-            Widgets.Label(rect, label);
-            GUI.color = Color.white;
-            Text.Anchor = TextAnchor.UpperLeft;
-            Text.Font = oldFont;
-
-            return Widgets.ButtonInvisible(rect);
         }
 
         private static string FormatFileSize(long byteCount)

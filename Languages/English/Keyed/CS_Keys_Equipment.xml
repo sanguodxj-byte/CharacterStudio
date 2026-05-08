@@ -86,6 +86,26 @@
     <CS_Studio_Equip_Section_VisualBase>Equipment / Visual Base</CS_Studio_Equip_Section_VisualBase>
     <CS_Studio_Equip_Section_VisualTransform>Equipment / Visual Transform</CS_Studio_Equip_Section_VisualTransform>
     <CS_Studio_Equip_Section_VisualVariants>Equipment / Visual Variants</CS_Studio_Equip_Section_VisualVariants>
+    <CS_Studio_Equip_TemplateMode>Template Mode</CS_Studio_Equip_TemplateMode>
+    <CS_Studio_Equip_TemplateMode_Tip>Template mode: Inherits CS abstract base class, simplified panel. Base class provides smeltable etc.\nFull mode: Inherits RimWorld vanilla base class, all fields expanded.</CS_Studio_Equip_TemplateMode_Tip>
+    <CS_Studio_Equip_Section_ExtraFields>Extra Fields / Field Extender</CS_Studio_Equip_Section_ExtraFields>
+    <CS_Studio_Equip_AddExtraField>Add Field</CS_Studio_Equip_AddExtraField>
+    <CS_Studio_Equip_ExtraFieldBrowser_Title>Field Catalog Browser</CS_Studio_Equip_ExtraFieldBrowser_Title>
+    <CS_Studio_Equip_ExtraFieldBrowser_Search_Tip>Type CN/EN to search field names</CS_Studio_Equip_ExtraFieldBrowser_Search_Tip>
+    <CS_Field_Value>Value</CS_Field_Value>
+    <CS_Studio_Search>Search</CS_Studio_Search>
+    <CS_Studio_Add>Add</CS_Studio_Add>
+    <CS_Field_StatDef>Stat Def</CS_Field_StatDef>
+    <CS_Field_StatValue>Value</CS_Field_StatValue>
+    <CS_Field_StatValue_Tip>Stat value</CS_Field_StatValue_Tip>
+    <CS_Field_SkillDef>Skill Def</CS_Field_SkillDef>
+    <CS_Field_SkillLevel>Skill Level</CS_Field_SkillLevel>
+    <CS_Field_SkillLevel_Tip>Required skill level (0-20)</CS_Field_SkillLevel_Tip>
+    <CS_Field_DamageDef>Damage Def</CS_Field_DamageDef>
+    <CS_Field_Multiplier>Multiplier</CS_Field_Multiplier>
+    <CS_Field_Multiplier_Tip>Damage multiplier (0-10)</CS_Field_Multiplier_Tip>
+    <CS_Field_ThingDef>Thing Def</CS_Field_ThingDef>
+    <CS_Field_Count>Count</CS_Field_Count>
     <CS_Studio_Equip_SelectEntry>Select an equipment entry to edit.</CS_Studio_Equip_SelectEntry>
     <CS_Studio_Equip_SelectHint>Select an equipment entry to edit full properties in the right panel.</CS_Studio_Equip_SelectHint>
     <CS_Studio_Equip_Shader_Cutout>Cutout</CS_Studio_Equip_Shader_Cutout>
@@ -157,4 +177,233 @@
     <CS_Studio_Equip_SwingPreset_Block>Block / Shield Raise</CS_Studio_Equip_SwingPreset_Block>
     <CS_Studio_Equip_SelectThingDef>Select ThingDef</CS_Studio_Equip_SelectThingDef>
     <CS_Studio_Equip_SelectRecipeDef>Select RecipeDef</CS_Studio_Equip_SelectRecipeDef>
+    <CS_Studio_Equip_Section_ItemsBase>Basic Information</CS_Studio_Equip_Section_ItemsBase>
+    <CS_Studio_Equip_Section_ItemsGraphic>Graphics &amp; References</CS_Studio_Equip_Section_ItemsGraphic>
+    <CS_Studio_Equip_Section_ItemsStats>Stats</CS_Studio_Equip_Section_ItemsStats>
+    <CS_Studio_Equip_Section_ItemsApparel>Apparel Properties</CS_Studio_Equip_Section_ItemsApparel>
+    <CS_Studio_Equip_Section_ItemsWeapon>Weapon Properties</CS_Studio_Equip_Section_ItemsWeapon>
+    <CS_Studio_Equip_Section_ItemsRecipe>Crafting &amp; Cost</CS_Studio_Equip_Section_ItemsRecipe>
+    <CS_Studio_Equip_Section_ItemsMeta>Extensions</CS_Studio_Equip_Section_ItemsMeta>
+    <CS_Studio_Equip_Section_ThingDefCore>ThingDef Core</CS_Studio_Equip_Section_ThingDefCore>
+    <CS_Studio_Equip_Section_StuffAndCost>Stuff &amp; Cost</CS_Studio_Equip_Section_StuffAndCost>
+    <CS_Studio_Equip_Section_RecipeMaker>Recipe Maker</CS_Studio_Equip_Section_RecipeMaker>
+    <CS_Studio_Equip_Section_ApparelAdvanced>Apparel Advanced</CS_Studio_Equip_Section_ApparelAdvanced>
+    <CS_Studio_Equip_Section_RawXml>Raw XML (comps/verbs/tools)</CS_Studio_Equip_Section_RawXml>
+    <CS_Studio_Equip_Description>Description</CS_Studio_Equip_Description>
+    <CS_Studio_Equip_TriggeredAnimation_DeployOffsetX>Deploy Offset X</CS_Studio_Equip_TriggeredAnimation_DeployOffsetX>
+    <CS_Studio_Equip_TriggeredAnimation_DeployOffsetY>Deploy Offset Y</CS_Studio_Equip_TriggeredAnimation_DeployOffsetY>
+    <CS_Studio_Equip_TriggeredAnimation_DeployOffsetZ>Deploy Offset Z</CS_Studio_Equip_TriggeredAnimation_DeployOffsetZ>
+    <CS_Studio_Equip_StatBases>Stat Bases</CS_Studio_Equip_StatBases>
+    <CS_Studio_Equip_StatBases_Tip>[Optional] Format: StatDef:Value, comma-separated for multiple</CS_Studio_Equip_StatBases_Tip>
+    <CS_Studio_Equip_EquippedStatOffsets>Equipped Stat Offsets</CS_Studio_Equip_EquippedStatOffsets>
+    <CS_Studio_Equip_StatOffsets_Tip>[Optional] Format: StatDef:Value, comma-separated for multiple</CS_Studio_Equip_StatOffsets_Tip>
+    <CS_Studio_Equip_EquippedAngleOffset>Equipped Angle Offset</CS_Studio_Equip_EquippedAngleOffset>
+    <CS_Studio_Equip_CostStuffCount>Stuff Cost Count</CS_Studio_Equip_CostStuffCount>
+    <CS_Studio_Equip_CostList>Cost List</CS_Studio_Equip_CostList>
+    <CS_Studio_Equip_CostList_Tip>[Optional] Format: ThingDef:Count, comma-separated for multiple</CS_Studio_Equip_CostList_Tip>
+    <CS_Studio_Equip_StuffCategories>Stuff Categories</CS_Studio_Equip_StuffCategories>
+    <CS_Studio_Equip_StuffCategories_Tip>[Optional] Stuff categories, e.g. Metallic, Leathery, Fabric. Comma-separated.</CS_Studio_Equip_StuffCategories_Tip>
+    <CS_Studio_Equip_FlyerThingDefName>Flyer ThingDef</CS_Studio_Equip_FlyerThingDefName>
+    <CS_Studio_Equip_FlyerThingDefName_Tip>[Optional] Flyer ThingDef defName. Leave empty to not spawn a flyer.</CS_Studio_Equip_FlyerThingDefName_Tip>
+    <CS_Studio_Equip_FlyerClassName>Flyer Class</CS_Studio_Equip_FlyerClassName>
+    <CS_Studio_Equip_FlyerClassName_Tip>[Optional] Full type name for the flyer thingClass.</CS_Studio_Equip_FlyerClassName_Tip>
+    <CS_Studio_Equip_FlyerFlightSpeed>Flight Speed</CS_Studio_Equip_FlyerFlightSpeed>
+    <CS_Studio_Equip_TechLevel>Tech Level</CS_Studio_Equip_TechLevel>
+    <CS_Studio_Equip_StackLimit>Stack Limit</CS_Studio_Equip_StackLimit>
+    <CS_Studio_Equip_DestroyOnDrop>Destroy On Drop</CS_Studio_Equip_DestroyOnDrop>
+    <CS_Studio_UI_ListEmpty>List is empty</CS_Studio_UI_ListEmpty>
+    <CS_Studio_UI_ListEmptyHint>Click 'Add' below to start entering data</CS_Studio_UI_ListEmptyHint>
+    <CS_Studio_AddTag>Add Tag</CS_Studio_AddTag>
+    <!-- ThingDef field labels -->
+    <CS_Field_Description>Description</CS_Field_Description>
+    <CS_Field_ThingClass>Custom Class</CS_Field_ThingClass>
+    <CS_Field_TechLevel>Tech Level</CS_Field_TechLevel>
+    <CS_Field_AltitudeLayer>Altitude Layer</CS_Field_AltitudeLayer>
+    <CS_Field_TickerType>Ticker Type</CS_Field_TickerType>
+    <CS_Field_PathCost>Path Cost</CS_Field_PathCost>
+    <CS_Field_UseHitPoints>Use Hit Points</CS_Field_UseHitPoints>
+    <CS_Field_Smeltable>Smeltable</CS_Field_Smeltable>
+    <CS_Field_Rotatable>Rotatable</CS_Field_Rotatable>
+    <CS_Field_DrawSize>Draw Size</CS_Field_DrawSize>
+    <CS_Field_RandomRotateAngle>Random Rotate Angle</CS_Field_RandomRotateAngle>
+    <CS_Field_StatBases>Stat Bases</CS_Field_StatBases>
+    <CS_Field_EquippedStatOffsets>Equipped Stat Offsets</CS_Field_EquippedStatOffsets>
+    <CS_Field_StuffCategories>Stuff Categories</CS_Field_StuffCategories>
+    <CS_Field_CostStuffCount>Stuff Cost Count</CS_Field_CostStuffCount>
+    <CS_Field_CostList>Cost List</CS_Field_CostList>
+    <CS_Field_ResearchPrerequisite>Research Prerequisite</CS_Field_ResearchPrerequisite>
+    <CS_Field_SkillRequirements>Skill Requirements</CS_Field_SkillRequirements>
+    <CS_Field_EffectWorking>Effect Working</CS_Field_EffectWorking>
+    <CS_Field_SoundWorking>Sound Working</CS_Field_SoundWorking>
+    <CS_Field_RecipeUsers>Recipe Users</CS_Field_RecipeUsers>
+    <CS_Field_UnfinishedThingDef>Unfinished ThingDef</CS_Field_UnfinishedThingDef>
+    <CS_Field_WorkSkill>Work Skill</CS_Field_WorkSkill>
+    <CS_Field_WorkSpeedStat>Work Speed Stat</CS_Field_WorkSpeedStat>
+    <CS_Field_DisplayPriority>Display Priority</CS_Field_DisplayPriority>
+    <CS_Field_DevelopmentalStageFilter>Developmental Stage</CS_Field_DevelopmentalStageFilter>
+    <CS_Field_WearPerDay>Wear Per Day</CS_Field_WearPerDay>
+    <CS_Field_SoundWear>Sound Wear</CS_Field_SoundWear>
+    <CS_Field_SoundRemove>Sound Remove</CS_Field_SoundRemove>
+    <CS_Field_CareIfDamaged>Care If Damaged</CS_Field_CareIfDamaged>
+    <CS_Field_UseDeflectMetalEffect>Use Deflect Metal Effect</CS_Field_UseDeflectMetalEffect>
+    <CS_Field_SlaveApparel>Slave Apparel</CS_Field_SlaveApparel>
+    <CS_Field_BlocksVision>Blocks Vision</CS_Field_BlocksVision>
+    <CS_Field_RenderSkipFlags>Render Skip Flags</CS_Field_RenderSkipFlags>
+    <CS_Field_DrawData>Draw Data (drawData)</CS_Field_DrawData>
+    <CS_Field_RawXml>Advanced XML (comps/verbs/tools)</CS_Field_RawXml>
+    <CS_Field_RawXml_Tip>[Optional] Format: [tagName] newline XML content newline --- newline [tagName] newline ...</CS_Field_RawXml_Tip>
+    <!-- Building/Turret section titles -->
+    <CS_Studio_Equip_Section_Building>Building</CS_Studio_Equip_Section_Building>
+    <CS_Studio_Equip_Section_Turret>Turret</CS_Studio_Equip_Section_Turret>
+    <!-- Building field labels -->
+    <CS_Field_BuildingSize>Building Size</CS_Field_BuildingSize>
+    <CS_Field_Passability>Passability</CS_Field_Passability>
+    <CS_Field_FillPercent>Fill Percent</CS_Field_FillPercent>
+    <CS_Field_TerrainAffordance>Terrain Affordance</CS_Field_TerrainAffordance>
+    <CS_Field_BlockWind>Block Wind</CS_Field_BlockWind>
+    <CS_Field_CastEdgeShadows>Cast Edge Shadows</CS_Field_CastEdgeShadows>
+    <CS_Field_DrawerType>Drawer Type</CS_Field_DrawerType>
+    <CS_Field_CanOverlapZones>Can Overlap Zones</CS_Field_CanOverlapZones>
+    <CS_Field_HasInteractionCell>Has Interaction Cell</CS_Field_HasInteractionCell>
+    <CS_Field_InteractionCellOffset>Interaction Cell Offset</CS_Field_InteractionCellOffset>
+    <CS_Field_KilledLeavings>Killed Leavings</CS_Field_KilledLeavings>
+    <CS_Field_DamageMultipliers>Damage Multipliers</CS_Field_DamageMultipliers>
+    <CS_Field_DesignationCategory>Designation Category</CS_Field_DesignationCategory>
+    <CS_Field_BuildingTags>Building Tags</CS_Field_BuildingTags>
+    <CS_Field_CombatPower>Combat Power</CS_Field_CombatPower>
+    <CS_Field_RoofCollapseMult>Roof Collapse Damage Mult</CS_Field_RoofCollapseMult>
+    <CS_Field_DestroySound>Destroy Sound</CS_Field_DestroySound>
+    <!-- Turret field labels -->
+    <CS_Field_TurretGunDef>Turret Gun Def</CS_Field_TurretGunDef>
+    <CS_Field_TurretBurstWarmupTime>Burst Warmup Time</CS_Field_TurretBurstWarmupTime>
+    <CS_Field_TurretBurstCooldownTime>Burst Cooldown Time</CS_Field_TurretBurstCooldownTime>
+    <CS_Field_TurretInitialCooldownTime>Initial Cooldown Time</CS_Field_TurretInitialCooldownTime>
+    <CS_Field_IsMechClusterThreat>Mech Cluster Threat</CS_Field_IsMechClusterThreat>
+    <!-- Def Browser -->
+    <CS_Studio_Browser_TabMemory>In-Memory Defs</CS_Studio_Browser_TabMemory>
+    <CS_Studio_Browser_TabExternal>External XML Files</CS_Studio_Browser_TabExternal>
+    <CS_Studio_Browser_Browse>Browse...</CS_Studio_Browser_Browse>
+    <!-- Selector titles -->
+    <CS_Studio_Equip_SelectSoundDef>Select Sound Def</CS_Studio_Equip_SelectSoundDef>
+    <CS_Studio_Equip_SelectTerrainAffordance>Select Terrain Affordance</CS_Studio_Equip_SelectTerrainAffordance>
+    <CS_Studio_Equip_SelectDesignationCategory>Select Designation Category</CS_Studio_Equip_SelectDesignationCategory>
+    <CS_Studio_Equip_SelectDamageDef>Select Damage Def</CS_Studio_Equip_SelectDamageDef>
+    <CS_Studio_Equip_SelectTurretGunDef>Select Turret Gun Def</CS_Studio_Equip_SelectTurretGunDef>
+    <CS_Studio_Equip_SelectResearchProjectDef>Select Research Project</CS_Studio_Equip_SelectResearchProjectDef>
+    <CS_Studio_Equip_SelectEffecterDef>Select Effecter</CS_Studio_Equip_SelectEffecterDef>
+    <CS_Studio_Equip_SelectSkillDef>Select Work Skill</CS_Studio_Equip_SelectSkillDef>
+    <CS_Studio_Equip_SelectStatDef>Select Stat</CS_Studio_Equip_SelectStatDef>
+    <CS_Field_CareIfWornByCorpse>Care If Worn By Corpse</CS_Field_CareIfWornByCorpse>
+    <CS_Field_CountsAsClothing>Counts As Clothing</CS_Field_CountsAsClothing>
+    <CS_Field_CanBeDesiredForIdeo>Can Be Desired For Ideo</CS_Field_CanBeDesiredForIdeo>
+    <CS_Field_IgnoredByNonViolent>Ignored By Non-Violent</CS_Field_IgnoredByNonViolent>
+    <CS_Field_ApparelScoreOffset>Apparel Score Offset</CS_Field_ApparelScoreOffset>
+    <CS_Field_ApparelRenderSkipFlags>Render Skip Flags</CS_Field_ApparelRenderSkipFlags>
+    <CS_Field_CountsAsClothingForNudity>Counts As Clothing For Nudity</CS_Field_CountsAsClothingForNudity>
+    <CS_Field_RecipeResearchPrerequisite>Research Prerequisite</CS_Field_RecipeResearchPrerequisite>
+    <CS_Field_RecipeSkillRequirements>Skill Requirements</CS_Field_RecipeSkillRequirements>
+    <CS_Field_RecipeEffectWorking>Effect Working</CS_Field_RecipeEffectWorking>
+    <CS_Field_RecipeSoundWorking>Sound Working</CS_Field_RecipeSoundWorking>
+    <CS_Field_RecipeWorkSkill>Work Skill</CS_Field_RecipeWorkSkill>
+    <CS_Field_RecipeWorkSpeedStat>Work Speed Stat</CS_Field_RecipeWorkSpeedStat>
+    <!-- Tools section -->
+    <CS_Field_ToolLabel>Label</CS_Field_ToolLabel>
+    <CS_Field_ToolLabel_Tip>[Required] Display name of this attack (e.g. edge, point, handle)</CS_Field_ToolLabel_Tip>
+    <CS_Field_ToolCapacities>Capacities</CS_Field_ToolCapacities>
+    <CS_Field_ToolCapacities_Tip>[Required] Attack type, comma-separated. Common: Cut, Blunt, Stab, Poke</CS_Field_ToolCapacities_Tip>
+    <CS_Field_ToolPower>Power</CS_Field_ToolPower>
+    <CS_Field_ToolPower_Tip>[Required] Base damage of this attack</CS_Field_ToolPower_Tip>
+    <CS_Field_ToolCooldown>Cooldown</CS_Field_ToolCooldown>
+    <CS_Field_ToolCooldown_Tip>[Required] Cooldown time in seconds between attacks</CS_Field_ToolCooldown_Tip>
+    <CS_Field_ToolArmorPen>Armor Penetration</CS_Field_ToolArmorPen>
+    <CS_Field_ToolArmorPen_Tip>[Optional] Armor penetration ratio. -1 = not exported, 0 = no penetration</CS_Field_ToolArmorPen_Tip>
+    <CS_Field_ToolChanceFactor>Chance Factor</CS_Field_ToolChanceFactor>
+    <CS_Field_ToolChanceFactor_Tip>[Optional] Weight for this attack to be selected. -1 = not exported</CS_Field_ToolChanceFactor_Tip>
+    <CS_Section_Tools>Tools</CS_Section_Tools>
+    <CS_Section_Tools_Tip>[Optional] Attack actions of this weapon. Each tool defines one melee/ranged attack.</CS_Section_Tools_Tip>
+    <!-- Verbs section -->
+    <CS_Field_VerbProjectile>Projectile</CS_Field_VerbProjectile>
+    <CS_Field_VerbProjectile_Tip>[Required] ThingDef defName of the projectile to fire</CS_Field_VerbProjectile_Tip>
+    <CS_Field_VerbClass>Verb Class</CS_Field_VerbClass>
+    <CS_Field_VerbClass_Tip>[Optional] Verb class. Default: Verb_Shoot</CS_Field_VerbClass_Tip>
+    <CS_Field_VerbWarmup>Warmup Time</CS_Field_VerbWarmup>
+    <CS_Field_VerbWarmup_Tip>[Optional] Aim warmup time in seconds before firing</CS_Field_VerbWarmup_Tip>
+    <CS_Field_VerbRange>Range</CS_Field_VerbRange>
+    <CS_Field_VerbRange_Tip>[Optional] Maximum firing range in cells</CS_Field_VerbRange_Tip>
+    <CS_Field_VerbBurstCount>Burst Count</CS_Field_VerbBurstCount>
+    <CS_Field_VerbBurstCount_Tip>[Optional] Number of shots per burst. 0 = not exported, 1 = single shot</CS_Field_VerbBurstCount_Tip>
+    <CS_Field_VerbBurstDelay>Burst Delay</CS_Field_VerbBurstDelay>
+    <CS_Field_VerbBurstDelay_Tip>[Optional] Delay between shots in a burst (seconds)</CS_Field_VerbBurstDelay_Tip>
+    <CS_Field_VerbSoundCast>Sound Cast</CS_Field_VerbSoundCast>
+    <CS_Field_VerbSoundCast_Tip>[Optional] SoundDef defName played when firing</CS_Field_VerbSoundCast_Tip>
+    <CS_Field_VerbSoundTail>Sound Tail</CS_Field_VerbSoundTail>
+    <CS_Field_VerbSoundTail_Tip>[Optional] SoundDef defName for shot echo/tail sound</CS_Field_VerbSoundTail_Tip>
+    <CS_Field_VerbMuzzle>Muzzle Flash</CS_Field_VerbMuzzle>
+    <CS_Field_VerbMuzzle_Tip>[Optional] Muzzle flash visual scale. Default: 9</CS_Field_VerbMuzzle_Tip>
+    <CS_Section_Verbs>Verbs</CS_Section_Verbs>
+    <CS_Section_Verbs_Tip>[Optional] Ranged attack properties. Defines how the weapon fires projectiles.</CS_Section_Verbs_Tip>
+    <!-- ThingDef Core field tooltips -->
+    <CS_Field_Description_Tip>[Optional] Description text shown in the item info card</CS_Field_Description_Tip>
+    <CS_Field_ThingClass_Tip>[Optional] Custom ThingDef class. Leave empty for default. Example: Axolotl.ApparelWithOutColor</CS_Field_ThingClass_Tip>
+    <CS_Field_TechLevel_Tip>[Optional] Technology level. Affects research and trader categorization</CS_Field_TechLevel_Tip>
+    <CS_Field_AltitudeLayer_Tip>[Optional] Rendering altitude layer. Common: Item, Building, Mote</CS_Field_AltitudeLayer_Tip>
+    <CS_Field_TickerType_Tip>[Optional] Tick frequency. Common: Never, Normal, Rare</CS_Field_TickerType_Tip>
+    <CS_Field_DrawSize_Tip>[Optional] World icon draw size. Format: width,height (e.g. 1.5,1.5)</CS_Field_DrawSize_Tip>
+    <CS_Field_RandomRotateAngle_Tip>[Optional] Random rotation angle for ground items. 0 = no rotation</CS_Field_RandomRotateAngle_Tip>
+    <CS_Field_UseHitPoints_Tip>[Optional] Whether this item has hit points and can take damage</CS_Field_UseHitPoints_Tip>
+    <CS_Field_Smeltable_Tip>[Optional] Whether this item can be smelted at a smelter</CS_Field_Smeltable_Tip>
+    <CS_Field_PathCost_Tip>[Optional] Movement path cost. 0 = no extra cost</CS_Field_PathCost_Tip>
+    <CS_Field_StuffCategories_Tip>[Optional] Allowed material categories. Common: Fabric, Leathery, Metallic, Woody</CS_Field_StuffCategories_Tip>
+    <CS_Field_CostStuffCount_Tip>[Optional] Amount of stuff material required for crafting. 0 = not exported</CS_Field_CostStuffCount_Tip>
+    <CS_Field_CostList_Tip>[Optional] Fixed material costs. Format: ThingDef:Count, comma-separated</CS_Field_CostList_Tip>
+    <CS_Field_StatBases_Tip>[Optional] Base stats. Format: StatDef:Value, comma-separated. Common: Mass, WorkToMake, ArmorRating_Sharp</CS_Field_StatBases_Tip>
+    <CS_Field_EquippedStatOffsets_Tip>[Optional] Stat offsets when equipped. Format: StatDef:Value. Example: MoveSpeed:-0.2</CS_Field_EquippedStatOffsets_Tip>
+    <CS_Field_WearPerDay_Tip>[Optional] Daily wear rate. Higher = faster degradation. 0 = no wear</CS_Field_WearPerDay_Tip>
+    <CS_Field_CareIfDamaged_Tip>[Optional] Whether colonists care about this item being damaged</CS_Field_CareIfDamaged_Tip>
+    <CS_Field_CareIfWornByCorpse_Tip>[Optional] Whether colonists care about this item being worn by a corpse</CS_Field_CareIfWornByCorpse_Tip>
+    <CS_Field_CountsAsClothingForNudity_Tip>[Optional] Whether wearing this prevents the nudity debuff</CS_Field_CountsAsClothingForNudity_Tip>
+    <CS_Field_SlaveApparel_Tip>[Optional] Whether this is designated as slave apparel</CS_Field_SlaveApparel_Tip>
+    <CS_Field_CanBeDesiredForIdeo_Tip>[Optional] Whether this can be desired by an ideology</CS_Field_CanBeDesiredForIdeo_Tip>
+    <CS_Field_UseDeflectMetalEffect_Tip>[Optional] Show metal spark deflection visual when hit</CS_Field_UseDeflectMetalEffect_Tip>
+    <CS_Field_BlocksVision_Tip>[Optional] Whether wearing this blocks the pawn's vision</CS_Field_BlocksVision_Tip>
+    <CS_Field_IgnoredByNonViolent_Tip>[Optional] Whether non-violent pawns ignore this weapon</CS_Field_IgnoredByNonViolent_Tip>
+    <CS_Field_RenderSkipFlags_Tip>[Optional] Render skip flags, comma-separated. Controls when rendering is skipped</CS_Field_RenderSkipFlags_Tip>
+    <CS_Field_DevelopmentalStageFilter_Tip>[Optional] Allowed developmental stages. Common: Child, Adult</CS_Field_DevelopmentalStageFilter_Tip>
+    <CS_Field_ApparelScoreOffset_Tip>[Optional] Score offset for AI apparel selection. Higher = more likely to be worn</CS_Field_ApparelScoreOffset_Tip>
+    <CS_Field_DrawData_Tip>[Optional] RimWorld 1.6 native ApparelDrawData XML content</CS_Field_DrawData_Tip>
+    <CS_Field_RecipeUsers_Tip>[Optional] Additional crafting station defNames, comma-separated</CS_Field_RecipeUsers_Tip>
+    <CS_Field_UnfinishedThingDef_Tip>[Optional] Unfinished item ThingDef shown during crafting</CS_Field_UnfinishedThingDef_Tip>
+    <CS_Field_RecipeResearchPrerequisite_Tip>[Optional] Required research project defName to unlock this recipe</CS_Field_RecipeResearchPrerequisite_Tip>
+    <CS_Field_SkillRequirements_Tip>[Optional] Skill levels needed. Format: SkillDef:Level, comma-separated</CS_Field_SkillRequirements_Tip>
+    <CS_Field_RecipeEffectWorking_Tip>[Optional] EffecterDef played while crafting</CS_Field_RecipeEffectWorking_Tip>
+    <CS_Field_RecipeSoundWorking_Tip>[Optional] SoundDef played while crafting</CS_Field_RecipeSoundWorking_Tip>
+    <CS_Field_RecipeWorkSkill_Tip>[Optional] SkillDef used for crafting quality (e.g. Crafting, Artistic)</CS_Field_RecipeWorkSkill_Tip>
+    <CS_Field_RecipeWorkSpeedStat_Tip>[Optional] StatDef affecting crafting speed (e.g. GeneralLaborSpeed)</CS_Field_RecipeWorkSpeedStat_Tip>
+    <CS_Field_DisplayPriority_Tip>[Optional] Recipe display priority in the crafting menu</CS_Field_DisplayPriority_Tip>
+    <CS_Studio_Equip_DefName_Tip>[Required] Unique identifier. Must follow DefName format (no spaces, alphanumeric)</CS_Studio_Equip_DefName_Tip>
+    <CS_Studio_Label_Tip>[Required] Display name shown in-game</CS_Studio_Label_Tip>
+    <CS_Studio_Equip_SlotTag_Tip>[Optional] Editor slot category. Common: Apparel, Headgear, Accessory, Utility</CS_Studio_Equip_SlotTag_Tip>
+    <CS_Studio_Equip_ExportGroupKey_Tip>[Optional] Export grouping key. Equipment with the same key export together</CS_Studio_Equip_ExportGroupKey_Tip>
+    <CS_Studio_Equip_SourceNote_Tip>[Optional] Optional source/notes for reference</CS_Studio_Equip_SourceNote_Tip>
+    <CS_Attr_Tags_Tip>[Optional] Tag list for categorization, comma-separated</CS_Attr_Tags_Tip>
+    <CS_Studio_Equip_ThingCategories_Tip>[Optional] ThingCategories for item storage, comma-separated</CS_Studio_Equip_ThingCategories_Tip>
+    <CS_Studio_Equip_AllowCrafting_Tip>[Optional] Whether this item can be crafted at a workbench</CS_Studio_Equip_AllowCrafting_Tip>
+    <CS_Studio_Equip_RecipeWorkAmount_Tip>[Optional] Crafting work amount in ticks</CS_Studio_Equip_RecipeWorkAmount_Tip>
+    <CS_Studio_Equip_RecipeIngredients_Tip>[Optional] Crafting materials. Format: ThingDef:Count, comma-separated</CS_Studio_Equip_RecipeIngredients_Tip>
+    <CS_Studio_Equip_AllowTrading_Tip>[Optional] Whether traders can sell/buy this item</CS_Studio_Equip_AllowTrading_Tip>
+    <CS_Studio_Equip_MarketValue_Tip>[Optional] Market value for trading. Affects wealth calculation</CS_Studio_Equip_MarketValue_Tip>
+    <CS_Studio_Equip_TradeTags_Tip>[Optional] Trader category tags, comma-separated</CS_Studio_Equip_TradeTags_Tip>
+    <CS_Studio_Equip_UseWornGraphicMask_Tip>[Optional] Use mask texture for worn graphic rendering</CS_Studio_Equip_UseWornGraphicMask_Tip>
+    <CS_Studio_Equip_ApparelTags_Tip>[Optional] Apparel tags for matching, comma-separated</CS_Studio_Equip_ApparelTags_Tip>
+    <CS_Studio_Equip_WeaponTags_Tip>[Optional] Weapon tags for AI selection, comma-separated</CS_Studio_Equip_WeaponTags_Tip>
+    <CS_Studio_Equip_WeaponClasses_Tip>[Optional] Weapon class categories, comma-separated. Common: Melee, Ranged</CS_Studio_Equip_WeaponClasses_Tip>
+    <CS_Field_FillPercent_Tip>[Optional] Fill percentage 0-1. Affects cover and shooting mechanics</CS_Field_FillPercent_Tip>
+    <CS_Field_BlockWind_Tip>[Optional] Whether this building blocks wind</CS_Field_BlockWind_Tip>
+    <CS_Field_CastEdgeShadows_Tip>[Optional] Whether this building casts edge shadows</CS_Field_CastEdgeShadows_Tip>
+    <CS_Field_CanOverlapZones_Tip>[Optional] Whether zones can overlap with this building</CS_Field_CanOverlapZones_Tip>
+    <CS_Studio_Equip_AdvancedEdit>Advanced Edit...</CS_Studio_Equip_AdvancedEdit>
+    <CS_Studio_Equip_Tab_ThingDef>ThingDef</CS_Studio_Equip_Tab_ThingDef>
+    <CS_Studio_Equip_Tab_Stats>Stats</CS_Studio_Equip_Tab_Stats>
+    <CS_Studio_Equip_Tab_Crafting>Crafting</CS_Studio_Equip_Tab_Crafting>
+    <CS_Studio_Equip_Tab_Equipment>Equipment</CS_Studio_Equip_Tab_Equipment>
 </LanguageData>

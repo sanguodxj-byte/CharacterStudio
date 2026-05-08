@@ -35,7 +35,7 @@ namespace CharacterStudio.UI
             }
 
             var pawns = map.mapPawns.AllPawnsSpawned
-                .Where(p => p.RaceProps.Humanlike && p.Drawer?.renderer?.renderTree != null)
+                .Where(p => p.Drawer?.renderer?.renderTree != null)
                 .ToList();
 
             if (pawns.Count == 0)

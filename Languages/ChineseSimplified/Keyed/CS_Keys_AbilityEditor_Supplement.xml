@@ -593,4 +593,13 @@
     <CS_Studio_VFX_Preset_FlameSurge>烈焰涌动</CS_Studio_VFX_Preset_FlameSurge>
     <CS_Studio_VFX_Preset_FlightJetBlue>飞行尾焰(蓝)</CS_Studio_VFX_Preset_FlightJetBlue>
     <CS_Studio_VFX_Preset_FlightJetTrail>飞行尾迹</CS_Studio_VFX_Preset_FlightJetTrail>
+
+    <!-- WorldMapFlight 大地图飞行运行时组件 -->
+    <CS_Studio_Runtime_WorldMapTakeoffEffecterDefName>起飞特效定义名</CS_Studio_Runtime_WorldMapTakeoffEffecterDefName>
+    <CS_Studio_Runtime_WorldMapTakeoffSoundDefName>起飞音效定义名</CS_Studio_Runtime_WorldMapTakeoffSoundDefName>
+    <CS_Studio_Runtime_WorldMapTakeoffDustEffect>起飞尘土效果</CS_Studio_Runtime_WorldMapTakeoffDustEffect>
+    <CS_Studio_Runtime_WorldMapFlightMessageKey>起飞消息键名</CS_Studio_Runtime_WorldMapFlightMessageKey>
+    <CS_Studio_Runtime_WorldMapMaxLaunchDistance>最大飞行距离（0=无限制）</CS_Studio_Runtime_WorldMapMaxLaunchDistance>
+    <CS_Studio_Runtime_WorldMapTravelDurationTicks>世界地图飞行时长（ticks）</CS_Studio_Runtime_WorldMapTravelDurationTicks>
+    <CS_Studio_Runtime_Desc_WorldMapFlight>施放后打开世界地图选择目标地块，角色起飞→世界地图飞行→着陆到达目的地。</CS_Studio_Runtime_Desc_WorldMapFlight>
 </LanguageData>

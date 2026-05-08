@@ -405,14 +405,13 @@ namespace CharacterStudio.UI
                 AbilityRuntimeComponentType.SmartJump => 244f,
                 AbilityRuntimeComponentType.EShortJump => 244f,
                 AbilityRuntimeComponentType.Dash => 244f,
-                AbilityRuntimeComponentType.RStackDetonation => 250f,
+                AbilityRuntimeComponentType.ExecuteBonusDamage => 112f,
                 AbilityRuntimeComponentType.PeriodicPulse => 112f,
                 AbilityRuntimeComponentType.KillRefresh => 112f,
                 AbilityRuntimeComponentType.ShieldAbsorb => 164f,
                 AbilityRuntimeComponentType.AttachedShieldVisual => 112f,
                 AbilityRuntimeComponentType.ProjectileInterceptorShield => 112f,
                 AbilityRuntimeComponentType.ChainBounce => 112f,
-                AbilityRuntimeComponentType.ExecuteBonusDamage => 112f,
                 AbilityRuntimeComponentType.MissingHealthBonusDamage => 112f,
                 AbilityRuntimeComponentType.FullHealthBonusDamage => 112f,
                 AbilityRuntimeComponentType.NearbyEnemyBonusDamage => 138f,
@@ -431,6 +430,7 @@ namespace CharacterStudio.UI
                 AbilityRuntimeComponentType.TimeStop => 86f,
                 AbilityRuntimeComponentType.WeatherChange => 112f,
                 AbilityRuntimeComponentType.BezierCurveWall => 246f,
+                AbilityRuntimeComponentType.WorldMapFlight => 300f,
                 _ => 64f
             };
         }
@@ -798,73 +798,6 @@ namespace CharacterStudio.UI
                             comp.smartCastAllowFallbackForward = fallback;
                             NotifyAbilityPreviewDirty(true);
                         }
-                    }
-                }
-                else if (comp.type == AbilityRuntimeComponentType.RStackDetonation)
-                {
-                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_RRequiredStacks".Translate(), labelW);
-                    string stacks = comp.requiredStacks.ToString();
-                    int requiredStacksBefore = comp.requiredStacks;
-                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.requiredStacks, ref stacks, 1, 999);
-                    if (comp.requiredStacks != requiredStacksBefore)
-                    {
-                        NotifyAbilityPreviewDirty(true);
-                    }
-                    rowY += 26f;
-
-                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_RDelayTicks".Translate(), labelW);
-                    string delay = comp.delayTicks.ToString();
-                    int delayBefore = comp.delayTicks;
-                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, valueW, 24f), ref comp.delayTicks, ref delay, 0, 99999);
-                    if (comp.delayTicks != delayBefore)
-                    {
-                        NotifyAbilityPreviewDirty(true);
-                    }
-                    rowY += 26f;
-
-                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_RWave1".Translate(), labelW);
-                    string w1r = comp.wave1Radius.ToString();
-                    string w1d = comp.wave1Damage.ToString();
-                    float wave1RadiusBefore = comp.wave1Radius;
-                    float wave1DamageBefore = comp.wave1Damage;
-                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, (valueW - 6f) / 2f, 24f), ref comp.wave1Radius, ref w1r, 0.1f, 99f);
-                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW + (valueW - 6f) / 2f + 6f, rowY, (valueW - 6f) / 2f, 24f), ref comp.wave1Damage, ref w1d, 1f, 99999f);
-                    if (Math.Abs(comp.wave1Radius - wave1RadiusBefore) > 0.001f || Math.Abs(comp.wave1Damage - wave1DamageBefore) > 0.001f)
-                    {
-                        NotifyAbilityPreviewDirty(true);
-                    }
-                    rowY += 26f;
-
-                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_RWave2".Translate(), labelW);
-                    string w2r = comp.wave2Radius.ToString();
-                    string w2d = comp.wave2Damage.ToString();
-                    float wave2RadiusBefore = comp.wave2Radius;
-                    float wave2DamageBefore = comp.wave2Damage;
-                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, (valueW - 6f) / 2f, 24f), ref comp.wave2Radius, ref w2r, 0.1f, 99f);
-                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW + (valueW - 6f) / 2f + 6f, rowY, (valueW - 6f) / 2f, 24f), ref comp.wave2Damage, ref w2d, 1f, 99999f);
-                    if (Math.Abs(comp.wave2Radius - wave2RadiusBefore) > 0.001f || Math.Abs(comp.wave2Damage - wave2DamageBefore) > 0.001f)
-                    {
-                        NotifyAbilityPreviewDirty(true);
-                    }
-                    rowY += 26f;
-
-                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_RWave3".Translate(), labelW);
-                    string w3r = comp.wave3Radius.ToString();
-                    string w3d = comp.wave3Damage.ToString();
-                    float wave3RadiusBefore = comp.wave3Radius;
-                    float wave3DamageBefore = comp.wave3Damage;
-                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW, rowY, (valueW - 6f) / 2f, 24f), ref comp.wave3Radius, ref w3r, 0.1f, 99f);
-                    UIHelper.TextFieldNumeric(new Rect(inner.x + labelW + (valueW - 6f) / 2f + 6f, rowY, (valueW - 6f) / 2f, 24f), ref comp.wave3Damage, ref w3d, 1f, 99999f);
-                    if (Math.Abs(comp.wave3Radius - wave3RadiusBefore) > 0.001f || Math.Abs(comp.wave3Damage - wave3DamageBefore) > 0.001f)
-                    {
-                        NotifyAbilityPreviewDirty(true);
-                    }
-                    rowY += 26f;
-
-                    DrawRCRowLabel(inner.x, rowY, "CS_Studio_Runtime_RDamageDef".Translate(), labelW);
-                    if (DrawSelectionFieldButton(new Rect(inner.x + labelW, rowY, valueW, 24f),
-                        comp.waveDamageDef?.label ?? "CS_Studio_None".Translate(), () => ShowDamageDefSelectorForRuntime(comp)))
-                    {
                     }
                 }
                 else if (comp.type == AbilityRuntimeComponentType.PeriodicPulse)
@@ -1588,6 +1521,10 @@ namespace CharacterStudio.UI
                     {
                         NotifyAbilityPreviewDirty(true);
                     }
+                }
+                else if (comp.type == AbilityRuntimeComponentType.WorldMapFlight)
+                {
+                    DrawReflectionFields(inner, ref rowY, labelW, valueW, comp);
                 }
 
                 y += blockHeight + 6f;

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -210,6 +210,7 @@ namespace CharacterStudio.UI
                 AbilityTargetType resolvedTargetType = ResolveTargetType(GetChildText(node, "targetType"), resolvedCarrierType, radius, projectileDefName);
                 bool useRadius = ParseBool(GetChildText(node, "useRadius"), radius > 0.001f);
                 AbilityAreaCenter areaCenter = ResolveAreaCenter(GetChildText(node, "areaCenter"), resolvedTargetType, useRadius);
+                bool useTwoPointTargeting = ParseBool(GetChildText(node, "useTwoPointTargeting"), false);
 
                 var ability = new ModularAbilityDef
                 {
@@ -224,6 +225,7 @@ namespace CharacterStudio.UI
                     targetType = resolvedTargetType,
                     useRadius = useRadius,
                     areaCenter = areaCenter,
+                    useTwoPointTargeting = useTwoPointTargeting,
                     range = range,
                     radius = radius
                 };
@@ -325,8 +327,8 @@ namespace CharacterStudio.UI
                     var vfx = DirectXmlToObject.ObjectFromXml<AbilityVisualEffectConfig>(child, true);
                     if (vfx != null)
                     {
-                        vfx.NormalizeLegacyData();
-                        vfx.SyncLegacyFields();
+                        vfx.NormalizeFieldConsistency();
+                        vfx.SyncDerivedFields();
                         result.Add(vfx);
                     }
                 }

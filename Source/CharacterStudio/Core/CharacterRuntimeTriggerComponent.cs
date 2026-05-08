@@ -160,7 +160,7 @@ namespace CharacterStudio.Core
 
         private bool CanFire(CharacterRuntimeTriggerDef trigger, Map map, int currentTick)
         {
-            if (trigger.fireOncePerGame && firedOnceGame.Contains(trigger.defName))
+            if (firedOnceGame.Contains(trigger.defName))
             {
                 return false;
             }
@@ -203,10 +203,7 @@ namespace CharacterStudio.Core
             lastTriggeredTicks[trigger.defName] = currentTick;
             lastTriggeredTicksByMap[mapKey] = currentTick;
 
-            if (trigger.fireOncePerGame)
-            {
-                firedOnceGame.Add(trigger.defName);
-            }
+            firedOnceGame.Add(trigger.defName);
 
             if (trigger.fireOncePerMap)
             {

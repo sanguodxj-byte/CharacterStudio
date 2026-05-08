@@ -104,7 +104,6 @@
     <CS_Studio_BaseSlot_PrimaryColor>主颜色</CS_Studio_BaseSlot_PrimaryColor>
     <CS_Studio_BaseSlot_PrimaryColorSource>主颜色来源</CS_Studio_BaseSlot_PrimaryColorSource>
     <CS_Studio_BaseSlot_SecondColorMask>第二颜色（Mask）</CS_Studio_BaseSlot_SecondColorMask>
-    <CS_Studio_Btn_Apply>内化纹理</CS_Studio_Btn_Apply>
     <CS_Studio_Btn_Cancel>取消</CS_Studio_Btn_Cancel>
     <CS_Studio_Btn_ClearShort>清空</CS_Studio_Btn_ClearShort>
     <CS_Studio_Btn_ContinueExport>继续导出</CS_Studio_Btn_ContinueExport>
@@ -176,6 +175,9 @@
     <CS_Studio_Face_Workflow_LayeredDynamic>分层动态</CS_Studio_Face_Workflow_LayeredDynamic>
     <CS_Studio_Face_Workflow_LayeredDynamic_Desc>分层工作流：按表情配置命名的面部部件，运行时由代码自动处理定位与回退。</CS_Studio_Face_Workflow_LayeredDynamic_Desc>
     <CS_Studio_Glossary_Title>词汇表</CS_Studio_Glossary_Title>
+    <CS_Studio_Menu_ConvertPaths>路径转换</CS_Studio_Menu_ConvertPaths>
+    <CS_Studio_Msg_ConvertPathsNone>未找到需要转换的绝对路径。</CS_Studio_Msg_ConvertPathsNone>
+    <CS_Studio_Msg_ConvertPathsSuccess>已转换 {0} 条路径为相对路径。</CS_Studio_Msg_ConvertPathsSuccess>
     <CS_Studio_Inspector_Field_Color>颜色</CS_Studio_Inspector_Field_Color>
     <CS_Studio_Inspector_Field_Graphic>贴图</CS_Studio_Inspector_Field_Graphic>
     <CS_Studio_Inspector_Field_Tag>标签</CS_Studio_Inspector_Field_Tag>
@@ -193,6 +195,9 @@
     <CS_Studio_Mannequin_PortraitError>肖像错误: {0}</CS_Studio_Mannequin_PortraitError>
     <CS_Studio_Mannequin_RenderError>渲染错误: {0}</CS_Studio_Mannequin_RenderError>
     <CS_Studio_Menu_Abilities>技能编辑器</CS_Studio_Menu_Abilities>
+    <CS_Studio_Menu_FixEdgeBleeding>边缘修正</CS_Studio_Menu_FixEdgeBleeding>
+    <CS_Studio_FixEdgeBleeding_Confirm>即将对所选文件夹内的所有 PNG/JPG 图片执行半透明像素边缘修正，修正结果会直接覆盖原文件。\n\n⚠ 请确保已对目标文件夹做了备份，此操作不可撤销。\n\n是否继续？</CS_Studio_FixEdgeBleeding_Confirm>
+    <CS_Studio_FixEdgeBleeding_Result>边缘修正完成：已修正 {0} 张，无需修正 {1} 张，失败 {2} 张</CS_Studio_FixEdgeBleeding_Result>
     <CS_Studio_Menu_Edit>编辑</CS_Studio_Menu_Edit>
     <CS_Studio_Menu_File>文件</CS_Studio_Menu_File>
     <CS_Studio_Menu_Help>帮助</CS_Studio_Menu_Help>
@@ -271,6 +276,8 @@
     <CS_Studio_Panel_RefreshTree>刷新渲染树</CS_Studio_Panel_RefreshTree>
     <CS_Studio_Preview_EditPerFacing>仅编辑当前朝向</CS_Studio_Preview_EditPerFacing>
     <CS_Studio_Preview_EditPerFacingTip>启用后，预览区拖拽与方向键微调只会修改当前朝向对应的偏移数据。南向修改基础 Offset，东/西向修改侧视 Offset，北向修改北向 Offset。</CS_Studio_Preview_EditPerFacingTip>
+    <CS_Studio_Preview_TextureOnlyReplace>仅替换贴图</CS_Studio_Preview_TextureOnlyReplace>
+    <CS_Studio_Preview_TextureOnlyReplaceTip>启用后，修改表情导入、基础槽位和图层编辑器的纹理路径时，只更新贴图路径，不自动调整偏移、缩放、旋转等配置参数。适用于已调好参数仅需更换贴图的场景。</CS_Studio_Preview_TextureOnlyReplaceTip>
     <CS_Studio_Preview_RefHint>按住 F 显示导入角色的原始半透明参考虚影（鼠标移入预览区可跟随）</CS_Studio_Preview_RefHint>
     <CS_Studio_Prop_CustomColor>自定义颜色</CS_Studio_Prop_CustomColor>
     <CS_Studio_Prop_HideNode>隐藏此节点</CS_Studio_Prop_HideNode>
@@ -318,6 +325,7 @@
     <CS_Studio_Section_WeaponCarryVisual>状态武器视觉</CS_Studio_Section_WeaponCarryVisual>
     <CS_Studio_Section_WeaponRender>武器渲染覆写</CS_Studio_Section_WeaponRender>
     <CS_Studio_Transform_GlobalScale>全局缩放</CS_Studio_Transform_GlobalScale>
+    <CS_Studio_UseCanDrawNowHiding>高性能隐藏 (CanDrawNow)</CS_Studio_UseCanDrawNowHiding>
     <CS_Studio_Skin_DefaultForTargetRaces>作为目标种族默认皮肤</CS_Studio_Skin_DefaultForTargetRaces>
     <CS_Studio_Skin_DefaultForTargetRaces_Tip>启用后，匹配 targetRaces 的种族会在运行时自动应用此皮肤；已有手动皮肤的 Pawn 不会被覆盖。</CS_Studio_Skin_DefaultForTargetRaces_Tip>
     <CS_Studio_Skin_DefaultRacePriority>默认皮肤优先级</CS_Studio_Skin_DefaultRacePriority>
@@ -431,33 +439,24 @@
     <CS_Studio_Worker_Default>默认</CS_Studio_Worker_Default>
     <CS_Studio_Worker_FaceComponent>面部组件</CS_Studio_Worker_FaceComponent>
     <CS_Studio_Workflow_AnimalStandardLayers>动物分层工作流</CS_Studio_Workflow_AnimalStandardLayers>
-    <CS_Studio_Workflow_CompositeBase>主体底图工作流</CS_Studio_Workflow_CompositeBase>
-    <CS_Studio_Workflow_CompositeBase_Hint>一张主体底图包含 body/head/hair，不含服装头饰表情；服装头饰由原版装备覆盖，表情建议使用 Head 透明覆盖层。</CS_Studio_Workflow_CompositeBase_Hint>
-    <CS_Studio_Workflow_StandardLayers>标准分层工作流</CS_Studio_Workflow_StandardLayers>
+    <CS_Studio_Workflow_Core>核心工作流</CS_Studio_Workflow_Core>
     <CS_Studio_XenotypeDefName>绑定 Xenotype</CS_Studio_XenotypeDefName>
     <CS_RoleCard_LetterLabel>角色已生成：{0}</CS_RoleCard_LetterLabel>
     <CS_Summon_Success>成功召唤：{0}</CS_Summon_Success>
     <CS_Summon_Use>召唤 {0}</CS_Summon_Use>
     <CS_Settings_Category>Character Studio</CS_Settings_Category>
-    <CS_Settings_FaceTrackThresholds>面部追踪阈值</CS_Settings_FaceTrackThresholds>
+    <CS_Settings_Presets>预设方案</CS_Settings_Presets>
+    <CS_Settings_UpdateFrequency>更新频率 (tick)</CS_Settings_UpdateFrequency>
+    <CS_Settings_StateEvalInterval>状态评估间隔</CS_Settings_StateEvalInterval>
+    <CS_Settings_HighFocusAnimInterval>高精度动画间隔</CS_Settings_HighFocusAnimInterval>
+    <CS_Settings_VisibleRange>视距阈值（格）</CS_Settings_VisibleRange>
+    <CS_Settings_VisibleRangeStandardLod>Standard LOD 视距</CS_Settings_VisibleRangeStandardLod>
     <CS_Settings_Preset_Balanced>均衡</CS_Settings_Preset_Balanced>
     <CS_Settings_Preset_Performance>性能</CS_Settings_Preset_Performance>
     <CS_Settings_Preset_UltraPerformance>极致性能</CS_Settings_Preset_UltraPerformance>
-    <CS_Settings_RootSizeNear>近距 根尺寸</CS_Settings_RootSizeNear>
-    <CS_Settings_BudgetNear>近距 预算</CS_Settings_BudgetNear>
-    <CS_Settings_RootSizeMid1>中距1 根尺寸</CS_Settings_RootSizeMid1>
-    <CS_Settings_BudgetMid1>中距1 预算</CS_Settings_BudgetMid1>
-    <CS_Settings_RootSizeMid2>中距2 根尺寸</CS_Settings_RootSizeMid2>
-    <CS_Settings_BudgetMid2>中距2 预算</CS_Settings_BudgetMid2>
-    <CS_Settings_RootSizeFar>远距 根尺寸</CS_Settings_RootSizeFar>
-    <CS_Settings_BudgetFar>远距 预算</CS_Settings_BudgetFar>
-    <CS_Settings_FallbackBudget>后备预算</CS_Settings_FallbackBudget>
-    <CS_Settings_FallbackPriorityThreshold>后备优先级阈值</CS_Settings_FallbackPriorityThreshold>
-    <CS_Settings_FallbackPriorityBudget>后备优先级预算</CS_Settings_FallbackPriorityBudget>
-    <CS_Settings_PriorityBonuses>优先级加成</CS_Settings_PriorityBonuses>
-    <CS_Settings_DraftedBonus>征召加成</CS_Settings_DraftedBonus>
-    <CS_Settings_ColonistBonus>殖民者加成</CS_Settings_ColonistBonus>
-    <CS_Settings_UnstableBonus>不稳定加成</CS_Settings_UnstableBonus>
+    <CS_Settings_ResetToDefaults>恢复默认</CS_Settings_ResetToDefaults>
+    <CS_Settings_DebugTools>调试工具</CS_Settings_DebugTools>
+    <CS_Settings_ShowPerformanceOverlay>显示性能统计悬浮窗</CS_Settings_ShowPerformanceOverlay>
     <CS_Studio_Performance_FaceCaches>面部缓存统计</CS_Studio_Performance_FaceCaches>
     <CS_Studio_Performance_FaceTransformCacheHits>面部变换缓存命中：{0}</CS_Studio_Performance_FaceTransformCacheHits>
     <CS_Studio_Performance_FaceTransformCacheMisses>面部变换缓存未命中：{0}</CS_Studio_Performance_FaceTransformCacheMisses>
@@ -466,20 +465,32 @@
     <CS_Studio_Performance_GraphicDirtyTriggers>图形脏标记触发次数：{0}</CS_Studio_Performance_GraphicDirtyTriggers>
     <CS_Studio_Performance_GraphicDirtySkipped>图形脏标记节流跳过次数：{0}</CS_Studio_Performance_GraphicDirtySkipped>
 
-    <!-- 纹理内化 -->
-    <CS_Studio_Internalize_Title>纹理性能优化</CS_Studio_Internalize_Title>
-    <CS_Studio_Internalize_Desc>检测到 {0} 个外部纹理路径。外部纹理在运行时会产生额外的性能开销（每帧磁盘 I/O 和额外缓存查找）。
+    <!-- WorldMapFlight 大地图飞行 -->
+    <CS_Ability_Fail_Roofed>无法在屋顶下起飞</CS_Ability_Fail_Roofed>
+    <CS_Ability_Fail_TargetRoofed>无法飞到有屋顶的位置</CS_Ability_Fail_TargetRoofed>
+    <CS_Ability_Fail_InvalidDestination>目标地块无效</CS_Ability_Fail_InvalidDestination>
+    <CS_Ability_Fail_ImpassableDestination>目标地块不可通行</CS_Ability_Fail_ImpassableDestination>
+    <CS_Ability_Fail_NotColonist>只有殖民者可以使用此技能</CS_Ability_Fail_NotColonist>
+    <CS_Ability_Fail_Downed>倒地的殖民者无法起飞</CS_Ability_Fail_Downed>
+    <CS_Ability_Fail_AlreadyInFlight>已在飞行中</CS_Ability_Fail_AlreadyInFlight>
+    <CS_Ability_Fail_SameTile>不能飞往当前所在地块</CS_Ability_Fail_SameTile>
+    <CS_Ability_WorldMapFlight_Launched>{0} 已起飞，正在飞往目标地点！</CS_Ability_WorldMapFlight_Launched>
+    <CS_Ability_WorldMapFlight_Arrived>{0} 已到达目的地</CS_Ability_WorldMapFlight_Arrived>
+    <CS_Ability_WorldMapFlight_Landed>{0} 已在目标地点着陆</CS_Ability_WorldMapFlight_Landed>
+    <CS_Ability_WorldMapFlight_SelectTarget>选择跨地图飞行目标地块</CS_Ability_WorldMapFlight_SelectTarget>
+    <CS_Ability_Validate_WorldMapSkyfallerNotFound>离场陨落物定义未找到：{0}</CS_Ability_Validate_WorldMapSkyfallerNotFound>
+    <CS_Ability_Validate_WorldMapWorldObjectNotFound>大地图物件定义未找到：{0}</CS_Ability_Validate_WorldMapWorldObjectNotFound>
+    <CS_Ability_Validate_WorldMapCarryRadius>携带半径不能为负数</CS_Ability_Validate_WorldMapCarryRadius>
+    <CS_Ability_Fail_SkyfallerDefNotFound>离场陨落物定义未找到</CS_Ability_Fail_SkyfallerDefNotFound>
 
-点击"确认优化"将：
-1. 在 Mods 目录创建子模组（CharacterStudio_UserTextures）
-2. 复制纹理到子模组并自动重定向所有路径
-3. 保存皮肤配置
+    <!-- WorldMapFlight 等待着陆 -->
+    <CS_Ability_WorldMapFlight_ArrivedWaiting>已到达目标地块上空，选择物件后点击着陆指令</CS_Ability_WorldMapFlight_ArrivedWaiting>
+    <CS_Ability_WorldMapFlight_EnterMap>进入地图</CS_Ability_WorldMapFlight_EnterMap>
+    <CS_Ability_WorldMapFlight_EnterMapDesc>生成并进入目标地图，选择着陆点降落</CS_Ability_WorldMapFlight_EnterMapDesc>
+    <CS_Ability_WorldMapFlight_FormCaravan>组建远征队</CS_Ability_WorldMapFlight_FormCaravan>
+    <CS_Ability_WorldMapFlight_FormCaravanDesc>取消飞行，在当前位置组建远征队</CS_Ability_WorldMapFlight_FormCaravanDesc>
+    <CS_Ability_WorldMapFlight_NoMapParent>目标地块没有可用的地图，将组建远征队</CS_Ability_WorldMapFlight_NoMapParent>
+    <CS_Ability_Fail_LandingSpotNotWalkable>着陆点不可通行</CS_Ability_Fail_LandingSpotNotWalkable>
 
-需要重启游戏并启用子模组后，优化后的路径才会生效。</CS_Studio_Internalize_Desc>
-    <CS_Studio_Internalize_Confirm>确认优化</CS_Studio_Internalize_Confirm>
-    <CS_Studio_Internalize_Cancel>取消</CS_Studio_Internalize_Cancel>
-    <CS_Studio_Internalize_SkipApply>仅应用（跳过优化）</CS_Studio_Internalize_SkipApply>
-    <CS_Studio_Internalize_Success>已复制 {0} 个纹理到子模组，请重启游戏并启用 {1} 使更改生效。</CS_Studio_Internalize_Success>
-    <CS_Studio_Internalize_Failed>纹理内化失败：{0}</CS_Studio_Internalize_Failed>
 </LanguageData>
 

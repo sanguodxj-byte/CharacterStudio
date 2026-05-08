@@ -47,7 +47,7 @@ namespace CharacterStudio.UI
                 .ToList();
 
             onChanged = onChangedCallback;
-            doCloseX = true;
+            doCloseX = false;
             doCloseButton = false;
             draggable = true;
             absorbInputAroundWindow = true;

@@ -13,9 +13,6 @@ namespace CharacterStudio.UI
 {
     public partial class Dialog_SkinEditor
     {
-        // ─────────────────────────────────────────────
-        private const string InternalizedXmlFileSuffix = ".internalized";
-
         private void OnSaveSkin()
         {
             // 图层修改工作流：委托给 RenderFix 保存
@@ -351,57 +348,11 @@ namespace CharacterStudio.UI
                         characterDefinition = characterDefinition.Clone()
                     };
 
-                    CharacterRuntimeTriggerDef trigger = new CharacterRuntimeTriggerDef
-                    {
-                        defName = $"CS_EditorPreviewTrigger_{CharacterSpawnProfileRegistry.SanitizeDefName(ownerCharacterDefName)}",
-                        label = characterDefinition.displayName,
-                        ownerCharacterDefName = ownerCharacterDefName,
-                        spawnProfileDefName = profile.defName,
-                        spawnNearColonist = true,
-                        requirePlayerHomeMap = false,
-                        evaluationIntervalTicks = 1,
-                        cooldownTicks = 0,
-                        fireOncePerGame = false,
-                        fireOncePerMap = false,
-                        conditionLogic = CharacterSpawnConditionLogic.All,
-                        requiredConditions = new System.Collections.Generic.List<CharacterRuntimeTriggerCondition>
-                        {
-                            new CharacterRuntimeTriggerCondition
-                            {
-                                conditionType = CharacterRuntimeTriggerConditionType.Always
-                            }
-                        },
-
-                        spawnSettings = directSpawnSettings.Clone()
-                    };
-
                     profile.characterDefinition.EnsureDefaults(profile.skinDefName, spawnRace, runtimeSkin.attributes);
                     CharacterStudioAPI.RegisterOrReplaceSkin(runtimeSkin);
-                    CharacterStudioAPI.RegisterRuntimeSpawnProfile(profile);
-                    CharacterStudioAPI.RegisterRuntimeTrigger(trigger);
 
-                    Pawn? spawnedPawn = null;
-                    Action<CharacterRuntimeTriggerDef, CharacterSpawnProfileDef?, Map, Pawn?> handler =
-                        (firedTrigger, firedProfile, firedMap, firedPawn) =>
-                        {
-                            if (firedTrigger == trigger)
-                                spawnedPawn = firedPawn;
-                        };
-                    CharacterStudioAPI.RuntimeTriggerFiredGlobal += handler;
-                    try
-                    {
-                        bool executed = CharacterRuntimeTriggerExecutor.TryExecute(trigger, Find.CurrentMap);
-                        if (!executed)
-                        {
-                            Log.Warning($"[CharacterStudio] 触发器执行返回 false，尝试直接使用 Profile 生成");
-                            spawnedPawn = CharacterRuntimeTriggerExecutor.TrySpawnProfile(
-                                profile, Find.CurrentMap, null, directSpawnSettings, "SpawnTriggerFromEditor");
-                        }
-                    }
-                    finally
-                    {
-                        CharacterStudioAPI.RuntimeTriggerFiredGlobal -= handler;
-                    }
+                    Pawn? spawnedPawn = CharacterRuntimeTriggerExecutor.TrySpawnProfile(
+                        profile, Find.CurrentMap, null, directSpawnSettings, "SpawnFromEditor");
 
                     if (spawnedPawn != null)
                     {

@@ -576,4 +576,13 @@
     <CS_Studio_VFX_Preset_FlameSurge>Flame Surge</CS_Studio_VFX_Preset_FlameSurge>
     <CS_Studio_VFX_Preset_FlightJetBlue>Flight Jet (Blue)</CS_Studio_VFX_Preset_FlightJetBlue>
     <CS_Studio_VFX_Preset_FlightJetTrail>Flight Jet Trail</CS_Studio_VFX_Preset_FlightJetTrail>
+
+    <!-- WorldMapFlight runtime component -->
+    <CS_Studio_Runtime_WorldMapTakeoffEffecterDefName>Takeoff Effecter Def Name</CS_Studio_Runtime_WorldMapTakeoffEffecterDefName>
+    <CS_Studio_Runtime_WorldMapTakeoffSoundDefName>Takeoff Sound Def Name</CS_Studio_Runtime_WorldMapTakeoffSoundDefName>
+    <CS_Studio_Runtime_WorldMapTakeoffDustEffect>Takeoff Dust Effect</CS_Studio_Runtime_WorldMapTakeoffDustEffect>
+    <CS_Studio_Runtime_WorldMapFlightMessageKey>Takeoff Message Key</CS_Studio_Runtime_WorldMapFlightMessageKey>
+    <CS_Studio_Runtime_WorldMapMaxLaunchDistance>Max Launch Distance (0=unlimited)</CS_Studio_Runtime_WorldMapMaxLaunchDistance>
+    <CS_Studio_Runtime_WorldMapTravelDurationTicks>World Map Travel Duration (ticks)</CS_Studio_Runtime_WorldMapTravelDurationTicks>
+    <CS_Studio_Runtime_Desc_WorldMapFlight>Opens the world map to select a destination tile. The pawn takes off, flies across the world map, and lands at the destination.</CS_Studio_Runtime_Desc_WorldMapFlight>
 </LanguageData>

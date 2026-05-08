@@ -16,13 +16,12 @@ namespace CharacterStudio.UI
             this.title = string.IsNullOrWhiteSpace(title) ? "Info" : title;
             this.text = text ?? string.Empty;
 
-            doCloseX = true;
-            doCloseButton = true;
+            doCloseX = false;
+            doCloseButton = false;
             draggable = true;
             resizeable = true;
             absorbInputAroundWindow = true;
             closeOnClickedOutside = false;
-            optionalTitle = this.title;
         }
 
         public override void DoWindowContents(Rect inRect)

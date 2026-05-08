@@ -1,4 +1,4 @@
-// ─────────────────────────────────────────────
+﻿// ─────────────────────────────────────────────
 // 技能视觉特效播放器
 // 从 CompAbilityEffect_Modular.cs 提取
 //
@@ -48,8 +48,8 @@ namespace CharacterStudio.Abilities
 
             try
             {
-                vfx.NormalizeLegacyData();
-                vfx.SyncLegacyFields();
+                vfx.NormalizeFieldConsistency();
+                vfx.SyncDerivedFields();
 
                 CompPawnSkin? skinComp = caster.GetComp<CompPawnSkin>();
                 if (skinComp != null

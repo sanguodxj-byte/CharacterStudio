@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using CharacterStudio.Abilities;
@@ -150,8 +150,6 @@ namespace CharacterStudio.UI
             public AbilityPreviewEventType type;
             public string label = string.Empty;
             public string detail = string.Empty;
-            [Obsolete("Use gridPos for map-grid coordinate simulation")]
-            public Vector2 normalizedPos = new Vector2(0.5f, 0.5f);
             /// <summary>地图格坐标（0-11 范围）</summary>
             public Vector2 gridPos = new Vector2(6f, 6f);
             public float radius = 0f;
@@ -980,7 +978,7 @@ namespace CharacterStudio.UI
             if (ResolvePreviewFacingMode(vfx) == AbilityVisualFacingMode.None)
             {
                 vfx.facingMode = AbilityVisualFacingMode.CastDirection;
-                vfx.SyncLegacyFields();
+                vfx.SyncDerivedFields();
                 facingChanged = true;
             }
 
@@ -1200,8 +1198,8 @@ namespace CharacterStudio.UI
                     return "CS_Studio_Ability_PreviewRuntimeEShortJump".Translate(component.jumpDistance.ToString(), component.cooldownTicks.ToString());
                 case AbilityRuntimeComponentType.Dash:
                     return "CS_Studio_Ability_PreviewRuntimeDash".Translate(component.dashDistance.ToString(), component.dashStepDurationTicks.ToString());
-                case AbilityRuntimeComponentType.RStackDetonation:
-                    return "CS_Studio_Ability_PreviewRuntimeRStack".Translate(component.requiredStacks.ToString(), component.delayTicks.ToString());
+                case AbilityRuntimeComponentType.ExecuteBonusDamage:
+                    return "CS_Studio_Ability_PreviewRuntimeExecuteBonusDamage".Translate(component.executeThresholdPercent, component.executeBonusDamageScale);
                 case AbilityRuntimeComponentType.PeriodicPulse:
                     return $"{GetRuntimeComponentTypeLabel(component.type)} · {component.pulseIntervalTicks}t / {component.pulseTotalTicks}t";
                 case AbilityRuntimeComponentType.KillRefresh:
@@ -1210,8 +1208,6 @@ namespace CharacterStudio.UI
                     return $"{GetRuntimeComponentTypeLabel(component.type)} · {component.shieldMaxDamage:0} / H{component.shieldHealRatio:0.##} / D{component.shieldBonusDamageRatio:0.##}";
                 case AbilityRuntimeComponentType.ChainBounce:
                     return $"{GetRuntimeComponentTypeLabel(component.type)} · {component.maxBounceCount} / {component.bounceRange:0.#} / -{(component.bounceDamageFalloff * 100f):0}%";
-                case AbilityRuntimeComponentType.ExecuteBonusDamage:
-                    return "CS_Studio_Ability_PreviewRuntimeExecuteBonusDamage".Translate(component.executeThresholdPercent, component.executeBonusDamageScale);
                 case AbilityRuntimeComponentType.MissingHealthBonusDamage:
                     return "CS_Studio_Ability_PreviewRuntimeMissingHealthBonusDamage".Translate(component.missingHealthBonusPerTenPercent, component.missingHealthBonusMaxScale);
                 case AbilityRuntimeComponentType.FullHealthBonusDamage:

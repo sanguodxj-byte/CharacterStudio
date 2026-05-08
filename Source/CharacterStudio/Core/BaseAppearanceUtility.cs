@@ -45,12 +45,13 @@ namespace CharacterStudio.Core
             if (skin?.baseAppearance == null)
                 yield break;
 
+            bool useCanDrawNow = skin.useCanDrawNowHiding;
             skin.baseAppearance.EnsureAllSlotsExist();
             foreach (var slot in skin.baseAppearance.EnabledSlots())
             {
                 yield return slot.ToPawnLayer(
                     $"[Base] {GetDisplayName(slot.slotType)}",
-                    GetAnchorTag(slot.slotType),
+                    useCanDrawNow ? "Root" : GetAnchorTag(slot.slotType),
                     GetBaseDrawOrder(slot.slotType),
                     skin.baseAppearance.drawSizeScale);
             }

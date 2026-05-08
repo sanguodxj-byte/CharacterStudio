@@ -22,7 +22,6 @@ namespace CharacterStudio.Patches
 
         public static void Apply(Harmony harmony)
         {
-            // TODO: RimWorld 1.6 API 变化 - Projectile.Tick() 可见性变更，需更新反射目标
             var target = AccessTools.Method(typeof(Projectile), "Tick");
             if (target == null)
             {
@@ -91,7 +90,7 @@ namespace CharacterStudio.Patches
             // 获取投射物伤害
             float damage = 0f;
             if (__instance.def?.projectile != null)
-                damage = __instance.def.projectile.GetDamageAmount(__instance); // TODO: RimWorld 1.6 API
+                damage = __instance.def.projectile.GetDamageAmount(__instance);
 
             if (BezierCurveWallManager.CheckLineIntersectsAnyWall(
                 lastPos, currentPos, shooterFaction, map, damage, out Vector3 hitPoint, out BezierWallInstance? hitWall))

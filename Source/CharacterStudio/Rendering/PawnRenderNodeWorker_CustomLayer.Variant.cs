@@ -111,7 +111,16 @@ namespace CharacterStudio.Rendering
             if (logicalSuffixes.Count == 0 && suppressWhenNoLogicalSuffix)
                 return null;
 
-            string? directionalToken = config.useDirectionalSuffix ? GetDirectionalToken(facing) : null;
+            // 内部路径（ContentFinder）的方向查找完全交给 Graphic_Multi 的 MatAt(Rot4)，
+            // 不在此做方向后缀替换——否则会把 "Body_east" 作为单帧路径传入，
+            // 导致 Graphic_Single 替代 Graphic_Multi，侧面/背面方向材质丢失。
+            // 仅外部路径（绝对路径）需要方向变体查找，因为 Graphic_Runtime 不会自动处理方向。
+            bool basePathIsExternal = System.IO.Path.IsPathRooted(basePath)
+                || basePath.Contains(":")
+                || basePath.StartsWith("/");
+            string? directionalToken = (config.useDirectionalSuffix && basePathIsExternal)
+                ? GetDirectionalToken(facing)
+                : null;
             List<string> prefixes = BuildVariantPrefixes(basePath, logicalSuffixes, directionalToken);
             // P-PERF: 用 for 循环替代 LINQ .Any(lambda)，避免闭包委托分配
             attemptedVariant = false;
@@ -163,9 +172,9 @@ namespace CharacterStudio.Rendering
                     AddExpressionSuffixCandidates(results, expression, pawn);
                     break;
 
-                case LayerVariantLogic.EyeDirectionOnly:
-                    AddUnique(results, EyeDirectionNames[(int)(skinComp?.CurEyeDirection ?? EyeDirection.Center)]);
-                    break;
+                 case LayerVariantLogic.EyeDirectionOnly:
+                     AddEyeDirectionSuffix(results, skinComp?.CurEyeDirection ?? EyeDirection.Center);
+                     break;
 
                 case LayerVariantLogic.BlinkOnly:
                     suppressWhenNoLogicalSuffix = true;
@@ -195,7 +204,7 @@ namespace CharacterStudio.Rendering
                 AddUnique(results, "Blink");
 
             if (config.useEyeDirectionSuffix && config.variantLogic != LayerVariantLogic.EyeDirectionOnly)
-                AddUnique(results, EyeDirectionNames[(int)(skinComp?.CurEyeDirection ?? EyeDirection.Center)]);
+                AddEyeDirectionSuffix(results, skinComp?.CurEyeDirection ?? EyeDirection.Center);
 
             if (config.useExpressionSuffix
                 && config.variantLogic != LayerVariantLogic.ExpressionOnly
@@ -255,6 +264,20 @@ namespace CharacterStudio.Rendering
             string nonNullValue = value!;
             if (!values.Contains(nonNullValue))
                 values.Add(nonNullValue);
+        }
+
+        /// <summary>
+        /// 添加眼部方向后缀候选，同时包含首字母大写和全小写两种形式
+        /// 以兼容不同命名约定的纹理文件（如 _Left 和 _left）
+        /// </summary>
+        private static void AddEyeDirectionSuffix(List<string> results, EyeDirection dir)
+        {
+            string name = EyeDirectionNames[(int)dir];
+            AddUnique(results, name);
+            // 添加全小写备选（如 "left", "right"）
+            string lower = name.ToLowerInvariant();
+            if (lower != name)
+                AddUnique(results, lower);
         }
 
         private ExpressionType? TryGetFallbackExpression(Pawn? pawn)
@@ -345,25 +368,29 @@ namespace CharacterStudio.Rendering
             if (string.IsNullOrEmpty(prefix))
                 return false;
 
-            if (!frameSequenceCountCache.TryGetValue(prefix, out int frameCount))
+            int frameCount;
+            lock (_frameSequenceLock)
             {
-                string firstFramePath = AppendVariantToken(prefix, FrameIndexTokens[0]);
-                if (!TextureExists(firstFramePath))
+                if (!frameSequenceCountCache.TryGetValue(prefix, out frameCount))
                 {
-                    frameSequenceCountCache[prefix] = 0;
-                    return false;
-                }
+                    string firstFramePath = AppendVariantToken(prefix, FrameIndexTokens[0]);
+                    if (!TextureExists(firstFramePath))
+                    {
+                        frameSequenceCountCache[prefix] = 0;
+                        return false;
+                    }
 
-                frameCount = 1;
-                for (int i = 1; i < 16; i++)
-                {
-                    if (TextureExists(AppendVariantToken(prefix, FrameIndexTokens[i])))
-                        frameCount++;
-                    else
-                        break;
-                }
+                    frameCount = 1;
+                    for (int i = 1; i < 16; i++)
+                    {
+                        if (TextureExists(AppendVariantToken(prefix, FrameIndexTokens[i])))
+                            frameCount++;
+                        else
+                            break;
+                    }
 
-                frameSequenceCountCache[prefix] = frameCount;
+                    frameSequenceCountCache[prefix] = frameCount;
+                }
             }
 
             if (frameCount <= 0)
@@ -382,6 +409,15 @@ namespace CharacterStudio.Rendering
         {
             if (string.IsNullOrEmpty(basePath))
                 return basePath;
+
+            // 内部路径（ContentFinder）不在此做方向后缀替换，
+            // 方向处理交给 Graphic_Multi.MatAt(Rot4)。
+            if (!System.IO.Path.IsPathRooted(basePath)
+                && !basePath.Contains(":")
+                && !basePath.StartsWith("/"))
+            {
+                return basePath;
+            }
 
             string? directionalToken = GetDirectionalToken(facing);
             if (string.IsNullOrEmpty(directionalToken))

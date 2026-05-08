@@ -83,7 +83,34 @@ namespace CharacterStudio.UI
                 }, refreshPreview: true, refreshRenderTree: true);
             }
 
-            float contentY = globalScaleRect.yMax + 8f;
+            // CanDrawNow 优化隐藏开关
+            Rect canDrawNowRect = new Rect(rect.x + Margin, globalScaleRect.yMax + 6f, rect.width - Margin * 2, 28f);
+            Widgets.DrawBoxSolid(canDrawNowRect, UIHelper.PanelFillSoftColor);
+            GUI.color = UIHelper.BorderColor;
+            Widgets.DrawBox(canDrawNowRect, 1);
+            GUI.color = Color.white;
+
+            bool useCanDrawNow = workingSkin.useCanDrawNowHiding;
+            Widgets.Checkbox(new Vector2(canDrawNowRect.x + 8f, canDrawNowRect.y + 5f), ref useCanDrawNow, 18f, false);
+
+            if (useCanDrawNow != workingSkin.useCanDrawNowHiding)
+            {
+                MutateWithUndo(() =>
+                {
+                    workingSkin.useCanDrawNowHiding = useCanDrawNow;
+                }, refreshPreview: true, refreshRenderTree: true);
+            }
+
+            Rect toggleLabelRect = new Rect(canDrawNowRect.x + 30f, canDrawNowRect.y + 5f, canDrawNowRect.width - 38f, 18f);
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.MiddleLeft;
+            GUI.color = UIHelper.SubtleColor;
+            Widgets.Label(toggleLabelRect, "CS_Studio_UseCanDrawNowHiding".Translate());
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = GameFont.Small;
+
+            float contentY = canDrawNowRect.yMax + 8f;
             float contentHeight = rect.height - contentY + rect.y - Margin;
             Rect contentRect = new Rect(rect.x + Margin, contentY, rect.width - Margin * 2, contentHeight);
             UIHelper.DrawContentCard(contentRect);

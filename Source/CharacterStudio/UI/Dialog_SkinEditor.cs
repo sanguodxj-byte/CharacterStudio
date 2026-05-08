@@ -37,7 +37,7 @@ namespace CharacterStudio.UI
         private CharacterDesignDocument workingDocument;
         private PawnSkinDef workingSkin;
         private List<ModularAbilityDef> workingAbilities = new List<ModularAbilityDef>();
-        private List<CharacterEquipmentDef>? WorkingEquipments;
+        private List<CharacterEquipmentDef> WorkingEquipments = new List<CharacterEquipmentDef>();
         private CharacterRenderFixPatch? workingRenderFixPatch;
         private bool layerModificationWorkflowActive = false;
         private readonly SkinEditorSession session = new SkinEditorSession();
@@ -276,8 +276,17 @@ namespace CharacterStudio.UI
         /// F键虚影状态：在 DoWindowContents 最开始读取，避免被 IMGUI TextField 拦截。
         /// </summary>
         private bool isHoldingReferenceGhost = false;
-        private float nextNewSkinPromptAllowedTime = 0f;
         private const float NewSkinPromptCooldownSeconds = 0.25f;
+
+        // 纹理替换模式：仅替换纹理不修改其他属性
+        private bool textureOnlyReplace = false;
+        // 预览加载纹理名显示
+        private string previewLoadedTexName = "";
+        private float previewLoadedTexNameTime = 0f;
+        // 拖拽撤销快照捕获标记
+        private bool hasCapturedUndoForCurrentDrag = false;
+        // 装备物品折叠初始化标记
+        private bool itemsCollapseInitialized = false;
 
         // 编辑目标 Pawn（可空，空表示仅预览模式）
         private Pawn? targetPawn;
@@ -310,14 +319,24 @@ namespace CharacterStudio.UI
             this.absorbInputAroundWindow = false;
             this.forcePause = false;
 
-            // 创建新的工作皮肤
+            // 直接以核心工作流状态创建工作皮肤，省去手动新建-核心工作流的步骤
+            string uniqueId = Guid.NewGuid().ToString("N").Substring(0, 8);
             workingSkin = new PawnSkinDef
             {
-                defName = "CS_NewSkin",
-                label = "CS_Studio_EditorTitle".Translate(),
-                description = ""
+                defName = $"CS_Skin_{uniqueId}",
+                label = "CS_Studio_DefaultSkinLabel".Translate(),
+                description = "",
+                author = "",
+                version = "1.0.0",
+                humanlikeOnly = true,
+                hideVanillaBody = true,
+                hideVanillaHead = true,
+                hideVanillaHair = true
             };
-            workingDocument = CreateDocumentFromSkin(workingSkin);
+            workingSkin.baseAppearance = new BaseAppearanceConfig();
+            workingSkin.targetRaces.Add(ThingDefOf.Human.defName);
+
+            workingDocument = CreateDocumentFromSkin(workingSkin, preferredRaceDefName: ThingDefOf.Human.defName);
         }
 
         public Dialog_SkinEditor(PawnSkinDef existingSkin) : this()
@@ -675,6 +694,15 @@ namespace CharacterStudio.UI
         {
             base.PreOpen();
             InitializeMannequin();
+
+            // 默认构造时（无 Pawn/已有皮肤导入），直接以核心工作流状态启动
+            if (targetPawn == null && workingDocument?.preferredPreviewRaceDefName != null)
+            {
+                ThingDef previewRace = DefDatabase<ThingDef>.GetNamedSilentFail(workingDocument.preferredPreviewRaceDefName) ?? ThingDefOf.Human;
+                mannequin?.ForceReset(previewRace);
+                RefreshRenderTree();
+                RefreshPreview();
+            }
         }
 
         public override void PreClose()
@@ -699,6 +727,57 @@ namespace CharacterStudio.UI
         {
             SyncAbilitiesToSkin();
             Find.WindowStack.Add(new Dialog_AbilityEditor(workingAbilities));
+        }
+
+        // ─────────────────────────────────────────────
+        // 导入辅助方法（供 Face.AutoImport 使用）
+        // ─────────────────────────────────────────────
+
+        /// <summary>
+        /// 将导入源根目录路径解析为物理磁盘路径。
+        /// 相对路径从 Mod 的 Textures 目录解析，绝对路径直接使用。
+        /// </summary>
+        private static string ResolveSourceRootToPhysicalDirectory(string sourceRoot)
+        {
+            if (string.IsNullOrWhiteSpace(sourceRoot))
+                return string.Empty;
+
+            if (System.IO.Path.IsPathRooted(sourceRoot))
+                return sourceRoot;
+
+            // 相对路径：从 Mod ContentPack 的 Textures 目录查找
+            var mod = LoadedModManager.GetMod<CharacterStudioMod>();
+            if (mod?.Content?.RootDir != null)
+            {
+                string texDir = System.IO.Path.Combine(mod.Content.RootDir, "Textures", sourceRoot);
+                if (System.IO.Directory.Exists(texDir))
+                    return texDir;
+            }
+
+            return sourceRoot;
+        }
+
+        /// <summary>
+        /// 判断路径是否为外部路径（非 Mod 内部路径）。
+        /// </summary>
+        private static bool IsExternalPath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return false;
+            return System.IO.Path.IsPathRooted(path) || path.StartsWith("/") || path.Contains(":");
+        }
+
+        /// <summary>
+        /// 将扫描到的文件路径转换为存储路径（相对 Mod Textures 目录的路径）。
+        /// </summary>
+        private static string ConvertScannedFileToStoragePath(string filePath, string physicalRoot, string logicalRoot)
+        {
+            if (string.IsNullOrWhiteSpace(filePath)) return string.Empty;
+
+            // 如果已经是相对路径或 ContentFinder 路径，直接返回
+            string fileName = System.IO.Path.GetFileNameWithoutExtension(filePath) ?? string.Empty;
+            string relativeDir = logicalRoot;
+
+            return string.IsNullOrEmpty(relativeDir) ? fileName : System.IO.Path.Combine(relativeDir, fileName);
         }
     }
 }

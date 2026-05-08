@@ -22,7 +22,7 @@ namespace CharacterStudio.UI
             "MetaOverlay"
         };
 
-        private void DrawSelectionPropertyButton(ref float y, float width, string label, string valueLabel, Action onClick, float labelWidth = UIHelper.LabelWidth)
+        internal void DrawSelectionPropertyButton(ref float y, float width, string label, string valueLabel, Action onClick, float labelWidth = UIHelper.LabelWidth)
         {
             Rect rect = new Rect(0f, y, width, UIHelper.RowHeight);
 
@@ -126,7 +126,7 @@ namespace CharacterStudio.UI
             Find.WindowStack.Add(new FloatMenu(options));
         }
 
-        private static string GetEquipmentShaderSelectionLabel(string shaderDefName)
+        internal static string GetEquipmentShaderSelectionLabel(string shaderDefName)
         {
             string resolvedShader = string.IsNullOrWhiteSpace(shaderDefName)
                 ? EquipmentShaderOptions[0]
@@ -136,64 +136,7 @@ namespace CharacterStudio.UI
             return key.CanTranslate() ? key.Translate() : resolvedShader;
         }
 
-        private static string GetAbilitySelectionLabel(string defName, IEnumerable<ModularAbilityDef> abilities)
-        {
-            if (string.IsNullOrWhiteSpace(defName))
-            {
-                return "CS_Studio_None".Translate();
-            }
-
-            ModularAbilityDef? resolved = abilities?
-                .FirstOrDefault(ability => ability != null && string.Equals(ability.defName, defName, StringComparison.OrdinalIgnoreCase));
-
-            if (resolved == null)
-            {
-                return defName;
-            }
-
-            string displayName = string.IsNullOrWhiteSpace(resolved.label) ? resolved.defName : resolved.label;
-            return $"{displayName} ({resolved.defName})";
-        }
-
-        private void ShowEquipmentTriggeredAbilitySelector(CharacterEquipmentRenderData renderData, IEnumerable<ModularAbilityDef> abilities, Action onChanged)
-        {
-            var options = new List<FloatMenuOption>
-            {
-                new FloatMenuOption("CS_Studio_None".Translate(), () =>
-                {
-                    MutateWithUndo(() =>
-                    {
-                        renderData.triggerAbilityDefName = string.Empty;
-                        onChanged();
-                    });
-                })
-            };
-
-            var sorted = abilities?
-                .Where(ability => ability != null && !string.IsNullOrWhiteSpace(ability.defName))
-                .GroupBy(ability => ability.defName, StringComparer.OrdinalIgnoreCase)
-                .Select(group => group.First())
-                .OrderBy(ability => string.IsNullOrWhiteSpace(ability.label) ? ability.defName : ability.label, StringComparer.OrdinalIgnoreCase)
-                .ToList() ?? new List<ModularAbilityDef>();
-
-            foreach (ModularAbilityDef ability in sorted)
-            {
-                ModularAbilityDef localAbility = ability;
-                string displayName = string.IsNullOrWhiteSpace(localAbility.label) ? localAbility.defName : localAbility.label;
-                options.Add(new FloatMenuOption($"{displayName} ({localAbility.defName})", () =>
-                {
-                    MutateWithUndo(() =>
-                    {
-                        renderData.triggerAbilityDefName = localAbility.defName;
-                        onChanged();
-                    });
-                }));
-            }
-
-            Find.WindowStack.Add(new FloatMenu(options));
-        }
-
-        private void ShowEquipmentShaderSelector(CharacterEquipmentDef equipment, Action onChanged)
+        internal void ShowEquipmentShaderSelector(CharacterEquipmentDef equipment, Action onChanged)
         {
             var options = new List<FloatMenuOption>();
 

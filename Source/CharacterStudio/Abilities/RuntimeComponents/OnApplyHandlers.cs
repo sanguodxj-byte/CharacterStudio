@@ -41,27 +41,6 @@ namespace CharacterStudio.Abilities.RuntimeComponents
         }
     }
 
-    public class RStackDetonationHandler : IOnApplyHandler
-    {
-        public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.RStackDetonation;
-        public void OnApply(CompAbilityEffect_Modular source, AbilityRuntimeComponentConfig config, Pawn caster, CompCharacterAbilityRuntime abilityComp, LocalTargetInfo target, LocalTargetInfo dest, int nowTick)
-        {
-            if (!abilityComp.RStackingEnabled || abilityComp.RSecondStageReady) return;
-            int requiredStacks = config.requiredStacks > 0 ? config.requiredStacks : 7;
-            abilityComp.RStackCount = Math.Min(requiredStacks, abilityComp.RStackCount + 1);
-            if (abilityComp.RStackCount >= requiredStacks)
-            {
-                abilityComp.RStackingEnabled = false;
-                abilityComp.RSecondStageReady = true;
-                Messages.Message("CS_Ability_R_Ready".Translate(), MessageTypeDefOf.PositiveEvent, false);
-            }
-            else
-            {
-                Messages.Message("CS_Ability_R_StackGain".Translate(abilityComp.RStackCount, requiredStacks), MessageTypeDefOf.NeutralEvent, false);
-            }
-        }
-    }
-
     public class PeriodicPulseHandler : IOnApplyHandler, ITickHandler
     {
         public AbilityRuntimeComponentType ComponentType => AbilityRuntimeComponentType.PeriodicPulse;

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -14,7 +14,7 @@ namespace CharacterStudio.Exporter
     /// </summary>
     public static class ExportAssetUtility
     {
-        public static IEnumerable<string> EnumerateTexturePaths(PawnSkinDef? skinDef, IEnumerable<ModularAbilityDef>? abilities, string? geneIconPath = null)
+        public static IEnumerable<string> EnumerateTexturePaths(PawnSkinDef? skinDef, IEnumerable<ModularAbilityDef>? abilities, string? geneIconPath = null, IEnumerable<CharacterEquipmentDef>? equipments = null)
         {
             if (skinDef == null)
             {
@@ -23,7 +23,7 @@ namespace CharacterStudio.Exporter
 
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (var path in EnumerateRawTexturePaths(skinDef, abilities, geneIconPath))
+            foreach (var path in EnumerateRawTexturePaths(skinDef, abilities, geneIconPath, equipments))
             {
                 if (string.IsNullOrWhiteSpace(path))
                 {
@@ -134,7 +134,7 @@ namespace CharacterStudio.Exporter
             return searchPaths.ToList();
         }
 
-        private static IEnumerable<string?> EnumerateRawTexturePaths(PawnSkinDef skinDef, IEnumerable<ModularAbilityDef>? abilities, string? geneIconPath)
+        private static IEnumerable<string?> EnumerateRawTexturePaths(PawnSkinDef skinDef, IEnumerable<ModularAbilityDef>? abilities, string? geneIconPath, IEnumerable<CharacterEquipmentDef>? equipments)
         {
             yield return skinDef.previewTexPath;
 
@@ -263,6 +263,31 @@ namespace CharacterStudio.Exporter
                 yield return geneIconPath;
             }
 
+            // 装备路径
+            if (equipments != null)
+            {
+                foreach (var equipment in equipments)
+                {
+                    if (equipment == null)
+                    {
+                        continue;
+                    }
+
+                    yield return equipment.previewTexPath;
+                    yield return equipment.worldTexPath;
+                    yield return equipment.wornTexPath;
+                    yield return equipment.maskTexPath;
+
+                    if (equipment.renderData != null)
+                    {
+                        foreach (var path in EnumerateRenderDataPaths(equipment.renderData))
+                        {
+                            yield return path;
+                        }
+                    }
+                }
+            }
+
             if (abilities == null)
             {
                 yield break;
@@ -289,14 +314,44 @@ namespace CharacterStudio.Exporter
                         continue;
                     }
 
-                    vfx.NormalizeLegacyData();
+                    vfx.NormalizeFieldConsistency();
                     if (!vfx.UsesCustomTextureType || string.IsNullOrWhiteSpace(vfx.customTexturePath))
                     {
                         continue;
                     }
  
-                    yield return vfx.customTexturePath;
+                     yield return vfx.customTexturePath;
                 }
+            }
+        }
+
+        /// <summary>
+        /// 枚举单个 CharacterEquipmentRenderData 中的所有纹理路径（含方向动画覆写）。
+        /// </summary>
+        private static IEnumerable<string?> EnumerateRenderDataPaths(CharacterEquipmentRenderData renderData)
+        {
+            yield return renderData.texPath;
+            yield return renderData.maskTexPath;
+            yield return renderData.triggeredIdleTexPath;
+            yield return renderData.triggeredDeployTexPath;
+            yield return renderData.triggeredHoldTexPath;
+            yield return renderData.triggeredReturnTexPath;
+            yield return renderData.triggeredIdleMaskTexPath;
+            yield return renderData.triggeredDeployMaskTexPath;
+            yield return renderData.triggeredHoldMaskTexPath;
+            yield return renderData.triggeredReturnMaskTexPath;
+
+            foreach (var animOverride in new[] { renderData.triggeredAnimationSouth, renderData.triggeredAnimationEastWest, renderData.triggeredAnimationNorth })
+            {
+                if (animOverride == null) continue;
+                yield return animOverride.triggeredIdleTexPath;
+                yield return animOverride.triggeredDeployTexPath;
+                yield return animOverride.triggeredHoldTexPath;
+                yield return animOverride.triggeredReturnTexPath;
+                yield return animOverride.triggeredIdleMaskTexPath;
+                yield return animOverride.triggeredDeployMaskTexPath;
+                yield return animOverride.triggeredHoldMaskTexPath;
+                yield return animOverride.triggeredReturnMaskTexPath;
             }
         }
     }

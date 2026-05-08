@@ -54,6 +54,9 @@ namespace CharacterStudio.UI
 
             editor.ApplyPreviewOverridesToSkinComp(skinComp);
 
+            // 面部路径缓存依赖 FaceGraphicVersion，必须递增才能让新映射的纹理生效
+            skinComp.MarkFaceGraphicDirty();
+
             string currentTriggerKey = editor.GetPreviewEquipmentAnimationTriggerKey();
             if (!editor.IsPreviewEquipmentAnimationPlaying || string.IsNullOrWhiteSpace(currentTriggerKey))
             {

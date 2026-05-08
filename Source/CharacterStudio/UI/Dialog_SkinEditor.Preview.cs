@@ -1057,6 +1057,33 @@ namespace CharacterStudio.UI
                     controlX += facingCtrlTotalWidth + Margin;
                 }
 
+                // 仅替换贴图复选框
+                {
+                    string texOnlyText = "CS_Studio_Preview_TextureOnlyReplace".Translate();
+                    Text.Font = GameFont.Tiny;
+                    float texOnlyTextWidth = Text.CalcSize(texOnlyText).x;
+                    Text.Font = GameFont.Small;
+                    float texOnlyCtrlTotalWidth = facingBoxSize + facingMargin + texOnlyTextWidth;
+                    if (controlX + texOnlyCtrlTotalWidth <= maxX)
+                    {
+                        Rect texOnlyCheckRect = new Rect(controlX, extY + (btnHeight - facingBoxSize) / 2f, facingBoxSize, facingBoxSize);
+                        Widgets.Checkbox(texOnlyCheckRect.position, ref textureOnlyReplace, facingBoxSize);
+
+                        Rect texOnlyLabelRect = new Rect(texOnlyCheckRect.xMax + facingMargin, extY, texOnlyTextWidth, btnHeight);
+                        Text.Font = GameFont.Tiny;
+                        Text.Anchor = TextAnchor.MiddleLeft;
+                        GUI.color = textureOnlyReplace ? UIHelper.AccentColor : UIHelper.SubtleColor;
+                        Widgets.Label(texOnlyLabelRect, texOnlyText);
+                        GUI.color = Color.white;
+                        Text.Anchor = TextAnchor.UpperLeft;
+                        Text.Font = GameFont.Small;
+
+                        TooltipHandler.TipRegion(new Rect(controlX, extY, texOnlyCtrlTotalWidth, btnHeight),
+                            "CS_Studio_Preview_TextureOnlyReplaceTip".Translate());
+                        controlX += texOnlyCtrlTotalWidth + Margin;
+                    }
+                }
+
                 // Face 选项卡扩展条：在控件右侧绘制
                 if (currentTab == EditorTab.Face)
                 {
@@ -1106,6 +1133,7 @@ namespace CharacterStudio.UI
 
             DrawPreviewHintsOverlay(previewInnerRect);
             DrawSelectedEquipmentPivotOverlay(previewInnerRect);
+            DrawLoadedTextureNameOverlay(previewInnerRect);
 
             HandlePreviewInput(previewInnerRect);
             HandleFaceGazeCursorInput(previewInnerRect);
@@ -1527,6 +1555,12 @@ namespace CharacterStudio.UI
             UpdatePreviewEquipmentAnimation();
             UpdateEquipmentPivotDragState(rect);
 
+            // MouseUp 时重置拖拽快照标志，确保下次拖拽能重新捕获
+            if (Event.current.type == EventType.MouseUp && Event.current.button == 0)
+            {
+                hasCapturedUndoForCurrentDrag = false;
+            }
+
             if (Mouse.IsOver(rect))
             {
                 // 滚轮缩放
@@ -1538,15 +1572,6 @@ namespace CharacterStudio.UI
                     previewZoom = Mathf.Clamp(previewZoom, 0.1f, 5f);
                     Event.current.Use();
                 }
-
-                // Shift + 左键点击选中 (已根据反馈移除，但为了代码完整性保留方法定义，此处注释掉调用)
-                /*
-                if (Event.current.type == EventType.MouseDown && Event.current.button == 0 && Event.current.shift)
-                {
-                    TrySelectLayerAt(Event.current.mousePosition, rect);
-                    Event.current.Use();
-                }
-                */
 
                 // 鼠标拖拽调整偏移（支持多选同步；基础槽位与图层保持一致；Shift 加速，Ctrl 精调）
                 if (Event.current.type == EventType.MouseDrag && Event.current.button == 0)
@@ -1571,11 +1596,11 @@ namespace CharacterStudio.UI
                     float dx = delta.x * sensitivity;
                     float dz = -delta.y * sensitivity; // 屏幕Y向下，世界Z向上
 
-                    if (TryApplyDragToWeaponPreview(dx, dz))
+                    if (TryApplyDragToSelectedEquipmentPreview(dx, dz))
                     {
                         Event.current.Use();
                     }
-                    else if (TryApplyDragToSelectedEquipmentPreview(dx, dz))
+                    else if (TryApplyDragToWeaponPreview(dx, dz))
                     {
                         Event.current.Use();
                     }
@@ -1584,6 +1609,12 @@ namespace CharacterStudio.UI
                         var targets = GetSelectedLayerTargets();
                         if (targets.Count > 0)
                         {
+                            if (!hasCapturedUndoForCurrentDrag)
+                            {
+                                CaptureUndoSnapshot();
+                                hasCapturedUndoForCurrentDrag = true;
+                            }
+
                             foreach (int idx in targets)
                             {
                                 ApplyPreviewDeltaToLayer(workingSkin.layers[idx], dx, dz);
@@ -1633,24 +1664,28 @@ namespace CharacterStudio.UI
 
                 if (handled)
                 {
-                    if (TryApplyNudgeToWeaponPreview(dx, dz))
+                    if (TryApplyNudgeToSelectedEquipmentPreview(dx, dz))
                     {
                         Event.current.Use();
                     }
-                    else if (TryApplyNudgeToSelectedEquipmentPreview(dx, dz))
+                    else if (TryApplyNudgeToWeaponPreview(dx, dz))
                     {
                         Event.current.Use();
                     }
                     else
                     {
+                        // 处理图层微调 (支持单选和多选)
                         var targets = GetSelectedLayerTargets();
                         if (targets.Count > 0)
                         {
+                            CaptureUndoSnapshot();
                             foreach (int idx in targets)
                             {
-                                ApplyPreviewDeltaToLayer(workingSkin.layers[idx], dx, dz);
+                                if (idx >= 0 && idx < workingSkin.layers.Count)
+                                {
+                                    ApplyPreviewDeltaToLayer(workingSkin.layers[idx], dx, dz);
+                                }
                             }
-
                             isDirty = true;
                             RefreshPreview();
                             Event.current.Use();
@@ -1757,6 +1792,12 @@ namespace CharacterStudio.UI
                 return false;
             }
 
+            if (!hasCapturedUndoForCurrentDrag)
+            {
+                CaptureUndoSnapshot();
+                hasCapturedUndoForCurrentDrag = true;
+            }
+
             workingSkin.animationConfig ??= new PawnAnimationConfig();
             workingSkin.animationConfig.carryVisual ??= new WeaponCarryVisualConfig();
             ApplyPreviewDeltaToWeaponConfig(workingSkin.animationConfig.carryVisual, dx, dz);
@@ -1772,6 +1813,8 @@ namespace CharacterStudio.UI
                 return false;
             }
 
+            CaptureUndoSnapshot();
+
             workingSkin.animationConfig ??= new PawnAnimationConfig();
             workingSkin.animationConfig.carryVisual ??= new WeaponCarryVisualConfig();
             ApplyPreviewDeltaToWeaponConfig(workingSkin.animationConfig.carryVisual, dx, dz);
@@ -1782,7 +1825,7 @@ namespace CharacterStudio.UI
 
         private bool TryApplyDragToSelectedEquipmentPreview(float dx, float dz)
         {
-            if (currentTab != EditorTab.Equipment)
+            if (currentTab != EditorTab.Equipment && currentTab != EditorTab.Items)
             {
                 return false;
             }
@@ -1792,6 +1835,12 @@ namespace CharacterStudio.UI
             if (selectedEquipmentIndex < 0 || selectedEquipmentIndex >= WorkingEquipments.Count)
             {
                 return false;
+            }
+
+            if (!hasCapturedUndoForCurrentDrag)
+            {
+                CaptureUndoSnapshot();
+                hasCapturedUndoForCurrentDrag = true;
             }
 
             var equipment = WorkingEquipments[selectedEquipmentIndex] ?? new CharacterEquipmentDef();
@@ -1806,7 +1855,7 @@ namespace CharacterStudio.UI
 
         private bool TryApplyNudgeToSelectedEquipmentPreview(float dx, float dz)
         {
-            if (currentTab != EditorTab.Equipment)
+            if (currentTab != EditorTab.Equipment && currentTab != EditorTab.Items)
             {
                 return false;
             }
@@ -1817,6 +1866,8 @@ namespace CharacterStudio.UI
             {
                 return false;
             }
+
+            CaptureUndoSnapshot();
 
             var equipment = WorkingEquipments[selectedEquipmentIndex] ?? new CharacterEquipmentDef();
             equipment.EnsureDefaults();
@@ -2256,6 +2307,63 @@ namespace CharacterStudio.UI
             Text.Font = oldFont;
         }
 
+        /// <summary>
+        /// 在预览区域左上角以淡出方式显示预览刷新时载入的纹理名称。
+        /// 信息在 RefreshPreview 时捕获到 previewLoadedTexName，
+        /// 总显示 30 秒，最后 3 秒线性淡出消失。
+        /// </summary>
+        private void DrawLoadedTextureNameOverlay(Rect previewRect)
+        {
+            if (previewLoadedTexNameTime <= 0f || string.IsNullOrWhiteSpace(previewLoadedTexName))
+                return;
+
+            // 淡出：最后 3 秒线性淡出
+            const float fadeDuration = 3f;
+            float alpha = Mathf.Clamp01(previewLoadedTexNameTime / fadeDuration);
+
+            GameFont prevFont = Text.Font;
+            Text.Font = GameFont.Tiny;
+
+            // 附加朝向信息
+            string rotationLabel = $" [{previewRotation.ToStringHuman()}]";
+            float pad = 6f;
+            float lineHeight = 18f;
+
+            // 按行计算尺寸
+            string[] lines = previewLoadedTexName.Split('\n');
+            float maxLineWidth = 0f;
+            for (int i = 0; i < lines.Length; i++)
+            {
+                string line = (i == 0) ? lines[i] + rotationLabel : lines[i];
+                float w = Text.CalcSize(line).x;
+                if (w > maxLineWidth) maxLineWidth = w;
+            }
+
+            float boxW = maxLineWidth + pad * 2f;
+            float boxH = lines.Length * lineHeight + pad * 2f;
+
+            // 半透明背景 + 1px 半透明边框
+            Rect overlayRect = new Rect(previewRect.x + 4f, previewRect.y + 4f, boxW, boxH);
+            float borderSize = 1f;
+            Rect borderRect = new Rect(overlayRect.x - borderSize, overlayRect.y - borderSize,
+                overlayRect.width + borderSize * 2f, overlayRect.height + borderSize * 2f);
+            Widgets.DrawBoxSolid(borderRect, new Color(0.5f, 0.5f, 0.5f, 0.3f * alpha));
+            Widgets.DrawBoxSolid(overlayRect, new Color(0f, 0f, 0f, 0.45f * alpha));
+
+            Text.Anchor = TextAnchor.MiddleLeft;
+            for (int i = 0; i < lines.Length; i++)
+            {
+                string line = (i == 0) ? lines[i] + rotationLabel : lines[i];
+                Rect lineRect = new Rect(overlayRect.x + pad, overlayRect.y + pad + i * lineHeight, maxLineWidth, lineHeight);
+                GUI.color = new Color(0.85f, 0.85f, 0.85f, alpha * 0.8f);
+                Widgets.Label(lineRect, line);
+            }
+
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = prevFont;
+        }
+
         private bool TryApplyDragToSelectedBaseSlot(float dx, float dz)
         {
             if (selectedBaseSlotType == null)
@@ -2263,9 +2371,20 @@ namespace CharacterStudio.UI
                 return false;
             }
 
+            if (!hasCapturedUndoForCurrentDrag)
+            {
+                CaptureUndoSnapshot();
+                hasCapturedUndoForCurrentDrag = true;
+            }
+
             workingSkin.baseAppearance ??= new BaseAppearanceConfig();
             var slot = workingSkin.baseAppearance.GetSlot(selectedBaseSlotType.Value);
             Vector3 offset = GetEditableOffsetForPreview(slot);
+            
+            // 修复逻辑：dx 增加代表视觉右移。
+            // 在南/北向视图，偏移 x 增加即右移。
+            // 在东向视图，偏移 x 增加即右移。
+            // 在西向视图，渲染公式通常镜像 East，所以 offset.x += dx 依然符合视觉预期。
             offset.x += dx;
             offset.z += dz;
             SetEditableOffsetForPreview(slot, offset);
@@ -2281,6 +2400,8 @@ namespace CharacterStudio.UI
             {
                 return false;
             }
+
+            CaptureUndoSnapshot();
 
             workingSkin.baseAppearance ??= new BaseAppearanceConfig();
             var slot = workingSkin.baseAppearance.GetSlot(selectedBaseSlotType.Value);

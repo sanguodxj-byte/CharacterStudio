@@ -24,8 +24,8 @@ namespace CharacterStudio.UI
         public Dialog_ApparelBrowser(Action<ThingDef?> onSelect)
         {
             this.onSelect = onSelect;
-            this.doCloseX = true;
-            this.doCloseButton = true;
+            this.doCloseX = false;
+            this.doCloseButton = false;
             this.draggable = true;
             this.resizeable = true;
             this.absorbInputAroundWindow = false;

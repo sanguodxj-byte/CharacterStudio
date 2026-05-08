@@ -14,15 +14,13 @@ namespace CharacterStudio.Abilities
 {
     /// <summary>
     /// 全局热键监听组件。
-    /// 管理选定角色的实时按键响应、冷却、连招判定及 R 技能堆叠机制。
-    /// 在 1.6 中负责拦截 QER/F/ZXC 热键。
+    /// 管理选定角色的实时按键响应、冷却、连招判定。
+    /// 在 1.6 中负责拦截 QE/T/F/ZXC/V 热键。
     /// </summary>
     public class AbilityHotkeyRuntimeComponent : GameComponent
     {
         private const int DefaultQWComboWindowTicks = 12;      // 0.2s
         private const int MinSlotCooldownTicks = 30;           // 0.5s — 所有槽位的最短 CD
-        private const int DefaultRRequiredStacks = 7;
-        private const int DefaultRSecondStageDelayTicks = 180;  // 3.0s
 
         private static bool globalHotkeysEnabled = true;
         private int lastProcessedTick = -1;
@@ -33,7 +31,6 @@ namespace CharacterStudio.Abilities
         {
             KeyCode.Q,
             KeyCode.E,
-            KeyCode.R,
             KeyCode.T,
             KeyCode.F,
             KeyCode.Z,
@@ -74,7 +71,6 @@ namespace CharacterStudio.Abilities
 
             if (Input.GetKeyDown(KeyCode.Q)) TryCastForSelectedPawn(AbilityRuntimeHotkeySlot.Q, tick);
             else if (Input.GetKeyDown(KeyCode.E)) TryCastForSelectedPawn(AbilityRuntimeHotkeySlot.E, tick);
-            else if (Input.GetKeyDown(KeyCode.R)) TryCastForSelectedPawn(AbilityRuntimeHotkeySlot.R, tick);
             else if (Input.GetKeyDown(KeyCode.T)) TryCastForSelectedPawn(AbilityRuntimeHotkeySlot.T, tick);
             else if (Input.GetKeyDown(KeyCode.F)) TryCastForSelectedPawn(AbilityRuntimeHotkeySlot.F, tick);
             else if (Input.GetKeyDown(KeyCode.Z)) TryCastForSelectedPawn(AbilityRuntimeHotkeySlot.Z, tick);
@@ -85,9 +81,6 @@ namespace CharacterStudio.Abilities
             // ── 以下逻辑基于 tick 驱动
             if (tick == lastProcessedTick) return;
             lastProcessedTick = tick;
-
-            UpdateRStackingStates();
-            ProcessPendingRSecondStages(tick);
         }
 
         private static bool IsSlotBound(AbilityRuntimeHotkeySlot slot)
@@ -112,7 +105,6 @@ namespace CharacterStudio.Abilities
                 case AbilityRuntimeHotkeySlot.Q: return state.qCooldownUntilTick;
                 case AbilityRuntimeHotkeySlot.W: return state.wCooldownUntilTick;
                 case AbilityRuntimeHotkeySlot.E: return state.eCooldownUntilTick;
-                case AbilityRuntimeHotkeySlot.R: return state.rCooldownUntilTick;
                 case AbilityRuntimeHotkeySlot.T: return state.tCooldownUntilTick;
                 case AbilityRuntimeHotkeySlot.A: return state.aCooldownUntilTick;
                 case AbilityRuntimeHotkeySlot.S: return state.sCooldownUntilTick;
@@ -135,7 +127,6 @@ namespace CharacterStudio.Abilities
                 case AbilityRuntimeHotkeySlot.Q: state.qCooldownUntilTick = untilTick; break;
                 case AbilityRuntimeHotkeySlot.W: state.wCooldownUntilTick = untilTick; break;
                 case AbilityRuntimeHotkeySlot.E: state.eCooldownUntilTick = untilTick; break;
-                case AbilityRuntimeHotkeySlot.R: state.rCooldownUntilTick = untilTick; break;
                 case AbilityRuntimeHotkeySlot.T: state.tCooldownUntilTick = untilTick; break;
                 case AbilityRuntimeHotkeySlot.A: state.aCooldownUntilTick = untilTick; break;
                 case AbilityRuntimeHotkeySlot.S: state.sCooldownUntilTick = untilTick; break;
@@ -382,10 +373,6 @@ namespace CharacterStudio.Abilities
                     abilityDefName = state.vOverrideAbilityDefName;
                     expireTick = state.vOverrideExpireTick;
                     break;
-                case AbilityRuntimeHotkeySlot.R:
-                    abilityDefName = state.rOverrideAbilityDefName;
-                    expireTick = state.rOverrideExpireTick;
-                    break;
                 default:
                     abilityDefName = string.Empty;
                     expireTick = -1;
@@ -446,10 +433,6 @@ namespace CharacterStudio.Abilities
                     state.vOverrideAbilityDefName = string.Empty;
                     state.vOverrideExpireTick = -1;
                     break;
-                case AbilityRuntimeHotkeySlot.R:
-                    state.rOverrideAbilityDefName = string.Empty;
-                    state.rOverrideExpireTick = -1;
-                    break;
                 default:
                     break;
             }
@@ -468,12 +451,6 @@ namespace CharacterStudio.Abilities
                 return TryCastSmartJumpAbility(caster, abilityComp, ability, tick, jumpComp, slot);
             }
 
-            AbilityRuntimeComponentConfig? rComp = GetRuntimeComponent(ability, AbilityRuntimeComponentType.RStackDetonation);
-            if (rComp != null && rComp.enabled)
-            {
-                return TryHandleGeneralizedRStackHotkey(caster, abilityComp, ability, tick, slot, rComp);
-            }
-
             return TryCastDefaultAbility(caster, ability);
         }
 
@@ -481,11 +458,6 @@ namespace CharacterStudio.Abilities
         {
             return ability.runtimeComponents?.FirstOrDefault(c =>
                 c.type == AbilityRuntimeComponentType.SmartJump || c.type == AbilityRuntimeComponentType.EShortJump);
-        }
-
-        private static AbilityRuntimeComponentConfig? GetRuntimeComponent(ModularAbilityDef ability, AbilityRuntimeComponentType type)
-        {
-            return ability.runtimeComponents?.FirstOrDefault(c => c.type == type);
         }
 
         private static bool TryCastSmartJumpAbility(Pawn caster, CompCharacterAbilityRuntime abilityComp, ModularAbilityDef ability, int tick, AbilityRuntimeHotkeySlot slot)
@@ -545,6 +517,12 @@ namespace CharacterStudio.Abilities
             {
                 try
                 {
+                    // 双点选取需要两次手动 Targeting，不能走 SmartCast（自动选目标）或原版委托（单点）
+                    if (ability.useTwoPointTargeting)
+                    {
+                        return TryQueueRuntimeAbility(caster, runtimeAbility, ability);
+                    }
+
                     if (TrySmartCastRuntimeAbility(caster, runtimeAbility, ability))
                         return true;
 
@@ -842,22 +820,6 @@ namespace CharacterStudio.Abilities
             }
 
             return applied;
-        }
-
-        private static void UpdateRStackingStates()
-        {
-            // 基于 tick 的堆叠逻辑更新
-        }
-
-        private static void ProcessPendingRSecondStages(int tick)
-        {
-            // 处理 R 技能二段触发
-        }
-
-        private static bool TryHandleGeneralizedRStackHotkey(Pawn caster, CompCharacterAbilityRuntime abilityComp, ModularAbilityDef ability, int tick, AbilityRuntimeHotkeySlot slot, AbilityRuntimeComponentConfig rComp)
-        {
-            // 处理 R 堆叠
-            return true;
         }
     }
 }

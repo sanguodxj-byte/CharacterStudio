@@ -1,6 +1,8 @@
-using System;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using CharacterStudio.Core;
+using RimWorld;
 using UnityEngine;
 using Verse;
 
@@ -8,10 +10,8 @@ namespace CharacterStudio.UI
 {
     public partial class Dialog_SkinEditor
     {
-#pragma warning disable CS0618
         private static readonly LayerColorType[] CachedLayerColorTypes =
             (LayerColorType[])Enum.GetValues(typeof(LayerColorType));
-#pragma warning restore CS0618
         private static readonly LayerRole[] CachedLayerRoles =
             (LayerRole[])Enum.GetValues(typeof(LayerRole));
         private static readonly LayerVariantLogic[] CachedLayerVariantLogics =
@@ -275,7 +275,7 @@ namespace CharacterStudio.UI
                     MutateSelectedLayersWithUndo(layer, l => l.visible = visible);
                 }
 
-                string[] shaderOptions = { "Cutout", "CutoutComplex", "Transparent", "TransparentPostLight", "TransparentZWrite", "ItemTransparent", "MetaOverlay", "Custom" };
+                string[] shaderOptions = { "Cutout", "CutoutComplex", "Transparent", "TransparentPostLight", "TransparentZWrite", "ItemTransparent", "CutoutPlant", "TransparentPlant", "MetaOverlay", "Custom" };
                 UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Prop_Shader".Translate(), layer.shaderDefName ?? "Cutout",
                     shaderOptions,
                     val => val,
@@ -285,14 +285,81 @@ namespace CharacterStudio.UI
                     },
                     tooltip: "CS_Studio_Prop_Shader_Tooltip".Translate());
 
-                // Custom shader path
+                // Custom shader: 选择 AssetBundle + 选择内部 Shader
                 if (layer.shaderDefName == "Custom")
                 {
-                    string customShaderPath = layer.customShaderPath ?? string.Empty;
-                    UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Prop_CustomShaderPath".Translate(), ref customShaderPath, tooltip: "CS_Studio_Prop_CustomShaderPath_Tooltip".Translate());
-                    if (customShaderPath != (layer.customShaderPath ?? string.Empty))
+                    // 第一行：已选的 shader 名称 + "..." 按钮（浏览 ab 文件）
+                    string displayShader = layer.customShaderPath ?? string.Empty;
+                    if (displayShader.Contains('|'))
+                        displayShader = displayShader.Substring(displayShader.IndexOf('|') + 1);
+
+                    UIHelper.DrawPropertyFieldWithButton(ref y, width,
+                        "CS_Studio_Prop_CustomShaderPath".Translate(),
+                        displayShader,
+                        () =>
+                        {
+                            string modRoot = CharacterStudio.CharacterStudioMod.ModContent?.RootDir ?? "";
+                            string initialPath = !string.IsNullOrWhiteSpace(modRoot) ? modRoot : "";
+                            Find.WindowStack.Add(new Dialog_FileBrowser(initialPath, selectedPath =>
+                            {
+                                // 从选中的 ab 包中扫描 shader
+                                string[]? assetNames = AssetBundleManager.EnumerateAssets(selectedPath);
+                                if (assetNames == null || assetNames.Length == 0)
+                                {
+                                    Messages.Message("CS_Studio_ShaderBundleEmpty".Translate(), MessageTypeDefOf.RejectInput, false);
+                                    return;
+                                }
+
+                                // 筛选 .shader 资源
+                                List<string> shaderNames = assetNames
+                                    .Where(n => n.EndsWith(".shader", StringComparison.OrdinalIgnoreCase))
+                                    .Select(n =>
+                                    {
+                                        string name = System.IO.Path.GetFileNameWithoutExtension(n);
+                                        // 尝试从 Assets/ 路径中提取完整 Shader 名
+                                        string dir = System.IO.Path.GetDirectoryName(n)?.Replace('\\', '/') ?? "";
+                                        if (dir.StartsWith("Assets/", StringComparison.OrdinalIgnoreCase))
+                                            dir = dir.Substring(7); // 去掉 "Assets/"
+                                        return name;
+                                    })
+                                    .Where(n => !string.IsNullOrWhiteSpace(n))
+                                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                                    .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+                                    .ToList();
+
+                                if (shaderNames.Count == 0)
+                                {
+                                    Messages.Message("CS_Studio_ShaderBundleEmpty".Translate(), MessageTypeDefOf.RejectInput, false);
+                                    return;
+                                }
+
+                                // 计算相对路径
+                                string relPath = selectedPath;
+                                if (!string.IsNullOrWhiteSpace(modRoot) && selectedPath.StartsWith(modRoot, StringComparison.OrdinalIgnoreCase))
+                                    relPath = selectedPath.Substring(modRoot.Length).TrimStart('\\', '/');
+
+                                // 弹出 shader 选择菜单
+                                var options = new List<FloatMenuOption>();
+                                foreach (string shaderName in shaderNames)
+                                {
+                                    string sn = shaderName;
+                                    string fullPath = relPath + "|" + sn;
+                                    options.Add(new FloatMenuOption(sn, () =>
+                                    {
+                                        MutateSelectedLayersWithUndo(layer, l => l.customShaderPath = fullPath, refreshRenderTree: true);
+                                    }));
+                                }
+                                Find.WindowStack.Add(new FloatMenu(options));
+                            }, "*.ab"));
+                        },
+                        "…");
+
+                    // 第二行：手动编辑路径（高级用户可以直接修改）
+                    string manualPath = layer.customShaderPath ?? string.Empty;
+                    UIHelper.DrawPropertyField(ref y, width, "CS_Studio_Prop_ShaderManualPath".Translate(), ref manualPath, tooltip: "CS_Studio_Prop_ShaderManualPath_Tooltip".Translate());
+                    if (manualPath != (layer.customShaderPath ?? string.Empty))
                     {
-                        MutateSelectedLayersWithUndo(layer, l => l.customShaderPath = customShaderPath, refreshRenderTree: true);
+                        MutateSelectedLayersWithUndo(layer, l => l.customShaderPath = manualPath, refreshRenderTree: true);
                     }
                 }
 
@@ -348,7 +415,6 @@ namespace CharacterStudio.UI
                         MutateSelectedLayersWithUndo(layer, l => l.workerClass = newWorker);
                     });
 
-#pragma warning disable CS0618
                 UIHelper.DrawPropertyDropdown(ref y, width, "CS_Studio_Prop_ColorType".Translate(), layer.colorType,
                     CachedLayerColorTypes,
                     type => $"CS_Studio_ColorType_{type}".Translate(),
@@ -359,7 +425,6 @@ namespace CharacterStudio.UI
 
                 if (layer.colorType == LayerColorType.Custom)
                 {
-#pragma warning restore CS0618
                     UIHelper.DrawPropertyColor(ref y, width, "CS_Studio_Prop_CustomColor".Translate(), layer.customColor,
                         col =>
                         {
@@ -522,7 +587,6 @@ namespace CharacterStudio.UI
                 y += 24f;
             }
 
-#pragma warning disable CS0618
             if (workingSkin.hiddenTags != null && workingSkin.hiddenTags.Count > 0)
             {
                 UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Hide_HiddenTagsCompat".Translate());
@@ -541,12 +605,9 @@ namespace CharacterStudio.UI
                     y += 24f;
                 }
             }
-#pragma warning restore
 
             int hiddenTotal = (workingSkin.hiddenPaths?.Count ?? 0)
-#pragma warning disable CS0618
                 + (workingSkin.hiddenTags?.Count ?? 0);
-#pragma warning restore
             DrawSelectionPropertyButton(ref y, width, "CS_Studio_Btn_AddHidden".Translate(),
                 hiddenTotal > 0 ? hiddenTotal.ToString() : "0",
                 ShowHiddenTagsMenu);
@@ -721,9 +782,7 @@ namespace CharacterStudio.UI
         private string GetHiddenVanillaSummary()
         {
             int hiddenPathsCount = workingSkin.hiddenPaths?.Count ?? 0;
-#pragma warning disable CS0618
             int hiddenTagsCount = workingSkin.hiddenTags?.Count ?? 0;
-#pragma warning restore
             int total = hiddenPathsCount + hiddenTagsCount;
             return total <= 0 ? "CS_Studio_None".Translate() : total.ToString();
         }

@@ -48,6 +48,8 @@ namespace CharacterStudio.UI
             Abilities.GlobalFilterCameraComponent.EnsureCreated();
             // 绘制全局滤镜叠加层（仅在 Shader 不可用时生效的回退路径）
             Abilities.VfxGlobalFilterManager.OnGUI();
+            // 性能统计窗口管理（通过设置开关控制）
+            Dialog_PerformanceStats.EnsureOpen();
         }
     }
 

@@ -305,8 +305,12 @@ namespace CharacterStudio.Rendering
         /// </summary>
         // P9: 缓存最近一次 GlobalPostfix 的 (Pawn, CompPawnSkin) 对，
         // 因为同一帧内所有原版节点都属于同一个 pawn，避免重复 GetComp。
+        // [ThreadStatic] 确保并行渲染时每个线程有独立缓存，避免竞态条件。
+        [ThreadStatic]
         private static Pawn? _globalPostfixLastPawn;
+        [ThreadStatic]
         private static CompPawnSkin? _globalPostfixLastComp;
+        [ThreadStatic]
         private static bool _globalPostfixLastHasRelevantSkin;
 
         public static void ScaleFor_GlobalPostfix(PawnRenderNode __0, PawnDrawParms __1, ref Vector3 __result)

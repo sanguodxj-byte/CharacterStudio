@@ -42,6 +42,12 @@ namespace CharacterStudio.UI
                     statusMessageTime -= Time.deltaTime;
                 }
 
+                // 更新预览纹理载入消息淡出计时
+                if (previewLoadedTexNameTime > 0)
+                {
+                    previewLoadedTexNameTime -= Time.deltaTime;
+                }
+
                 // 全局快捷键（Ctrl+A 全选图层，Ctrl+Z 撤回）
                 HandleGlobalShortcuts();
 
@@ -103,7 +109,8 @@ namespace CharacterStudio.UI
                 }
 
                 // 绘制右侧属性面板
-                Rect rightRect = new Rect(inRect.width - RightPanelWidth, contentY, RightPanelWidth, contentHeight);
+                float rightPanelWidth = RightPanelWidth;
+                Rect rightRect = new Rect(inRect.width - rightPanelWidth, contentY, rightPanelWidth, contentHeight);
                 DrawPropertiesPanel(rightRect);
 
                 // 绘制底部状态栏
@@ -263,8 +270,11 @@ namespace CharacterStudio.UI
             }
 
             DrawButton("CS_Studio_Skin_Settings".Translate(), OnOpenSkinSettings);
+            DrawButton("CS_Studio_Menu_ConvertPaths".Translate(), OnConvertPathsToRelative);
             DrawButton("CS_LLM_Settings_Title".Translate(), OnOpenLlmSettings);
             DrawButton("CS_Studio_Menu_Abilities".Translate(), OpenAbilityEditor);
+
+            DrawButton("CS_Studio_Menu_FixEdgeBleeding".Translate(), OnFixEdgeBleeding);
 
             Rect helpRect = new Rect(Mathf.Min(x, maxButtonX - 28f), buttonY, 26f, buttonHeight);
             if (helpRect.xMax <= maxButtonX)

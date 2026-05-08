@@ -181,6 +181,7 @@ namespace CharacterStudio.Core
         public float previewHeadOffsetZ = 0f;
         public bool editLayerOffsetPerFacing = false;
         public float globalTextureScale = 1f;
+        public bool useCanDrawNowHiding = false;
 
         public CharacterStatModifierProfile statModifiers = new CharacterStatModifierProfile();
         public List<ModularAbilityDef> abilities = new List<ModularAbilityDef>();
@@ -216,6 +217,7 @@ namespace CharacterStudio.Core
             Scribe_Values.Look(ref previewHeadOffsetZ, "previewHeadOffsetZ", 0f);
             Scribe_Values.Look(ref editLayerOffsetPerFacing, "editLayerOffsetPerFacing", false);
             Scribe_Values.Look(ref globalTextureScale, "globalTextureScale", 1f);
+            Scribe_Values.Look(ref useCanDrawNowHiding, "useCanDrawNowHiding", false);
             Scribe_Deep.Look(ref statModifiers, "statModifiers");
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)

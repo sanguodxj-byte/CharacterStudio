@@ -197,6 +197,12 @@ namespace CharacterStudio.UI
                 return false;
             }
 
+            // 双点选取需要自定义 Targeter 链式调用，不能委托给原版 Command_Ability
+            if (modAbility.useTwoPointTargeting)
+            {
+                return false;
+            }
+
             AbilityCarrierType normalizedCarrier = ModularAbilityDefExtensions.NormalizeCarrierType(modAbility.carrierType);
             AbilityTargetType normalizedTarget = ModularAbilityDefExtensions.NormalizeTargetType(modAbility);
             if (normalizedCarrier == AbilityCarrierType.Self || normalizedTarget == AbilityTargetType.Self)
@@ -385,7 +391,6 @@ namespace CharacterStudio.UI
             {
                 "Q" => state.qCooldownUntilTick,
                 "E" => state.eCooldownUntilTick,
-                "R" => state.rCooldownUntilTick,
                 "T" => state.tCooldownUntilTick,
                 "F" => state.fCooldownUntilTick,
                 "Z" => state.zCooldownUntilTick,
@@ -510,10 +515,6 @@ namespace CharacterStudio.UI
                 if (slotEntry.isCombo)
                 {
                     sb.AppendLine("Combo Window: Active");
-                }
-                if (slotEntry.rStackCount > 0)
-                {
-                    sb.AppendLine("Stacks: " + slotEntry.rStackCount);
                 }
                 if (!string.IsNullOrWhiteSpace(slotEntry.runtimeSummary))
                 {

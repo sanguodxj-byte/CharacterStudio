@@ -16,7 +16,6 @@ namespace CharacterStudio.Abilities
         SmartJump,
         EShortJump,
         Dash,
-        RStackDetonation,
         PeriodicPulse,
         KillRefresh,
         ShieldAbsorb,
@@ -42,7 +41,8 @@ namespace CharacterStudio.Abilities
         FlightLandingBurst,
         TimeStop,
         WeatherChange,
-        BezierCurveWall
+        BezierCurveWall,
+        WorldMapFlight
     }
 
     public enum AbilityRuntimeHotkeySlot
@@ -51,7 +51,6 @@ namespace CharacterStudio.Abilities
         Q,
         W,
         E,
-        R,
         T,
         A,
         S,
@@ -69,7 +68,6 @@ namespace CharacterStudio.Abilities
         {
             AbilityRuntimeHotkeySlot.Q,
             AbilityRuntimeHotkeySlot.E,
-            AbilityRuntimeHotkeySlot.R,
             AbilityRuntimeHotkeySlot.T,
             AbilityRuntimeHotkeySlot.F,
             AbilityRuntimeHotkeySlot.Z,
@@ -162,7 +160,8 @@ namespace CharacterStudio.Abilities
         Teleport,
         Control,
         Terraform,
-        WeatherChange
+        WeatherChange,
+        Thought
     }
 
     public enum AbilityVisualEffectType

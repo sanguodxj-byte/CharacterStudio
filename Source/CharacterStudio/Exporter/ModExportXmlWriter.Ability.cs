@@ -141,5 +141,60 @@ namespace CharacterStudio.Exporter
 
             return new XDocument(new XDeclaration("1.0", "utf-8", null), element);
         }
+
+        /// <summary>
+        /// 从技能效果配置中提取所有 Thought 类型效果，生成对应的 ThoughtDef XML 文档。
+        /// 每个 Thought 效果生成一个独立的 ThoughtDef。
+        /// </summary>
+        public static XDocument? CreateThoughtDefsDocument(List<ModularAbilityDef>? abilities)
+        {
+            if (abilities == null) return null;
+
+            var thoughtEffects = new List<(string abilityDefName, AbilityEffectConfig effect)>();
+            foreach (var ability in abilities)
+            {
+                if (ability.effects == null) continue;
+                foreach (var effect in ability.effects)
+                {
+                    if (effect.type == AbilityEffectType.Thought && !string.IsNullOrWhiteSpace(effect.thoughtLabel))
+                    {
+                        thoughtEffects.Add((ability.defName ?? "Ability", effect));
+                    }
+                }
+            }
+
+            if (thoughtEffects.Count == 0) return null;
+
+            var defs = new XElement("Defs");
+            foreach (var (abilityDefName, effect) in thoughtEffects)
+            {
+                string thoughtDefName = EffectWorker_Thought.GenerateThoughtDefName(effect.thoughtLabel);
+                
+                var stageElements = new List<object>
+                {
+                    new XElement("label", effect.thoughtLabel),
+                    new XElement("description", effect.thoughtDescription ?? string.Empty),
+                    new XElement("baseMoodEffect", effect.thoughtMoodOffset.ToString("G", System.Globalization.CultureInfo.InvariantCulture))
+                };
+
+                var thoughtElements = new List<object>
+                {
+                    new XElement("defName", thoughtDefName),
+                    new XElement("durationDays", effect.thoughtDurationDays.ToString("G", System.Globalization.CultureInfo.InvariantCulture)),
+                    new XElement("stackLimit", effect.thoughtStackLimit),
+                    new XElement("showBubble", effect.thoughtShowBubble.ToString().ToLowerInvariant()),
+                    new XElement("stages", new XElement("li", stageElements))
+                };
+
+                if (!string.IsNullOrWhiteSpace(effect.thoughtIconPath))
+                {
+                    thoughtElements.Insert(1, new XElement("iconPath", effect.thoughtIconPath));
+                }
+
+                defs.Add(new XElement("ThoughtDef", thoughtElements.ToArray()));
+            }
+
+            return new XDocument(new XDeclaration("1.0", "utf-8", null), defs);
+        }
     }
 }

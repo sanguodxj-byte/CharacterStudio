@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Verse;
@@ -29,9 +29,7 @@ namespace CharacterStudio.Core
             var prepared = skin.Clone();
 
             prepared.hiddenPaths ??= new List<string>();
-#pragma warning disable CS0618
             prepared.hiddenTags ??= new List<string>();
-#pragma warning restore CS0618
             prepared.targetRaces ??= new List<string>();
             prepared.attributes ??= new CharacterAttributeProfile();
             prepared.statModifiers ??= new CharacterStatModifierProfile();
@@ -48,9 +46,7 @@ namespace CharacterStudio.Core
             }
 
             prepared.hiddenPaths.RemoveAll(string.IsNullOrWhiteSpace);
-#pragma warning disable CS0618
             prepared.hiddenTags.RemoveAll(string.IsNullOrWhiteSpace);
-#pragma warning restore CS0618
             prepared.targetRaces.RemoveAll(string.IsNullOrWhiteSpace);
 
             NormalizeBaseAppearance(prepared.baseAppearance);

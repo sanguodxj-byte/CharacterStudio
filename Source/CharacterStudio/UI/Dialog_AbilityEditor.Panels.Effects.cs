@@ -59,52 +59,8 @@ namespace CharacterStudio.UI
             float height = 46f;
             // Amount + Chance row
             height += RowHeight;
-            switch (effect.type)
-            {
-                case AbilityEffectType.Summon:
-                    height += RowHeight;  // SummonKind + SummonCount
-                    height += RowHeight;  // SummonFaction
-                    break;
-                case AbilityEffectType.Terraform:
-                    height += RowHeight;  // TerraformMode
-                    if (effect.terraformMode == TerraformEffectMode.SpawnThing)
-                    {
-                        height += RowHeight; // TerraformThing
-                        height += RowHeight; // SpawnCount
-                    }
-                    else if (effect.terraformMode == TerraformEffectMode.ReplaceTerrain)
-                    {
-                        height += RowHeight; // TerraformTerrain
-                    }
-                    break;
-            }
-
-            if (effect.type == AbilityEffectType.Damage)
-            {
-                height += RowHeight; // DamageDef
-                height += RowHeight; // CanHurtSelf
-            }
-
-            if (effect.type == AbilityEffectType.Buff || effect.type == AbilityEffectType.Debuff)
-            {
-                // Hediff + Duration on the same row as Amount + Chance - already counted
-            }
-
-            if (effect.type == AbilityEffectType.Control)
-            {
-                // ControlMode + Duration on same row - no extra
-                if (effect.controlMode != ControlEffectMode.Stun)
-                {
-                    height += RowHeight; // ControlMoveDistance
-                }
-            }
-
-            if (effect.type == AbilityEffectType.WeatherChange)
-            {
-                height += RowHeight; // WeatherDef
-                height += RowHeight; // Duration + Transition
-            }
-
+            // 类型特化行数委托给 Behavior
+            height += EffectBehaviorRegistry.Get(effect.type).GetExpandedRowCount(effect) * RowHeight;
             return height + 10f;
         }
 
@@ -112,7 +68,8 @@ namespace CharacterStudio.UI
         {
             string amountText = effect.amount.ToString("F1");
             string chanceText = (effect.chance * 100f).ToString("F0") + "%";
-            return $"{GetEffectTypeLabel(effect.type)}  ·  {amountText}  ·  {chanceText}";
+            string delayText = effect.delayTicks > 0 ? $"  ·  {effect.delayTicks}t" : "";
+            return $"{GetEffectTypeLabel(effect.type)}  ·  {amountText}  ·  {chanceText}{delayText}";
         }
 
         private void DrawEffectItem(Rect rect, AbilityEffectConfig effect, int index)
@@ -126,12 +83,27 @@ namespace CharacterStudio.UI
             Rect inner = rect.ContractedBy(6f);
             float y = inner.y;
 
-            // ── Row 1: Title (effect type selector) + action buttons ──
+            // ── Row 1: Title (effect type selector) + delay + action buttons ──
             GameFont prevFont = Text.Font;
             float actionButtonsWidth = 96f;
-            float typeSelectorWidth = Mathf.Max(100f, inner.width - actionButtonsWidth - 4f);
+            float delayFieldWidth = 68f; // label(26) + gap(2) + input(40)
+            float typeSelectorWidth = Mathf.Max(100f, inner.width - actionButtonsWidth - delayFieldWidth - 12f);
             if (DrawSelectionFieldButton(new Rect(inner.x, y, typeSelectorWidth, 22f), GetEffectTypeLabel(effect.type), () => ShowEffectTypeSelector(effect)))
             {
+            }
+
+            // Delay ticks input (between type selector and action buttons)
+            float delayX = inner.x + typeSelectorWidth + 4f;
+            Text.Font = GameFont.Tiny;
+            float delayLabelW = 26f;
+            Widgets.Label(new Rect(delayX, y + 2f, delayLabelW, 20f), "T:");
+            Text.Font = prevFont;
+            string delayStr = effect.delayTicks.ToString();
+            int delayBefore = effect.delayTicks;
+            UIHelper.TextFieldNumeric(new Rect(delayX + delayLabelW + 2f, y, 40f, 22f), ref effect.delayTicks, ref delayStr, 0, 60000);
+            if (effect.delayTicks != delayBefore)
+            {
+                NotifyAbilityPreviewDirty(true);
             }
 
             // Action buttons aligned to right
@@ -176,28 +148,7 @@ namespace CharacterStudio.UI
             float rightX = inner.x + colWidth + gap;
 
             // 计算展开区域行数，预画 section card 背景
-            int expandedRows = 1; // Amount + Chance
-            switch (effect.type)
-            {
-                case AbilityEffectType.Damage:
-                    expandedRows += 2; // DamageDef + CanHurtSelf
-                    break;
-                case AbilityEffectType.Summon:
-                    expandedRows += 2; // SummonKind+Count + SummonFaction
-                    if (effect.summonFactionType == SummonFactionType.FixedDef) expandedRows++;
-                    break;
-                case AbilityEffectType.Terraform:
-                    expandedRows++; // TerraformMode
-                    if (effect.terraformMode == TerraformEffectMode.SpawnThing) expandedRows += 2;
-                    else if (effect.terraformMode == TerraformEffectMode.ReplaceTerrain) expandedRows++;
-                    break;
-                case AbilityEffectType.Control:
-                    if (effect.controlMode != ControlEffectMode.Stun) expandedRows++;
-                    break;
-                case AbilityEffectType.WeatherChange:
-                    expandedRows += 2; // WeatherDef + Duration/Transition
-                    break;
-            }
+            int expandedRows = 1 + EffectBehaviorRegistry.Get(effect.type).GetExpandedRowCount(effect); // Amount + Chance + 类型特化行
             DrawSectionBg(inner.x, y, inner.width, expandedRows * 26f);
 
             void DrawNumericRow(float rowY, float x, string label, ref float value, ref string buffer, float min = float.MinValue, float max = float.MaxValue)
@@ -330,6 +281,55 @@ namespace CharacterStudio.UI
                     string weatherTransStr = effect.weatherTransitionTicks.ToString();
                     DrawNumericRowInt(y, rightX, "CS_Studio_Effect_WeatherTransition".Translate(), ref effect.weatherTransitionTicks, ref weatherTransStr, 0, 99999);
                     break;
+                case AbilityEffectType.Thought:
+                    // Row: Label (full width text field)
+                    Text.Font = GameFont.Tiny;
+                    Widgets.Label(new Rect(inner.x, y + 2f, labelW, 20f), GenText.Truncate("CS_Studio_Effect_ThoughtLabel".Translate(), labelW));
+                    Text.Font = prevFont;
+                    string thoughtLabelStr = effect.thoughtLabel;
+                    effect.thoughtLabel = Widgets.TextField(new Rect(inner.x + labelW, y, inner.width - labelW, 24f), effect.thoughtLabel);
+                    if (effect.thoughtLabel != thoughtLabelStr) NotifyAbilityPreviewDirty(true);
+                    y += 26f;
+                    // Row: Description (full width text field)
+                    Text.Font = GameFont.Tiny;
+                    Widgets.Label(new Rect(inner.x, y + 2f, labelW, 20f), GenText.Truncate("CS_Studio_Effect_ThoughtDesc".Translate(), labelW));
+                    Text.Font = prevFont;
+                    string thoughtDescBefore = effect.thoughtDescription;
+                    effect.thoughtDescription = Widgets.TextField(new Rect(inner.x + labelW, y, inner.width - labelW, 24f), effect.thoughtDescription);
+                    if (effect.thoughtDescription != thoughtDescBefore) NotifyAbilityPreviewDirty(true);
+                    y += 26f;
+                    // Row: MoodOffset + DurationDays
+                    {
+                        string moodStr = effect.thoughtMoodOffset.ToString();
+                        DrawNumericRow(y, inner.x, "CS_Studio_Effect_ThoughtMood".Translate(), ref effect.thoughtMoodOffset, ref moodStr, -100f, 100f);
+                        string thoughtDurStr = effect.thoughtDurationDays.ToString();
+                        DrawNumericRow(y, rightX, "CS_Studio_Effect_ThoughtDuration".Translate(), ref effect.thoughtDurationDays, ref thoughtDurStr, 0.01f, 999f);
+                    }
+                    y += 26f;
+                    // Row: StackLimit + ShowBubble
+                    {
+                        string stackStr = effect.thoughtStackLimit.ToString();
+                        DrawNumericRowInt(y, inner.x, "CS_Studio_Effect_ThoughtStackLimit".Translate(), ref effect.thoughtStackLimit, ref stackStr, 1, 100);
+                        Text.Font = GameFont.Tiny;
+                        Widgets.Label(new Rect(rightX, y + 2f, labelW, 20f), GenText.Truncate("CS_Studio_Effect_ThoughtShowBubble".Translate(), labelW));
+                        Text.Font = prevFont;
+                        bool showBubble = effect.thoughtShowBubble;
+                        Widgets.Checkbox(new Vector2(rightX + labelW, y + 2f), ref showBubble, 24f, false);
+                        if (effect.thoughtShowBubble != showBubble)
+                        {
+                            effect.thoughtShowBubble = showBubble;
+                            NotifyAbilityPreviewDirty(true);
+                        }
+                    }
+                    y += 26f;
+                    // Row: IconPath (full width)
+                    Text.Font = GameFont.Tiny;
+                    Widgets.Label(new Rect(inner.x, y + 2f, labelW, 20f), GenText.Truncate("CS_Studio_Effect_ThoughtIcon".Translate(), labelW));
+                    Text.Font = prevFont;
+                    string iconBefore = effect.thoughtIconPath;
+                    effect.thoughtIconPath = Widgets.TextField(new Rect(inner.x + labelW, y, inner.width - labelW, 24f), effect.thoughtIconPath);
+                    if (effect.thoughtIconPath != iconBefore) NotifyAbilityPreviewDirty(true);
+                    break;
             }
         }
 
@@ -355,30 +355,8 @@ namespace CharacterStudio.UI
                 chance = 1f
             };
 
-            switch (type)
-            {
-                case AbilityEffectType.Damage:
-                    config.amount = 10f;
-                    config.damageDef = DamageDefOf.Blunt;
-                    break;
-                case AbilityEffectType.Heal:
-                    config.amount = 8f;
-                    break;
-                case AbilityEffectType.Buff:
-                case AbilityEffectType.Debuff:
-                    config.duration = 10f;
-                    break;
-                case AbilityEffectType.Summon:
-                    config.summonCount = 1;
-                    break;
-                case AbilityEffectType.Control:
-                    config.duration = 3f;
-                    break;
-                case AbilityEffectType.WeatherChange:
-                    config.weatherDurationTicks = 60000;
-                    config.weatherTransitionTicks = 3000;
-                    break;
-            }
+            // 类型特化默认值委托给 Behavior
+            EffectBehaviorRegistry.Get(type).SetDefaults(config);
 
             return config;
         }
@@ -567,6 +545,8 @@ namespace CharacterStudio.UI
             }
 
             effect.type = type;
+
+            // 公共字段全部归零
             effect.amount = 0f;
             effect.duration = 0f;
             effect.chance = 1f;
@@ -584,25 +564,19 @@ namespace CharacterStudio.UI
             effect.terraformTerrainDef = null;
             effect.terraformSpawnCount = 1;
             effect.canHurtSelf = false;
+            effect.weatherDefName = string.Empty;
+            effect.weatherDurationTicks = 0;
+            effect.weatherTransitionTicks = 0;
+            effect.thoughtLabel = string.Empty;
+            effect.thoughtDescription = string.Empty;
+            effect.thoughtMoodOffset = 0f;
+            effect.thoughtDurationDays = 0f;
+            effect.thoughtStackLimit = 1;
+            effect.thoughtShowBubble = false;
+            effect.thoughtIconPath = string.Empty;
 
-            AbilityEffectConfig defaults = CreateDefaultEffectConfig(type);
-            effect.amount = defaults.amount;
-            effect.duration = defaults.duration;
-            effect.chance = defaults.chance;
-            effect.damageDef = defaults.damageDef;
-            effect.hediffDef = defaults.hediffDef;
-            effect.summonKind = defaults.summonKind;
-            effect.summonCount = defaults.summonCount;
-            effect.summonFactionType = defaults.summonFactionType;
-            effect.summonFactionDef = defaults.summonFactionDef;
-            effect.summonFactionDefName = defaults.summonFactionDefName;
-            effect.controlMode = defaults.controlMode;
-            effect.controlMoveDistance = defaults.controlMoveDistance;
-            effect.terraformMode = defaults.terraformMode;
-            effect.terraformThingDef = defaults.terraformThingDef;
-            effect.terraformTerrainDef = defaults.terraformTerrainDef;
-            effect.terraformSpawnCount = defaults.terraformSpawnCount;
-            effect.canHurtSelf = defaults.canHurtSelf;
+            // 类型特化默认值委托给 Behavior
+            EffectBehaviorRegistry.Get(type).SetDefaults(effect);
 
             NotifyAbilityPreviewDirty(true);
         }

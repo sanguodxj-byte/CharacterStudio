@@ -39,7 +39,6 @@ namespace CharacterStudio.Abilities.RuntimeComponents
             Register(new SlotOverrideWindowHandler());
             Register(new HotkeyOverrideHandler());
             Register(new FollowupCooldownGateHandler());
-            Register(new RStackDetonationHandler());
             Register(new PeriodicPulseHandler());
             Register(new ShieldAbsorbHandler());
             Register(new AttachedShieldVisualHandler());
@@ -51,6 +50,7 @@ namespace CharacterStudio.Abilities.RuntimeComponents
             Register(new FlightLandingBurstHandler());
             Register(new DashHandler());
             Register(new BezierCurveWallHandler());
+            Register(new WorldMapFlightHandler());
 
             // Damage Scale Modifiers
             Register(new ExecuteBonusDamageHandler());

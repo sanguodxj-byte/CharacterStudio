@@ -17,8 +17,8 @@ namespace CharacterStudio.UI
         public Dialog_RenderTreeInspector(Pawn pawn)
         {
             this.pawn = pawn;
-            this.doCloseX = true;
-            this.doCloseButton = true;
+            this.doCloseX = false;
+            this.doCloseButton = false;
             this.draggable = true;
             this.resizeable = true;
             

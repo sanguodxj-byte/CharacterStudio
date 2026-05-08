@@ -85,4 +85,10 @@
     <CS_Studio_Export_ExternalFilesSelected>已指定 {0} 个外部文件</CS_Studio_Export_ExternalFilesSelected>
     <CS_Studio_Export_DefaultGenerated>缺省（保存时自动生成）</CS_Studio_Export_DefaultGenerated>
     <CS_Studio_Browser_SelectFolder>选择文件夹</CS_Studio_Browser_SelectFolder>
+    <CS_Studio_Browser_SelectedCount>已选择 {0} 个文件</CS_Studio_Browser_SelectedCount>
+    <CS_Studio_Browser_Folder>文件夹</CS_Studio_Browser_Folder>
+    <CS_Studio_Browser_File>文件</CS_Studio_Browser_File>
+    <CS_Studio_Browser_CompactView>紧凑视图</CS_Studio_Browser_CompactView>
+    <CS_Studio_Browser_StandardView>标准视图</CS_Studio_Browser_StandardView>
+    <CS_Studio_Browser_Go>前往</CS_Studio_Browser_Go>
 </LanguageData>

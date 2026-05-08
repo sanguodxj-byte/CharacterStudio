@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using CharacterStudio.Exporter;
 using UnityEngine;
 using Verse;
 
@@ -21,31 +22,31 @@ namespace CharacterStudio.Core
 
     public class BaseAppearanceSlotConfig
     {
-        public bool enabled = false;
-        public BaseAppearanceSlotType slotType;
-        public string texPath = "";
-        public string maskTexPath = "";
-        public string shaderDefName = "Cutout";
-        public LayerColorSource colorSource = LayerColorSource.Fixed;
-        public Color customColor = Color.white;
-        public LayerColorSource colorTwoSource = LayerColorSource.Fixed;
-        public Color customColorTwo = Color.white;
-        public Vector2 scale = Vector2.one;
-        public Vector2 scaleEastMultiplier = Vector2.one;
-        public Vector2 scaleNorthMultiplier = Vector2.one;
-        public bool useWestOffset = false;
-        public Vector2 scaleWestMultiplier = Vector2.one;
-        public Vector3 offset = Vector3.zero;
-        public Vector3 offsetEast = Vector3.zero;
-        public Vector3 offsetNorth = Vector3.zero;
-        public Vector3 offsetWest = Vector3.zero;
-        public float rotation = 0f;
-        public float rotationEastOffset = 0f;
-        public float rotationNorthOffset = 0f;
-        public float rotationWestOffset = 0f;
-        public bool flipHorizontal = false;
-        public float drawOrderOffset = 0f;
-        public Type? graphicClass;
+        [XmlExportField(BoolToLower = true)] public bool enabled = false;
+        [XmlExportField] public BaseAppearanceSlotType slotType;
+        [XmlExportField(SkipEmptyString = true)] public string texPath = "";
+        [XmlExportField(SkipEmptyString = true)] public string maskTexPath = "";
+        [XmlExportField(SkipEmptyString = true)] public string shaderDefName = "Cutout";
+        [XmlExportField] public LayerColorSource colorSource = LayerColorSource.Fixed;
+        [XmlExportField(Ignore = true)] public Color customColor = Color.white;
+        [XmlExportField] public LayerColorSource colorTwoSource = LayerColorSource.Fixed;
+        [XmlExportField(Ignore = true)] public Color customColorTwo = Color.white;
+        [XmlExportField] public Vector2 scale = Vector2.one;
+        [XmlExportField] public Vector2 scaleEastMultiplier = Vector2.one;
+        [XmlExportField] public Vector2 scaleNorthMultiplier = Vector2.one;
+        [XmlExportField(BoolToLower = true)] public bool useWestOffset = false;
+        [XmlExportField] public Vector2 scaleWestMultiplier = Vector2.one;
+        [XmlExportField] public Vector3 offset = Vector3.zero;
+        [XmlExportField] public Vector3 offsetEast = Vector3.zero;
+        [XmlExportField] public Vector3 offsetNorth = Vector3.zero;
+        [XmlExportField] public Vector3 offsetWest = Vector3.zero;
+        [XmlExportField] public float rotation = 0f;
+        [XmlExportField(SkipDefault = 0f, SkipDefaultFloat = true)] public float rotationEastOffset = 0f;
+        [XmlExportField(SkipDefault = 0f, SkipDefaultFloat = true)] public float rotationNorthOffset = 0f;
+        [XmlExportField(SkipDefault = 0f, SkipDefaultFloat = true)] public float rotationWestOffset = 0f;
+        [XmlExportField(BoolToLower = true)] public bool flipHorizontal = false;
+        [XmlExportField] public float drawOrderOffset = 0f;
+        [XmlExportField(Ignore = true)] public Type? graphicClass;
 
         public BaseAppearanceSlotConfig Clone()
         {
@@ -110,16 +111,19 @@ namespace CharacterStudio.Core
                 customColorTwo = customColorTwo,
                 maskTexPath = maskTexPath,
                 visible = enabled,
-                graphicClass = graphicClass
+                graphicClass = graphicClass,
+                // 基础槽位图层不应走 ResolveExpressionVariant 表情变体查找，
+                // 设置 role 为 Base 使 UsesUnifiedVariantLogic 返回 true。
+                role = LayerRole.Base
             };
         }
     }
 
     public class BaseAppearanceConfig
     {
-        public float globalScale = 1f;
-        public float drawSizeScale = 1f;
-        public List<BaseAppearanceSlotConfig> slots = new List<BaseAppearanceSlotConfig>();
+        [XmlExportField] public float globalScale = 1f;
+        [XmlExportField] public float drawSizeScale = 1f;
+        [XmlExportField(SkipEmptyCollection = true)] public List<BaseAppearanceSlotConfig> slots = new List<BaseAppearanceSlotConfig>();
 
         public BaseAppearanceConfig()
         {

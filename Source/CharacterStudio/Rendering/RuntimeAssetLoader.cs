@@ -30,7 +30,7 @@ namespace CharacterStudio.Rendering
         private static readonly Dictionary<string, int> cacheAccessTimes = new Dictionary<string, int>();
 
         // 最大缓存数量
-        // 安全网（IsTextureInExternalGraphicCache）确保不会淘汰仍在渲染的纹理，
+        // 安全网（TextureRefTracker）确保不会淘汰仍在渲染的纹理，
         // 因此不需要过大的缓冲。512×512 RGBA ≈ 1MB/张，2048 张 ≈ 2GB 上限。
         // 实际使用中 LRU 会自然淘汰不再使用的旧纹理。
         private const int MaxTextureCacheSize = 2048;
@@ -126,6 +126,11 @@ namespace CharacterStudio.Rendering
                 {
                     if (textureCache.TryGetValue(resolvedPath, out var cachedTex))
                     {
+                        // Unity Object 的 null 检查：C# 引用有效但 native 对象可能已被
+                        // Resources.UnloadUnusedAssets() 或 RimWorld 原版资源管理释放。
+                        // Unity 重载了 == 操作符，cachedTex != null 能检测已销毁的 Unity 对象。
+                        // 注意：不要在此调用任何 Unity native API（如 GetNativeTexturePtr），
+                        // 因为 LoadTextureRaw 可能在非主线程（渲染线程）被调用。
                         if (cachedTex != null)
                         {
                             if (checkMod && IsFileModified(resolvedPath))
@@ -135,13 +140,18 @@ namespace CharacterStudio.Rendering
                             else
                             {
                                 cacheAccessTimes[resolvedPath] = Environment.TickCount;
+                                Performance.CharacterStudioPerformanceStats.RecordTextureCacheHit();
                                 return cachedTex;
                             }
                         }
                         else
                         {
+                            // 纹理已失效（被 Unity 引擎释放），移除缓存条目以便重新加载
+                            TextureMemoryMonitor.RemoveTexture(resolvedPath);
                             textureCache.Remove(resolvedPath);
                             cacheAccessTimes.Remove(resolvedPath);
+                            textureInstanceIdToPath.Remove(cachedTex?.GetInstanceID() ?? 0);
+                            fileLastWriteTimes.Remove(resolvedPath);
                         }
                     }
                 }
@@ -184,7 +194,10 @@ namespace CharacterStudio.Rendering
                 // Log.Message($"[CharacterStudio] 正在加载外部纹理: {resolvedPath}"); // 调试日志
 
                 byte[] bytes = File.ReadAllBytes(resolvedPath);
-                return CreateTextureFromBytes(resolvedPath, bytes, useCache);
+                var result = CreateTextureFromBytes(resolvedPath, bytes, useCache);
+                if (result != null)
+                    Performance.CharacterStudioPerformanceStats.RecordTextureLoadFromDisk();
+                return result;
             }
             catch (Exception ex)
             {
@@ -237,6 +250,18 @@ namespace CharacterStudio.Rendering
                 && (texturePath.Contains(":")
                     || texturePath.StartsWith("/")
                     || Path.IsPathRooted(texturePath));
+        }
+
+        /// <summary>
+        /// 检查纹理是否已在缓存中（用于预热时跳过已加载纹理）。
+        /// </summary>
+        public static bool IsTextureCached(string resolvedPath)
+        {
+            if (string.IsNullOrWhiteSpace(resolvedPath)) return false;
+            lock (textureCacheLock)
+            {
+                return textureCache.ContainsKey(resolvedPath);
+            }
         }
 
         public static bool ExternalTextureExists(string fullPath, out string resolvedPath)
@@ -356,22 +381,88 @@ namespace CharacterStudio.Rendering
             return fullPath;
         }
 
-        private static void FixTransparentEdgeBleeding(Texture2D texture)
+        /// <summary>
+        /// 对文件夹内所有支持的图片文件执行半透明像素边缘修正，直接修改原文件。
+        /// 返回 (已处理文件数, 跳过文件数, 错误文件数)。
+        /// </summary>
+        public static (int processed, int skipped, int errors) FixEdgeBleedingForFolder(string folderPath)
         {
+            if (!Directory.Exists(folderPath))
+                return (0, 0, 0);
+
+            int processed = 0, skipped = 0, errors = 0;
+            string[] extensions = { ".png", ".PNG", ".jpg", ".JPG", ".jpeg", ".JPEG" };
+            var files = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var ext in extensions)
+            {
+                foreach (var f in Directory.GetFiles(folderPath, "*" + ext))
+                    files.Add(f);
+            }
+
+            foreach (string filePath in files)
+            {
+                try
+                {
+                    byte[] bytes = File.ReadAllBytes(filePath);
+                    var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+                    tex.name = Path.GetFileNameWithoutExtension(filePath);
+
+                    if (!ImageConversion.LoadImage(tex, bytes))
+                    {
+                        UnityEngine.Object.Destroy(tex);
+                        errors++;
+                        continue;
+                    }
+
+                    bool changed = FixTransparentEdgeBleeding(tex);
+
+                    if (changed)
+                    {
+                        tex.Apply(false, false);
+                        byte[] pngBytes = tex.EncodeToPNG();
+                        UnityEngine.Object.Destroy(tex);
+                        File.WriteAllBytes(filePath, pngBytes);
+                        processed++;
+                    }
+                    else
+                    {
+                        UnityEngine.Object.Destroy(tex);
+                        skipped++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning($"[CharacterStudio] 边缘修正处理失败: {filePath} - {ex.Message}");
+                    errors++;
+                }
+            }
+
+            return (processed, skipped, errors);
+        }
+
+        /// <summary>
+        /// 修正纹理中半透明像素的 RGB 值，消除暗色/杂色边缘。
+        /// 返回是否有像素被修改。
+        /// </summary>
+        public static bool FixTransparentEdgeBleeding(Texture2D texture)
+        {
+            bool changed = false;
             try
             {
                 int width = texture.width;
                 int height = texture.height;
                 if (width <= 1 || height <= 1)
                 {
-                    return;
+                    return false;
                 }
 
                 Color32[] source = texture.GetPixels32();
-                Color32[] result = new Color32[source.Length];
-                Array.Copy(source, result, source.Length);
+                Color32[] buffer = new Color32[source.Length];
+                Array.Copy(source, buffer, source.Length);
 
-                bool changed = false;
+                // ── 第一阶段：将全透明像素（alpha ≤ 8）的 RGB 替换为不透明邻居的加权平均色 ──
+                // 这些像素虽然被 Cutout shader 丢弃，但 mipmap 生成时会参与混合，
+                // 如果 RGB 是黑色/杂色，缩小后 mipmap 级别会出现暗色/杂色边缘。
                 for (int y = 0; y < height; y++)
                 {
                     for (int x = 0; x < width; x++)
@@ -379,61 +470,86 @@ namespace CharacterStudio.Rendering
                         int index = y * width + x;
                         Color32 current = source[index];
                         if (current.a > 8)
-                        {
                             continue;
-                        }
 
-                        int totalR = 0;
-                        int totalG = 0;
-                        int totalB = 0;
-                        int totalWeight = 0;
+                        int tR = 0, tG = 0, tB = 0, tW = 0;
 
                         for (int ny = Math.Max(0, y - 1); ny <= Math.Min(height - 1, y + 1); ny++)
                         {
                             for (int nx = Math.Max(0, x - 1); nx <= Math.Min(width - 1, x + 1); nx++)
                             {
-                                if (nx == x && ny == y)
-                                {
-                                    continue;
-                                }
-
+                                if (nx == x && ny == y) continue;
                                 Color32 neighbor = source[ny * width + nx];
-                                if (neighbor.a <= 8)
-                                {
-                                    continue;
-                                }
-
+                                if (neighbor.a <= 8) continue;
                                 int weight = Math.Max(1, (int)neighbor.a);
-                                totalR += neighbor.r * weight;
-                                totalG += neighbor.g * weight;
-                                totalB += neighbor.b * weight;
-                                totalWeight += weight;
+                                tR += neighbor.r * weight; tG += neighbor.g * weight; tB += neighbor.b * weight; tW += weight;
                             }
                         }
 
-                        if (totalWeight <= 0)
-                        {
+                        if (tW <= 0) continue;
+
+                        buffer[index] = new Color32(
+                            (byte)(tR / tW), (byte)(tG / tW), (byte)(tB / tW), current.a);
+                    }
+                }
+
+                // ── 第二阶段：修正半透明边缘像素的 RGB ──
+                // 半透明像素（9 ≤ alpha ≤ 254）在 Cutout shader 下被渲染为完全不透明，
+                // 如果其 RGB 保留暗色/预乘色值，会产生可见的暗色/杂色边缘线。
+                // 将这些像素的 RGB 替换为不透明邻居（alpha ≥ 200）的加权平均色，保留原始 alpha。
+                for (int y2 = 0; y2 < height; y2++)
+                {
+                    for (int x2 = 0; x2 < width; x2++)
+                    {
+                        int idx = y2 * width + x2;
+                        Color32 px = source[idx];
+
+                        if (px.a < 9 || px.a > 254)
                             continue;
+
+                        int tR2 = 0, tG2 = 0, tB2 = 0, tW2 = 0;
+
+                        for (int ny2 = Math.Max(0, y2 - 1); ny2 <= Math.Min(height - 1, y2 + 1); ny2++)
+                        {
+                            for (int nx2 = Math.Max(0, x2 - 1); nx2 <= Math.Min(width - 1, x2 + 1); nx2++)
+                            {
+                                if (nx2 == x2 && ny2 == y2) continue;
+                                Color32 nb = source[ny2 * width + nx2];
+                                if (nb.a < 200) continue;
+                                int w = (int)nb.a;
+                                tR2 += nb.r * w; tG2 += nb.g * w; tB2 += nb.b * w; tW2 += w;
+                            }
                         }
 
-                        result[index] = new Color32(
-                            (byte)(totalR / totalWeight),
-                            (byte)(totalG / totalWeight),
-                            (byte)(totalB / totalWeight),
-                            current.a);
+                        if (tW2 <= 0) continue;
+
+                        buffer[idx] = new Color32(
+                            (byte)(tR2 / tW2), (byte)(tG2 / tW2), (byte)(tB2 / tW2), px.a);
+                    }
+                }
+
+                // 检查是否有实际变化
+                for (int i = 0; i < source.Length; i++)
+                {
+                    if (source[i].r != buffer[i].r || source[i].g != buffer[i].g || source[i].b != buffer[i].b)
+                    {
                         changed = true;
+                        break;
                     }
                 }
 
                 if (changed)
                 {
-                    texture.SetPixels32(result);
+                    texture.SetPixels32(buffer);
                 }
             }
             catch (Exception ex)
             {
                 Log.Warning($"[CharacterStudio] 修正透明边缘采样时出错: {ex.Message}");
+                return false;
             }
+
+            return changed;
         }
 
         /// <summary>
@@ -745,16 +861,16 @@ namespace CharacterStudio.Rendering
         /// </summary>
         public static string GetCacheStats()
         {
-            int texCount, matCount;
             lock (textureCacheLock)
             {
-                texCount = textureCache.Count;
+                return $"TextureCache: {textureCache.Count}/{MaxTextureCacheSize}, " +
+                       $"MaterialCache: {materialCache.Count}/{MaxMaterialCacheSize}, " +
+                       $"PendingReads: {pendingTextureReadRequests.Count}, " +
+                       $"PendingBytes: {pendingTextureBytes.Count}, " +
+                       $"FailedReads: {pendingTextureReadFailures.Count}, " +
+                       $"PathResolveCache: {resolvedPathCache.Count}, " +
+                       $"EdgeFixProcessed: {edgeBleedingProcessedPaths.Count}";
             }
-            lock (materialCacheLock)
-            {
-                matCount = materialCache.Count;
-            }
-            return $"纹理缓存: {texCount}/{MaxTextureCacheSize} 项, 材质缓存: {matCount}/{MaxMaterialCacheSize} 项";
         }
 
         // P-PERF: 复用排序缓冲区，避免 EnsureCacheCapacity 每次淘汰 new List + Sort 分配
@@ -792,9 +908,8 @@ namespace CharacterStudio.Rendering
                     {
                         if (item is Texture2D tex)
                         {
-                            // 安全网：如果纹理仍被 externalGraphicCache 引用，跳过淘汰。
-                            // 已被 Destroy 的纹理引用会让 Graphic_Runtime 渲染为透明。
-                            if (PawnRenderNodeWorker_CustomLayer.IsTextureInExternalGraphicCache(tex))
+                            // 安全网：如果纹理仍被任何缓存层引用，跳过淘汰。
+                            if (TextureRefTracker.IsReferenced(tex))
                             {
                                 // 刷新访问时间，避免反复尝试淘汰
                                 accessTimes[key] = Environment.TickCount;
@@ -805,12 +920,14 @@ namespace CharacterStudio.Rendering
                             textureSemiTransparencyCache.Remove(textureInstanceId);
                             textureInstanceIdToPath.Remove(textureInstanceId);
                             UnityEngine.Object.Destroy(tex);
+                            TextureMemoryMonitor.RemoveTexture(key);
                         }
                         cache.Remove(key);
                     }
                     accessTimes.Remove(key);
                     fileLastWriteTimes.Remove(key);
                     evicted++;
+                    Performance.CharacterStudioPerformanceStats.RecordTextureLruEviction();
                 }
 
                 sorted.Clear();
@@ -835,6 +952,7 @@ namespace CharacterStudio.Rendering
                             _evictionKeysBuffer = new List<string>(toRemove);
                         _evictionKeysBuffer.Add(key);
                         removed++;
+                        Performance.CharacterStudioPerformanceStats.RecordTextureLruEviction();
                     }
                 }
                 if (_evictionKeysBuffer != null)
@@ -988,6 +1106,8 @@ namespace CharacterStudio.Rendering
                     cacheAccessTimes[resolvedPath] = Environment.TickCount;
                     textureInstanceIdToPath[tex.GetInstanceID()] = resolvedPath;
                 }
+
+                TextureMemoryMonitor.RecordTexture(resolvedPath, tex);
             }
 
             return tex;
@@ -1178,11 +1298,17 @@ namespace CharacterStudio.Rendering
 
         /// <summary>
         /// 主线程 tick 回调：消费后台读取的纹理字节数据，创建 Texture2D 对象。
-        /// 每次 tick 最多处理 4 个，避免单帧卡顿。
+        /// 使用时间预算（默认 8ms），而非固定数量，避免大量纹理时的长队列延迟。
         /// </summary>
         public static void TickProcessPendingTextures()
         {
             if (!IsMainThread()) return;
+
+            // 跟踪待处理队列峰值
+            lock (textureCacheLock)
+            {
+                Performance.CharacterStudioPerformanceStats.UpdatePendingQueuePeak(pendingTextureBytes.Count);
+            }
 
             int processed = 0;
             while (processed < 4)

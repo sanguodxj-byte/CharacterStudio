@@ -205,7 +205,15 @@ namespace CharacterStudio.Rendering
                         : faceConfig.GetLayeredPartConfig(partType, expression, side);
 
                     if (closedStatePart != null)
-                        return closedStatePart.GetDirectionalTexPath(facing);
+                    {
+                        string directionalPath = closedStatePart.GetDirectionalTexPath(facing);
+                        // 侧/背朝向无方向变体资源时，不应用闭眼表情贴图，
+                        // 避免正面贴图泄漏到侧面
+                        if (!string.IsNullOrWhiteSpace(directionalPath))
+                            return directionalPath;
+                        if (facing == Rot4.South)
+                            return closedStatePart.GetPrimaryTexPath();
+                    }
                 }
             }
 
@@ -616,6 +624,10 @@ namespace CharacterStudio.Rendering
                         if (TryResolveDirectionalCompiledPath(overlayPath, facing, portraitCache.TryGetPortraitOverlayDirectionAvailability(overlayId, out FaceDirectionAvailability? overlayAvailability) ? overlayAvailability : null, out string resolvedOverlayPath))
                             return resolvedOverlayPath;
 
+                        // 侧/背朝向无方向变体资源时，不回退到正面路径，交由上层 Neutral 回退处理
+                        if (facing != Rot4.South)
+                            return null;
+
                         return overlayPath;
                     }
                 }
@@ -626,6 +638,10 @@ namespace CharacterStudio.Rendering
                     {
                         if (TryResolveDirectionalCompiledPath(partPath, facing, portraitCache.TryGetPortraitPartDirectionAvailability(partType, side, out FaceDirectionAvailability? partAvailability) ? partAvailability : null, out string resolvedPartPath))
                             return resolvedPartPath;
+
+                        // 侧/背朝向无方向变体资源时，不回退到正面路径，交由上层 Neutral 回退处理
+                        if (facing != Rot4.South)
+                            return null;
 
                         return partPath;
                     }
@@ -640,6 +656,7 @@ namespace CharacterStudio.Rendering
                 if (TryResolveDirectionalCompiledPath(portraitTrack.basePath, facing, baseAvailability, out string resolvedBasePath))
                     return resolvedBasePath;
 
+                // Base 部件特殊：侧/背朝向无方向变体时允许回退到正面路径（Base 缺失会导致整个面部消失）
                 return portraitTrack.basePath;
             }
 

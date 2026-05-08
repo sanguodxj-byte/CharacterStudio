@@ -201,5 +201,13 @@ namespace CharacterStudio.Rendering
             graphicCache.Clear();
             isMultiCache.Clear();
         }
+
+        /// <summary>
+        /// 返回缓存统计（供性能报告使用）。
+        /// </summary>
+        public static string GetCacheStats()
+        {
+            return $"Graphic: {graphicCache.Count}, IsMulti: {isMultiCache.Count}";
+        }
     }
 }

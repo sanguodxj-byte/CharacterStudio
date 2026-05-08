@@ -136,6 +136,7 @@
     <CS_Studio_Texture_BrowseExternal>外部文件浏览</CS_Studio_Texture_BrowseExternal>
     <CS_Studio_Texture_BrowseInternal>内部纹理浏览 (Textures/)</CS_Studio_Texture_BrowseInternal>
     <CS_Studio_Browser_TexturesDir>跳转到 CharacterStudio 的 Textures 目录。选择此目录下的文件会自动转为相对路径，由 RimWorld 原版管线加载，性能更优。</CS_Studio_Browser_TexturesDir>
+    <CS_Studio_Browser_DefsDir>跳转到 CharacterStudio 的 defs 目录。用于存放自定义 XML 定义文件（武器、装备等）。</CS_Studio_Browser_DefsDir>
     <CS_Studio_Prop_Visible>可见</CS_Studio_Prop_Visible>
     <CS_Studio_Prop_Shader>材质类型 (Shader)</CS_Studio_Prop_Shader>
     <CS_Studio_Prop_Shader_Tooltip>决定图层如何处理半透明与深度排序：
@@ -144,8 +145,11 @@
 • Transparent: 柔和半透明边缘，不写入深度（由于无遮挡能力，仅限用于墨镜、特效、面纱等确实需要全透叠色的部件，否则会导致底部影子透上来）。
 • TransparentPostLight: 同上，但不接受场景阴影。
 • MetaOverlay: 用于特殊不可见渲染通道。</CS_Studio_Prop_Shader_Tooltip>
-    <CS_Studio_Prop_CustomShaderPath>自定义Shader路径</CS_Studio_Prop_CustomShaderPath>
-    <CS_Studio_Prop_CustomShaderPath_Tooltip>自定义着色器路径（如 Hidden/RimWorld/TransparentZWrite）。仅在Shader设置为Custom时生效。</CS_Studio_Prop_CustomShaderPath_Tooltip>
+    <CS_Studio_Prop_CustomShaderPath>自定义Shader</CS_Studio_Prop_CustomShaderPath>
+    <CS_Studio_Prop_CustomShaderPath_Tooltip>点击"…"按钮浏览AssetBundle文件并选择其中的Shader。也可在下方的路径栏手动输入。</CS_Studio_Prop_CustomShaderPath_Tooltip>
+    <CS_Studio_Prop_ShaderManualPath>路径(手动)</CS_Studio_Prop_ShaderManualPath>
+    <CS_Studio_Prop_ShaderManualPath_Tooltip>手动输入Shader路径。格式: "AssetBundle相对路径|Shader名称"，如 "1.6/AssetBundles/cs_shaders|Sprite (Pixel Lit Dissolve)"。也可直接输入Unity内置Shader名称。</CS_Studio_Prop_ShaderManualPath_Tooltip>
+    <CS_Studio_ShaderBundleEmpty>该AssetBundle中未找到Shader资源。</CS_Studio_ShaderBundleEmpty>
     <CS_Studio_Prop_Alpha>不透明度</CS_Studio_Prop_Alpha>
     <CS_Studio_Prop_Alpha_Tooltip>控制图层的透明度。1=完全不透明，0=完全透明。仅在使用透明Shader时可用。</CS_Studio_Prop_Alpha_Tooltip>
     <CS_Studio_Prop_ZWrite>深度写入</CS_Studio_Prop_ZWrite>
@@ -159,6 +163,45 @@
     <CS_Studio_Performance_Title>Character Studio 性能统计</CS_Studio_Performance_Title>
     <CS_Studio_Performance_EnableCapture>启用统计采集</CS_Studio_Performance_EnableCapture>
     <CS_Studio_Performance_Reset>重置统计</CS_Studio_Performance_Reset>
+    <CS_Studio_Performance_Copy>复制报告</CS_Studio_Performance_Copy>
+    <CS_Studio_Performance_EnableCapture_Short>采集</CS_Studio_Performance_EnableCapture_Short>
+
+    <!-- 性能悬浮窗 -->
+    <CS_Studio_Perf_Sec_TextureMemory>纹理内存</CS_Studio_Perf_Sec_TextureMemory>
+    <CS_Studio_Perf_Usage>用量</CS_Studio_Perf_Usage>
+    <CS_Studio_Perf_Pressure>压力</CS_Studio_Perf_Pressure>
+    <CS_Studio_Perf_Tracked>追踪中</CS_Studio_Perf_Tracked>
+    <CS_Studio_Perf_Sec_TextureLoading>纹理加载</CS_Studio_Perf_Sec_TextureLoading>
+    <CS_Studio_Perf_CacheHitRate>缓存命中率</CS_Studio_Perf_CacheHitRate>
+    <CS_Studio_Perf_LoadsHits>加载 / 命中</CS_Studio_Perf_LoadsHits>
+    <CS_Studio_Perf_LruEvictions>LRU 淘汰</CS_Studio_Perf_LruEvictions>
+    <CS_Studio_Perf_DestroyedSkipped>已销毁 / 跳过</CS_Studio_Perf_DestroyedSkipped>
+    <CS_Studio_Perf_PressureReleases>压力释放</CS_Studio_Perf_PressureReleases>
+    <CS_Studio_Perf_QueuePeak>队列峰值</CS_Studio_Perf_QueuePeak>
+    <CS_Studio_Perf_Sec_WorkerCaches>Worker 缓存</CS_Studio_Perf_Sec_WorkerCaches>
+    <CS_Studio_Perf_CustomLayer>自定义图层</CS_Studio_Perf_CustomLayer>
+    <CS_Studio_Perf_FaceComp>表情组件</CS_Studio_Perf_FaceComp>
+    <CS_Studio_Perf_EyeDir>眼部方向</CS_Studio_Perf_EyeDir>
+    <CS_Studio_Perf_AssetLoader>资源加载器</CS_Studio_Perf_AssetLoader>
+    <CS_Studio_Perf_PoolAvailable>池可用数</CS_Studio_Perf_PoolAvailable>
+    <CS_Studio_Perf_Sec_RenderRefresh>渲染刷新</CS_Studio_Perf_Sec_RenderRefresh>
+    <CS_Studio_Perf_Requests>请求数</CS_Studio_Perf_Requests>
+    <CS_Studio_Perf_DispatchedCoalesced>下发 / 合并</CS_Studio_Perf_DispatchedCoalesced>
+    <CS_Studio_Perf_CoalesceRate>合并率</CS_Studio_Perf_CoalesceRate>
+    <CS_Studio_Perf_DirtyThrottled>触发 / 节流</CS_Studio_Perf_DirtyThrottled>
+    <CS_Studio_Perf_Sec_FaceCaches>面部缓存</CS_Studio_Perf_Sec_FaceCaches>
+    <CS_Studio_Perf_TransformHit>变换命中</CS_Studio_Perf_TransformHit>
+    <CS_Studio_Perf_TransformHM>变换 命中/未命中</CS_Studio_Perf_TransformHM>
+    <CS_Studio_Perf_PathHit>路径命中</CS_Studio_Perf_PathHit>
+    <CS_Studio_Perf_PathHM>路径 命中/未命中</CS_Studio_Perf_PathHM>
+    <CS_Studio_Perf_Sec_Camera>相机 / LOD</CS_Studio_Perf_Sec_Camera>
+    <CS_Studio_Perf_CameraZoom>当前缩放</CS_Studio_Perf_CameraZoom>
+    <CS_Studio_Perf_HighFocusThreshold>高精度阈值</CS_Studio_Perf_HighFocusThreshold>
+    <CS_Studio_Perf_HighFocusZoom>近景全动画</CS_Studio_Perf_HighFocusZoom>
+    <CS_Studio_Perf_Sec_Bootstrap>启动引导</CS_Studio_Perf_Sec_Bootstrap>
+    <CS_Studio_Perf_ExecSkipped>执行 / 跳过</CS_Studio_Perf_ExecSkipped>
+    <CS_Studio_Perf_PawnsComps>Pawn / 组件</CS_Studio_Perf_PawnsComps>
+    <CS_Studio_Perf_SkinsLoadouts>皮肤 / 装备</CS_Studio_Perf_SkinsLoadouts>
     <CS_Studio_Performance_Status_On>统计状态：已启用</CS_Studio_Performance_Status_On>
     <CS_Studio_Performance_Status_Off>统计状态：已关闭（优化逻辑仍生效）</CS_Studio_Performance_Status_Off>
     <CS_Studio_Performance_Bootstrap>Bootstrap 统计</CS_Studio_Performance_Bootstrap>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<LanguageData>
+  <CS_PawnFlightTravelling.label>飞行角色</CS_PawnFlightTravelling.label>
+  <CS_PawnFlightTravelling.description>正在飞行中的角色。</CS_PawnFlightTravelling.description>
+  <CS_PawnFlightWaiting.label>等待着陆的飞行角色</CS_PawnFlightWaiting.label>
+  <CS_PawnFlightWaiting.description>到达目标上空，等待着陆指令的飞行角色。</CS_PawnFlightWaiting.description>
+</LanguageData>

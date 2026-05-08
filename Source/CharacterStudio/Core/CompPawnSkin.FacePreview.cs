@@ -14,7 +14,7 @@ namespace CharacterStudio.Core
             var oldExp = curExpression;
             var pawn = Pawn!;
 
-            curExpression = FaceExpressionStateResolver.ResolveExpression(pawn);
+                curExpression = FaceExpressionStateResolver.ResolveExpression(pawn, faceExpressionState, activeSkin?.faceConfig?.idleMicroExpression);
 
             if (oldExp != curExpression)
             {
@@ -155,9 +155,19 @@ namespace CharacterStudio.Core
 
             if (faceExpressionState.IsBlinkActive)
             {
-                // 眨眼相位推进只影响 transform（alpha/offset），不需要重建 graphic
+                BlinkPhase phaseBefore = faceExpressionState.blinkPhase;
+                int phaseTickBefore = faceExpressionState.blinkPhaseTick;
+
                 faceExpressionState.ConsumeBlinkTick();
-                RequestTransformRefresh();
+
+                // 眨眼相位变化影响贴图路径（ReplacementEye 的显示/隐藏），
+                // 必须刷新 graphic 缓存，否则闭眼贴图在眨眼结束后不会消失
+                bool phaseChanged = phaseBefore != faceExpressionState.blinkPhase
+                    || phaseTickBefore != faceExpressionState.blinkPhaseTick;
+                if (phaseChanged)
+                    MarkFaceGraphicDirty();
+                else
+                    RequestTransformRefresh();
             }
             else
             {
@@ -258,10 +268,20 @@ namespace CharacterStudio.Core
 
             _effectiveStateCacheFrameId = frameId;
             _cachedEffectiveExpression = EffectiveFaceStateEvaluator.ResolveExpression(this);
-            _cachedEffectiveMouthState = EffectiveFaceStateEvaluator.ResolveMouthState(this);
-            _cachedEffectiveLidState = EffectiveFaceStateEvaluator.ResolveLidState(this);
-            _cachedEffectiveBrowState = EffectiveFaceStateEvaluator.ResolveBrowState(this);
-            _cachedEffectiveEmotionOverlayState = EffectiveFaceStateEvaluator.ResolveEmotionOverlayState(this);
+
+            // 预计算 needs 表情覆盖，供所有通道共用
+            ExpressionType? needsExprOverride = null;
+            if (Pawn != null && _cachedEffectiveExpression != ExpressionType.Neutral)
+            {
+                ExpressionType needsExpr = FaceExpressionStateResolver.ResolveNeedsExpression(Pawn);
+                if (needsExpr != _cachedEffectiveExpression && needsExpr != ExpressionType.Neutral)
+                    needsExprOverride = needsExpr;
+            }
+
+            _cachedEffectiveMouthState = EffectiveFaceStateEvaluator.ResolveMouthState(this, _cachedEffectiveExpression, needsExprOverride);
+            _cachedEffectiveLidState = EffectiveFaceStateEvaluator.ResolveLidState(this, _cachedEffectiveExpression, needsExprOverride);
+            _cachedEffectiveBrowState = EffectiveFaceStateEvaluator.ResolveBrowState(this, _cachedEffectiveExpression, needsExprOverride);
+            _cachedEffectiveEmotionOverlayState = EffectiveFaceStateEvaluator.ResolveEmotionOverlayState(this, _cachedEffectiveExpression, needsExprOverride);
             _cachedEffectiveOverlaySemanticKey = EffectiveFaceStateEvaluator.ResolveOverlaySemanticKey(this);
             _cachedEffectiveEyeVariant = ResolveEyeAnimationVariant(_cachedEffectiveExpression);
             _cachedEffectivePupilVariant = ResolvePupilScaleVariant(_cachedEffectiveExpression);
@@ -272,6 +292,7 @@ namespace CharacterStudio.Core
         public void InvalidateEffectiveStateCache()
         {
             _effectiveStateCacheFrameId = -1;
+            _cachedHasActiveFaceAnimFrameId = -1;
         }
 
         public ExpressionType GetEffectiveExpression()
@@ -444,23 +465,10 @@ namespace CharacterStudio.Core
 
             int tick = Find.TickManager?.TicksGame ?? 0;
             int pawnSeed = Pawn?.thingIDNumber ?? 0;
-            bool happyFamily = expression == ExpressionType.Happy
-                || expression == ExpressionType.Cheerful
-                || expression == ExpressionType.Lovin
-                || expression == ExpressionType.SocialRelax;
 
-            if (happyFamily)
+            if (IsHappyFamily(expression))
             {
-                int cycle = Mathf.Abs(pawnSeed + tick / 45) % 6;
-                return cycle switch
-                {
-                    0 => EyeAnimationVariant.HappyOpen,
-                    1 => EyeAnimationVariant.HappySoft,
-                    2 => EyeAnimationVariant.HappyClosedPeak,
-                    3 => EyeAnimationVariant.HappyClosedPeak,
-                    4 => EyeAnimationVariant.HappyOpen,
-                    _ => EyeAnimationVariant.HappySoft,
-                };
+                return ResolveHappyEyeVariant(pawnSeed, tick);
             }
 
             if (expression == ExpressionType.Working || expression == ExpressionType.Reading)
@@ -503,18 +511,9 @@ namespace CharacterStudio.Core
                 ExpressionType needsExpr = FaceExpressionStateResolver.ResolveNeedsExpression(Pawn);
                 if (needsExpr != expression && needsExpr != ExpressionType.Neutral)
                 {
-                    if (needsExpr == ExpressionType.Happy || needsExpr == ExpressionType.Cheerful || needsExpr == ExpressionType.Lovin || needsExpr == ExpressionType.SocialRelax)
+                    if (IsHappyFamily(needsExpr))
                     {
-                        int cycle = Mathf.Abs(pawnSeed + tick / 45) % 6;
-                        return cycle switch
-                        {
-                            0 => EyeAnimationVariant.HappyOpen,
-                            1 => EyeAnimationVariant.HappySoft,
-                            2 => EyeAnimationVariant.HappyClosedPeak,
-                            3 => EyeAnimationVariant.HappyClosedPeak,
-                            4 => EyeAnimationVariant.HappyOpen,
-                            _ => EyeAnimationVariant.HappySoft,
-                        };
+                        return ResolveHappyEyeVariant(pawnSeed, tick);
                     }
                 }
             }
@@ -528,6 +527,26 @@ namespace CharacterStudio.Core
                 3 => EyeAnimationVariant.NeutralOpen,
                 4 => EyeAnimationVariant.NeutralGlance,
                 _ => EyeAnimationVariant.NeutralSoft,
+            };
+        }
+
+        private static bool IsHappyFamily(ExpressionType expression)
+            => expression == ExpressionType.Happy
+            || expression == ExpressionType.Cheerful
+            || expression == ExpressionType.Lovin
+            || expression == ExpressionType.SocialRelax;
+
+        private static EyeAnimationVariant ResolveHappyEyeVariant(int pawnSeed, int tick)
+        {
+            int cycle = Mathf.Abs(pawnSeed + tick / 45) % 6;
+            return cycle switch
+            {
+                0 => EyeAnimationVariant.HappyOpen,
+                1 => EyeAnimationVariant.HappySoft,
+                2 => EyeAnimationVariant.HappyClosedPeak,
+                3 => EyeAnimationVariant.HappyClosedPeak,
+                4 => EyeAnimationVariant.HappyOpen,
+                _ => EyeAnimationVariant.HappySoft,
             };
         }
 
@@ -637,7 +656,7 @@ namespace CharacterStudio.Core
             if (!FaceRuntimeActivationGuard.CanProcessEyeDirection(this, Pawn)) return;
 
             var pawn = Pawn!;
-            EyeDirection resolvedDirection = EyeDirectionStateResolver.ResolveDirection(pawn);
+            EyeDirection resolvedDirection = EyeDirectionStateResolver.ResolveDirection(pawn, faceExpressionState, activeSkin?.faceConfig?.idleMicroExpression);
             bool directionChanged = eyeDirectionState.SetDirection(resolvedDirection);
 
             // 攻击状态（AttackMelee / AttackRanged / WaitCombat）时，

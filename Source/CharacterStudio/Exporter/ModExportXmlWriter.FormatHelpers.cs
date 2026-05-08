@@ -12,7 +12,6 @@ namespace CharacterStudio.Exporter
     public static partial class ModExportXmlWriter
     {
         // ─── FormatVector3 / FormatVector2 / FormatColor 通过 XmlExportHelper 提供外部复用 ───
-        // 内部保留 private 方法以保持兼容
 
         internal static string FormatVector3(Vector3 value)
         {

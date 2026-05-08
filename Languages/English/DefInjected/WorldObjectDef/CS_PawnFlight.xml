@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<LanguageData>
+  <CS_PawnFlightTravelling.label>Flying Character</CS_PawnFlightTravelling.label>
+  <CS_PawnFlightTravelling.description>A character flying through the air.</CS_PawnFlightTravelling.description>
+  <CS_PawnFlightWaiting.label>Flying Character (Awaiting Landing)</CS_PawnFlightWaiting.label>
+  <CS_PawnFlightWaiting.description>A character that has arrived above the destination, awaiting landing orders.</CS_PawnFlightWaiting.description>
+</LanguageData>

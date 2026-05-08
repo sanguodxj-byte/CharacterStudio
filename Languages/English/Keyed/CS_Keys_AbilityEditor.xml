@@ -27,6 +27,7 @@
     <CS_Ability_EffectType_Control>Control</CS_Ability_EffectType_Control>
     <CS_Ability_EffectType_Terraform>Terraform</CS_Ability_EffectType_Terraform>
     <CS_Ability_EffectType_WeatherChange>Weather Change</CS_Ability_EffectType_WeatherChange>
+    <CS_Ability_EffectType_Thought>Thought</CS_Ability_EffectType_Thought>
     <CS_Ability_RuntimeComponentType_SlotOverrideWindow>Combo Window</CS_Ability_RuntimeComponentType_SlotOverrideWindow>
     <CS_Ability_RuntimeComponentType_HotkeyOverride>Hotkey Override</CS_Ability_RuntimeComponentType_HotkeyOverride>
     <CS_Ability_RuntimeComponentType_FollowupCooldownGate>Followup Cooldown Gate</CS_Ability_RuntimeComponentType_FollowupCooldownGate>
@@ -121,10 +122,20 @@
     <CS_Studio_Effect_WeatherDef>Weather Def</CS_Studio_Effect_WeatherDef>
     <CS_Studio_Effect_WeatherDuration>Duration (Ticks)</CS_Studio_Effect_WeatherDuration>
     <CS_Studio_Effect_WeatherTransition>Transition (Ticks)</CS_Studio_Effect_WeatherTransition>
+    <CS_Studio_Effect_ThoughtLabel>Label</CS_Studio_Effect_ThoughtLabel>
+    <CS_Studio_Effect_ThoughtDesc>Description</CS_Studio_Effect_ThoughtDesc>
+    <CS_Studio_Effect_ThoughtMood>Mood Offset</CS_Studio_Effect_ThoughtMood>
+    <CS_Studio_Effect_ThoughtDuration>Duration (Days)</CS_Studio_Effect_ThoughtDuration>
+    <CS_Studio_Effect_ThoughtStackLimit>Stack Limit</CS_Studio_Effect_ThoughtStackLimit>
+    <CS_Studio_Effect_ThoughtShowBubble>Show Bubble</CS_Studio_Effect_ThoughtShowBubble>
+    <CS_Studio_Effect_ThoughtIcon>Icon Path</CS_Studio_Effect_ThoughtIcon>
+    <CS_Ability_Validate_ThoughtLabelRequired>Thought requires a label</CS_Ability_Validate_ThoughtLabelRequired>
+    <CS_Ability_Validate_ThoughtMoodZero>Mood offset is 0, this thought won't affect mood</CS_Ability_Validate_ThoughtMoodZero>
     <CS_Ability_Validate_WeatherDefNameRequired>Weather def name cannot be empty.</CS_Ability_Validate_WeatherDefNameRequired>
     <CS_Ability_Validate_WeatherDurationPositive>Weather duration must be positive.</CS_Ability_Validate_WeatherDurationPositive>
     <CS_Ability_Validate_WeatherTransitionNonNegative>Weather transition cannot be negative.</CS_Ability_Validate_WeatherTransitionNonNegative>
     <CS_Ability_Validate_ComboTargetAbilityRequired>Combo target ability DefName cannot be empty.</CS_Ability_Validate_ComboTargetAbilityRequired>
+    <CS_Ability_Validate_EffectDelayNonNegative>Effect delay cannot be negative.</CS_Ability_Validate_EffectDelayNonNegative>
     <CS_Studio_VFX_Type_LineTexture>Line Texture</CS_Studio_VFX_Type_LineTexture>
     <CS_Studio_VFX_Type_WallTexture>Wall Texture</CS_Studio_VFX_Type_WallTexture>
     <CS_Studio_VFX_Type_DustPuff>Dust Puff</CS_Studio_VFX_Type_DustPuff>
@@ -193,4 +204,6 @@
     <CS_Ability_Validate_BezierWallThickness>Thickness must be greater than 0.</CS_Ability_Validate_BezierWallThickness>
     <CS_Ability_Validate_BezierWallSegments>Segment count must be greater than 0.</CS_Ability_Validate_BezierWallSegments>
     <CS_Ability_Validate_BezierWallAbsorbMax>Absorption capacity must be greater than 0.</CS_Ability_Validate_BezierWallAbsorbMax>
+    <CS_Ability_RuntimeComponentType_WorldMapFlight>Cross-Map Flight</CS_Ability_RuntimeComponentType_WorldMapFlight>
+    <CS_Studio_Runtime_Desc_WorldMapFlight>Cast to open the world map and select a destination. The pawn takes off visually, flies across the world map, and lands at the target site.</CS_Studio_Runtime_Desc_WorldMapFlight>
 </LanguageData>

@@ -85,7 +85,6 @@
     <CS_Studio_Anim_Twitch>Random Twitch</CS_Studio_Anim_Twitch>
     <CS_Studio_Anim_Type>Type</CS_Studio_Anim_Type>
     <CS_Studio_Author>Author</CS_Studio_Author>
-    <CS_Studio_Btn_Apply>Internalize Textures</CS_Studio_Btn_Apply>
     <CS_Studio_Btn_Cancel>Cancel</CS_Studio_Btn_Cancel>
     <CS_Studio_Btn_ClearShort>Clear</CS_Studio_Btn_ClearShort>
     <CS_Studio_Btn_ContinueExport>Export Anyway</CS_Studio_Btn_ContinueExport>
@@ -145,6 +144,11 @@
     <CS_Studio_Mannequin_NotInitialized>Mannequin not initialized</CS_Studio_Mannequin_NotInitialized>
     <CS_Studio_Mannequin_PortraitError>Portrait error: {0}</CS_Studio_Mannequin_PortraitError>
     <CS_Studio_Mannequin_RenderError>Render error: {0}</CS_Studio_Mannequin_RenderError>
+    <CS_Studio_Menu_Abilities>Ability Editor</CS_Studio_Menu_Abilities>
+    <CS_Studio_Menu_FixEdgeBleeding>Fix Edges</CS_Studio_Menu_FixEdgeBleeding>
+    <CS_Studio_FixEdgeBleeding_Confirm>This will apply semi-transparent pixel edge correction to all PNG/JPG images in the selected folder. Original files will be overwritten.\n\n⚠ Please make sure you have a backup of the target folder. This action cannot be undone.\n\nContinue?</CS_Studio_FixEdgeBleeding_Confirm>
+    <CS_Studio_FixEdgeBleeding_Result>Edge fix complete: {0} fixed, {1} unchanged, {2} failed</CS_Studio_FixEdgeBleeding_Result>
+    <CS_Studio_Menu_ConvertPaths>Convert Paths</CS_Studio_Menu_ConvertPaths>
     <CS_Studio_Menu_Edit>Edit</CS_Studio_Menu_Edit>
     <CS_Studio_Menu_File>File</CS_Studio_Menu_File>
     <CS_Studio_Menu_Help>Help</CS_Studio_Menu_Help>
@@ -158,6 +162,8 @@
     <CS_Studio_Msg_AppendedNoBoundPawn>Appended {1} layers from {0}, but no suitable target pawn could be auto-bound on the current map</CS_Studio_Msg_AppendedNoBoundPawn>
     <CS_Studio_Msg_AppliedToPawn>Applied to {0}</CS_Studio_Msg_AppliedToPawn>
     <CS_Studio_Msg_ConfirmDelete>Are you sure you want to delete this layer?</CS_Studio_Msg_ConfirmDelete>
+    <CS_Studio_Msg_ConvertPathsNone>No absolute paths found that need conversion.</CS_Studio_Msg_ConvertPathsNone>
+    <CS_Studio_Msg_ConvertPathsSuccess>Converted {0} path(s) to relative.</CS_Studio_Msg_ConvertPathsSuccess>
     <CS_Studio_Msg_Copied>Copied: {0}</CS_Studio_Msg_Copied>
     <CS_Studio_Msg_Hidden>Hidden: {0}</CS_Studio_Msg_Hidden>
     <CS_Studio_Msg_Imported>Imported {1} layers from {0}</CS_Studio_Msg_Imported>
@@ -255,6 +261,7 @@
     <CS_Studio_Section_WeaponCarryVisual>State Weapon Visual</CS_Studio_Section_WeaponCarryVisual>
     <CS_Studio_Section_WeaponRender>Weapon Render Override</CS_Studio_Section_WeaponRender>
     <CS_Studio_Transform_GlobalScale>Global Scale</CS_Studio_Transform_GlobalScale>
+    <CS_Studio_UseCanDrawNowHiding>Optimized Hiding (CanDrawNow)</CS_Studio_UseCanDrawNowHiding>
     <CS_Studio_Skin_DefaultForTargetRaces>Use as default skin for target races</CS_Studio_Skin_DefaultForTargetRaces>
     <CS_Studio_Skin_DefaultForTargetRaces_Tip>When enabled, races matching targetRaces automatically receive this skin at runtime. Pawns with an existing manual skin are not overridden.</CS_Studio_Skin_DefaultForTargetRaces_Tip>
     <CS_Studio_Skin_DefaultRacePriority>Default skin priority</CS_Studio_Skin_DefaultRacePriority>
@@ -367,25 +374,18 @@
     <CS_Summon_Success>Successfully summoned: {0}</CS_Summon_Success>
     <CS_Summon_Use>Summon {0}</CS_Summon_Use>
     <CS_Settings_Category>Character Studio</CS_Settings_Category>
-    <CS_Settings_FaceTrackThresholds>Face Track Thresholds</CS_Settings_FaceTrackThresholds>
+    <CS_Settings_Presets>Presets</CS_Settings_Presets>
+    <CS_Settings_UpdateFrequency>Update Frequency (ticks)</CS_Settings_UpdateFrequency>
+    <CS_Settings_StateEvalInterval>State Evaluation Interval</CS_Settings_StateEvalInterval>
+    <CS_Settings_HighFocusAnimInterval>HighFocus Animation Interval</CS_Settings_HighFocusAnimInterval>
+    <CS_Settings_VisibleRange>Visible Range Threshold (cells)</CS_Settings_VisibleRange>
+    <CS_Settings_VisibleRangeStandardLod>Standard LOD Visible Range</CS_Settings_VisibleRangeStandardLod>
     <CS_Settings_Preset_Balanced>Balanced</CS_Settings_Preset_Balanced>
     <CS_Settings_Preset_Performance>Performance</CS_Settings_Preset_Performance>
     <CS_Settings_Preset_UltraPerformance>Ultra Performance</CS_Settings_Preset_UltraPerformance>
-    <CS_Settings_RootSizeNear>Near Root Size</CS_Settings_RootSizeNear>
-    <CS_Settings_BudgetNear>Near Budget</CS_Settings_BudgetNear>
-    <CS_Settings_RootSizeMid1>Mid1 Root Size</CS_Settings_RootSizeMid1>
-    <CS_Settings_BudgetMid1>Mid1 Budget</CS_Settings_BudgetMid1>
-    <CS_Settings_RootSizeMid2>Mid2 Root Size</CS_Settings_RootSizeMid2>
-    <CS_Settings_BudgetMid2>Mid2 Budget</CS_Settings_BudgetMid2>
-    <CS_Settings_RootSizeFar>Far Root Size</CS_Settings_RootSizeFar>
-    <CS_Settings_BudgetFar>Far Budget</CS_Settings_BudgetFar>
-    <CS_Settings_FallbackBudget>Fallback Budget</CS_Settings_FallbackBudget>
-    <CS_Settings_FallbackPriorityThreshold>Fallback Priority Threshold</CS_Settings_FallbackPriorityThreshold>
-    <CS_Settings_FallbackPriorityBudget>Fallback Priority Budget</CS_Settings_FallbackPriorityBudget>
-    <CS_Settings_PriorityBonuses>Priority Bonuses</CS_Settings_PriorityBonuses>
-    <CS_Settings_DraftedBonus>Drafted Bonus</CS_Settings_DraftedBonus>
-    <CS_Settings_ColonistBonus>Colonist Bonus</CS_Settings_ColonistBonus>
-    <CS_Settings_UnstableBonus>Unstable Bonus</CS_Settings_UnstableBonus>
+    <CS_Settings_ResetToDefaults>Reset to Defaults</CS_Settings_ResetToDefaults>
+    <CS_Settings_DebugTools>Debug Tools</CS_Settings_DebugTools>
+    <CS_Settings_ShowPerformanceOverlay>Show Performance Stats Overlay</CS_Settings_ShowPerformanceOverlay>
     <CS_Studio_Performance_FaceCaches>Face cache stats</CS_Studio_Performance_FaceCaches>
     <CS_Studio_Performance_FaceTransformCacheHits>Face transform cache hits: {0}</CS_Studio_Performance_FaceTransformCacheHits>
     <CS_Studio_Performance_FaceTransformCacheMisses>Face transform cache misses: {0}</CS_Studio_Performance_FaceTransformCacheMisses>
@@ -393,21 +393,73 @@
     <CS_Studio_Performance_FacePathCacheMisses>Face path cache misses: {0}</CS_Studio_Performance_FacePathCacheMisses>
     <CS_Studio_Performance_GraphicDirtyTriggers>Graphic dirty triggers: {0}</CS_Studio_Performance_GraphicDirtyTriggers>
     <CS_Studio_Performance_GraphicDirtySkipped>Graphic dirty skips by throttle: {0}</CS_Studio_Performance_GraphicDirtySkipped>
+    <CS_Studio_Performance_Copy>Copy</CS_Studio_Performance_Copy>
+    <CS_Studio_Performance_EnableCapture_Short>Capture</CS_Studio_Performance_EnableCapture_Short>
 
-    <!-- Texture Internalization -->
-    <CS_Studio_Internalize_Title>Texture Optimization</CS_Studio_Internalize_Title>
-    <CS_Studio_Internalize_Desc>Detected {0} external texture path(s). External textures cause additional performance overhead at runtime (disk I/O and extra cache lookups per frame).
+    <!-- Performance Overlay Keys -->
+    <CS_Studio_Perf_Sec_TextureMemory>Texture Memory</CS_Studio_Perf_Sec_TextureMemory>
+    <CS_Studio_Perf_Usage>Usage</CS_Studio_Perf_Usage>
+    <CS_Studio_Perf_Pressure>Pressure</CS_Studio_Perf_Pressure>
+    <CS_Studio_Perf_Tracked>Tracked</CS_Studio_Perf_Tracked>
+    <CS_Studio_Perf_Sec_TextureLoading>Texture Loading</CS_Studio_Perf_Sec_TextureLoading>
+    <CS_Studio_Perf_CacheHitRate>Cache Hit Rate</CS_Studio_Perf_CacheHitRate>
+    <CS_Studio_Perf_LoadsHits>Loads / Hits</CS_Studio_Perf_LoadsHits>
+    <CS_Studio_Perf_LruEvictions>LRU Evictions</CS_Studio_Perf_LruEvictions>
+    <CS_Studio_Perf_DestroyedSkipped>Destroyed / Skipped</CS_Studio_Perf_DestroyedSkipped>
+    <CS_Studio_Perf_PressureReleases>Pressure Releases</CS_Studio_Perf_PressureReleases>
+    <CS_Studio_Perf_QueuePeak>Queue Peak</CS_Studio_Perf_QueuePeak>
+    <CS_Studio_Perf_Sec_WorkerCaches>Worker Caches</CS_Studio_Perf_Sec_WorkerCaches>
+    <CS_Studio_Perf_CustomLayer>CustomLayer</CS_Studio_Perf_CustomLayer>
+    <CS_Studio_Perf_FaceComp>FaceComp</CS_Studio_Perf_FaceComp>
+    <CS_Studio_Perf_EyeDir>EyeDir</CS_Studio_Perf_EyeDir>
+    <CS_Studio_Perf_AssetLoader>AssetLoader</CS_Studio_Perf_AssetLoader>
+    <CS_Studio_Perf_PoolAvailable>Pool Available</CS_Studio_Perf_PoolAvailable>
+    <CS_Studio_Perf_Sec_RenderRefresh>Render Refresh</CS_Studio_Perf_Sec_RenderRefresh>
+    <CS_Studio_Perf_Requests>Requests</CS_Studio_Perf_Requests>
+    <CS_Studio_Perf_DispatchedCoalesced>Dispatched / Coalesced</CS_Studio_Perf_DispatchedCoalesced>
+    <CS_Studio_Perf_CoalesceRate>Coalesce Rate</CS_Studio_Perf_CoalesceRate>
+    <CS_Studio_Perf_DirtyThrottled>Dirty / Throttled</CS_Studio_Perf_DirtyThrottled>
+    <CS_Studio_Perf_Sec_FaceCaches>Face Caches</CS_Studio_Perf_Sec_FaceCaches>
+    <CS_Studio_Perf_TransformHit>Transform Hit</CS_Studio_Perf_TransformHit>
+    <CS_Studio_Perf_TransformHM>Transform H/M</CS_Studio_Perf_TransformHM>
+    <CS_Studio_Perf_PathHit>Path Hit</CS_Studio_Perf_PathHit>
+    <CS_Studio_Perf_PathHM>Path H/M</CS_Studio_Perf_PathHM>
+    <CS_Studio_Perf_Sec_Camera>Camera / LOD</CS_Studio_Perf_Sec_Camera>
+    <CS_Studio_Perf_CameraZoom>Zoom Level</CS_Studio_Perf_CameraZoom>
+    <CS_Studio_Perf_HighFocusThreshold>HighFocus Threshold</CS_Studio_Perf_HighFocusThreshold>
+    <CS_Studio_Perf_HighFocusZoom>Near Full Anim</CS_Studio_Perf_HighFocusZoom>
+    <CS_Studio_Perf_Sec_Bootstrap>Bootstrap</CS_Studio_Perf_Sec_Bootstrap>
+    <CS_Studio_Perf_ExecSkipped>Executed / Skipped</CS_Studio_Perf_ExecSkipped>
+    <CS_Studio_Perf_PawnsComps>Pawns / Comps</CS_Studio_Perf_PawnsComps>
+    <CS_Studio_Perf_SkinsLoadouts>Skins / Loadouts</CS_Studio_Perf_SkinsLoadouts>
 
-Clicking "Confirm" will:
-1. Create a sub-mod (CharacterStudio_UserTextures) in the Mods directory
-2. Copy textures into the sub-mod and redirect all paths automatically
-3. Save the skin configuration
+    <CS_Studio_Preview_TextureOnlyReplace>Texture Only</CS_Studio_Preview_TextureOnlyReplace>
 
-You will need to restart the game and enable the sub-mod for the optimized paths to take effect.</CS_Studio_Internalize_Desc>
-    <CS_Studio_Internalize_Confirm>Confirm Optimization</CS_Studio_Internalize_Confirm>
-    <CS_Studio_Internalize_Cancel>Cancel</CS_Studio_Internalize_Cancel>
-    <CS_Studio_Internalize_SkipApply>Apply Only (Skip Optimization)</CS_Studio_Internalize_SkipApply>
-    <CS_Studio_Internalize_Success>Copied {0} textures to sub-mod. Please restart the game and enable {1} for the changes to take effect.</CS_Studio_Internalize_Success>
-    <CS_Studio_Internalize_Failed>Texture internalization failed: {0}</CS_Studio_Internalize_Failed>
-</LanguageData>
+    <!-- WorldMapFlight -->
+    <CS_Ability_Fail_Roofed>Cannot take off under a roof</CS_Ability_Fail_Roofed>
+    <CS_Ability_Fail_TargetRoofed>Cannot fly to a roofed location</CS_Ability_Fail_TargetRoofed>
+    <CS_Ability_Fail_InvalidDestination>Invalid destination tile</CS_Ability_Fail_InvalidDestination>
+    <CS_Ability_Fail_ImpassableDestination>Destination tile is impassable</CS_Ability_Fail_ImpassableDestination>
+    <CS_Ability_Fail_NotColonist>Only colonists can use this ability</CS_Ability_Fail_NotColonist>
+    <CS_Ability_Fail_Downed>Downed colonists cannot take off</CS_Ability_Fail_Downed>
+    <CS_Ability_Fail_AlreadyInFlight>Already in flight</CS_Ability_Fail_AlreadyInFlight>
+    <CS_Ability_Fail_SameTile>Cannot fly to the current tile</CS_Ability_Fail_SameTile>
+    <CS_Ability_WorldMapFlight_Launched>{0} has taken off and is flying to the destination!</CS_Ability_WorldMapFlight_Launched>
+    <CS_Ability_WorldMapFlight_Arrived>{0} has arrived at the destination</CS_Ability_WorldMapFlight_Arrived>
+    <CS_Ability_WorldMapFlight_Landed>{0} has landed at the destination</CS_Ability_WorldMapFlight_Landed>
+    <CS_Ability_WorldMapFlight_SelectTarget>Select cross-map flight destination</CS_Ability_WorldMapFlight_SelectTarget>
+    <CS_Ability_Validate_WorldMapSkyfallerNotFound>Leaving skyfaller def not found: {0}</CS_Ability_Validate_WorldMapSkyfallerNotFound>
+    <CS_Ability_Validate_WorldMapWorldObjectNotFound>World object def not found: {0}</CS_Ability_Validate_WorldMapWorldObjectNotFound>
+    <CS_Ability_Validate_WorldMapCarryRadius>Carry radius cannot be negative</CS_Ability_Validate_WorldMapCarryRadius>
+    <CS_Ability_Fail_SkyfallerDefNotFound>Leaving skyfaller def not found</CS_Ability_Fail_SkyfallerDefNotFound>
 
+    <!-- WorldMapFlight waiting to land -->
+    <CS_Ability_WorldMapFlight_ArrivedWaiting>Arrived above the destination. Select the flying object and click the landing command.</CS_Ability_WorldMapFlight_ArrivedWaiting>
+    <CS_Ability_WorldMapFlight_EnterMap>Enter Map</CS_Ability_WorldMapFlight_EnterMap>
+    <CS_Ability_WorldMapFlight_EnterMapDesc>Generate and enter the target map, then choose a landing spot</CS_Ability_WorldMapFlight_EnterMapDesc>
+    <CS_Ability_WorldMapFlight_FormCaravan>Form Caravan</CS_Ability_WorldMapFlight_FormCaravan>
+    <CS_Ability_WorldMapFlight_FormCaravanDesc>Cancel flight and form a caravan at the current location</CS_Ability_WorldMapFlight_FormCaravanDesc>
+    <CS_Ability_WorldMapFlight_NoMapParent>No map available at destination, forming caravan instead</CS_Ability_WorldMapFlight_NoMapParent>
+    <CS_Ability_Fail_LandingSpotNotWalkable>Landing spot is not walkable</CS_Ability_Fail_LandingSpotNotWalkable>
+
+    <CS_Studio_Preview_TextureOnlyReplaceTip>When enabled, modifying texture paths for expression import, base slots and layer editor will only update the texture path without auto-adjusting offsets, scale, rotation or other config parameters. Useful when parameters are already tuned and you only need to swap the texture.</CS_Studio_Preview_TextureOnlyReplaceTip>

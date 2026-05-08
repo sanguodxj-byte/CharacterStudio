@@ -1,8 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using CharacterStudio.Core;
+using CharacterStudio.Exporter;
 using CharacterStudio.Introspection;
+using CharacterStudio.Rendering;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -17,24 +20,7 @@ namespace CharacterStudio.UI
 
         private void OnNewSkin()
         {
-            if (isDirty)
-            {
-                if (Time.realtimeSinceStartup < nextNewSkinPromptAllowedTime)
-                {
-                    return;
-                }
-
-                nextNewSkinPromptAllowedTime = Time.realtimeSinceStartup + NewSkinPromptCooldownSeconds;
-
-                Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation(
-                    "CS_Studio_Msg_UnsavedChanges".Translate(),
-                    ShowNewSkinWorkflowMenu,
-                    true));
-            }
-            else
-            {
-                ShowNewSkinWorkflowMenu();
-            }
+            ShowNewSkinWorkflowMenu();
         }
 
         private void ShowNewSkinWorkflowMenu()
@@ -42,10 +28,7 @@ namespace CharacterStudio.UI
             var options = new List<FloatMenuOption>
             {
                 new FloatMenuOption(
-                    "CS_Studio_Workflow_StandardLayers".Translate(),
-                    () => CreateNewSkin(NewSkinWorkflow.StandardLayers)),
-                new FloatMenuOption(
-                    "CS_Studio_Workflow_CompositeBase".Translate(),
+                    "CS_Studio_Workflow_Core".Translate(),
                     () => CreateNewSkin(NewSkinWorkflow.CompositeBase)),
                 new FloatMenuOption(
                     "CS_Studio_Workflow_AnimalStandardLayers".Translate(),
@@ -65,8 +48,6 @@ namespace CharacterStudio.UI
             bool isNonHumanlikeWorkflow = workflow == NewSkinWorkflow.AnimalStandardLayers
                 || workflow == NewSkinWorkflow.MechanoidStandardLayers;
 
-            nextNewSkinPromptAllowedTime = 0f;
-
             ReplaceWorkingSkin(new PawnSkinDef
             {
                 defName = $"CS_Skin_{uniqueId}",
@@ -80,9 +61,7 @@ namespace CharacterStudio.UI
             workingSkin.layers.Clear();
             workingSkin.baseAppearance = new BaseAppearanceConfig();
             workingSkin.hiddenPaths.Clear();
-#pragma warning disable CS0618
             workingSkin.hiddenTags.Clear();
-#pragma warning restore CS0618
             workingSkin.hideVanillaBody = false;
             workingSkin.hideVanillaHead = false;
             workingSkin.hideVanillaHair = false;
@@ -95,30 +74,9 @@ namespace CharacterStudio.UI
                 workingSkin.hideVanillaBody = true;
                 workingSkin.hideVanillaHead = true;
                 workingSkin.hideVanillaHair = true;
-
-                workingSkin.layers.Add(new PawnLayerConfig
-                {
-                    layerName = "CS_Studio_Workflow_CompositeBaseLayerName".Translate(),
-                    anchorTag = "Body",
-                    drawOrder = 0f,
-                    colorSource = LayerColorSource.Fixed,
-                    colorTwoSource = LayerColorSource.Fixed,
-                    customColor = Color.white,
-                    customColorTwo = Color.white,
-                    scale = Vector2.one,
-                    visible = true
-                });
-
-                selectedLayerIndex = 0;
-                selectedLayerIndices.Clear();
-                selectedLayerIndices.Add(0);
-                currentTab = EditorTab.Layers;
-                ShowStatus("CS_Studio_Workflow_CompositeBase_Hint".Translate());
             }
-            else
-            {
-                ShowStatus(GetWorkflowStatusKey(workflow).Translate());
-            }
+
+            ShowStatus(GetWorkflowStatusKey(workflow).Translate());
 
             if (workingDocument != null)
             {
@@ -127,12 +85,9 @@ namespace CharacterStudio.UI
             }
 
             workingAbilities.Clear();
-            if (workflow != NewSkinWorkflow.CompositeBase)
-            {
-                selectedLayerIndex = -1;
-                selectedLayerIndices.Clear();
-                currentTab = EditorTab.BaseAppearance;
-            }
+            selectedLayerIndex = -1;
+            selectedLayerIndices.Clear();
+            currentTab = EditorTab.BaseAppearance;
 
             selectedNodePath = "";
             selectedBaseSlotType = null;
@@ -169,7 +124,7 @@ namespace CharacterStudio.UI
                 case NewSkinWorkflow.MechanoidStandardLayers:
                     return "CS_Studio_Workflow_MechanoidStandardLayers";
                 default:
-                    return "CS_Studio_Workflow_StandardLayers";
+                    return "CS_Studio_Workflow_Core";
             }
         }
 
@@ -253,6 +208,23 @@ namespace CharacterStudio.UI
                 SyncAbilitiesFromSkin();
                 RefreshPreview();
             }));
+        }
+
+        private void OnConvertPathsToRelative()
+        {
+            SyncAbilitiesToSkin();
+            var result = TextureInternalizer.Internalize(workingSkin, workingAbilities);
+            if (result.success && result.copiedCount > 0)
+            {
+                isDirty = true;
+                SyncAbilitiesFromSkin();
+                RefreshPreview();
+                ShowStatus("CS_Studio_Msg_ConvertPathsSuccess".Translate(result.copiedCount));
+            }
+            else
+            {
+                ShowStatus("CS_Studio_Msg_ConvertPathsNone".Translate());
+            }
         }
 
         private void OnOpenLlmSettings()
@@ -436,7 +408,8 @@ namespace CharacterStudio.UI
                 MutateWithUndo(() =>
                 {
                     layer.texPath = path;
-                    TrySyncEditableFaceLayerTextureToFaceConfig(layer);
+                    if (!textureOnlyReplace)
+                        TrySyncEditableFaceLayerTextureToFaceConfig(layer);
                     RebuildEditorBuffersFromWorkingState();
                 }, refreshPreview: true, refreshRenderTree: true);
             }, defaultRoot: GetSkinRootDir()));
@@ -445,7 +418,6 @@ namespace CharacterStudio.UI
         private void ShowHiddenTagsMenu()
         {
             var options = new List<FloatMenuOption>();
-#pragma warning disable CS0618
             var commonTags = new[]
             {
                 "Head", "Hair", "Body", "Beard", "Tattoo", "FaceTattoo", "BodyTattoo",
@@ -484,7 +456,6 @@ namespace CharacterStudio.UI
             {
                 ShowStatus("CS_Studio_Msg_AllTagsAdded".Translate());
             }
-#pragma warning restore CS0618
         }
 
         private void ShowRenderTreeTagSelector()
@@ -505,7 +476,6 @@ namespace CharacterStudio.UI
             CollectSnapshots(rootSnapshot, allSnapshots);
 
             var options = new List<FloatMenuOption>();
-#pragma warning disable CS0618
             foreach (var snapshot in allSnapshots)
             {
                 if (!string.IsNullOrEmpty(snapshot.tagDefName) && snapshot.tagDefName != "Untagged" &&
@@ -535,7 +505,6 @@ namespace CharacterStudio.UI
             {
                 ShowStatus("CS_Studio_Msg_NoMoreTags".Translate());
             }
-#pragma warning restore CS0618
         }
 
         private void OnSaveRenderFixPatch()
@@ -556,6 +525,24 @@ namespace CharacterStudio.UI
 
             isDirty = false;
             ShowStatus("CS_Studio_Msg_PatchSaved".Translate());
+        }
+
+        private void OnFixEdgeBleeding()
+        {
+            string initialPath = Path.Combine(GenFilePaths.ConfigFolderPath, "CharacterStudio");
+            try { Directory.CreateDirectory(initialPath); } catch { }
+
+            Find.WindowStack.Add(new Dialog_FileBrowser(initialPath, (string selectedFolder) =>
+            {
+                Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation(
+                    "CS_Studio_FixEdgeBleeding_Confirm".Translate(),
+                    () =>
+                    {
+                        var (processed, skipped, errors) = RuntimeAssetLoader.FixEdgeBleedingForFolder(selectedFolder);
+                        ShowStatus("CS_Studio_FixEdgeBleeding_Result".Translate(processed, skipped, errors));
+                    },
+                    true));
+            }, true));
         }
     }
 }

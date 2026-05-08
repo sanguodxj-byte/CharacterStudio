@@ -71,23 +71,23 @@ namespace CharacterStudio.Abilities
         public bool smartCastAllowFallbackForward = true;
 
         // RStack
-        [EditorField("CS_Studio_Runtime_RequiredStacks", AbilityRuntimeComponentType.RStackDetonation)]
+        [EditorField("CS_Studio_Runtime_RequiredStacks", AbilityRuntimeComponentType.ExecuteBonusDamage)]
         public int requiredStacks = 7;
-        [EditorField("CS_Studio_Runtime_DelayTicks", AbilityRuntimeComponentType.RStackDetonation)]
+        [EditorField("CS_Studio_Runtime_DelayTicks", AbilityRuntimeComponentType.ExecuteBonusDamage)]
         public int delayTicks = 180;
-        [EditorField("CS_Studio_Runtime_Wave1Radius", AbilityRuntimeComponentType.RStackDetonation)]
+        [EditorField("CS_Studio_Runtime_Wave1Radius", AbilityRuntimeComponentType.ExecuteBonusDamage)]
         public float wave1Radius = 3f;
-        [EditorField("CS_Studio_Runtime_Wave1Damage", AbilityRuntimeComponentType.RStackDetonation)]
+        [EditorField("CS_Studio_Runtime_Wave1Damage", AbilityRuntimeComponentType.ExecuteBonusDamage)]
         public float wave1Damage = 80f;
-        [EditorField("CS_Studio_Runtime_Wave2Radius", AbilityRuntimeComponentType.RStackDetonation)]
+        [EditorField("CS_Studio_Runtime_Wave2Radius", AbilityRuntimeComponentType.ExecuteBonusDamage)]
         public float wave2Radius = 6f;
-        [EditorField("CS_Studio_Runtime_Wave2Damage", AbilityRuntimeComponentType.RStackDetonation)]
+        [EditorField("CS_Studio_Runtime_Wave2Damage", AbilityRuntimeComponentType.ExecuteBonusDamage)]
         public float wave2Damage = 140f;
-        [EditorField("CS_Studio_Runtime_Wave3Radius", AbilityRuntimeComponentType.RStackDetonation)]
+        [EditorField("CS_Studio_Runtime_Wave3Radius", AbilityRuntimeComponentType.ExecuteBonusDamage)]
         public float wave3Radius = 9f;
-        [EditorField("CS_Studio_Runtime_Wave3Damage", AbilityRuntimeComponentType.RStackDetonation)]
+        [EditorField("CS_Studio_Runtime_Wave3Damage", AbilityRuntimeComponentType.ExecuteBonusDamage)]
         public float wave3Damage = 220f;
-        [EditorField("CS_Studio_Runtime_WaveDamageDef", AbilityRuntimeComponentType.RStackDetonation)]
+        [EditorField("CS_Studio_Runtime_WaveDamageDef", AbilityRuntimeComponentType.ExecuteBonusDamage)]
         public DamageDef? waveDamageDef;
 
         // Pulse
@@ -131,29 +131,29 @@ namespace CharacterStudio.Abilities
         public float bounceDamageFalloff = 0.2f;
 
         // Execute / Health Bonus
-        [EditorField("CS_Studio_Runtime_ExecuteThresholdPercent", AbilityRuntimeComponentType.RStackDetonation)]
+        [EditorField("CS_Studio_Runtime_ExecuteThresholdPercent", AbilityRuntimeComponentType.ExecuteBonusDamage)]
         public float executeThresholdPercent = 0.3f;
-        [EditorField("CS_Studio_Runtime_ExecuteBonusDamageScale", AbilityRuntimeComponentType.RStackDetonation)]
+        [EditorField("CS_Studio_Runtime_ExecuteBonusDamageScale", AbilityRuntimeComponentType.ExecuteBonusDamage)]
         public float executeBonusDamageScale = 0.5f;
-        [EditorField("CS_Studio_Runtime_FullHealthThresholdPercent", AbilityRuntimeComponentType.RStackDetonation)]
+        [EditorField("CS_Studio_Runtime_FullHealthThresholdPercent", AbilityRuntimeComponentType.ExecuteBonusDamage)]
         public float fullHealthThresholdPercent = 0.95f;
-        [EditorField("CS_Studio_Runtime_FullHealthBonusDamageScale", AbilityRuntimeComponentType.RStackDetonation)]
+        [EditorField("CS_Studio_Runtime_FullHealthBonusDamageScale", AbilityRuntimeComponentType.ExecuteBonusDamage)]
         public float fullHealthBonusDamageScale = 0.35f;
-        [EditorField("CS_Studio_Runtime_MissingHealthBonusPerTenPercent", AbilityRuntimeComponentType.RStackDetonation)]
+        [EditorField("CS_Studio_Runtime_MissingHealthBonusPerTenPercent", AbilityRuntimeComponentType.ExecuteBonusDamage)]
         public float missingHealthBonusPerTenPercent = 0.05f;
-        [EditorField("CS_Studio_Runtime_MissingHealthBonusMaxScale", AbilityRuntimeComponentType.RStackDetonation)]
+        [EditorField("CS_Studio_Runtime_MissingHealthBonusMaxScale", AbilityRuntimeComponentType.ExecuteBonusDamage)]
         public float missingHealthBonusMaxScale = 0.5f;
 
         // Nearby / Isolated
-        [EditorField("CS_Studio_Runtime_NearbyEnemyBonusMaxTargets", AbilityRuntimeComponentType.RStackDetonation)]
+        [EditorField("CS_Studio_Runtime_NearbyEnemyBonusMaxTargets", AbilityRuntimeComponentType.ExecuteBonusDamage)]
         public int nearbyEnemyBonusMaxTargets = 4;
-        [EditorField("CS_Studio_Runtime_NearbyEnemyBonusPerTarget", AbilityRuntimeComponentType.RStackDetonation)]
+        [EditorField("CS_Studio_Runtime_NearbyEnemyBonusPerTarget", AbilityRuntimeComponentType.ExecuteBonusDamage)]
         public float nearbyEnemyBonusPerTarget = 0.08f;
-        [EditorField("CS_Studio_Runtime_NearbyEnemyBonusRadius", AbilityRuntimeComponentType.RStackDetonation)]
+        [EditorField("CS_Studio_Runtime_NearbyEnemyBonusRadius", AbilityRuntimeComponentType.ExecuteBonusDamage)]
         public float nearbyEnemyBonusRadius = 5f;
-        [EditorField("CS_Studio_Runtime_IsolatedTargetRadius", AbilityRuntimeComponentType.RStackDetonation)]
+        [EditorField("CS_Studio_Runtime_IsolatedTargetRadius", AbilityRuntimeComponentType.ExecuteBonusDamage)]
         public float isolatedTargetRadius = 4f;
-        [EditorField("CS_Studio_Runtime_IsolatedTargetBonusDamageScale", AbilityRuntimeComponentType.RStackDetonation)]
+        [EditorField("CS_Studio_Runtime_IsolatedTargetBonusDamageScale", AbilityRuntimeComponentType.ExecuteBonusDamage)]
         public float isolatedTargetBonusDamageScale = 0.35f;
 
         // Mark
@@ -317,6 +317,20 @@ namespace CharacterStudio.Abilities
         [EditorField("CS_Studio_Runtime_BezierWallReflectsProjectiles", AbilityRuntimeComponentType.BezierCurveWall)]
         public bool bezierWallReflectsProjectiles = false;
 
+        // WorldMapFlight
+        [EditorField("CS_Studio_Runtime_WorldMapTakeoffEffecterDefName", AbilityRuntimeComponentType.WorldMapFlight)]
+        public string worldMapTakeoffEffecterDefName = string.Empty;
+        [EditorField("CS_Studio_Runtime_WorldMapTakeoffSoundDefName", AbilityRuntimeComponentType.WorldMapFlight)]
+        public string worldMapTakeoffSoundDefName = string.Empty;
+        [EditorField("CS_Studio_Runtime_WorldMapTakeoffDustEffect", AbilityRuntimeComponentType.WorldMapFlight)]
+        public bool worldMapTakeoffDustEffect = true;
+        [EditorField("CS_Studio_Runtime_WorldMapFlightMessageKey", AbilityRuntimeComponentType.WorldMapFlight)]
+        public string worldMapFlightMessageKey = string.Empty;
+        [EditorField("CS_Studio_Runtime_WorldMapMaxLaunchDistance", AbilityRuntimeComponentType.WorldMapFlight)]
+        public int worldMapMaxLaunchDistance = 0;
+        [EditorField("CS_Studio_Runtime_WorldMapTravelDurationTicks", AbilityRuntimeComponentType.WorldMapFlight, Min = 30f, Max = 3600f)]
+        public int worldMapTravelDurationTicks = 300;
+
         public virtual void ExposeData()
         {
             AbilityRuntimeComponentType tempType = type;
@@ -468,6 +482,13 @@ namespace CharacterStudio.Abilities
             Scribe_Values.Look(ref bezierWallAbsorbMax, "bezierWallAbsorbMax", 200f);
             Scribe_Values.Look(ref bezierWallCustomTexture, "bezierWallCustomTexture", string.Empty);
             Scribe_Values.Look(ref bezierWallReflectsProjectiles, "bezierWallReflectsProjectiles", false);
+
+            Scribe_Values.Look(ref worldMapTakeoffEffecterDefName, "worldMapTakeoffEffecterDefName", string.Empty);
+            Scribe_Values.Look(ref worldMapTakeoffSoundDefName, "worldMapTakeoffSoundDefName", string.Empty);
+            Scribe_Values.Look(ref worldMapTakeoffDustEffect, "worldMapTakeoffDustEffect", true);
+            Scribe_Values.Look(ref worldMapFlightMessageKey, "worldMapFlightMessageKey", string.Empty);
+            Scribe_Values.Look(ref worldMapMaxLaunchDistance, "worldMapMaxLaunchDistance", 0);
+            Scribe_Values.Look(ref worldMapTravelDurationTicks, "worldMapTravelDurationTicks", 300);
         }
 
         public void LoadDataFromXmlCustom(XmlNode xmlRoot)

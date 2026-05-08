@@ -73,7 +73,7 @@ namespace CharacterStudio.UI
             if (!layerModificationWorkflowActive &&
                 currentTab == EditorTab.Items &&
                 selectedEquipmentIndex >= 0 &&
-                selectedEquipmentIndex < (WorkingEquipments?.Count ?? 0))
+                selectedEquipmentIndex < WorkingEquipments.Count)
             {
                 DrawEquipmentProperties(rect, equipmentMode: false);
                 return;
@@ -82,7 +82,7 @@ namespace CharacterStudio.UI
             if (!layerModificationWorkflowActive && currentTab == EditorTab.Equipment)
             {
                 if (selectedEquipmentIndex >= 0 &&
-                    selectedEquipmentIndex < (WorkingEquipments?.Count ?? 0))
+                    selectedEquipmentIndex < WorkingEquipments.Count)
                 {
                     DrawEquipmentProperties(rect, equipmentMode: true);
                 }

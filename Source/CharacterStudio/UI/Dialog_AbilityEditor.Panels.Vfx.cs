@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using CharacterStudio.Abilities;
@@ -138,18 +138,18 @@ namespace CharacterStudio.UI
         {
             float height = 50f; // header: title(22) + summary(18) + spacing(10)
 
-            // 全局滤镜类型：紧凑布局（类型 + 触发 + 延时/持续 + 全局滤镜区域）
+            // 全局滤镜类型：紧凑布局（类型 + 触发 + 持续 + 全局滤镜区域）
             if (vfx.IsGlobalFilterType)
             {
                 height += SectionPadding; // Basic section
-                height += RowHeight * 3;  // Type + Trigger + Delay/Duration
+                height += RowHeight * 3;  // Type + Trigger + Duration
                 // 全局滤镜区域：分隔线(4) + 标题(20) + SectionPadding + 2行
                 height += 4f + 20f + SectionPadding + RowHeight * 2;
                 return height + 10f;
             }
 
             // Section 1: 基础设置
-            int basicRows = 4; // Type+Source, Target+Trigger, Delay+Duration, Scale+Expression
+            int basicRows = 3; // Type+Source, Target+Trigger, Duration+Scale, Expression
             if (UsesPresetSource(vfx) || UsesTextureSourceSelector(vfx)) basicRows++;
             height += SectionPadding + basicRows * RowHeight;
 
@@ -234,18 +234,37 @@ namespace CharacterStudio.UI
                 NotifyAbilityPreviewDirty(true);
             }
 
-            // ── Row 1: Title + action buttons ──
+            // ── Row 1: Title + delay + action buttons ──
             float headerY = inner.y;
+
+            // Action buttons width: ▲(20)+gap(2)+▼(20)+gap(2)+X(22) = 66px
+            // Delay field: label(26) + gap(2) + input(40) = 68px
+            float actionButtonsWidth = 66f;
+            float delayFieldWidth = 68f;
 
             // Title label (left side)
             GameFont prevFont = Text.Font;
             Text.Font = GameFont.Small;
             GUI.color = vfx.enabled ? UIHelper.HeaderColor : Color.gray;
             string titleText = BuildVfxTitleLabel(vfx, index);
-            float titleWidth = inner.width - 70f;
+            float titleWidth = inner.width - actionButtonsWidth - delayFieldWidth - 12f;
             Widgets.Label(new Rect(inner.x, headerY, titleWidth, 22f), titleText);
             GUI.color = Color.white;
             Text.Font = prevFont;
+
+            // Delay ticks input (between title and action buttons)
+            float delayX = inner.x + titleWidth + 4f;
+            Text.Font = GameFont.Tiny;
+            float delayLabelW = 26f;
+            Widgets.Label(new Rect(delayX, headerY + 2f, delayLabelW, 20f), "T:");
+            Text.Font = prevFont;
+            string vfxDelayStr = vfx.delayTicks.ToString();
+            int vfxDelayBefore = vfx.delayTicks;
+            UIHelper.TextFieldNumeric(new Rect(delayX + delayLabelW + 2f, headerY, 40f, 22f), ref vfx.delayTicks, ref vfxDelayStr, 0, 60000);
+            if (vfx.delayTicks != vfxDelayBefore)
+            {
+                NotifyAbilityPreviewDirty();
+            }
 
             // Action buttons (right side, all in one row)
             float btnX = inner.x + inner.width - 66f;
@@ -340,7 +359,7 @@ namespace CharacterStudio.UI
             }
 
             // ── Section 1: 基础设置 ──
-            int basicRows = 4; // Type+Source, Target+Trigger, Delay+Duration, Scale+Expression
+            int basicRows = 3; // Type+Source, Target+Trigger, Duration+Scale, Expression
             if (UsesPresetSource(vfx) || UsesCustomTextureSettings(vfx)) basicRows++;
             DrawSectionBg(inner.x, y, inner.width, basicRows * RowHeight);
 
@@ -358,14 +377,14 @@ namespace CharacterStudio.UI
                             vfx.presetDefName = names.Count > 0 ? names[0] : string.Empty;
                         }
                         vfx.textureSource = AbilityVisualEffectTextureSource.Vanilla;
-                        vfx.SyncLegacyFields();
+                        vfx.SyncDerivedFields();
                         NotifyAbilityPreviewDirty(true);
                     }),
                     new FloatMenuOption(GetVfxCategoryLabel(AbilityVisualEffectType.CustomTexture), () =>
                     {
                         vfx.type = AbilityVisualEffectType.CustomTexture;
                         vfx.textureSource = AbilityVisualEffectTextureSource.LocalPath;
-                        vfx.SyncLegacyFields();
+                        vfx.SyncDerivedFields();
                         NotifyAbilityPreviewDirty(true);
                     }),
                     new FloatMenuOption(GetVfxCategoryLabel(AbilityVisualEffectType.LineTexture), () =>
@@ -373,7 +392,7 @@ namespace CharacterStudio.UI
                         vfx.type = AbilityVisualEffectType.LineTexture;
                         vfx.textureSource = AbilityVisualEffectTextureSource.LocalPath;
                         vfx.pathMode = AbilityVisualPathMode.DirectLineCasterToTarget;
-                        vfx.SyncLegacyFields();
+                        vfx.SyncDerivedFields();
                         NotifyAbilityPreviewDirty(true);
                     }),
                     new FloatMenuOption(GetVfxCategoryLabel(AbilityVisualEffectType.WallTexture), () =>
@@ -381,21 +400,21 @@ namespace CharacterStudio.UI
                         vfx.type = AbilityVisualEffectType.WallTexture;
                         vfx.textureSource = AbilityVisualEffectTextureSource.LocalPath;
                         vfx.pathMode = AbilityVisualPathMode.DirectLineCasterToTarget;
-                        vfx.SyncLegacyFields();
+                        vfx.SyncDerivedFields();
                         NotifyAbilityPreviewDirty(true);
                     }),
                     new FloatMenuOption(GetVfxCategoryLabel(AbilityVisualEffectType.Fleck), () =>
                     {
                         vfx.type = AbilityVisualEffectType.Fleck;
                         vfx.textureSource = AbilityVisualEffectTextureSource.Vanilla;
-                        vfx.SyncLegacyFields();
+                        vfx.SyncDerivedFields();
                         NotifyAbilityPreviewDirty(true);
                     }),
                     new FloatMenuOption(GetVfxCategoryLabel(AbilityVisualEffectType.FleckConnectingLine), () =>
                     {
                         vfx.type = AbilityVisualEffectType.FleckConnectingLine;
                         vfx.textureSource = AbilityVisualEffectTextureSource.Vanilla;
-                        vfx.SyncLegacyFields();
+                        vfx.SyncDerivedFields();
                         NotifyAbilityPreviewDirty(true);
                     }),
                     new FloatMenuOption(GetVfxCategoryLabel(AbilityVisualEffectType.GlobalFilter), () =>
@@ -536,16 +555,14 @@ namespace CharacterStudio.UI
             });
             y += RowHeight;
 
-            string delayStr = vfx.delayTicks.ToString();
-            DrawIntRow(y, inner.x, "CS_Studio_VFX_DelayShort".Translate(), ref vfx.delayTicks, ref delayStr, 0, 60000);
             string durationStr = vfx.displayDurationTicks.ToString();
-            DrawIntRow(y, rightX, "CS_Studio_VFX_DisplayDurationShort".Translate(), ref vfx.displayDurationTicks, ref durationStr, 1, 60000);
+            DrawIntRow(y, inner.x, "CS_Studio_VFX_DisplayDurationShort".Translate(), ref vfx.displayDurationTicks, ref durationStr, 1, 60000);
+            string scaleStr = vfx.scale.ToString("F2");
+            DrawNumberRow(y, rightX, "CS_Studio_VFX_ScaleShort".Translate(), ref vfx.scale, ref scaleStr, 0.1f, 5f);
             y += RowHeight;
 
-            string scaleStr = vfx.scale.ToString("F2");
-            DrawNumberRow(y, inner.x, "CS_Studio_VFX_ScaleShort".Translate(), ref vfx.scale, ref scaleStr, 0.1f, 5f);
             string expressionDurationStr = vfx.linkedExpressionDurationTicks.ToString();
-            DrawIntRow(y, rightX, "CS_Studio_VFX_ExpressionDurationShort".Translate(), ref vfx.linkedExpressionDurationTicks, ref expressionDurationStr, 1, 60000);
+            DrawIntRow(y, inner.x, "CS_Studio_VFX_ExpressionDurationShort".Translate(), ref vfx.linkedExpressionDurationTicks, ref expressionDurationStr, 1, 60000);
             y += RowHeight;
 
             // ── Section 2: 贴图设置（CustomTexture/Line/Wall 共用） ──
@@ -584,7 +601,7 @@ namespace CharacterStudio.UI
                         options.Add(new FloatMenuOption(GetVfxFacingModeLabel(captured), () =>
                         {
                             vfx.facingMode = captured;
-                            vfx.SyncLegacyFields();
+                            vfx.SyncDerivedFields();
                             NotifyAbilityPreviewDirty();
                         }));
                     }
@@ -1035,11 +1052,9 @@ namespace CharacterStudio.UI
             });
             y += RowHeight;
 
-            // 延时 + 持续时间
-            string delayStr = vfx.delayTicks.ToString();
-            DrawIntRowLocal(y, inner.x, "CS_Studio_VFX_DelayShort".Translate(), ref vfx.delayTicks, ref delayStr, 0, 60000);
+            // 持续时间
             string durationStr = vfx.displayDurationTicks.ToString();
-            DrawIntRowLocal(y, rightX, "CS_Studio_VFX_DisplayDurationShort".Translate(), ref vfx.displayDurationTicks, ref durationStr, 1, 60000);
+            DrawIntRowLocal(y, inner.x, "CS_Studio_VFX_DisplayDurationShort".Translate(), ref vfx.displayDurationTicks, ref durationStr, 1, 60000);
             y += RowHeight;
 
             // 全局滤镜配置
@@ -1064,7 +1079,7 @@ namespace CharacterStudio.UI
                     scale = 1f,
                     textureSource = AbilityVisualEffectTextureSource.Vanilla
                 };
-                vfx.SyncLegacyFields();
+                vfx.SyncDerivedFields();
                 selectedAbility?.visualEffects.Add(vfx);
                 NotifyAbilityPreviewDirty(true);
             }));
@@ -1081,7 +1096,7 @@ namespace CharacterStudio.UI
                     scale = 1f,
                     textureSource = AbilityVisualEffectTextureSource.LocalPath
                 };
-                vfx.SyncLegacyFields();
+                vfx.SyncDerivedFields();
                 selectedAbility?.visualEffects.Add(vfx);
                 NotifyAbilityPreviewDirty(true);
             }));
@@ -1099,7 +1114,7 @@ namespace CharacterStudio.UI
                     textureSource = AbilityVisualEffectTextureSource.LocalPath,
                     pathMode = AbilityVisualPathMode.DirectLineCasterToTarget
                 };
-                vfx.SyncLegacyFields();
+                vfx.SyncDerivedFields();
                 selectedAbility?.visualEffects.Add(vfx);
                 NotifyAbilityPreviewDirty(true);
             }));
@@ -1117,7 +1132,7 @@ namespace CharacterStudio.UI
                     textureSource = AbilityVisualEffectTextureSource.LocalPath,
                     pathMode = AbilityVisualPathMode.DirectLineCasterToTarget
                 };
-                vfx.SyncLegacyFields();
+                vfx.SyncDerivedFields();
                 selectedAbility?.visualEffects.Add(vfx);
                 NotifyAbilityPreviewDirty(true);
             }));
@@ -1134,7 +1149,7 @@ namespace CharacterStudio.UI
                     scale = 1f,
                     textureSource = AbilityVisualEffectTextureSource.Vanilla
                 };
-                vfx.SyncLegacyFields();
+                vfx.SyncDerivedFields();
                 selectedAbility?.visualEffects.Add(vfx);
                 NotifyAbilityPreviewDirty(true);
             }));
@@ -1152,7 +1167,7 @@ namespace CharacterStudio.UI
                     lineWidth = 0.35f,
                     textureSource = AbilityVisualEffectTextureSource.Vanilla
                 };
-                vfx.SyncLegacyFields();
+                vfx.SyncDerivedFields();
                 selectedAbility?.visualEffects.Add(vfx);
                 NotifyAbilityPreviewDirty(true);
             }));
@@ -1169,7 +1184,7 @@ namespace CharacterStudio.UI
                     displayDurationTicks = 60,
                     scale = 1f
                 };
-                vfx.SyncLegacyFields();
+                vfx.SyncDerivedFields();
                 selectedAbility?.visualEffects.Add(vfx);
                 NotifyAbilityPreviewDirty(true);
             }));

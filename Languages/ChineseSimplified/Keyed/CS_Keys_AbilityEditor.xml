@@ -27,6 +27,7 @@
     <CS_Ability_EffectType_Control>控制</CS_Ability_EffectType_Control>
     <CS_Ability_EffectType_Terraform>地形改造</CS_Ability_EffectType_Terraform>
     <CS_Ability_EffectType_WeatherChange>天气变化</CS_Ability_EffectType_WeatherChange>
+    <CS_Ability_EffectType_Thought>心情条目</CS_Ability_EffectType_Thought>
     <CS_Ability_RuntimeComponentType_SlotOverrideWindow>连段窗口</CS_Ability_RuntimeComponentType_SlotOverrideWindow>
     <CS_Ability_RuntimeComponentType_HotkeyOverride>热键覆盖</CS_Ability_RuntimeComponentType_HotkeyOverride>
     <CS_Ability_RuntimeComponentType_FollowupCooldownGate>后续冷却门</CS_Ability_RuntimeComponentType_FollowupCooldownGate>
@@ -120,10 +121,20 @@
     <CS_Studio_Effect_WeatherDef>天气定义</CS_Studio_Effect_WeatherDef>
     <CS_Studio_Effect_WeatherDuration>持续时长 (Tick)</CS_Studio_Effect_WeatherDuration>
     <CS_Studio_Effect_WeatherTransition>过渡时长 (Tick)</CS_Studio_Effect_WeatherTransition>
+    <CS_Studio_Effect_ThoughtLabel>标签</CS_Studio_Effect_ThoughtLabel>
+    <CS_Studio_Effect_ThoughtDesc>描述</CS_Studio_Effect_ThoughtDesc>
+    <CS_Studio_Effect_ThoughtMood>心情偏移</CS_Studio_Effect_ThoughtMood>
+    <CS_Studio_Effect_ThoughtDuration>持续天数</CS_Studio_Effect_ThoughtDuration>
+    <CS_Studio_Effect_ThoughtStackLimit>叠加上限</CS_Studio_Effect_ThoughtStackLimit>
+    <CS_Studio_Effect_ThoughtShowBubble>显示气泡</CS_Studio_Effect_ThoughtShowBubble>
+    <CS_Studio_Effect_ThoughtIcon>图标路径</CS_Studio_Effect_ThoughtIcon>
+    <CS_Ability_Validate_ThoughtLabelRequired>心情条目需要填写标签</CS_Ability_Validate_ThoughtLabelRequired>
+    <CS_Ability_Validate_ThoughtMoodZero>心情偏移为0，该条目不会影响心情</CS_Ability_Validate_ThoughtMoodZero>
     <CS_Ability_Validate_WeatherDefNameRequired>天气定义名称不能为空。</CS_Ability_Validate_WeatherDefNameRequired>
     <CS_Ability_Validate_WeatherDurationPositive>天气持续时长必须大于 0。</CS_Ability_Validate_WeatherDurationPositive>
     <CS_Ability_Validate_WeatherTransitionNonNegative>天气过渡时长不能为负数。</CS_Ability_Validate_WeatherTransitionNonNegative>
     <CS_Ability_Validate_ComboTargetAbilityRequired>连段目标技能不能为空。</CS_Ability_Validate_ComboTargetAbilityRequired>
+    <CS_Ability_Validate_EffectDelayNonNegative>效果延迟不能为负数。</CS_Ability_Validate_EffectDelayNonNegative>
     <CS_Studio_VFX_Type_LineTexture>线状贴图</CS_Studio_VFX_Type_LineTexture>
     <CS_Studio_VFX_Type_WallTexture>墙状贴图</CS_Studio_VFX_Type_WallTexture>
     <CS_Studio_VFX_Type_DustPuff>尘雾</CS_Studio_VFX_Type_DustPuff>
@@ -192,4 +203,6 @@
     <CS_Ability_Validate_BezierWallThickness>墙体厚度必须大于 0。</CS_Ability_Validate_BezierWallThickness>
     <CS_Ability_Validate_BezierWallSegments>分段数必须大于 0。</CS_Ability_Validate_BezierWallSegments>
     <CS_Ability_Validate_BezierWallAbsorbMax>最大吸收量必须大于 0。</CS_Ability_Validate_BezierWallAbsorbMax>
+    <CS_Ability_RuntimeComponentType_WorldMapFlight>跨地图飞行</CS_Ability_RuntimeComponentType_WorldMapFlight>
+    <CS_Studio_Runtime_Desc_WorldMapFlight>施放后打开世界地图选择目标地块，角色起飞并以自身视觉飞离当前地图，经大地图飞行到达目标后以自身视觉着陆。</CS_Studio_Runtime_Desc_WorldMapFlight>
 </LanguageData>

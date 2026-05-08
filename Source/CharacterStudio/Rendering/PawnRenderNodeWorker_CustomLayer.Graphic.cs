@@ -24,8 +24,11 @@ namespace CharacterStudio.Rendering
             if (string.IsNullOrEmpty(path))
                 return false;
 
-            if (textureExistsCache.TryGetValue(path, out bool cachedExists))
-                return cachedExists;
+            lock (_textureExistsCacheLock)
+            {
+                if (textureExistsCache.TryGetValue(path, out bool cachedExists))
+                    return cachedExists;
+            }
 
             bool exists;
             if (System.IO.Path.IsPathRooted(path) || path.StartsWith("/"))
@@ -46,14 +49,17 @@ namespace CharacterStudio.Rendering
             }
 
             // P-PERF: Queue-based FIFO 淘汰，确保可靠的插入顺序淘汰
-            if (textureExistsCache.Count >= MaxTextureExistsCacheSize && textureExistsEvictionQueue.Count > 0)
+            lock (_textureExistsCacheLock)
             {
-                textureExistsCache.Remove(textureExistsEvictionQueue.Dequeue());
-            }
+                if (textureExistsCache.Count >= MaxTextureExistsCacheSize && textureExistsEvictionQueue.Count > 0)
+                {
+                    textureExistsCache.Remove(textureExistsEvictionQueue.Dequeue());
+                }
 
-            textureExistsEvictionQueue.Enqueue(path);
-            textureExistsCache[path] = exists;
-            return exists;
+                textureExistsEvictionQueue.Enqueue(path);
+                textureExistsCache[path] = exists;
+                return exists;
+            }
         }
 
         private static void LogMissingExternalTextureWarningOnce(string path)
@@ -117,10 +123,17 @@ namespace CharacterStudio.Rendering
 
                 string? layeredBasePath = ResolveLayeredFacePartBasePath(customNode, parms.pawn, parms.facing);
                 if (customNode.layeredFacePartType.HasValue
-                    && parms.facing == Rot4.North
                     && string.IsNullOrWhiteSpace(layeredBasePath))
                 {
-                    return null;
+                    // North 朝向无贴图时始终不绘制（避免正面贴图泄漏到背面）
+                    // ReplacementEye/ReplacementMouth 在任何朝向下如果运行时解析无贴图路径，
+                    // 也必须返回 null，避免注入时的 fallback 路径（如 _east）泄漏到其他朝向
+                    if (parms.facing == Rot4.North
+                        || customNode.layeredFacePartType.Value == LayeredFacePartType.ReplacementEye
+                        || customNode.layeredFacePartType.Value == LayeredFacePartType.ReplacementMouth)
+                    {
+                        return null;
+                    }
                 }
 
                 string? configuredPath = ResolveConfiguredTexPath(
@@ -179,41 +192,44 @@ namespace CharacterStudio.Rendering
 
                 string cachePath = externalExists ? resolvedExternalPath : resolvedTexPath;
                 string cacheKey = BuildExternalGraphicCacheKey(cachePath, shader, props?.color ?? Color.white);
-                if (externalGraphicCache.TryGetValue(cacheKey, out Graphic cachedGraphic))
+                lock (_externalGraphicCacheLock)
                 {
-                    resultGraphic = cachedGraphic;
-                }
-                else
-                {
-                    // P-PERF: Queue-based FIFO 淘汰，确保可靠的插入顺序淘汰
-                    if (externalGraphicCache.Count >= MaxExternalGraphicCacheSize && externalGraphicEvictionQueue.Count > 0)
+                    if (externalGraphicCache.TryGetValue(cacheKey, out Graphic cachedGraphic))
                     {
-                        string evictedKey = externalGraphicEvictionQueue.Dequeue();
-                        if (externalGraphicCache.TryGetValue(evictedKey, out Graphic evictedGraphic))
-                        {
-                            externalGraphicCache.Remove(evictedKey);
-                            // P10: 同步移除纹理 ID 跟踪
-                            RemoveTextureTrackingFromGraphic(evictedGraphic);
-                            if (evictedGraphic is Graphic_Runtime runtimeEvicted)
-                            {
-                                GraphicRuntimePool.Return(runtimeEvicted);
-                            }
-                        }
-                    }
-
-                    var graphic = GraphicRuntimePool.Get();
-                    graphic.Init(req);
-                    if (graphic.IsInitializedSuccessfully)
-                    {
-                        externalGraphicEvictionQueue.Enqueue(cacheKey);
-                        externalGraphicCache[cacheKey] = graphic;
-                        // P10: 添加纹理 ID 跟踪
-                        TrackTextureFromGraphic(graphic);
-                        resultGraphic = graphic;
+                        resultGraphic = cachedGraphic;
                     }
                     else
                     {
-                        resultGraphic = graphic;
+                        // P-PERF: Queue-based FIFO 淘汰，确保可靠的插入顺序淘汰
+                        if (externalGraphicCache.Count >= MaxExternalGraphicCacheSize && externalGraphicEvictionQueue.Count > 0)
+                        {
+                            string evictedKey = externalGraphicEvictionQueue.Dequeue();
+                            if (externalGraphicCache.TryGetValue(evictedKey, out Graphic evictedGraphic))
+                            {
+                                externalGraphicCache.Remove(evictedKey);
+                                // P10: 同步移除纹理 ID 跟踪
+                                RemoveTextureTrackingFromGraphic(evictedGraphic);
+                                if (evictedGraphic is Graphic_Runtime runtimeEvicted)
+                                {
+                                    GraphicRuntimePool.Return(runtimeEvicted);
+                                }
+                            }
+                        }
+
+                        var graphic = GraphicRuntimePool.Get();
+                        graphic.Init(req);
+                        if (graphic.IsInitializedSuccessfully)
+                        {
+                            externalGraphicEvictionQueue.Enqueue(cacheKey);
+                            externalGraphicCache[cacheKey] = graphic;
+                            // P10: 添加纹理 ID 跟踪
+                            TrackTextureFromGraphic(graphic);
+                            resultGraphic = graphic;
+                        }
+                        else
+                        {
+                            resultGraphic = graphic;
+                        }
                     }
                 }
             }
@@ -232,34 +248,37 @@ namespace CharacterStudio.Rendering
                     {
                         if (graphicType == null || (graphicType != typeof(Graphic_Multi) && graphicType != typeof(Graphic_Single)))
                         {
-                            if (graphicTypeProbeCache.TryGetValue(resolvedTexPath, out var cachedGraphicType))
+                            lock (_graphicTypeProbeLock)
                             {
-                                graphicType = cachedGraphicType;
-                            }
-                            else if (!RuntimeAssetLoader.IsMainThread())
-                            {
-                                graphicType = typeof(Graphic_Multi);
-                            }
-                            else if (ContentFinder<Texture2D>.Get(resolvedTexPath + "_north", false) != null)
-                            {
-                                graphicType = typeof(Graphic_Multi);
-                                // P-PERF: Queue-based FIFO 淘汰，确保可靠的插入顺序淘汰
-                                if (graphicTypeProbeCache.Count >= MaxGraphicTypeProbeCacheSize && graphicTypeProbeEvictionQueue.Count > 0)
+                                if (graphicTypeProbeCache.TryGetValue(resolvedTexPath, out var cachedGraphicType))
                                 {
-                                    graphicTypeProbeCache.Remove(graphicTypeProbeEvictionQueue.Dequeue());
+                                    graphicType = cachedGraphicType;
                                 }
-                                graphicTypeProbeEvictionQueue.Enqueue(resolvedTexPath);
-                                graphicTypeProbeCache[resolvedTexPath] = graphicType;
-                            }
-                            else if (ContentFinder<Texture2D>.Get(resolvedTexPath, false) != null)
-                            {
-                                graphicType = typeof(Graphic_Single);
-                                if (graphicTypeProbeCache.Count >= MaxGraphicTypeProbeCacheSize && graphicTypeProbeEvictionQueue.Count > 0)
+                                else if (!RuntimeAssetLoader.IsMainThread())
                                 {
-                                    graphicTypeProbeCache.Remove(graphicTypeProbeEvictionQueue.Dequeue());
+                                    graphicType = typeof(Graphic_Multi);
                                 }
-                                graphicTypeProbeEvictionQueue.Enqueue(resolvedTexPath);
-                                graphicTypeProbeCache[resolvedTexPath] = graphicType;
+                                else if (ContentFinder<Texture2D>.Get(resolvedTexPath + "_north", false) != null)
+                                {
+                                    graphicType = typeof(Graphic_Multi);
+                                    // P-PERF: Queue-based FIFO 淘汰，确保可靠的插入顺序淘汰
+                                    if (graphicTypeProbeCache.Count >= MaxGraphicTypeProbeCacheSize && graphicTypeProbeEvictionQueue.Count > 0)
+                                    {
+                                        graphicTypeProbeCache.Remove(graphicTypeProbeEvictionQueue.Dequeue());
+                                    }
+                                    graphicTypeProbeEvictionQueue.Enqueue(resolvedTexPath);
+                                    graphicTypeProbeCache[resolvedTexPath] = graphicType;
+                                }
+                                else if (ContentFinder<Texture2D>.Get(resolvedTexPath, false) != null)
+                                {
+                                    graphicType = typeof(Graphic_Single);
+                                    if (graphicTypeProbeCache.Count >= MaxGraphicTypeProbeCacheSize && graphicTypeProbeEvictionQueue.Count > 0)
+                                    {
+                                        graphicTypeProbeCache.Remove(graphicTypeProbeEvictionQueue.Dequeue());
+                                    }
+                                    graphicTypeProbeEvictionQueue.Enqueue(resolvedTexPath);
+                                    graphicTypeProbeCache[resolvedTexPath] = graphicType;
+                                }
                             }
 
                             if (graphicType == null) graphicType = typeof(Graphic_Multi);
@@ -280,10 +299,14 @@ namespace CharacterStudio.Rendering
                         else
                         {
                             // P-PERF: 缓存泛型 MethodInfo，避免每帧 MakeGenericMethod + new object[] 分配
-                            if (!_cachedGraphicDbMethods.TryGetValue(graphicType!, out System.Reflection.MethodInfo? cachedGeneric))
+                            System.Reflection.MethodInfo? cachedGeneric;
+                            lock (_reflectionCacheLock)
                             {
-                                cachedGeneric = _graphicDbGetTwoColors?.MakeGenericMethod(graphicType!);
-                                _cachedGraphicDbMethods[graphicType!] = cachedGeneric;
+                                if (!_cachedGraphicDbMethods.TryGetValue(graphicType!, out cachedGeneric))
+                                {
+                                    cachedGeneric = _graphicDbGetTwoColors?.MakeGenericMethod(graphicType!);
+                                    _cachedGraphicDbMethods[graphicType!] = cachedGeneric;
+                                }
                             }
 
                             if (cachedGeneric != null)
@@ -368,8 +391,11 @@ namespace CharacterStudio.Rendering
             {
                 // P-PERF: 已应用过则直接跳过（Graphic 非 UnityObject，用 GetHashCode）
                 int instanceId = RuntimeHelpers.GetHashCode(baseGraphic);
-                if (_zWriteAppliedInstanceIds.Contains(instanceId))
-                    return baseGraphic;
+                lock (_zWriteLock)
+                {
+                    if (_zWriteAppliedInstanceIds.Contains(instanceId))
+                        return baseGraphic;
+                }
 
                 if (baseGraphic is Graphic_Single single)
                 {
@@ -378,13 +404,19 @@ namespace CharacterStudio.Rendering
                     {
                         if (!SupportsZWriteProperty(mat) || mat.GetInt(CachedZWriteID) == 1)
                         {
-                            _zWriteAppliedInstanceIds.Add(instanceId);
+                            lock (_zWriteLock)
+                            {
+                                _zWriteAppliedInstanceIds.Add(instanceId);
+                            }
                         }
                         else
                         {
                             Material zWriteMat = GetSharedZWriteMaterial(mat);
                             _graphicMatField?.SetValue(single, zWriteMat);
-                            _zWriteAppliedInstanceIds.Add(instanceId);
+                            lock (_zWriteLock)
+                            {
+                                _zWriteAppliedInstanceIds.Add(instanceId);
+                            }
                         }
                     }
                 }
@@ -406,7 +438,10 @@ namespace CharacterStudio.Rendering
 
                         if (alreadyZWrite)
                         {
-                            _zWriteAppliedInstanceIds.Add(instanceId);
+                            lock (_zWriteLock)
+                            {
+                                _zWriteAppliedInstanceIds.Add(instanceId);
+                            }
                         }
                         else
                         {
@@ -421,7 +456,10 @@ namespace CharacterStudio.Rendering
                                 }
                             }
                             _graphicMultiMatsField.SetValue(multi, newMats);
-                            _zWriteAppliedInstanceIds.Add(instanceId);
+                            lock (_zWriteLock)
+                            {
+                                _zWriteAppliedInstanceIds.Add(instanceId);
+                            }
                         }
                     }
                 }
@@ -441,8 +479,11 @@ namespace CharacterStudio.Rendering
 
             // P-PERF: 基于原始材质 ID 获取共享的 ZWrite 版本，极大提升合批概率
             int baseMatId = baseMat.GetInstanceID();
-            if (_sharedZWriteMaterials.TryGetValue(baseMatId, out Material shared))
-                return shared;
+            lock (_zWriteLock)
+            {
+                if (_sharedZWriteMaterials.TryGetValue(baseMatId, out Material shared))
+                    return shared;
+            }
 
             Material zWriteMat = new Material(baseMat);
             if (!SupportsZWriteProperty(zWriteMat))
@@ -450,7 +491,10 @@ namespace CharacterStudio.Rendering
 
             zWriteMat.SetInt(CachedZWriteID, 1);
             // 保持原始 renderQueue，仅开启 ZWrite
-            _sharedZWriteMaterials[baseMatId] = zWriteMat;
+            lock (_zWriteLock)
+            {
+                _sharedZWriteMaterials[baseMatId] = zWriteMat;
+            }
             return zWriteMat;
         }
 
@@ -503,11 +547,16 @@ namespace CharacterStudio.Rendering
                 Material? mat = graphic?.MatAt(Rot4.South, null);
                 if (mat?.mainTexture is Texture2D tex)
                 {
+                    TextureRefTracker.AddRef(tex, RefSource.CustomLayer);
+                    // 兼容旧安全网
                     int id = tex.GetInstanceID();
-                    if (_externalGraphicTextureRefCounts.TryGetValue(id, out int count))
-                        _externalGraphicTextureRefCounts[id] = count + 1;
-                    else
-                        _externalGraphicTextureRefCounts[id] = 1;
+                    lock (_externalGraphicCacheLock)
+                    {
+                        if (_externalGraphicTextureRefCounts.TryGetValue(id, out int count))
+                            _externalGraphicTextureRefCounts[id] = count + 1;
+                        else
+                            _externalGraphicTextureRefCounts[id] = 1;
+                    }
                 }
             }
             catch { }
@@ -520,13 +569,17 @@ namespace CharacterStudio.Rendering
                 Material? mat = graphic?.MatAt(Rot4.South, null);
                 if (mat?.mainTexture is Texture2D tex)
                 {
+                    TextureRefTracker.ReleaseRef(tex, RefSource.CustomLayer);
                     int id = tex.GetInstanceID();
-                    if (_externalGraphicTextureRefCounts.TryGetValue(id, out int count))
+                    lock (_externalGraphicCacheLock)
                     {
-                        if (count <= 1)
-                            _externalGraphicTextureRefCounts.Remove(id);
-                        else
-                            _externalGraphicTextureRefCounts[id] = count - 1;
+                        if (_externalGraphicTextureRefCounts.TryGetValue(id, out int count))
+                        {
+                            if (count <= 1)
+                                _externalGraphicTextureRefCounts.Remove(id);
+                            else
+                                _externalGraphicTextureRefCounts[id] = count - 1;
+                        }
                     }
                 }
             }
@@ -535,17 +588,20 @@ namespace CharacterStudio.Rendering
 
         public static void ClearExternalGraphicCache()
         {
-            foreach (var graphic in externalGraphicCache.Values)
+            lock (_externalGraphicCacheLock)
             {
-                if (graphic is Graphic_Runtime runtime)
+                foreach (var graphic in externalGraphicCache.Values)
                 {
-                    GraphicRuntimePool.Return(runtime);
+                    if (graphic is Graphic_Runtime runtime)
+                    {
+                        GraphicRuntimePool.Return(runtime);
+                    }
                 }
+                externalGraphicCache.Clear();
+                externalGraphicEvictionQueue.Clear();
+                // P10: 同步清除纹理引用计数跟踪
+                _externalGraphicTextureRefCounts.Clear();
             }
-            externalGraphicCache.Clear();
-            externalGraphicEvictionQueue.Clear();
-            // P10: 同步清除纹理引用计数跟踪
-            _externalGraphicTextureRefCounts.Clear();
         }
 
         /// <summary>
@@ -576,10 +632,38 @@ namespace CharacterStudio.Rendering
                             string customPath = customNode.config.customShaderPath;
                             if (!string.IsNullOrWhiteSpace(customPath))
                             {
-                                if (!customShaderCache.TryGetValue(customPath, out Shader? customShader))
+                                Shader? customShader;
+                                bool needsCache;
+                                lock (_customShaderCacheLock)
                                 {
+                                    needsCache = !customShaderCache.TryGetValue(customPath, out customShader);
+                                }
+
+                                if (needsCache)
+                                {
+                                    // 1. 尝试从 Unity 内置资源查找
                                     customShader = Shader.Find(customPath);
-                                    customShaderCache[customPath] = customShader;
+
+                                    // 2. 尝试从 AssetBundle 加载（格式: "bundlePath|shaderName" 或纯 shader 名自动搜索）
+                                    if (customShader == null)
+                                    {
+                                        if (customPath.Contains('|'))
+                                        {
+                                            // 显式指定: "1.6/AssetBundles/cs_shaders|Sprite (Pixel Lit Dissolve)"
+                                            string[] parts = customPath.Split(new[] { '|' }, 2);
+                                            customShader = AssetBundleManager.LoadAsset<Shader>(parts[0], parts[1]);
+                                        }
+                                        else
+                                        {
+                                            // 自动搜索: 遍历所有已知的 shader AssetBundle
+                                            customShader = TryLoadShaderFromAssetBundles(customPath);
+                                        }
+                                    }
+
+                                    lock (_customShaderCacheLock)
+                                    {
+                                        customShaderCache[customPath] = customShader;
+                                    }
                                     if (customShader == null)
                                         Log.WarningOnce($"[CharacterStudio] Custom shader not found: {customPath}, falling back to CutoutComplex", customPath.GetHashCode());
                                 }
@@ -592,6 +676,29 @@ namespace CharacterStudio.Rendering
                 }
             }
             return node.ShaderFor(pawn) ?? ShaderDatabase.Cutout;
+        }
+
+        /// <summary>
+        /// 已知的 shader AssetBundle 路径列表，用于按 shader 名称自动搜索。
+        /// </summary>
+        private static readonly string[] knownShaderBundlePaths = new[]
+        {
+            "1.6/AssetBundles/cs_shaders",
+            "1.6/AssetBundles/cs_shaders.ab",
+        };
+
+        /// <summary>
+        /// 尝试从所有已知的 shader AssetBundle 中加载指定名称的 Shader。
+        /// </summary>
+        private static Shader? TryLoadShaderFromAssetBundles(string shaderName)
+        {
+            foreach (string bundlePath in knownShaderBundlePaths)
+            {
+                Shader? shader = AssetBundleManager.LoadAsset<Shader>(bundlePath, shaderName);
+                if (shader != null)
+                    return shader;
+            }
+            return null;
         }
 
         private static bool IsAlphaBlendShader(string? shaderDefName)
@@ -689,15 +796,35 @@ namespace CharacterStudio.Rendering
         public static void ClearCache()
         {
             ClearExternalGraphicCache();
-            textureExistsCache.Clear();
-            textureExistsEvictionQueue.Clear();
-            frameSequenceCountCache.Clear();
-            graphicTypeProbeCache.Clear();
-            graphicTypeProbeEvictionQueue.Clear();
+            lock (_textureExistsCacheLock)
+            {
+                textureExistsCache.Clear();
+                textureExistsEvictionQueue.Clear();
+            }
+            lock (_frameSequenceLock)
+            {
+                frameSequenceCountCache.Clear();
+            }
+            lock (_graphicTypeProbeLock)
+            {
+                graphicTypeProbeCache.Clear();
+                graphicTypeProbeEvictionQueue.Clear();
+            }
             // P-PERF: 清理 ZWrite 已处理记录，防止 HashSet 无界增长
-            _zWriteAppliedInstanceIds.Clear();
-            // P-PERF: 清理全局材质池
-            _sharedZWriteMaterials.Clear();
+            lock (_zWriteLock)
+            {
+                _zWriteAppliedInstanceIds.Clear();
+                // P-PERF: 清理全局材质池
+                _sharedZWriteMaterials.Clear();
+            }
+        }
+
+        /// <summary>
+        /// 返回缓存统计（供性能报告使用）。
+        /// </summary>
+        public static string GetCacheStats()
+        {
+            return $"External: {externalGraphicCache.Count}/{MaxExternalGraphicCacheSize}";
         }
     }
 }

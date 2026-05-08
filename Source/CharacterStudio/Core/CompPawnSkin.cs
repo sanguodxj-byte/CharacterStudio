@@ -109,6 +109,14 @@ namespace CharacterStudio.Core
             Pawn? pawn = Pawn;
             if (pawn == null || !pawn.Spawned) return;
 
+            // 朝向变化时预热新方向的纹理，避免并行渲染线程首次请求时因非主线程无法创建 Texture2D 而丢失
+            int currentRotation = pawn.Rotation.AsInt;
+            if (lastPrewarmedRotation != -1 && currentRotation != lastPrewarmedRotation)
+            {
+                PawnSkinRuntimeUtility.PrewarmDirectionalVariants(pawn);
+            }
+            lastPrewarmedRotation = currentRotation;
+
             // Ability ticking (forced move, face override) is now handled by CompCharacterAbilityRuntime.CompTick()
             FaceRuntimeRefreshCoordinator.FlushDeferredRefresh(this);
 
@@ -241,13 +249,71 @@ namespace CharacterStudio.Core
         private int lastGraphicDirtyTick = -1;
         private const int MinGraphicDirtyIntervalTicks = 3;
 
+        // 朝向变化预热：记录上次预热时的朝向，检测朝向切换后预热新方向的纹理
+        private int lastPrewarmedRotation = -1;
+
         private int faceTransformVersion = 0;
         private int faceGraphicVersion = 0;
+        private const int MaxFaceTransformCacheSize = 4096;
+        private const int MaxFacePathCacheSize = 4096;
         private readonly Dictionary<FaceTransformCacheKey, FaceTransformCacheEntry> faceTransformCache = new Dictionary<FaceTransformCacheKey, FaceTransformCacheEntry>();
         private readonly Dictionary<FacePathCacheKey, FacePathCacheEntry> facePathCache = new Dictionary<FacePathCacheKey, FacePathCacheEntry>();
 
         public int FaceTransformVersion => faceTransformVersion;
         public int FaceGraphicVersion => faceGraphicVersion;
+
+        // P-PERF: HasActiveFaceAnimation 结果帧级缓存，避免每节点每方法重复计算。
+        // 15 个面部件节点 × 4 方法 = 60 次/帧 → 优化为 1 次计算 + 59 次缓存命中。
+        private int _cachedHasActiveFaceAnimFrameId = -1;
+        private bool _cachedHasActiveFaceAnimResult;
+
+        /// <summary>
+        /// P-PERF: 检查当前角色是否有活跃的面部动画（呼吸、眨眼、眼动、表情变化）。
+        /// 结果按帧缓存——同一帧内多次调用直接返回缓存值。
+        /// </summary>
+        public bool HasActiveFaceAnimation()
+        {
+            int frameId = GetCurrentEffectiveStateFrameId();
+            if (_cachedHasActiveFaceAnimFrameId == frameId)
+                return _cachedHasActiveFaceAnimResult;
+
+            _cachedHasActiveFaceAnimFrameId = frameId;
+            _cachedHasActiveFaceAnimResult = ComputeHasActiveFaceAnimation();
+            return _cachedHasActiveFaceAnimResult;
+        }
+
+        /// <summary>
+        /// HasActiveFaceAnimation 的实际计算逻辑（已从公共方法中提取以支持帧级缓存）。
+        /// </summary>
+        private bool ComputeHasActiveFaceAnimation()
+        {
+            // 有眨眼
+            if (faceExpressionState?.IsBlinkActive == true)
+                return true;
+
+            // 有非中性表情
+            var expr = GetEffectiveExpression();
+            if (expr != ExpressionType.Neutral)
+                return true;
+
+            // 有眼动
+            EyeDirection eyeDir = CurEyeDirection;
+            if (eyeDir != EyeDirection.Center)
+                return true;
+
+            // 有呼吸动画配置（检查 motionAmplitude > 0）
+            var faceConfig = ActiveSkin?.faceConfig;
+            if (faceConfig?.layeredParts != null)
+            {
+                foreach (var part in faceConfig.layeredParts)
+                {
+                    if (part != null && part.motionAmplitude > 0.0001f)
+                        return true;
+                }
+            }
+
+            return false;
+        }
 
         public readonly struct FaceTransformCacheKey : IEquatable<FaceTransformCacheKey>
         {
@@ -359,13 +425,23 @@ namespace CharacterStudio.Core
             => faceTransformCache.TryGetValue(key, out entry);
 
         public void SetCachedFaceTransform(FaceTransformCacheKey key, FaceTransformCacheEntry entry)
-            => faceTransformCache[key] = entry;
+        {
+            // P-CAP: 防止缓存无界增长（key 包含 tick，高频表情下可能持续累积）
+            if (faceTransformCache.Count >= MaxFaceTransformCacheSize)
+                faceTransformCache.Clear();
+            faceTransformCache[key] = entry;
+        }
 
         public bool TryGetCachedFacePath(FacePathCacheKey key, out FacePathCacheEntry entry)
             => facePathCache.TryGetValue(key, out entry);
 
         public void SetCachedFacePath(FacePathCacheKey key, FacePathCacheEntry entry)
-            => facePathCache[key] = entry;
+        {
+            // P-CAP: 防止缓存无界增长
+            if (facePathCache.Count >= MaxFacePathCacheSize)
+                facePathCache.Clear();
+            facePathCache[key] = entry;
+        }
 
         public void MarkFaceTransformDirty()
         {
@@ -477,7 +553,8 @@ namespace CharacterStudio.Core
         Tear,
         Sweat,
         Gloomy,
-        Lovin
+        Lovin,
+        Sleep
     }
 
     public enum BlinkPhase

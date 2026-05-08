@@ -79,7 +79,8 @@ namespace CharacterStudio.Core
             if (skin == null)
                 return;
 
-            foreach (string texturePath in EnumerateExternalTexturePaths(skin))
+            // 首次应用时也预热方向变体，避免首次朝向切换时丢失纹理
+            foreach (string texturePath in EnumerateExternalTexturePaths(skin, includeDirectionalVariants: true))
             {
                 try
                 {
@@ -96,7 +97,7 @@ namespace CharacterStudio.Core
             }
         }
 
-        private static IEnumerable<string> EnumerateExternalTexturePaths(PawnSkinDef skin)
+        private static IEnumerable<string> EnumerateExternalTexturePaths(PawnSkinDef skin, bool includeDirectionalVariants = false)
         {
             HashSet<string> yielded = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
             List<string> pendingExternalPaths = new List<string>();
@@ -117,6 +118,22 @@ namespace CharacterStudio.Core
                 pendingExternalPaths.Add(resolvedPath);
             }
 
+            // Yield a base path and, if includeDirectionalVariants, its _east / _north suffixed variants
+            // (South uses the base path itself, so no suffix is needed).
+            void YieldWithDirectionalVariants(string? basePath)
+            {
+                YieldIfExternal(basePath);
+                if (!includeDirectionalVariants || string.IsNullOrWhiteSpace(basePath))
+                    return;
+
+                // Only attempt directional variants for external paths
+                if (!RuntimeAssetLoader.LooksLikeExternalTexturePath(basePath))
+                    return;
+
+                YieldIfExternal(AppendDirectionalSuffix(basePath, "_east"));
+                YieldIfExternal(AppendDirectionalSuffix(basePath, "_north"));
+            }
+
             if (!string.IsNullOrWhiteSpace(skin.previewTexPath))
                 YieldIfExternal(skin.previewTexPath);
 
@@ -127,8 +144,17 @@ namespace CharacterStudio.Core
                     if (layer == null)
                         continue;
 
-                    YieldIfExternal(layer.texPath);
-                    YieldIfExternal(layer.maskTexPath);
+                    bool useDir = layer.useDirectionalSuffix;
+                    if (useDir)
+                    {
+                        YieldWithDirectionalVariants(layer.texPath);
+                        YieldWithDirectionalVariants(layer.maskTexPath);
+                    }
+                    else
+                    {
+                        YieldIfExternal(layer.texPath);
+                        YieldIfExternal(layer.maskTexPath);
+                    }
                 }
             }
 
@@ -152,6 +178,53 @@ namespace CharacterStudio.Core
             }
 
             return pendingExternalPaths;
+        }
+
+        /// <summary>
+        /// 在主线程预热皮肤中所有外部纹理及其方向变体（_east/_north）。
+        /// 在朝向切换时调用，确保并行渲染线程首次请求某方向纹理时 textureCache 已有数据。
+        /// </summary>
+        public static void PrewarmDirectionalVariants(Pawn pawn)
+        {
+            var skin = pawn.GetComp<CompPawnSkin>()?.ActiveSkin;
+            if (skin == null)
+                return;
+
+            foreach (string texturePath in EnumerateExternalTexturePaths(skin, includeDirectionalVariants: true))
+            {
+                try
+                {
+                    Texture2D? texture = RuntimeAssetLoader.LoadTextureRaw(texturePath);
+                    if (texture != null)
+                    {
+                        RuntimeAssetLoader.GetMaterialForTexture(texture);
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    Log.Warning($"[CharacterStudio] 预热方向变体纹理失败: {texturePath} ({ex.Message})");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 为外部纹理路径构建方向后缀变体路径。
+        /// 在扩展名之前插入后缀：path/to/tex.png → path/to/tex_east.png
+        /// </summary>
+        private static string AppendDirectionalSuffix(string? basePath, string suffix)
+        {
+            if (string.IsNullOrEmpty(basePath) || string.IsNullOrEmpty(suffix))
+                return basePath ?? string.Empty;
+
+            string nonNullBasePath = basePath!;
+            string cleanToken = suffix.StartsWith("_", System.StringComparison.Ordinal) ? suffix.Substring(1) : suffix;
+            int dotIndex = nonNullBasePath.LastIndexOf('.');
+            if (dotIndex > 0)
+            {
+                return nonNullBasePath.Substring(0, dotIndex) + "_" + cleanToken + nonNullBasePath.Substring(dotIndex);
+            }
+
+            return nonNullBasePath + "_" + cleanToken;
         }
 
         public static bool ClearSkinFromPawn(Pawn? pawn)

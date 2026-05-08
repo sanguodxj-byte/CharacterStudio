@@ -278,7 +278,7 @@ namespace CharacterStudio.Core
     public sealed class FaceEyeDirectionRuntimeData
     {
         public bool enabled = false;
-        public float upperLidMoveDown = 0.0044f;
+        public float upperLidMoveDown = 0.0352f;
 
         public string texCenter = string.Empty;
         public string texLeft = string.Empty;
@@ -414,7 +414,7 @@ namespace CharacterStudio.Core
         /// <summary>肖像轨是否允许使用程序化表情补偿。</summary>
         public bool supportsProgrammaticAdjustments = true;
 
-        /// <summary>旧 EyeDirection 覆盖层使用的眼方向资源缓存。</summary>
+        /// <summary>眼方向资源缓存（用于 EyeDirection 覆盖层渲染）。</summary>
         public FaceEyeDirectionRuntimeData eyeDirection = new FaceEyeDirectionRuntimeData();
 
         public void SetDirectionAvailability(
@@ -597,6 +597,14 @@ namespace CharacterStudio.Core
 
         /// <summary>下次允许更新肖像轨状态的 Tick。</summary>
         public int nextPortraitUpdateTick = 0;
+
+        // ── LOD 精度追踪 ──
+
+        /// <summary>上次完整状态评估（表情解析/轨道/LOD）的 tick。</summary>
+        public int lastStateEvaluationTick = -999999;
+
+        /// <summary>上次动画帧推进（眨眼/帧动画/程序动画）的 tick。</summary>
+        public int lastAnimationTick = -999999;
 
         /// <summary>轨道切换时置位，供渲染入口决定是否刷新。</summary>
         public bool trackDirty = true;

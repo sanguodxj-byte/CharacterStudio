@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Defs>
+
+  <!-- 跨地图飞行：飞行中的世界物件（替代 TravellingTransporters） -->
+  <WorldObjectDef ParentName="TravellingTransporters">
+    <defName>CS_PawnFlightTravelling</defName>
+    <label>flying character</label>
+    <description>A character flying through the air.</description>
+    <worldObjectClass>CharacterStudio.Abilities.TravellingTransporters_PawnFlight</worldObjectClass>
+  </WorldObjectDef>
+
+  <!-- 跨地图飞行：等待着陆的世界物件 -->
+  <WorldObjectDef>
+    <defName>CS_PawnFlightWaiting</defName>
+    <label>flying pawn (waiting to land)</label>
+    <description>A character flying in the air, waiting to land at a chosen location.</description>
+    <worldObjectClass>CharacterStudio.Abilities.WorldObject_PawnFlightWaiting</worldObjectClass>
+    <canSpawnOnWater>false</canSpawnOnWater>
+    <canSpawnOnImpassable>false</canSpawnOnImpassable>
+    <texture>World/WorldObjects/Expanding/Caravan</texture>
+  </WorldObjectDef>
+
+</Defs>

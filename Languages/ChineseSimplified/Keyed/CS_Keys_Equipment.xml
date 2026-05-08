@@ -6,12 +6,12 @@
     <CS_Studio_Equip_AnchorPath_Hint>可选的精确渲染树路径。设置后将优先于锚点标签。</CS_Studio_Equip_AnchorPath_Hint>
     <CS_Studio_Equip_AnchorTag>视觉锚点标签</CS_Studio_Equip_AnchorTag>
     <CS_Studio_Equip_AnchorTag_Hint>在未提供明确锚点路径时，选择要使用的渲染锚点标签。</CS_Studio_Equip_AnchorTag_Hint>
-    <CS_Studio_Equip_ApparelLayers>服装层级</CS_Studio_Equip_ApparelLayers>
+    <CS_Studio_Equip_ApparelLayers>[必填] 服装层级</CS_Studio_Equip_ApparelLayers>
     <CS_Studio_Equip_ApparelMask>服装遮罩</CS_Studio_Equip_ApparelMask>
     <CS_Studio_Equip_ApparelTags>服装标签</CS_Studio_Equip_ApparelTags>
     <CS_Studio_Equip_AllowCrafting>允许制作</CS_Studio_Equip_AllowCrafting>
     <CS_Studio_Equip_AllowTrading>允许交易/购买</CS_Studio_Equip_AllowTrading>
-    <CS_Studio_Equip_BodyPartGroups>身体部位组</CS_Studio_Equip_BodyPartGroups>
+    <CS_Studio_Equip_BodyPartGroups>[必填] 身体部位组</CS_Studio_Equip_BodyPartGroups>
     <CS_Studio_Equip_BoundAbilities>已绑定技能</CS_Studio_Equip_BoundAbilities>
     <CS_Studio_Equip_Btn_Abilities>技能</CS_Studio_Equip_Btn_Abilities>
     <CS_Studio_Equip_Btn_DisablePivotEdit>关闭枢轴编辑</CS_Studio_Equip_Btn_DisablePivotEdit>
@@ -86,6 +86,26 @@
     <CS_Studio_Equip_Section_VisualBase>装备 / 视觉基础</CS_Studio_Equip_Section_VisualBase>
     <CS_Studio_Equip_Section_VisualTransform>装备 / 视觉变换</CS_Studio_Equip_Section_VisualTransform>
     <CS_Studio_Equip_Section_VisualVariants>装备 / 视觉变体</CS_Studio_Equip_Section_VisualVariants>
+    <CS_Studio_Equip_TemplateMode>模板模式</CS_Studio_Equip_TemplateMode>
+    <CS_Studio_Equip_TemplateMode_Tip>模板模式：继承CS抽象基类，主面板精简，基类提供smeltable等公共字段。\n全量模式：继承RimWorld原版基类，所有字段展开。</CS_Studio_Equip_TemplateMode_Tip>
+    <CS_Studio_Equip_Section_ExtraFields>额外字段 / 字段补充器</CS_Studio_Equip_Section_ExtraFields>
+    <CS_Studio_Equip_AddExtraField>添加字段</CS_Studio_Equip_AddExtraField>
+    <CS_Studio_Equip_ExtraFieldBrowser_Title>字段目录浏览器</CS_Studio_Equip_ExtraFieldBrowser_Title>
+    <CS_Studio_Equip_ExtraFieldBrowser_Search_Tip>输入中/英文搜索字段名</CS_Studio_Equip_ExtraFieldBrowser_Search_Tip>
+    <CS_Field_Value>值</CS_Field_Value>
+    <CS_Studio_Search>搜索</CS_Studio_Search>
+    <CS_Studio_Add>添加</CS_Studio_Add>
+    <CS_Field_StatDef>属性定义</CS_Field_StatDef>
+    <CS_Field_StatValue>数值</CS_Field_StatValue>
+    <CS_Field_StatValue_Tip>属性数值</CS_Field_StatValue_Tip>
+    <CS_Field_SkillDef>技能定义</CS_Field_SkillDef>
+    <CS_Field_SkillLevel>技能等级</CS_Field_SkillLevel>
+    <CS_Field_SkillLevel_Tip>要求的技能等级(0-20)</CS_Field_SkillLevel_Tip>
+    <CS_Field_DamageDef>伤害类型</CS_Field_DamageDef>
+    <CS_Field_Multiplier>倍率</CS_Field_Multiplier>
+    <CS_Field_Multiplier_Tip>伤害倍率(0-10)</CS_Field_Multiplier_Tip>
+    <CS_Field_ThingDef>物品定义</CS_Field_ThingDef>
+    <CS_Field_Count>数量</CS_Field_Count>
     <CS_Studio_Equip_SelectEntry>请选择一个装备条目进行编辑。</CS_Studio_Equip_SelectEntry>
     <CS_Studio_Equip_SelectHint>请选择一个装备条目，以便在右侧面板编辑完整属性。</CS_Studio_Equip_SelectHint>
     <CS_Studio_Equip_Shader_Cutout>Cutout</CS_Studio_Equip_Shader_Cutout>
@@ -157,4 +177,233 @@
     <CS_Studio_Equip_SwingPreset_Block>格挡/举盾</CS_Studio_Equip_SwingPreset_Block>
     <CS_Studio_Equip_SelectThingDef>选择物品定义</CS_Studio_Equip_SelectThingDef>
     <CS_Studio_Equip_SelectRecipeDef>选择配方定义</CS_Studio_Equip_SelectRecipeDef>
+    <CS_Studio_Equip_Section_ItemsBase>基础信息</CS_Studio_Equip_Section_ItemsBase>
+    <CS_Studio_Equip_Section_ItemsGraphic>图形与引用</CS_Studio_Equip_Section_ItemsGraphic>
+    <CS_Studio_Equip_Section_ItemsStats>数值属性</CS_Studio_Equip_Section_ItemsStats>
+    <CS_Studio_Equip_Section_ItemsApparel>服装属性</CS_Studio_Equip_Section_ItemsApparel>
+    <CS_Studio_Equip_Section_ItemsWeapon>武器属性</CS_Studio_Equip_Section_ItemsWeapon>
+    <CS_Studio_Equip_Section_ItemsRecipe>制作与成本</CS_Studio_Equip_Section_ItemsRecipe>
+    <CS_Studio_Equip_Section_ItemsMeta>扩展</CS_Studio_Equip_Section_ItemsMeta>
+    <CS_Studio_Equip_Section_ThingDefCore>ThingDef 核心</CS_Studio_Equip_Section_ThingDefCore>
+    <CS_Studio_Equip_Section_StuffAndCost>材料与成本</CS_Studio_Equip_Section_StuffAndCost>
+    <CS_Studio_Equip_Section_RecipeMaker>制作配方 (recipeMaker)</CS_Studio_Equip_Section_RecipeMaker>
+    <CS_Studio_Equip_Section_ApparelAdvanced>服装高级设置</CS_Studio_Equip_Section_ApparelAdvanced>
+    <CS_Studio_Equip_Section_RawXml>原始 XML (comps/verbs/tools)</CS_Studio_Equip_Section_RawXml>
+    <CS_Studio_Equip_Description>描述</CS_Studio_Equip_Description>
+    <CS_Studio_Equip_TriggeredAnimation_DeployOffsetX>展开偏移 X</CS_Studio_Equip_TriggeredAnimation_DeployOffsetX>
+    <CS_Studio_Equip_TriggeredAnimation_DeployOffsetY>展开偏移 Y</CS_Studio_Equip_TriggeredAnimation_DeployOffsetY>
+    <CS_Studio_Equip_TriggeredAnimation_DeployOffsetZ>展开偏移 Z</CS_Studio_Equip_TriggeredAnimation_DeployOffsetZ>
+    <CS_Studio_Equip_StatBases>基础属性</CS_Studio_Equip_StatBases>
+    <CS_Studio_Equip_StatBases_Tip>[可选] 格式: StatDef:数值, 多个用逗号分隔</CS_Studio_Equip_StatBases_Tip>
+    <CS_Studio_Equip_EquippedStatOffsets>装备属性偏移</CS_Studio_Equip_EquippedStatOffsets>
+    <CS_Studio_Equip_StatOffsets_Tip>[可选] 格式: StatDef:数值, 多个用逗号分隔</CS_Studio_Equip_StatOffsets_Tip>
+    <CS_Studio_Equip_EquippedAngleOffset>装备角度偏移</CS_Studio_Equip_EquippedAngleOffset>
+    <CS_Studio_Equip_CostStuffCount>材料数量</CS_Studio_Equip_CostStuffCount>
+    <CS_Studio_Equip_CostList>制作成本</CS_Studio_Equip_CostList>
+    <CS_Studio_Equip_CostList_Tip>[可选] 格式: ThingDef:数量, 多个用逗号分隔</CS_Studio_Equip_CostList_Tip>
+    <CS_Studio_Equip_StuffCategories>材质类别</CS_Studio_Equip_StuffCategories>
+    <CS_Studio_Equip_StuffCategories_Tip>[可选] 材质类别, 如 Metallic, Leathery, Fabric. 多个用逗号分隔</CS_Studio_Equip_StuffCategories_Tip>
+    <CS_Studio_Equip_FlyerThingDefName>飞行器 Def</CS_Studio_Equip_FlyerThingDefName>
+    <CS_Studio_Equip_FlyerThingDefName_Tip>[可选] 飞行器 ThingDef defName, 为空时不生成飞行器</CS_Studio_Equip_FlyerThingDefName_Tip>
+    <CS_Studio_Equip_FlyerClassName>飞行器类型</CS_Studio_Equip_FlyerClassName>
+    <CS_Studio_Equip_FlyerClassName_Tip>[可选] 飞行器 thingClass 完整类型名</CS_Studio_Equip_FlyerClassName_Tip>
+    <CS_Studio_Equip_FlyerFlightSpeed>飞行速度</CS_Studio_Equip_FlyerFlightSpeed>
+    <CS_Studio_Equip_TechLevel>科技等级</CS_Studio_Equip_TechLevel>
+    <CS_Studio_Equip_StackLimit>堆叠限制</CS_Studio_Equip_StackLimit>
+    <CS_Studio_Equip_DestroyOnDrop>掉落时销毁</CS_Studio_Equip_DestroyOnDrop>
+    <CS_Studio_UI_ListEmpty>列表为空</CS_Studio_UI_ListEmpty>
+    <CS_Studio_UI_ListEmptyHint>点击下方的“添加”按钮开始录入数据</CS_Studio_UI_ListEmptyHint>
+    <CS_Studio_AddTag>添加标签</CS_Studio_AddTag>
+    <!-- ThingDef 字段标签 -->
+    <CS_Field_Description>描述</CS_Field_Description>
+    <CS_Field_ThingClass>自定义类</CS_Field_ThingClass>
+    <CS_Field_TechLevel>科技等级</CS_Field_TechLevel>
+    <CS_Field_AltitudeLayer>海拔层</CS_Field_AltitudeLayer>
+    <CS_Field_TickerType>时钟类型</CS_Field_TickerType>
+    <CS_Field_PathCost>路径代价</CS_Field_PathCost>
+    <CS_Field_UseHitPoints>使用耐久</CS_Field_UseHitPoints>
+    <CS_Field_Smeltable>可冶炼</CS_Field_Smeltable>
+    <CS_Field_Rotatable>可旋转</CS_Field_Rotatable>
+    <CS_Field_DrawSize>绘制尺寸</CS_Field_DrawSize>
+    <CS_Field_RandomRotateAngle>随机旋转角</CS_Field_RandomRotateAngle>
+    <CS_Field_StatBases>基础属性</CS_Field_StatBases>
+    <CS_Field_EquippedStatOffsets>装备属性偏移</CS_Field_EquippedStatOffsets>
+    <CS_Field_StuffCategories>材质类别</CS_Field_StuffCategories>
+    <CS_Field_CostStuffCount>材料消耗数</CS_Field_CostStuffCount>
+    <CS_Field_CostList>成本列表</CS_Field_CostList>
+    <CS_Field_ResearchPrerequisite>前置研究</CS_Field_ResearchPrerequisite>
+    <CS_Field_SkillRequirements>技能需求</CS_Field_SkillRequirements>
+    <CS_Field_EffectWorking>工作特效</CS_Field_EffectWorking>
+    <CS_Field_SoundWorking>工作音效</CS_Field_SoundWorking>
+    <CS_Field_RecipeUsers>制作台列表</CS_Field_RecipeUsers>
+    <CS_Field_UnfinishedThingDef>半成品Def</CS_Field_UnfinishedThingDef>
+    <CS_Field_WorkSkill>工作技能</CS_Field_WorkSkill>
+    <CS_Field_WorkSpeedStat>工作速度Stat</CS_Field_WorkSpeedStat>
+    <CS_Field_DisplayPriority>显示优先级</CS_Field_DisplayPriority>
+    <CS_Field_DevelopmentalStageFilter>发育阶段</CS_Field_DevelopmentalStageFilter>
+    <CS_Field_WearPerDay>每日磨损</CS_Field_WearPerDay>
+    <CS_Field_SoundWear>穿戴音效</CS_Field_SoundWear>
+    <CS_Field_SoundRemove>脱下音效</CS_Field_SoundRemove>
+    <CS_Field_CareIfDamaged>检查损坏</CS_Field_CareIfDamaged>
+    <CS_Field_UseDeflectMetalEffect>金属偏转特效</CS_Field_UseDeflectMetalEffect>
+    <CS_Field_SlaveApparel>奴隶服装</CS_Field_SlaveApparel>
+    <CS_Field_BlocksVision>遮挡视线</CS_Field_BlocksVision>
+    <CS_Field_RenderSkipFlags>渲染跳过标记</CS_Field_RenderSkipFlags>
+    <CS_Field_DrawData>绘制数据 (drawData)</CS_Field_DrawData>
+    <CS_Field_RawXml>高级XML (comps/verbs/tools)</CS_Field_RawXml>
+    <CS_Field_RawXml_Tip>[可选] 格式: [tagName] 回车 XML内容 回车 --- 回车 [tagName] 回车 ...</CS_Field_RawXml_Tip>
+    <!-- 建筑/炮塔 Section 标题 -->
+    <CS_Studio_Equip_Section_Building>建筑</CS_Studio_Equip_Section_Building>
+    <CS_Studio_Equip_Section_Turret>炮塔</CS_Studio_Equip_Section_Turret>
+    <!-- 建筑字段标签 -->
+    <CS_Field_BuildingSize>建筑尺寸</CS_Field_BuildingSize>
+    <CS_Field_Passability>通行类型</CS_Field_Passability>
+    <CS_Field_FillPercent>填充百分比</CS_Field_FillPercent>
+    <CS_Field_TerrainAffordance>地形需求</CS_Field_TerrainAffordance>
+    <CS_Field_BlockWind>阻挡风</CS_Field_BlockWind>
+    <CS_Field_CastEdgeShadows>投射边缘阴影</CS_Field_CastEdgeShadows>
+    <CS_Field_DrawerType>绘制类型</CS_Field_DrawerType>
+    <CS_Field_CanOverlapZones>可与区域重叠</CS_Field_CanOverlapZones>
+    <CS_Field_HasInteractionCell>有交互格子</CS_Field_HasInteractionCell>
+    <CS_Field_InteractionCellOffset>交互格子偏移</CS_Field_InteractionCellOffset>
+    <CS_Field_KilledLeavings>摧毁掉落</CS_Field_KilledLeavings>
+    <CS_Field_DamageMultipliers>伤害倍率</CS_Field_DamageMultipliers>
+    <CS_Field_DesignationCategory>建筑分类</CS_Field_DesignationCategory>
+    <CS_Field_BuildingTags>建筑标签</CS_Field_BuildingTags>
+    <CS_Field_CombatPower>战斗强度</CS_Field_CombatPower>
+    <CS_Field_RoofCollapseMult>屋顶坍塌伤害倍率</CS_Field_RoofCollapseMult>
+    <CS_Field_DestroySound>销毁音效</CS_Field_DestroySound>
+    <!-- 炮塔字段标签 -->
+    <CS_Field_TurretGunDef>炮塔武器Def</CS_Field_TurretGunDef>
+    <CS_Field_TurretBurstWarmupTime>射击预热时间</CS_Field_TurretBurstWarmupTime>
+    <CS_Field_TurretBurstCooldownTime>射击冷却时间</CS_Field_TurretBurstCooldownTime>
+    <CS_Field_TurretInitialCooldownTime>初始冷却时间</CS_Field_TurretInitialCooldownTime>
+    <CS_Field_IsMechClusterThreat>机械集群威胁</CS_Field_IsMechClusterThreat>
+    <!-- Def 浏览器 -->
+    <CS_Studio_Browser_TabMemory>内存中的 Def</CS_Studio_Browser_TabMemory>
+    <CS_Studio_Browser_TabExternal>外部 XML 文件</CS_Studio_Browser_TabExternal>
+    <CS_Studio_Browser_Browse>浏览...</CS_Studio_Browser_Browse>
+    <!-- 选择器标题 -->
+    <CS_Studio_Equip_SelectSoundDef>选择音效定义</CS_Studio_Equip_SelectSoundDef>
+    <CS_Studio_Equip_SelectTerrainAffordance>选择地形需求</CS_Studio_Equip_SelectTerrainAffordance>
+    <CS_Studio_Equip_SelectDesignationCategory>选择建筑分类</CS_Studio_Equip_SelectDesignationCategory>
+    <CS_Studio_Equip_SelectDamageDef>选择伤害类型</CS_Studio_Equip_SelectDamageDef>
+    <CS_Studio_Equip_SelectTurretGunDef>选择炮塔武器</CS_Studio_Equip_SelectTurretGunDef>
+    <CS_Studio_Equip_SelectResearchProjectDef>选择前置研究</CS_Studio_Equip_SelectResearchProjectDef>
+    <CS_Studio_Equip_SelectEffecterDef>选择工作特效</CS_Studio_Equip_SelectEffecterDef>
+    <CS_Studio_Equip_SelectSkillDef>选择工作技能</CS_Studio_Equip_SelectSkillDef>
+    <CS_Studio_Equip_SelectStatDef>选择 Stat</CS_Studio_Equip_SelectStatDef>
+    <CS_Field_CareIfWornByCorpse>在意被尸体穿戴</CS_Field_CareIfWornByCorpse>
+    <CS_Field_CountsAsClothing>算作服装(避免裸体惩罚)</CS_Field_CountsAsClothing>
+    <CS_Field_CanBeDesiredForIdeo>可被Ideo需求</CS_Field_CanBeDesiredForIdeo>
+    <CS_Field_IgnoredByNonViolent>非暴力角色忽略</CS_Field_IgnoredByNonViolent>
+    <CS_Field_ApparelScoreOffset>服装评分偏移</CS_Field_ApparelScoreOffset>
+    <CS_Field_ApparelRenderSkipFlags>渲染跳过标记</CS_Field_ApparelRenderSkipFlags>
+    <CS_Field_CountsAsClothingForNudity>算作服装(避免裸体惩罚)</CS_Field_CountsAsClothingForNudity>
+    <CS_Field_RecipeResearchPrerequisite>研究前置</CS_Field_RecipeResearchPrerequisite>
+    <CS_Field_RecipeSkillRequirements>技能需求(技能:等级)</CS_Field_RecipeSkillRequirements>
+    <CS_Field_RecipeEffectWorking>工作特效</CS_Field_RecipeEffectWorking>
+    <CS_Field_RecipeSoundWorking>工作音效</CS_Field_RecipeSoundWorking>
+    <CS_Field_RecipeWorkSkill>工作技能</CS_Field_RecipeWorkSkill>
+    <CS_Field_RecipeWorkSpeedStat>工作速度Stat</CS_Field_RecipeWorkSpeedStat>
+    <!-- 攻击动作 (Tools) -->
+    <CS_Field_ToolLabel>标签</CS_Field_ToolLabel>
+    <CS_Field_ToolLabel_Tip>[必填] 攻击部位名称（如 edge、point、handle）</CS_Field_ToolLabel_Tip>
+    <CS_Field_ToolCapacities>攻击类型</CS_Field_ToolCapacities>
+    <CS_Field_ToolCapacities_Tip>[必填] 攻击动作类型，逗号分隔。常见：Cut（斩）、Blunt（钝）、Stab（刺）、Poke（捅）</CS_Field_ToolCapacities_Tip>
+    <CS_Field_ToolPower>伤害</CS_Field_ToolPower>
+    <CS_Field_ToolPower_Tip>[必填] 该攻击的基础伤害值</CS_Field_ToolPower_Tip>
+    <CS_Field_ToolCooldown>冷却时间</CS_Field_ToolCooldown>
+    <CS_Field_ToolCooldown_Tip>[必填] 攻击间隔（秒）</CS_Field_ToolCooldown_Tip>
+    <CS_Field_ToolArmorPen>穿甲</CS_Field_ToolArmorPen>
+    <CS_Field_ToolArmorPen_Tip>[可选] 穿甲率。-1 = 不输出，0 = 无穿甲</CS_Field_ToolArmorPen_Tip>
+    <CS_Field_ToolChanceFactor>选择权重</CS_Field_ToolChanceFactor>
+    <CS_Field_ToolChanceFactor_Tip>[可选] 该攻击被选中的权重。-1 = 不输出</CS_Field_ToolChanceFactor_Tip>
+    <CS_Section_Tools>攻击动作</CS_Section_Tools>
+    <CS_Section_Tools_Tip>[可选] 武器的攻击动作定义。每个条目代表一种攻击方式。</CS_Section_Tools_Tip>
+    <!-- 射击属性 (Verbs) -->
+    <CS_Field_VerbProjectile>弹射物</CS_Field_VerbProjectile>
+    <CS_Field_VerbProjectile_Tip>[必填] 发射的子弹 ThingDef defName</CS_Field_VerbProjectile_Tip>
+    <CS_Field_VerbClass>动词类</CS_Field_VerbClass>
+    <CS_Field_VerbClass_Tip>[可选] Verb 类型。默认：Verb_Shoot</CS_Field_VerbClass_Tip>
+    <CS_Field_VerbWarmup>瞄准时间</CS_Field_VerbWarmup>
+    <CS_Field_VerbWarmup_Tip>[可选] 开火前的瞄准预热时间（秒）</CS_Field_VerbWarmup_Tip>
+    <CS_Field_VerbRange>射程</CS_Field_VerbRange>
+    <CS_Field_VerbRange_Tip>[可选] 最大射击距离（格）</CS_Field_VerbRange_Tip>
+    <CS_Field_VerbBurstCount>连发数</CS_Field_VerbBurstCount>
+    <CS_Field_VerbBurstCount_Tip>[可选] 每次攻击的射击数。0 = 不输出，1 = 单发</CS_Field_VerbBurstCount_Tip>
+    <CS_Field_VerbBurstDelay>连发间隔</CS_Field_VerbBurstDelay>
+    <CS_Field_VerbBurstDelay_Tip>[可选] 连发中每发间隔（秒）</CS_Field_VerbBurstDelay_Tip>
+    <CS_Field_VerbSoundCast>射击音效</CS_Field_VerbSoundCast>
+    <CS_Field_VerbSoundCast_Tip>[可选] 射击时播放的 SoundDef defName</CS_Field_VerbSoundCast_Tip>
+    <CS_Field_VerbSoundTail>射击尾音</CS_Field_VerbSoundTail>
+    <CS_Field_VerbSoundTail_Tip>[可选] 射击回声/尾音 SoundDef defName</CS_Field_VerbSoundTail_Tip>
+    <CS_Field_VerbMuzzle>枪口闪光</CS_Field_VerbMuzzle>
+    <CS_Field_VerbMuzzle_Tip>[可选] 枪口火焰视觉效果缩放。默认：9</CS_Field_VerbMuzzle_Tip>
+    <CS_Section_Verbs>射击属性</CS_Section_Verbs>
+    <CS_Section_Verbs_Tip>[可选] 远程攻击属性。定义武器如何发射弹射物。</CS_Section_Verbs_Tip>
+    <!-- ThingDef 核心字段提示 -->
+    <CS_Field_Description_Tip>[可选] 物品信息卡上显示的描述文本</CS_Field_Description_Tip>
+    <CS_Field_ThingClass_Tip>[可选] 自定义 ThingDef 类。留空使用默认。示例：Axolotl.ApparelWithOutColor</CS_Field_ThingClass_Tip>
+    <CS_Field_TechLevel_Tip>[可选] 科技等级。影响研究和商人分类</CS_Field_TechLevel_Tip>
+    <CS_Field_AltitudeLayer_Tip>[可选] 渲染高度层。常见：Item、Building、Mote</CS_Field_AltitudeLayer_Tip>
+    <CS_Field_TickerType_Tip>[可选] Tick 频率。常见：Never、Normal、Rare</CS_Field_TickerType_Tip>
+    <CS_Field_DrawSize_Tip>[可选] 世界图标绘制尺寸。格式：宽,高（如 1.5,1.5）</CS_Field_DrawSize_Tip>
+    <CS_Field_RandomRotateAngle_Tip>[可选] 地面物品随机旋转角度。0 = 不旋转</CS_Field_RandomRotateAngle_Tip>
+    <CS_Field_UseHitPoints_Tip>[可选] 该物品是否拥有耐久度</CS_Field_UseHitPoints_Tip>
+    <CS_Field_Smeltable_Tip>[可选] 是否可以在冶炼台分解</CS_Field_Smeltable_Tip>
+    <CS_Field_PathCost_Tip>[可选] 通行代价。0 = 无额外代价</CS_Field_PathCost_Tip>
+    <CS_Field_StuffCategories_Tip>[可选] 允许的材料类别。常见：Fabric（织物）、Leathery（皮革）、Metallic（金属）、Woody（木质）</CS_Field_StuffCategories_Tip>
+    <CS_Field_CostStuffCount_Tip>[可选] 制作所需的材料数量。0 = 不输出</CS_Field_CostStuffCount_Tip>
+    <CS_Field_CostList_Tip>[可选] 固定材料消耗。格式：ThingDef:数量，逗号分隔</CS_Field_CostList_Tip>
+    <CS_Field_StatBases_Tip>[可选] 基础属性。格式：StatDef:值，逗号分隔。常见：Mass、WorkToMake、ArmorRating_Sharp</CS_Field_StatBases_Tip>
+    <CS_Field_EquippedStatOffsets_Tip>[可选] 装备后的属性偏移。格式：StatDef:值。示例：MoveSpeed:-0.2</CS_Field_EquippedStatOffsets_Tip>
+    <CS_Field_WearPerDay_Tip>[可选] 每日磨损率。越高越快损坏。0 = 不磨损</CS_Field_WearPerDay_Tip>
+    <CS_Field_CareIfDamaged_Tip>[可选] 殖民者是否在意此物品损坏</CS_Field_CareIfDamaged_Tip>
+    <CS_Field_CareIfWornByCorpse_Tip>[可选] 殖民者是否在意此物品被尸体穿过</CS_Field_CareIfWornByCorpse_Tip>
+    <CS_Field_CountsAsClothingForNudity_Tip>[可选] 穿戴后是否避免裸体惩罚</CS_Field_CountsAsClothingForNudity_Tip>
+    <CS_Field_SlaveApparel_Tip>[可选] 是否被标记为奴隶服装</CS_Field_SlaveApparel_Tip>
+    <CS_Field_CanBeDesiredForIdeo_Tip>[可选] 是否可被意识形态需求</CS_Field_CanBeDesiredForIdeo_Tip>
+    <CS_Field_UseDeflectMetalEffect_Tip>[可选] 被击中时显示金属火花偏转特效</CS_Field_UseDeflectMetalEffect_Tip>
+    <CS_Field_BlocksVision_Tip>[可选] 穿戴后是否阻挡小人视线</CS_Field_BlocksVision_Tip>
+    <CS_Field_IgnoredByNonViolent_Tip>[可选] 非暴力小人是否会忽略此武器</CS_Field_IgnoredByNonViolent_Tip>
+    <CS_Field_RenderSkipFlags_Tip>[可选] 渲染跳过标记，逗号分隔。控制何时跳过渲染</CS_Field_RenderSkipFlags_Tip>
+    <CS_Field_DevelopmentalStageFilter_Tip>[可选] 允许的发育阶段。常见：Child、Adult</CS_Field_DevelopmentalStageFilter_Tip>
+    <CS_Field_ApparelScoreOffset_Tip>[可选] AI 服装选择评分偏移。越高越可能被穿戴</CS_Field_ApparelScoreOffset_Tip>
+    <CS_Field_DrawData_Tip>[可选] RimWorld 1.6 原生 ApparelDrawData XML 内容</CS_Field_DrawData_Tip>
+    <CS_Field_RecipeUsers_Tip>[可选] 额外制作台 defName，逗号分隔</CS_Field_RecipeUsers_Tip>
+    <CS_Field_UnfinishedThingDef_Tip>[可选] 制作过程中显示的半成品 ThingDef</CS_Field_UnfinishedThingDef_Tip>
+    <CS_Field_RecipeResearchPrerequisite_Tip>[可选] 解锁此配方所需的研究项目 defName</CS_Field_RecipeResearchPrerequisite_Tip>
+    <CS_Field_SkillRequirements_Tip>[可选] 所需技能等级。格式：技能:等级，逗号分隔</CS_Field_SkillRequirements_Tip>
+    <CS_Field_RecipeEffectWorking_Tip>[可选] 制作时播放的 EffecterDef</CS_Field_RecipeEffectWorking_Tip>
+    <CS_Field_RecipeSoundWorking_Tip>[可选] 制作时播放的 SoundDef</CS_Field_RecipeSoundWorking_Tip>
+    <CS_Field_RecipeWorkSkill_Tip>[可选] 制作品质使用的技能（如 Crafting、Artistic）</CS_Field_RecipeWorkSkill_Tip>
+    <CS_Field_RecipeWorkSpeedStat_Tip>[可选] 影响制作速度的 StatDef（如 GeneralLaborSpeed）</CS_Field_RecipeWorkSpeedStat_Tip>
+    <CS_Field_DisplayPriority_Tip>[可选] 配方在制作菜单中的显示优先级</CS_Field_DisplayPriority_Tip>
+    <CS_Studio_Equip_DefName_Tip>[必填] 唯一标识名。必须符合 DefName 格式（无空格、字母数字）</CS_Studio_Equip_DefName_Tip>
+    <CS_Studio_Label_Tip>[必填] 游戏内显示的名称</CS_Studio_Label_Tip>
+    <CS_Studio_Equip_SlotTag_Tip>[可选] 编辑器槽位类别。常见：Apparel、Headgear、Accessory、Utility</CS_Studio_Equip_SlotTag_Tip>
+    <CS_Studio_Equip_ExportGroupKey_Tip>[可选] 导出分组键。相同键的装备一起导出</CS_Studio_Equip_ExportGroupKey_Tip>
+    <CS_Studio_Equip_SourceNote_Tip>[可选] 可选的来源/备注信息</CS_Studio_Equip_SourceNote_Tip>
+    <CS_Attr_Tags_Tip>[可选] 标签列表，逗号分隔，用于分类检索</CS_Attr_Tags_Tip>
+    <CS_Studio_Equip_ThingCategories_Tip>[可选] 物品存储类别，逗号分隔</CS_Studio_Equip_ThingCategories_Tip>
+    <CS_Studio_Equip_AllowCrafting_Tip>[可选] 是否可以在工作台制作此物品</CS_Studio_Equip_AllowCrafting_Tip>
+    <CS_Studio_Equip_RecipeWorkAmount_Tip>[可选] 制作工时（ticks）</CS_Studio_Equip_RecipeWorkAmount_Tip>
+    <CS_Studio_Equip_RecipeIngredients_Tip>[可选] 制作材料。格式：ThingDef:数量，逗号分隔</CS_Studio_Equip_RecipeIngredients_Tip>
+    <CS_Studio_Equip_AllowTrading_Tip>[可选] 是否允许商人买卖此物品</CS_Studio_Equip_AllowTrading_Tip>
+    <CS_Studio_Equip_MarketValue_Tip>[可选] 市场价值。影响财富计算</CS_Studio_Equip_MarketValue_Tip>
+    <CS_Studio_Equip_TradeTags_Tip>[可选] 商人分类标签，逗号分隔</CS_Studio_Equip_TradeTags_Tip>
+    <CS_Studio_Equip_UseWornGraphicMask_Tip>[可选] 穿戴贴图使用蒙版纹理</CS_Studio_Equip_UseWornGraphicMask_Tip>
+    <CS_Studio_Equip_ApparelTags_Tip>[可选] 服装匹配标签，逗号分隔</CS_Studio_Equip_ApparelTags_Tip>
+    <CS_Studio_Equip_WeaponTags_Tip>[可选] 武器标签，用于 AI 选择，逗号分隔</CS_Studio_Equip_WeaponTags_Tip>
+    <CS_Studio_Equip_WeaponClasses_Tip>[可选] 武器类别，逗号分隔。常见：Melee、Ranged</CS_Studio_Equip_WeaponClasses_Tip>
+    <CS_Field_FillPercent_Tip>[可选] 填充百分比 0-1。影响掩体和射击机制</CS_Field_FillPercent_Tip>
+    <CS_Field_BlockWind_Tip>[可选] 此建筑是否阻挡风</CS_Field_BlockWind_Tip>
+    <CS_Field_CastEdgeShadows_Tip>[可选] 此建筑是否投射边缘阴影</CS_Field_CastEdgeShadows_Tip>
+    <CS_Field_CanOverlapZones_Tip>[可选] 区域是否可以与此建筑重叠</CS_Field_CanOverlapZones_Tip>
+    <CS_Studio_Equip_AdvancedEdit>高级编辑...</CS_Studio_Equip_AdvancedEdit>
+    <CS_Studio_Equip_Tab_ThingDef>ThingDef</CS_Studio_Equip_Tab_ThingDef>
+    <CS_Studio_Equip_Tab_Stats>属性</CS_Studio_Equip_Tab_Stats>
+    <CS_Studio_Equip_Tab_Crafting>制作</CS_Studio_Equip_Tab_Crafting>
+    <CS_Studio_Equip_Tab_Equipment>装备</CS_Studio_Equip_Tab_Equipment>
 </LanguageData>

@@ -423,22 +423,13 @@ namespace CharacterStudio.UI
             UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_PupilCore_Title".Translate());
             DrawPropertyHint(ref y, width, "CS_Studio_Face_PupilCore_Hint".Translate());
 
-            // ── 左瞳孔（正面朝向） ──
-            UIHelper.DrawSectionTitle(ref y, width, "左瞳孔 · 正面朝向");
-            DrawFloatProperty(ref y, width, "基础 X 偏移", ref pupilMotion.leftPupil_frontBaseX, -0.03f, 0.03f, "F6");
-            DrawFloatProperty(ref y, width, "向左看 X", ref pupilMotion.leftPupil_dirLeftX, -0.03f, 0.03f, "F6");
-            DrawFloatProperty(ref y, width, "向右看 X", ref pupilMotion.leftPupil_dirRightX, -0.03f, 0.03f, "F6");
-            DrawFloatProperty(ref y, width, "向上看 Z", ref pupilMotion.leftPupil_dirUpZ, -0.03f, 0.03f, "F6");
-            DrawFloatProperty(ref y, width, "向下看 Z", ref pupilMotion.leftPupil_dirDownZ, -0.03f, 0.03f, "F6");
-            y += 4f;
-
-            // ── 右瞳孔（正面朝向） ──
-            UIHelper.DrawSectionTitle(ref y, width, "右瞳孔 · 正面朝向");
-            DrawFloatProperty(ref y, width, "基础 X 偏移", ref pupilMotion.rightPupil_frontBaseX, -0.03f, 0.03f, "F6");
-            DrawFloatProperty(ref y, width, "向左看 X", ref pupilMotion.rightPupil_dirLeftX, -0.03f, 0.03f, "F6");
-            DrawFloatProperty(ref y, width, "向右看 X", ref pupilMotion.rightPupil_dirRightX, -0.03f, 0.03f, "F6");
-            DrawFloatProperty(ref y, width, "向上看 Z", ref pupilMotion.rightPupil_dirUpZ, -0.03f, 0.03f, "F6");
-            DrawFloatProperty(ref y, width, "向下看 Z", ref pupilMotion.rightPupil_dirDownZ, -0.03f, 0.03f, "F6");
+            // ── 正面朝向瞳孔偏移（统一字段） ──
+            UIHelper.DrawSectionTitle(ref y, width, "正面朝向 · 瞳孔偏移");
+            DrawFloatProperty(ref y, width, "基础 X 幅度", ref pupilMotion.frontBaseX, -0.03f, 0.03f, "F6");
+            DrawFloatProperty(ref y, width, "向左看 X", ref pupilMotion.dirLeftX, -0.03f, 0.03f, "F6");
+            DrawFloatProperty(ref y, width, "向右看 X", ref pupilMotion.dirRightX, -0.03f, 0.03f, "F6");
+            DrawFloatProperty(ref y, width, "向上看 Z", ref pupilMotion.dirUpZ, -0.03f, 0.03f, "F6");
+            DrawFloatProperty(ref y, width, "向下看 Z", ref pupilMotion.dirDownZ, -0.03f, 0.03f, "F6");
             y += 4f;
 
             // ── 侧面朝向 ──
@@ -2389,21 +2380,13 @@ namespace CharacterStudio.UI
             UIHelper.DrawSectionTitle(ref y, width, "CS_Studio_Face_PupilAdvanced_Title".Translate());
             DrawPropertyHint(ref y, width, "CS_Studio_Face_PupilAdvanced_Hint".Translate());
 
-            // ── 左瞳孔（正面朝向） ──
-            UIHelper.DrawSectionTitle(ref y, width, "左瞳孔 · 正面朝向");
-            DrawFloatProperty(ref y, width, "基础 X 偏移", ref pupilMotion.leftPupil_frontBaseX, -0.01f, 0.01f, "F6");
-            DrawFloatProperty(ref y, width, "向左看 X", ref pupilMotion.leftPupil_dirLeftX, -0.01f, 0.01f, "F6");
-            DrawFloatProperty(ref y, width, "向右看 X", ref pupilMotion.leftPupil_dirRightX, -0.01f, 0.01f, "F6");
-            DrawFloatProperty(ref y, width, "向上看 Z", ref pupilMotion.leftPupil_dirUpZ, -0.01f, 0.01f, "F6");
-            DrawFloatProperty(ref y, width, "向下看 Z", ref pupilMotion.leftPupil_dirDownZ, -0.01f, 0.01f, "F6");
-
-            // ── 右瞳孔（正面朝向） ──
-            UIHelper.DrawSectionTitle(ref y, width, "右瞳孔 · 正面朝向");
-            DrawFloatProperty(ref y, width, "基础 X 偏移", ref pupilMotion.rightPupil_frontBaseX, -0.01f, 0.01f, "F6");
-            DrawFloatProperty(ref y, width, "向左看 X", ref pupilMotion.rightPupil_dirLeftX, -0.01f, 0.01f, "F6");
-            DrawFloatProperty(ref y, width, "向右看 X", ref pupilMotion.rightPupil_dirRightX, -0.01f, 0.01f, "F6");
-            DrawFloatProperty(ref y, width, "向上看 Z", ref pupilMotion.rightPupil_dirUpZ, -0.01f, 0.01f, "F6");
-            DrawFloatProperty(ref y, width, "向下看 Z", ref pupilMotion.rightPupil_dirDownZ, -0.01f, 0.01f, "F6");
+            // ── 正面朝向瞳孔偏移（统一字段） ──
+            UIHelper.DrawSectionTitle(ref y, width, "正面朝向 · 瞳孔偏移");
+            DrawFloatProperty(ref y, width, "基础 X 幅度", ref pupilMotion.frontBaseX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, "向左看 X", ref pupilMotion.dirLeftX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, "向右看 X", ref pupilMotion.dirRightX, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, "向上看 Z", ref pupilMotion.dirUpZ, -0.01f, 0.01f, "F6");
+            DrawFloatProperty(ref y, width, "向下看 Z", ref pupilMotion.dirDownZ, -0.01f, 0.01f, "F6");
 
             // ── 侧面朝向 ──
             UIHelper.DrawSectionTitle(ref y, width, "侧面朝向");

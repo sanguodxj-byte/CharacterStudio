@@ -107,7 +107,27 @@ namespace CharacterStudio.UI
             UIHelper.ClearNumericFieldFocusAndBuffers();
         }
 
-        private void FinalizeMutatedEditorState(bool refreshPreview = true, bool refreshRenderTree = false, string? statusMessage = null)
+        /// <summary>
+        /// 从 workingDocument.characterDefinition.equipments 重建 WorkingEquipments 列表，
+        /// 用于 Undo/Redo 恢复时同步装备编辑缓冲区。
+        /// </summary>
+        private void RestoreWorkingEquipmentsFromDocument()
+        {
+            WorkingEquipments ??= new List<CharacterEquipmentDef>();
+            WorkingEquipments.Clear();
+
+            var docEquipments = workingDocument?.characterDefinition?.equipments;
+            if (docEquipments != null)
+            {
+                foreach (var eq in docEquipments)
+                {
+                    if (eq != null)
+                        WorkingEquipments.Add(eq.Clone());
+                }
+            }
+        }
+
+        internal void FinalizeMutatedEditorState(bool refreshPreview = true, bool refreshRenderTree = false, string? statusMessage = null)
         {
             isDirty = true;
             semanticMappingCacheVersion++;
@@ -122,7 +142,7 @@ namespace CharacterStudio.UI
                 ShowStatus(statusMessage!);
         }
 
-        private void MutateWithUndo(Action mutation, bool refreshPreview = true, bool refreshRenderTree = false, string? statusMessage = null)
+        internal void MutateWithUndo(Action mutation, bool refreshPreview = true, bool refreshRenderTree = false, string? statusMessage = null)
         {
             if (mutation == null)
                 return;
@@ -220,6 +240,8 @@ namespace CharacterStudio.UI
             layerModificationWorkflowActive = snapshot.LayerModificationWorkflowActive;
             workingRenderFixPatch = snapshot.WorkingRenderFixPatch?.Clone();
 
+            RestoreWorkingEquipmentsFromDocument();
+
             SanitizeLayerSelection();
             RebuildEditorBuffersFromWorkingState();
             FinalizeMutatedEditorState(refreshPreview: true, refreshRenderTree: true);
@@ -255,6 +277,8 @@ namespace CharacterStudio.UI
             selectedBaseSlotType = snapshot.SelectedBaseSlotType;
             layerModificationWorkflowActive = snapshot.LayerModificationWorkflowActive;
             workingRenderFixPatch = snapshot.WorkingRenderFixPatch?.Clone();
+
+            RestoreWorkingEquipmentsFromDocument();
 
             SanitizeLayerSelection();
             RebuildEditorBuffersFromWorkingState();

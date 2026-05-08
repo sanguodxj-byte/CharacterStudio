@@ -6,35 +6,6 @@ using Verse;
 
 namespace CharacterStudio.Abilities.RuntimeComponents.Configs
 {
-    public class Config_RStackDetonation : AbilityRuntimeComponentConfig
-    {
-        public override AbilityRuntimeComponentType type => AbilityRuntimeComponentType.RStackDetonation;
-        public override float EditorBlockHeight => 250f;
-
-        public override void NormalizeForSave()
-        {
-            requiredStacks = AbilityEditorNormalizationUtility.ClampInt(requiredStacks, 1, 999);
-            delayTicks = AbilityEditorNormalizationUtility.ClampInt(delayTicks, 0, 99999);
-            wave1Radius = AbilityEditorNormalizationUtility.ClampFloat(wave1Radius, 0.1f, 99f);
-            wave1Damage = AbilityEditorNormalizationUtility.ClampFloat(wave1Damage, 1f, 99999f);
-            wave2Radius = AbilityEditorNormalizationUtility.ClampFloat(wave2Radius, 0.1f, 99f);
-            wave2Damage = AbilityEditorNormalizationUtility.ClampFloat(wave2Damage, 1f, 99999f);
-            wave3Radius = AbilityEditorNormalizationUtility.ClampFloat(wave3Radius, 0.1f, 99f);
-            wave3Damage = AbilityEditorNormalizationUtility.ClampFloat(wave3Damage, 1f, 99999f);
-        }
-
-        public override AbilityValidationResult Validate()
-        {
-            var result = new AbilityValidationResult();
-            if (!enabled) return result;
-            if (requiredStacks <= 0) result.AddError("CS_Ability_Validate_RRequiredStacks".Translate());
-            if (delayTicks < 0) result.AddError("CS_Ability_Validate_RDelayTicks".Translate());
-            if (wave1Radius <= 0 || wave2Radius <= 0 || wave3Radius <= 0) result.AddError("CS_Ability_Validate_RWaveRadius".Translate());
-            if (wave1Damage <= 0 || wave2Damage <= 0 || wave3Damage <= 0) result.AddError("CS_Ability_Validate_RWaveDamage".Translate());
-            return result;
-        }
-    }
-
     public class Config_ComboStacks : AbilityRuntimeComponentConfig
     {
         public override AbilityRuntimeComponentType type => AbilityRuntimeComponentType.ComboStacks;

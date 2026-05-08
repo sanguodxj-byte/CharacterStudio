@@ -16,7 +16,7 @@ namespace CharacterStudio.UI
             AbilityRuntimeComponentType.SmartJump,
             AbilityRuntimeComponentType.EShortJump,
             AbilityRuntimeComponentType.Dash,
-            AbilityRuntimeComponentType.RStackDetonation,
+            AbilityRuntimeComponentType.ExecuteBonusDamage,
             AbilityRuntimeComponentType.PeriodicPulse,
             AbilityRuntimeComponentType.KillRefresh,
             AbilityRuntimeComponentType.ShieldAbsorb,
@@ -41,7 +41,8 @@ namespace CharacterStudio.UI
             AbilityRuntimeComponentType.FlightLandingBurst,
             AbilityRuntimeComponentType.TimeStop,
             AbilityRuntimeComponentType.WeatherChange,
-            AbilityRuntimeComponentType.BezierCurveWall
+            AbilityRuntimeComponentType.BezierCurveWall,
+            AbilityRuntimeComponentType.WorldMapFlight
         };
 
         private static IEnumerable<AbilityRuntimeComponentType> GetRuntimeComponentLibraryTypes()
@@ -97,7 +98,8 @@ namespace CharacterStudio.UI
                 || type == AbilityRuntimeComponentType.FlightOnlyFollowup
                 || type == AbilityRuntimeComponentType.FlightLandingBurst
                 || type == AbilityRuntimeComponentType.TimeStop
-                || type == AbilityRuntimeComponentType.BezierCurveWall;
+                || type == AbilityRuntimeComponentType.BezierCurveWall
+                || type == AbilityRuntimeComponentType.WorldMapFlight;
         }
 
         private static string GetRuntimeComponentTypeDescription(AbilityRuntimeComponentType type)
@@ -110,7 +112,6 @@ namespace CharacterStudio.UI
                 AbilityRuntimeComponentType.SmartJump => "CS_Studio_Runtime_Desc_SmartJump".Translate(),
                 AbilityRuntimeComponentType.EShortJump => "CS_Studio_Runtime_Desc_EShortJump".Translate(),
                 AbilityRuntimeComponentType.Dash => "CS_Studio_Runtime_Desc_Dash".Translate(),
-                AbilityRuntimeComponentType.RStackDetonation => "CS_Studio_Runtime_Desc_RStackDetonation".Translate(),
                 AbilityRuntimeComponentType.PeriodicPulse => "CS_Studio_Runtime_Desc_PeriodicPulse".Translate(),
                 AbilityRuntimeComponentType.KillRefresh => "CS_Studio_Runtime_Desc_KillRefresh".Translate(),
                 AbilityRuntimeComponentType.ShieldAbsorb => "CS_Studio_Runtime_Desc_ShieldAbsorb".Translate(),
@@ -136,6 +137,7 @@ namespace CharacterStudio.UI
                 AbilityRuntimeComponentType.TimeStop => "CS_Studio_Runtime_Desc_TimeStop".Translate(),
                 AbilityRuntimeComponentType.WeatherChange => "CS_Studio_Runtime_Desc_WeatherChange".Translate(),
                 AbilityRuntimeComponentType.BezierCurveWall => "CS_Studio_Runtime_Desc_BezierCurveWall".Translate(),
+                AbilityRuntimeComponentType.WorldMapFlight => "CS_Studio_Runtime_Desc_WorldMapFlight".Translate(),
                 _ => type.ToString()
             };
         }
@@ -188,41 +190,6 @@ namespace CharacterStudio.UI
                     config.triggerEquipmentAnimationOnApply = false;
                     config.equipmentAnimationTriggerKey = "Dash";
                     config.equipmentAnimationDurationTicks = 30;
-                    break;
-                case AbilityRuntimeComponentType.RStackDetonation:
-                    config.waveDamageDef = DamageDefOf.Bomb;
-                    break;
-                case AbilityRuntimeComponentType.PeriodicPulse:
-                    config.pulseIntervalTicks = 60;
-                    config.pulseTotalTicks = 240;
-                    config.pulseStartsImmediately = true;
-                    break;
-                case AbilityRuntimeComponentType.KillRefresh:
-                    config.killRefreshHotkeySlot = AbilityRuntimeHotkeySlot.Q;
-                    config.killRefreshCooldownPercent = 1f;
-                    break;
-                case AbilityRuntimeComponentType.ShieldAbsorb:
-                    config.shieldMaxDamage = 120f;
-                    config.shieldDurationTicks = 240f;
-                    config.shieldHealRatio = 0.5f;
-                    config.shieldBonusDamageRatio = 0.25f;
-                    break;
-                case AbilityRuntimeComponentType.AttachedShieldVisual:
-                    config.shieldVisualScale = 1.35f;
-                    config.shieldVisualHeightOffset = 0f;
-                    break;
-                case AbilityRuntimeComponentType.ProjectileInterceptorShield:
-                    config.shieldInterceptorThingDefName = "CS_ProjectileInterceptorShield";
-                    config.shieldInterceptorDurationTicks = 240;
-                    break;
-                case AbilityRuntimeComponentType.ChainBounce:
-                    config.maxBounceCount = 4;
-                    config.bounceRange = 6f;
-                    config.bounceDamageFalloff = 0.2f;
-                    break;
-                case AbilityRuntimeComponentType.ExecuteBonusDamage:
-                    config.executeThresholdPercent = 0.3f;
-                    config.executeBonusDamageScale = 0.5f;
                     break;
                 case AbilityRuntimeComponentType.MissingHealthBonusDamage:
                     config.missingHealthBonusPerTenPercent = 0.05f;
@@ -318,6 +285,11 @@ namespace CharacterStudio.UI
                     config.bezierWallCurveDirection = 1;
                     config.bezierWallAbsorbMax = 200f;
                     break;
+                case AbilityRuntimeComponentType.WorldMapFlight:
+                    config.worldMapTakeoffDustEffect = true;
+                    config.worldMapMaxLaunchDistance = 0;
+                    config.worldMapTravelDurationTicks = 300;
+                    break;
             }
 
             return config;
@@ -327,7 +299,6 @@ namespace CharacterStudio.UI
         {
             yield return AbilityRuntimeHotkeySlot.Q;
             yield return AbilityRuntimeHotkeySlot.E;
-            yield return AbilityRuntimeHotkeySlot.R;
             yield return AbilityRuntimeHotkeySlot.T;
             yield return AbilityRuntimeHotkeySlot.F;
             yield return AbilityRuntimeHotkeySlot.Z;

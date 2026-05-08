@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using CharacterStudio.Core;
 using UnityEngine;
@@ -13,6 +13,7 @@ namespace CharacterStudio.Core
     /// </summary>
     public static class FaceRuntimeCompiler
     {
+        private static readonly object _cacheLock = new object();
         private static readonly Dictionary<string, FaceRuntimeCompiledData> compiledCache
             = new Dictionary<string, FaceRuntimeCompiledData>(StringComparer.Ordinal);
 
@@ -54,17 +55,26 @@ namespace CharacterStudio.Core
             string buildStamp = ComputeBuildStamp(skin);
             string cacheKey = (skin.defName ?? string.Empty) + "|" + buildStamp;
 
-            if (compiledCache.TryGetValue(cacheKey, out FaceRuntimeCompiledData cached) && cached != null)
-                return cached;
+            lock (_cacheLock)
+            {
+                if (compiledCache.TryGetValue(cacheKey, out FaceRuntimeCompiledData cached) && cached != null)
+                    return cached;
+            }
 
             FaceRuntimeCompiledData compiled = BuildInternal(skin, buildStamp);
-            compiledCache[cacheKey] = compiled;
+            lock (_cacheLock)
+            {
+                compiledCache[cacheKey] = compiled;
+            }
             return compiled;
         }
 
         public static void ClearCache()
         {
-            compiledCache.Clear();
+            lock (_cacheLock)
+            {
+                compiledCache.Clear();
+            }
         }
 
         private static FaceRuntimeCompiledData BuildInternal(PawnSkinDef skin, string buildStamp)
@@ -182,7 +192,7 @@ namespace CharacterStudio.Core
                             if (partConfig != null)
                             {
                                 cache.SetPortraitPartDirectionAvailability(partType, BuildDirectionAvailability(path, partConfig), side);
-                                partConfig.SyncLegacyMotionAmplitude();
+                                partConfig.EnsureMotionAmplitudeInitialized();
                                 AddMotionAmplitude(portraitTrack, partType, expression, partConfig.motionAmplitude, side);
                             }
                         }
@@ -347,7 +357,7 @@ namespace CharacterStudio.Core
 
         private static FaceDirectionAvailability BuildDirectionAvailability(string basePath, LayeredFacePartConfig? partConfig)
         {
-            partConfig?.SyncDirectionalTexPathsFromLegacy();
+            partConfig?.EnsureDirectionalTexPathsConsistent();
 
             bool hasSouth = partConfig != null
                 ? !string.IsNullOrWhiteSpace(partConfig.texPathSouth)

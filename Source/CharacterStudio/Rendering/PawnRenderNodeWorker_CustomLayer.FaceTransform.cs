@@ -45,6 +45,23 @@ namespace CharacterStudio.Rendering
             if (customNode.lastProgrammaticFaceTick == currentTick)
                 return;
 
+            customNode.lastProgrammaticFaceTick = currentTick;
+
+            // P-PERF: 区分「需要完整 Profile 驱动计算」和「仅需廉价微动计算」。
+            // 仅当存在非中性表情、眨眼、非中心眼动时才走完整路径。
+            // 大多数 tick 中角色处于 Neutral/Center 无眨眼状态，
+            // 此时只需计算 motionAmplitude 驱动的微动偏移（Sin 波），避免完整 Profile 管线。
+            bool needsFullCalculation = skinComp.IsBlinkActive()
+                || skinComp.GetEffectiveExpression() != ExpressionType.Neutral
+                || skinComp.CurEyeDirection != EyeDirection.Center;
+
+            if (!needsFullCalculation)
+            {
+                // P-PERF: 快速空闲路径——仅计算微动偏移，跳过完整 Profile 驱动管线。
+                ApplyIdleMicroMotion(customNode, skinComp, currentTick);
+                return;
+            }
+
             var cacheKey = new CompPawnSkin.FaceTransformCacheKey(
                 customNode.layeredFacePartType.Value,
                 customNode.layeredFacePartSide,
@@ -54,13 +71,11 @@ namespace CharacterStudio.Rendering
             {
                 CharacterStudioPerformanceStats.RecordFaceTransformCacheLookup(hit: true);
                 ApplyCachedProgrammaticFaceTransform(customNode, cachedTransform);
-                customNode.lastProgrammaticFaceTick = currentTick;
                 return;
             }
 
             CharacterStudioPerformanceStats.RecordFaceTransformCacheLookup(hit: false);
 
-            customNode.lastProgrammaticFaceTick = currentTick;
             CalculateProgrammaticFaceTransform(customNode, pawn, currentTick);
             skinComp.SetCachedFaceTransform(
                 cacheKey,
@@ -94,6 +109,43 @@ namespace CharacterStudio.Rendering
             {
                 customNode.currentProgrammaticAlpha = targetAlpha;
             }
+        }
+
+        /// <summary>
+        /// P-PERF: 空闲状态下的快速微动计算。
+        /// 当角色处于 Neutral 表情 + Center 眼方向 + 无眨眼时，
+        /// 跳过完整 Profile 驱动管线，仅计算 motionAmplitude 驱动的微动偏移。
+        /// 这覆盖了游戏中大多数 tick（角色空闲站立、睡眠、无表情互动）。
+        /// </summary>
+        private void ApplyIdleMicroMotion(PawnRenderNode_Custom customNode, CompPawnSkin skinComp, int currentTick)
+        {
+            // 默认为无变换（角度=0，偏移=零，缩放=1，目标透明度=1）
+            customNode.currentProgrammaticAngle = 0f;
+            customNode.currentProgrammaticOffset = Vector3.zero;
+            customNode.currentProgrammaticScale = Vector3.one;
+            customNode.targetProgrammaticAlpha = 1f;
+
+            // 计算基础相位（与其他路径共享的相位生成逻辑）
+            float phase = customNode.basePhase;
+            if (Mathf.Approximately(phase, 0f))
+            {
+                phase = (customNode.GetHashCode() % 1024) / 1024f * Mathf.PI * 2f;
+                customNode.basePhase = phase;
+            }
+
+            float timeSec = currentTick / 60f;
+            float primaryWave = Mathf.Sin(timeSec * 2.25f + phase);
+            float slowWave = Mathf.Sin(timeSec * 0.9f + phase * 0.5f);
+
+            // ApplyLayeredFacePartMotionAmplitude 内部会查询 motionAmplitude，
+            // 如果无微动配置则直接返回 baseOffset（零向量）
+            customNode.currentProgrammaticOffset = ApplyLayeredFacePartMotionAmplitude(
+                customNode,
+                Vector3.zero,
+                primaryWave,
+                slowWave);
+
+            UpdateProgrammaticFaceAlpha(customNode);
         }
 
         private void ResetProgrammaticFaceTransform(PawnRenderNode_Custom customNode)
@@ -603,39 +655,39 @@ namespace CharacterStudio.Rendering
             EyeAnimationVariant eyeVariant = skinComp?.GetEffectiveEyeAnimationVariant() ?? EyeAnimationVariant.NeutralOpen;
 
             float sideSign = GetLayeredFaceSideSign(customNode);
-            float offsetX = GetLayeredFaceSideBias(customNode, 0.0002f);
-            float offsetZ = 0.0004f * primaryWave;
+            float offsetX = GetLayeredFaceSideBias(customNode, 0.0016f);
+            float offsetZ = 0.0032f * primaryWave;
 
             switch (eyeVariant)
             {
                 case EyeAnimationVariant.NeutralSoft:
-                    offsetZ += 0.0005f;
+                    offsetZ += 0.004f;
                     break;
                 case EyeAnimationVariant.NeutralLookDown:
-                    offsetZ += 0.0010f;
+                    offsetZ += 0.008f;
                     break;
                 case EyeAnimationVariant.NeutralGlance:
-                    offsetX += (primaryWave > 0f ? 0.0008f : -0.0008f) + sideSign * 0.00035f;
+                    offsetX += (primaryWave > 0f ? 0.0064f : -0.0064f) + sideSign * 0.0028f;
                     break;
                 case EyeAnimationVariant.WorkFocusDown:
-                    offsetZ += 0.0016f;
+                    offsetZ += 0.0128f;
                     break;
                 case EyeAnimationVariant.WorkFocusUp:
-                    offsetZ -= 0.0012f;
+                    offsetZ -= 0.0096f;
                     break;
                 case EyeAnimationVariant.HappySoft:
-                    offsetZ -= 0.0006f;
+                    offsetZ -= 0.0048f;
                     break;
                 case EyeAnimationVariant.ShockWide:
-                    offsetZ -= 0.0018f;
+                    offsetZ -= 0.0144f;
                     break;
                 case EyeAnimationVariant.ScaredWide:
-                    offsetZ -= 0.0012f;
-                    offsetX += primaryWave * 0.0006f + sideSign * 0.0003f;
+                    offsetZ -= 0.0096f;
+                    offsetX += primaryWave * 0.0048f + sideSign * 0.0024f;
                     break;
                 case EyeAnimationVariant.ScaredFlinch:
-                    offsetZ += 0.0008f;
-                    offsetX += slowWave * 0.0007f + sideSign * 0.00045f;
+                    offsetZ += 0.0064f;
+                    offsetX += slowWave * 0.0056f + sideSign * 0.0036f;
                     break;
                 case EyeAnimationVariant.HappyClosedPeak:
                     HideProgrammaticFacePart(customNode);
@@ -664,7 +716,7 @@ namespace CharacterStudio.Rendering
             SetProgrammaticFaceTransform(
                 customNode,
                 primaryWave * 0.15f,
-                new Vector3(offsetX, 0f, offsetZ + slowWave * 0.0004f),
+                new Vector3(offsetX, 0f, offsetZ + slowWave * 0.0032f),
                 new Vector3(1.01f + Mathf.Abs(slowWave) * 0.01f, 1f, scaleZ));
         }
 
@@ -687,54 +739,54 @@ namespace CharacterStudio.Rendering
             PupilScaleVariant pupilVariant = skinComp?.GetEffectivePupilScaleVariant() ?? PupilScaleVariant.Neutral;
 
             float sideSign = GetLayeredFaceSideSign(customNode);
-            float offsetX = GetLayeredFaceSideBias(customNode, 0.000028f);
-            float offsetZ = slowWave * 0.00005f;
+            float offsetX = GetLayeredFaceSideBias(customNode, 0.000224f);
+            float offsetZ = slowWave * 0.0004f;
             switch (eyeDirection)
             {
                 case EyeDirection.Left:
-                    offsetX = -0.00018f;
+                    offsetX = -0.00144f;
                     break;
                 case EyeDirection.Right:
-                    offsetX = 0.00018f;
+                    offsetX = 0.00144f;
                     break;
                 case EyeDirection.Up:
-                    offsetZ -= 0.00014f;
+                    offsetZ -= 0.00112f;
                     break;
                 case EyeDirection.Down:
-                    offsetZ += 0.00016f;
+                    offsetZ += 0.00128f;
                     break;
             }
 
             switch (eyeVariant)
             {
                 case EyeAnimationVariant.NeutralSoft:
-                    offsetZ += 0.00004f;
+                    offsetZ += 0.00032f;
                     break;
                 case EyeAnimationVariant.NeutralLookDown:
-                    offsetZ += 0.00012f;
+                    offsetZ += 0.00096f;
                     break;
                 case EyeAnimationVariant.NeutralGlance:
-                    offsetX += (primaryWave > 0f ? 0.00010f : -0.00010f) + sideSign * 0.000045f;
+                    offsetX += (primaryWave > 0f ? 0.00080f : -0.00080f) + sideSign * 0.00036f;
                     break;
                 case EyeAnimationVariant.WorkFocusDown:
-                    offsetZ += 0.00020f;
+                    offsetZ += 0.0016f;
                     break;
                 case EyeAnimationVariant.WorkFocusUp:
-                    offsetZ -= 0.00015f;
+                    offsetZ -= 0.0012f;
                     break;
                 case EyeAnimationVariant.HappyOpen:
-                    offsetZ -= 0.00003f;
+                    offsetZ -= 0.00024f;
                     break;
                 case EyeAnimationVariant.ShockWide:
-                    offsetZ -= 0.00012f;
+                    offsetZ -= 0.00096f;
                     break;
                 case EyeAnimationVariant.ScaredWide:
-                    offsetZ -= 0.00008f;
-                    offsetX += primaryWave * 0.00008f + sideSign * 0.00004f;
+                    offsetZ -= 0.00064f;
+                    offsetX += primaryWave * 0.00064f + sideSign * 0.00032f;
                     break;
                 case EyeAnimationVariant.ScaredFlinch:
-                    offsetZ += 0.00008f;
-                    offsetX += slowWave * 0.00009f + sideSign * 0.000055f;
+                    offsetZ += 0.00064f;
+                    offsetX += slowWave * 0.00072f + sideSign * 0.00044f;
                     break;
                 case EyeAnimationVariant.HappyClosedPeak:
                 case EyeAnimationVariant.BlinkClosed:
@@ -783,7 +835,7 @@ namespace CharacterStudio.Rendering
             SetProgrammaticFaceTransform(
                 customNode,
                 primaryWave * 0.35f,
-                new Vector3(offsetX + primaryWave * 0.00004f, 0f, offsetZ),
+                new Vector3(offsetX + primaryWave * 0.00032f, 0f, offsetZ),
                 new Vector3(scale, 1f, scale));
         }
 

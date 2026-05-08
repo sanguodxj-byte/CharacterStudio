@@ -22,8 +22,6 @@ namespace CharacterStudio.Abilities
         public int wOverrideExpireTick = -1;
         public string eOverrideAbilityDefName = string.Empty;
         public int eOverrideExpireTick = -1;
-        public string rOverrideAbilityDefName = string.Empty;
-        public int rOverrideExpireTick = -1;
         public string tOverrideAbilityDefName = string.Empty;
         public int tOverrideExpireTick = -1;
         public string aOverrideAbilityDefName = string.Empty;
@@ -47,7 +45,6 @@ namespace CharacterStudio.Abilities
         public int qCooldownUntilTick = 0;
         public int wCooldownUntilTick = 0;
         public int eCooldownUntilTick = 0;
-        public int rCooldownUntilTick = 0;
         public int tCooldownUntilTick = 0;
         public int aCooldownUntilTick = 0;
         public int sCooldownUntilTick = 0;
@@ -57,14 +54,6 @@ namespace CharacterStudio.Abilities
         public int xCooldownUntilTick = 0;
         public int cCooldownUntilTick = 0;
         public int vCooldownUntilTick = 0;
-
-        public bool rStackingEnabled = false;
-        public int rStackCount = 0;
-        public bool rSecondStageReady = false;
-        public int rSecondStageExecuteTick = -1;
-        public bool rSecondStageHasTarget = false;
-        public IntVec3 rSecondStageTargetCell = IntVec3.Invalid;
-        public string rStackAbilityDefName = string.Empty;
 
         public int weaponCarryCastingUntilTick = -1;
         public int periodicPulseNextTick = -1;
@@ -136,6 +125,21 @@ namespace CharacterStudio.Abilities
         public System.Collections.Generic.HashSet<Pawn> forcedMoveHitPawns = new System.Collections.Generic.HashSet<Pawn>();
 
         // ── Bezier Curve Wall ──
+        // ── World Map Flight ──
+        public bool isInWorldMapFlight = false;
+        public string worldMapFlightSourceAbilityDefName = string.Empty;
+        public int worldMapFlightDestinationTile = -1;
+        public int worldMapFlightStartTick = -1;
+        public int worldMapFlightHandoffTick = -1;
+        public bool worldMapFlightMapParentRequired;
+        public int worldMapFlightTravelDurationTicks = 300;
+
+        // ── World Map Landing (反向 FlightState 从天而降) ──
+        public bool isWorldMapLanding = false;
+        public int worldMapLandingStartTick = -1;
+        public int worldMapLandingDurationTicks = 150;
+        public float worldMapLandingHeightFactor = 100f;
+
         public int bezierWallExpireTick = -1;
         public float bezierWallStartX;
         public float bezierWallStartZ;
@@ -156,7 +160,6 @@ namespace CharacterStudio.Abilities
                 AbilityRuntimeHotkeySlot.Q => qCooldownUntilTick,
                 AbilityRuntimeHotkeySlot.W => wCooldownUntilTick,
                 AbilityRuntimeHotkeySlot.E => eCooldownUntilTick,
-                AbilityRuntimeHotkeySlot.R => rCooldownUntilTick,
                 AbilityRuntimeHotkeySlot.T => tCooldownUntilTick,
                 AbilityRuntimeHotkeySlot.A => aCooldownUntilTick,
                 AbilityRuntimeHotkeySlot.S => sCooldownUntilTick,
@@ -177,7 +180,6 @@ namespace CharacterStudio.Abilities
                 case AbilityRuntimeHotkeySlot.Q: qCooldownUntilTick = value; break;
                 case AbilityRuntimeHotkeySlot.W: wCooldownUntilTick = value; break;
                 case AbilityRuntimeHotkeySlot.E: eCooldownUntilTick = value; break;
-                case AbilityRuntimeHotkeySlot.R: rCooldownUntilTick = value; break;
                 case AbilityRuntimeHotkeySlot.T: tCooldownUntilTick = value; break;
                 case AbilityRuntimeHotkeySlot.A: aCooldownUntilTick = value; break;
                 case AbilityRuntimeHotkeySlot.S: sCooldownUntilTick = value; break;
@@ -197,7 +199,6 @@ namespace CharacterStudio.Abilities
                 case AbilityRuntimeHotkeySlot.Q: qOverrideAbilityDefName = defName; break;
                 case AbilityRuntimeHotkeySlot.W: wOverrideAbilityDefName = defName; break;
                 case AbilityRuntimeHotkeySlot.E: eOverrideAbilityDefName = defName; break;
-                case AbilityRuntimeHotkeySlot.R: rOverrideAbilityDefName = defName; break;
                 case AbilityRuntimeHotkeySlot.T: tOverrideAbilityDefName = defName; break;
                 case AbilityRuntimeHotkeySlot.A: aOverrideAbilityDefName = defName; break;
                 case AbilityRuntimeHotkeySlot.S: sOverrideAbilityDefName = defName; break;
@@ -217,7 +218,6 @@ namespace CharacterStudio.Abilities
                 case AbilityRuntimeHotkeySlot.Q: qOverrideExpireTick = tick; break;
                 case AbilityRuntimeHotkeySlot.W: wOverrideExpireTick = tick; break;
                 case AbilityRuntimeHotkeySlot.E: eOverrideExpireTick = tick; break;
-                case AbilityRuntimeHotkeySlot.R: rOverrideExpireTick = tick; break;
                 case AbilityRuntimeHotkeySlot.T: tOverrideExpireTick = tick; break;
                 case AbilityRuntimeHotkeySlot.A: aOverrideExpireTick = tick; break;
                 case AbilityRuntimeHotkeySlot.S: sOverrideExpireTick = tick; break;
@@ -242,8 +242,6 @@ namespace CharacterStudio.Abilities
             Scribe_Values.Look(ref wOverrideExpireTick, "wOverrideExpireTick", -1);
             Scribe_Values.Look(ref eOverrideAbilityDefName, "eOverrideAbilityDefName", string.Empty);
             Scribe_Values.Look(ref eOverrideExpireTick, "eOverrideExpireTick", -1);
-            Scribe_Values.Look(ref rOverrideAbilityDefName, "rOverrideAbilityDefName", string.Empty);
-            Scribe_Values.Look(ref rOverrideExpireTick, "rOverrideExpireTick", -1);
             Scribe_Values.Look(ref tOverrideAbilityDefName, "tOverrideAbilityDefName", string.Empty);
             Scribe_Values.Look(ref tOverrideExpireTick, "tOverrideExpireTick", -1);
             Scribe_Values.Look(ref aOverrideAbilityDefName, "aOverrideAbilityDefName", string.Empty);
@@ -266,7 +264,6 @@ namespace CharacterStudio.Abilities
             Scribe_Values.Look(ref qCooldownUntilTick, "qCooldownUntilTick", 0);
             Scribe_Values.Look(ref wCooldownUntilTick, "wCooldownUntilTick", 0);
             Scribe_Values.Look(ref eCooldownUntilTick, "eCooldownUntilTick", 0);
-            Scribe_Values.Look(ref rCooldownUntilTick, "rCooldownUntilTick", 0);
             Scribe_Values.Look(ref tCooldownUntilTick, "tCooldownUntilTick", 0);
             Scribe_Values.Look(ref aCooldownUntilTick, "aCooldownUntilTick", 0);
             Scribe_Values.Look(ref sCooldownUntilTick, "sCooldownUntilTick", 0);
@@ -284,6 +281,18 @@ namespace CharacterStudio.Abilities
             Scribe_Values.Look(ref bezierWallBlockFriendly, "bezierWallBlockFriendly", false);
             Scribe_Values.Look(ref bezierWallAbsorbRemaining, "bezierWallAbsorbRemaining", 0f);
             Scribe_Values.Look(ref lastBezierWallApplyTick, "lastBezierWallApplyTick", -1);
+            Scribe_Values.Look(ref isInWorldMapFlight, "isInWorldMapFlight", false);
+            Scribe_Values.Look(ref worldMapFlightSourceAbilityDefName, "worldMapFlightSourceAbilityDefName", string.Empty);
+            Scribe_Values.Look(ref worldMapFlightDestinationTile, "worldMapFlightDestinationTile", -1);
+            Scribe_Values.Look(ref worldMapFlightStartTick, "worldMapFlightStartTick", -1);
+            Scribe_Values.Look(ref worldMapFlightHandoffTick, "worldMapFlightHandoffTick", -1);
+            Scribe_Values.Look(ref worldMapFlightMapParentRequired, "worldMapFlightMapParentRequired", false);
+            Scribe_Values.Look(ref worldMapFlightTravelDurationTicks, "worldMapFlightTravelDurationTicks", 300);
+
+            Scribe_Values.Look(ref isWorldMapLanding, "isWorldMapLanding", false);
+            Scribe_Values.Look(ref worldMapLandingStartTick, "worldMapLandingStartTick", -1);
+            Scribe_Values.Look(ref worldMapLandingDurationTicks, "worldMapLandingDurationTicks", 150);
+            Scribe_Values.Look(ref worldMapLandingHeightFactor, "worldMapLandingHeightFactor", 20f);
         }
 
         public void Normalize()
@@ -293,7 +302,6 @@ namespace CharacterStudio.Abilities
             slotOverrideWindowSlotId ??= string.Empty;
             wOverrideAbilityDefName ??= string.Empty;
             eOverrideAbilityDefName ??= string.Empty;
-            rOverrideAbilityDefName ??= string.Empty;
             tOverrideAbilityDefName ??= string.Empty;
             aOverrideAbilityDefName ??= string.Empty;
             sOverrideAbilityDefName ??= string.Empty;
@@ -303,11 +311,6 @@ namespace CharacterStudio.Abilities
             xOverrideAbilityDefName ??= string.Empty;
             cOverrideAbilityDefName ??= string.Empty;
             vOverrideAbilityDefName ??= string.Empty;
-
-            if (rStackCount < 0) rStackCount = 0;
-            if (rStackCount > 7) rStackCount = 7;
-            if (!rSecondStageHasTarget) rSecondStageTargetCell = IntVec3.Invalid;
-            rStackAbilityDefName ??= string.Empty;
 
             if (shieldRemainingDamage < 0f) shieldRemainingDamage = 0f;
             if (shieldStoredHeal < 0f) shieldStoredHeal = 0f;
@@ -339,6 +342,16 @@ namespace CharacterStudio.Abilities
             if (bezierWallSegmentCount <= 0) bezierWallSegmentCount = 16;
             if (bezierWallAbsorbRemaining < 0f) bezierWallAbsorbRemaining = 0f;
             if (lastBezierWallApplyTick < -1) lastBezierWallApplyTick = -1;
+
+            // ── World Map Flight ──
+            worldMapFlightSourceAbilityDefName ??= string.Empty;
+            if (worldMapFlightStartTick < -1) worldMapFlightStartTick = -1;
+            if (worldMapFlightHandoffTick < -1) worldMapFlightHandoffTick = -1;
+
+            // ── World Map Landing ──
+            if (worldMapLandingStartTick < -1) worldMapLandingStartTick = -1;
+            if (worldMapLandingDurationTicks <= 0) worldMapLandingDurationTicks = 150;
+            if (worldMapLandingHeightFactor < 0f) worldMapLandingHeightFactor = 100f;
         }
     }
 }

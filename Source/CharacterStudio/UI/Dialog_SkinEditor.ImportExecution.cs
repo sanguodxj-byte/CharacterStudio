@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -274,9 +274,7 @@ namespace CharacterStudio.UI
             workingRenderFixPatch = null;
             workingSkin.layers ??= new List<PawnLayerConfig>();
             workingSkin.hiddenPaths ??= new List<string>();
-#pragma warning disable CS0618
             workingSkin.hiddenTags ??= new List<string>();
-#pragma warning restore CS0618
             workingSkin.targetRaces ??= new List<string>();
             workingSkin.baseAppearance ??= new BaseAppearanceConfig();
             layers ??= new List<PawnLayerConfig>();
@@ -288,9 +286,7 @@ namespace CharacterStudio.UI
             {
                 workingSkin.layers.Clear();
                 workingSkin.hiddenPaths.Clear();
-#pragma warning disable CS0618
                 workingSkin.hiddenTags.Clear();
-#pragma warning restore CS0618
                 workingSkin.hideVanillaBody = false;
                 workingSkin.hideVanillaHead = false;
                 workingSkin.hideVanillaHair = false;
@@ -325,7 +321,6 @@ namespace CharacterStudio.UI
                 }
             }
 
-#pragma warning disable CS0618
             foreach (var tag in sourceTags)
             {
                 if (!string.IsNullOrWhiteSpace(tag) && !workingSkin.hiddenTags.Contains(tag))
@@ -333,7 +328,6 @@ namespace CharacterStudio.UI
                     workingSkin.hiddenTags.Add(tag);
                 }
             }
-#pragma warning restore CS0618
 
             if (shouldHideVanillaBody)
             {
@@ -373,7 +367,7 @@ namespace CharacterStudio.UI
                 foreach (var raceDefName in skinDef.targetRaces)
                 {
                     var raceDef = DefDatabase<ThingDef>.GetNamedSilentFail(raceDefName);
-                    if (raceDef?.race != null && raceDef.race.Humanlike)
+                    if (raceDef?.race != null)
                     {
                         return raceDef;
                     }
@@ -448,7 +442,7 @@ namespace CharacterStudio.UI
             }
 
             IEnumerable<Pawn> candidates = map.mapPawns.AllPawnsSpawned
-                .Where(p => p.RaceProps.Humanlike && p.Drawer?.renderer?.renderTree != null)
+                .Where(p => p.Drawer?.renderer?.renderTree != null)
                 .Where(skinDef.IsValidForPawn);
 
             if (preferredRace != null)

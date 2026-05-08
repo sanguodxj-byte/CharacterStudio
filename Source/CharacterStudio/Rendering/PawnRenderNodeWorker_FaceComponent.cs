@@ -22,6 +22,8 @@ namespace CharacterStudio.Rendering
         // 静态缓存
         // ─────────────────────────────────────────────
 
+        private static readonly object _cacheLock = new object();
+
         // 表情 Graphic 缓存：key = "path|shaderName|colorHex"
         private static readonly Dictionary<string, Graphic> graphicCache
             = new Dictionary<string, Graphic>(StringComparer.Ordinal);
@@ -312,17 +314,23 @@ namespace CharacterStudio.Rendering
         {
             // 缓存键：路径 + shader 名称 + 颜色 RGBA + tickKey（帧动画每帧独立缓存）
             string key = BuildCacheKey(path, shader, color, tickKey);
-            if (graphicCache.TryGetValue(key, out var cached))
+            lock (_cacheLock)
             {
-                if (CanCacheGraphic(cached))
-                    return cached;
+                if (graphicCache.TryGetValue(key, out var cached))
+                {
+                    if (CanCacheGraphic(cached))
+                        return cached;
 
-                graphicCache.Remove(key);
+                    graphicCache.Remove(key);
+                }
             }
 
             Graphic g = BuildGraphic(path, shader, color);
-            if (CanCacheGraphic(g))
-                graphicCache[key] = g;
+            lock (_cacheLock)
+            {
+                if (CanCacheGraphic(g))
+                    graphicCache[key] = g;
+            }
 
             return g;
         }
@@ -363,14 +371,20 @@ namespace CharacterStudio.Rendering
 
         private static bool GetOrDetectIsMulti(string path)
         {
-            if (isMultiCache.TryGetValue(path, out bool cached))
-                return cached;
+            lock (_cacheLock)
+            {
+                if (isMultiCache.TryGetValue(path, out bool cached))
+                    return cached;
+            }
 
             if (!CharacterStudio.Rendering.RuntimeAssetLoader.IsMainThread())
                 return true;
 
             bool isMulti = ContentFinder<Texture2D>.Get(path + "_north", false) != null;
-            isMultiCache[path] = isMulti;
+            lock (_cacheLock)
+            {
+                isMultiCache[path] = isMulti;
+            }
             return isMulti;
         }
 
@@ -387,8 +401,22 @@ namespace CharacterStudio.Rendering
         /// </summary>
         public static void ClearCache()
         {
-            graphicCache.Clear();
-            isMultiCache.Clear();
+            lock (_cacheLock)
+            {
+                graphicCache.Clear();
+                isMultiCache.Clear();
+            }
+        }
+
+        /// <summary>
+        /// 返回缓存统计（供性能报告使用）。
+        /// </summary>
+        public static string GetCacheStats()
+        {
+            lock (_cacheLock)
+            {
+                return $"Graphic: {graphicCache.Count}, IsMulti: {isMultiCache.Count}";
+            }
         }
     }
 }

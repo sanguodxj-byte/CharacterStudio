@@ -182,7 +182,7 @@ namespace CharacterStudio.UI
                 case CharacterRuntimeTriggerConditionType.ColonyThingDefCount:
                     Find.WindowStack.Add(new Dialog_DefBrowser<ThingDef>(
                         "CS_Studio_RuntimeTriggers_Condition_ColonyThingDefCount".Translate().ToString(),
-                        DefDatabase<ThingDef>.AllDefsListForReading.OrderBy(static def => def.label ?? def.defName),
+                        DefDatabase<ThingDef>.AllDefsListForReading.OrderBy(static def => def.label ?? def.defName, StringComparer.OrdinalIgnoreCase),
                         def => condition.thingDefName = def.defName,
                         def => $"{(def.label ?? def.defName)} ({def.defName})",
                         def => def.description ?? string.Empty));
@@ -191,7 +191,7 @@ namespace CharacterStudio.UI
                 case CharacterRuntimeTriggerConditionType.ColonyThingCategoryCount:
                     Find.WindowStack.Add(new Dialog_DefBrowser<ThingCategoryDef>(
                         "CS_Studio_RuntimeTriggers_Condition_ColonyThingCategoryCount".Translate().ToString(),
-                        DefDatabase<ThingCategoryDef>.AllDefsListForReading.OrderBy(static def => def.label ?? def.defName),
+                        DefDatabase<ThingCategoryDef>.AllDefsListForReading.OrderBy(static def => def.label ?? def.defName, StringComparer.OrdinalIgnoreCase),
                         def => condition.categoryDefName = def.defName,
                         def => $"{(def.label ?? def.defName)} ({def.defName})",
                         _ => string.Empty));

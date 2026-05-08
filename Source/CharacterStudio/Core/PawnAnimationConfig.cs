@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System;
+using CharacterStudio.Exporter;
 
 namespace CharacterStudio.Core
 {
@@ -16,21 +17,21 @@ namespace CharacterStudio.Core
     /// </summary>
     public class WeaponCarryVisualConfig
     {
-        public bool enabled = false;
-        public string anchorTag = "Body";
-        public string texUndrafted = string.Empty;
-        public string texDrafted = string.Empty;
-        public string texCasting = string.Empty;
-        public Vector3 offset = Vector3.zero;
-        public Vector3 offsetNorth = Vector3.zero;
-        public Vector3 offsetEast = Vector3.zero;
-        public Vector2 scale = Vector2.one;
-        public Vector2 scaleNorthMultiplier = Vector2.one;
-        public Vector2 scaleEastMultiplier = Vector2.one;
-        public float rotation = 0f;
-        public float rotationNorthOffset = 0f;
-        public float rotationEastOffset = 0f;
-        public float drawOrder = 80f;
+        [XmlExportField(BoolToLower = true)] public bool enabled = false;
+        [XmlExportField] public string anchorTag = "Body";
+        [XmlExportField(SkipEmptyString = true)] public string texUndrafted = string.Empty;
+        [XmlExportField(SkipEmptyString = true)] public string texDrafted = string.Empty;
+        [XmlExportField(SkipEmptyString = true)] public string texCasting = string.Empty;
+        [XmlExportField] public Vector3 offset = Vector3.zero;
+        [XmlExportField] public Vector3 offsetNorth = Vector3.zero;
+        [XmlExportField] public Vector3 offsetEast = Vector3.zero;
+        [XmlExportField] public Vector2 scale = Vector2.one;
+        [XmlExportField] public Vector2 scaleNorthMultiplier = Vector2.one;
+        [XmlExportField] public Vector2 scaleEastMultiplier = Vector2.one;
+        [XmlExportField] public float rotation = 0f;
+        [XmlExportField(SkipDefault = 0f, SkipDefaultFloat = true)] public float rotationNorthOffset = 0f;
+        [XmlExportField(SkipDefault = 0f, SkipDefaultFloat = true)] public float rotationEastOffset = 0f;
+        [XmlExportField(Format = "F3")] public float drawOrder = 80f;
 
         public string GetAnyTexPath()
         {
@@ -87,13 +88,13 @@ namespace CharacterStudio.Core
     /// </summary>
     public class ProceduralAnimationConfig
     {
-        public bool breathingEnabled = false;
-        public float breathingSpeed = 1.0f;
-        public float breathingAmplitude = 0.02f;
+        [XmlExportField(BoolToLower = true)] public bool breathingEnabled = false;
+        [XmlExportField] public float breathingSpeed = 1.0f;
+        [XmlExportField] public float breathingAmplitude = 0.02f;
 
-        public bool hoveringEnabled = false;
-        public float hoveringSpeed = 1.0f;
-        public float hoveringAmplitude = 0.05f;
+        [XmlExportField(BoolToLower = true)] public bool hoveringEnabled = false;
+        [XmlExportField] public float hoveringSpeed = 1.0f;
+        [XmlExportField] public float hoveringAmplitude = 0.05f;
 
         public ProceduralAnimationConfig Clone() => new ProceduralAnimationConfig
         {
@@ -113,32 +114,32 @@ namespace CharacterStudio.Core
     public class PawnAnimationConfig
     {
         /// <summary>是否启用动画覆写系统</summary>
-        public bool enabled = true;
+        [XmlExportField(BoolToLower = true)] public bool enabled = true;
 
         // --- 程序化动画 ---
         /// <summary>全局程序化效果（呼吸等）</summary>
-        public ProceduralAnimationConfig procedural = new ProceduralAnimationConfig();
+        [XmlExportField] public ProceduralAnimationConfig procedural = new ProceduralAnimationConfig();
 
         // --- 武器/物品专项（保持原有字段名以兼容 XML） ---
         /// <summary>是否启用武器位置覆写</summary>
-        public bool weaponOverrideEnabled = false; 
+        [XmlExportField(BoolToLower = true)] public bool weaponOverrideEnabled = false;
         
         /// <summary>通用偏移</summary>
-        public Vector3 offset = Vector3.zero;
+        [XmlExportField] public Vector3 offset = Vector3.zero;
         /// <summary>正面偏移</summary>
-        public Vector3 offsetSouth = Vector3.zero;
+        [XmlExportField] public Vector3 offsetSouth = Vector3.zero;
         /// <summary>背面偏移</summary>
-        public Vector3 offsetNorth = Vector3.zero;
+        [XmlExportField] public Vector3 offsetNorth = Vector3.zero;
         /// <summary>侧面偏移</summary>
-        public Vector3 offsetEast = Vector3.zero;
+        [XmlExportField] public Vector3 offsetEast = Vector3.zero;
         /// <summary>缩放乘数</summary>
-        public Vector2 scale = Vector2.one;
+        [XmlExportField] public Vector2 scale = Vector2.one;
         
         /// <summary>是否应用到副手</summary>
-        public bool applyToOffHand = true;
+        [XmlExportField(BoolToLower = true)] public bool applyToOffHand = true;
         
         /// <summary>收纳/拔刀状态视觉</summary>
-        public WeaponCarryVisualConfig carryVisual = new WeaponCarryVisualConfig();
+        [XmlExportField(Ignore = true)] public WeaponCarryVisualConfig carryVisual = new WeaponCarryVisualConfig();
 
         /// <summary>
         /// 根据 Pawn 朝向返回应叠加的武器偏移量。

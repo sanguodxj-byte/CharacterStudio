@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -401,10 +401,8 @@ namespace CharacterStudio.Core
             target.hiddenPaths.Clear();
             target.hiddenPaths.AddRange(cloned.hiddenPaths);
 
-#pragma warning disable CS0618
             target.hiddenTags.Clear();
             target.hiddenTags.AddRange(cloned.hiddenTags);
-#pragma warning restore CS0618
 
             // 恢复标识字段（不能被 Clone 覆盖）
             target.defName   = savedDefName;

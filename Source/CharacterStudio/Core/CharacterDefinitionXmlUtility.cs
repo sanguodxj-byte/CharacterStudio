@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -345,63 +345,8 @@ namespace CharacterStudio.Core
 
         private static CharacterEquipmentRenderData ParseEquipmentRenderData(XElement? element)
         {
-            CharacterEquipmentRenderData data = CharacterEquipmentRenderData.CreateDefault();
-            if (element == null)
-            {
-                return data;
-            }
-
-            data.layerName = element.Element("layerName")?.Value ?? data.layerName;
-            data.texPath = element.Element("texPath")?.Value ?? data.texPath;
-            data.anchorTag = element.Element("anchorTag")?.Value ?? data.anchorTag;
-            data.anchorPath = element.Element("anchorPath")?.Value ?? data.anchorPath;
-            data.maskTexPath = element.Element("maskTexPath")?.Value ?? data.maskTexPath;
-            data.shaderDefName = element.Element("shaderDefName")?.Value ?? data.shaderDefName;
-            data.directionalFacing = element.Element("directionalFacing")?.Value ?? data.directionalFacing;
-            data.offset = ParseVector3(element.Element("offset")?.Value, data.offset);
-            data.offsetEast = ParseVector3(element.Element("offsetEast")?.Value, data.offsetEast);
-            data.offsetNorth = ParseVector3(element.Element("offsetNorth")?.Value, data.offsetNorth);
-            data.useWestOffset = ParseBool(element.Element("useWestOffset")?.Value, data.useWestOffset);
-            data.offsetWest = ParseVector3(element.Element("offsetWest")?.Value, data.offsetWest);
-            data.scale = ParseVector2(element.Element("scale")?.Value, data.scale);
-            data.scaleEastMultiplier = ParseVector2(element.Element("scaleEastMultiplier")?.Value, data.scaleEastMultiplier);
-            data.scaleNorthMultiplier = ParseVector2(element.Element("scaleNorthMultiplier")?.Value, data.scaleNorthMultiplier);
-            data.scaleWestMultiplier = ParseVector2(element.Element("scaleWestMultiplier")?.Value, data.scaleWestMultiplier);
-            data.rotation = ParseFloat(element.Element("rotation")?.Value, data.rotation);
-            data.rotationEastOffset = ParseFloat(element.Element("rotationEastOffset")?.Value, data.rotationEastOffset);
-            data.rotationNorthOffset = ParseFloat(element.Element("rotationNorthOffset")?.Value, data.rotationNorthOffset);
-            data.rotationWestOffset = ParseFloat(element.Element("rotationWestOffset")?.Value, data.rotationWestOffset);
-            data.drawOrder = ParseFloat(element.Element("drawOrder")?.Value, data.drawOrder);
-            data.flipHorizontal = ParseBool(element.Element("flipHorizontal")?.Value, data.flipHorizontal);
-            data.visible = ParseBool(element.Element("visible")?.Value, data.visible);
-            data.colorSource = ParseEnum(element.Element("colorSource")?.Value, data.colorSource);
-            data.customColor = ParseColor(element.Element("customColor")?.Value, data.customColor);
-            data.colorTwoSource = ParseEnum(element.Element("colorTwoSource")?.Value, data.colorTwoSource);
-            data.customColorTwo = ParseColor(element.Element("customColorTwo")?.Value, data.customColorTwo);
-            data.useTriggeredLocalAnimation = ParseBool(element.Element("useTriggeredLocalAnimation")?.Value, data.useTriggeredLocalAnimation);
-            data.triggerAbilityDefName = element.Element("triggerAbilityDefName")?.Value ?? data.triggerAbilityDefName;
-            data.animationGroupKey = element.Element("animationGroupKey")?.Value ?? data.animationGroupKey;
-            data.triggeredAnimationRole = ParseEnum(element.Element("triggeredAnimationRole")?.Value, data.triggeredAnimationRole);
-            data.triggeredDeployAngle = ParseFloat(element.Element("triggeredDeployAngle")?.Value, data.triggeredDeployAngle);
-            data.triggeredReturnAngle = ParseFloat(element.Element("triggeredReturnAngle")?.Value, data.triggeredReturnAngle);
-            data.triggeredDeployTicks = ParseInt(element.Element("triggeredDeployTicks")?.Value, data.triggeredDeployTicks);
-            data.triggeredHoldTicks = ParseInt(element.Element("triggeredHoldTicks")?.Value, data.triggeredHoldTicks);
-            data.triggeredReturnTicks = ParseInt(element.Element("triggeredReturnTicks")?.Value, data.triggeredReturnTicks);
-            data.triggeredPivotOffset = ParseVector2(element.Element("triggeredPivotOffset")?.Value, data.triggeredPivotOffset);
-            data.triggeredUseVfxVisibility = ParseBool(element.Element("triggeredUseVfxVisibility")?.Value, data.triggeredUseVfxVisibility);
-            data.triggeredIdleTexPath = element.Element("triggeredIdleTexPath")?.Value ?? data.triggeredIdleTexPath;
-            data.triggeredDeployTexPath = element.Element("triggeredDeployTexPath")?.Value ?? data.triggeredDeployTexPath;
-            data.triggeredHoldTexPath = element.Element("triggeredHoldTexPath")?.Value ?? data.triggeredHoldTexPath;
-            data.triggeredReturnTexPath = element.Element("triggeredReturnTexPath")?.Value ?? data.triggeredReturnTexPath;
-            data.triggeredIdleMaskTexPath = element.Element("triggeredIdleMaskTexPath")?.Value ?? data.triggeredIdleMaskTexPath;
-            data.triggeredDeployMaskTexPath = element.Element("triggeredDeployMaskTexPath")?.Value ?? data.triggeredDeployMaskTexPath;
-            data.triggeredHoldMaskTexPath = element.Element("triggeredHoldMaskTexPath")?.Value ?? data.triggeredHoldMaskTexPath;
-            data.triggeredReturnMaskTexPath = element.Element("triggeredReturnMaskTexPath")?.Value ?? data.triggeredReturnMaskTexPath;
-            data.triggeredVisibleDuringDeploy = ParseBool(element.Element("triggeredVisibleDuringDeploy")?.Value, data.triggeredVisibleDuringDeploy);
-            data.triggeredVisibleDuringHold = ParseBool(element.Element("triggeredVisibleDuringHold")?.Value, data.triggeredVisibleDuringHold);
-            data.triggeredVisibleDuringReturn = ParseBool(element.Element("triggeredVisibleDuringReturn")?.Value, data.triggeredVisibleDuringReturn);
-            data.triggeredVisibleOutsideCycle = ParseBool(element.Element("triggeredVisibleOutsideCycle")?.Value, data.triggeredVisibleOutsideCycle);
-            return data;
+            return Exporter.XmlExportHelper.CreateFromXml<CharacterEquipmentRenderData>(element)
+                ?? CharacterEquipmentRenderData.CreateDefault();
         }
 
         private static bool ParseBool(string? value, bool fallback)

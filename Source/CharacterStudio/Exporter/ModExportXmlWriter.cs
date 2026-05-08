@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
@@ -278,8 +278,8 @@ namespace CharacterStudio.Exporter
                 {
                     if (part == null) continue;
 
-                    part.SyncDirectionalTexPathsFromLegacy();
-                    part.SyncLegacyMotionAmplitude();
+                    part.EnsureDirectionalTexPathsConsistent();
+                    part.EnsureMotionAmplitudeInitialized();
                     if (!part.HasAnyTexture()) continue;
 
                     layeredPartsEl.Add(new XElement("li",
@@ -390,9 +390,7 @@ namespace CharacterStudio.Exporter
                         !string.IsNullOrEmpty(skin.previewTexPath) ? new XElement("previewTexPath", skin.previewTexPath) : null,
                         GenerateAttributesXml(skin.attributes),
                         GenerateStringListXml("hiddenPaths", skin.hiddenPaths),
-#pragma warning disable CS0618
                         GenerateStringListXml("hiddenTags", skin.hiddenTags),
-#pragma warning restore CS0618
                         GenerateBaseAppearanceXml(skin.baseAppearance),
                         GenerateLayersXml(skin.layers),
                         GenerateTargetRacesXml(skin.targetRaces),
@@ -531,16 +529,11 @@ namespace CharacterStudio.Exporter
             el.Add(new XElement("pupilMotion",
                 new XElement("sideBiasX", eyeCfg.pupilMotion.sideBiasX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
                 new XElement("slowWaveOffsetZ", eyeCfg.pupilMotion.slowWaveOffsetZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
-                new XElement("leftPupil_frontBaseX", eyeCfg.pupilMotion.leftPupil_frontBaseX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
-                new XElement("leftPupil_dirLeftX", eyeCfg.pupilMotion.leftPupil_dirLeftX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
-                new XElement("leftPupil_dirRightX", eyeCfg.pupilMotion.leftPupil_dirRightX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
-                new XElement("leftPupil_dirUpZ", eyeCfg.pupilMotion.leftPupil_dirUpZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
-                new XElement("leftPupil_dirDownZ", eyeCfg.pupilMotion.leftPupil_dirDownZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
-                new XElement("rightPupil_frontBaseX", eyeCfg.pupilMotion.rightPupil_frontBaseX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
-                new XElement("rightPupil_dirLeftX", eyeCfg.pupilMotion.rightPupil_dirLeftX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
-                new XElement("rightPupil_dirRightX", eyeCfg.pupilMotion.rightPupil_dirRightX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
-                new XElement("rightPupil_dirUpZ", eyeCfg.pupilMotion.rightPupil_dirUpZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
-                new XElement("rightPupil_dirDownZ", eyeCfg.pupilMotion.rightPupil_dirDownZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("frontBaseX", eyeCfg.pupilMotion.frontBaseX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("dirLeftX", eyeCfg.pupilMotion.dirLeftX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("dirRightX", eyeCfg.pupilMotion.dirRightX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("dirUpZ", eyeCfg.pupilMotion.dirUpZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
+                new XElement("dirDownZ", eyeCfg.pupilMotion.dirDownZ.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
                 new XElement("side_baseX", eyeCfg.pupilMotion.side_baseX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
                 new XElement("side_dirLeftX", eyeCfg.pupilMotion.side_dirLeftX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),
                 new XElement("side_dirRightX", eyeCfg.pupilMotion.side_dirRightX.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)),

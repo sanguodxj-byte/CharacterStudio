@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using CharacterStudio.Abilities;
@@ -257,6 +257,7 @@ namespace CharacterStudio.UI
                 aiCanUse = source.aiCanUse,
                 carrierType = source.carrierType,
                 targetType = source.targetType,
+                useTwoPointTargeting = source.useTwoPointTargeting,
                 useRadius = source.useRadius,
                 areaCenter = source.areaCenter,
                 areaShape = source.areaShape,

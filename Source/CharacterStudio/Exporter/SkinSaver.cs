@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -148,6 +148,7 @@ namespace CharacterStudio.Exporter
                 new XElement("hideVanillaApparel", skin.hideVanillaApparel.ToString().ToLower()),
                 new XElement("humanlikeOnly", skin.humanlikeOnly.ToString().ToLower()),
                 new XElement("globalTextureScale", skin.globalTextureScale.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+                skin.useCanDrawNowHiding ? new XElement("useCanDrawNowHiding", "true") : null,
                 !string.IsNullOrEmpty(skin.author) ? new XElement("author", skin.author) : null,
                 !string.IsNullOrEmpty(skin.version) ? new XElement("version", skin.version) : null,
                 !string.IsNullOrEmpty(skin.previewTexPath) ? new XElement("previewTexPath", skin.previewTexPath) : null,
@@ -159,10 +160,8 @@ namespace CharacterStudio.Exporter
                 
                 // 隐藏路径
                 GenerateListElement("hiddenPaths", skin.hiddenPaths),
-                // 隐藏标签 (保留兼容性)
-                #pragma warning disable CS0618
+                // 隐藏标签（[Obsolete] 兼容导出）
                 GenerateListElement("hiddenTags", skin.hiddenTags),
-                #pragma warning restore CS0618
 
                 // 基础槽位
                 GenerateBaseAppearanceXml(skin.baseAppearance),
@@ -204,191 +203,16 @@ namespace CharacterStudio.Exporter
 
                 equipment.EnsureDefaults();
 
-                var equipmentEl = new XElement("li",
-                    !string.IsNullOrWhiteSpace(equipment.defName) ? new XElement("defName", equipment.defName) : null,
-                    !string.IsNullOrWhiteSpace(equipment.label) ? new XElement("label", equipment.label) : null,
-                    !string.IsNullOrWhiteSpace(equipment.description) ? new XElement("description", equipment.description) : null,
-                    new XElement("enabled", equipment.enabled.ToString().ToLower()),
-                    !string.IsNullOrWhiteSpace(equipment.slotTag) ? new XElement("slotTag", equipment.slotTag) : null,
-                    !string.IsNullOrWhiteSpace(equipment.exportGroupKey) ? new XElement("exportGroupKey", equipment.exportGroupKey) : null,
-                    !string.IsNullOrWhiteSpace(equipment.thingDefName) ? new XElement("thingDefName", equipment.thingDefName) : null,
-                    !string.IsNullOrWhiteSpace(equipment.parentThingDefName) ? new XElement("parentThingDefName", equipment.parentThingDefName) : null,
-                    !string.IsNullOrWhiteSpace(equipment.previewTexPath) ? new XElement("previewTexPath", equipment.previewTexPath) : null,
-                    !string.IsNullOrWhiteSpace(equipment.sourceNote) ? new XElement("sourceNote", equipment.sourceNote) : null,
-                    !string.IsNullOrWhiteSpace(equipment.flyerThingDefName) ? new XElement("flyerThingDefName", equipment.flyerThingDefName) : null,
-                    !string.IsNullOrWhiteSpace(equipment.flyerClassName) && equipment.flyerClassName != "CharacterStudio.Abilities.CharacterStudioPawnFlyer_Default" ? new XElement("flyerClassName", equipment.flyerClassName) : null,
-                    Math.Abs(equipment.flyerFlightSpeed - 22f) > 0.0001f ? new XElement("flyerFlightSpeed", equipment.flyerFlightSpeed.ToString(System.Globalization.CultureInfo.InvariantCulture)) : null,
-                    !string.IsNullOrWhiteSpace(equipment.worldTexPath) ? new XElement("worldTexPath", equipment.worldTexPath) : null,
-                    !string.IsNullOrWhiteSpace(equipment.wornTexPath) ? new XElement("wornTexPath", equipment.wornTexPath) : null,
-                    !string.IsNullOrWhiteSpace(equipment.maskTexPath) ? new XElement("maskTexPath", equipment.maskTexPath) : null,
-                    !string.IsNullOrWhiteSpace(equipment.shaderDefName) ? new XElement("shaderDefName", equipment.shaderDefName) : null,
-                    equipment.useWornGraphicMask ? new XElement("useWornGraphicMask", equipment.useWornGraphicMask.ToString().ToLower()) : null,
-                    new XElement("allowCrafting", equipment.allowCrafting.ToString().ToLower()),
-                    !string.IsNullOrWhiteSpace(equipment.recipeDefName) ? new XElement("recipeDefName", equipment.recipeDefName) : null,
-                    !string.IsNullOrWhiteSpace(equipment.recipeWorkbenchDefName) ? new XElement("recipeWorkbenchDefName", equipment.recipeWorkbenchDefName) : null,
-                    Math.Abs(equipment.recipeWorkAmount - 1200f) > 0.0001f ? new XElement("recipeWorkAmount", equipment.recipeWorkAmount.ToString(System.Globalization.CultureInfo.InvariantCulture)) : null,
-                    equipment.recipeProductCount != 1 ? new XElement("recipeProductCount", equipment.recipeProductCount) : null,
-                    new XElement("allowTrading", equipment.allowTrading.ToString().ToLower()),
-                    Math.Abs(equipment.marketValue - 250f) > 0.0001f ? new XElement("marketValue", equipment.marketValue.ToString(System.Globalization.CultureInfo.InvariantCulture)) : null,
-                    GenerateListElement("tags", equipment.tags),
-                    GenerateListElement("tradeTags", equipment.tradeTags),
-                    GenerateListElement("weaponTags", equipment.weaponTags),
-                    GenerateListElement("weaponClasses", equipment.weaponClasses),
-                    GenerateListElement("abilityDefNames", equipment.abilityDefNames),
-                    GenerateListElement("thingCategories", equipment.thingCategories),
-                    GenerateListElement("bodyPartGroups", equipment.bodyPartGroups),
-                    GenerateListElement("apparelLayers", equipment.apparelLayers),
-                    GenerateListElement("apparelTags", equipment.apparelTags),
-                    GenerateEquipmentCostEntriesXml("recipeIngredients", equipment.recipeIngredients),
-                    GenerateEquipmentStatEntriesXml("statBases", equipment.statBases),
-                    GenerateEquipmentStatEntriesXml("equippedStatOffsets", equipment.equippedStatOffsets),
-                    GenerateEquipmentRenderDataXml(equipment.renderData)
-                );
-
+                var equipmentEl = new XElement("li", AbilityXmlSerialization.SerializePublicFields(equipment));
                 root.Add(equipmentEl);
             }
 
             return root.HasElements ? root : null;
         }
 
-        private static XElement? GenerateEquipmentStatEntriesXml(string tagName, List<CharacterEquipmentStatEntry>? entries)
-        {
-            if (entries == null || entries.Count == 0)
-            {
-                return null;
-            }
-
-            var root = new XElement(tagName);
-            foreach (var entry in entries)
-            {
-                if (entry == null || string.IsNullOrWhiteSpace(entry.statDefName))
-                {
-                    continue;
-                }
-
-                root.Add(new XElement("li",
-                    new XElement("statDefName", entry.statDefName),
-                    new XElement("value", entry.value.ToString(System.Globalization.CultureInfo.InvariantCulture))
-                ));
-            }
-
-            return root.HasElements ? root : null;
-        }
-
-        private static XElement? GenerateEquipmentCostEntriesXml(string tagName, List<CharacterEquipmentCostEntry>? entries)
-        {
-            if (entries == null || entries.Count == 0)
-            {
-                return null;
-            }
-
-            var root = new XElement(tagName);
-            foreach (var entry in entries)
-            {
-                if (entry == null || string.IsNullOrWhiteSpace(entry.thingDefName) || entry.count <= 0)
-                {
-                    continue;
-                }
-
-                root.Add(new XElement("li",
-                    new XElement("thingDefName", entry.thingDefName),
-                    new XElement("count", entry.count)
-                ));
-            }
-
-            return root.HasElements ? root : null;
-        }
-
-        private static XElement? GenerateEquipmentRenderDataXml(CharacterEquipmentRenderData? renderData)
-        {
-            if (renderData == null) return null;
-
-            return new XElement("renderData",
-                !string.IsNullOrEmpty(renderData.layerName) ? new XElement("layerName", renderData.layerName) : null,
-                !string.IsNullOrEmpty(renderData.texPath) ? new XElement("texPath", renderData.texPath) : null,
-                !string.IsNullOrEmpty(renderData.anchorTag) ? new XElement("anchorTag", renderData.anchorTag) : null,
-                !string.IsNullOrEmpty(renderData.anchorPath) ? new XElement("anchorPath", renderData.anchorPath) : null,
-                !string.IsNullOrEmpty(renderData.maskTexPath) ? new XElement("maskTexPath", renderData.maskTexPath) : null,
-                !string.IsNullOrEmpty(renderData.shaderDefName) ? new XElement("shaderDefName", renderData.shaderDefName) : null,
-                !string.IsNullOrWhiteSpace(renderData.directionalFacing) ? new XElement("directionalFacing", renderData.directionalFacing) : null,
-                new XElement("offset", $"({renderData.offset.x:F3}, {renderData.offset.y:F3}, {renderData.offset.z:F3})"),
-                renderData.offsetEast != Vector3.zero ? new XElement("offsetEast", $"({renderData.offsetEast.x:F3}, {renderData.offsetEast.y:F3}, {renderData.offsetEast.z:F3})") : null,
-                renderData.offsetNorth != Vector3.zero ? new XElement("offsetNorth", $"({renderData.offsetNorth.x:F3}, {renderData.offsetNorth.y:F3}, {renderData.offsetNorth.z:F3})") : null,
-                  renderData.useWestOffset ? new XElement("useWestOffset", "true") : null,
-                  renderData.offsetWest != Vector3.zero ? new XElement("offsetWest", $"({renderData.offsetWest.x:F3}, {renderData.offsetWest.y:F3}, {renderData.offsetWest.z:F3})") : null,
-                new XElement("drawOrder", renderData.drawOrder),
-                new XElement("scale", $"({renderData.scale.x:F2}, {renderData.scale.y:F2})"),
-                renderData.scaleEastMultiplier != Vector2.one ? new XElement("scaleEastMultiplier", $"({renderData.scaleEastMultiplier.x:F3}, {renderData.scaleEastMultiplier.y:F3})") : null,
-                renderData.scaleNorthMultiplier != Vector2.one ? new XElement("scaleNorthMultiplier", $"({renderData.scaleNorthMultiplier.x:F3}, {renderData.scaleNorthMultiplier.y:F3})") : null,
-                new XElement("rotation", renderData.rotation),
-                renderData.rotationEastOffset != 0f ? new XElement("rotationEastOffset", renderData.rotationEastOffset) : null,
-                renderData.rotationNorthOffset != 0f ? new XElement("rotationNorthOffset", renderData.rotationNorthOffset) : null,
-                new XElement("flipHorizontal", renderData.flipHorizontal.ToString().ToLower()),
-                new XElement("colorSource", renderData.colorSource.ToString()),
-                renderData.colorSource == LayerColorSource.Fixed ? new XElement("customColor", $"({renderData.customColor.r:F3}, {renderData.customColor.g:F3}, {renderData.customColor.b:F3}, {renderData.customColor.a:F3})") : null,
-                new XElement("colorTwoSource", renderData.colorTwoSource.ToString()),
-                renderData.colorTwoSource == LayerColorSource.Fixed ? new XElement("customColorTwo", $"({renderData.customColorTwo.r:F3}, {renderData.customColorTwo.g:F3}, {renderData.customColorTwo.b:F3}, {renderData.customColorTwo.a:F3})") : null,
-                new XElement("visible", renderData.visible.ToString().ToLower()),
-
-                // 技能触发动画 (装备侧)
-                renderData.useTriggeredLocalAnimation ? new XElement("useTriggeredLocalAnimation", "true") : null,
-                renderData.useTriggeredLocalAnimation && !string.IsNullOrEmpty(renderData.triggerAbilityDefName) ? new XElement("triggerAbilityDefName", renderData.triggerAbilityDefName) : null,
-                renderData.useTriggeredLocalAnimation && !string.IsNullOrEmpty(renderData.animationGroupKey) ? new XElement("animationGroupKey", renderData.animationGroupKey) : null,
-                renderData.useTriggeredLocalAnimation ? new XElement("triggeredAnimationRole", renderData.triggeredAnimationRole.ToString()) : null,
-                renderData.useTriggeredLocalAnimation ? new XElement("triggeredDeployAngle", renderData.triggeredDeployAngle) : null,
-                renderData.useTriggeredLocalAnimation ? new XElement("triggeredReturnAngle", renderData.triggeredReturnAngle) : null,
-                renderData.useTriggeredLocalAnimation ? new XElement("triggeredDeployTicks", renderData.triggeredDeployTicks) : null,
-                renderData.useTriggeredLocalAnimation ? new XElement("triggeredHoldTicks", renderData.triggeredHoldTicks) : null,
-                renderData.useTriggeredLocalAnimation ? new XElement("triggeredReturnTicks", renderData.triggeredReturnTicks) : null,
-                renderData.useTriggeredLocalAnimation && renderData.triggeredPivotOffset != Vector2.zero ? new XElement("triggeredPivotOffset", $"({renderData.triggeredPivotOffset.x:F3}, {renderData.triggeredPivotOffset.y:F3})") : null,
-                renderData.useTriggeredLocalAnimation && renderData.triggeredDeployOffset != Vector3.zero ? new XElement("triggeredDeployOffset", $"({renderData.triggeredDeployOffset.x:F3}, {renderData.triggeredDeployOffset.y:F3}, {renderData.triggeredDeployOffset.z:F3})") : null,
-                renderData.useTriggeredLocalAnimation ? new XElement("triggeredUseVfxVisibility", renderData.triggeredUseVfxVisibility.ToString().ToLower()) : null,
-                renderData.useTriggeredLocalAnimation && !string.IsNullOrEmpty(renderData.triggeredIdleTexPath) ? new XElement("triggeredIdleTexPath", renderData.triggeredIdleTexPath) : null,
-                renderData.useTriggeredLocalAnimation && !string.IsNullOrEmpty(renderData.triggeredDeployTexPath) ? new XElement("triggeredDeployTexPath", renderData.triggeredDeployTexPath) : null,
-                renderData.useTriggeredLocalAnimation && !string.IsNullOrEmpty(renderData.triggeredHoldTexPath) ? new XElement("triggeredHoldTexPath", renderData.triggeredHoldTexPath) : null,
-                renderData.useTriggeredLocalAnimation && !string.IsNullOrEmpty(renderData.triggeredReturnTexPath) ? new XElement("triggeredReturnTexPath", renderData.triggeredReturnTexPath) : null,
-                renderData.useTriggeredLocalAnimation && !string.IsNullOrEmpty(renderData.triggeredIdleMaskTexPath) ? new XElement("triggeredIdleMaskTexPath", renderData.triggeredIdleMaskTexPath) : null,
-                renderData.useTriggeredLocalAnimation && !string.IsNullOrEmpty(renderData.triggeredDeployMaskTexPath) ? new XElement("triggeredDeployMaskTexPath", renderData.triggeredDeployMaskTexPath) : null,
-                renderData.useTriggeredLocalAnimation && !string.IsNullOrEmpty(renderData.triggeredHoldMaskTexPath) ? new XElement("triggeredHoldMaskTexPath", renderData.triggeredHoldMaskTexPath) : null,
-                renderData.useTriggeredLocalAnimation && !string.IsNullOrEmpty(renderData.triggeredReturnMaskTexPath) ? new XElement("triggeredReturnMaskTexPath", renderData.triggeredReturnMaskTexPath) : null,
-                renderData.useTriggeredLocalAnimation ? new XElement("triggeredVisibleDuringDeploy", renderData.triggeredVisibleDuringDeploy.ToString().ToLower()) : null,
-                renderData.useTriggeredLocalAnimation ? new XElement("triggeredVisibleDuringHold", renderData.triggeredVisibleDuringHold.ToString().ToLower()) : null,
-                renderData.useTriggeredLocalAnimation ? new XElement("triggeredVisibleDuringReturn", renderData.triggeredVisibleDuringReturn.ToString().ToLower()) : null,
-                renderData.useTriggeredLocalAnimation ? new XElement("triggeredVisibleOutsideCycle", renderData.triggeredVisibleOutsideCycle.ToString().ToLower()) : null,
-                renderData.useTriggeredLocalAnimation && renderData.triggeredAnimationSouth != null ? GenerateTriggeredAnimationOverrideXml("triggeredAnimationSouth", renderData.triggeredAnimationSouth) : null,
-                renderData.useTriggeredLocalAnimation && renderData.triggeredAnimationEastWest != null ? GenerateTriggeredAnimationOverrideXml("triggeredAnimationEastWest", renderData.triggeredAnimationEastWest) : null,
-                renderData.useTriggeredLocalAnimation && renderData.triggeredAnimationNorth != null ? GenerateTriggeredAnimationOverrideXml("triggeredAnimationNorth", renderData.triggeredAnimationNorth) : null
-            );
-        }
-
         private static XElement GenerateTriggeredAnimationOverrideXml(string tagName, CharacterStudio.Core.EquipmentTriggeredAnimationOverride cfg)
         {
-            return new XElement(tagName,
-                new XElement("useTriggeredLocalAnimation", cfg.useTriggeredLocalAnimation.ToString().ToLower()),
-                !string.IsNullOrEmpty(cfg.triggerAbilityDefName) ? new XElement("triggerAbilityDefName", cfg.triggerAbilityDefName) : null,
-                !string.IsNullOrEmpty(cfg.animationGroupKey) ? new XElement("animationGroupKey", cfg.animationGroupKey) : null,
-                new XElement("triggeredAnimationRole", cfg.triggeredAnimationRole.ToString()),
-                new XElement("triggeredDeployAngle", cfg.triggeredDeployAngle),
-                new XElement("triggeredReturnAngle", cfg.triggeredReturnAngle),
-                new XElement("triggeredDeployTicks", cfg.triggeredDeployTicks),
-                new XElement("triggeredHoldTicks", cfg.triggeredHoldTicks),
-                new XElement("triggeredReturnTicks", cfg.triggeredReturnTicks),
-                cfg.triggeredPivotOffset != Vector2.zero ? new XElement("triggeredPivotOffset", $"({cfg.triggeredPivotOffset.x:F3}, {cfg.triggeredPivotOffset.y:F3})") : null,
-                cfg.triggeredDeployOffset != Vector3.zero ? new XElement("triggeredDeployOffset", $"({cfg.triggeredDeployOffset.x:F3}, {cfg.triggeredDeployOffset.y:F3}, {cfg.triggeredDeployOffset.z:F3})") : null,
-                new XElement("triggeredUseVfxVisibility", cfg.triggeredUseVfxVisibility.ToString().ToLower()),
-                !string.IsNullOrEmpty(cfg.triggeredIdleTexPath) ? new XElement("triggeredIdleTexPath", cfg.triggeredIdleTexPath) : null,
-                !string.IsNullOrEmpty(cfg.triggeredDeployTexPath) ? new XElement("triggeredDeployTexPath", cfg.triggeredDeployTexPath) : null,
-                !string.IsNullOrEmpty(cfg.triggeredHoldTexPath) ? new XElement("triggeredHoldTexPath", cfg.triggeredHoldTexPath) : null,
-                !string.IsNullOrEmpty(cfg.triggeredReturnTexPath) ? new XElement("triggeredReturnTexPath", cfg.triggeredReturnTexPath) : null,
-                !string.IsNullOrEmpty(cfg.triggeredIdleMaskTexPath) ? new XElement("triggeredIdleMaskTexPath", cfg.triggeredIdleMaskTexPath) : null,
-                !string.IsNullOrEmpty(cfg.triggeredDeployMaskTexPath) ? new XElement("triggeredDeployMaskTexPath", cfg.triggeredDeployMaskTexPath) : null,
-                !string.IsNullOrEmpty(cfg.triggeredHoldMaskTexPath) ? new XElement("triggeredHoldMaskTexPath", cfg.triggeredHoldMaskTexPath) : null,
-                !string.IsNullOrEmpty(cfg.triggeredReturnMaskTexPath) ? new XElement("triggeredReturnMaskTexPath", cfg.triggeredReturnMaskTexPath) : null,
-                new XElement("triggeredVisibleDuringDeploy", cfg.triggeredVisibleDuringDeploy.ToString().ToLower()),
-                new XElement("triggeredVisibleDuringHold", cfg.triggeredVisibleDuringHold.ToString().ToLower()),
-                new XElement("triggeredVisibleDuringReturn", cfg.triggeredVisibleDuringReturn.ToString().ToLower()),
-                new XElement("triggeredVisibleOutsideCycle", cfg.triggeredVisibleOutsideCycle.ToString().ToLower())
-            );
+            return new XElement(tagName, AbilityXmlSerialization.SerializePublicFields(cfg));
         }
 
         private static XElement? GenerateAbilitiesXml(List<ModularAbilityDef>? abilities)
@@ -458,6 +282,7 @@ namespace CharacterStudio.Exporter
                     effect.terraformTerrainDef != null ? new XElement("terraformTerrainDef", effect.terraformTerrainDef.defName) : null,
                     new XElement("terraformSpawnCount", effect.terraformSpawnCount),
                     new XElement("canHurtSelf", effect.canHurtSelf.ToString().ToLower()),
+                    effect.delayTicks > 0 ? new XElement("delayTicks", effect.delayTicks) : null,
                     !string.IsNullOrWhiteSpace(effect.weatherDefName) ? new XElement("weatherDefName", effect.weatherDefName) : null,
                     new XElement("weatherDurationTicks", effect.weatherDurationTicks),
                     new XElement("weatherTransitionTicks", effect.weatherTransitionTicks)
@@ -796,8 +621,8 @@ namespace CharacterStudio.Exporter
                 {
                     if (part == null) continue;
 
-                    part.SyncDirectionalTexPathsFromLegacy();
-                    part.SyncLegacyMotionAmplitude();
+                    part.EnsureDirectionalTexPathsConsistent();
+                    part.EnsureMotionAmplitudeInitialized();
                     if (!part.HasAnyTexture()) continue;
 
                     LayeredFacePartSide normalizedSide = PawnFaceConfig.NormalizePartSide(part.partType, part.side);
@@ -895,8 +720,8 @@ namespace CharacterStudio.Exporter
             foreach (var vfx in vfxList)
             {
                 if (vfx == null) continue;
-                vfx.NormalizeLegacyData();
-                vfx.SyncLegacyFields();
+                vfx.NormalizeFieldConsistency();
+                vfx.SyncDerivedFields();
                 root.Add(new XElement("li",
                     new XElement("enabled", vfx.enabled.ToString().ToLower()),
                     new XElement("type", vfx.type.ToString()),
@@ -974,330 +799,53 @@ namespace CharacterStudio.Exporter
         private static XElement? GenerateEyeDirectionConfigXml(CharacterStudio.Core.PawnEyeDirectionConfig eyeCfg)
         {
             if (eyeCfg == null) return null;
-
-            var el = new XElement("eyeDirectionConfig",
-                new XElement("enabled", eyeCfg.enabled.ToString().ToLower())
-            );
-
-            if (!string.IsNullOrEmpty(eyeCfg.texCenter)) el.Add(new XElement("texCenter", eyeCfg.texCenter));
-            if (!string.IsNullOrEmpty(eyeCfg.texLeft))   el.Add(new XElement("texLeft",   eyeCfg.texLeft));
-            if (!string.IsNullOrEmpty(eyeCfg.texRight))  el.Add(new XElement("texRight",  eyeCfg.texRight));
-            if (!string.IsNullOrEmpty(eyeCfg.texUp))     el.Add(new XElement("texUp",     eyeCfg.texUp));
-            if (!string.IsNullOrEmpty(eyeCfg.texDown))   el.Add(new XElement("texDown",   eyeCfg.texDown));
-            
-            if (eyeCfg.upperLidMoveDown != 0.0044f) el.Add(new XElement("upperLidMoveDown", eyeCfg.upperLidMoveDown.ToString(System.Globalization.CultureInfo.InvariantCulture)));
-
-            if (eyeCfg.lidMotion != null) el.Add(GenerateLidMotionConfigXml(eyeCfg.lidMotion));
-            if (eyeCfg.eyeMotion != null) el.Add(GenerateEyeMotionConfigXml(eyeCfg.eyeMotion));
-            if (eyeCfg.pupilMotion != null) el.Add(GeneratePupilMotionConfigXml(eyeCfg.pupilMotion));
-
-            return el;
+            return new XElement("eyeDirectionConfig", AbilityXmlSerialization.SerializePublicFields(eyeCfg));
         }
 
         private static XElement GenerateBrowMotionConfigXml(PawnFaceConfig.BrowMotionConfig cfg)
         {
-            return new XElement("browMotion",
-                new XElement("angryAngleBase", cfg.angryAngleBase),
-                new XElement("angryAngleWave", cfg.angryAngleWave),
-                new XElement("angryOffsetZBase", cfg.angryOffsetZBase),
-                new XElement("angrySlowWaveOffsetZ", cfg.angrySlowWaveOffsetZ),
-                new XElement("angryScaleX", cfg.angryScaleX),
-                new XElement("angryScaleZ", cfg.angryScaleZ),
-                new XElement("sadAngleBase", cfg.sadAngleBase),
-                new XElement("sadAngleWave", cfg.sadAngleWave),
-                new XElement("sadOffsetZBase", cfg.sadOffsetZBase),
-                new XElement("sadSlowWaveOffsetZ", cfg.sadSlowWaveOffsetZ),
-                new XElement("sadScaleX", cfg.sadScaleX),
-                new XElement("sadScaleZ", cfg.sadScaleZ),
-                new XElement("happyAngleBase", cfg.happyAngleBase),
-                new XElement("happyAngleWave", cfg.happyAngleWave),
-                new XElement("happyOffsetZBase", cfg.happyOffsetZBase),
-                new XElement("happySlowWaveOffsetZ", cfg.happySlowWaveOffsetZ),
-                new XElement("happyScaleX", cfg.happyScaleX),
-                new XElement("happyScaleZ", cfg.happyScaleZ),
-                new XElement("defaultSlowWaveOffsetZ", cfg.defaultSlowWaveOffsetZ)
-            );
+            return new XElement("browMotion", AbilityXmlSerialization.SerializePublicFields(cfg));
         }
 
         private static XElement GenerateMouthMotionConfigXml(PawnFaceConfig.MouthMotionConfig cfg)
         {
-            return new XElement("mouthMotion",
-                new XElement("smileAngleWave", cfg.smileAngleWave),
-                new XElement("smileOffsetZBase", cfg.smileOffsetZBase),
-                new XElement("smilePrimaryWaveOffsetZ", cfg.smilePrimaryWaveOffsetZ),
-                new XElement("smileScaleXBase", cfg.smileScaleXBase),
-                new XElement("smileScaleXWave", cfg.smileScaleXWave),
-                new XElement("smileScaleZ", cfg.smileScaleZ),
-                new XElement("openAngleWave", cfg.openAngleWave),
-                new XElement("openOffsetZBase", cfg.openOffsetZBase),
-                new XElement("openPrimaryWaveOffsetZ", cfg.openPrimaryWaveOffsetZ),
-                new XElement("openScaleX", cfg.openScaleX),
-                new XElement("openScaleZBase", cfg.openScaleZBase),
-                new XElement("openScaleZWave", cfg.openScaleZWave),
-                new XElement("downAngleBase", cfg.downAngleBase),
-                new XElement("downAngleWave", cfg.downAngleWave),
-                new XElement("downOffsetZBase", cfg.downOffsetZBase),
-                new XElement("downSlowWaveOffsetZ", cfg.downSlowWaveOffsetZ),
-                new XElement("downScaleX", cfg.downScaleX),
-                new XElement("downScaleZ", cfg.downScaleZ),
-                new XElement("sleepOffsetZ", cfg.sleepOffsetZ),
-                new XElement("sleepScaleX", cfg.sleepScaleX),
-                new XElement("sleepScaleZ", cfg.sleepScaleZ),
-                new XElement("eatingAngleWave", cfg.eatingAngleWave),
-                new XElement("eatingOffsetZBase", cfg.eatingOffsetZBase),
-                new XElement("eatingPrimaryWaveOffsetZ", cfg.eatingPrimaryWaveOffsetZ),
-                new XElement("eatingScaleX", cfg.eatingScaleX),
-                new XElement("eatingScaleZBase", cfg.eatingScaleZBase),
-                new XElement("eatingScaleZWave", cfg.eatingScaleZWave),
-                new XElement("shockScaredAngleWave", cfg.shockScaredAngleWave),
-                new XElement("shockScaredOffsetZBase", cfg.shockScaredOffsetZBase),
-                new XElement("shockScaredPrimaryWaveOffsetZ", cfg.shockScaredPrimaryWaveOffsetZ),
-                new XElement("shockScaredScaleX", cfg.shockScaredScaleX),
-                new XElement("shockScaredScaleZBase", cfg.shockScaredScaleZBase),
-                new XElement("shockScaredScaleZWave", cfg.shockScaredScaleZWave),
-                new XElement("defaultSlowWaveOffsetZ", cfg.defaultSlowWaveOffsetZ)
-            );
+            return new XElement("mouthMotion", AbilityXmlSerialization.SerializePublicFields(cfg));
         }
 
         private static XElement GenerateEmotionOverlayMotionConfigXml(PawnFaceConfig.EmotionOverlayMotionConfig cfg)
         {
-            return new XElement("emotionOverlayMotion",
-                new XElement("blushPulseBase", cfg.blushPulseBase),
-                new XElement("blushPulseWave", cfg.blushPulseWave),
-                new XElement("blushOffsetZBase", cfg.blushOffsetZBase),
-                new XElement("blushSlowWaveOffsetZ", cfg.blushSlowWaveOffsetZ),
-                new XElement("blushScaleZBase", cfg.blushScaleZBase),
-                new XElement("blushScaleZWave", cfg.blushScaleZWave),
-                new XElement("tearPulseBase", cfg.tearPulseBase),
-                new XElement("tearPulseWave", cfg.tearPulseWave),
-                new XElement("tearAngleWave", cfg.tearAngleWave),
-                new XElement("tearOffsetZBase", cfg.tearOffsetZBase),
-                new XElement("tearPrimaryWaveOffsetZ", cfg.tearPrimaryWaveOffsetZ),
-                new XElement("sweatPulseBase", cfg.sweatPulseBase),
-                new XElement("sweatPulseWave", cfg.sweatPulseWave),
-                new XElement("sweatAngleWave", cfg.sweatAngleWave),
-                new XElement("sweatOffsetXWave", cfg.sweatOffsetXWave),
-                new XElement("sweatOffsetZBase", cfg.sweatOffsetZBase),
-                new XElement("sweatSlowWaveOffsetZ", cfg.sweatSlowWaveOffsetZ)
-            );
+            return new XElement("emotionOverlayMotion", AbilityXmlSerialization.SerializePublicFields(cfg));
         }
 
         private static XElement GenerateLidMotionConfigXml(PawnEyeDirectionConfig.LidMotionConfig cfg)
         {
-            return new XElement("lidMotion",
-                new XElement("upperSideBiasX", cfg.upperSideBiasX),
-                new XElement("upperBlinkScaleX", cfg.upperBlinkScaleX),
-                new XElement("upperBlinkScaleZ", cfg.upperBlinkScaleZ),
-                new XElement("upperCloseScaleX", cfg.upperCloseScaleX),
-                new XElement("upperCloseScaleZ", cfg.upperCloseScaleZ),
-                new XElement("upperHalfBaseOffsetSubtract", cfg.upperHalfBaseOffsetSubtract),
-                new XElement("upperHalfNeutralSoftExtraOffset", cfg.upperHalfNeutralSoftExtraOffset),
-                new XElement("upperHalfLookDownExtraOffset", cfg.upperHalfLookDownExtraOffset),
-                new XElement("upperHalfScaredExtraOffset", cfg.upperHalfScaredExtraOffset),
-                new XElement("upperHalfSlowWaveOffset", cfg.upperHalfSlowWaveOffset),
-                new XElement("upperHalfScaleDefault", cfg.upperHalfScaleDefault),
-                new XElement("upperHalfScaleNeutralSoft", cfg.upperHalfScaleNeutralSoft),
-                new XElement("upperHalfScaleLookDown", cfg.upperHalfScaleLookDown),
-                new XElement("upperHalfScaleScared", cfg.upperHalfScaleScared),
-                new XElement("upperHappySoftOffset", cfg.upperHappySoftOffset),
-                new XElement("upperHappyOpenOffset", cfg.upperHappyOpenOffset),
-                new XElement("upperHappySoftScale", cfg.upperHappySoftScale),
-                new XElement("upperHappyOpenScale", cfg.upperHappyOpenScale),
-                new XElement("upperHappyScaleX", cfg.upperHappyScaleX),
-                new XElement("upperHappyAngleBase", cfg.upperHappyAngleBase),
-                new XElement("upperHappyAngleWave", cfg.upperHappyAngleWave),
-                new XElement("upperHappySlowWaveOffset", cfg.upperHappySlowWaveOffset),
-                new XElement("upperDefaultSlowWaveOffset", cfg.upperDefaultSlowWaveOffset),
-                new XElement("upperBlinkClosingPhaseDuration", cfg.upperBlinkClosingPhaseDuration),
-                new XElement("upperBlinkOpeningStart", cfg.upperBlinkOpeningStart),
-                new XElement("upperBlinkOpeningDuration", cfg.upperBlinkOpeningDuration),
-                new XElement("lowerSideBiasX", cfg.lowerSideBiasX),
-                new XElement("lowerBlinkOffset", cfg.lowerBlinkOffset),
-                new XElement("lowerBlinkScaleX", cfg.lowerBlinkScaleX),
-                new XElement("lowerBlinkScaleZ", cfg.lowerBlinkScaleZ),
-                new XElement("lowerCloseOffset", cfg.lowerCloseOffset),
-                new XElement("lowerCloseScaleX", cfg.lowerCloseScaleX),
-                new XElement("lowerCloseScaleZ", cfg.lowerCloseScaleZ),
-                new XElement("lowerHalfOffset", cfg.lowerHalfOffset),
-                new XElement("lowerHalfSlowWaveOffset", cfg.lowerHalfSlowWaveOffset),
-                new XElement("lowerHalfScaleX", cfg.lowerHalfScaleX),
-                new XElement("lowerHalfScaleZ", cfg.lowerHalfScaleZ),
-                new XElement("lowerHappyAngleBase", cfg.lowerHappyAngleBase),
-                new XElement("lowerHappyAngleWave", cfg.lowerHappyAngleWave),
-                new XElement("lowerHappyOffset", cfg.lowerHappyOffset),
-                new XElement("lowerHappySlowWaveOffset", cfg.lowerHappySlowWaveOffset),
-                new XElement("lowerHappyScaleX", cfg.lowerHappyScaleX),
-                new XElement("lowerHappyScaleZ", cfg.lowerHappyScaleZ),
-                new XElement("lowerDefaultSlowWaveOffset", cfg.lowerDefaultSlowWaveOffset),
-                new XElement("genericBlinkOffset", cfg.genericBlinkOffset),
-                new XElement("genericBlinkScaleX", cfg.genericBlinkScaleX),
-                new XElement("genericBlinkScaleZ", cfg.genericBlinkScaleZ),
-                new XElement("genericCloseOffset", cfg.genericCloseOffset),
-                new XElement("genericCloseScaleX", cfg.genericCloseScaleX),
-                new XElement("genericCloseScaleZ", cfg.genericCloseScaleZ),
-                new XElement("genericHalfOffset", cfg.genericHalfOffset),
-                new XElement("genericHalfSlowWaveOffset", cfg.genericHalfSlowWaveOffset),
-                new XElement("genericHalfScaleX", cfg.genericHalfScaleX),
-                new XElement("genericHalfScaleZ", cfg.genericHalfScaleZ),
-                new XElement("genericHappyAngleBase", cfg.genericHappyAngleBase),
-                new XElement("genericHappyAngleWave", cfg.genericHappyAngleWave),
-                new XElement("genericHappyOffset", cfg.genericHappyOffset),
-                new XElement("genericHappySlowWaveOffset", cfg.genericHappySlowWaveOffset),
-                new XElement("genericHappyScaleX", cfg.genericHappyScaleX),
-                new XElement("genericHappyScaleZ", cfg.genericHappyScaleZ),
-                new XElement("genericDefaultSlowWaveOffset", cfg.genericDefaultSlowWaveOffset),
-                new XElement("genericDefaultScaleZBase", cfg.genericDefaultScaleZBase),
-                new XElement("genericDefaultScaleZWaveAmplitude", cfg.genericDefaultScaleZWaveAmplitude)
-            );
+            return new XElement("lidMotion", AbilityXmlSerialization.SerializePublicFields(cfg));
         }
 
         private static XElement GenerateEyeMotionConfigXml(PawnEyeDirectionConfig.EyeMotionConfig cfg)
         {
-            return new XElement("eyeMotion",
-                new XElement("sideBiasX", cfg.sideBiasX),
-                new XElement("primaryWaveOffsetZ", cfg.primaryWaveOffsetZ),
-                new XElement("dirLeftOffsetX", cfg.dirLeftOffsetX),
-                new XElement("dirRightOffsetX", cfg.dirRightOffsetX),
-                new XElement("dirUpOffsetZ", cfg.dirUpOffsetZ),
-                new XElement("dirDownOffsetZ", cfg.dirDownOffsetZ),
-                new XElement("neutralSoftOffsetZ", cfg.neutralSoftOffsetZ),
-                new XElement("neutralLookDownOffsetZ", cfg.neutralLookDownOffsetZ),
-                new XElement("neutralGlanceWaveOffsetX", cfg.neutralGlanceWaveOffsetX),
-                new XElement("neutralGlanceSideOffsetX", cfg.neutralGlanceSideOffsetX),
-                new XElement("workFocusDownOffsetZ", cfg.workFocusDownOffsetZ),
-                new XElement("workFocusUpOffsetZ", cfg.workFocusUpOffsetZ),
-                new XElement("happySoftOffsetZ", cfg.happySoftOffsetZ),
-                new XElement("shockWideOffsetZ", cfg.shockWideOffsetZ),
-                new XElement("scaredWideOffsetZ", cfg.scaredWideOffsetZ),
-                new XElement("scaredWideWaveOffsetX", cfg.scaredWideWaveOffsetX),
-                new XElement("scaredWideSideOffsetX", cfg.scaredWideSideOffsetX),
-                new XElement("scaredFlinchOffsetZ", cfg.scaredFlinchOffsetZ),
-                new XElement("scaredFlinchWaveOffsetX", cfg.scaredFlinchWaveOffsetX),
-                new XElement("scaredFlinchSideOffsetX", cfg.scaredFlinchSideOffsetX),
-                new XElement("baseAngleWave", cfg.baseAngleWave),
-                new XElement("slowWaveOffsetZ", cfg.slowWaveOffsetZ),
-                new XElement("scaleXBase", cfg.scaleXBase),
-                new XElement("scaleXWaveAmplitude", cfg.scaleXWaveAmplitude)
-            );
+            return new XElement("eyeMotion", AbilityXmlSerialization.SerializePublicFields(cfg));
         }
 
         private static XElement GeneratePupilMotionConfigXml(PawnEyeDirectionConfig.PupilMotionConfig cfg)
         {
-            return new XElement("pupilMotion",
-                new XElement("leftPupil_frontBaseX", cfg.leftPupil_frontBaseX),
-                new XElement("leftPupil_dirLeftX", cfg.leftPupil_dirLeftX),
-                new XElement("leftPupil_dirRightX", cfg.leftPupil_dirRightX),
-                new XElement("leftPupil_dirUpZ", cfg.leftPupil_dirUpZ),
-                new XElement("leftPupil_dirDownZ", cfg.leftPupil_dirDownZ),
-                new XElement("rightPupil_frontBaseX", cfg.rightPupil_frontBaseX),
-                new XElement("rightPupil_dirLeftX", cfg.rightPupil_dirLeftX),
-                new XElement("rightPupil_dirRightX", cfg.rightPupil_dirRightX),
-                new XElement("rightPupil_dirUpZ", cfg.rightPupil_dirUpZ),
-                new XElement("rightPupil_dirDownZ", cfg.rightPupil_dirDownZ),
-                new XElement("side_baseX", cfg.side_baseX),
-                new XElement("side_dirLeftX", cfg.side_dirLeftX),
-                new XElement("side_dirRightX", cfg.side_dirRightX),
-                new XElement("side_dirUpZ", cfg.side_dirUpZ),
-                new XElement("side_dirDownZ", cfg.side_dirDownZ),
-                new XElement("sideBiasX", cfg.sideBiasX),
-                new XElement("slowWaveOffsetZ", cfg.slowWaveOffsetZ),
-                new XElement("neutralSoftOffsetZ", cfg.neutralSoftOffsetZ),
-                new XElement("neutralLookDownOffsetZ", cfg.neutralLookDownOffsetZ),
-                new XElement("neutralGlanceWaveOffsetX", cfg.neutralGlanceWaveOffsetX),
-                new XElement("neutralGlanceSideOffsetX", cfg.neutralGlanceSideOffsetX),
-                new XElement("workFocusDownOffsetZ", cfg.workFocusDownOffsetZ),
-                new XElement("workFocusUpOffsetZ", cfg.workFocusUpOffsetZ),
-                new XElement("happyOpenOffsetZ", cfg.happyOpenOffsetZ),
-                new XElement("shockWideOffsetZ", cfg.shockWideOffsetZ),
-                new XElement("scaredWideOffsetZ", cfg.scaredWideOffsetZ),
-                new XElement("scaredWideWaveOffsetX", cfg.scaredWideWaveOffsetX),
-                new XElement("scaredWideSideOffsetX", cfg.scaredWideSideOffsetX),
-                new XElement("scaredFlinchOffsetZ", cfg.scaredFlinchOffsetZ),
-                new XElement("scaredFlinchWaveOffsetX", cfg.scaredFlinchWaveOffsetX),
-                new XElement("scaredFlinchSideOffsetX", cfg.scaredFlinchSideOffsetX),
-                new XElement("transformAngleWave", cfg.transformAngleWave),
-                new XElement("finalWaveOffsetX", cfg.finalWaveOffsetX),
-                new XElement("focusScaleBase", cfg.focusScaleBase),
-                new XElement("focusScaleWave", cfg.focusScaleWave),
-                new XElement("slightlyContractedScaleBase", cfg.slightlyContractedScaleBase),
-                new XElement("slightlyContractedScaleWave", cfg.slightlyContractedScaleWave),
-                new XElement("contractedScaleBase", cfg.contractedScaleBase),
-                new XElement("contractedScaleWave", cfg.contractedScaleWave),
-                new XElement("dilatedScaleBase", cfg.dilatedScaleBase),
-                new XElement("dilatedScaleWave", cfg.dilatedScaleWave),
-                new XElement("dilatedMaxScaleBase", cfg.dilatedMaxScaleBase),
-                new XElement("dilatedMaxScaleWave", cfg.dilatedMaxScaleWave),
-                new XElement("scaredPulseScaleBase", cfg.scaredPulseScaleBase),
-                new XElement("scaredPulseScaleWave", cfg.scaredPulseScaleWave),
-                new XElement("shockScaredMinScaleBase", cfg.shockScaredMinScaleBase),
-                new XElement("shockScaredMinScaleWave", cfg.shockScaredMinScaleWave),
-                new XElement("happyMaxScaleBase", cfg.happyMaxScaleBase),
-                new XElement("happyMaxScaleWave", cfg.happyMaxScaleWave),
-                new XElement("sleepingScale", cfg.sleepingScale),
-                new XElement("workFocusMaxScale", cfg.workFocusMaxScale),
-                new XElement("neutralSoftMaxScale", cfg.neutralSoftMaxScale),
-                new XElement("neutralLookDownMaxScale", cfg.neutralLookDownMaxScale),
-                new XElement("shockWideMinScaleBase", cfg.shockWideMinScaleBase),
-                new XElement("shockWideMinScaleWave", cfg.shockWideMinScaleWave),
-                new XElement("scaredWideMinScaleBase", cfg.scaredWideMinScaleBase),
-                new XElement("scaredWideMinScaleWave", cfg.scaredWideMinScaleWave),
-                new XElement("scaredFlinchMinScaleBase", cfg.scaredFlinchMinScaleBase),
-                new XElement("scaredFlinchMinScaleWave", cfg.scaredFlinchMinScaleWave)
-            );
+            return new XElement("pupilMotion", AbilityXmlSerialization.SerializePublicFields(cfg));
         }
 
         private static XElement GenerateAnimationConfigXml(CharacterStudio.Core.PawnAnimationConfig cfg)
         {
-            var el = new XElement("animationConfig",
-                new XElement("enabled", cfg.enabled.ToString().ToLower()),
-                new XElement("weaponOverrideEnabled", cfg.weaponOverrideEnabled.ToString().ToLower()),
-                new XElement("applyToOffHand", cfg.applyToOffHand.ToString().ToLower()),
-                new XElement("scale", $"({cfg.scale.x:F3}, {cfg.scale.y:F3})")
-            );
+            var el = new XElement("animationConfig", AbilityXmlSerialization.SerializePublicFields(cfg));
 
-            if (cfg.procedural != null)
-            {
-                el.Add(new XElement("procedural",
-                    new XElement("breathingEnabled", cfg.procedural.breathingEnabled.ToString().ToLower()),
-                    new XElement("breathingSpeed", cfg.procedural.breathingSpeed),
-                    new XElement("breathingAmplitude", cfg.procedural.breathingAmplitude),
-                    new XElement("hoveringEnabled", cfg.procedural.hoveringEnabled.ToString().ToLower()),
-                    new XElement("hoveringSpeed", cfg.procedural.hoveringSpeed),
-                    new XElement("hoveringAmplitude", cfg.procedural.hoveringAmplitude)
-                ));
-            }
-
-            if (cfg.carryVisual != null && cfg.carryVisual.enabled) el.Add(GenerateWeaponCarryVisualXml(cfg.carryVisual));
-
-            if (cfg.offset != UnityEngine.Vector3.zero)
-                el.Add(new XElement("offset", $"({cfg.offset.x:F3}, {cfg.offset.y:F3}, {cfg.offset.z:F3})"));
-            if (cfg.offsetSouth != UnityEngine.Vector3.zero)
-                el.Add(new XElement("offsetSouth", $"({cfg.offsetSouth.x:F3}, {cfg.offsetSouth.y:F3}, {cfg.offsetSouth.z:F3})"));
-            if (cfg.offsetNorth != UnityEngine.Vector3.zero)
-                el.Add(new XElement("offsetNorth", $"({cfg.offsetNorth.x:F3}, {cfg.offsetNorth.y:F3}, {cfg.offsetNorth.z:F3})"));
-            if (cfg.offsetEast != UnityEngine.Vector3.zero)
-                el.Add(new XElement("offsetEast", $"({cfg.offsetEast.x:F3}, {cfg.offsetEast.y:F3}, {cfg.offsetEast.z:F3})"));
+            // carryVisual 仅在 enabled 时输出（SerializePublicFields 无法表达此条件）
+            if (cfg.carryVisual != null && cfg.carryVisual.enabled)
+                el.Add(GenerateWeaponCarryVisualXml(cfg.carryVisual));
 
             return el;
         }
 
         private static XElement GenerateWeaponCarryVisualXml(CharacterStudio.Core.WeaponCarryVisualConfig cfg)
         {
-            var el = new XElement("carryVisual",
-                new XElement("enabled", cfg.enabled.ToString().ToLower()),
-                new XElement("anchorTag", cfg.anchorTag ?? "Body"),
-                new XElement("scale", $"({cfg.scale.x:F3}, {cfg.scale.y:F3})"),
-                new XElement("drawOrder", cfg.drawOrder.ToString("F3", System.Globalization.CultureInfo.InvariantCulture))
-            );
-
-            if (!string.IsNullOrEmpty(cfg.texUndrafted)) el.Add(new XElement("texUndrafted", cfg.texUndrafted));
-            if (!string.IsNullOrEmpty(cfg.texDrafted))   el.Add(new XElement("texDrafted", cfg.texDrafted));
-            if (!string.IsNullOrEmpty(cfg.texCasting))   el.Add(new XElement("texCasting", cfg.texCasting));
-            if (cfg.offset != UnityEngine.Vector3.zero)      el.Add(new XElement("offset", $"({cfg.offset.x:F3}, {cfg.offset.y:F3}, {cfg.offset.z:F3})"));
-            if (cfg.offsetNorth != UnityEngine.Vector3.zero) el.Add(new XElement("offsetNorth", $"({cfg.offsetNorth.x:F3}, {cfg.offsetNorth.y:F3}, {cfg.offsetNorth.z:F3})"));
-            if (cfg.offsetEast != UnityEngine.Vector3.zero)  el.Add(new XElement("offsetEast", $"({cfg.offsetEast.x:F3}, {cfg.offsetEast.y:F3}, {cfg.offsetEast.z:F3})"));
-
-            return el;
+            return new XElement("carryVisual", AbilityXmlSerialization.SerializePublicFields(cfg));
         }
     }
 }

@@ -25,8 +25,8 @@ namespace CharacterStudio.UI
 
         public Dialog_Glossary()
         {
-            this.doCloseX = true;
-            this.doCloseButton = true;
+            this.doCloseX = false;
+            this.doCloseButton = false;
             this.draggable = true;
             this.resizeable = true;
             this.absorbInputAroundWindow = false;
@@ -96,7 +96,10 @@ namespace CharacterStudio.UI
             float y = 40;
 
             // 搜索栏
-            string newSearch = Widgets.TextEntryLabeled(new Rect(0, y, inRect.width, 24), "CS_Studio_Browser_Search".Translate(), searchText);
+            float searchLabelWidth = Text.CalcSize("CS_Studio_Browser_Search".Translate()).x + 4f;
+            Rect searchRect = new Rect(0, y, inRect.width, 24);
+            Widgets.Label(new Rect(searchRect.x, searchRect.y, searchLabelWidth, searchRect.height), "CS_Studio_Browser_Search".Translate());
+            string newSearch = Widgets.TextField(new Rect(searchRect.x + searchLabelWidth, searchRect.y, searchRect.width - searchLabelWidth, searchRect.height), searchText);
             if (newSearch != searchText)
             {
                 searchText = newSearch;

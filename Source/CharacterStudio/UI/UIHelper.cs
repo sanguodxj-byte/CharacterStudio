@@ -408,22 +408,24 @@ namespace CharacterStudio.UI
         /// </summary>
         public static Rect DrawDialogFrame(Rect inRect, Window window)
         {
-            // 遮盖原版右上角关闭按钮区域（原版 X 在 inRect 右上角外侧约 -4px 处）
-            float coverSize = 36f;
-            Rect coverRect = new Rect(inRect.width - coverSize + 2f, -6f, coverSize, coverSize);
-            Widgets.DrawBoxSolid(coverRect, new Color(0.16f, 0.16f, 0.16f, 1f));
-            // 重绘边框
-            GUI.color = BorderColor;
-            Widgets.DrawBox(coverRect, 1);
+            // 右上角关闭按钮 — 放在窗口标题栏区域（y < 0），确保不被内容覆盖
+            float closeBtnSize = 20f;
+            float closeMargin = 8f;
+            float closeY = -closeBtnSize - 2f;
+            Rect closeBtnRect = new Rect(inRect.width - closeBtnSize - closeMargin, closeY, closeBtnSize, closeBtnSize);
+            bool closeHover = Mouse.IsOver(closeBtnRect);
+            if (closeHover)
+            {
+                Widgets.DrawBoxSolid(closeBtnRect, new Color(1f, 0.3f, 0.3f, 0.35f));
+            }
+            GUI.color = closeHover ? new Color(1f, 0.5f, 0.5f, 1f) : new Color(0.6f, 0.65f, 0.75f, 0.85f);
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.MiddleCenter;
+            Widgets.Label(closeBtnRect, "✕");
             GUI.color = Color.white;
-
-            // 自定义关闭按钮（居中于遮盖区域）
-            float closeBtnSize = 22f;
-            Rect closeBtnRect = new Rect(
-                coverRect.x + (coverRect.width - closeBtnSize) / 2f,
-                coverRect.y + (coverRect.height - closeBtnSize) / 2f,
-                closeBtnSize, closeBtnSize);
-            if (DrawToolbarButton(closeBtnRect, "✕"))
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = GameFont.Small;
+            if (Widgets.ButtonInvisible(closeBtnRect))
             {
                 window.Close();
             }
@@ -693,7 +695,9 @@ namespace CharacterStudio.UI
 
             Widgets.Label(new Rect(rect.x, rect.y, actualLabelWidth, 24), label);
 
-            float fieldWidth = rect.width - actualLabelWidth - selectButtonWidth - (showClear ? clearButtonWidth : 0f) - (showClear ? spacing * 2f : spacing);
+            float maxContentWidth = 280f;
+            float availableContent = Mathf.Min(maxContentWidth, rect.width - actualLabelWidth);
+            float fieldWidth = availableContent - selectButtonWidth - (showClear ? clearButtonWidth : 0f) - (showClear ? spacing * 2f : spacing);
             fieldWidth = Mathf.Max(minFieldWidth, fieldWidth);
             Rect fieldRect = new Rect(rect.x + actualLabelWidth, rect.y, fieldWidth, 24f);
             Widgets.DrawBoxSolid(fieldRect, PanelFillSoftColor);
@@ -990,7 +994,8 @@ namespace CharacterStudio.UI
                 actualLabelWidth = Mathf.Max(30f, availableLabelWidth);
             }
             
-            Rect toggleRect = new Rect(rect.x + actualLabelWidth, rect.y, rect.width - actualLabelWidth, 24f);
+            float maxToggleWidth = 80f;
+            Rect toggleRect = new Rect(rect.x + actualLabelWidth, rect.y, Mathf.Min(maxToggleWidth, rect.width - actualLabelWidth), 24f);
 
             Widgets.Label(new Rect(rect.x, rect.y, actualLabelWidth, 24), label);
             Widgets.DrawBoxSolid(toggleRect, value ? ActiveTabColor : PanelFillSoftColor);
@@ -1124,6 +1129,287 @@ namespace CharacterStudio.UI
 
             rowY += RowHeight;
             return changed;
+        }
+
+        // ─────────────────────────────────────────────
+        // 物品编辑器专用辅助方法
+        // ─────────────────────────────────────────────
+
+        /// <summary>
+        /// 装备类型 → 显示图标
+        /// </summary>
+        public static string GetEquipmentTypeIcon(CharacterStudio.Core.EquipmentType type)
+        {
+            return type switch
+            {
+                CharacterStudio.Core.EquipmentType.Apparel => "🧥",
+                CharacterStudio.Core.EquipmentType.WeaponMelee => "⚔",
+                CharacterStudio.Core.EquipmentType.WeaponRanged => "🏹",
+                CharacterStudio.Core.EquipmentType.Item => "📦",
+                _ => "◆"
+            };
+        }
+
+        /// <summary>
+        /// 装备类型 → 徽章颜色
+        /// </summary>
+        public static Color GetEquipmentTypeColor(CharacterStudio.Core.EquipmentType type)
+        {
+            return type switch
+            {
+                CharacterStudio.Core.EquipmentType.Apparel => new Color(0.3f, 0.65f, 1f),    // 蓝
+                CharacterStudio.Core.EquipmentType.WeaponMelee => new Color(1f, 0.45f, 0.35f), // 红
+                CharacterStudio.Core.EquipmentType.WeaponRanged => new Color(0.95f, 0.7f, 0.25f), // 金
+                CharacterStudio.Core.EquipmentType.Item => new Color(0.55f, 0.82f, 0.45f),     // 绿
+                _ => Color.gray
+            };
+        }
+
+        /// <summary>
+        /// 在工具栏中绘制垂直分隔线
+        /// </summary>
+        public static void DrawToolbarSeparator(float x, float y, float height)
+        {
+            Widgets.DrawBoxSolid(new Rect(x, y + 4f, 1f, height - 8f), new Color(1f, 1f, 1f, 0.10f));
+        }
+
+        /// <summary>
+        /// 绘制带颜色徽章的物品类型标签（用于列表行和属性面板头部）
+        /// </summary>
+        public static void DrawEquipmentTypeBadge(Rect rect, CharacterStudio.Core.EquipmentType type, bool enabled)
+        {
+            Color badgeColor = GetEquipmentTypeColor(type);
+            if (!enabled)
+            {
+                badgeColor = Color.gray;
+            }
+
+            string icon = GetEquipmentTypeIcon(type);
+            string typeName = type.ToString();
+
+            // 徽章背景
+            Widgets.DrawBoxSolid(rect, new Color(badgeColor.r, badgeColor.g, badgeColor.b, 0.15f));
+            Widgets.DrawBoxSolid(new Rect(rect.x, rect.yMax - 2f, rect.width, 2f), new Color(badgeColor.r, badgeColor.g, badgeColor.b, enabled ? 0.7f : 0.3f));
+            GUI.color = new Color(badgeColor.r, badgeColor.g, badgeColor.b, enabled ? 0.6f : 0.3f);
+            Widgets.DrawBox(rect, 1);
+            GUI.color = Color.white;
+
+            GameFont oldFont = Text.Font;
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.MiddleCenter;
+            GUI.color = enabled ? badgeColor : Color.gray;
+            Widgets.Label(rect, $"{icon} {typeName}");
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = oldFont;
+        }
+
+        /// <summary>
+        /// 绘制属性面板摘要卡片（显示选中物品的名称、类型、启用状态）
+        /// </summary>
+        public static float DrawSummaryCard(Rect rect, string title, string subtitle, Color accentColor, string? badgeIcon = null)
+        {
+            float cardHeight = 58f;
+            Rect cardRect = new Rect(rect.x, rect.y, rect.width, cardHeight);
+
+            // 卡片背景
+            Widgets.DrawBoxSolid(cardRect, new Color(0.12f, 0.15f, 0.22f, 0.95f));
+            // 左侧色带
+            Widgets.DrawBoxSolid(new Rect(cardRect.x, cardRect.y, 4f, cardRect.height), accentColor);
+            // 底部分隔线
+            Widgets.DrawBoxSolid(new Rect(cardRect.x, cardRect.yMax - 2f, cardRect.width, 2f), new Color(accentColor.r, accentColor.g, accentColor.b, 0.4f));
+            GUI.color = BorderColor;
+            Widgets.DrawBox(cardRect, 1);
+            GUI.color = Color.white;
+
+            float contentX = cardRect.x + 12f;
+
+            // 图标（如果提供）
+            if (!string.IsNullOrEmpty(badgeIcon))
+            {
+                GameFont iconFont = Text.Font;
+                Text.Font = GameFont.Medium;
+                Text.Anchor = TextAnchor.MiddleLeft;
+                GUI.color = accentColor;
+                Widgets.Label(new Rect(contentX, cardRect.y + 6f, 30f, 28f), badgeIcon);
+                GUI.color = Color.white;
+                Text.Anchor = TextAnchor.UpperLeft;
+                Text.Font = iconFont;
+                contentX += 30f;
+            }
+
+            // 标题
+            GameFont titleFont = Text.Font;
+            Text.Font = GameFont.Small;
+            Text.Anchor = TextAnchor.MiddleLeft;
+            GUI.color = HeaderColor;
+            float titleWidth = Mathf.Max(100f, cardRect.width - contentX + cardRect.x - 16f);
+            Widgets.Label(new Rect(contentX, cardRect.y + 6f, titleWidth, 22f), title.Truncate(titleWidth));
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = titleFont;
+
+            // 副标题
+            GameFont subFont = Text.Font;
+            Text.Font = GameFont.Tiny;
+            GUI.color = SubtleColor;
+            Widgets.Label(new Rect(contentX, cardRect.y + 30f, titleWidth, 18f), subtitle.Truncate(titleWidth));
+            GUI.color = Color.white;
+            Text.Font = subFont;
+
+            return cardHeight;
+        }
+
+        /// <summary>
+        /// 绘制空列表提示区域（带图标和引导文字）
+        /// </summary>
+        public static void DrawEmptyState(Rect rect, string icon, string message, string hint)
+        {
+            // 半透明背景
+            Widgets.DrawBoxSolid(rect, new Color(PanelFillColor.r, PanelFillColor.g, PanelFillColor.b, 0.5f));
+
+            float centerX = rect.x + rect.width / 2f;
+            float centerY = rect.y + rect.height / 2f - 20f;
+
+            // 大图标
+            GameFont iconFont = Text.Font;
+            Text.Font = GameFont.Medium;
+            Text.Anchor = TextAnchor.MiddleCenter;
+            GUI.color = new Color(1f, 1f, 1f, 0.25f);
+            Widgets.Label(new Rect(centerX - 60f, centerY - 16f, 120f, 32f), icon);
+            GUI.color = Color.white;
+
+            // 提示文字
+            Text.Font = GameFont.Small;
+            GUI.color = SubtleColor;
+            Widgets.Label(new Rect(centerX - 120f, centerY + 22f, 240f, 22f), message);
+            GUI.color = Color.white;
+
+            // 辅助说明
+            Text.Font = GameFont.Tiny;
+            GUI.color = new Color(SubtleColor.r, SubtleColor.g, SubtleColor.b, 0.6f);
+            Widgets.Label(new Rect(centerX - 120f, centerY + 44f, 240f, 18f), hint);
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = iconFont;
+        }
+
+        // ─────────────────────────────────────────────
+        // 紧凑布局辅助
+        // ─────────────────────────────────────────────
+
+        public static void DrawTwoColumnRow(ref float y, float width, Func<float, float, float> drawLeft, Func<float, float, float> drawRight, float gap = 8f)
+        {
+            float colWidth = (width - gap) / 2f;
+            float leftEndY = drawLeft(y, colWidth);
+            float rightEndY = drawRight(y, colWidth);
+            y = Mathf.Max(leftEndY, rightEndY);
+        }
+
+        public static void DrawKeyedListEditor<T>(ref float y, float width, string label, List<T> list, Func<T> createNew, Action<T, float, float> drawEntry, string? tooltip = null)
+        {
+            DrawSectionTitle(ref y, width, label);
+            if (!string.IsNullOrEmpty(tooltip))
+            {
+                DrawInfoBanner(ref y, width, tooltip!);
+            }
+
+            if (list == null || list.Count == 0)
+            {
+                Rect emptyRect = new Rect(0, y, width, 60f);
+                DrawEmptyState(emptyRect, "📄", "CS_Studio_UI_ListEmpty".Translate(), "CS_Studio_UI_ListEmptyHint".Translate());
+                y += 68f;
+            }
+            else
+            {
+                for (int i = 0; i < list.Count; i++)
+                {
+                    int index = i;
+                    Rect rowRect = new Rect(0, y, width, RowHeight);
+                    DrawAlternatingRowBackground(rowRect, index);
+
+                    float entryWidth = width - 30f;
+                    drawEntry(list[index], y, entryWidth);
+
+                    if (DrawDangerButton(new Rect(width - 24f, y + 2f, 22f, 22f), "×", "CS_Studio_Delete".Translate()))
+                    {
+                        list.RemoveAt(index);
+                        i--;
+                        continue;
+                    }
+                    y += RowHeight;
+                }
+                y += 4f;
+            }
+
+            Rect btnRect = new Rect(width - 100f, y, 100f, 26f);
+            if (DrawToolbarButton(btnRect, "CS_Studio_Add".Translate(), true))
+            {
+                list!.Add(createNew());
+            }
+            y += 34f;
+        }
+
+        public static void DrawTagEditor(ref float y, float width, string label, List<string> tags, Action onAddClick, string? tooltip = null)
+        {
+            Rect labelRect = new Rect(0, y, width, 24f);
+            Widgets.Label(labelRect, label);
+            if (!string.IsNullOrEmpty(tooltip))
+            {
+                TooltipHandler.TipRegion(labelRect, tooltip);
+            }
+            y += 26f;
+
+            float currentX = 0f;
+            float tagHeight = 22f;
+            float tagGap = 4f;
+
+            if (tags == null || tags.Count == 0)
+            {
+                GUI.color = SubtleColor;
+                Text.Font = GameFont.Tiny;
+                Widgets.Label(new Rect(0, y, width, 20f), "(" + "CS_Studio_None".Translate() + ")");
+                GUI.color = Color.white;
+                Text.Font = GameFont.Small;
+                y += 24f;
+            }
+            else
+            {
+                foreach (string tag in tags.ToList())
+                {
+                    string localTag = tag;
+                    float tagWidth = Text.CalcSize(localTag).x + 30f;
+                    if (currentX + tagWidth > width)
+                    {
+                        currentX = 0f;
+                        y += tagHeight + tagGap;
+                    }
+
+                    Rect tagRect = new Rect(currentX, y, tagWidth, tagHeight);
+                    Widgets.DrawBoxSolid(tagRect, PanelFillSoftColor);
+                    GUI.color = BorderColor;
+                    Widgets.DrawBox(tagRect, 1);
+                    GUI.color = Color.white;
+
+                    Text.Font = GameFont.Tiny;
+                    Widgets.Label(new Rect(tagRect.x + 6f, tagRect.y, tagRect.width - 22f, tagRect.height), localTag);
+                    
+                    if (DrawDangerButton(new Rect(tagRect.xMax - 18f, tagRect.y + 2f, 16f, 16f), "×"))
+                    {
+                        tags.Remove(localTag);
+                    }
+                    Text.Font = GameFont.Small;
+
+                    currentX += tagWidth + tagGap;
+                }
+                y += tagHeight + 8f;
+            }
+
+            if (DrawToolbarButton(new Rect(0, y, 80f, 22f), "CS_Studio_Add".Translate()))
+            {
+                onAddClick?.Invoke();
+            }
+            y += 30f;
         }
     }
 }

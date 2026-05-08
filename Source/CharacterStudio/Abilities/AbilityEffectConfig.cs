@@ -3,8 +3,6 @@
 // 从 ModularAbilityDef.cs 提取
 // ─────────────────────────────────────────────
 
-using System;
-using CharacterStudio.Core;
 using RimWorld;
 using Verse;
 
@@ -32,9 +30,23 @@ namespace CharacterStudio.Abilities
         public int terraformSpawnCount = 1;
         public bool canHurtSelf = false;
 
+        /// <summary>
+        /// 效果延迟执行的 tick 数。按此值在施法时刻轴上排列执行顺序。
+        /// 0 = 立即执行。
+        /// </summary>
+        public int delayTicks = 0;
+
         public string weatherDefName = string.Empty; // Added for WeatherChange
         public int weatherDurationTicks = 60000; // Added for WeatherChange (default 1 day)
         public int weatherTransitionTicks = 3000; // Added for WeatherChange (default 0.5 hour)
+
+        public string thoughtLabel = string.Empty;
+        public string thoughtDescription = string.Empty;
+        public float thoughtMoodOffset = 5f;
+        public float thoughtDurationDays = 1f;
+        public int thoughtStackLimit = 1;
+        public bool thoughtShowBubble = true;
+        public string thoughtIconPath = string.Empty;
 
         public void ExposeData()
         {
@@ -56,9 +68,17 @@ namespace CharacterStudio.Abilities
             Scribe_Defs.Look(ref terraformTerrainDef, "terraformTerrainDef");
             Scribe_Values.Look(ref terraformSpawnCount, "terraformSpawnCount", 1);
             Scribe_Values.Look(ref canHurtSelf, "canHurtSelf", false);
+            Scribe_Values.Look(ref delayTicks, "delayTicks", 0);
             Scribe_Values.Look(ref weatherDefName, "weatherDefName", string.Empty);
             Scribe_Values.Look(ref weatherDurationTicks, "weatherDurationTicks", 60000);
             Scribe_Values.Look(ref weatherTransitionTicks, "weatherTransitionTicks", 3000);
+            Scribe_Values.Look(ref thoughtLabel, "thoughtLabel", string.Empty);
+            Scribe_Values.Look(ref thoughtDescription, "thoughtDescription", string.Empty);
+            Scribe_Values.Look(ref thoughtMoodOffset, "thoughtMoodOffset", 5f);
+            Scribe_Values.Look(ref thoughtDurationDays, "thoughtDurationDays", 1f);
+            Scribe_Values.Look(ref thoughtStackLimit, "thoughtStackLimit", 1);
+            Scribe_Values.Look(ref thoughtShowBubble, "thoughtShowBubble", true);
+            Scribe_Values.Look(ref thoughtIconPath, "thoughtIconPath", string.Empty);
         }
 
         public AbilityEffectConfig Clone()
@@ -68,21 +88,13 @@ namespace CharacterStudio.Abilities
 
         public void NormalizeForSave()
         {
+            // 公共字段规范化
             duration = AbilityEditorNormalizationUtility.ClampFloat(duration, 0f, 999f);
             chance = AbilityEditorNormalizationUtility.ClampFloat(chance, 0.01f, 1f);
-            summonCount = AbilityEditorNormalizationUtility.ClampInt(summonCount, 1, 99);
-            controlMoveDistance = AbilityEditorNormalizationUtility.ClampInt(controlMoveDistance, 1, 99);
-            terraformSpawnCount = AbilityEditorNormalizationUtility.ClampInt(terraformSpawnCount, 1, 999);
+            delayTicks = AbilityEditorNormalizationUtility.ClampInt(delayTicks, 0, 60000);
 
-            if (summonFactionDef != null)
-            {
-                summonFactionDefName = summonFactionDef.defName;
-            }
-
-            // Added for WeatherChange
-            weatherDefName = AbilityEditorNormalizationUtility.TrimOrEmpty(weatherDefName);
-            weatherDurationTicks = AbilityEditorNormalizationUtility.ClampInt(weatherDurationTicks, 1, 9999999);
-            weatherTransitionTicks = AbilityEditorNormalizationUtility.ClampInt(weatherTransitionTicks, 0, 99999);
+            // 类型特化规范化委托给 Behavior
+            EffectBehaviorRegistry.Get(type).NormalizeForSave(this);
         }
 
         public AbilityValidationResult Validate()
@@ -92,54 +104,11 @@ namespace CharacterStudio.Abilities
                 result.AddWarning("CS_Ability_Validate_EffectNegativeAmount".Translate());
             if (chance <= 0 || chance > 1)
                 result.AddError("CS_Ability_Validate_EffectChanceRange".Translate(chance));
+            if (delayTicks < 0)
+                result.AddWarning("CS_Ability_Validate_EffectDelayNonNegative".Translate());
 
-            switch (type)
-            {
-                case AbilityEffectType.Damage:
-                    if (amount <= 0)
-                        result.AddError("CS_Ability_Validate_DamageAmount".Translate());
-                    break;
-                case AbilityEffectType.Buff:
-                case AbilityEffectType.Debuff:
-                    if (hediffDef == null)
-                        result.AddError("CS_Ability_Validate_HediffRequired".Translate(($"CS_Ability_EffectType_{type}").Translate()));
-                    break;
-                case AbilityEffectType.Summon:
-                    if (summonKind == null)
-                        result.AddError("CS_Ability_Validate_SummonKindRequired".Translate());
-                    if (summonCount <= 0)
-                        result.AddError("CS_Ability_Validate_SummonCount".Translate());
-                    break;
-                case AbilityEffectType.Control:
-                    if (controlMode != ControlEffectMode.Stun && controlMoveDistance <= 0)
-                        result.AddError("CS_Ability_Validate_ControlMoveDistance".Translate());
-                    if (duration < 0f)
-                        result.AddError("CS_Ability_Validate_ControlDuration".Translate());
-                    break;
-                case AbilityEffectType.Terraform:
-                    switch (terraformMode)
-                    {
-                        case TerraformEffectMode.SpawnThing:
-                            if (terraformThingDef == null)
-                                result.AddError("CS_Ability_Validate_TerraformThingRequired".Translate());
-                            if (terraformSpawnCount <= 0)
-                                result.AddError("CS_Ability_Validate_TerraformSpawnCount".Translate());
-                            break;
-                        case TerraformEffectMode.ReplaceTerrain:
-                            if (terraformTerrainDef == null)
-                                result.AddError("CS_Ability_Validate_TerraformTerrainRequired".Translate());
-                            break;
-                    }
-                    break;
-                case AbilityEffectType.WeatherChange: // Added validation for WeatherChange
-                    if (string.IsNullOrWhiteSpace(weatherDefName))
-                        result.AddError("CS_Ability_Validate_WeatherDefNameRequired".Translate());
-                    if (weatherDurationTicks <= 0)
-                        result.AddError("CS_Ability_Validate_WeatherDurationPositive".Translate());
-                    if (weatherTransitionTicks < 0)
-                        result.AddError("CS_Ability_Validate_WeatherTransitionNonNegative".Translate());
-                    break;
-            }
+            // 类型特化校验委托给 Behavior
+            EffectBehaviorRegistry.Get(type).Validate(this, result);
 
             return result;
         }

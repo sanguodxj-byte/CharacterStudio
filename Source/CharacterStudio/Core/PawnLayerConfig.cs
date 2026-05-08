@@ -98,6 +98,7 @@
 
 
 using System;
+using CharacterStudio.Exporter;
 using UnityEngine;
 using Verse;
 
@@ -110,99 +111,98 @@ namespace CharacterStudio.Core
     public class PawnLayerConfig
     {
         /// <summary>图层名称（用于标识）</summary>
-        public string layerName = "";
+        [XmlExportField] public string layerName = "";
 
         /// <summary>纹理路径（相对于模组 Textures 文件夹）</summary>
-        public string texPath = "";
+        [XmlExportField] public string texPath = "";
 
         /// <summary>锚点标签（用于附加到 PawnRenderTree 的哪个节点）</summary>
         /// <remarks>
         /// 常用值: "Head", "Body", "Hair" 等
         /// 对应 PawnRenderNodeTagDef
         /// </remarks>
-        public string anchorTag = "Head";
+        [XmlExportField] public string anchorTag = "Head";
 
         /// <summary>锚点路径（NodePath 精准定位，优先于 anchorTag）</summary>
         /// <remarks>
         /// 格式: "Root/Body/Head:0"
         /// 如果设置了此字段，将优先使用路径匹配而非标签匹配
         /// </remarks>
-        public string anchorPath = "";
+        [XmlExportField(SkipEmptyString = true)] public string anchorPath = "";
 
         /// <summary>相对于锚点的偏移量</summary>
-        public Vector3 offset = Vector3.zero;
+        [XmlExportField] public Vector3 offset = Vector3.zero;
 
         /// <summary>侧面朝向时的额外偏移量 (East/West)</summary>
-        public Vector3 offsetEast = Vector3.zero;
+        [XmlExportField] public Vector3 offsetEast = Vector3.zero;
 
         /// <summary>北向朝向时的额外偏移量 (North)</summary>
-        public Vector3 offsetNorth = Vector3.zero;
+        [XmlExportField] public Vector3 offsetNorth = Vector3.zero;
 
         /// <summary>是否启用独立的西向偏移（否则回退到 East 镜像）</summary>
-        public bool useWestOffset = false;
+        [XmlExportField(BoolToLower = true)] public bool useWestOffset = false;
 
         /// <summary>西向朝向时的额外偏移量 (West)</summary>
-        public Vector3 offsetWest = Vector3.zero;
+        [XmlExportField] public Vector3 offsetWest = Vector3.zero;
 
         /// <summary>绘制顺序（用于确定图层的前后关系）</summary>
-        public float drawOrder = 0f;
+        [XmlExportField] public float drawOrder = 0f;
 
         /// <summary>图层缩放</summary>
-        public Vector2 scale = Vector2.one;
+        [XmlExportField] public Vector2 scale = Vector2.one;
 
         /// <summary>侧向缩放乘数（East/West，1=不覆盖）</summary>
-        public Vector2 scaleEastMultiplier = Vector2.one;
+        [XmlExportField] public Vector2 scaleEastMultiplier = Vector2.one;
 
         /// <summary>北向缩放乘数（North，1=不覆盖）</summary>
-        public Vector2 scaleNorthMultiplier = Vector2.one;
+        [XmlExportField] public Vector2 scaleNorthMultiplier = Vector2.one;
 
         /// <summary>西向缩放乘数（West，1=不覆盖）</summary>
-        public Vector2 scaleWestMultiplier = Vector2.one;
+        [XmlExportField] public Vector2 scaleWestMultiplier = Vector2.one;
 
         /// <summary>旋转角度（度）</summary>
-        public float rotation = 0f;
-        public float rotationEastOffset = 0f;
-        public float rotationNorthOffset = 0f;
-        public float rotationWestOffset = 0f;
+        [XmlExportField] public float rotation = 0f;
+        [XmlExportField(SkipDefault = 0f, SkipDefaultFloat = true)] public float rotationEastOffset = 0f;
+        [XmlExportField(SkipDefault = 0f, SkipDefaultFloat = true)] public float rotationNorthOffset = 0f;
+        [XmlExportField(SkipDefault = 0f, SkipDefaultFloat = true)] public float rotationWestOffset = 0f;
 
         /// <summary>是否根据方向翻转</summary>
-        public bool flipHorizontal = false;
+        [XmlExportField(BoolToLower = true)] public bool flipHorizontal = false;
 
         /// <summary>可选：仅在指定朝向显示（South/East/West/North，留空表示不限制）</summary>
-        public string directionalFacing = string.Empty;
+        [XmlExportField(SkipEmptyString = true)] public string directionalFacing = string.Empty;
 
         /// <summary>仅在特定朝向时显示</summary>
-        public RotDrawMode rotDrawMode = RotDrawMode.Fresh | RotDrawMode.Rotting;
+        [XmlExportField] public RotDrawMode rotDrawMode = RotDrawMode.Fresh | RotDrawMode.Rotting;
 
         /// <summary>自定义 Worker 类型（可选）</summary>
-        public Type? workerClass = null;
+        [XmlExportField(Ignore = true)] public Type? workerClass = null;
 
         /// <summary>图形类类型（如 Graphic_Multi, Graphic_Single）</summary>
-        public Type? graphicClass;
+        [XmlExportField(Ignore = true)] public Type? graphicClass;
 
         /// <summary>
-        /// [废弃] 保留字段，仅供旧版 XML 反序列化兼容使用，运行时不读取。
+        /// 旧版 Shader 类型字段，仅供旧版 XML 反序列化兼容使用，运行时不读取。
         /// 请使用 <see cref="shaderDefName"/> 指定 Shader。
         /// </summary>
-        [Obsolete("Use shaderDefName instead. This field exists only for backward XML compatibility.")]
-        public string? shaderTypeDef = null;
+        [XmlExportField(Ignore = true)] public string? shaderTypeDef = null;
 
         /// <summary>着色器名称（用于 ShaderDatabase.LoadShader 加载，如 "Cutout", "CutoutComplex"）</summary>
-        public string shaderDefName = "Cutout";
+        [XmlExportField(SkipEmptyString = true)] public string shaderDefName = "Cutout";
 
         /// <summary>自定义 Shader 路径（当 shaderDefName 为 "Custom" 时使用）</summary>
         /// <remarks>
         /// 格式示例: "RimWorld/ItemTransparent", "Map/Transparent"
         /// 使用 Shader.Find() 加载
         /// </remarks>
-        public string customShaderPath = "";
+        [XmlExportField(SkipEmptyString = true)] public string customShaderPath = "";
 
         /// <summary>全局透明度（0=完全透明, 1=完全不透明）</summary>
         /// <remarks>
         /// 仅在 Shader 为 Transparent / TransparentPostLight / TransparentZWrite / ItemTransparent 时生效。
         /// Cutout 系列 Shader 使用 Alpha Cutoff，不支持半透明。
         /// </remarks>
-        public float alpha = 1f;
+        [XmlExportField(SkipDefault = 1f, SkipDefaultFloat = true, Format = "F3")] public float alpha = 1f;
 
         /// <summary>是否写入深度缓存（ZWrite）</summary>
         /// <remarks>
@@ -210,20 +210,19 @@ namespace CharacterStudio.Core
         /// 仅在 Shader 为 Transparent / TransparentPostLight 时有意义（Cutout 默认写入深度）。
         /// 等效于 shaderDefName == "TransparentZWrite"，但更加灵活。
         /// </remarks>
-        public bool zWrite = false;
+        [XmlExportField(BoolToLower = true)] public bool zWrite = false;
 
         /// <summary>
         /// 颜色来源。
         /// 默认 PawnHair：尾巴、耳朵、呆毛等附加图层绝大多数情况下应跟随发色，
         /// 用户可在属性面板随时修改。
         /// </summary>
-        public LayerColorSource colorSource = LayerColorSource.PawnHair;
+        [XmlExportField] public LayerColorSource colorSource = LayerColorSource.PawnHair;
 
         /// <summary>
-        /// [废弃] 旧版颜色类型桥接属性，将旧 LayerColorType 枚举映射到 colorSource。
-        /// 保留仅为已存储皮肤的 XML 反序列化兼容，新代码请直接读写 <see cref="colorSource"/>。
+        /// 旧版颜色类型桥接属性，将旧 LayerColorType 枚举映射到 colorSource。
+        /// 保留为已存储皮肤的 XML 反序列化兼容，新代码请直接读写 <see cref="colorSource"/>。
         /// </summary>
-        [Obsolete("Use colorSource instead. This property exists only for backward XML compatibility.")]
         public LayerColorType colorType
         {
             get => (LayerColorType)(int)colorSource;
@@ -231,106 +230,106 @@ namespace CharacterStudio.Core
         }
 
         /// <summary>自定义颜色</summary>
-        public Color customColor = Color.white;
+        [XmlExportField(Ignore = true)] public Color customColor = Color.white;
 
         /// <summary>
         /// 第二颜色来源 (Mask)。
         /// 默认 PawnHair：与主颜色来源保持一致，通常用于 Mask 通道着色。
         /// </summary>
-        public LayerColorSource colorTwoSource = LayerColorSource.PawnHair;
+        [XmlExportField] public LayerColorSource colorTwoSource = LayerColorSource.PawnHair;
 
         /// <summary>自定义颜色2（用于 Mask 通道等）</summary>
-        public Color customColorTwo = Color.white;
+        [XmlExportField(Ignore = true)] public Color customColorTwo = Color.white;
 
         /// <summary>Mask 纹理路径</summary>
-        public string maskTexPath = "";
+        [XmlExportField(SkipEmptyString = true)] public string maskTexPath = "";
 
         /// <summary>可选：武器状态视觉配置（供动态武器携带层使用）</summary>
-        public WeaponCarryVisualConfig? weaponCarryVisual;
+        [XmlExportField(Ignore = true)] public WeaponCarryVisualConfig? weaponCarryVisual;
 
         /// <summary>是否可见</summary>
-        public bool visible = true;
+        [XmlExportField(BoolToLower = true)] public bool visible = true;
 
         /// <summary>图层在统一表情系统中的角色</summary>
-        public LayerRole role = LayerRole.Decoration;
+        [XmlExportField] public LayerRole role = LayerRole.Decoration;
 
         /// <summary>图层纹理变体解析逻辑</summary>
-        public LayerVariantLogic variantLogic = LayerVariantLogic.None;
+        [XmlExportField] public LayerVariantLogic variantLogic = LayerVariantLogic.None;
 
         /// <summary>
         /// 变体解析基础名称。为空时回退到 <see cref="texPath"/>。
         /// 可用于让多个状态图层共享同一基础命名空间。
         /// </summary>
-        public string variantBaseName = "";
+        [XmlExportField(SkipEmptyString = true)] public string variantBaseName = "";
 
         /// <summary>是否启用朝向后缀解析（例如 _east / _north）</summary>
-        public bool useDirectionalSuffix = true;
+        [XmlExportField(BoolToLower = true)] public bool useDirectionalSuffix = true;
 
         /// <summary>是否启用高层表情后缀解析（例如 _Happy / _Angry）</summary>
-        public bool useExpressionSuffix = false;
+        [XmlExportField(BoolToLower = true)] public bool useExpressionSuffix = false;
 
         /// <summary>是否启用眼睛方向后缀解析（例如 _Left / _Right）</summary>
-        public bool useEyeDirectionSuffix = false;
+        [XmlExportField(BoolToLower = true)] public bool useEyeDirectionSuffix = false;
 
         /// <summary>是否启用 Blink 后缀解析（例如 _Blink）</summary>
-        public bool useBlinkSuffix = false;
+        [XmlExportField(BoolToLower = true)] public bool useBlinkSuffix = false;
 
         /// <summary>是否启用帧序列后缀解析（例如 _f0 / _f1）</summary>
-        public bool useFrameSequence = false;
+        [XmlExportField(BoolToLower = true)] public bool useFrameSequence = false;
 
         /// <summary>当找不到任何可用变体时是否隐藏图层，而不是回退到基础图</summary>
-        public bool hideWhenMissingVariant = false;
+        [XmlExportField(BoolToLower = true)] public bool hideWhenMissingVariant = false;
 
         /// <summary>
          /// 指定可见的高层表情名称列表；为空表示不限制。
         /// 使用 <see cref="ExpressionType"/> 的名称进行匹配。
         /// </summary>
-        public string[] visibleExpressions = Array.Empty<string>();
+        [XmlExportField(Ignore = true)] public string[] visibleExpressions = Array.Empty<string>();
 
         /// <summary>
         /// 指定隐藏的高层表情名称列表；为空表示不限制。
         /// 使用 <see cref="ExpressionType"/> 的名称进行匹配。
         /// </summary>
-        public string[] hiddenExpressions = Array.Empty<string>();
+        [XmlExportField(Ignore = true)] public string[] hiddenExpressions = Array.Empty<string>();
 
         /// <summary>动画类型</summary>
-        public LayerAnimationType animationType = LayerAnimationType.None;
+        [XmlExportField] public LayerAnimationType animationType = LayerAnimationType.None;
 
         /// <summary>动画频率（抽动间隔或摆动速度）</summary>
-        public float animFrequency = 1f;
+        [XmlExportField(Ignore = true)] public float animFrequency = 1f;
 
         /// <summary>动画幅度（角度）</summary>
-        public float animAmplitude = 15f;
+        [XmlExportField(Ignore = true)] public float animAmplitude = 15f;
 
         /// <summary>动画速度（动作快慢）</summary>
-        public float animSpeed = 1f;
+        [XmlExportField(Ignore = true)] public float animSpeed = 1f;
 
         /// <summary>动画是否也影响位移（适用于尾巴根部摆动）</summary>
-        public bool animAffectsOffset = false;
+        [XmlExportField(Ignore = true)] public bool animAffectsOffset = false;
 
         /// <summary>位移动画幅度</summary>
-        public float animOffsetAmplitude = 0.02f;
+        [XmlExportField(Ignore = true)] public float animOffsetAmplitude = 0.02f;
 
         /// <summary>动画相位偏移（0-1，用于错开多个图层）</summary>
-        public float animPhaseOffset = 0f;
+        [XmlExportField(Ignore = true)] public float animPhaseOffset = 0f;
 
         /// <summary>Brownian 漫游半径（相对角色中心）</summary>
-        public float brownianRadius = 0.18f;
+        [XmlExportField(Ignore = true)] public float brownianRadius = 0.18f;
 
         /// <summary>Brownian 随机扰动力度</summary>
-        public float brownianJitter = 0.012f;
+        [XmlExportField(Ignore = true)] public float brownianJitter = 0.012f;
 
         /// <summary>Brownian 速度阻尼（越大越稳）</summary>
-        public float brownianDamping = 0.92f;
+        [XmlExportField(Ignore = true)] public float brownianDamping = 0.92f;
 
         /// <summary>战斗状态下收拢到角色附近的半径</summary>
-        public float brownianCombatRadius = 0.06f;
+        [XmlExportField(Ignore = true)] public float brownianCombatRadius = 0.06f;
 
         /// <summary>是否启用通行约束，避免漂移到不可通行格</summary>
-        public bool brownianRespectWalkability = false;
+        [XmlExportField(Ignore = true)] public bool brownianRespectWalkability = false;
 
         /// <summary>是否限制在当前房间内游走</summary>
-        public bool brownianStayInRoom = false;
+        [XmlExportField(Ignore = true)] public bool brownianStayInRoom = false;
 
         /// <summary>
         /// 旋转枢轴点本地偏移（相对于图层锚点，单位与 offset 相同）。
@@ -338,36 +337,36 @@ namespace CharacterStudio.Core
         /// (anchorWorldPos + animPivotOffset) 这一点持续旋转。
         /// X/Z 分量对应世界平面内的水平/前后偏移。
         /// </summary>
-        public Vector2 animPivotOffset = Vector2.zero;
+        [XmlExportField(Ignore = true)] public Vector2 animPivotOffset = Vector2.zero;
 
         // 技能驱动的装备局部闭环动画
-        public bool useTriggeredEquipmentAnimation = false;
-        public string triggerAbilityDefName = string.Empty;
-        public string triggeredAnimationGroupKey = string.Empty;
-        public EquipmentTriggeredAnimationRole triggeredAnimationRole = EquipmentTriggeredAnimationRole.MovablePart;
-        public float triggeredDeployAngle = 45f;
-        public float triggeredReturnAngle = 0f;
-        public int triggeredDeployTicks = 12;
-        public int triggeredHoldTicks = 24;
-        public int triggeredReturnTicks = 12;
-        public Vector2 triggeredPivotOffset = Vector2.zero;
-        public Vector3 triggeredDeployOffset = Vector3.zero;
-        public bool triggeredUseVfxVisibility = false;
-        public string triggeredIdleTexPath = string.Empty;
-        public string triggeredDeployTexPath = string.Empty;
-        public string triggeredHoldTexPath = string.Empty;
-        public string triggeredReturnTexPath = string.Empty;
-        public string triggeredIdleMaskTexPath = string.Empty;
-        public string triggeredDeployMaskTexPath = string.Empty;
-        public string triggeredHoldMaskTexPath = string.Empty;
-        public string triggeredReturnMaskTexPath = string.Empty;
-        public bool triggeredVisibleDuringDeploy = true;
-        public bool triggeredVisibleDuringHold = true;
-        public bool triggeredVisibleDuringReturn = true;
-        public bool triggeredVisibleOutsideCycle = true;
-        public EquipmentTriggeredAnimationOverride? triggeredAnimationSouth;
-        public EquipmentTriggeredAnimationOverride? triggeredAnimationEastWest;
-        public EquipmentTriggeredAnimationOverride? triggeredAnimationNorth;
+        [XmlExportField(BoolToLower = true)] public bool useTriggeredEquipmentAnimation = false;
+        [XmlExportField(Ignore = true)] public string triggerAbilityDefName = string.Empty;
+        [XmlExportField(Ignore = true)] public string triggeredAnimationGroupKey = string.Empty;
+        [XmlExportField(Ignore = true)] public EquipmentTriggeredAnimationRole triggeredAnimationRole = EquipmentTriggeredAnimationRole.MovablePart;
+        [XmlExportField(Ignore = true)] public float triggeredDeployAngle = 45f;
+        [XmlExportField(Ignore = true)] public float triggeredReturnAngle = 0f;
+        [XmlExportField(Ignore = true)] public int triggeredDeployTicks = 12;
+        [XmlExportField(Ignore = true)] public int triggeredHoldTicks = 24;
+        [XmlExportField(Ignore = true)] public int triggeredReturnTicks = 12;
+        [XmlExportField(Ignore = true)] public Vector2 triggeredPivotOffset = Vector2.zero;
+        [XmlExportField(Ignore = true)] public Vector3 triggeredDeployOffset = Vector3.zero;
+        [XmlExportField(Ignore = true)] public bool triggeredUseVfxVisibility = false;
+        [XmlExportField(Ignore = true)] public string triggeredIdleTexPath = string.Empty;
+        [XmlExportField(Ignore = true)] public string triggeredDeployTexPath = string.Empty;
+        [XmlExportField(Ignore = true)] public string triggeredHoldTexPath = string.Empty;
+        [XmlExportField(Ignore = true)] public string triggeredReturnTexPath = string.Empty;
+        [XmlExportField(Ignore = true)] public string triggeredIdleMaskTexPath = string.Empty;
+        [XmlExportField(Ignore = true)] public string triggeredDeployMaskTexPath = string.Empty;
+        [XmlExportField(Ignore = true)] public string triggeredHoldMaskTexPath = string.Empty;
+        [XmlExportField(Ignore = true)] public string triggeredReturnMaskTexPath = string.Empty;
+        [XmlExportField(Ignore = true)] public bool triggeredVisibleDuringDeploy = true;
+        [XmlExportField(Ignore = true)] public bool triggeredVisibleDuringHold = true;
+        [XmlExportField(Ignore = true)] public bool triggeredVisibleDuringReturn = true;
+        [XmlExportField(Ignore = true)] public bool triggeredVisibleOutsideCycle = true;
+        [XmlExportField(Ignore = true)] public EquipmentTriggeredAnimationOverride? triggeredAnimationSouth;
+        [XmlExportField(Ignore = true)] public EquipmentTriggeredAnimationOverride? triggeredAnimationEastWest;
+        [XmlExportField(Ignore = true)] public EquipmentTriggeredAnimationOverride? triggeredAnimationNorth;
 
         /// <summary>
         /// 复制当前配置
@@ -399,9 +398,7 @@ namespace CharacterStudio.Core
                 rotDrawMode = this.rotDrawMode,
                 workerClass = this.workerClass,
                 graphicClass = this.graphicClass,
-#pragma warning disable CS0618
                 shaderTypeDef = this.shaderTypeDef,
-#pragma warning restore CS0618
                 shaderDefName = this.shaderDefName,
                 customShaderPath = this.customShaderPath,
                 alpha = this.alpha,
@@ -540,9 +537,8 @@ namespace CharacterStudio.Core
     }
 
     /// <summary>
-    /// [Obsolete] 图层颜色类型 (旧版兼容)
+    /// 图层颜色类型（旧版兼容枚举，与 LayerColorSource 值一一对应）
     /// </summary>
-    [Obsolete("Use LayerColorSource instead")]
     public enum LayerColorType
     {
         Custom,

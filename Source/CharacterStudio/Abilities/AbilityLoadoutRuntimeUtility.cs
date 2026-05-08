@@ -15,9 +15,7 @@ namespace CharacterStudio.Abilities
         public string abilityDefName = string.Empty;
         public bool isCombo;
         public bool isOverride;
-        public bool isSecondStage;
         public int qModeIndex = -1;
-        public int rStackCount = 0;
         public int charges = 1;
         public string runtimeTag = string.Empty;
         public string runtimeSummary = string.Empty;
@@ -30,7 +28,6 @@ namespace CharacterStudio.Abilities
             Q,
             W,
             E,
-            R,
             T,
             A,
             S,
@@ -309,7 +306,7 @@ namespace CharacterStudio.Abilities
             }
 
             int tick = Find.TickManager?.TicksGame ?? 0;
-            foreach (VisibleAbilitySlot slot in new[] { VisibleAbilitySlot.Q, VisibleAbilitySlot.W, VisibleAbilitySlot.E, VisibleAbilitySlot.R, VisibleAbilitySlot.T, VisibleAbilitySlot.A, VisibleAbilitySlot.S, VisibleAbilitySlot.D, VisibleAbilitySlot.F, VisibleAbilitySlot.Z, VisibleAbilitySlot.X, VisibleAbilitySlot.C, VisibleAbilitySlot.V })
+            foreach (VisibleAbilitySlot slot in new[] { VisibleAbilitySlot.Q, VisibleAbilitySlot.W, VisibleAbilitySlot.E, VisibleAbilitySlot.T, VisibleAbilitySlot.A, VisibleAbilitySlot.S, VisibleAbilitySlot.D, VisibleAbilitySlot.F, VisibleAbilitySlot.Z, VisibleAbilitySlot.X, VisibleAbilitySlot.C, VisibleAbilitySlot.V })
             {
                 string defName = ResolveVisibleAbilityDefName(abilityComp, loadout, slot, tick);
                 if (string.IsNullOrWhiteSpace(defName))
@@ -363,18 +360,14 @@ namespace CharacterStudio.Abilities
                 && !string.IsNullOrWhiteSpace(comp.SlotOverrideWindowAbilityDefName)
                 && string.Equals(comp.SlotOverrideWindowAbilityDefName, defName, StringComparison.OrdinalIgnoreCase);
 
-            bool isSecondStage = slot == VisibleAbilitySlot.R && comp.RSecondStageReady;
-
             return new VisibleAbilitySlotEntry
             {
                 slotId = slot.ToString(),
-                slotBadge = BuildSlotBadge(comp, slot, isCombo, isSecondStage),
+                slotBadge = BuildSlotBadge(comp, slot, isCombo),
                 abilityDefName = defName,
                 isCombo = isCombo,
                 isOverride = isOverride,
-                isSecondStage = isSecondStage,
                 qModeIndex = -1,
-                rStackCount = slot == VisibleAbilitySlot.R ? Math.Max(0, comp.RStackCount) : 0,
                 charges = Math.Max(1, ResolveAbilityByDefName(loadout, defName)?.charges ?? 1),
                 runtimeTag = BuildRuntimeTag(ResolveAbilityByDefName(loadout, defName)),
                 runtimeSummary = BuildRuntimeSummary(ResolveAbilityByDefName(loadout, defName))
@@ -390,7 +383,7 @@ namespace CharacterStudio.Abilities
 
             if (ability.runtimeComponents.Any(c => c != null && c.enabled && (c.type == AbilityRuntimeComponentType.SmartJump || c.type == AbilityRuntimeComponentType.EShortJump || c.type == AbilityRuntimeComponentType.Dash))) return "跃";
             if (ability.runtimeComponents.Any(c => c != null && c.enabled && c.type == AbilityRuntimeComponentType.ShieldAbsorb)) return "盾";
-            if (ability.runtimeComponents.Any(c => c != null && c.enabled && c.type == AbilityRuntimeComponentType.RStackDetonation)) return "爆";
+            if (ability.runtimeComponents.Any(c => c != null && c.enabled && c.type == AbilityRuntimeComponentType.ExecuteBonusDamage)) return "爆";
             if (ability.runtimeComponents.Any(c => c != null && c.enabled && c.type == AbilityRuntimeComponentType.ChainBounce)) return "链";
             if (ability.runtimeComponents.Any(c => c != null && c.enabled && c.type == AbilityRuntimeComponentType.PeriodicPulse)) return "脉";
             if (ability.runtimeComponents.Any(c => c != null && c.enabled && c.type == AbilityRuntimeComponentType.SlotOverrideWindow)) return "连";
@@ -414,7 +407,7 @@ namespace CharacterStudio.Abilities
             return string.Join(" / ", parts);
         }
 
-        private static string BuildSlotBadge(CompCharacterAbilityRuntime comp, VisibleAbilitySlot slot, bool isCombo, bool isSecondStage)
+        private static string BuildSlotBadge(CompCharacterAbilityRuntime comp, VisibleAbilitySlot slot, bool isCombo)
         {
             switch (slot)
             {
@@ -443,7 +436,7 @@ namespace CharacterStudio.Abilities
                 case VisibleAbilitySlot.V:
                     return "V";
                 default:
-                    return isSecondStage ? "R2" : "R";
+                    return string.Empty;
             }
         }
 
@@ -529,8 +522,8 @@ namespace CharacterStudio.Abilities
                     expireTick = runtimeState.vOverrideExpireTick;
                     break;
                 default:
-                    abilityDefName = runtimeState.rOverrideAbilityDefName;
-                    expireTick = runtimeState.rOverrideExpireTick;
+                    abilityDefName = string.Empty;
+                    expireTick = -1;
                     break;
             }
 

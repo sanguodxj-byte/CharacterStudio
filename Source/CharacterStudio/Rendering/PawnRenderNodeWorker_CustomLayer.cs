@@ -30,6 +30,17 @@ namespace CharacterStudio.Rendering
             _cachedItemTransparent ??= ShaderDatabase.LoadShader("ItemTransparent");
         }
 
+        // ── Thread-safety lock objects for static collections accessed during multi-threaded rendering ──
+        private static readonly object _externalGraphicCacheLock = new object();
+        private static readonly object _textureExistsCacheLock = new object();
+        private static readonly object _graphicTypeProbeLock = new object();
+        private static readonly object _directionalFacingLock = new object();
+        private static readonly object _frameSequenceLock = new object();
+        private static readonly object _zWriteLock = new object();
+        private static readonly object _scaleFallbackLock = new object();
+        private static readonly object _reflectionCacheLock = new object();
+        private static readonly object _customShaderCacheLock = new object();
+
         private static readonly Dictionary<string, Graphic> externalGraphicCache
             = new Dictionary<string, Graphic>(StringComparer.Ordinal);
         // P-PERF: Queue 跟踪插入顺序，确保 FIFO 淘汰可靠性（Dictionary.Keys 顺序不保证）
@@ -83,7 +94,10 @@ namespace CharacterStudio.Rendering
         public static bool IsTextureInExternalGraphicCache(Texture2D texture)
         {
             if (texture == null) return false;
-            return _externalGraphicTextureRefCounts.TryGetValue(texture.GetInstanceID(), out int count) && count > 0;
+            lock (_externalGraphicCacheLock)
+            {
+                return _externalGraphicTextureRefCounts.TryGetValue(texture.GetInstanceID(), out int count) && count > 0;
+            }
         }
 
         // P3: _lastTextureResolveCachedSkinComp 线程本地缓存
@@ -246,10 +260,14 @@ namespace CharacterStudio.Rendering
         {
             // P2: 使用预解析缓存，避免每帧 Trim() 分配和多次字符串比较
             string raw = config.directionalFacing ?? string.Empty;
-            if (!directionalFacingParseCache.TryGetValue(raw, out DirectionalFacingFlags flags))
+            DirectionalFacingFlags flags;
+            lock (_directionalFacingLock)
             {
-                flags = ParseDirectionalFacing(raw);
-                directionalFacingParseCache[raw] = flags;
+                if (!directionalFacingParseCache.TryGetValue(raw, out flags))
+                {
+                    flags = ParseDirectionalFacing(raw);
+                    directionalFacingParseCache[raw] = flags;
+                }
             }
 
             if (flags == DirectionalFacingFlags.Any)

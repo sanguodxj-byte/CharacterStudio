@@ -18,8 +18,7 @@ namespace CharacterStudio.Core
             }
         }
 
-        // ActiveAbilityLoadout is now on CompCharacterAbilityRuntime
-        // This property forwards for backward compatibility
+        // 转发到 CompCharacterAbilityRuntime（向后兼容）
         public CharacterAbilityLoadout? ActiveAbilityLoadout
         {
             get => AbilityComp?.ActiveAbilityLoadout;
@@ -127,26 +126,9 @@ namespace CharacterStudio.Core
 
             Scribe_Deep.Look(ref loadoutForSerialize, "activeAbilityLoadout");
 
-            // 文件日志——绕过 RimWorld 日志系统
-            try
-            {
-                var logPath = System.IO.Path.Combine(
-                    System.IO.Path.GetTempPath(), "CS_Debug.log");
-                var msg = $"[{System.DateTime.Now:HH:mm:ss.fff}] PostExposeData mode={Scribe.mode}";
-                System.IO.File.AppendAllText(logPath, msg + "\n");
-            }
-            catch { }
-
             if (Scribe.mode == LoadSaveMode.LoadingVars && loadoutForSerialize != null)
             {
                 _migratedLoadout = loadoutForSerialize;
-            }
-
-            // 旧存档的 abilityRuntimeState 迁移：读取并丢弃
-            if (Scribe.mode == LoadSaveMode.LoadingVars)
-            {
-                var legacyState = new Abilities.AbilityHotkeyRuntimeState();
-                legacyState.ExposeData();
             }
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
@@ -156,13 +138,6 @@ namespace CharacterStudio.Core
                 if (_migratedLoadout != null)
                 {
                     var abilityComp = Pawn?.GetComp<Abilities.CompCharacterAbilityRuntime>();
-                    try
-                    {
-                        var logPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "CS_Debug.log");
-                        System.IO.File.AppendAllText(logPath,
-                            $"[{System.DateTime.Now:HH:mm:ss.fff}] PostLoadInit migratedLoadout abilities={_migratedLoadout.abilities?.Count ?? -1} abilityComp={abilityComp != null} pawn={Pawn?.LabelShort ?? "null"}\n");
-                    }
-                    catch { }
 
                     if (abilityComp != null)
                     {

@@ -193,9 +193,9 @@ namespace CharacterStudio.UI
                 onChanged?.Invoke();
             }));
 
-            // 获取所有人形种族
+            // 获取所有种族
             var races = DefDatabase<ThingDef>.AllDefs
-                .Where(d => d.race != null && d.race.Humanlike)
+                .Where(d => d.race != null)
                 .OrderBy(d => d.label);
 
             foreach (var race in races)

@@ -27,21 +27,22 @@ namespace CharacterStudio.UI
             Rect titleRect = UIHelper.DrawPanelShell(rect, panelTitle, Margin);
 
             float btnY = titleRect.yMax + 6f;
-            float btnCount = 8f;
-            float btnWidth = (rect.width - Margin * (btnCount + 1f)) / btnCount;
-            float btnHeight = Mathf.Max(ButtonHeight - 2f, 22f);
+            const float cols = 3f;
+            float btnWidth = (rect.width - Margin * (cols + 1f)) / cols;
+            float btnHeight = Mathf.Max(ButtonHeight, 24f);
 
             float startX = rect.x + Margin;
-            UIHelper.DrawIconButton(new Rect(startX + (btnWidth + Margin) * 0f, btnY, btnWidth, btnHeight), "+", "CS_Studio_Equip_Btn_New".Translate(), AddNewEquipment, true);
-            UIHelper.DrawIconButton(new Rect(startX + (btnWidth + Margin) * 1f, btnY, btnWidth, btnHeight), "A", "CS_Studio_Equip_Btn_Abilities".Translate(), OpenAbilityEditor);
-            UIHelper.DrawIconButton(new Rect(startX + (btnWidth + Margin) * 2f, btnY, btnWidth, btnHeight), "✈", "CS_Studio_Equip_AircraftPreset".Translate(), AddAircraftWingAnimationPreset, true);
-            UIHelper.DrawIconButton(new Rect(startX + (btnWidth + Margin) * 3f, btnY, btnWidth, btnHeight), "-", "CS_Studio_Btn_Delete".Translate(), DeleteSelectedEquipment);
-            UIHelper.DrawIconButton(new Rect(startX + (btnWidth + Margin) * 4f, btnY, btnWidth, btnHeight), "C", "CS_Studio_Panel_Duplicate".Translate(), DuplicateSelectedEquipment);
-            UIHelper.DrawIconButton(new Rect(startX + (btnWidth + Margin) * 5f, btnY, btnWidth, btnHeight), "T", "CS_Studio_Equip_Btn_TestSpawn".Translate(), SpawnSelectedEquipmentForTest, true);
-            UIHelper.DrawIconButton(new Rect(startX + (btnWidth + Margin) * 6f, btnY, btnWidth, btnHeight), "↓", "CS_Studio_Equip_ImportXmlTitle".Translate(), OpenEquipmentImportXmlDialog);
-            UIHelper.DrawIconButton(new Rect(startX + (btnWidth + Margin) * 7f, btnY, btnWidth, btnHeight), "↑", "CS_Studio_Equip_Btn_ExportXml".Translate(), ExportSelectedEquipmentToDefaultPath);
+            // 行 0：新建 / 删除 / 复制
+            UIHelper.DrawIconButton(new Rect(startX + (btnWidth + Margin) * 0f, btnY, btnWidth, btnHeight), "CS_Studio_Equip_Btn_New".Translate(), "CS_Studio_Equip_Btn_New".Translate(), AddNewEquipment, true);
+            UIHelper.DrawIconButton(new Rect(startX + (btnWidth + Margin) * 1f, btnY, btnWidth, btnHeight), "CS_Studio_Btn_Delete".Translate(), "CS_Studio_Btn_Delete".Translate(), DeleteSelectedEquipment);
+            UIHelper.DrawIconButton(new Rect(startX + (btnWidth + Margin) * 2f, btnY, btnWidth, btnHeight), "CS_Studio_Panel_Duplicate".Translate(), "CS_Studio_Panel_Duplicate".Translate(), DuplicateSelectedEquipment);
+            // 行 1：测试生成 / 导入 / 导出
+            float row1Y = btnY + btnHeight + 2f;
+            UIHelper.DrawIconButton(new Rect(startX + (btnWidth + Margin) * 0f, row1Y, btnWidth, btnHeight), "CS_Studio_Equip_Btn_TestSpawn".Translate(), "CS_Studio_Equip_Btn_TestSpawn".Translate(), SpawnSelectedEquipmentForTest, true);
+            UIHelper.DrawIconButton(new Rect(startX + (btnWidth + Margin) * 1f, row1Y, btnWidth, btnHeight), "导入", "CS_Studio_Equip_ImportXmlTitle".Translate(), OpenEquipmentImportXmlDialog);
+            UIHelper.DrawIconButton(new Rect(startX + (btnWidth + Margin) * 2f, row1Y, btnWidth, btnHeight), "导出", "CS_Studio_Equip_Btn_ExportXml".Translate(), ExportSelectedEquipmentToDefaultPath);
 
-            float listY = btnY + btnHeight + 8f;
+            float listY = row1Y + btnHeight + 8f;
             float listHeight = rect.height - listY + rect.y - Margin;
             Rect listRect = new Rect(rect.x + Margin, listY, rect.width - Margin * 2, listHeight);
 
@@ -91,7 +92,7 @@ namespace CharacterStudio.UI
             var equipment = WorkingEquipments[index];
             equipment ??= CreateDefaultEquipment(index);
             WorkingEquipments[index] = equipment;
-            equipment?.EnsureDefaults();
+            equipment.EnsureDefaults();
 
             Rect rowRect = new Rect(0f, y, width, 34f);
 
@@ -219,7 +220,7 @@ namespace CharacterStudio.UI
 
         private void SanitizeEquipmentSelection()
         {
-            int count = WorkingEquipments?.Count ?? 0;
+            int count = WorkingEquipments.Count;
             if (count <= 0)
             {
                 selectedEquipmentIndex = -1;
@@ -455,6 +456,11 @@ namespace CharacterStudio.UI
                 existing.graphicData = runtimeDef.graphicData;
                 existing.uiIcon = runtimeDef.uiIcon;
                 existing.thingCategories = runtimeDef.thingCategories;
+                existing.building = runtimeDef.building;
+                existing.size = runtimeDef.size;
+                existing.passability = runtimeDef.passability;
+                existing.pathCost = runtimeDef.pathCost;
+                existing.fillPercent = runtimeDef.fillPercent;
                 CopyVerbs(runtimeDef, existing);
                 return existing;
             }
@@ -474,6 +480,11 @@ namespace CharacterStudio.UI
                 cached.graphicData = runtimeDef.graphicData;
                 cached.uiIcon = runtimeDef.uiIcon;
                 cached.thingCategories = runtimeDef.thingCategories;
+                cached.building = runtimeDef.building;
+                cached.size = runtimeDef.size;
+                cached.passability = runtimeDef.passability;
+                cached.pathCost = runtimeDef.pathCost;
+                cached.fillPercent = runtimeDef.fillPercent;
                 CopyVerbs(runtimeDef, cached);
                 return cached;
             }
@@ -595,6 +606,162 @@ namespace CharacterStudio.UI
                     .Where(def => def != null)
                     .Cast<WeaponClassDef>()
                     .ToList() ?? new List<WeaponClassDef>();
+            }
+            else if (equipment.itemType == CharacterStudio.Core.EquipmentType.Building
+                || equipment.itemType == CharacterStudio.Core.EquipmentType.Turret)
+            {
+                // 建筑/炮塔类型
+                runtimeDef.category = ThingCategory.Building;
+                runtimeDef.thingClass = equipment.itemType == CharacterStudio.Core.EquipmentType.Turret
+                    ? typeof(Building_TurretGun)
+                    : (parentDef?.thingClass ?? typeof(Building));
+                runtimeDef.altitudeLayer = AltitudeLayer.Building;
+
+                if (!string.IsNullOrWhiteSpace(equipment.drawerType))
+                {
+                    if (Enum.TryParse<DrawerType>(equipment.drawerType, out var dt))
+                        runtimeDef.drawerType = dt;
+                    else
+                        runtimeDef.drawerType = DrawerType.MapMeshAndRealTime;
+                }
+                else
+                {
+                    runtimeDef.drawerType = DrawerType.MapMeshAndRealTime;
+                }
+
+                runtimeDef.selectable = true;
+                runtimeDef.rotatable = false;
+
+                // size
+                if (!string.IsNullOrWhiteSpace(equipment.buildingSize))
+                {
+                    string[] sizeParts = equipment.buildingSize.Split(',');
+                    if (sizeParts.Length == 2 && int.TryParse(sizeParts[0].Trim(), out int sx) && int.TryParse(sizeParts[1].Trim(), out int sy))
+                    {
+                        runtimeDef.size = new IntVec2(sx, sy);
+                    }
+                }
+
+                // passability
+                if (!string.IsNullOrWhiteSpace(equipment.passability))
+                {
+                    if (Enum.TryParse<Traversability>(equipment.passability, out var pass))
+                        runtimeDef.passability = pass;
+                }
+
+                // fillPercent
+                if (equipment.fillPercent > 0f)
+                    runtimeDef.fillPercent = equipment.fillPercent;
+
+                // pathCost
+                if (equipment.pathCost > 0)
+                    runtimeDef.pathCost = equipment.pathCost;
+
+                // terrainAffordanceNeeded
+                if (!string.IsNullOrWhiteSpace(equipment.terrainAffordanceNeeded))
+                {
+                    var terrainAfford = DefDatabase<TerrainAffordanceDef>.GetNamedSilentFail(equipment.terrainAffordanceNeeded);
+                    if (terrainAfford != null)
+                    {
+                        var terrainAffordField = typeof(ThingDef).GetField("terrainAffordanceNeeded",
+                            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                        terrainAffordField?.SetValue(runtimeDef, terrainAfford);
+                    }
+                }
+
+                // building properties
+                var buildingProps = new BuildingProperties
+                {
+                    buildingTags = equipment.buildingTags != null ? new List<string>(equipment.buildingTags) : new List<string>(),
+                    isEdifice = true
+                };
+
+                if (equipment.combatPower > 0f)
+                    buildingProps.combatPower = equipment.combatPower;
+
+                if (equipment.roofCollapseDamageMultiplier > 0f)
+                    buildingProps.roofCollapseDamageMultiplier = equipment.roofCollapseDamageMultiplier;
+
+                if (!string.IsNullOrWhiteSpace(equipment.destroySound))
+                {
+                    var soundDef = DefDatabase<SoundDef>.GetNamedSilentFail(equipment.destroySound);
+                    if (soundDef != null)
+                        buildingProps.destroySound = soundDef;
+                }
+
+                // 炮塔专有字段
+                if (equipment.itemType == CharacterStudio.Core.EquipmentType.Turret)
+                {
+                    if (!string.IsNullOrWhiteSpace(equipment.turretGunDef))
+                    {
+                        ThingDef? gunDef = DefDatabase<ThingDef>.GetNamedSilentFail(equipment.turretGunDef);
+                        if (gunDef != null)
+                            buildingProps.turretGunDef = gunDef;
+                    }
+
+                    if (equipment.turretBurstWarmupTime > 0f)
+                        buildingProps.turretBurstWarmupTime = new Verse.FloatRange(equipment.turretBurstWarmupTime, equipment.turretBurstWarmupTime);
+                    if (equipment.turretBurstCooldownTime > 0f)
+                        buildingProps.turretBurstCooldownTime = equipment.turretBurstCooldownTime;
+                    if (equipment.turretInitialCooldownTime > 0f)
+                        buildingProps.turretInitialCooldownTime = equipment.turretInitialCooldownTime;
+
+                    if (equipment.isMechClusterThreat)
+                        runtimeDef.isMechClusterThreat = true;
+                }
+
+                runtimeDef.building = buildingProps;
+
+                // killedLeavings
+                if (equipment.killedLeavings != null && equipment.killedLeavings.Count > 0)
+                {
+                    var leavings = new List<ThingDefCountClass>();
+                    foreach (var entry in equipment.killedLeavings)
+                    {
+                        ThingDef? thingDef = DefDatabase<ThingDef>.GetNamedSilentFail(entry.thingDefName);
+                        if (thingDef != null)
+                            leavings.Add(new ThingDefCountClass(thingDef, entry.count));
+                    }
+                    runtimeDef.killedLeavings = leavings;
+                }
+
+                // damageMultipliers
+                if (equipment.damageMultipliers != null && equipment.damageMultipliers.Count > 0)
+                {
+                    runtimeDef.damageMultipliers = new List<DamageMultiplier>(equipment.damageMultipliers.Count);
+                    foreach (var dm in equipment.damageMultipliers)
+                    {
+                        if (dm == null || string.IsNullOrWhiteSpace(dm.damageDefName)) continue;
+                        DamageDef? damageDef = DefDatabase<DamageDef>.GetNamedSilentFail(dm.damageDefName);
+                        if (damageDef != null)
+                            runtimeDef.damageMultipliers.Add(new DamageMultiplier { damageDef = damageDef, multiplier = dm.multiplier });
+                    }
+                }
+
+                // graphicData drawSize from buildingSize
+                if (!string.IsNullOrWhiteSpace(equipment.graphicDrawSize))
+                {
+                    string[] drawParts = equipment.graphicDrawSize.Split(',');
+                    if (drawParts.Length == 2 && float.TryParse(drawParts[0].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float dx)
+                        && float.TryParse(drawParts[1].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float dy))
+                    {
+                        runtimeDef.graphicData.drawSize = new Vector2(dx, dy);
+                    }
+                }
+                else if (!string.IsNullOrWhiteSpace(equipment.buildingSize))
+                {
+                    string[] sizeParts = equipment.buildingSize.Split(',');
+                    if (sizeParts.Length == 2 && float.TryParse(sizeParts[0].Trim(), out float bx) && float.TryParse(sizeParts[1].Trim(), out float by))
+                    {
+                        runtimeDef.graphicData.drawSize = new Vector2(bx, by);
+                    }
+                }
+
+                // comps from parentDef (for buildings)
+                if (parentDef?.comps != null)
+                {
+                    runtimeDef.comps = new List<CompProperties>(parentDef.comps);
+                }
             }
 
             foreach (CharacterEquipmentStatEntry entry in equipment.statBases ?? new List<CharacterEquipmentStatEntry>())
@@ -1237,13 +1404,15 @@ namespace CharacterStudio.UI
                     renderData = renderData
                 };
 
-                // 提取 statBases
+                // 提取 statBases（跳过 MarketValue，已有独立字段）
                 XmlNode? statBasesNode = FindEquipmentChildNode(node, "statBases");
                 if (statBasesNode != null)
                 {
                     foreach (XmlNode child in statBasesNode.ChildNodes)
                     {
                         if (child.NodeType != XmlNodeType.Element || string.IsNullOrWhiteSpace(child.Name))
+                            continue;
+                        if (string.Equals(child.Name, "MarketValue", StringComparison.OrdinalIgnoreCase))
                             continue;
                         if (float.TryParse(child.InnerText.Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float statVal))
                         {
@@ -1341,11 +1510,197 @@ namespace CharacterStudio.UI
                     }
                 }
 
+                // 根据 ThingDef 内容自动检测 itemType
+                equipment.itemType = DetectEquipmentTypeFromNode(node, apparelNode);
+
+                // ── ThingDef 完整字段导入 ──
+
+                // thingClass
+                equipment.thingClass = FindEquipmentChildNode(node, "thingClass")?.InnerText?.Trim() ?? string.Empty;
+
+                // techLevel
+                equipment.techLevel = FindEquipmentChildNode(node, "techLevel")?.InnerText?.Trim() ?? string.Empty;
+
+                // 顶层布尔/数值字段
+                string? useHitPointsText = FindEquipmentChildNode(node, "useHitPoints")?.InnerText?.Trim();
+                if (!string.IsNullOrWhiteSpace(useHitPointsText))
+                    equipment.useHitPoints = !string.Equals(useHitPointsText, "false", StringComparison.OrdinalIgnoreCase);
+                equipment.altitudeLayer = FindEquipmentChildNode(node, "altitudeLayer")?.InnerText?.Trim() ?? string.Empty;
+                equipment.tickerType = FindEquipmentChildNode(node, "tickerType")?.InnerText?.Trim() ?? string.Empty;
+                string? pathCostText = FindEquipmentChildNode(node, "pathCost")?.InnerText?.Trim();
+                if (int.TryParse(pathCostText, out int pc)) equipment.pathCost = pc;
+                string? smeltableText = FindEquipmentChildNode(node, "smeltable")?.InnerText?.Trim();
+                if (!string.IsNullOrWhiteSpace(smeltableText)) equipment.smeltable = string.Equals(smeltableText, "true", StringComparison.OrdinalIgnoreCase);
+                string? rotatableText = FindEquipmentChildNode(node, "rotatable")?.InnerText?.Trim();
+                if (!string.IsNullOrWhiteSpace(rotatableText)) equipment.rotatable = string.Equals(rotatableText, "true", StringComparison.OrdinalIgnoreCase);
+                string? selectableText = FindEquipmentChildNode(node, "selectable")?.InnerText?.Trim();
+                if (!string.IsNullOrWhiteSpace(selectableText)) equipment.selectable = !string.Equals(selectableText, "false", StringComparison.OrdinalIgnoreCase);
+                string? drawGUIOverlayText = FindEquipmentChildNode(node, "drawGUIOverlay")?.InnerText?.Trim();
+                if (!string.IsNullOrWhiteSpace(drawGUIOverlayText)) equipment.drawGUIOverlay = !string.Equals(drawGUIOverlayText, "false", StringComparison.OrdinalIgnoreCase);
+                string? alwaysHaulableText = FindEquipmentChildNode(node, "alwaysHaulable")?.InnerText?.Trim();
+                if (!string.IsNullOrWhiteSpace(alwaysHaulableText)) equipment.alwaysHaulable = !string.Equals(alwaysHaulableText, "false", StringComparison.OrdinalIgnoreCase);
+
+                // graphicData 子字段
+                if (graphicDataNode != null)
+                {
+                    equipment.graphicDrawSize = FindEquipmentChildNode(graphicDataNode, "drawSize")?.InnerText?.Trim() ?? string.Empty;
+                    string? rotateAngleText = FindEquipmentChildNode(graphicDataNode, "onGroundRandomRotateAngle")?.InnerText?.Trim();
+                    if (float.TryParse(rotateAngleText, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float ra))
+                        equipment.graphicRandomRotateAngle = ra;
+                }
+
+                // stuffCategories
+                XmlNode? stuffCategoriesNode = FindEquipmentChildNode(node, "stuffCategories");
+                if (stuffCategoriesNode != null)
+                {
+                    foreach (XmlNode child in stuffCategoriesNode.ChildNodes)
+                    {
+                        if (child.NodeType == XmlNodeType.Element && !string.IsNullOrWhiteSpace(child.InnerText))
+                            equipment.stuffCategories.Add(child.InnerText.Trim());
+                    }
+                }
+
+                // costStuffCount
+                string? costStuffCountText = FindEquipmentChildNode(node, "costStuffCount")?.InnerText?.Trim();
+                if (int.TryParse(costStuffCountText, out int csc)) equipment.costStuffCount = csc;
+
+                // costList (ThingDef 级)
+                XmlNode? costListNode = FindEquipmentChildNode(node, "costList");
+                if (costListNode != null)
+                {
+                    foreach (XmlNode child in costListNode.ChildNodes)
+                    {
+                        if (child.NodeType == XmlNodeType.Element && !string.IsNullOrWhiteSpace(child.Name))
+                        {
+                            if (int.TryParse(child.InnerText?.Trim(), out int count) && count > 0)
+                                equipment.costList.Add(new CharacterEquipmentCostEntry { thingDefName = child.Name.Trim(), count = count });
+                        }
+                    }
+                }
+
+                // recipeMaker 子字段
+                XmlNode? recipeMakerNode = FindEquipmentChildNode(node, "recipeMaker");
+                if (recipeMakerNode != null)
+                {
+                    equipment.recipeResearchPrerequisite = FindEquipmentChildNode(recipeMakerNode, "researchPrerequisite")?.InnerText?.Trim() ?? string.Empty;
+                    equipment.recipeEffectWorking = FindEquipmentChildNode(recipeMakerNode, "effectWorking")?.InnerText?.Trim() ?? string.Empty;
+                    equipment.recipeSoundWorking = FindEquipmentChildNode(recipeMakerNode, "soundWorking")?.InnerText?.Trim() ?? string.Empty;
+                    equipment.recipeUnfinishedThingDef = FindEquipmentChildNode(recipeMakerNode, "unfinishedThingDef")?.InnerText?.Trim() ?? string.Empty;
+                    equipment.recipeWorkSkill = FindEquipmentChildNode(recipeMakerNode, "workSkill")?.InnerText?.Trim() ?? string.Empty;
+                    equipment.recipeWorkSpeedStat = FindEquipmentChildNode(recipeMakerNode, "workSpeedStat")?.InnerText?.Trim() ?? string.Empty;
+                    string? displayPrioText = FindEquipmentChildNode(recipeMakerNode, "displayPriority")?.InnerText?.Trim();
+                    if (float.TryParse(displayPrioText, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float dp))
+                        equipment.recipeDisplayPriority = dp;
+
+                    // skillRequirements
+                    XmlNode? skillReqNode = FindEquipmentChildNode(recipeMakerNode, "skillRequirements");
+                    if (skillReqNode != null)
+                    {
+                        foreach (XmlNode child in skillReqNode.ChildNodes)
+                        {
+                            if (child.NodeType == XmlNodeType.Element && !string.IsNullOrWhiteSpace(child.Name))
+                            {
+                                if (float.TryParse(child.InnerText?.Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float sv))
+                                    equipment.recipeSkillRequirements.Add(new CharacterEquipmentStatEntry { statDefName = child.Name.Trim(), value = sv });
+                            }
+                        }
+                    }
+
+                    // recipeUsers
+                    XmlNode? recipeUsersNode = FindEquipmentChildNode(recipeMakerNode, "recipeUsers");
+                    if (recipeUsersNode != null)
+                    {
+                        foreach (XmlNode child in recipeUsersNode.ChildNodes)
+                        {
+                            if (child.NodeType == XmlNodeType.Element && !string.IsNullOrWhiteSpace(child.InnerText))
+                                equipment.recipeUsers.Add(child.InnerText.Trim());
+                        }
+                    }
+                }
+
+                // apparel 子字段扩展
+                if (apparelNode != null)
+                {
+                    string? wearPerDayText = FindEquipmentChildNode(apparelNode, "wearPerDay")?.InnerText?.Trim();
+                    if (float.TryParse(wearPerDayText, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float wpd))
+                        equipment.wearPerDay = wpd;
+
+                    string? careIfDamagedText = FindEquipmentChildNode(apparelNode, "careIfDamaged")?.InnerText?.Trim();
+                    if (!string.IsNullOrWhiteSpace(careIfDamagedText))
+                        equipment.careIfDamaged = string.Equals(careIfDamagedText, "true", StringComparison.OrdinalIgnoreCase);
+
+                    string? careIfCorpseText = FindEquipmentChildNode(apparelNode, "careIfWornByCorpse")?.InnerText?.Trim();
+                    if (!string.IsNullOrWhiteSpace(careIfCorpseText))
+                        equipment.careIfWornByCorpse = string.Equals(careIfCorpseText, "true", StringComparison.OrdinalIgnoreCase);
+
+                    string? countsNudityText = FindEquipmentChildNode(apparelNode, "countsAsClothingForNudity")?.InnerText?.Trim();
+                    if (!string.IsNullOrWhiteSpace(countsNudityText))
+                        equipment.countsAsClothingForNudity = string.Equals(countsNudityText, "true", StringComparison.OrdinalIgnoreCase);
+
+                    string? slaveApparelText = FindEquipmentChildNode(apparelNode, "slaveApparel")?.InnerText?.Trim();
+                    if (!string.IsNullOrWhiteSpace(slaveApparelText))
+                        equipment.slaveApparel = string.Equals(slaveApparelText, "true", StringComparison.OrdinalIgnoreCase);
+
+                    equipment.developmentalStageFilter = FindEquipmentChildNode(apparelNode, "developmentalStageFilter")?.InnerText?.Trim() ?? string.Empty;
+                    equipment.soundWear = FindEquipmentChildNode(apparelNode, "soundWear")?.InnerText?.Trim() ?? string.Empty;
+                    equipment.soundRemove = FindEquipmentChildNode(apparelNode, "soundRemove")?.InnerText?.Trim() ?? string.Empty;
+
+                    string? useDeflectText = FindEquipmentChildNode(apparelNode, "useDeflectMetalEffect")?.InnerText?.Trim();
+                    if (!string.IsNullOrWhiteSpace(useDeflectText))
+                        equipment.useDeflectMetalEffect = string.Equals(useDeflectText, "true", StringComparison.OrdinalIgnoreCase);
+
+                    XmlNode? renderSkipNode = FindEquipmentChildNode(apparelNode, "renderSkipFlags");
+                    if (renderSkipNode != null)
+                    {
+                        foreach (XmlNode child in renderSkipNode.ChildNodes)
+                        {
+                            if (child.NodeType == XmlNodeType.Element && !string.IsNullOrWhiteSpace(child.InnerText))
+                                equipment.apparelRenderSkipFlags.Add(child.InnerText.Trim());
+                        }
+                    }
+
+                    string? blocksVisionText = FindEquipmentChildNode(apparelNode, "blocksVision")?.InnerText?.Trim();
+                    if (!string.IsNullOrWhiteSpace(blocksVisionText))
+                        equipment.blocksVision = string.Equals(blocksVisionText, "true", StringComparison.OrdinalIgnoreCase);
+
+                    string? ignoredNonViolentText = FindEquipmentChildNode(apparelNode, "ignoredByNonViolent")?.InnerText?.Trim();
+                    if (!string.IsNullOrWhiteSpace(ignoredNonViolentText))
+                        equipment.ignoredByNonViolent = string.Equals(ignoredNonViolentText, "true", StringComparison.OrdinalIgnoreCase);
+
+                    string? scoreOffsetText = FindEquipmentChildNode(apparelNode, "scoreOffset")?.InnerText?.Trim();
+                    if (float.TryParse(scoreOffsetText, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float so))
+                        equipment.apparelScoreOffset = so;
+
+                    // drawData（原版 ApparelDrawData，保留原始 XML 以确保导出兼容性）
+                    XmlNode? drawDataNode = FindEquipmentChildNode(apparelNode, "drawData");
+                    if (drawDataNode != null)
+                        equipment.apparelDrawDataXml = drawDataNode.InnerXml;
+                }
+
+                // 原始 XML 块（comps/verbs/tools 等）
+                var rawXmlTags = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "comps", "verbs", "tools" };
+                foreach (XmlNode child in node.ChildNodes)
+                {
+                    if (child.NodeType != XmlNodeType.Element) continue;
+                    if (rawXmlTags.Contains(child.Name))
+                    {
+                        equipment.rawXmlEntries.Add(new RawXmlEntry
+                        {
+                            tagName = child.Name,
+                            innerXml = child.InnerXml
+                        });
+                    }
+                }
+
                 equipment.EnsureDefaults();
                 if (string.IsNullOrWhiteSpace(equipment.defName))
                     equipment.defName = equipment.thingDefName;
                 if (string.IsNullOrWhiteSpace(equipment.label))
                     equipment.label = equipment.defName;
+
+                // 保存原始 ThingDef XML 以支持非破坏性导出
+                equipment.rawOriginalThingDefXml = node.OuterXml;
+
                 return equipment;
             }
             catch (Exception ex)
@@ -1353,6 +1708,65 @@ namespace CharacterStudio.UI
                 Log.Warning($"[CharacterStudio] 解析正式装备 ThingDef 失败: {ex.Message}");
                 return null;
             }
+        }
+
+        private static CharacterStudio.Core.EquipmentType DetectEquipmentTypeFromNode(XmlNode node, XmlNode? apparelNode)
+        {
+            string? parentName = node.Attributes?["ParentName"]?.Value;
+            // 有 apparel 节点 → Apparel
+            if (apparelNode != null)
+                return CharacterStudio.Core.EquipmentType.Apparel;
+
+            // 检查 ParentName 暗示的类型
+            if (!string.IsNullOrWhiteSpace(parentName))
+            {
+                string lower = parentName!.ToLowerInvariant();
+                if (lower.Contains("gun") || lower.Contains("ranged") || lower.Contains("bullet"))
+                    return CharacterStudio.Core.EquipmentType.WeaponRanged;
+                if (lower.Contains("melee") || lower.Contains("weapon") || lower.Contains("blade") || lower.Contains("blunt") || lower.Contains("sharp"))
+                    return CharacterStudio.Core.EquipmentType.WeaponMelee;
+                if (lower.Contains("building"))
+                    return CharacterStudio.Core.EquipmentType.Building;
+                if (lower.Contains("turret"))
+                    return CharacterStudio.Core.EquipmentType.Turret;
+            }
+
+            // 检查 verbs 节点（有 verb 通常表示武器）
+            XmlNode? verbsNode = FindEquipmentChildNode(node, "verbs");
+            if (verbsNode != null)
+            {
+                // 有 projectile 相关 verb → 远程武器
+                string verbsXml = verbsNode.InnerXml;
+                if (verbsXml.IndexOf("Projectile", StringComparison.OrdinalIgnoreCase) >= 0
+                    || verbsXml.IndexOf("LaunchProjectile", StringComparison.OrdinalIgnoreCase) >= 0)
+                    return CharacterStudio.Core.EquipmentType.WeaponRanged;
+                // 有 MeleeAttack → 近战武器
+                if (verbsXml.IndexOf("MeleeAttack", StringComparison.OrdinalIgnoreCase) >= 0)
+                    return CharacterStudio.Core.EquipmentType.WeaponMelee;
+                // 有 verb 但不确定类型 → 默认近战
+                return CharacterStudio.Core.EquipmentType.WeaponMelee;
+            }
+
+            // 检查 tools 节点（武器通常有 tools）
+            XmlNode? toolsNode = FindEquipmentChildNode(node, "tools");
+            if (toolsNode != null && toolsNode.ChildNodes.Count > 0)
+                return CharacterStudio.Core.EquipmentType.WeaponMelee;
+
+            // 检查 thingClass 暗示的类型
+            string? thingClass = FindEquipmentChildNode(node, "thingClass")?.InnerText?.Trim();
+            if (!string.IsNullOrWhiteSpace(thingClass))
+            {
+                string tc = thingClass!;
+                if (tc.IndexOf("Building", StringComparison.OrdinalIgnoreCase) >= 0)
+                    return CharacterStudio.Core.EquipmentType.Building;
+                if (tc.IndexOf("Turret", StringComparison.OrdinalIgnoreCase) >= 0)
+                    return CharacterStudio.Core.EquipmentType.Turret;
+                if (tc.IndexOf("Apparel", StringComparison.OrdinalIgnoreCase) >= 0)
+                    return CharacterStudio.Core.EquipmentType.Apparel;
+            }
+
+            // 默认：Item
+            return CharacterStudio.Core.EquipmentType.Item;
         }
 
         private static void NormalizeImportedEquipmentDefNames(List<CharacterEquipmentDef> importedEquipments, List<CharacterEquipmentDef>? existingEquipments)

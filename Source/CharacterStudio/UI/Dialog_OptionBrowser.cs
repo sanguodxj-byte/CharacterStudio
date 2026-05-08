@@ -25,12 +25,11 @@ namespace CharacterStudio.UI
             this.onSelected = onSelected ?? throw new ArgumentNullException(nameof(onSelected));
             this.labelGetter = labelGetter ?? throw new ArgumentNullException(nameof(labelGetter));
             this.metaGetter = metaGetter ?? (_ => string.Empty);
-            doCloseX = true;
-            doCloseButton = true;
+            doCloseX = false;
+            doCloseButton = false;
             draggable = true;
             resizeable = true;
             absorbInputAroundWindow = true;
-            optionalTitle = title;
         }
 
         public override void DoWindowContents(Rect inRect)
@@ -47,11 +46,17 @@ namespace CharacterStudio.UI
             GUI.color = UIHelper.BorderColor;
             Widgets.DrawBox(searchRect, 1);
             GUI.color = Color.white;
-            searchText = Widgets.TextEntryLabeled(searchRect.ContractedBy(6f), "CS_Studio_Browser_Search".Translate(), searchText);
+            Rect contractedSearch = searchRect.ContractedBy(6f);
+            float searchLabelWidth = Text.CalcSize("CS_Studio_Browser_Search".Translate()).x + 4f;
+            Widgets.Label(new Rect(contractedSearch.x, contractedSearch.y, searchLabelWidth, contractedSearch.height), "CS_Studio_Browser_Search".Translate());
+            string newSearch = Widgets.TextField(new Rect(contractedSearch.x + searchLabelWidth, contractedSearch.y, contractedSearch.width - searchLabelWidth, contractedSearch.height), searchText);
+            if (newSearch != searchText)
+                searchText = newSearch;
 
             y += 40f;
             Rect listRect = new Rect(0f, y, inRect.width, inRect.height - y - 8f);
-            List<TItem> visibleItems = GetVisibleItems();
+            bool composing = Input.imeIsSelected && !string.IsNullOrEmpty(Input.compositionString);
+            List<TItem> visibleItems = composing ? allItems : GetVisibleItems();
             float contentHeight = Mathf.Max(listRect.height - 4f, visibleItems.Count * 56f);
             Rect viewRect = new Rect(0f, 0f, listRect.width - 16f, contentHeight);
 
