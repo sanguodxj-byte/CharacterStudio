@@ -11,13 +11,23 @@ namespace CharacterStudio.Patches
     /// </summary>
     public static class Patch_CharacterAttributeBuffStat
     {
-        private static readonly System.Reflection.FieldInfo? StatWorkerStatField = AccessTools.Field(typeof(StatWorker), "stat");
+        // P-PERF: Harmony AccessTools.FieldRef 替代 FieldInfo.GetValue，消除反射固定开销
+        private static readonly AccessTools.FieldRef<StatWorker, StatDef>? _statWorkerStatGetter;
+
+        static Patch_CharacterAttributeBuffStat()
+        {
+            var field = AccessTools.Field(typeof(StatWorker), "stat");
+            if (field != null)
+            {
+                _statWorkerStatGetter = AccessTools.FieldRefAccess<StatWorker, StatDef>(field);
+            }
+        }
 
         public static void Apply(Harmony harmony)
         {
-            if (StatWorkerStatField == null)
+            if (_statWorkerStatGetter == null)
             {
-                Log.Warning("[CharacterStudio] Patch_CharacterAttributeBuffStat: Could not find StatWorker.stat field via reflection. Attribute buffs will be silently inactive. This may indicate a RimWorld version mismatch.");
+                Log.Warning("[CharacterStudio] Patch_CharacterAttributeBuffStat: Could not create field access delegate for StatWorker.stat. Attribute buffs will be silently inactive. This may indicate a RimWorld version mismatch.");
             }
 
             var target = AccessTools.Method(typeof(StatWorker), nameof(StatWorker.GetValue), new[] { typeof(Thing), typeof(bool), typeof(int) });
@@ -42,13 +52,13 @@ namespace CharacterStudio.Patches
                 return;
             }
 
-            // P0: 快速路径 — O(1) HashSet 检查，无 buff 的 Pawn 立即跳过，避免后续反射和迭代
+            // P0: 快速路径 — O(1) HashSet 检查，无 buff 的 Pawn 立即跳过，避免后续委托调用和迭代
             if (!CharacterAttributeBuffService.HasActiveBuffFast(pawn.thingIDNumber))
             {
                 return;
             }
 
-            StatDef? stat = StatWorkerStatField?.GetValue(__instance) as StatDef;
+            StatDef? stat = _statWorkerStatGetter?.Invoke(__instance);
             if (stat == null)
             {
                 return;
@@ -65,7 +75,7 @@ namespace CharacterStudio.Patches
                 return;
             }
 
-            StatDef? stat = StatWorkerStatField?.GetValue(__instance) as StatDef;
+            StatDef? stat = _statWorkerStatGetter?.Invoke(__instance);
             if (stat == null)
             {
                 return;

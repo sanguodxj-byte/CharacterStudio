@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using CharacterStudio.Core;
 using RimWorld;
 using Verse;
@@ -11,6 +12,20 @@ namespace CharacterStudio.Attributes
     {
         // P0: 追踪有活跃属性 Buff 的 Pawn ID 集合，用于 StatWorker Postfix 快速跳过
         private static readonly HashSet<int> pawnIdsWithActiveBuffs = new HashSet<int>();
+
+        // P-PERF: ConditionalWeakTable 缓存 CompPawnSkin 查找，避免 ApplyModifiers 内每次 GetComp
+        private static readonly ConditionalWeakTable<Pawn, CompPawnSkin> _skinCompCache
+            = new ConditionalWeakTable<Pawn, CompPawnSkin>();
+
+        private static CompPawnSkin? GetSkinCompFast(Pawn pawn)
+        {
+            if (_skinCompCache.TryGetValue(pawn, out CompPawnSkin? cached))
+                return cached;
+            cached = pawn.GetComp<CompPawnSkin>();
+            if (cached != null)
+                _skinCompCache.Add(pawn, cached);
+            return cached;
+        }
 
         public static CharacterStatModifierProfile GetOrCreateProfile(PawnSkinDef skin)
         {
@@ -109,8 +124,8 @@ namespace CharacterStudio.Attributes
                 return value;
             }
 
-            // 直接访问 profile.entries 避免 yield return 迭代器分配
-            var comp = pawn.GetComp<CompPawnSkin>();
+            // P-PERF: 使用缓存查找 CompPawnSkin
+            var comp = GetSkinCompFast(pawn);
             var profile = comp?.ActiveSkin?.statModifiers;
             if (profile?.entries == null || profile.entries.Count == 0)
             {

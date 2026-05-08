@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 using HarmonyLib;
 using CharacterStudio.Core;
 using UnityEngine;
@@ -8,73 +9,69 @@ namespace CharacterStudio.Rendering
 {
     public static class Patch_AnimationRender
     {
-        // P-PERF: 缓存 CompPawnSkin 查找结果，避免每个渲染节点重复 GetComp
-        private static readonly System.WeakReference<Pawn> _lastOffsetPawnRef = new System.WeakReference<Pawn>(null!);
-        private static CompPawnSkin? _lastOffsetSkinComp;
-        private static readonly System.WeakReference<Pawn> _lastScalePawnRef = new System.WeakReference<Pawn>(null!);
-        private static CompPawnSkin? _lastScaleSkinComp;
+        // P-PERF: 单一 ConditionalWeakTable 替代两组 WeakReference，多 Pawn 零 miss
+        private static readonly ConditionalWeakTable<Pawn, CompPawnSkin> _skinCompCache
+            = new ConditionalWeakTable<Pawn, CompPawnSkin>();
 
-        /// <summary>P-PERF: 快速获取 CompPawnSkin，利用 WeakReference 避免对同一 Pawn 重复 GetComp</summary>
-        private static CompPawnSkin? FastGetSkinComp_Pawn(Pawn pawn, System.WeakReference<Pawn> cacheRef, ref CompPawnSkin? cached)
+        /// <summary>P-PERF: ConditionalWeakTable O(1) 查找，自动跟随 GC</summary>
+        private static CompPawnSkin? FastGetSkinComp(Pawn pawn)
         {
-            if (cacheRef.TryGetTarget(out Pawn? cachedPawn) && cachedPawn == pawn)
+            if (_skinCompCache.TryGetValue(pawn, out CompPawnSkin? cached))
                 return cached;
             cached = pawn.GetComp<CompPawnSkin>();
-            cacheRef.SetTarget(pawn);
+            if (cached != null)
+                _skinCompCache.Add(pawn, cached);
             return cached;
         }
 
-        private static bool IsWeaponNode(PawnRenderNode node, out bool isOffHand)
+        private static bool IsWeaponOffHand(PawnRenderNode node)
         {
-            isOffHand = false;
-            if (node?.Props?.tagDef == null) return false;
             string tagName = node.Props.tagDef.defName;
-            
-            // P-PERF: 使用 IndexOf 而非正则，性能更优
-            if (tagName.IndexOf("Weapon", StringComparison.OrdinalIgnoreCase) < 0) return false;
-            
-            if (tagName.IndexOf("Off",  StringComparison.OrdinalIgnoreCase) >= 0 ||
-                tagName.IndexOf("Left", StringComparison.OrdinalIgnoreCase) >= 0)
-                isOffHand = true;
-            return true;
+            return tagName.IndexOf("Off", StringComparison.OrdinalIgnoreCase) >= 0
+                || tagName.IndexOf("Left", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         public static void OffsetFor_Postfix(PawnRenderNode __0, PawnDrawParms __1, ref Vector3 __result)
         {
             try
             {
+                // P-PERF: 先检查标签再获取 Comp，避免对大部分无关节点调用 GetComp
+                string tag = __0.Props?.tagDef?.defName ?? "";
+                bool isBody = tag == "Body";
+                bool isHead = tag == "Head";
+                bool isWeapon = !isBody && !isHead && tag.Length > 0 && tag.IndexOf("Weapon", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                if (!isBody && !isHead && !isWeapon) return;
+
                 Pawn? pawn = __1.pawn;
                 if (pawn == null) return;
-                
-                CompPawnSkin? skinComp = FastGetSkinComp_Pawn(pawn, _lastOffsetPawnRef, ref _lastOffsetSkinComp);
-                if (skinComp == null) return; // 快速跳过：原版角色无组件
+
+                CompPawnSkin? skinComp = FastGetSkinComp(pawn);
+                if (skinComp == null) return;
 
                 if (skinComp.ActiveSkin?.animationConfig == null) return;
                 var animCfg = skinComp.ActiveSkin.animationConfig;
                 if (!animCfg.enabled) return;
 
-                // --- 1. 防止层级叠加 ---
-                // 仅在“骨架根节点”上应用动画，子节点（衣服、面部、发型）会自然继承父节点的位移。
-                string tag = __0.Props?.tagDef?.defName ?? "";
-                
-                if (tag == "Body")
+                if (isBody)
                 {
                     __result += skinComp.GetAnimationDelta(AnimBone.Body);
                 }
-                else if (tag == "Head")
+                else if (isHead)
                 {
-                    // Head 在渲染树里是 Body 的子节点，这里只叠加 Head 相对于 Body 的增量
                     __result += skinComp.GetAnimationDelta(AnimBone.Head);
                 }
-
-                // --- 2. 处理武器专项偏移 ---
-                if (IsWeaponNode(__0, out bool isOffHand))
+                else if (isWeapon)
                 {
-                    if (animCfg.weaponOverrideEnabled && (!isOffHand || animCfg.applyToOffHand))
+                    if (animCfg.weaponOverrideEnabled)
                     {
-                        Vector3 wOffset = animCfg.GetWeaponOffsetForRotation(__1.facing);
-                        if (__1.facing == Rot4.West) wOffset.x = -wOffset.x;
-                        __result += wOffset;
+                        bool isOffHand = IsWeaponOffHand(__0);
+                        if (!isOffHand || animCfg.applyToOffHand)
+                        {
+                            Vector3 wOffset = animCfg.GetWeaponOffsetForRotation(__1.facing);
+                            if (__1.facing == Rot4.West) wOffset.x = -wOffset.x;
+                            __result += wOffset;
+                        }
                     }
                 }
             }
@@ -85,34 +82,42 @@ namespace CharacterStudio.Rendering
         {
             try
             {
+                // P-PERF: 先检查标签再获取 Comp
+                string tag = __0.Props?.tagDef?.defName ?? "";
+                bool isBody = tag == "Body";
+                bool isWeapon = !isBody && tag.Length > 0 && tag.IndexOf("Weapon", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                if (!isBody && !isWeapon) return;
+
                 Pawn? pawn = __1.pawn;
                 if (pawn == null) return;
-                
-                CompPawnSkin? skinComp = FastGetSkinComp_Pawn(pawn, _lastScalePawnRef, ref _lastScaleSkinComp);
-                if (skinComp == null) return; // 快速跳过：原版角色无组件
+
+                CompPawnSkin? skinComp = FastGetSkinComp(pawn);
+                if (skinComp == null) return;
 
                 if (skinComp.ActiveSkin?.animationConfig == null) return;
                 var animCfg = skinComp.ActiveSkin.animationConfig;
                 if (!animCfg.enabled) return;
 
-                // 缩放同样只应用给 Body 根节点，避免子节点（如面部）跟着二次缩放导致形变
-                string tag = __0.Props?.tagDef?.defName ?? "";
-                if (tag == "Body")
+                if (isBody)
                 {
                     float bScale = skinComp.GetBreathingScale(AnimBone.Body);
-                    if (Math.Abs(bScale - 1.0f) > 0.0001f)
+                    if (bScale != 1.0f)
                     {
                         __result.x *= bScale;
                         __result.z *= bScale;
                     }
                 }
-
-                if (IsWeaponNode(__0, out bool isOffHand))
+                else if (isWeapon)
                 {
-                    if (animCfg.weaponOverrideEnabled && (!isOffHand || animCfg.applyToOffHand))
+                    if (animCfg.weaponOverrideEnabled)
                     {
-                        __result.x *= animCfg.scale.x > 0 ? animCfg.scale.x : 1f;
-                        __result.z *= animCfg.scale.y > 0 ? animCfg.scale.y : 1f;
+                        bool isOffHand = IsWeaponOffHand(__0);
+                        if (!isOffHand || animCfg.applyToOffHand)
+                        {
+                            __result.x *= animCfg.scale.x > 0 ? animCfg.scale.x : 1f;
+                            __result.z *= animCfg.scale.y > 0 ? animCfg.scale.y : 1f;
+                        }
                     }
                 }
             }

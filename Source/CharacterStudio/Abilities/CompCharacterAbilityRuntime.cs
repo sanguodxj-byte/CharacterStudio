@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿using System;
 using System.Collections.Generic;
 using CharacterStudio.Core;
 using RimWorld;
@@ -45,6 +45,12 @@ namespace CharacterStudio.Abilities
                 {
                     _cachedTotalFlightHeight = 0f;
                 }
+                else if (abilityRuntimeState.isWorldMapLanding)
+                {
+                    // 着陆模式：使用着陆高度因子 + liftFactor（从 1→0）
+                    float liftFactor = GetFlightLiftFactor01();
+                    _cachedTotalFlightHeight = abilityRuntimeState.worldMapLandingHeightFactor * liftFactor;
+                }
                 else
                 {
                     float liftFactor = GetFlightLiftFactor01();
@@ -64,6 +70,8 @@ namespace CharacterStudio.Abilities
             get
             {
                 if (!IsFlightStateActive()) return 0f;
+                if (abilityRuntimeState.isWorldMapLanding)
+                    return abilityRuntimeState.worldMapLandingHeightFactor * GetFlightLiftFactor01();
                 return abilityRuntimeState.flightStateHeightFactor * GetFlightLiftFactor01();
             }
         }
@@ -91,6 +99,8 @@ namespace CharacterStudio.Abilities
         {
             base.CompTick();
             TickForcedMove();
+            TickWorldMapFlight();
+            TickWorldMapLanding();
             TickAbilityFaceOverride();
         }
 
@@ -116,43 +126,6 @@ namespace CharacterStudio.Abilities
         public void SetCooldownUntilTick(AbilityRuntimeHotkeySlot slot, int value) => abilityRuntimeState.SetCooldownUntilTick(slot, value);
         public void SetOverrideDefName(AbilityRuntimeHotkeySlot slot, string defName) => abilityRuntimeState.SetOverrideDefName(slot, defName);
         public void SetOverrideExpireTick(AbilityRuntimeHotkeySlot slot, int tick) => abilityRuntimeState.SetOverrideExpireTick(slot, tick);
-
-        // ── R-Stack ──
-        public bool RStackingEnabled
-        {
-            get => abilityRuntimeState.rStackingEnabled;
-            set => abilityRuntimeState.rStackingEnabled = value;
-        }
-        public int RStackCount
-        {
-            get => abilityRuntimeState.rStackCount;
-            set => abilityRuntimeState.rStackCount = value;
-        }
-        public bool RSecondStageReady
-        {
-            get => abilityRuntimeState.rSecondStageReady;
-            set => abilityRuntimeState.rSecondStageReady = value;
-        }
-        public int RSecondStageExecuteTick
-        {
-            get => abilityRuntimeState.rSecondStageExecuteTick;
-            set => abilityRuntimeState.rSecondStageExecuteTick = value;
-        }
-        public bool RSecondStageHasTarget
-        {
-            get => abilityRuntimeState.rSecondStageHasTarget;
-            set => abilityRuntimeState.rSecondStageHasTarget = value;
-        }
-        public IntVec3 RSecondStageTargetCell
-        {
-            get => abilityRuntimeState.rSecondStageTargetCell;
-            set => abilityRuntimeState.rSecondStageTargetCell = value;
-        }
-        public string RStackAbilityDefName
-        {
-            get => abilityRuntimeState.rStackAbilityDefName;
-            set => abilityRuntimeState.rStackAbilityDefName = value ?? string.Empty;
-        }
 
         // ── Weapon Carry ──
         public int WeaponCarryCastingUntilTick
@@ -339,7 +312,11 @@ namespace CharacterStudio.Abilities
         public int FlightStateExpireTick
         {
             get => abilityRuntimeState.flightStateExpireTick;
-            set => abilityRuntimeState.flightStateExpireTick = value;
+            set
+            {
+                abilityRuntimeState.flightStateExpireTick = value;
+                NotifyFlyingStateChanged();
+            }
         }
         public float FlightStateHeightFactor
         {
@@ -395,6 +372,69 @@ namespace CharacterStudio.Abilities
         {
             get => abilityRuntimeState.vanillaFlightPendingLandingBurst;
             set => abilityRuntimeState.vanillaFlightPendingLandingBurst = value;
+        }
+
+        // ── World Map Flight ──
+        public bool IsInWorldMapFlight
+        {
+            get => abilityRuntimeState.isInWorldMapFlight;
+            set => abilityRuntimeState.isInWorldMapFlight = value;
+        }
+        public string WorldMapFlightSourceAbilityDefName
+        {
+            get => abilityRuntimeState.worldMapFlightSourceAbilityDefName;
+            set => abilityRuntimeState.worldMapFlightSourceAbilityDefName = value ?? string.Empty;
+        }
+        public int WorldMapFlightDestinationTile
+        {
+            get => abilityRuntimeState.worldMapFlightDestinationTile;
+            set => abilityRuntimeState.worldMapFlightDestinationTile = value;
+        }
+        public int WorldMapFlightStartTick
+        {
+            get => abilityRuntimeState.worldMapFlightStartTick;
+            set => abilityRuntimeState.worldMapFlightStartTick = value;
+        }
+        public int WorldMapFlightHandoffTick
+        {
+            get => abilityRuntimeState.worldMapFlightHandoffTick;
+            set => abilityRuntimeState.worldMapFlightHandoffTick = value;
+        }
+        public bool WorldMapFlightMapParentRequired
+        {
+            get => abilityRuntimeState.worldMapFlightMapParentRequired;
+            set => abilityRuntimeState.worldMapFlightMapParentRequired = value;
+        }
+        public int WorldMapFlightTravelDurationTicks
+        {
+            get => abilityRuntimeState.worldMapFlightTravelDurationTicks;
+            set => abilityRuntimeState.worldMapFlightTravelDurationTicks = value;
+        }
+
+        // ── World Map Landing ──
+        public bool IsWorldMapLanding
+        {
+            get => abilityRuntimeState.isWorldMapLanding;
+            set
+            {
+                abilityRuntimeState.isWorldMapLanding = value;
+                NotifyFlyingStateChanged();
+            }
+        }
+        public int WorldMapLandingStartTick
+        {
+            get => abilityRuntimeState.worldMapLandingStartTick;
+            set => abilityRuntimeState.worldMapLandingStartTick = value;
+        }
+        public int WorldMapLandingDurationTicks
+        {
+            get => abilityRuntimeState.worldMapLandingDurationTicks;
+            set => abilityRuntimeState.worldMapLandingDurationTicks = value;
+        }
+        public float WorldMapLandingHeightFactor
+        {
+            get => abilityRuntimeState.worldMapLandingHeightFactor;
+            set => abilityRuntimeState.worldMapLandingHeightFactor = value;
         }
 
         // ── Triggered Equipment Animation ──
@@ -610,7 +650,7 @@ namespace CharacterStudio.Abilities
             abilityRuntimeState.forcedMoveBusyUntilTick = abilityRuntimeState.forcedMoveStartTick + durationTicks + 6;
             abilityRuntimeState.forcedMoveCollisionTriggered = false;
 
-            // 旧字段兼容
+            // 同步写入冗余字段以兼容存档序列化
             abilityRuntimeState.forcedMoveDirectionX = (int)Mathf.Round(dir.x);
             abilityRuntimeState.forcedMoveDirectionZ = (int)Mathf.Round(dir.y);
             abilityRuntimeState.forcedMoveQueuedSteps = Mathf.CeilToInt(distance);
@@ -780,6 +820,7 @@ namespace CharacterStudio.Abilities
             if (abilityRuntimeState.forcedMoveActive && abilityRuntimeState.forcedMoveIsLanding)
             {
                 abilityRuntimeState.flightStateExpireTick = -1;
+                NotifyFlyingStateChanged();
             }
 
             abilityRuntimeState.forcedMoveActive = false;
@@ -860,16 +901,36 @@ namespace CharacterStudio.Abilities
         // ── Flight Visual Queries (for rendering layer) ──
         public bool IsFlightStateActive()
         {
-            int now = AbilityTimeStopRuntimeController.ResolveVisualTickForPawn(Pawn, Find.TickManager?.TicksGame ?? 0);
-            return abilityRuntimeState.flightStateExpireTick >= now;
+            // 世界地图着陆模式：独立的飞行判定
+            if (abilityRuntimeState.isWorldMapLanding)
+            {
+                int now = Find.TickManager?.TicksGame ?? 0;
+                return abilityRuntimeState.worldMapLandingStartTick >= 0
+                    && now < abilityRuntimeState.worldMapLandingStartTick + abilityRuntimeState.worldMapLandingDurationTicks;
+            }
+
+            int now2 = AbilityTimeStopRuntimeController.ResolveVisualTickForPawn(Pawn, Find.TickManager?.TicksGame ?? 0);
+            return abilityRuntimeState.flightStateExpireTick >= now2;
         }
 
         public float GetFlightLiftFactor01()
         {
+            // ── 世界地图着陆模式：高度从 1.0 平滑衰减到 0.0 ──
+            if (abilityRuntimeState.isWorldMapLanding)
+            {
+                int now = AbilityTimeStopRuntimeController.ResolveVisualTickForPawn(Pawn, Find.TickManager?.TicksGame ?? 0);
+                int startTick = abilityRuntimeState.worldMapLandingStartTick;
+                int duration = abilityRuntimeState.worldMapLandingDurationTicks;
+                if (startTick < 0 || duration <= 0) return 0f;
+                float progress = Mathf.Clamp01((float)(now - startTick) / duration);
+                // 从 1.0 到 0.0，使用 SmoothStep 使末段更平滑
+                return Mathf.SmoothStep(1f, 0f, progress);
+            }
+
             if (!IsFlightStateActive() || abilityRuntimeState.flightStateStartTick < 0 || abilityRuntimeState.flightStateExpireTick < abilityRuntimeState.flightStateStartTick)
                 return 0f;
 
-            int now = AbilityTimeStopRuntimeController.ResolveVisualTickForPawn(Pawn, Find.TickManager?.TicksGame ?? 0);
+            int now2 = AbilityTimeStopRuntimeController.ResolveVisualTickForPawn(Pawn, Find.TickManager?.TicksGame ?? 0);
             
             // 落地冲刺逻辑：高度随位移百分比下降
             if (abilityRuntimeState.forcedMoveActive && abilityRuntimeState.forcedMoveIsLanding && abilityRuntimeState.forcedMoveTotalDistance > 0.001f)
@@ -879,11 +940,11 @@ namespace CharacterStudio.Abilities
 
             // 正常的起飞/降落过渡
             const float TransitionTicks = 30f;
-            float age = now - abilityRuntimeState.flightStateStartTick;
+            float age = now2 - abilityRuntimeState.flightStateStartTick;
             float takeoffFactor = Mathf.Clamp01(age / TransitionTicks);
             
             // 降落平滑过渡 (30 ticks)
-            float remaining = abilityRuntimeState.flightStateExpireTick - now;
+            float remaining = abilityRuntimeState.flightStateExpireTick - now2;
             float landingFactor = Mathf.Clamp01(remaining / TransitionTicks);
 
             // 使用 SmoothStep 让过渡更自然
@@ -970,6 +1031,44 @@ namespace CharacterStudio.Abilities
             pawn.GetComp<Core.CompPawnSkin>()?.RequestRenderRefresh();
         }
 
+        // P-PERF: 同步飞行状态到 Patch_PawnRenderer 的 HashSet 快速跳过集合
+        private void NotifyFlyingStateChanged()
+        {
+            Pawn? pawn = Pawn;
+            if (pawn == null) return;
+            Rendering.Patch_PawnRenderer.SetPawnFlying(pawn, IsFlightStateActive());
+        }
+
+        // ── World Map Landing Tick ──
+        private void TickWorldMapLanding()
+        {
+            if (!abilityRuntimeState.isWorldMapLanding) return;
+
+            int now = Find.TickManager?.TicksGame ?? 0;
+            int endTick = abilityRuntimeState.worldMapLandingStartTick + abilityRuntimeState.worldMapLandingDurationTicks;
+
+            if (now >= endTick)
+            {
+                // 着陆动画完成，清理着陆状态
+                abilityRuntimeState.isWorldMapLanding = false;
+                abilityRuntimeState.worldMapLandingStartTick = -1;
+                NotifyFlyingStateChanged();
+
+                Pawn? pawn = Pawn;
+                if (pawn != null && pawn.Spawned && pawn.Map != null)
+                {
+                    // 着陆尘埃效果
+                    FleckMaker.ThrowDustPuff(pawn.Position, pawn.Map, 1.5f);
+                    FleckMaker.ThrowLightningGlow(pawn.DrawPos, pawn.Map, 1.5f);
+                    Find.CameraDriver.shaker.DoShake(0.3f);
+
+                    // 着陆后方向朝南
+                    pawn.Rotation = Rot4.South;
+                    RequestSkinRenderRefresh();
+                }
+            }
+        }
+
         // ── Ability Face Override Tick ──
         private void TickAbilityFaceOverride()
         {
@@ -982,6 +1081,22 @@ namespace CharacterStudio.Abilities
                 abilityRuntimeState.abilityPupilBrightnessOffset = 0f;
                 abilityRuntimeState.abilityPupilContrastOffset = 0f;
             }
+        }
+
+        // ── World Map Flight Handoff Tick ──
+        private void TickWorldMapFlight()
+        {
+            int handoffTick = abilityRuntimeState.worldMapFlightHandoffTick;
+            if (handoffTick < 0) return;
+
+            int now = Find.TickManager?.TicksGame ?? 0;
+            if (now < handoffTick) return;
+
+            Pawn? pawn = Pawn;
+            if (pawn == null || pawn.Map == null) { AbilityWorldMapFlightUtility.ClearWorldMapFlightState(pawn); return; }
+
+            // 到达移交时间 → DeSpawn 并创建 TravellingTransporters
+            AbilityWorldMapFlightUtility.ExecuteHandoff(pawn);
         }
     }
 
